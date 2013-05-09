@@ -1,6 +1,7 @@
 # Django settings for stackdio project.
 
 import os
+from os.path import dirname, normpath, join
 import djcelery
 djcelery.setup_loader()
 
@@ -13,7 +14,7 @@ TEMPLATE_DEBUG = DEBUG
 ##
 # Some convenience variables
 ##
-SITE_ROOT = '/'.join(os.path.dirname(__file__).split('/')[0:-2])
+SITE_ROOT = '/'.join(dirname(__file__).split('/')[0:-2])
 
 ##
 # Define your admin tuples like ('full name', 'email@address.com')
@@ -55,6 +56,11 @@ STATICFILES_FINDERS = (
 #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS
+FIXTURE_DIRS = (
+    normpath(join(SITE_ROOT, 'fixtures')),
+)
+
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -74,6 +80,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'rest_framework',
+    'south',
+    'djcelery',
     'core',
 )
 

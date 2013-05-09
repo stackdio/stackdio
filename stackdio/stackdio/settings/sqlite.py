@@ -17,6 +17,11 @@ DATABASES = {
     }
 }
 
+##
+# Celery & RabbitMQ
+##
+BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+
 # Local settings overrides...should not be committed.
 try:
     from .local_settings import *
