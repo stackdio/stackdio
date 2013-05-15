@@ -3,3 +3,4 @@ syntax: glob
 dev.db
 *.pyc
 *.swp
+*.un~
