@@ -2,8 +2,19 @@
 
 import os
 from os.path import dirname, normpath, join
+
+from django.core.exceptions import ImproperlyConfigured
+
 import djcelery
+
 djcelery.setup_loader()
+
+def getenv(var):
+    try:
+        return os.environ[var]
+    except KeyError, e:
+        msg = 'Missing environment variable {0}.'.format(var)
+        raise ImproperlyConfigured(msg)
 
 ##
 #

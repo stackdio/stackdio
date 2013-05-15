@@ -12,8 +12,12 @@ ALLOWED_HOSTS = ['*']
 ##
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '%s/dev.db' % SITE_ROOT,
+        'ENGINE':   'django.db.backends.mysql',
+        'NAME':     'stackdio',
+        'HOST':     'localhost',
+        'PORT':     '3306',
+        'USER':     getenv('MYSQL_USER'),
+        'PASSWORD': getenv('MYSQL_PASS'),
     }
 }
 
