@@ -1,0 +1,11 @@
+user: abe
+root_dir: /opt/salt_root
+verify_env: True
+
+file_roots:
+  base:
+    - /opt/salt_root/srv/salt
+
+pillar_roots:
+  base:
+    - /opt/salt_root/srv/pillar

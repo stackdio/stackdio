@@ -69,7 +69,7 @@ STATICFILES_FINDERS = (
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS
 FIXTURE_DIRS = (
-    normpath(join(SITE_ROOT, 'fixtures')),
+    normpath(join(SITE_ROOT, 'stackdio', 'fixtures')),
 )
 
 MIDDLEWARE_CLASSES = (
