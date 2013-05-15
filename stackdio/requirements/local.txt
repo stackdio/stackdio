@@ -1,4 +1,0 @@
-# Load the base requirements first
--r base.txt
-
-# Any additional requirements for local development goes here
