@@ -18,10 +18,11 @@ def api_root(request, format=None):
         'core': {
             'users': reverse('user-list', request=request, format=format),
         },
-        'blueprints': reverse('blueprint-list', request=request, format=format),
-        # 'layers': reverse('user-list', request=request, format=format),
-        # 'stacks': reverse('user-list', request=request, format=format),
-        # 'states': reverse('user-list', request=request, format=format),
+        # 'blueprints': reverse('blueprint-list', request=request, format=format),
+        # 'layers': reverse('layer-list', request=request, format=format),
+        'stacks': reverse('stack-list', request=request, format=format),
+        'hosts': reverse('host-list', request=request, format=format),
+        # 'states': reverse('state-list', request=request, format=format),
     })
 
 urlpatterns = patterns('',
@@ -33,8 +34,8 @@ urlpatterns = patterns('',
     ##
     url(r'^', include('core.urls')),
 
-    url(r'^blueprints/', include('blueprints.urls')),
-    url(r'^layers/', include('layers.urls')),
-    url(r'^stacks/', include('stacks.urls')),
-    url(r'^states/', include('states.urls')),
+    # url(r'^blueprints/', include('blueprints.urls')),
+    # url(r'^layers/', include('layers.urls')),
+    url(r'^', include('stacks.urls')),
+    # url(r'^states/', include('states.urls')),
 )

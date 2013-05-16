@@ -8,6 +8,7 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('created', 
                   'modified', 
                   'title', 
+                  'name', 
                   'slug', 
                   'description', 
                   )

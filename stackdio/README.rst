@@ -24,6 +24,7 @@ stackd.io is a web-based tool for provisioning and managing cloud infrastructure
   - [pip]
   - [virtualenv-wrapper] or [pythonbrew]
   - [RabbitMQ] - again, Homebrew is nice
+  - [swig]
 
 ###### MySQL
 
