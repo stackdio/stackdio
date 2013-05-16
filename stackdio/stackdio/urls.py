@@ -8,21 +8,6 @@ from rest_framework.reverse import reverse
 from django.contrib import admin
 admin.autodiscover()
 
-@api_view(['GET'])
-def api_root(request, format=None):
-    '''
-    Root of the stackd.io API. Below are all of the API endpoints that
-    are currently accessible. Each API will have its own documentation
-    and particular parameters that may discoverable by browsing directly
-    to them.
-
-    '''
-    return Response({
-        'core': {
-            'users': reverse('user-list', request=request, format=format),
-        },
-    })
-
 
 urlpatterns = patterns('',
 
@@ -32,7 +17,6 @@ urlpatterns = patterns('',
     # API root endpoint and additional app endpoints. Pretty much
     # each application will need to pull in their urls.py here
     # if they want to be added to be discoverable
-    (r'^api/$', api_root),
-    (r'^api/', include('core.urls')),
+    url(r'^api/', include('api_v1.urls')),
 
 )

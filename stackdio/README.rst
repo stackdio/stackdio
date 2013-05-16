@@ -11,7 +11,7 @@ stackd.io is a web-based tool for provisioning and managing cloud infrastructure
 
 ## PROJECT HISTORY
 
-- v0.1 (08May2013
+- v0.1 (08-May-2013)
  - Stuff
  - More stuff
 
@@ -22,7 +22,7 @@ stackd.io is a web-based tool for provisioning and managing cloud infrastructure
   - Python >= 2.6
   - [MySQL] - we recommend using Homebrew if using OS X
   - [pip]
-  - [virtualenv-wrapper]
+  - [virtualenv-wrapper] or [pythonbrew]
   - [RabbitMQ] - again, Homebrew is nice
 
 ###### MySQL
@@ -67,7 +67,7 @@ Clone and initialize stackdio:
 
     hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management stackdio
     cd stackdio
-    pip install -r stackdio/requirements/local.txt
+    sudo pip install -r stackdio/requirements/local.txt
     python manage.py syncdb --noinput
     python manage.py migrate
     python manage.py loaddata local_data
@@ -156,4 +156,5 @@ stackd.io uses a number of open source projects to work properly. For a more up-
   [Twitter Bootstrap]: http://twitter.github.com/bootstrap/
   [pip]: http://www.pip-installer.org/en/latest/
   [virtualenv-wrapper]: https://bitbucket.org/dhellmann/virtualenvwrapper
+  [pythonbrew]: https://github.com/utahta/pythonbrew
   [MySQL]: http://dev.mysql.com/downloads/
