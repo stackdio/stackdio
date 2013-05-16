@@ -2,3 +2,4 @@
 -r base.txt
 
 # Any additional requirements for local development goes here
+django-debug-toolbar==0.9.4
