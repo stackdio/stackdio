@@ -40,3 +40,8 @@ INSTALLED_APPS += ('debug_toolbar',)
 # For debug_toolbar to load
 ##
 INTERNAL_IPS = ('127.0.0.1',)
+
+##
+# The local storage directory for storing file data
+##
+FILE_STORAGE_DIRECTORY = normpath(join(SITE_ROOT, 'storage'))

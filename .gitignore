@@ -1,5 +1,6 @@
 syntax: glob
 
+storage/
 dev.db
 *.pyc
 *.swp
