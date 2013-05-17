@@ -42,6 +42,13 @@ INSTALLED_APPS += ('debug_toolbar',)
 INTERNAL_IPS = ('127.0.0.1',)
 
 ##
+# debug_toolbar configuration
+##
+DEBUG_TOOLBAR_CONFIG = {
+    'INTERCEPT_REDIRECTS': False,
+}
+
+##
 # The local storage directory for storing file data
 ##
 FILE_STORAGE_DIRECTORY = normpath(join(SITE_ROOT, 'storage'))
