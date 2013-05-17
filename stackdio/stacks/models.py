@@ -5,10 +5,7 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, 
-                             null=True, 
-                             blank=True, 
-                             related_name='stacks')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
 
 
 class Role(TimeStampedModel, TitleSlugDescriptionModel):
@@ -20,8 +17,8 @@ class Role(TimeStampedModel, TitleSlugDescriptionModel):
 class StackMetdata(TimeStampedModel, TitleSlugDescriptionModel):
 
 
-    stack = models.ForeignKey(Stack, null=True, blank=True, related_name='metadata')
-    role = models.ForeignKey(Role, null=True, blank=True)
+    stack = models.ForeignKey(Stack, related_name='metadata')
+    role = models.ForeignKey(Role)
     instance_count = models.IntegerField(default=0)
     host_pattern = models.CharField(max_length=32)
 
@@ -29,7 +26,7 @@ class StackMetdata(TimeStampedModel, TitleSlugDescriptionModel):
 class Host(TimeStampedModel, TitleSlugDescriptionModel):
 
 
-    stack = models.ForeignKey(Stack, null=True, blank=True, related_name='hosts')
-    role = models.ForeignKey(Role, null=True, blank=True, related_name='hosts')
+    stack = models.ForeignKey(Stack, related_name='hosts')
+    role = models.ForeignKey(Role, related_name='hosts')
 
 
