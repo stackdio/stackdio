@@ -12,6 +12,11 @@ def get_map_file_path(obj, filename):
 class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
 
+    class Meta:
+
+        unique_together = ('user', 'title')
+
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
 
     map_file = DeletingFileField(
@@ -32,7 +37,7 @@ class Role(TimeStampedModel, TitleSlugDescriptionModel):
     role_name = models.CharField(max_length=64)
     
     
-class StackMetdata(TimeStampedModel, TitleSlugDescriptionModel):
+class StackMetadata(TimeStampedModel, TitleSlugDescriptionModel):
 
 
     stack = models.ForeignKey(Stack, related_name='metadata')

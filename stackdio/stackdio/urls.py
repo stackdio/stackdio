@@ -3,6 +3,7 @@ from django.conf.urls import patterns, include, url
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.urlpatterns import format_suffix_patterns
 
 # Enable admin interface
 from django.contrib import admin
@@ -18,4 +19,15 @@ urlpatterns = patterns('',
     # the api_v1 module. 
     url(r'^api/', include('api_v1.urls')),
 
+)
+
+# Format suffixes
+urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'api'])
+
+##
+# Default login/logout views. Without this you won't get the login/logout links
+# in the views.
+##
+urlpatterns += patterns('',
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 )

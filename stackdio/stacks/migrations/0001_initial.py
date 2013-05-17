@@ -16,9 +16,13 @@ class Migration(SchemaMigration):
             ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
             ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
             ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='stacks', null=True, to=orm['auth.User'])),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['auth.User'])),
+            ('map_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
         ))
         db.send_create_signal(u'stacks', ['Stack'])
+
+        # Adding unique constraint on 'Stack', fields ['user', 'title']
+        db.create_unique(u'stacks_stack', ['user_id', 'title'])
 
         # Adding model 'Role'
         db.create_table(u'stacks_role', (
@@ -32,20 +36,20 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'stacks', ['Role'])
 
-        # Adding model 'StackMetdata'
-        db.create_table(u'stacks_stackmetdata', (
+        # Adding model 'StackMetadata'
+        db.create_table(u'stacks_stackmetadata', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
             ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
             ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='metadata', null=True, to=orm['stacks.Stack'])),
-            ('role', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stacks.Role'], null=True, blank=True)),
+            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='metadata', to=orm['stacks.Stack'])),
+            ('role', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stacks.Role'])),
             ('instance_count', self.gf('django.db.models.fields.IntegerField')(default=0)),
             ('host_pattern', self.gf('django.db.models.fields.CharField')(max_length=32)),
         ))
-        db.send_create_signal(u'stacks', ['StackMetdata'])
+        db.send_create_signal(u'stacks', ['StackMetadata'])
 
         # Adding model 'Host'
         db.create_table(u'stacks_host', (
@@ -55,21 +59,24 @@ class Migration(SchemaMigration):
             ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
             ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
             ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='hosts', null=True, to=orm['stacks.Stack'])),
-            ('role', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='hosts', null=True, to=orm['stacks.Role'])),
+            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['stacks.Stack'])),
+            ('role', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['stacks.Role'])),
         ))
         db.send_create_signal(u'stacks', ['Host'])
 
 
     def backwards(self, orm):
+        # Removing unique constraint on 'Stack', fields ['user', 'title']
+        db.delete_unique(u'stacks_stack', ['user_id', 'title'])
+
         # Deleting model 'Stack'
         db.delete_table(u'stacks_stack')
 
         # Deleting model 'Role'
         db.delete_table(u'stacks_role')
 
-        # Deleting model 'StackMetdata'
-        db.delete_table(u'stacks_stackmetdata')
+        # Deleting model 'StackMetadata'
+        db.delete_table(u'stacks_stackmetadata')
 
         # Deleting model 'Host'
         db.delete_table(u'stacks_host')
@@ -118,9 +125,9 @@ class Migration(SchemaMigration):
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'role': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'hosts'", 'null': 'True', 'to': u"orm['stacks.Role']"}),
+            'role': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['stacks.Role']"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
-            'stack': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'hosts'", 'null': 'True', 'to': u"orm['stacks.Stack']"}),
+            'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['stacks.Stack']"}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'stacks.role': {
@@ -134,26 +141,27 @@ class Migration(SchemaMigration):
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'stacks.stack': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Stack'},
+            'Meta': {'unique_together': "(('user', 'title'),)", 'object_name': 'Stack'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'map_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'stacks'", 'null': 'True', 'to': u"orm['auth.User']"})
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['auth.User']"})
         },
-        u'stacks.stackmetdata': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'StackMetdata'},
+        u'stacks.stackmetadata': {
+            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'StackMetadata'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'host_pattern': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'instance_count': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['stacks.Role']", 'null': 'True', 'blank': 'True'}),
+            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['stacks.Role']"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
-            'stack': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'metadata'", 'null': 'True', 'to': u"orm['stacks.Stack']"}),
+            'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'metadata'", 'to': u"orm['stacks.Stack']"}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         }
     }

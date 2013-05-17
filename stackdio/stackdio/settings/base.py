@@ -180,3 +180,24 @@ LOGGING = {
         },
     }
 }
+
+##
+# Django REST Framework configuration
+##
+REST_FRAMEWORK = {
+    'PAGINATE_BY': 25,
+    'PAGINATE_BY_PARAM': 'page_size',
+
+    'FILTER_BACKEND': 'rest_framework.filters.DjangoFilterBackend',
+
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        #'api.authentication.APIKeyAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+
+}
+

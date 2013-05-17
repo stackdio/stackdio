@@ -3,23 +3,33 @@ from .models import Stack, Host, Role
 from rest_framework import serializers
 
 class StackSerializer(serializers.HyperlinkedModelSerializer):
+    user = serializers.Field()
+
     class Meta:
         model = Stack
-        fields = ('created', 
-                  'title', 
-                  'description', 
-                  )
+        fields = (
+            'url',
+            'user',
+            'created', 
+            'title', 
+            'description',
+            'map_file',
+        )
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Host
-        fields = ('created', 
-                  'title', 
-                  )
+        fields = (
+            'url',
+            'created', 
+            'title', 
+        )
 
 class RoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Role
-        fields = ('created', 
-                  'title', 
-                  )
+        fields = (
+            'url', 
+            'created', 
+            'title', 
+        )
