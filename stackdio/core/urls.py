@@ -1,8 +1,9 @@
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, include, url
+
 from .api import UserListAPIView, UserDetailAPIView
 
-
 urlpatterns = patterns('training.api',
+
     url(r'^users/$',
         UserListAPIView.as_view(), 
         name='user-list'),
@@ -12,5 +13,3 @@ urlpatterns = patterns('training.api',
         name='user-detail'),
 
 )
-
-

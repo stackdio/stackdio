@@ -1,4 +1,3 @@
-from django.conf.urls.defaults import *
 from django.conf.urls import patterns, include, url
 
 from rest_framework.decorators import api_view

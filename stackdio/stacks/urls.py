@@ -1,6 +1,6 @@
-from django.conf.urls.defaults import patterns, url
-from .api import StackListAPIView, HostListAPIView
+from django.conf.urls import patterns, include, url
 
+from .api import StackListAPIView, HostListAPIView
 
 urlpatterns = patterns('stacks.api',
 

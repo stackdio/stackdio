@@ -14,9 +14,8 @@ urlpatterns = patterns('',
     # Admin interface
     url(r'^__private/admin/', include(admin.site.urls)),
 
-    # API root endpoint and additional app endpoints. Pretty much
-    # each application will need to pull in their urls.py here
-    # if they want to be added to be discoverable
+    # API v1 root endpoint -- add additional URLs to urls.py in
+    # the api_v1 module. 
     url(r'^api/', include('api_v1.urls')),
 
 )

@@ -1,38 +1,40 @@
 # README
-***
 
 stackd.io is a web-based tool for provisioning and managing cloud infrastructure. 
 
-###### Team:
+### Team:
+
+For assistance, please see one of the following kind sirs:
 
  - [Abe Music]
  - [Charlie Penner]
  - [Steve Brownlee]
 
-## PROJECT HISTORY
+### PROJECT HISTORY
 
 - v0.1 (08-May-2013)
  - Stuff
  - More stuff
 
-## Developer Installation
+# Developer Installation
+***
 
-###### Prequisites:
+### Prequisites:
 
   - Python >= 2.6
   - [MySQL] - we recommend using Homebrew if using OS X
   - [pip]
   - [virtualenv-wrapper] or [pythonbrew]
   - [RabbitMQ] - again, Homebrew is nice
-  - [swig]
+  - [swig] - yup, Homebrew
 
-###### MySQL
+### MySQL
 
-Install it:
+###### Install it:
     
     With Homebrew: brew update && brew install mysql
     
-Set up your database and users:
+###### Set up your database and users:
 
     # In mysql shell
     create database stackdio;
@@ -44,23 +46,23 @@ Set up your database and users:
     
     # Note 2: please don't change the database name!
 
-Resetting your database (if you need to):
+###### Resetting your database (if you need to):
 
     mysqladmin -uroot drop stackdio;
     mysqladmin -uroot create stackdio;
 
-###### stackdio:
+### stackdio:
 
-Create your virtualenv:
+###### Create your virtualenv:
 
     mkvirtualenv stackdio
     workon stackdio
 
-Clone and initialize stackdio:
+###### Clone and initialize stackdio:
     
-    Set the following environment variables.
-      - MYSQL_USER (the user that will connect to the MySQL server @ localhost)
-      - MYSQL_PASS (the password for the user above)
+    # Set the following environment variables.
+    # MYSQL_USER (the user that will connect to the MySQL server @ localhost)
+    # MYSQL_PASS (the password for the user above)
 
     NOTE: If using virtualenv-wrapper it's best to put these in your postactivate
     script as you may be using multiple projects that require the same environment
@@ -82,20 +84,30 @@ Point your browser to http://localhost:8000. There are two default users in the 
 
 API endpoints can be found at http://localhost:8000/api/
 
-###### Salt & Salt-Cloud
+### Salt & Salt-Cloud
 
-Installation:
+###### Installation:
     
-    Should already be handled by the requirements files
+    # Should already be handled by the requirements files. If you're running OS X
+    # you have a few more things to do. 
+    
+    # First, install the curl-ca-bundle for SSL using Homebrew. If you'd rather 
+    # not use Homebrew for whatever reason, see 
+    # http://libcloud.apache.org/docs/ssl-certificate-validation.html
+ 
+    brew install curl-ca-bundle
+ 
+    # Now, put it in the right spot for libcloud to find it:
+ 
+    mkdir -p /opt/local/share/curl
+    cd /opt/local/share/curl
+    ln -s /usr/local/share/ca-bundle.crt curl-ca-bundle.crt
 
-    Setting the following environment variable is handy:
-      - SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
-    
-Configuration:
+###### Configuration:
 
     # OK, stick with me on this :)
     
-    # First, we're going to change default location of where salt will pull
+    # First, we're going to change the default location of where salt will pull
     # its configuration from (I'm using /opt/salt_root, and you should too :) )
     mkdir -p /opt/salt_root/etc/salt
     mkdir -p /opt/salt_root/srv/salt
@@ -105,21 +117,41 @@ Configuration:
     cd <stackdio_root_directory>
     cp stackdio/etc/salt-master /opt/salt_root/etc/salt/master
     
-    # Edit your configuration file to make sure the 'user' parameter is set
-    # correctly (in my case it's abe)
-
-Running:
+    # Edit the master file  to make sure the 'user' parameter is set correctly
+    # (in my case it's abe)
     
-    salt-master -c /opt/salt_root -ldebug
-###### RabbitMQ
+    # Copy in the salt-cloud related stuff
+    cp stackdio/etc/cloud.providers /opt/salt_root/etc/salt/cloud.providers
+    cp stackdio/etc/cloud.profiles /opt/salt_root/etc/salt/cloud.profiles
+    
+    # Modify those cloud.* files to match your settings and environment
+    # paying close attention to the AWS specific settings in cloud.profiles
+    
+    # Setting the following environment variables is also pretty handy. Again, I
+    # suggest putting them in your virtualenv's postactivate file:
+        
+        export SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
+        export SALT_CLOUD_CONFIG=/opt/salt_root/etc/salt/cloud
+        export SALT_CLOUDVM_CONFIG=/opt/salt_root/etc/salt/cloud.profiles
+        export SALT_CLOUD_PROVIDERS_CONFIG=/opt/salt_root/etc/salt/cloud.providers
 
-Installation
+###### Running:
+    
+    # To start the salt master:
+    salt-master
+    
+    # To run salt-cloud:
+    salt-cloud
+    
+### RabbitMQ
+
+###### Installation
 
     OS X: brew install rabbitmq
     Ubuntu: apt-get install rabbitmq-server
     CentOS/RHEL: yum install rabbitmq-server
 
-Execution
+###### Execution
 
     OS X: rabbitmq-server (use nohup if you want it in the background)
     Ubuntu: service rabbitmq-server start/stop
@@ -127,13 +159,21 @@ Execution
     
     * See http://www.rabbitmq.com/relocate.html for useful overrides.
     
-###### Celery
+### Celery
 
-Execution
+###### Installation
+
+    TODO
+    
+###### Configuration
 
     TODO
 
-## Technology
+###### Execution
+
+    TODO
+
+### Technology
 
 stackd.io uses a number of open source projects to work properly. For a more up-to-date list of dependencies, please see the requirements.txt file.
 
