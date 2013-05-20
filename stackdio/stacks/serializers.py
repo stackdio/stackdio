@@ -28,6 +28,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'created', 
             'title', 
             'description',
+            'status',
+            'status_detail',
         )
 
 class RoleSerializer(serializers.HyperlinkedModelSerializer):

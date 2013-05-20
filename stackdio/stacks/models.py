@@ -7,8 +7,9 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 
 import yaml
+import model_utils.models
+
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
-from model_utils.models import StatusModel
 from model_utils import Choices
 
 from core.fields import DeletingFileField
@@ -17,6 +18,12 @@ logger = logging.getLogger(__name__)
 
 def get_map_file_path(obj, filename):
     return "stacks/{0}/{1}.map".format(obj.user.username, obj.slug)
+
+class StatusModel(model_utils.models.StatusModel):
+    status_detail = models.TextField(blank=True)
+
+    class Meta:
+        abstract = True
 
 class StackManager(models.Manager):
     
@@ -77,7 +84,7 @@ class StackManager(models.Manager):
         return stack_obj
 
 class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
-    STATUS = Choices('pending', 'running')
+    STATUS = Choices('pending', 'launching', 'provisioning', 'finished', 'error')
 
     class Meta:
 

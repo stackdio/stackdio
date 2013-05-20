@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from core.exceptions import ResourceConflict, BadRequest
 
+from . import tasks 
 from .models import Stack, Host, Role, StackMetadata
 from .serializers import StackSerializer, HostSerializer, RoleSerializer
 
@@ -41,6 +42,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         stack = Stack.objects.create_stack(request.user, request.DATA)
 
         # TODO: Queue up stack creation using Celery
+        tasks.launch_stack.delay(stack.id)
     
         # return serialized stack object
         serializer = StackSerializer(stack)
