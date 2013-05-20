@@ -1,7 +1,8 @@
 from django.conf.urls import patterns, include, url
 
 from .api import StackListAPIView, StackDetailAPIView
-from .api import HostListAPIView
+from .api import StackHostsAPIView, StackDetailAPIView
+from .api import HostListAPIView, HostDetailAPIView
 
 urlpatterns = patterns('stacks.api',
 
@@ -13,9 +14,17 @@ urlpatterns = patterns('stacks.api',
         StackDetailAPIView.as_view(), 
         name='stack-detail'),
 
+    url(r'^stacks/(?P<pk>[0-9]+)/hosts$', 
+        StackHostsAPIView.as_view(), 
+        name='stack-hosts'),
+
     url(r'^hosts/$',
         HostListAPIView.as_view(), 
         name='host-list'),
+
+    url(r'^hosts/(?P<pk>[0-9]+)/$', 
+        HostDetailAPIView.as_view(), 
+        name='host-detail'),
 )
 
 

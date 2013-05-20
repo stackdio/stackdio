@@ -34,5 +34,29 @@
             "email": "test.user@digitalreasoning.com",
             "date_joined": "2013-05-08T15:17:11.058Z"
         }
+    },
+    {
+        "pk": 1,
+        "model": "stacks.role",
+        "fields": {
+            "description": "This role will provision a machine as a CDH NameNode",
+            "title": "CDH4 NameNode",
+            "created": "2013-05-17T19:41:00Z",
+            "modified": "2013-05-17T19:41:00Z",
+            "role_name": "cdh4namenode",
+            "slug": "cdh4-namenode"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "stacks.role",
+        "fields": {
+            "description": "This role will provision a machine as a CDH DataNode",
+            "title": "CDH4 DataNode",
+            "created": "2013-05-17T19:41:00Z",
+            "modified": "2013-05-17T19:41:00Z",
+            "role_name": "cdh4datanode",
+            "slug": "cdh4-datanode"
+        }
     }
 ]

@@ -28,10 +28,10 @@ class StackMetadataAdmin(admin.ModelAdmin):
     
 
     list_display = [
-        'title',
-        'slug',
         'stack',
         'role',
+        'instance_count',
+        'host_pattern',
     ]
 admin.site.register(StackMetadata, StackMetadataAdmin)
 
@@ -39,9 +39,8 @@ class HostAdmin(admin.ModelAdmin):
     
 
     list_display = [
-        'title',
-        'slug',
         'stack',
         'role',
+        'hostname',
     ]
 admin.site.register(Host, HostAdmin)
