@@ -163,15 +163,22 @@ API endpoints can be found at http://localhost:8000/api/
 
 ###### Installation
 
-    TODO
+    # Should already be handled by the requirements files, but just in case:
+    pip install celery django-celery
     
 ###### Configuration
 
-    TODO
+    Nothing to see here (yet)
 
 ###### Execution
 
-    TODO
+    # NOTE: Make sure RabbitMQ is running first or else the celery worker
+    # won't be able to connect to the broker
+    manage.py celery worker -lDEBUG
+
+    # If you want to run it in the background use nohup. While in development
+    # I think it's much faster to have it in the foreground so you can just
+    # Ctrl+C the process when you need to make changes.
 
 ### Technology
 
