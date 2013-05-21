@@ -6,6 +6,14 @@ from .api import HostListAPIView, HostDetailAPIView
 
 urlpatterns = patterns('stacks.api',
 
+    url(r'^hosts/$',
+        HostListAPIView.as_view(), 
+        name='host-list'),
+
+    url(r'^hosts/(?P<pk>[0-9]+)/$', 
+        HostDetailAPIView.as_view(), 
+        name='host-detail'),
+
     url(r'^stacks/$',
         StackListAPIView.as_view(), 
         name='stack-list'),
@@ -17,14 +25,6 @@ urlpatterns = patterns('stacks.api',
     url(r'^stacks/(?P<pk>[0-9]+)/hosts$', 
         StackHostsAPIView.as_view(), 
         name='stack-hosts'),
-
-    url(r'^hosts/$',
-        HostListAPIView.as_view(), 
-        name='host-list'),
-
-    url(r'^hosts/(?P<pk>[0-9]+)/$', 
-        HostDetailAPIView.as_view(), 
-        name='host-detail'),
 )
 
 
