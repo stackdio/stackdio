@@ -94,7 +94,7 @@ INSTALLED_APPS = (
     'south',
     'djcelery',
     'core',
-    'blueprints',
+    'cloud',
     'stacks',
 )
 

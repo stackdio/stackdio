@@ -38,6 +38,9 @@ class StackListAPIView(generics.ListCreateAPIView):
         machines
         '''
 
+        # XXX: remove me!
+        Stack.objects.all().delete()
+
         # create the stack object and foreign key objects
         stack = Stack.objects.create_stack(request.user, request.DATA)
 

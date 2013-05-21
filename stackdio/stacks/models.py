@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def get_map_file_path(obj, filename):
     return "stacks/{0}/{1}.map".format(obj.user.username, obj.slug)
 
-class StatusModel(model_utils.models.StatusModel):
+class StatusDetailModel(model_utils.models.StatusModel):
     status_detail = models.TextField(blank=True)
 
     class Meta:
@@ -83,7 +83,7 @@ class StackManager(models.Manager):
 
         return stack_obj
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
+class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     STATUS = Choices('pending', 'launching', 'provisioning', 'finished', 'error')
 
     class Meta:
@@ -91,6 +91,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         unique_together = ('user', 'title')
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
+
+    cloud_profile = models.ForeignKey('InstanceProfile', related_name='stacks')
 
     map_file = DeletingFileField(
         max_length=255, 
@@ -122,7 +124,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 'minion': {
                     'master': master,
                     'grains': {
-                        'roles': roles
+                        'roles': roles,
+                        'stack_id': self.id,
                     }
                 },
             }
@@ -167,3 +170,11 @@ class Host(TimeStampedModel):
     def __unicode__(self):
         return 'Stack %r, role %r' % (self.stack, self.role)
 
+class CLoudProvider(TimeStampedModel, TitleSlugDescriptionModel):
+
+
+    provider_name = models.CharField(max_length=64, unique=True)
+
+class InstanceProfile(TimeStampedModel, TitleSlugDescriptionModel):
+
+    profile_name = models.CharField(max_length=64, unique=True)

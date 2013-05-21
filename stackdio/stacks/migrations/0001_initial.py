@@ -20,6 +20,7 @@ class Migration(SchemaMigration):
             ('status_changed', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status')),
             ('status_detail', self.gf('django.db.models.fields.TextField')(blank=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['auth.User'])),
+            ('cloud_profile', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['stacks.CloudProfile'])),
             ('map_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
         ))
         db.send_create_signal(u'stacks', ['Stack'])
@@ -62,6 +63,18 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'stacks', ['Host'])
 
+        # Adding model 'CloudProfile'
+        db.create_table(u'stacks_cloudprofile', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
+            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('profile_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
+        ))
+        db.send_create_signal(u'stacks', ['CloudProfile'])
+
 
     def backwards(self, orm):
         # Removing unique constraint on 'Stack', fields ['user', 'title']
@@ -78,6 +91,9 @@ class Migration(SchemaMigration):
 
         # Deleting model 'Host'
         db.delete_table(u'stacks_host')
+
+        # Deleting model 'CloudProfile'
+        db.delete_table(u'stacks_cloudprofile')
 
 
     models = {
@@ -117,6 +133,16 @@ class Migration(SchemaMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
+        u'stacks.cloudprofile': {
+            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'CloudProfile'},
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'profile_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
         u'stacks.host': {
             'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Host'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
@@ -138,6 +164,7 @@ class Migration(SchemaMigration):
         },
         u'stacks.stack': {
             'Meta': {'unique_together': "(('user', 'title'),)", 'object_name': 'Stack'},
+            'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['stacks.CloudProfile']"}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
