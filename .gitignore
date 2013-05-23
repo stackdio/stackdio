@@ -5,3 +5,5 @@ dev.db
 *.pyc
 *.swp
 *.un~
+reload.sh
+tooling/.meteor
