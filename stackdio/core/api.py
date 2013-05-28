@@ -7,10 +7,10 @@ from .serializers import UserSerializer
 
 class UserListAPIView(generics.ListAPIView):
 
-    model = settings.AUTH_USER_MODEL
+    model = get_user_model()
     serializer_class = UserSerializer
 
 class UserDetailAPIView(generics.RetrieveAPIView):
 
-    model = settings.AUTH_USER_MODEL
+    model = get_user_model()
     serializer_class = UserSerializer

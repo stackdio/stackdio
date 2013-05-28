@@ -29,8 +29,8 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'cloud', ['CloudProvider'])
 
-        # Adding model 'CloudProviderInstanceSize'
-        db.create_table(u'cloud_cloudproviderinstancesize', (
+        # Adding model 'CloudInstanceSize'
+        db.create_table(u'cloud_cloudinstancesize', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
             ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
@@ -38,7 +38,7 @@ class Migration(SchemaMigration):
             ('provider_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudProviderType'])),
             ('instance_id', self.gf('django.db.models.fields.CharField')(max_length=64)),
         ))
-        db.send_create_signal(u'cloud', ['CloudProviderInstanceSize'])
+        db.send_create_signal(u'cloud', ['CloudInstanceSize'])
 
         # Adding model 'CloudProfile'
         db.create_table(u'cloud_cloudprofile', (
@@ -50,7 +50,7 @@ class Migration(SchemaMigration):
             ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
             ('cloud_provider', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudProvider'])),
             ('image_id', self.gf('django.db.models.fields.CharField')(max_length=64)),
-            ('default_instance_size', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudProviderInstanceSize'])),
+            ('default_instance_size', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudInstanceSize'])),
             ('script', self.gf('django.db.models.fields.CharField')(max_length=64)),
             ('ssh_user', self.gf('django.db.models.fields.CharField')(max_length=64)),
         ))
@@ -64,19 +64,28 @@ class Migration(SchemaMigration):
         # Deleting model 'CloudProvider'
         db.delete_table(u'cloud_cloudprovider')
 
-        # Deleting model 'CloudProviderInstanceSize'
-        db.delete_table(u'cloud_cloudproviderinstancesize')
+        # Deleting model 'CloudInstanceSize'
+        db.delete_table(u'cloud_cloudinstancesize')
 
         # Deleting model 'CloudProfile'
         db.delete_table(u'cloud_cloudprofile')
 
 
     models = {
+        u'cloud.cloudinstancesize': {
+            'Meta': {'object_name': 'CloudInstanceSize'},
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'instance_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'provider_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProviderType']"}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
         u'cloud.cloudprofile': {
             'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'CloudProfile'},
             'cloud_provider': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProvider']"}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'default_instance_size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProviderInstanceSize']"}),
+            'default_instance_size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'image_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
@@ -97,15 +106,6 @@ class Migration(SchemaMigration):
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'yaml': ('django.db.models.fields.TextField', [], {})
-        },
-        u'cloud.cloudproviderinstancesize': {
-            'Meta': {'object_name': 'CloudProviderInstanceSize'},
-            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'instance_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'provider_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProviderType']"}),
-            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'cloud.cloudprovidertype': {
             'Meta': {'object_name': 'CloudProviderType'},

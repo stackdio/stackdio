@@ -18,3 +18,10 @@ class BadRequest(APIException):
         self.detail = detail
         logger.debug('BadRequest: %s' % self.detail)
         super(BadRequest, self).__init__(self.detail)
+
+class NotImplemented(APIException):
+    def __init__(self, detail):
+        self.status_code = status.HTTP_501_NOT_IMPLEMENTED
+        self.detail = detail
+        logger.debug('NotImplemented: %s' % self.detail)
+        super(BadRequest, self).__init__(self.detail)

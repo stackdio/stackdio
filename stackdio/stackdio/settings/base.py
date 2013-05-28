@@ -17,6 +17,27 @@ def getenv(var):
         raise ImproperlyConfigured(msg)
 
 ##
+# Required base-level environment variables. The salt and salt-cloud
+# environment variables usually don't need to be set for salt and
+# salt-cloud to work correctly, however, the stackd.io installation
+# must have them set and available for things to function correctly.
+##
+
+# This is the salt-master configuration
+SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')
+
+# This is the salt-cloud configuration file.
+SALT_CLOUD_CONFIG = getenv('SALT_CLOUD_CONFIG')
+
+# This is the cloud.profiles file for configuring the cloud profiles
+# that are available.
+SALT_CLOUDVM_CONFIG = getenv('SALT_CLOUDVM_CONFIG')
+
+# The cloud.providers file that defines all the availabel cloud 
+# providers
+SALT_CLOUD_PROVIDERS_CONFIG = getenv('SALT_CLOUD_PROVIDERS_CONFIG')
+
+##
 #
 ##
 DEBUG = True
@@ -138,13 +159,13 @@ USE_L10N = True
 USE_TZ = True
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = '!&-bq%17z_osv3a)ziny$k7auc8rwv@^r*alo*e@wt#z^g(x6v'
+# e.g, '!&-bq%17z_osv3a)ziny$k7auc8rwv@^r*alo*e@wt#z^g(x6v'
+SECRET_KEY = getenv('DJANGO_SECRET_KEY')
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
 )
 
 ROOT_URLCONF = 'stackdio.urls'
@@ -193,6 +214,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'cloud': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
         'stacks': {
             'handlers': ['console'],
             'level': 'DEBUG',
@@ -213,6 +239,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         #'api.authentication.APIKeyAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ),
 
     'DEFAULT_PERMISSION_CLASSES': (
@@ -221,3 +248,10 @@ REST_FRAMEWORK = {
 
 }
 
+##
+# Available cloud providers
+##
+CLOUD_PROVIDERS = [
+    'cloud.providers.aws.AWSCloudProvider',
+    #'core.providers.rackspace.RackspaceCloudProvider',
+]

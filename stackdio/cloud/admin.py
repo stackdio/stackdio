@@ -3,7 +3,7 @@ from django.contrib import admin
 from .models import (
     CloudProviderType, 
     CloudProvider, 
-    CloudProviderInstanceSize,
+    CloudInstanceSize,
     CloudProfile,
 )
 
@@ -25,7 +25,7 @@ class CloudProviderAdmin(admin.ModelAdmin):
     ]
 admin.site.register(CloudProvider, CloudProviderAdmin)
 
-class CloudProviderInstanceSizeAdmin(admin.ModelAdmin):
+class CloudInstanceSizeAdmin(admin.ModelAdmin):
 
 
     list_display = [
@@ -35,7 +35,7 @@ class CloudProviderInstanceSizeAdmin(admin.ModelAdmin):
         'provider_type',
         'instance_id',
     ]
-admin.site.register(CloudProviderInstanceSize, CloudProviderInstanceSizeAdmin)
+admin.site.register(CloudInstanceSize, CloudInstanceSizeAdmin)
 
 class CloudProfileAdmin(admin.ModelAdmin):
 

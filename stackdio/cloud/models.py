@@ -21,12 +21,18 @@ class CloudProviderType(models.Model):
 
 
     # TODO: Probably should detect what providers are available, but how?
-    PROVIDER_TYPES = (('aws', 'AWS'),)
+    AWS_PROVIDER_TYPE = ('aws', 'AWS')
+    PROVIDER_TYPES = (
+        AWS_PROVIDER_TYPE,
+    )
 
     type_name = models.CharField(max_length=32, choices=PROVIDER_TYPES, unique=True)
 
     def __unicode__(self):
         return self.type_name
+
+class CloudProviderManager(models.Manager):
+    pass
 
 class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
 
@@ -46,11 +52,14 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         blank=False,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
+    # provide additional manager functionality
+    objects = CloudProviderManager()
+
     def __unicode__(self):
 
         return self.title
 
-class CloudProviderInstanceSize(TitleSlugDescriptionModel):
+class CloudInstanceSize(TitleSlugDescriptionModel):
     
 
     # `title` field will be the type used by salt-cloud for the `size` 
@@ -66,6 +75,9 @@ class CloudProviderInstanceSize(TitleSlugDescriptionModel):
     def __unicode__(self):
         
         return '{0} ({1})'.format(self.title, self.instance_id)
+
+class CloudProfileManager(models.Manager):
+    pass
 
 class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     
@@ -85,7 +97,7 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
 
     # The default instance size of this profile, may be overridden
     # by the user at creation time
-    default_instance_size = models.ForeignKey('CloudProviderInstanceSize')
+    default_instance_size = models.ForeignKey('CloudInstanceSize')
 
     # The salt-cloud `script` parameter. Will most likely correspond to the
     # type of OS for this profile (e.g., Ubuntu, RHEL6, Fedora, etc)
@@ -95,6 +107,9 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     # needs this to provision the box as a salt-minion and connect it
     # up to the salt-master automatically.
     ssh_user = models.CharField(max_length=64)
+
+    # provide additional manager functionality
+    objects = CloudProfileManager()
 
     def __unicode__(self):
 

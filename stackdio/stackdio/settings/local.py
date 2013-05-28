@@ -34,7 +34,10 @@ MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
 ##
 # Add in additional applications
 ##
-INSTALLED_APPS += ('debug_toolbar',)
+INSTALLED_APPS += (
+    'debug_toolbar',
+    'django_pdb',
+)
 
 ##
 # For debug_toolbar to load
