@@ -36,21 +36,22 @@ class AWSCloudProvider(BaseCloudProvider):
     AWS_PRIVATE_KEY = 'private_key_path'
 
 
-    @staticmethod
-    def create_provider_yaml(data):
+    @classmethod
+    def get_provider_data(self, data):
         '''
-        Takes a JSON dictionary and returns the yaml string for this 
-        provider. The following are required keys in the dictionary:
-
-        `aws_id`
-
-        Requires the foll
+        Takes a dict of the request data and returns a new dict of info
+        relevant to this provider type. See salt cloud documentation for
+        more info on what needs to be in this dict for the provider type
+        you're implementing.
         '''
+        security_groups = filter(None, data[self.AWS_SECURITY_GROUPS].split(','))
         yaml_data = {
-            'provider': SHORT_NAME,
-            'id': data[AWS_ID],
-            'key': data[AWS_SECRET_KEY], 
-            'keyname': data[AWS_KEYPAIR],
-            'securitygroup': data[AWS_SECURITY_GROUPS],
-            'private_key': data[AWS_PRIVATE_KEY],
+            'provider': self.SHORT_NAME,
+            'id': data[self.AWS_ID],
+            'key': data[self.AWS_SECRET_KEY], 
+            'keyname': data[self.AWS_KEYPAIR],
+            'securitygroup': security_groups,
+            'private_key': data[self.AWS_PRIVATE_KEY],
         }
+
+        return yaml_data

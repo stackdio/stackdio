@@ -1,4 +1,5 @@
 import logging
+import yaml
 
 from django.conf import settings
 
@@ -15,6 +16,7 @@ from core import (
 
 from .utils import (
     get_cloud_providers,
+    write_cloud_providers_file,
 )
 
 from .models import (
@@ -58,13 +60,10 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
         logger.debug(data)
         logger.debug(obj)
         provider_classes = get_cloud_providers()
-        logger.debug('{0!r}'.format(provider_classes))
-        return
 
         # lookup provider type
         try:
             provider_type = CloudProviderType.objects.get(id=data.get('provider_type'))
-            provider_classes = get_cloud_providers()
 
             # Add the private key to data
             data['private_key_path'] = obj.private_key_file.path
@@ -73,13 +72,18 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
                 logger.debug('PROVIDER CLASS {}'.format(provider_class))
                 logger.debug('PROVIDER CLASS SHORT NAME {}'.format(provider_class.SHORT_NAME))
                 if provider_class.SHORT_NAME == provider_type.type_name:
-                    yaml_data = provider_class.create_provider_yaml(data)
+                    provider_data = provider_class.get_provider_data(data)
                     break
+            
+            yaml_data = {}
+            yaml_data[obj.slug] = provider_data
+            obj.yaml = yaml.safe_dump(yaml_data,
+                                      default_flow_style=False)
+            obj.save()
 
-            import pprint
-            logger.debug(pprint.pformat(yaml_data))
+            # recreate the salt cloud providers file
+            write_cloud_providers_file()
 
-            raise core_exceptions.BadRequest('TODO: Implement me.')
         except CloudProviderType.DoesNotExist, e:
             raise core_exceptions.BadRequest('Provider types does not exist.')
 

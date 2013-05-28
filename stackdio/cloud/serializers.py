@@ -12,6 +12,7 @@ from .models import (
 class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
     private_key_file = serializers.FileField(max_length=255,
                                              allow_empty_file=False)
+    yaml = serializers.Field()
 
     provider_type = serializers.PrimaryKeyRelatedField()
 
@@ -24,6 +25,7 @@ class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
             'description', 
             'provider_type',
             'private_key_file',
+            'yaml',
         )
 
 class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):

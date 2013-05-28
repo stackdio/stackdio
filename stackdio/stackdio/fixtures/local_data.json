@@ -65,19 +65,5 @@
         "fields": {
             "type_name": "aws"
         }
-    },
-    {
-        "pk": 1,
-        "model": "cloud.cloudprovider",
-        "fields": {
-            "description": "foo bar baz",
-            "title": "AWS Platform Account",
-            "created": "2013-05-21T20:26:04Z",
-            "modified": "2013-05-21T20:26:04Z",
-            "private_key_file": "cloud/aws-platform-account/keys/id_rsa-platform-keypair",
-            "yaml": "provider: aws\r\nid: LKDJLKDJ\r\nkey: SECRET_SAUCE\r\nkeyname: platform\r\nprivate_key: /foo/bar/baz.pem\r\nsecuritygroup:\r\n  - default\r\nssh_interface: public_ips\r\nrename_on_destroy: True\r\ndelvol_on_destroy: True",
-            "slug": "aws-platform-account",
-            "provider_type": 1
-        }
-}
+    }
 ]

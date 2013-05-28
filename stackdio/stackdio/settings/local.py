@@ -29,27 +29,12 @@ BROKER_URL = 'amqp://guest:guest@localhost:5672/'
 ##
 # Add in additional middleware
 ##
-MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
+#MIDDLEWARE_CLASSES += ('',)
 
 ##
 # Add in additional applications
 ##
-INSTALLED_APPS += (
-    'debug_toolbar',
-    'django_pdb',
-)
-
-##
-# For debug_toolbar to load
-##
-INTERNAL_IPS = ('127.0.0.1',)
-
-##
-# debug_toolbar configuration
-##
-DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': False,
-}
+#INSTALLED_APPS += ('',)
 
 ##
 # The local storage directory for storing file data
