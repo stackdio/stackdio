@@ -7,3 +7,4 @@ dev.db
 *.un~
 reload.sh
 tooling/.meteor
+tooling/public/node_modules

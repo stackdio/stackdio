@@ -38,8 +38,8 @@ urlpatterns = patterns('',
     # IMPORTS URLS FROM ALL APPS
     ##
     url(r'^', include('core.urls')),
-    url(r'^cloud/', include('cloud.urls')),
-    url(r'^stacks/', include('stacks.urls')),
+    url(r'^', include('cloud.urls')),
+    url(r'^', include('stacks.urls')),
 
     # url(r'^blueprints/', include('blueprints.urls')),
     # url(r'^layers/', include('layers.urls')),

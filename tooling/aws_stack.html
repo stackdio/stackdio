@@ -1,0 +1,50 @@
+<body>
+
+</body>
+
+<template name="awsStackForm">
+    <form id="aws-stack-form" class="hide form-newstack view">
+        <legend>Stack Details</legend>
+
+        <input id="stack-title" type="text" class="input-block-level" placeholder="Title">
+        <textarea id="stack-purpose"  class="span8" rows="5" placeholder="Purpose"></textarea>
+
+        <legend>
+            Stack Roles 
+            <span class="pull-right">
+                <select style="margin:5px 0; width: 150px;">
+                    <option>hadoop</option>
+                    <option>accumulo</option>
+                    <option>node</option>
+                    <option>apache</option>
+                    <option>java</option>
+                </select>
+                <!-- <a class="btn" data-toggle="modal" href="#newState"><i class="icon-plus-sign"></i> Add State</a></legend> -->
+                <a class="btn" data-toggle="modal" href="#"><i class="icon-plus-sign"></i> Add Role</a>
+                
+            </span>
+        </legend>
+
+        <div class="well">
+            <div class="row-fluid">
+                <ul class="thumbnails">
+                    <li class="span2">
+                        <a href="#" class="thumbnail state-preview btn-inverse">hadoop</a>
+                    </li>
+                    <li class="span2">
+                        <a href="#" class="thumbnail state-preview btn-inverse">hdfs</a>
+                    </li>
+                    <li class="span2">
+                        <a href="#" class="thumbnail state-preview btn-inverse">graphite</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="margin:40px 0 0 0;">
+        <button class="btn btn-large btn-primary" type="submit">Launch Stack</button>
+        </div>
+    </form>
+
+</template>
+
