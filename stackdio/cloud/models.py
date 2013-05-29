@@ -8,6 +8,8 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 
 from core.fields import DeletingFileField
 
+from .utils import get_cloud_provider_choices
+
 logger = logging.getLogger(__name__)
 
 def get_private_key_file_path(obj, filename):
@@ -19,14 +21,10 @@ def get_private_key_file_path(obj, filename):
 
 class CloudProviderType(models.Model):
 
-
-    # TODO: Probably should detect what providers are available, but how?
-    AWS_PROVIDER_TYPE = ('aws', 'AWS')
-    PROVIDER_TYPES = (
-        AWS_PROVIDER_TYPE,
-    )
-
-    type_name = models.CharField(max_length=32, choices=PROVIDER_TYPES, unique=True)
+    PROVIDER_CHOICES = get_cloud_provider_choices()
+    type_name = models.CharField(max_length=32, 
+                                 choices=PROVIDER_CHOICES, 
+                                 unique=True)
 
     def __unicode__(self):
         return self.type_name
@@ -37,20 +35,15 @@ class CloudProviderManager(models.Manager):
 class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
 
 
+    class Meta:
+        unique_together = ('title', 'provider_type')
+
     # What is the type of provider (e.g., AWS, Rackspace, etc)
     provider_type = models.ForeignKey('CloudProviderType')
 
     # Used to store the provider-specifc YAML that will be written
     # to disk in settings.SALT_CLOUD_PROVIDERS_FILE
     yaml = models.TextField()
-
-    # Where on disk is the private key going to be stored for this
-    # cloud provider?
-    private_key_file = DeletingFileField(max_length=255,
-        upload_to=get_private_key_file_path,
-        null=False,
-        blank=False,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
     # provide additional manager functionality
     objects = CloudProviderManager()

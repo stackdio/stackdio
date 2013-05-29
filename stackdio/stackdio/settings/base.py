@@ -253,5 +253,5 @@ REST_FRAMEWORK = {
 ##
 CLOUD_PROVIDERS = [
     'cloud.providers.aws.AWSCloudProvider',
-    #'core.providers.rackspace.RackspaceCloudProvider',
+    'cloud.providers.rackspace.RackspaceCloudProvider',
 ]

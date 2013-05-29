@@ -15,7 +15,7 @@ from core import (
 )
 
 from .utils import (
-    get_cloud_providers,
+    get_provider_type_and_class,
     write_cloud_providers_file,
 )
 
@@ -57,31 +57,31 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
     def post_save(self, obj, created=False):
         
         data = self.request.DATA
+        files = self.request.FILES
         logger.debug(data)
         logger.debug(obj)
-        provider_classes = get_cloud_providers()
 
-        # lookup provider type
+        # Lookup provider type
         try:
-            provider_type = CloudProviderType.objects.get(id=data.get('provider_type'))
+            provider_type, provider_class = \
+                get_provider_type_and_class(data.get('provider_type'))
 
-            # Add the private key to data
-            data['private_key_path'] = obj.private_key_file.path
+            # Instantiate the class with the saved ORM object
+            provider = provider_class(obj)
 
-            for provider_class in provider_classes:
-                logger.debug('PROVIDER CLASS {}'.format(provider_class))
-                logger.debug('PROVIDER CLASS SHORT NAME {}'.format(provider_class.SHORT_NAME))
-                if provider_class.SHORT_NAME == provider_type.type_name:
-                    provider_data = provider_class.get_provider_data(data)
-                    break
+            # Levarage the provider to generate its required data that
+            # will be serialized down to yaml and stored in both the database
+            # and the salt cloud providers file
+            provider_data = provider.get_provider_data(data, files)
             
+            # Generate the yaml and store in the database
             yaml_data = {}
             yaml_data[obj.slug] = provider_data
             obj.yaml = yaml.safe_dump(yaml_data,
                                       default_flow_style=False)
             obj.save()
 
-            # recreate the salt cloud providers file
+            # Recreate the salt cloud providers file
             write_cloud_providers_file()
 
         except CloudProviderType.DoesNotExist, e:

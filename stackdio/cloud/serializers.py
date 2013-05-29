@@ -9,9 +9,9 @@ from .models import (
     CloudProfile,
 )
 
+from .utils import get_provider_type_and_class
+
 class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
-    private_key_file = serializers.FileField(max_length=255,
-                                             allow_empty_file=False)
     yaml = serializers.Field()
 
     provider_type = serializers.PrimaryKeyRelatedField()
@@ -24,15 +24,33 @@ class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
             'slug', 
             'description', 
             'provider_type',
-            'private_key_file',
             'yaml',
         )
 
+    def validate(self, attrs):
+
+        # validate provider specific request data
+        request = self.context['request']
+
+        provider_type, provider_class = \
+            get_provider_type_and_class(request.DATA.get('provider_type'))
+
+        result, errors = provider_class.validate_provider_data(request.DATA, 
+                                                               request.FILES)
+        
+        if not result:
+            raise serializers.ValidationError(errors)
+
+        return attrs
+
 class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
+    title = serializers.Field(source='get_type_name_display')
+
     class Meta:
         model = CloudProviderType
         fields = (
             'url',
+            'title', 
             'type_name', 
         )
 

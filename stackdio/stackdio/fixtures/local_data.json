@@ -65,5 +65,12 @@
         "fields": {
             "type_name": "aws"
         }
+    },
+    {
+        "pk": 2,
+        "model": "cloud.cloudprovidertype",
+        "fields": {
+            "type_name": "openstack"
+        }
     }
 ]

@@ -25,9 +25,11 @@ class Migration(SchemaMigration):
             ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
             ('provider_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudProviderType'])),
             ('yaml', self.gf('django.db.models.fields.TextField')()),
-            ('private_key_file', self.gf('core.fields.DeletingFileField')(max_length=255)),
         ))
         db.send_create_signal(u'cloud', ['CloudProvider'])
+
+        # Adding unique constraint on 'CloudProvider', fields ['title', 'provider_type']
+        db.create_unique(u'cloud_cloudprovider', ['title', 'provider_type_id'])
 
         # Adding model 'CloudInstanceSize'
         db.create_table(u'cloud_cloudinstancesize', (
@@ -58,6 +60,9 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
+        # Removing unique constraint on 'CloudProvider', fields ['title', 'provider_type']
+        db.delete_unique(u'cloud_cloudprovider', ['title', 'provider_type_id'])
+
         # Deleting model 'CloudProviderType'
         db.delete_table(u'cloud_cloudprovidertype')
 
@@ -96,12 +101,11 @@ class Migration(SchemaMigration):
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'cloud.cloudprovider': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'CloudProvider'},
+            'Meta': {'unique_together': "(('title', 'provider_type'),)", 'object_name': 'CloudProvider'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'private_key_file': ('core.fields.DeletingFileField', [], {'max_length': '255'}),
             'provider_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProviderType']"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
