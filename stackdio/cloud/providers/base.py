@@ -32,10 +32,11 @@ class BaseCloudProvider(object):
         # up, etc.
         self.provider_storage = os.path.join(settings.FILE_STORAGE_DIRECTORY,
                                              'cloud',
-                                             obj.slug)
+                                             obj.slug) if self.obj else None
 
         # make sure the storage directory is available
-        if not os.path.isdir(self.provider_storage):
+        if self.provider_storage and \
+           not os.path.isdir(self.provider_storage):
             os.makedirs(self.provider_storage)
 
     @classmethod

@@ -63,3 +63,23 @@ def write_cloud_providers_file():
         # get all the providers yaml information
         for provider in models.CloudProvider.objects.all():
             f.write(provider.yaml)
+
+def write_cloud_profiles_file():
+
+    profile_yaml = {}
+
+    # Get all the profiles and add the relevant data to the dict
+    # that we'll use to generate the yaml data from
+    for profile in models.CloudProfile.objects.all():
+
+        profile_yaml[profile.slug] = {
+            'provider': profile.cloud_provider.slug,
+            'image': profile.image_id,
+            'size': profile.default_instance_size.title,
+            'ssh-user': profile.ssh_user,
+            'script': profile.script,
+        }
+
+    with open(settings.SALT_CLOUDVM_CONFIG, 'w') as f:
+        f.write(yaml.safe_dump(profile_yaml,
+                               default_flow_style=False))

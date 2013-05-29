@@ -53,6 +53,10 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         return self.title
 
 class CloudInstanceSize(TitleSlugDescriptionModel):
+
+
+    class Meta:
+        ordering = ['title']
     
 
     # `title` field will be the type used by salt-cloud for the `size` 
@@ -74,6 +78,9 @@ class CloudProfileManager(models.Manager):
 
 class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     
+
+    class Meta:
+        unique_together = ('title', 'cloud_provider')
 
     # Script choices available to the `script` field
     SCRIPT_CHOICES = (
