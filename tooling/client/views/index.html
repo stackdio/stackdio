@@ -4,10 +4,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
-
-    <link href="css/bootstrap.css" rel="stylesheet">
-    <link href="css/bootstrap-responsive.css" rel="stylesheet">
-    <link href="css/stackd.css" rel="stylesheet">
 </head>
 
 <body>
@@ -30,19 +26,27 @@
     {{> sidebarTemplate}}
     {{> page}}
 
-    <script src="public/js/bootstrap.js"></script>
 </body>
 
 <template name='page'>
-  {{> dashboard}}
-  {{> awsStackForm}}
-  {{> providerList}}
+    {{> dashboard}}
+    {{> stackList}}
+    {{> awsStackForm}}
+    {{> providerList}}
 </template>
 
 <template name="dashboard">
-    <div id="dashboard">
-        <div class="text-center span9">{{stacks}}</div>
-        <div class="text-center span9">{{providers}}</div>
-        <div class="text-center span9">{{users}}</div>
+    <div id="dashboard" class="hide view">
+        <div class="span9">
+            <h3>Stacks</h3>
+            {{> stackTable}}
+        </div>
+        <div class="span9">
+            <h3>Cloud Providers</h3>
+            {{> providerTable}}
+        </div>
+        <div class="span9">
+            {{users}}
+        </div>
     </div>
 </template>

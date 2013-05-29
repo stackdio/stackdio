@@ -5,7 +5,8 @@ body {
 }
 
 .view {
-    margin-left: 220px;
+    /*margin-left: 220px;*/
+    padding: 0 40px 0 200px;
 }
 
 .form-signin {
