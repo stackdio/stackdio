@@ -35,8 +35,9 @@ class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
         provider_type, provider_class = \
             get_provider_type_and_class(request.DATA.get('provider_type'))
 
-        result, errors = provider_class.validate_provider_data(request.DATA, 
-                                                               request.FILES)
+        provider = provider_class()
+        result, errors = provider.validate_provider_data(request.DATA, 
+                                                         request.FILES)
         
         if not result:
             raise serializers.ValidationError(errors)
@@ -69,6 +70,8 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
+    cloud_provider = serializers.PrimaryKeyRelatedField()
+    default_instance_size = serializers.PrimaryKeyRelatedField()
     class Meta:
         model = CloudProfile
         fields = (

@@ -5,6 +5,9 @@ Amazon Web Services provider for stackd.io
 import os
 import logging
 
+import boto
+from django.core.exceptions import ValidationError
+
 from cloud.providers.base import BaseCloudProvider
 
 logger = logging.getLogger(__name__)
@@ -60,10 +63,21 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return yaml_data
 
-    @classmethod
     def validate_provider_data(self, data, files):
+
         result, errors = super(AWSCloudProvider, self) \
             .validate_provider_data(data, files)
+
+        # check security groups
+        if result:
+            ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])
+
+            try:
+                security_groups = filter(None, data[self.SECURITY_GROUPS].split(','))
+                security_groups = ec2.get_all_security_groups(security_groups)
+            except boto.exception.EC2ResponseError, e:
+                result = False
+                errors['AWS'].append(e.error_message)
 
         # check for required files
         if not files or self.PRIVATE_KEY_FILE not in files:
@@ -71,4 +85,3 @@ class AWSCloudProvider(BaseCloudProvider):
             errors[self.PRIVATE_KEY_FILE].append(self.REQUIRED_MESSAGE)
         
         return result, errors
-

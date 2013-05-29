@@ -17,6 +17,7 @@ from core import (
 from .utils import (
     get_provider_type_and_class,
     write_cloud_providers_file,
+    write_cloud_profiles_file,
 )
 
 from .models import (
@@ -106,14 +107,16 @@ class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
     model = CloudInstanceSize
     serializer_class = CloudInstanceSizeSerializer
 
-class CloudProfileListAPIView(generics.ListAPIView):
+class CloudProfileListAPIView(generics.ListCreateAPIView):
 
 
     model = CloudProfile
     serializer_class = CloudProfileSerializer
 
+    def post_save(self, obj, created=False):
+        write_cloud_profiles_file()
 
-class CloudProfileDetailAPIView(generics.RetrieveAPIView):
+class CloudProfileDetailAPIView(generics.RetrieveDestroyAPIView):
 
 
     model = CloudProfile

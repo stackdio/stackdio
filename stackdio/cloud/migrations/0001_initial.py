@@ -58,8 +58,14 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'cloud', ['CloudProfile'])
 
+        # Adding unique constraint on 'CloudProfile', fields ['title', 'cloud_provider']
+        db.create_unique(u'cloud_cloudprofile', ['title', 'cloud_provider_id'])
+
 
     def backwards(self, orm):
+        # Removing unique constraint on 'CloudProfile', fields ['title', 'cloud_provider']
+        db.delete_unique(u'cloud_cloudprofile', ['title', 'cloud_provider_id'])
+
         # Removing unique constraint on 'CloudProvider', fields ['title', 'provider_type']
         db.delete_unique(u'cloud_cloudprovider', ['title', 'provider_type_id'])
 
@@ -78,7 +84,7 @@ class Migration(SchemaMigration):
 
     models = {
         u'cloud.cloudinstancesize': {
-            'Meta': {'object_name': 'CloudInstanceSize'},
+            'Meta': {'ordering': "['title']", 'object_name': 'CloudInstanceSize'},
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'instance_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
@@ -87,7 +93,7 @@ class Migration(SchemaMigration):
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'cloud.cloudprofile': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'CloudProfile'},
+            'Meta': {'unique_together': "(('title', 'cloud_provider'),)", 'object_name': 'CloudProfile'},
             'cloud_provider': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProvider']"}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'default_instance_size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),

@@ -8,6 +8,7 @@ amqp==1.0.11
 anyjson==0.3.3
 apache-libcloud==0.12.4
 billiard==2.7.3.28
+boto==2.9.5
 celery==3.0.19
 distribute==0.6.31
 django-braces==1.0.0
