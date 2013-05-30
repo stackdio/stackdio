@@ -50,7 +50,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         stack = Stack.objects.create_stack(request.user, request.DATA)
 
         # TODO: Queue up stack creation using Celery
-        #tasks.launch_stack.delay(stack.id)
+        tasks.launch_stack.delay(stack.id)
     
         # return serialized stack object
         serializer = StackSerializer(stack)

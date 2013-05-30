@@ -120,20 +120,13 @@ API endpoints can be found at http://localhost:8000/api/
     # Edit the master file  to make sure the 'user' parameter is set correctly
     # (in my case it's abe)
     
-    # Copy in the salt-cloud related stuff
-    cp stackdio/etc/cloud.providers /opt/salt_root/etc/salt/cloud.providers
-    cp stackdio/etc/cloud.profiles /opt/salt_root/etc/salt/cloud.profiles
-    
-    # Modify those cloud.* files to match your settings and environment
-    # paying close attention to the AWS specific settings in cloud.profiles
-    
-    # Setting the following environment variables is also pretty handy. Again, I
+    # Setting the following environment variables is required. Again, I
     # suggest putting them in your virtualenv's postactivate file:
         
-        export SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
-        export SALT_CLOUD_CONFIG=/opt/salt_root/etc/salt/cloud
-        export SALT_CLOUDVM_CONFIG=/opt/salt_root/etc/salt/cloud.profiles
-        export SALT_CLOUD_PROVIDERS_CONFIG=/opt/salt_root/etc/salt/cloud.providers
+    export SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
+    export SALT_CLOUD_CONFIG=/opt/salt_root/etc/salt/cloud
+    export SALT_CLOUDVM_CONFIG=/opt/salt_root/etc/salt/cloud.profiles
+    export SALT_CLOUD_PROVIDERS_CONFIG=/opt/salt_root/etc/salt/cloud.providers
 
 ###### Running:
     

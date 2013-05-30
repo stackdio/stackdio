@@ -22,6 +22,9 @@ def launch_stack(stack_id):
 
         client = SaltCloud()
         args = [
+            '-y',                   # Assume yes to everything
+            '-l',                   # Log level
+            'error',
             '-P',                   # Parallelize it
             '-m',                   # Specify the map file  to use
             stack.map_file.path

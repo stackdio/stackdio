@@ -59,6 +59,10 @@ class AWSCloudProvider(BaseCloudProvider):
             'keyname': data[self.KEYPAIR],
             'securitygroup': security_groups,
             'private_key': private_key_path,
+
+            'ssh_interface': 'public_ips',
+            'rename_on_destroy': True,
+            'delvol_on_destroy': True,
         }
 
         return yaml_data
