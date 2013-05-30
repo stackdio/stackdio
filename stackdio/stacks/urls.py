@@ -1,8 +1,13 @@
 from django.conf.urls import patterns, include, url
 
-from .api import StackListAPIView, StackDetailAPIView
-from .api import StackHostsAPIView, StackDetailAPIView
-from .api import HostListAPIView, HostDetailAPIView
+from .api import (
+    StackListAPIView, 
+    StackDetailAPIView,
+    StackHostsAPIView, 
+    StackDetailAPIView,
+    HostListAPIView, 
+    HostDetailAPIView,
+)
 
 urlpatterns = patterns('stacks.api',
 

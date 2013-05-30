@@ -1,5 +1,6 @@
 import logging
-from socket import getfqdn
+import collections
+import socket
 
 from django.conf import settings
 from django.db import models, transaction
@@ -13,6 +14,7 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 from model_utils import Choices
 
 from core.fields import DeletingFileField
+from cloud.models import CloudProfile, CloudInstanceSize
 
 logger = logging.getLogger(__name__)
 
@@ -35,48 +37,66 @@ class StackManager(models.Manager):
         {
             "title": "Abe's CDH4 Cluster",
             "description": "Abe's personal cluster for testing CDH4 and stuff...",
-            "roles": [
+            "hosts": [
                 {
-                    "id": 1,
-                    "instance_count": 1,
-                    "host_pattern": "abe-nn"
+                    "host_count": 1,
+                    "host_size": 1,         # what instance_size object to use
+                    "host_pattern": "foo",  # the naming pattern for the host's
+                                            # hostname, in this case the hostname
+                                            # would become 'foo-1'
+                    "cloud_profile": 1,     # what cloud_profile object to use
+                    "salt_roles": [1,2,3],  # what salt_roles to use
+                    "host_security_groups": "foo,bar,baz",
                 },
                 {
-                    "id": 2,
-                    "instance_count": 10,
-                    "host_pattern": "abe-dn"
+                    ...
+                    more hosts
+                    ...
                 }
             ]
         }
         '''
 
         stack_obj = self.model(title=data['title'],
-                               description=data['description'],
+                               description=data.get('description'),
                                user=user)
         stack_obj.save()
 
-        for role in data['roles']:
-            instance_count = role['instance_count']
-            host_pattern = role['host_pattern']
+        for host in data['hosts']:
+            host_count = host['host_count']
+            host_size = host['host_size']
+            host_pattern = host['host_pattern']
+            cloud_profile = host['cloud_profile']
+            salt_roles = host['salt_roles']
 
-            # pull role objects
-            role_obj = Role.objects.get(id=role['id'])
-
-            # create metadata
-            metadata = stack_obj.metadata.create(
-                stack=stack_obj,
-                role=role_obj,
-                instance_count=instance_count,
-                host_pattern=host_pattern
-            )
+            # Get the security group objects
+            security_group_objs = [
+                SecurityGroup.objects.get_or_create(group_name=g)[0] for \
+                g in filter(
+                    None, 
+                    set(h.strip() for \
+                        h in host['host_security_groups'].split(','))
+                )]
+                        
+            # lookup other objects
+            role_objs = SaltRole.objects.filter(id__in=host['salt_roles'])
+            cloud_profile_obj = CloudProfile.objects.get(id=cloud_profile)
+            host_size_obj = CloudInstanceSize.objects.get(id=host_size)
 
             # create hosts
-            for i in xrange(1, instance_count+1):
-                host = stack_obj.hosts.create(
+            for i in xrange(1, host_count+1):
+                host_obj = stack_obj.hosts.create(
                     stack=stack_obj, 
-                    role=role_obj,
+                    cloud_profile=cloud_profile_obj,
+                    instance_size=host_size_obj,
                     hostname='%s-%d' % (host_pattern, i),
                 )
+
+                # set security groups
+                host_obj.security_groups.add(*security_group_objs)
+
+                # set roles
+                host_obj.roles.add(*role_objs)
 
         # generate stack
         stack_obj._generate_map_file()
@@ -91,8 +111,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         unique_together = ('user', 'title')
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
-
-    cloud_profile = models.ForeignKey('InstanceProfile', related_name='stacks')
 
     map_file = DeletingFileField(
         max_length=255, 
@@ -111,26 +129,42 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
         # TODO: Should we store this somewhere instead of assuming
         # the master will always be this box?
-        master = getfqdn()
+        master = socket.getfqdn()
 
         map_file_dict = {}
         provider_dict = {}
 
+        profiles = collections.defaultdict(list)
+
         for host in self.hosts.all():
-            roles = [
-                host.role.role_name 
-            ]
-            provider_dict[host.hostname] = {
-                'minion': {
-                    'master': master,
-                    'grains': {
-                        'roles': roles,
-                        'stack_id': self.id,
-                    }
-                },
-            }
-        map_file_dict['provider_goes_here'] = provider_dict
-        map_file_yaml = yaml.safe_dump(map_file_dict, 
+            # load provider yaml to extract default security groups
+            cloud_provider = host.cloud_profile.cloud_provider
+            cloud_provider_yaml = yaml.safe_load(
+                cloud_provider.yaml)[cloud_provider.slug]
+
+            # pull various stuff we need for a host
+            roles = [r.role_name for r in host.roles.all()]
+            instance_size = host.instance_size.title
+            security_groups = set([sg.group_name for \
+                               sg in host.security_groups.all()])
+
+            # add in cloud provider security groups
+            security_groups.add(*cloud_provider_yaml['securitygroup'])
+
+            profiles[host.cloud_profile.slug].append({
+                host.hostname: {
+                    'size': instance_size,
+                    'securitygroup': list(security_groups),
+                    'minion': {
+                        'master': master,
+                        'grains': {
+                            'roles': roles,
+                            'stack_id': int(self.id),
+                        }
+                    },
+                }
+            })
+        map_file_yaml = yaml.safe_dump(dict(profiles), 
                                        default_flow_style=False)
 
         if not self.map_file:
@@ -139,7 +173,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             with open(self.map_file.file, 'w') as f:
                 f.write(map_file_yaml)
 
-class Role(TimeStampedModel, TitleSlugDescriptionModel):
+class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):
 
 
     role_name = models.CharField(max_length=64)
@@ -147,34 +181,32 @@ class Role(TimeStampedModel, TitleSlugDescriptionModel):
     def __unicode__(self):
         return self.title
     
-    
-class StackMetadata(TimeStampedModel):
-
-
-    stack = models.ForeignKey(Stack, related_name='metadata')
-    role = models.ForeignKey(Role)
-    instance_count = models.IntegerField(default=0)
-    host_pattern = models.CharField(max_length=32)
-
-    def __unicode__(self):
-        return 'Stack %r, role %r' % (self.stack, self.role)
-
-
 class Host(TimeStampedModel):
 
 
-    stack = models.ForeignKey(Stack, related_name='hosts')
-    role = models.ForeignKey(Role, related_name='hosts')
+    # TODO: We should be using generic foreign keys here to a cloud provider
+    # specific implementation of a Host object. I'm not exactly sure how this
+    # will work, but I think by using Django's content type system we can make
+    # it work...just not sure how easy it will be to extend, maintain, etc.
+
+    stack = models.ForeignKey('Stack', 
+                              related_name='hosts')
+    cloud_profile = models.ForeignKey('cloud.CloudProfile', 
+                                      related_name='hosts')
+    instance_size = models.ForeignKey('cloud.CloudInstanceSize', 
+                                      related_name='hosts')
+    roles = models.ManyToManyField('stacks.SaltRole', 
+                              related_name='hosts')
+
     hostname = models.CharField(max_length=64)
+    security_groups = models.ManyToManyField('stacks.SecurityGroup', 
+                                        related_name='hosts')
+
 
     def __unicode__(self):
-        return 'Stack %r, role %r' % (self.stack, self.role)
+        return self.hostname
 
-class CLoudProvider(TimeStampedModel, TitleSlugDescriptionModel):
+class SecurityGroup(TimeStampedModel):
+    
 
-
-    provider_name = models.CharField(max_length=64, unique=True)
-
-class InstanceProfile(TimeStampedModel, TitleSlugDescriptionModel):
-
-    profile_name = models.CharField(max_length=64, unique=True)
+    group_name = models.CharField(max_length=64)

@@ -2,7 +2,11 @@ import logging
 
 from rest_framework import serializers
 
-from .models import Stack, Host, Role
+from .models import (
+    Stack, 
+    Host, 
+    SaltRole,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +36,9 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'status_detail',
         )
 
-class RoleSerializer(serializers.HyperlinkedModelSerializer):
+class SaltRoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = Role
+        model = SaltRole
         fields = (
             'url', 
             'created', 

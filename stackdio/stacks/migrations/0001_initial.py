@@ -20,7 +20,6 @@ class Migration(SchemaMigration):
             ('status_changed', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status')),
             ('status_detail', self.gf('django.db.models.fields.TextField')(blank=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['auth.User'])),
-            ('cloud_profile', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['stacks.InstanceProfile'])),
             ('map_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
         ))
         db.send_create_signal(u'stacks', ['Stack'])
@@ -28,8 +27,8 @@ class Migration(SchemaMigration):
         # Adding unique constraint on 'Stack', fields ['user', 'title']
         db.create_unique(u'stacks_stack', ['user_id', 'title'])
 
-        # Adding model 'Role'
-        db.create_table(u'stacks_role', (
+        # Adding model 'SaltRole'
+        db.create_table(u'stacks_saltrole', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
@@ -38,19 +37,7 @@ class Migration(SchemaMigration):
             ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
             ('role_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
         ))
-        db.send_create_signal(u'stacks', ['Role'])
-
-        # Adding model 'StackMetadata'
-        db.create_table(u'stacks_stackmetadata', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='metadata', to=orm['stacks.Stack'])),
-            ('role', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stacks.Role'])),
-            ('instance_count', self.gf('django.db.models.fields.IntegerField')(default=0)),
-            ('host_pattern', self.gf('django.db.models.fields.CharField')(max_length=32)),
-        ))
-        db.send_create_signal(u'stacks', ['StackMetadata'])
+        db.send_create_signal(u'stacks', ['SaltRole'])
 
         # Adding model 'Host'
         db.create_table(u'stacks_host', (
@@ -58,34 +45,36 @@ class Migration(SchemaMigration):
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['stacks.Stack'])),
-            ('role', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['stacks.Role'])),
+            ('cloud_profile', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['cloud.CloudProfile'])),
+            ('instance_size', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['cloud.CloudInstanceSize'])),
             ('hostname', self.gf('django.db.models.fields.CharField')(max_length=64)),
         ))
         db.send_create_signal(u'stacks', ['Host'])
 
-        # Adding model 'CLoudProvider'
-        db.create_table(u'stacks_cloudprovider', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
-            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('provider_name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=64)),
+        # Adding M2M table for field roles on 'Host'
+        db.create_table(u'stacks_host_roles', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('host', models.ForeignKey(orm[u'stacks.host'], null=False)),
+            ('saltrole', models.ForeignKey(orm[u'stacks.saltrole'], null=False))
         ))
-        db.send_create_signal(u'stacks', ['CLoudProvider'])
+        db.create_unique(u'stacks_host_roles', ['host_id', 'saltrole_id'])
 
-        # Adding model 'InstanceProfile'
-        db.create_table(u'stacks_instanceprofile', (
+        # Adding M2M table for field security_groups on 'Host'
+        db.create_table(u'stacks_host_security_groups', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('host', models.ForeignKey(orm[u'stacks.host'], null=False)),
+            ('securitygroup', models.ForeignKey(orm[u'stacks.securitygroup'], null=False))
+        ))
+        db.create_unique(u'stacks_host_security_groups', ['host_id', 'securitygroup_id'])
+
+        # Adding model 'SecurityGroup'
+        db.create_table(u'stacks_securitygroup', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
-            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('profile_name', self.gf('django.db.models.fields.CharField')(unique=True, max_length=64)),
+            ('group_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
         ))
-        db.send_create_signal(u'stacks', ['InstanceProfile'])
+        db.send_create_signal(u'stacks', ['SecurityGroup'])
 
 
     def backwards(self, orm):
@@ -95,20 +84,20 @@ class Migration(SchemaMigration):
         # Deleting model 'Stack'
         db.delete_table(u'stacks_stack')
 
-        # Deleting model 'Role'
-        db.delete_table(u'stacks_role')
-
-        # Deleting model 'StackMetadata'
-        db.delete_table(u'stacks_stackmetadata')
+        # Deleting model 'SaltRole'
+        db.delete_table(u'stacks_saltrole')
 
         # Deleting model 'Host'
         db.delete_table(u'stacks_host')
 
-        # Deleting model 'CLoudProvider'
-        db.delete_table(u'stacks_cloudprovider')
+        # Removing M2M table for field roles on 'Host'
+        db.delete_table('stacks_host_roles')
 
-        # Deleting model 'InstanceProfile'
-        db.delete_table(u'stacks_instanceprofile')
+        # Removing M2M table for field security_groups on 'Host'
+        db.delete_table('stacks_host_security_groups')
+
+        # Deleting model 'SecurityGroup'
+        db.delete_table(u'stacks_securitygroup')
 
 
     models = {
@@ -141,6 +130,45 @@ class Migration(SchemaMigration):
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
+        u'cloud.cloudinstancesize': {
+            'Meta': {'ordering': "['title']", 'object_name': 'CloudInstanceSize'},
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'instance_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'provider_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProviderType']"}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        u'cloud.cloudprofile': {
+            'Meta': {'unique_together': "(('title', 'cloud_provider'),)", 'object_name': 'CloudProfile'},
+            'cloud_provider': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProvider']"}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'default_instance_size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'image_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'script': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'ssh_user': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        u'cloud.cloudprovider': {
+            'Meta': {'unique_together': "(('title', 'provider_type'),)", 'object_name': 'CloudProvider'},
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'provider_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProviderType']"}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'yaml': ('django.db.models.fields.TextField', [], {})
+        },
+        u'cloud.cloudprovidertype': {
+            'Meta': {'object_name': 'CloudProviderType'},
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'type_name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '32'})
+        },
         u'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
             'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
@@ -148,37 +176,20 @@ class Migration(SchemaMigration):
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
-        u'stacks.cloudprovider': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'CLoudProvider'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'provider_name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '64'}),
-            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
-        },
         u'stacks.host': {
             'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Host'},
+            'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['cloud.CloudProfile']"}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'hostname': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'instance_size': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['cloud.CloudInstanceSize']"}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'role': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['stacks.Role']"}),
+            'roles': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'hosts'", 'symmetrical': 'False', 'to': u"orm['stacks.SaltRole']"}),
+            'security_groups': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'hosts'", 'symmetrical': 'False', 'to': u"orm['stacks.SecurityGroup']"}),
             'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['stacks.Stack']"})
         },
-        u'stacks.instanceprofile': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'InstanceProfile'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'profile_name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '64'}),
-            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
-        },
-        u'stacks.role': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Role'},
+        u'stacks.saltrole': {
+            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'SaltRole'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -187,9 +198,15 @@ class Migration(SchemaMigration):
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
+        u'stacks.securitygroup': {
+            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'SecurityGroup'},
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'group_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'})
+        },
         u'stacks.stack': {
             'Meta': {'unique_together': "(('user', 'title'),)", 'object_name': 'Stack'},
-            'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['stacks.InstanceProfile']"}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -201,16 +218,6 @@ class Migration(SchemaMigration):
             'status_detail': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['auth.User']"})
-        },
-        u'stacks.stackmetadata': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'StackMetadata'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'host_pattern': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'instance_count': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['stacks.Role']"}),
-            'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'metadata'", 'to': u"orm['stacks.Stack']"})
         }
     }
 

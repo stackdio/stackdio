@@ -6,18 +6,9 @@ from django.core.files.storage import FileSystemStorage
 
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
-from core.fields import DeletingFileField
-
 from .utils import get_cloud_provider_choices
 
 logger = logging.getLogger(__name__)
-
-def get_private_key_file_path(obj, filename):
-    '''
-    Determines the path to where private key files are stored.
-    '''
-
-    return "cloud/{0}/keys/{1}".format(obj.slug, filename)
 
 class CloudProviderType(models.Model):
 

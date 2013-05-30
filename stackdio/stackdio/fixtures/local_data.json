@@ -37,7 +37,7 @@
     },
     {
         "pk": 1,
-        "model": "stacks.role",
+        "model": "stacks.saltrole",
         "fields": {
             "description": "This role will provision a machine as a CDH NameNode",
             "title": "CDH4 NameNode",
@@ -49,7 +49,7 @@
     },
     {
         "pk": 2,
-        "model": "stacks.role",
+        "model": "stacks.saltrole",
         "fields": {
             "description": "This role will provision a machine as a CDH DataNode",
             "title": "CDH4 DataNode",
