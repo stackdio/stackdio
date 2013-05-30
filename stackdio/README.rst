@@ -21,12 +21,30 @@ For assistance, please see one of the following kind sirs:
 
 ### Prequisites:
 
-  - Python >= 2.6
+  - Python >= 2.6 (with development headers)
   - [MySQL] - we recommend using Homebrew if using OS X
   - [pip]
-  - [virtualenv-wrapper] or [pythonbrew]
+  - [virtualenv-burrito] or [pythonbrew]
   - [RabbitMQ] - again, Homebrew is nice
   - [swig] - yup, Homebrew
+
+### Ubuntu stuff
+
+    sudo apt-get install mercurial python-pip python-dev libssl-dev libncurses5-dev
+
+### virtualenv-burrito
+
+###### Install it
+
+    curl -s https://raw.github.com/brainsik/virtualenv-burrito/master/virtualenv-burrito.sh | $SHELL
+    
+### Swig
+
+###### Install it
+
+    Homebrew: brew install swig
+    
+    Ubuntu: sudo apt-get install swig
 
 ### MySQL
 
@@ -34,12 +52,14 @@ For assistance, please see one of the following kind sirs:
     
     With Homebrew: brew update && brew install mysql
     
+    Ubuntu: sudo apt-get install mysql-server mysql-client libmysqlclient-dev
+    
 ###### Set up your database and users:
 
-    # In mysql shell
+    # In mysql shell (hint: run `mysql`)
     create database stackdio;
     create user stackdio;
-    grant all on stackdio.* to 'stackdio'@'localhost' identified by 'password'
+    grant all on stackdio.* to 'stackdio'@'localhost' identified by 'password';
     
     # Note: you can change the user and password, but make sure to set the env
     # variables later to the correct value.
@@ -60,22 +80,87 @@ For assistance, please see one of the following kind sirs:
 
 ###### Clone and initialize stackdio:
     
-    # Set the following environment variables.
-    # MYSQL_USER (the user that will connect to the MySQL server @ localhost)
-    # MYSQL_PASS (the password for the user above)
+    # Set the django secret key environment variable. For development purposes
+    # this can be just about anything, but when in production, choose something
+    # very, very hard to guess - random gibberish is mostly preferred :)
+    export DJANGO_SECRET_KEY='randomgibberishgobbeltygook'
+    
+    # Set the following environment variables for MySQL
+    export MYSQL_USER='stackdio'
+    export MYSQL_PASS='password'
+    
+    # Setting the following environment variables is also required. Again, I
+    # suggest putting them in your virtualenv's postactivate file. These are
+    # so Django and celery tasks know where to get to salt configuration and
+    # scripts. We won't be installing salt or salt cloud for a bit, but go
+    # ahead and set them.
+        
+    export SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
+    export SALT_CLOUD_CONFIG=/opt/salt_root/etc/salt/cloud
+    export SALT_CLOUDVM_CONFIG=/opt/salt_root/etc/salt/cloud.profiles
+    export SALT_CLOUD_PROVIDERS_CONFIG=/opt/salt_root/etc/salt/cloud.providers
 
     NOTE: If using virtualenv-wrapper it's best to put these in your postactivate
     script as you may be using multiple projects that require the same environment
     variables, but with different values.
+    
+    # Reinitialize your virtualenv to get those new environment variables
+    workon stackdio
 
-    hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management stackdio
-    cd stackdio
-    sudo pip install -r stackdio/requirements/local.txt
+    hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management stackdio_root
+    cd stackdio_root/stackdio
+    pip install -r stackdio/requirements/local.txt
+    
+    # If you're running a newer version of Ubuntu, please see the next section
+    # before proceeding.
+    
     python manage.py syncdb --noinput
     python manage.py migrate
     python manage.py loaddata local_data
-    python manage.py runserver
+    python manage.py runserver 0.0.0.0:8000
+    
+###### Ubuntu has some issues with SSLV2
 
+    Ubuntu doesn't ship a Python version that includes SSLV2, which M2Crypto
+    depends on, so a bit of magic needs to happen. Taken from
+    https://raw.github.com/Motiejus/django-webtopay/master/m2crypto_ubuntu
+    
+    # First remove M2Crypto
+    pip uninstall M2Crypto
+    
+    cd /tmp
+    touch foo.sh
+    
+    # Next, copy bash script below to /tmp/foo.sh and run it
+    bash /tmp/foo.sh
+    
+    #!/bin/sh -xe
+    
+    # Sets up m2crypto on ubuntu architecture in virtualenv
+    # openssl 1.0 does not have sslv2, which is not disabled in m2crypto
+    # therefore this workaround is required
+    
+    PATCH="
+    --- SWIG/_ssl.i 2011-01-15 20:10:06.000000000 +0100
+    +++ SWIG/_ssl.i 2012-06-17 17:39:05.292769292 +0200
+    @@ -48,8 +48,10 @@
+     %rename(ssl_get_alert_desc_v) SSL_alert_desc_string_long;
+     extern const char *SSL_alert_desc_string_long(int);
+    
+    +#ifndef OPENSSL_NO_SSL2
+     %rename(sslv2_method) SSLv2_method;
+     extern SSL_METHOD *SSLv2_method(void);
+    +#endif
+     %rename(sslv3_method) SSLv3_method;
+     extern SSL_METHOD *SSLv3_method(void);
+     %rename(sslv23_method) SSLv23_method;"
+    
+    pip install --download="." m2crypto
+    tar -xf M2Crypto-*.tar.gz
+    rm M2Crypto-*.tar.gz
+    cd M2Crypto-*
+    echo "$PATCH" | patch -p0
+    python setup.py install
 
 Point your browser to http://localhost:8000. There are two default users in the system:
  
@@ -117,16 +202,10 @@ API endpoints can be found at http://localhost:8000/api/
     cd <stackdio_root_directory>
     cp stackdio/etc/salt-master /opt/salt_root/etc/salt/master
     
-    # Edit the master file  to make sure the 'user' parameter is set correctly
-    # (in my case it's abe)
-    
-    # Setting the following environment variables is required. Again, I
-    # suggest putting them in your virtualenv's postactivate file:
-        
-    export SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
-    export SALT_CLOUD_CONFIG=/opt/salt_root/etc/salt/cloud
-    export SALT_CLOUDVM_CONFIG=/opt/salt_root/etc/salt/cloud.profiles
-    export SALT_CLOUD_PROVIDERS_CONFIG=/opt/salt_root/etc/salt/cloud.providers
+    # Edit the master file  to make sure the 'user' parameter is set correctly. It
+    # should be the user that Django, celery, and salt will all run as (on my box
+    # it's abe, but if you're in EC2 it may be ubuntu or ec2-user or anything else
+    # as long as you're using that user)
 
 ###### Running:
     
@@ -141,14 +220,14 @@ API endpoints can be found at http://localhost:8000/api/
 ###### Installation
 
     OS X: brew install rabbitmq
-    Ubuntu: apt-get install rabbitmq-server
-    CentOS/RHEL: yum install rabbitmq-server
+    
+    Ubuntu: sudo apt-get install rabbitmq-server
 
 ###### Execution
 
     OS X: rabbitmq-server (use nohup if you want it in the background)
+    
     Ubuntu: service rabbitmq-server start/stop
-    CentOS/RHEL: service rabbitmq-server start/stop
     
     * See http://www.rabbitmq.com/relocate.html for useful overrides.
     
@@ -169,9 +248,7 @@ API endpoints can be found at http://localhost:8000/api/
     # won't be able to connect to the broker
     manage.py celery worker -lDEBUG
 
-    # If you want to run it in the background use nohup. While in development
-    # I think it's much faster to have it in the foreground so you can just
-    # Ctrl+C the process when you need to make changes.
+    # See celery documentation for ways of daemonizing the process
 
 ### Technology
 
@@ -196,6 +273,6 @@ stackd.io uses a number of open source projects to work properly. For a more up-
   [RabbitMQ]: http://www.rabbitmq.com/
   [Twitter Bootstrap]: http://twitter.github.com/bootstrap/
   [pip]: http://www.pip-installer.org/en/latest/
-  [virtualenv-wrapper]: https://bitbucket.org/dhellmann/virtualenvwrapper
+  [virtualenv-burrito]: https://github.com/brainsik/virtualenv-burrito
   [pythonbrew]: https://github.com/utahta/pythonbrew
   [MySQL]: http://dev.mysql.com/downloads/
