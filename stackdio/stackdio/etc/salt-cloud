@@ -1,0 +1,2 @@
+log_file: /opt/salt_root/var/log/salt/cloud
+verify_env: True
