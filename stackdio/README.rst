@@ -198,14 +198,19 @@ API endpoints can be found at http://localhost:8000/api/
     mkdir -p /opt/salt_root/srv/salt
     mkdir -p /opt/salt_root/srv/pillar
     
-    # Copy in the master configuration file
+    # Copy in the master and cloud configuration files for defaults
     cd <stackdio_root_directory>
     cp stackdio/etc/salt-master /opt/salt_root/etc/salt/master
+    cp stackdio/etc/salt-cloud /opt/salt_root/etc/salt/cloud
     
     # Edit the master file  to make sure the 'user' parameter is set correctly. It
     # should be the user that Django, celery, and salt will all run as (on my box
     # it's abe, but if you're in EC2 it may be ubuntu or ec2-user or anything else
     # as long as you're using that user)
+    
+    # The cloud file should be ready to go as there's not much going on, but if
+    # you can change the default log directory, just make sure the path exists
+    # and the user running salt-cloud has the right permissions.
 
 ###### Running:
     
