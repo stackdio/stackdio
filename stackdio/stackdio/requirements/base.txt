@@ -26,7 +26,7 @@ pytz==2013b
 pyzmq==13.1.0
 readline==6.2.4.1
 requests==1.2.0
-salt==0.15.1
+salt==0.15.3
 salt-cloud==0.8.8
 see==1.0.1
 simplejson==3.2.0

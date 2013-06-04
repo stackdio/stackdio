@@ -29,10 +29,15 @@ def launch_stack(stack_id):
             '-m',                   # Specify the map file  to use
             stack.map_file.path
         ]
-        x = client.run(args)
+
+        # TODO: This hangs in salt-cloud/celery, need to find a fix or
+        # workaround. Very critical piece of the system.
+        #x = client.run(args)
+        time.sleep(5)
 
         # TODO: Run highstate machines with this stack id
         # e.g, `salt 'stack_id:{0}'.format(stack_id) state.highstate`
+
         stack.status = 'provisioning'
         stack.save()
         time.sleep(5)

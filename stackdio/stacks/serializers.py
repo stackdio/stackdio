@@ -36,6 +36,18 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'status_detail',
         )
 
+    def validate(self, attrs):
+
+        # validate provider specific request data
+        request = self.context['request']
+
+        errors = {
+            'foo': ['Missing some stuff'],
+        }
+        raise serializers.ValidationError(errors)
+
+        return attrs    
+
 class SaltRoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = SaltRole

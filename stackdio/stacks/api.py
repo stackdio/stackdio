@@ -1,24 +1,30 @@
 import logging
 
-from rest_framework import generics
-from rest_framework import parsers
+from rest_framework import (
+    generics,
+    parsers,
+    serializers,
+)
 from rest_framework.response import Response
 
-from core.exceptions import ResourceConflict, BadRequest
+from core.exceptions import ResourceConflict
 
-from . import tasks 
+from . import tasks
 from .models import (
-    Stack, 
-    Host, 
-    SaltRole
+    Stack,
+    Host,
+    SaltRole,
 )
 
 from .serializers import StackSerializer, HostSerializer, SaltRoleSerializer
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
+
 
 class StackListAPIView(generics.ListCreateAPIView):
-
+    '''
+    TODO: Add docstring
+    '''
     model = Stack
     serializer_class = StackSerializer
     parser_classes = (parsers.JSONParser,)
@@ -31,7 +37,7 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # check for duplicates
         if Stack.objects.filter(user=self.request.user, title=obj.title).count():
-            raise ResourceConflict('A Stack resource already exists with ' \
+            raise ResourceConflict('A Stack resource already exists with '
                                    'the given parameters.')
 
         obj.user = self.request.user
@@ -42,8 +48,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         as well as generating the salt-cloud map that will be used to launch
         machines
         '''
-
-        # XXX: remove me!
+        # XXX: remove me when in production
         Stack.objects.all().delete()
 
         # create the stack object and foreign key objects
@@ -51,34 +56,37 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # TODO: Queue up stack creation using Celery
         tasks.launch_stack.delay(stack.id)
-    
+
         # return serialized stack object
         serializer = StackSerializer(stack)
         return Response(serializer.data)
 
-class StackDetailAPIView(generics.RetrieveDestroyAPIView):
 
+class StackDetailAPIView(generics.RetrieveDestroyAPIView):
     model = Stack
     serializer_class = StackSerializer
 
-class HostListAPIView(generics.ListAPIView):
 
+class StackActionAPIView(generics.SingleObjectAPIView):
+    model = Stack
+    serializer_class = StackSerializer
+
+
+class HostListAPIView(generics.ListAPIView):
     model = Host
     serializer_class = HostSerializer
 
-class StackHostsAPIView(HostListAPIView):
 
+class StackHostsAPIView(HostListAPIView):
     def get_queryset(self):
         return Host.objects.filter(stack__pk=self.kwargs.get('pk'))
 
-class HostDetailAPIView(generics.RetrieveAPIView):
 
+class HostDetailAPIView(generics.RetrieveAPIView):
     model = Host
     serializer_class = HostSerializer
 
 
 class SaltRoleListAPIView(generics.ListAPIView):
-
     model = SaltRole
     serializer_class = SaltRoleSerializer
-
