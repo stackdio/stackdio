@@ -1,0 +1,28 @@
+<template name="providerProfileList">
+    <div id="profiles" class="hide text-center view">
+        <div>&nbsp;</div>
+        <h2>Cloud Provider Profiles</h2>
+        <div class="pull-right">
+            <a class="btn btn-primary" data-toggle="modal" href="#profiles-form"><i class="icon-plus-sign"></i> New Profile</a>
+        </div>    
+
+        {{> providerProfileTable}}
+    </div>
+</template>
+
+<template name="providerProfileTable">
+    <table id="profile-table" class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        {{#each profiles}}
+        <tr>
+            <td><a href="{{url}}">{{title}}</a></td>
+            <td>{{description}}</td>
+        </tr>
+        {{/each}}
+    </table>
+</template>

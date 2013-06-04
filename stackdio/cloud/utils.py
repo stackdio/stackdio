@@ -52,8 +52,10 @@ def get_cloud_providers():
             providers.append(getattr(module, class_name))
 
     except ImportError as e:
-        msg = 'Could not import {0} from settings.CLOUD_PROVIDERS'.format(class_path)
-        raise ImportError(msg)
+        # msg = 'Could not import {0} from settings.CLOUD_PROVIDERS'.format(class_path)
+        # logger.error(e)
+        # raise ImportError(msg)
+        raise
 
     return providers
 

@@ -13,12 +13,12 @@ from .utils import get_provider_type_and_class
 
 class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
-
     provider_type = serializers.PrimaryKeyRelatedField()
 
     class Meta:
         model = CloudProvider
         fields = (
+            'id',
             'url',
             'title', 
             'slug', 
@@ -61,6 +61,7 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = CloudInstanceSize
         fields = (
+            'id',
             'url',
             'title', 
             'slug', 
@@ -75,6 +76,7 @@ class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = CloudProfile
         fields = (
+            'id',
             'url',
             'title', 
             'slug',

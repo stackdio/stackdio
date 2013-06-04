@@ -1,0 +1,43 @@
+<template name="awsAccountForm">
+    <form id="aws-account-form" class="hide modal fade stackdform">
+        <legend>New AWS Account</legend>
+
+        <input id="provider-type" type="hidden" value="1">
+
+        <label>Title</label>
+        <input id="account-title" type="text" class="input-block-level input-large">
+
+        <label>Purpose</label>
+        <textarea id="account-purpose" name="description" class="span5" rows="3"></textarea>
+        
+        <label>AWS Access Key</label>
+        <input id="aws-access-key" type="text" class="input-block-level input-large">
+
+        <label>AWS Secret Key</label>
+        <input id="aws-secret-key" type="text" class="input-block-level input-large">
+
+        <label>AWS Keypair Name</label>
+        <input id="aws-keypair-name" type="text" class="input-block-level input-large">
+
+        <label>Security groups</label>
+        <input id="aws-security-groups" type="text" class="input-block-level input-large" placeholder="comma,delimited,group,names">
+
+        <label>Private key file</label>
+        <div class="fileupload fileupload-new" data-provides="fileupload">
+            <div class="input-append">
+                <div class="uneditable-input span3"><i class="icon-file fileupload-exists"></i> <span class="fileupload-preview"></span></div>
+                <span class="btn btn-file">
+                    <span class="fileupload-new">Select file</span><span class="fileupload-exists">Change</span>
+                    <input id="aws-private-keyfile" type="file" />
+                </span>
+                <a href="#" class="btn fileupload-exists" data-dismiss="fileupload">Remove</a>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+            <!-- <button class="btn btn-primary" type="submit">Create Profile</button> -->
+            <button data-dismiss="modal" id="submit-account" class="btn btn-primary">Create Account</button>
+        </div>
+    </form>
+</template>

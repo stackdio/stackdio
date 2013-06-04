@@ -1,5 +1,6 @@
 import logging
 import yaml
+from collections import defaultdict
 
 from django.conf import settings
 
@@ -36,22 +37,24 @@ from .serializers import (
 
 logger = logging.getLogger(__name__)
 
+
 class CloudProviderTypeListAPIView(generics.ListAPIView):
-
-
     model = CloudProviderType
     serializer_class = CloudProviderTypeSerializer
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
-
-
     model = CloudProviderType
     serializer_class = CloudProviderTypeSerializer
 
+
+class CloudProfileScriptsListAPIView(generics.ListAPIView):
+    def get(self, request, *args, **kwargs):
+        scripts = [{'os': k, 'script': v} for k,v in [choice for choice in CloudProfile.SCRIPT_CHOICES]]
+        return Response(scripts)
+
+
 class CloudProviderListAPIView(generics.ListCreateAPIView):
-
-
     model = CloudProvider
     serializer_class = CloudProviderSerializer
 
@@ -88,36 +91,30 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
         except CloudProviderType.DoesNotExist, e:
             raise core_exceptions.BadRequest('Provider types does not exist.')
 
+
 class CloudProviderDetailAPIView(generics.RetrieveDestroyAPIView):
-
-
     model = CloudProvider
     serializer_class = CloudProviderSerializer
 
+
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
-
-
     model = CloudInstanceSize
     serializer_class = CloudInstanceSizeSerializer
 
 
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
-
-
     model = CloudInstanceSize
     serializer_class = CloudInstanceSizeSerializer
 
+
 class CloudProfileListAPIView(generics.ListCreateAPIView):
-
-
     model = CloudProfile
     serializer_class = CloudProfileSerializer
 
     def post_save(self, obj, created=False):
         write_cloud_profiles_file()
 
+
 class CloudProfileDetailAPIView(generics.RetrieveDestroyAPIView):
-
-
     model = CloudProfile
     serializer_class = CloudProfileSerializer

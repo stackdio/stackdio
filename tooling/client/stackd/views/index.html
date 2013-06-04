@@ -30,23 +30,29 @@
 
 <template name='page'>
     {{> dashboard}}
+    
     {{> stackList}}
+    {{> accountList}}
+    {{> providerProfileList}}
+
     {{> awsStackForm}}
-    {{> providerList}}
+    {{> awsAccountForm}}
+    {{> providerProfileForm}}
 </template>
 
 <template name="dashboard">
-    <div id="dashboard" class="hide view">
+    <div id="dashboard" class=" view">
         <div class="span9">
             <h3>Stacks</h3>
             {{> stackTable}}
         </div>
         <div class="span9">
-            <h3>Cloud Providers</h3>
-            {{> providerTable}}
+            <h3>Provider Accounts</h3>
+            {{> accountTable}}
         </div>
         <div class="span9">
-            {{users}}
+            <h3>Accounts Profiles</h3>
+            {{> providerProfileTable}}
         </div>
     </div>
 </template>

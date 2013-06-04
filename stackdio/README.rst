@@ -4,7 +4,7 @@ stackd.io is a web-based tool for provisioning and managing cloud infrastructure
 
 ### Team:
 
-For assistance, please see one of the following kind sirs:
+For assistance, please see one of the following Dintinguished Gentlemen:
 
  - [Abe Music]
  - [Charlie Penner]
@@ -255,6 +255,43 @@ API endpoints can be found at http://localhost:8000/api/
 
     # See celery documentation for ways of daemonizing the process
 
+### User Interface
+
+The stackd.io framework comes with a default user interface that uses the Node.js-based Meteor framework. For full documentation, please visit 
+
+    http://docs.meteor.com/#quickstart
+
+#### Installation
+
+You can install Meteor by executing the following command.
+
+    curl https://install.meteor.com | /bin/sh
+    
+#### Django CORS configuration
+
+In order to access the API running on port 8000, you need to enable CORS access in Django. Do do this, uncomment the corsheader middleware statement in the __settings/base.py__ file.
+
+    # 'corsheaders.middleware.CorsMiddleware',
+    
+Then uncomment the CORS whitelist setting. Search for 'whitelist' and you'll find it.
+
+    # CORS_ORIGIN_WHITELIST = (
+    #    'localhost:3000',
+    # )
+
+Obviously, this has to match the port on which the Meteor process is running. If you start Meteor on a different port, reflect that change in the whitelist.
+
+#### Running
+
+To start the user interface, simply run meteor in the tooling directory. This will start a Node server on port 3000.
+
+    cd tooling
+    meteor
+    
+Then open your browser and start the initial setup
+
+    http://localhost:3000/
+
 ### Technology
 
 stackd.io uses a number of open source projects to work properly. For a more up-to-date list of dependencies, please see the requirements.txt file.
@@ -266,6 +303,7 @@ stackd.io uses a number of open source projects to work properly. For a more up-
 * [django-celery] - Django integration for Celery
 * [RabbitMQ] - complete and highly reliable enterprise messaging system based on the emerging AMQP standard
 * [Twitter Bootstrap] - great UI boilerplate for modern web apps
+* [Meteor] - An open-source platform for building real-time, top-quality web apps
 
   [Abe Music]: https://wiki.corp.digitalreasoning.com/confluence/display/~abe.music
   [Charlie Penner]: https://wiki.corp.digitalreasoning.com/confluence/display/~charlie.penner
@@ -277,6 +315,7 @@ stackd.io uses a number of open source projects to work properly. For a more up-
   [django-celery]: http://docs.celeryproject.org/en/latest/django/index.html
   [RabbitMQ]: http://www.rabbitmq.com/
   [Twitter Bootstrap]: http://twitter.github.com/bootstrap/
+  [Meteor]: http://www.meteor.com
   [pip]: http://www.pip-installer.org/en/latest/
   [virtualenv-burrito]: https://github.com/brainsik/virtualenv-burrito
   [pythonbrew]: https://github.com/utahta/pythonbrew

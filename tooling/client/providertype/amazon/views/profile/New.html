@@ -1,0 +1,45 @@
+<template name="providerProfileForm">
+    <!-- <form id="profiles-form" class="hide modal fade stackdform" action="http://localhost:8000/api/profiles/" method="POST"> -->
+    <form id="profiles-form" class="hide modal fade stackdform">
+        <legend>Provider Profile</legend>
+
+        <label>Provider</label>
+        <select name="cloud_provider" id="profile-cloud-provider">
+        {{#each providers}}
+            <option value="{{id}}">{{title}}</option>
+        {{/each}}
+        </select>
+
+        <label>Titles</label>
+        <input id="profile-title" name="title" type="text" class="input-block-level input-large">
+
+        <label>Purpose</label>
+        <textarea id="profile-purpose" name="description" class="span5" rows="3"></textarea>
+        
+        <label>AMI</label>
+        <input id="profile-image-id" name="image_id" type="text" class="input-block-level input-large">
+
+        <label>Default host size</label>
+        <select id="profile-default-instance-size" name="default_instance_size" class="input-xlarge">
+        {{#each instancesizes}}
+            <option value="{{id}}">{{title}}</option>
+        {{/each}}
+        </select>
+
+        <label>Script</label>
+        <select id="profile-script" name="default_instance_size" class="input-xlarge">
+        {{#each profileScripts}}
+            <option>{{script}}</option>
+        {{/each}}
+        </select>
+
+        <label>SSH User</label>
+        <input id="profile-ssh-user" name="ssh_user" type="text" class=" input-large">
+
+        <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+            <!-- <button class="btn btn-primary" type="submit">Create Profile</button> -->
+            <button data-dismiss="modal" id="submit-profile" class="btn btn-primary">Create Profile</button>
+        </div>
+    </form>
+</template>

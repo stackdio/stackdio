@@ -1,10 +1,10 @@
 <template name="stackList">
     <div id="stacks" class="hide text-center view">
         <div>&nbsp;</div>
-        <h1>Running Stacks</h1>
+        <h2>Running Stacks</h2>
         <div class="btn-group pull-right">
-            <a class="btn btn-large btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                New Stack
+            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                <i class="icon-plus-sign"></i> New Stack
                 <span class="caret"></span>
             </a>
             <ul class="dropdown-menu">
@@ -21,18 +21,18 @@
 </template>
 
 <template name="stackTable">
-        <table id="stack-table" class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Description</th>
-                </tr>
-            </thead>
-            {{#each stacks}}
+    <table id="stack-table" class="table table-bordered">
+        <thead>
             <tr>
-                <td><a href="{{url}}">{{title}}</a></td>
-                <td>{{description}}</td>
+                <th>Name</th>
+                <th>Description</th>
             </tr>
-            {{/each}}
-        </table>
+        </thead>
+        {{#each stacks}}
+        <tr>
+            <td><a href="{{url}}">{{title}}</a></td>
+            <td>{{description}}</td>
+        </tr>
+        {{/each}}
+    </table>
 </template>

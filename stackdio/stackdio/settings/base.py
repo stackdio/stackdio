@@ -96,6 +96,7 @@ FIXTURE_DIRS = (
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -112,6 +113,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'rest_framework',
+    'rest_framework.authtoken',
     'south',
     'djcelery',
     'core',
@@ -169,6 +171,10 @@ TEMPLATE_LOADERS = (
 )
 
 ROOT_URLCONF = 'stackdio.urls'
+
+CORS_ORIGIN_WHITELIST = (
+    'localhost:3000',
+)
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'stackdio.wsgi.application'
