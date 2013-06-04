@@ -58,7 +58,9 @@ class StackListAPIView(generics.ListCreateAPIView):
         tasks.launch_stack.delay(stack.id)
 
         # return serialized stack object
-        serializer = StackSerializer(stack)
+        serializer = StackSerializer(stack, context={
+            'request': request,
+        })
         return Response(serializer.data)
 
 

@@ -8,6 +8,7 @@ from .models import Stack
 
 logger = get_task_logger(__name__)
 
+
 @celery.task(name='stacks.launch_stack')
 def launch_stack(stack_id):
     try:
@@ -25,7 +26,7 @@ def launch_stack(stack_id):
             '-y',                   # Assume yes to everything
             '-l',                   # Log level
             'error',
-            '-P',                   # Parallelize it
+            #'-P',                   # Parallelize it
             '-m',                   # Specify the map file  to use
             stack.map_file.path
         ]
@@ -46,8 +47,7 @@ def launch_stack(stack_id):
         stack.save()
 
     except Stack.DoesNotExist:
-        logger.error('Attempted to launch an unknown Stack with id {}' \
-            .format(stack_id))
+        logger.error('Attempted to launch an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while launching a Stack')
         stack.status = 'error'
