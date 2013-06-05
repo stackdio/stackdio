@@ -1,8 +1,8 @@
 import time
 
+import envoy
 import celery
 from celery.utils.log import get_task_logger
-from saltcloud.cli import SaltCloud
 
 from .models import Stack
 
@@ -21,23 +21,17 @@ def launch_stack(stack_id):
         stack.status = 'launching'
         stack.save()
 
-        client = SaltCloud()
-        args = [
-            '-y',                   # Assume yes to everything
-            '-l',                   # Log level
-            'error',
-            #'-P',                   # Parallelize it
-            '-m',                   # Specify the map file  to use
-            stack.map_file.path
-        ]
-
-        # TODO: This hangs in salt-cloud/celery, need to find a fix or
-        # workaround. Very critical piece of the system.
-        #x = client.run(args)
-        time.sleep(5)
+        # Launch stack
+        result = envoy.run('salt-cloud -y -ldebug -m {}'.format(stack.map_file.path))
+        if result.status_code > 0:
+            stack.status = Stack.ERROR
+            stack.status_detail = result.std_err
+            stack.save()
+            return
 
         # TODO: Run highstate machines with this stack id
         # e.g, `salt 'stack_id:{0}'.format(stack_id) state.highstate`
+        #envoy.run('salt \'{}\' state.highstate'.format('*'))
 
         stack.status = 'provisioning'
         stack.save()

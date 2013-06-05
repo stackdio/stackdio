@@ -108,7 +108,12 @@ class StackManager(models.Manager):
 
 
 class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
-    STATUS = Choices('pending', 'launching', 'provisioning', 'finished', 'error')
+    PENDING = 'pending'
+    LAUNCHING = 'launching'
+    PROVISIONING = 'provisioning'
+    FINISHED = 'finished'
+    ERROR = 'error'
+    STATUS = Choices(PENDING, LAUNCHING, PROVISIONING, FINISHED, ERROR)
 
     class Meta:
 
