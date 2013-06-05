@@ -23,12 +23,6 @@ Meteor.startup(function () {
                 item = items[i];
                 ProviderAccounts.insert(item);
             }
-
-            // Publish the Accounts in the all-Accounts channel
-            // Meteor.publish("all-Accounts", function () {
-            //     return Accounts.find(); // everything
-            // });
-
         }
     );
 

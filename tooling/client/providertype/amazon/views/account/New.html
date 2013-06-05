@@ -1,26 +1,56 @@
 <template name="awsAccountForm">
-    <form id="aws-account-form" class="hide modal fade stackdform">
+    <!-- 
+        For now, the id of an account form has to follow this pattern:
+            {type_name}-account-form
+        Where type_name is the value in the DB for the provider_type entry for this provider.
+    -->
+    <form id="aws-account-form" class="hide modal fade stackdform" action="">
         <legend>New AWS Account</legend>
 
         <input id="provider-type" type="hidden" value="1">
 
-        <label>Title</label>
-        <input id="account-title" type="text" class="input-block-level input-large">
 
-        <label>Purpose</label>
-        <textarea id="account-purpose" name="description" class="span5" rows="3"></textarea>
-        
-        <label>AWS Access Key</label>
-        <input id="aws-access-key" type="text" class="input-block-level input-large">
+        <div class="control-group">
+            <label class="control-label" for="accountTitle">Title</label>
+            <div class="controls">
+                <input id="accountTitle" name="accountTitle" type="text" class="input-xlarge">
+            </div>
+        </div>
 
-        <label>AWS Secret Key</label>
-        <input id="aws-secret-key" type="text" class="input-block-level input-large">
+        <div class="control-group">
+            <label class="control-label" for="accountPurpose">Purpose</label>
+            <div class="controls">
+                <textarea id="accountPurpose" name="accountPurpose" class="span6" rows="2"></textarea>
+            </div>
+        </div>
 
-        <label>AWS Keypair Name</label>
-        <input id="aws-keypair-name" type="text" class="input-block-level input-large">
+        <div class="control-group">
+            <label class="control-label" for="accessKey">AWS Access Key</label>
+            <div class="controls">
+                <input id="accessKey" name="accessKey" type="text" class="input-xlarge">
+            </div>
+        </div>
 
-        <label>Security groups</label>
-        <input id="aws-security-groups" type="text" class="input-block-level input-large" placeholder="comma,delimited,group,names">
+        <div class="control-group">
+            <label class="control-label" for="secretKey">AWS Secret Key</label>
+            <div class="controls">
+                <input id="secretKey" name="secretKey" type="text" class="input-xlarge">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label" for="keypairName">AWS Keypair Name</label>
+            <div class="controls">
+                <input id="keypairName" name="keypairName" type="text" class="input-xlarge">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label class="control-label" for="securityGroups">Security groups</label>
+            <div class="controls">
+                <input id="securityGroups" name="securityGroups" type="text" class="input-xlarge" placeholder="comma,delimited,group,names">
+            </div>
+        </div>
 
         <label>Private key file</label>
         <div class="fileupload fileupload-new" data-provides="fileupload">
@@ -35,9 +65,27 @@
         </div>
 
         <div class="modal-footer">
+
+            <div id="aws-account-fail" class="alert alert-block alert-error fade in hide">
+                <a class="close" data-hide="alert" href="#">&times;</a>
+                <h4 class="alert-heading">Oh snap! You suck at the cloud!</h4>
+                <p>Go back and enter in that data again... n00b...</p>
+            </div>
+
             <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-            <!-- <button class="btn btn-primary" type="submit">Create Profile</button> -->
-            <button data-dismiss="modal" id="submit-account" class="btn btn-primary">Create Account</button>
+            <button id="submit-account" class="btn btn-primary">Create Account</button>
+
         </div>
     </form>
+<!-- 
+    <div id="aws-account-fail" class="modal hide fade in" tabindex="-1" role="dialog" aria-labelledby="ohSnap" aria-hidden="true">
+        <div class="modal-header alert-error">
+            <button type="button" class="close" data-hide="modal" aria-hidden="true">×</button>
+            <h3 id="ohSnap">Oh snap! You suck at the cloud!</h3>
+            <small>Go back and enter in that data again... n00b...</small>
+        </div>
+        <div class="modal-body alert-error" id="awsErrorBody"></div>
+    </div>
+ -->
+
 </template>

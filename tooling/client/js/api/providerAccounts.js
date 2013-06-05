@@ -5,9 +5,54 @@ if (Meteor.isClient) {
         return ProviderAccounts.find({}).fetch();
     }
 
+    Template.awsAccountForm.rendered = function () {
+        $('#aws-account-form').validate({
+            rules: {
+                accountTitle: {
+                    minlength: 2,
+                    required: true
+                },
+                accountPurpose: {
+                    required: true,
+                    minlength: 2
+                },
+                accessKey: {
+                    minlength: 2,
+                    required: true
+                },
+                secretKey: {
+                    minlength: 2,
+                    required: true
+                },
+                keypairName: {
+                    minlength: 2,
+                    required: true
+                },
+                securityGroups: {
+                    minlength: 2,
+                    required: true
+                }
+            },
+            highlight: function(element) {
+                $(element).closest('.control-group').removeClass('success').addClass('error');
+            },
+            success: function(element) {
+                element
+                .text('OK!').addClass('valid')
+                .closest('.control-group').removeClass('error').addClass('success');
+            }
+        });
+    }
+
     Template.awsAccountForm.events({
         'click #submit-account': function (evt, node) {
             var formData = new FormData(), xhr = new XMLHttpRequest();
+
+            evt.preventDefault();
+            evt.stopPropagation();
+
+            // console.log(evt);
+            // return;
 
             // A reference to the files selected
             files = evt.target.form[7].files;
@@ -35,43 +80,26 @@ if (Meteor.isClient) {
             xhr.onloadend = function (evt) {
                 var response_data;
 
-                console.log(evt);
-                return;
-
                 // Show an animated message containing the result of the upload
-                if (evt.target.status === 200 || evt.target.status === 302) {
-                    response_data = JSON.decode(evt.target.responseText);
+                if (evt.target.status === 200 || evt.target.status === 201 || evt.target.status === 302) {
+                    ProviderAccounts.insert(JSON.decode(evt.target.responseText));
                 } else {
                     console.log(evt);
+                    var response = JSON.parse(evt.target.response);
+
+                    for (key in response) {
+                        failure = response[key];
+                        $('#aws-account-fail').append('<p>' + key + ': ' + failure + '</p>');
+                        // $('#awsErrorBody').append('<p>' + key + ': ' + failure + '</p>');
+                    }
+
+                    // $('#aws-account-fail').modal('show')
+                    $('#aws-account-fail').show();
                 }
             };
 
             // Start the upload process
             xhr.send(formData);
-
-
-            // Meteor.http.post('http://localhost:8000/api/providers/', 
-            //     {
-            //         headers: {
-            //             "Authorization": "Basic " + Base64.encode('testuser:password')
-            //         },
-            //         data: {
-            //             title: $('#profile-title').val(),
-            //             description: $('#profile-purpose').val(),
-            //             cloud_provider: $('#profile-cloud-provider').val(),
-            //             image_id: $('#profile-image-id').val(),
-            //             default_instance_size: $('#profile-default-instance-size').val(),
-            //             script: $('#profile-script').val(),
-            //             ssh_user: $('#profile-ssh-user').val()
-            //         }
-            //     },
-            //     function (error, response) {
-            //         if (response.hasOwnProperty('data')) {
-            //             ProviderProfiles.insert(response.data);
-            //         }
-            //     }
-            // );
-
         }
     });
 }
