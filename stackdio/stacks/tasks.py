@@ -11,17 +11,6 @@ from .models import Stack
 logger = get_task_logger(__name__)
 
 
-def log_envoy_result(result, out_file=None, err_file=None, add_date=True):
-    date_format = '%Y%m%d_%H%M%s'
-    date_string = '.{}'.format(datetime.now().strftime(date_format)) if add_date else ''
-
-    with open(out_file + date_string, 'w') as f:
-        f.write(result.std_out)
-
-    with open(err_file + date_string, 'w') as f:
-        f.write(result.std_err)
-
-
 @celery.task(name='stacks.launch_stack')
 def launch_stack(stack_id):
     try:
@@ -38,18 +27,27 @@ def launch_stack(stack_id):
         # file at runtime
 
         # Get paths
+        now = format(datetime.now().strftime('%Y%m%d_%H%M%s'))
         map_file = stack.map_file.path
-        out_file = map_file + '.out'
-        err_file = map_file + '.err'
+        log_file = stack.map_file.path + '.{}.log'.format(now)
 
         # Launch stack
-        result = envoy.run('salt-cloud -y -lquiet --out json --out-indent -1 '
-                           '-m {}'.format(stack.map_file.path))
-        log_envoy_result(result, out_file, err_file)
+        result = envoy.run(' '.join([
+            'salt-cloud',
+            '-y',                    # assume yes
+            '-lquiet',               # no logging on console
+            '--log-file {0}',        # where to log
+            '--log-file-level all',  # full logging
+            '--out json',            # return JSON formatted results
+            '--out-indent -1',       # don't format them; this is because of
+                                     # a bug in salt-cloud
+            '-m {1}',                # the map file to use for launching
+        ]).format(log_file, map_file))
 
         if result.status_code > 0:
             stack.status = Stack.ERROR
-            stack.status_detail = result.std_err
+            stack.status_detail = result.std_err \
+                if len(result.std_err) else result.std_out
             stack.save()
             return
 
@@ -60,6 +58,13 @@ def launch_stack(stack_id):
         stack.status = 'provisioning'
         stack.save()
         time.sleep(5)
+
+        # highstate, targeting only this stack
+        # result = envoy.run(' '.join([
+        #     'salt',
+        #     'G:{}'                  # targeting a specific grain attribute
+        #     'state.highstate',      # highstate!
+        # ]).format(stack_id))
 
         stack.status = 'finished'
         stack.save()
