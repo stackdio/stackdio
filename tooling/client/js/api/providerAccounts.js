@@ -6,6 +6,7 @@ if (Meteor.isClient) {
     }
 
     Template.awsAccountForm.rendered = function () {
+        console.log(ProviderAccounts.find({}).fetch());
         $('#aws-account-form').validate({
             rules: {
                 accountTitle: {
@@ -44,7 +45,14 @@ if (Meteor.isClient) {
         });
     }
 
+    Template.accountTable.events({
+        'click .aws_account': function (evt, node) {
+            console.log(arguments);
+        }
+    });
+
     Template.awsAccountForm.events({
+
         'click #submit-account': function (evt, node) {
             var formData = new FormData(), xhr = new XMLHttpRequest();
 

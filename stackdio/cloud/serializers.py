@@ -14,6 +14,7 @@ from .utils import get_provider_type_and_class
 class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
     provider_type = serializers.PrimaryKeyRelatedField()
+    provider_type_name = serializers.Field(source='provider_type.type_name')
 
     class Meta:
         model = CloudProvider
@@ -24,6 +25,7 @@ class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
             'slug', 
             'description', 
             'provider_type',
+            'provider_type_name',
             'yaml',
         )
 
