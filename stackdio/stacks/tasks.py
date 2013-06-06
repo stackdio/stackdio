@@ -27,7 +27,7 @@ def launch_stack(stack_id):
         # file at runtime
 
         # Get paths
-        now = format(datetime.now().strftime('%Y%m%d_%H%M%s'))
+        now = datetime.now().strftime('%Y%m%d_%H%M%S')
         map_file = stack.map_file.path
         log_file = stack.map_file.path + '.{}.log'.format(now)
 

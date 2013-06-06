@@ -3,6 +3,7 @@ Amazon Web Services provider for stackd.io
 """
 
 import os
+import stat
 import logging
 
 import boto
@@ -50,6 +51,9 @@ class AWSCloudProvider(BaseCloudProvider):
         private_key_path = os.path.join(self.provider_storage, 'id_rsa')
         with open(private_key_path, 'w') as f:
             f.write(files[self.PRIVATE_KEY_FILE].read())
+
+        # change the file permissions of the RSA key
+        os.chmod(private_key_path, stat.S_IRUSR)
 
         security_groups = filter(None, data[self.SECURITY_GROUPS].split(','))
         yaml_data = {
