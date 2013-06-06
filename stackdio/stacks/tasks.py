@@ -1,4 +1,6 @@
 import time
+import os.path
+from datetime import datetime
 
 import envoy
 import celery
@@ -7,6 +9,17 @@ from celery.utils.log import get_task_logger
 from .models import Stack
 
 logger = get_task_logger(__name__)
+
+
+def log_envoy_result(result, out_file=None, err_file=None, add_date=True):
+    date_format = '%Y%m%d_%H%M%s'
+    date_string = '.{}'.format(datetime.now().strftime(date_format)) if add_date else ''
+
+    with open(out_file + date_string, 'w') as f:
+        f.write(result.std_out)
+
+    with open(err_file + date_string, 'w') as f:
+        f.write(result.std_err)
 
 
 @celery.task(name='stacks.launch_stack')
@@ -21,8 +34,19 @@ def launch_stack(stack_id):
         stack.status = 'launching'
         stack.save()
 
+        # TODO: It would be nice if we could control the salt-cloud log
+        # file at runtime
+
+        # Get paths
+        map_file = stack.map_file.path
+        out_file = map_file + '.out'
+        err_file = map_file + '.err'
+
         # Launch stack
-        result = envoy.run('salt-cloud -y -ldebug -m {}'.format(stack.map_file.path))
+        result = envoy.run('salt-cloud -y -lquiet --out json --out-indent -1 '
+                           '-m {}'.format(stack.map_file.path))
+        log_envoy_result(result, out_file, err_file)
+
         if result.status_code > 0:
             stack.status = Stack.ERROR
             stack.status_detail = result.std_err
