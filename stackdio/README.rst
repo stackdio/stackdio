@@ -95,6 +95,7 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     # scripts. We won't be installing salt or salt cloud for a bit, but go
     # ahead and set them.
         
+    export SALT_ROOT=/opt/salt_root
     export SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
     export SALT_CLOUD_CONFIG=/opt/salt_root/etc/salt/cloud
     export SALT_CLOUDVM_CONFIG=/opt/salt_root/etc/salt/cloud.profiles

@@ -23,6 +23,9 @@ def getenv(var):
 # must have them set and available for things to function correctly.
 ##
 
+# This is the salt root
+SALT_ROOT = getenv('SALT_ROOT')
+
 # This is the salt-master configuration
 SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')
 

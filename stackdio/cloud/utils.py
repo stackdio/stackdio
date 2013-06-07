@@ -1,5 +1,7 @@
 import logging
 import yaml
+import os
+import re
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -85,3 +87,16 @@ def write_cloud_profiles_file():
     with open(settings.SALT_CLOUDVM_CONFIG, 'w') as f:
         f.write(yaml.safe_dump(profile_yaml,
                                default_flow_style=False))
+
+
+def findRoles(filename, pattern):
+    with open(filename) as file:
+        recording = False
+        for line in file:
+            # if line.startswith(pattern):
+            # re.match('^(\s)+-\s(?!match\:)', line)
+            if re.match(pattern, line):
+                yield line
+                recording = not recording
+            elif recording:
+                yield line

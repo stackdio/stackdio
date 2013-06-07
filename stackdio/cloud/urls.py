@@ -10,6 +10,7 @@ from .api import (
     CloudProfileListAPIView, 
     CloudProfileDetailAPIView,
     CloudProfileScriptsListAPIView,
+    SaltRolesListAPIView,
 )
 
 
@@ -50,6 +51,10 @@ urlpatterns = patterns('cloud.api',
     url(r'^profiles/(?P<pk>[0-9]+)/$', 
         CloudProfileDetailAPIView.as_view(), 
         name='cloudprofile-detail'),
+
+    url(r'^roles/$',
+        SaltRolesListAPIView.as_view(), 
+        name='saltroles-list'),
 
 )
 
