@@ -5,6 +5,10 @@ if (Meteor.isClient) {
         return ProviderAccounts.find({}).fetch();
     }
 
+    Template.stackList.accounts = function () {
+        return ProviderAccounts.find({}).fetch();
+    }
+
     Template.awsAccountForm.rendered = function () {
         console.log(ProviderAccounts.find({}).fetch());
         $('#aws-account-form').validate({

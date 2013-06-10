@@ -5,6 +5,10 @@ if (Meteor.isClient) {
         return ProviderProfiles.find({}).fetch();
     }
 
+    Template.awsHostForm.profiles = function () {
+        return ProviderProfiles.find({}).fetch();
+    }
+
     Template.providerProfileForm.events({
         'click #submit-profile': function (evt, node) {
 

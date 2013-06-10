@@ -1,27 +1,14 @@
-<body>
-
-</body>
-
 <template name="awsStackForm">
-    <form id="aws-stack-form" class="hide form-newstack view">
+    <form id="aws-stack-form" class="hide form-newstack modal">
         <legend>Stack Details</legend>
 
         <input id="stack-title" type="text" class="input-block-level" placeholder="Title">
-        <textarea id="stack-purpose"  class="span8" rows="5" placeholder="Purpose"></textarea>
+        <textarea id="stack-purpose"  class="span5" rows="4" placeholder="Purpose"></textarea>
 
         <legend>
-            Stack Roles 
+            Stack Hosts 
             <span class="pull-right">
-                <select style="margin:5px 0; width: 150px;">
-                    <option>hadoop</option>
-                    <option>accumulo</option>
-                    <option>node</option>
-                    <option>apache</option>
-                    <option>java</option>
-                </select>
-                <!-- <a class="btn" data-toggle="modal" href="#newState"><i class="icon-plus-sign"></i> Add State</a></legend> -->
-                <a class="btn" data-toggle="modal" href="#"><i class="icon-plus-sign"></i> Add Role</a>
-                
+                <a class="btn" data-toggle="modal" href="#aws-host-form"><i class="icon-plus-sign"></i> Add Host</a>
             </span>
         </legend>
 

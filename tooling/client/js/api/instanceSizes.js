@@ -4,4 +4,8 @@ if (Meteor.isClient) {
     Template.providerProfileForm.instancesizes = function () {
         return InstanceSizes.find({}).fetch();
     }
+
+    Template.awsHostForm.instancesizes = function () {
+        return InstanceSizes.find({}).fetch();
+    }
 }

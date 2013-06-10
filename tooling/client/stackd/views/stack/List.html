@@ -8,9 +8,9 @@
                 <span class="caret"></span>
             </a>
             <ul class="dropdown-menu">
-                {{#each providers}}
+                {{#each accounts}}
                     <li>
-                        <a href="#">{{title}}</a>
+                        <a data-toggle="modal" href="#aws-stack-form">{{title}}</a>
                     </li>
                 {{/each}}
             </ul>
