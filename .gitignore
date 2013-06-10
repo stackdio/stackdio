@@ -8,3 +8,4 @@ dev.db
 reload.sh
 tooling/.meteor
 tooling/public/node_modules
+ui/.meteor
