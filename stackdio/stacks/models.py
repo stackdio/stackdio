@@ -165,10 +165,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     'securitygroup': list(security_groups),
                     'minion': {
                         'master': master,
-                        'grains': {
-                            'roles': roles,
-                            'stack_id': int(self.id),
-                        }
+                        'roles': roles,
+                        'stack_id': int(self.id),
                     },
                 }
             })
