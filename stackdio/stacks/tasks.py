@@ -35,6 +35,7 @@ def launch_stack(stack_id):
         launch_cmd = ' '.join([
             'salt-cloud',
             '-y',                    # assume yes
+            '-P',                    # parallelize VM launching
             '-lquiet',               # no logging on console
             '--log-file {0}',        # where to log
             '--log-file-level all',  # full logging

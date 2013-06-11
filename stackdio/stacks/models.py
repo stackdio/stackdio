@@ -24,7 +24,7 @@ def get_map_file_path(obj, filename):
 
 
 def get_top_file_path(obj, filename):
-    return "stack_{}.sls".format(obj.id)
+    return "stack_{}_top.sls".format(obj.id)
 
 
 class StatusDetailModel(model_utils.models.StatusModel):
