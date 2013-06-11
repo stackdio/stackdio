@@ -206,7 +206,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
 
         if not self.top_file:
-            self.top_file.save('stack_{}.sls'.format(self.id), ContentFile(top_file_yaml))
+            self.top_file.save('stack_{}_top.sls'.format(self.id), ContentFile(top_file_yaml))
         else:
             with open(self.top_file.file, 'w') as f:
                 f.write(top_file_yaml)
