@@ -21,6 +21,7 @@ class Migration(SchemaMigration):
             ('status_detail', self.gf('django.db.models.fields.TextField')(blank=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['auth.User'])),
             ('map_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
+            ('top_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
         ))
         db.send_create_signal(u'stacks', ['Stack'])
 
@@ -217,6 +218,7 @@ class Migration(SchemaMigration):
             'status_changed': ('model_utils.fields.MonitorField', [], {'default': 'datetime.datetime.now', 'monitor': "'status'"}),
             'status_detail': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'top_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['auth.User']"})
         }
     }

@@ -73,11 +73,10 @@ def provision_stack(stack_id):
         stack.save()
 
         # Run the appropriate top file
-        provision_cmd = ' '.join(
         provision_cmd = ' '.join([
             'salt',
             '-C',                   # compound targeting
-            'G@stack_id:{}'.format(stack_id), # target the nodes in this stack only
+            'G@stack_id:{}'.format(stack_id),  # target the nodes in this stack only
             'state.top',            # run this stack's top file
             stack.top_file.name,
             '--out yaml'            # output in yaml format
