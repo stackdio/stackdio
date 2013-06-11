@@ -178,9 +178,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     'securitygroup': list(security_groups),
                     'minion': {
                         'master': master,
-                        'roles': roles,
-                        'stack_id': int(self.id),
-                    },
+                        'grains': {
+                            'roles': roles,
+                            'stack_id': int(self.id),
+                        }
+                    }
                 }
             })
         map_file_yaml = yaml.safe_dump(dict(profiles),
