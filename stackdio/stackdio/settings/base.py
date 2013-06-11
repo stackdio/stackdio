@@ -26,6 +26,9 @@ def getenv(var):
 # This is the salt root
 SALT_ROOT = getenv('SALT_ROOT')
 
+# Where salt states live (e.g., /srv/salt)
+SALT_STATE_ROOT = getenv('SALT_STATE_ROOT')
+
 # This is the salt-master configuration
 SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')
 

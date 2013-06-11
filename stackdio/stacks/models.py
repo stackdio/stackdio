@@ -23,6 +23,10 @@ def get_map_file_path(obj, filename):
     return "stacks/{0}/{1}.map".format(obj.user.username, obj.slug)
 
 
+def get_top_file_path(obj, filename):
+    return "stack_{}.sls".format(obj.id)
+
+
 class StatusDetailModel(model_utils.models.StatusModel):
     status_detail = models.TextField(blank=True)
 
@@ -101,8 +105,9 @@ class StackManager(models.Manager):
                 # set roles
                 host_obj.roles.add(*role_objs)
 
-        # generate stack
+        # generate salt and salt-cloud files
         stack_obj._generate_map_file()
+        stack_obj._generate_top_file()
 
         return stack_obj
 
@@ -128,6 +133,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         blank=True,
         default=None,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
+    top_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_top_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.SALT_STATE_ROOT))
 
     objects = StackManager()
 
@@ -178,6 +191,23 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         else:
             with open(self.map_file.file, 'w') as f:
                 f.write(map_file_yaml)
+
+    def _generate_top_file(self):
+        top_file_data = {}
+
+        for host in self.hosts.all():
+            top_file_data[host.hostname] = [r.role_name for r in host.roles.all()]
+
+        top_file_data = {
+            'base': top_file_data
+        }
+        top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
+
+        if not self.top_file:
+            self.top_file.save('stack_{}.sls'.format(self.id), ContentFile(top_file_yaml))
+        else:
+            with open(self.top_file.file, 'w') as f:
+                f.write(top_file_yaml)
 
 
 class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):
