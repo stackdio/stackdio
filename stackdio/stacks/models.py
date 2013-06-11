@@ -182,7 +182,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                             'roles': roles,
                             'stack_id': int(self.id),
                         }
-                    }
+                    },
                 }
             })
         map_file_yaml = yaml.safe_dump(dict(profiles),

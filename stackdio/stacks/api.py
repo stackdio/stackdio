@@ -1,4 +1,5 @@
 import logging
+import celery
 
 from rest_framework import (
     generics,
@@ -9,7 +10,12 @@ from rest_framework.response import Response
 
 from core.exceptions import ResourceConflict
 
-from . import tasks
+from .tasks import (
+    launch_stack,
+    provision_stack,
+    finish_stack,
+)
+
 from .models import (
     Stack,
     Host,
@@ -54,8 +60,10 @@ class StackListAPIView(generics.ListCreateAPIView):
         # create the stack object and foreign key objects
         stack = Stack.objects.create_stack(request.user, request.DATA)
 
-        # TODO: Queue up stack creation using Celery
-        tasks.launch_stack.delay(stack.id)
+        # Queue up stack creation and provisioning using Celery
+        (launch_stack.si(stack.id) | 
+         provision_stack.si(stack.id) |
+         finish_stack.si(stack.id))()
 
         # return serialized stack object
         serializer = StackSerializer(stack, context={
