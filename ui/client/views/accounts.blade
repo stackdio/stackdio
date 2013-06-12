@@ -1,0 +1,16 @@
+div.view
+    h2
+        !Provider Accounts
+    table#stack-table.table.table-bordered(ng-controller="accountCtrl")
+        thead
+            tr
+                th
+                    !Name
+                th
+                    !Description
+        tr(ng-repeat="acct in ProviderAccounts | orderBy: id" ng-class="sel($index)" ng-click="toggleSelect($index)")
+            td
+                a(class="{{acct.provider_type_name}}_account" id="{{acct.provider_type_name}}_1" href="{{acct.url}}")
+                    !{{acct.title}}
+            td
+                !{{acct.description}}

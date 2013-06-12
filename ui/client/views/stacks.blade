@@ -1,0 +1,16 @@
+div.view
+    h2
+        !Stacks
+    table#stack-table.table.table-bordered(ng-controller="stackCtrl")
+        thead
+            tr
+                th
+                    !Name
+                th
+                    !Description
+        tr(ng-repeat="stack in Stacks | orderBy: id" ng-class="sel($index)" ng-click="toggleSelect($index)")
+            td
+                a(href="{{url}}")
+                    !{{title}}
+            td
+                !{{description}}

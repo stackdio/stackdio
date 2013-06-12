@@ -1,0 +1,40 @@
+div.view
+    div.control-group
+        label(for='instanceSize' class='control-label')
+            !Instance sizelabel
+        div.controls(ng-controller="instanceCtrl")
+            select(id="instanceSize" name="instanceSize" class="input-xlarge")
+                option(value="{{size.id}}" ng-repeat="size in InstanceSizes | orderBy: id" ng-class="sel($index)" ng-click="toggleSelect($index)")
+                    !{{size.description}}
+
+    h2
+        !Stacks
+    table#stack-table.table.table-bordered(ng-controller="stackCtrl")
+        thead
+            tr
+                th
+                    !Name
+                th
+                    !Description
+        tr(ng-repeat="stack in Stacks | orderBy: id" ng-class="sel($index)" ng-click="toggleSelect($index)")
+            td
+                a(href="{{url}}")
+                    !{{title}}
+            td
+                !{{description}}
+
+    h2
+        !Provider Accounts
+    table#stack-table.table.table-bordered(ng-controller="accountCtrl")
+        thead
+            tr
+                th
+                    !Name
+                th
+                    !Description
+        tr(ng-repeat="acct in ProviderAccounts | orderBy: id" ng-class="sel($index)" ng-click="toggleSelect($index)")
+            td
+                a(class="{{acct.provider_type_name}}_account" id="{{acct.provider_type_name}}_1" href="{{acct.url}}")
+                    !{{acct.title}}
+            td
+                !{{acct.description}}
