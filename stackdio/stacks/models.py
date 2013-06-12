@@ -1,6 +1,7 @@
 import logging
 import collections
 import socket
+import envoy
 
 from django.conf import settings
 from django.db import models, transaction
@@ -32,6 +33,11 @@ class StatusDetailModel(model_utils.models.StatusModel):
 
     class Meta:
         abstract = True
+
+    def set_status(self, status, detail=''):
+        self.status = status
+        self.status_detail = detail
+        return self.save()
 
 
 class StackManager(models.Manager):
@@ -118,7 +124,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     PROVISIONING = 'provisioning'
     FINISHED = 'finished'
     ERROR = 'error'
-    STATUS = Choices(PENDING, LAUNCHING, PROVISIONING, FINISHED, ERROR)
+    DESTROYING = 'destroying'
+    STATUS = Choices(PENDING, 
+                     LAUNCHING, 
+                     PROVISIONING, 
+                     FINISHED, 
+                     ERROR,
+                     DESTROYING)
 
     class Meta:
 
@@ -210,6 +222,46 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         else:
             with open(self.top_file.file, 'w') as f:
                 f.write(top_file_yaml)
+
+    def query_hosts(self):
+        '''
+        Uses salt-cloud to query all the hosts for the given stack id.
+        '''
+        try:
+            logger.info('get_hosts_info: {0!r}'.format(self))
+             
+            # salt-cloud command to pull host information with
+            # a yaml output
+            query_cmd = ' '.join([
+                'salt-cloud',
+                '-m {0}',                   # map file to use
+                '-F',                       # execute a full query
+                '--out yaml'                # output in yaml format
+            ]).format(self.map_file.path)
+
+            logger.debug('Query hosts command: {0}'.format(query_cmd))
+            result = envoy.run(query_cmd)
+
+            # Run the envoy stdout through the yaml parser. The format
+            # will always be a dictionary with one key (the provider type)
+            # and a value that's a dictionary containing keys for every
+            # host in the stack. 
+            provider_type, result = yaml.safe_load(result.std_out).popitem()
+            return result
+
+        except Exception, e:
+            logger.exception('Unhandled exception')
+            raise
+
+    def create_dns_resource_records(self):
+        '''
+        '''
+        hosts = self.query_hosts()
+
+    def delete_dns_resource_records(self):
+        '''
+        '''
+        hosts = self.query_hosts()
 
 
 class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):

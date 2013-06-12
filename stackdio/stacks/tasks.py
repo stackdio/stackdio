@@ -1,3 +1,4 @@
+import yaml
 import time
 import os.path
 from datetime import datetime
@@ -20,8 +21,7 @@ def launch_stack(stack_id):
         # Use SaltCloud to launch machines using the given stack's
         # map_file that should already be generated
 
-        stack.status = 'launching'
-        stack.save()
+        stack.set_status(Stack.LAUNCHING)
 
         # TODO: It would be nice if we could control the salt-cloud log
         # file at runtime
@@ -32,7 +32,7 @@ def launch_stack(stack_id):
         log_file = stack.map_file.path + '.{}.log'.format(now)
 
         # Launch stack
-        launch_cmd = ' '.join([
+        cmd = ' '.join([
             'salt-cloud',
             '-y',                    # assume yes
             '-P',                    # parallelize VM launching
@@ -45,23 +45,19 @@ def launch_stack(stack_id):
             '-m {1}',                # the map file to use for launching
         ]).format(log_file, map_file)
 
-        logger.debug('Launch command: {0}'.format(launch_cmd))
-        result = envoy.run(launch_cmd)
+        logger.debug('Excuting command: {0}'.format(cmd))
+        result = envoy.run(cmd)
 
         if result.status_code > 0:
-            stack.status = Stack.ERROR
-            stack.status_detail = result.std_err \
-                if len(result.std_err) else result.std_out
-            stack.save()
+            err_msg = result.std_err if len(result.std_err) else result.std_out
+            stack.set_status(Stack.ERROR, err_msg)
             return
 
     except Stack.DoesNotExist:
         logger.error('Attempted to launch an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while launching a Stack')
-        stack.status = 'error'
-        stack.status_detail = str(e)
-        stack.save()
+        stack.set_status(Stack.ERROR, str(e))
 
 @celery.task(name='stacks.provision_stack')
 def provision_stack(stack_id):
@@ -70,11 +66,10 @@ def provision_stack(stack_id):
         logger.info('Provisioning stack: {0!r}'.format(stack))
 
         # Update status
-        stack.status = 'provisioning'
-        stack.save()
+        stack.set_status(Stack.PROVISIONING)
 
         # Run the appropriate top file
-        provision_cmd = ' '.join([
+        cmd = ' '.join([
             'salt',
             '-C',                   # compound targeting
             'G@stack_id:{}'.format(stack_id),  # target the nodes in this stack only
@@ -83,8 +78,8 @@ def provision_stack(stack_id):
             '--out yaml'            # output in yaml format
         ]).format(stack_id)
 
-        logger.debug('Provision command: {0}'.format(provision_cmd))
-        result = envoy.run(provision_cmd)
+        logger.debug('Excuting command: {0}'.format(cmd))
+        result = envoy.run(cmd)
 
         logger.debug('salt state.top stdout:')
         logger.debug(result.std_out)
@@ -96,9 +91,7 @@ def provision_stack(stack_id):
         logger.error('Attempted to provision an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while provisioning a Stack')
-        stack.status = 'error'
-        stack.status_detail = str(e)
-        stack.save()
+        stack.set_status(Stack.ERROR, str(e))
 
 
 @celery.task(name='stacks.finish_stack')
@@ -108,13 +101,51 @@ def finish_stack(stack_id):
         logger.info('Finishing stack: {0!r}'.format(stack))
 
         # Update status
-        stack.status = 'finished'
-        stack.save()
+        stack.set_status(Stack.FINISHED)
 
     except Stack.DoesNotExist:
         logger.error('Attempted to provision an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while finishing a Stack')
-        stack.status = 'error'
-        stack.status_detail = str(e)
-        stack.save()
+        stack.set_status(Stack.ERROR, str(e))
+
+
+@celery.task(name='stacks.destroy_stack', ignore_result=True)
+def destroy_stack(stack_id):
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Destroying stack: {0!r}'.format(stack))
+
+        # Check for map file, and if it doesn't exist just remove
+        # the stack and return
+        if not os.path.isfile(stack.map_file.path):
+            logger.warn('Map file for stack {} does not exist. '
+                        'Deleting stack anyway.'.format(stack))
+            stack.delete()
+            return
+
+        # Run the appropriate top file
+        cmd = ' '.join([
+            'salt-cloud',
+            '-y',                   # assume yes
+            '-P',                   # destroy in parallel
+            '-m {0}',               # the map file to use for launching
+            '-d',                   # destroy the stack
+            '--out yaml',           # output in yaml
+        ]).format(stack.map_file.path)
+
+        logger.debug('Excuting command: {0}'.format(cmd))
+        result = envoy.run(cmd)
+
+        if result.status_code > 0:
+            err_msg = result.std_err if len(result.std_err) else result.std_out
+            stack.set_status(Stack.ERROR, err_msg)
+            return
+
+        stack.delete()
+
+    except Stack.DoesNotExist:
+        logger.error('Attempted to destroy an unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception while finishing a Stack')
+        stack.set_status(Stack.ERROR, str(e))

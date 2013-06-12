@@ -10,21 +10,20 @@ from rest_framework.response import Response
 
 from core.exceptions import ResourceConflict
 
-from .tasks import (
-    launch_stack,
-    provision_stack,
-    finish_stack,
-)
-
+from . import tasks
 from .models import (
     Stack,
     Host,
     SaltRole,
 )
 
-from .serializers import StackSerializer, HostSerializer, SaltRoleSerializer
+from .serializers import (
+    StackSerializer, 
+    HostSerializer, 
+    SaltRoleSerializer,
+)
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class StackListAPIView(generics.ListCreateAPIView):
@@ -61,9 +60,14 @@ class StackListAPIView(generics.ListCreateAPIView):
         stack = Stack.objects.create_stack(request.user, request.DATA)
 
         # Queue up stack creation and provisioning using Celery
-        (launch_stack.si(stack.id) | 
-         provision_stack.si(stack.id) |
-         finish_stack.si(stack.id))()
+        task_chain = (
+            tasks.launch_stack.si(stack.id) | 
+            tasks.provision_stack.si(stack.id) |
+            tasks.finish_stack.si(stack.id)
+        )
+        
+        # execute the chain
+        task_chain()
 
         # return serialized stack object
         serializer = StackSerializer(stack, context={
@@ -76,11 +80,25 @@ class StackDetailAPIView(generics.RetrieveDestroyAPIView):
     model = Stack
     serializer_class = StackSerializer
 
+    def delete(self, request, *args, **kwargs):
+        '''
+        Overriding the delete method to make sure the stack
+        is taken offline before being deleted
+        '''
+        # Update the status
+        stack = self.get_object()
+        msg = 'Stack will be removed upon successful termination ' \
+              'of all machines'
+        stack.set_status(Stack.DESTROYING, msg)
+        logger.debug(stack)
+        logger.debug(stack.status_detail)
 
-class StackActionAPIView(generics.SingleObjectAPIView):
-    model = Stack
-    serializer_class = StackSerializer
+        # Async destroy the stack
+        tasks.destroy_stack.delay(stack.id)
 
+        # Return the stack while its deleting
+        serializer = self.get_serializer(stack)
+        return Response(serializer.data)
 
 class HostListAPIView(generics.ListAPIView):
     model = Host
@@ -91,6 +109,26 @@ class StackHostsAPIView(HostListAPIView):
     def get_queryset(self):
         return Host.objects.filter(stack__pk=self.kwargs.get('pk'))
 
+    def get(self, request, *args, **kwargs):
+        '''
+        Override get method to add additional host-specific info
+        to the result that is looked up via salt.
+        '''
+        result = super(StackHostsAPIView, self).get(request, *args, **kwargs)
+
+        stack = request.user.stacks.get(id=kwargs.get('pk'))
+        query_results = stack.query_hosts()
+
+        # TODO: query_results are highly dependent on the underlying
+        # salt-cloud driver and there's no guarantee that the result
+        # format for AWS will be the same for Rackspace. In the future,
+        # we should probably pass the results off to the cloud provider
+        # implementation to format into a generic result for the user
+        for host in result.data['results']:
+            hostname = host['hostname']
+            host.update(query_results[hostname]['extra'])
+
+        return result
 
 class HostDetailAPIView(generics.RetrieveAPIView):
     model = Host

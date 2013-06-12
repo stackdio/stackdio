@@ -3,7 +3,6 @@ from django.conf.urls import patterns, include, url
 from .api import (
     StackListAPIView, 
     StackDetailAPIView,
-    StackActionAPIView,
     StackHostsAPIView, 
     StackDetailAPIView,
     HostListAPIView, 
@@ -27,10 +26,6 @@ urlpatterns = patterns('stacks.api',
     url(r'^stacks/(?P<pk>[0-9]+)/$', 
         StackDetailAPIView.as_view(), 
         name='stack-detail'),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/action/$', 
-        StackActionAPIView.as_view(), 
-        name='stack-action'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/hosts$', 
         StackHostsAPIView.as_view(), 
