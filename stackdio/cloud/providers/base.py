@@ -96,3 +96,12 @@ class BaseCloudProvider(object):
                 errors[key].append(self.REQUIRED_MESSAGE)
 
         return len(errors) == 0, errors
+
+    @classmethod
+    def register_dns(self, hosts):
+        '''
+        Given a list of 'stacks.Host' objects, this method's
+        implementation should handle the registration of DNS
+        for the given cloud provider (e.g., Route53 on AWS)
+        '''
+        raise NotImplementedError()

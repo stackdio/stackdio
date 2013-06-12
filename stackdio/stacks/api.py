@@ -1,5 +1,6 @@
 import logging
 import celery
+from collections import defaultdict
 
 from rest_framework import (
     generics,
@@ -62,6 +63,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         # Queue up stack creation and provisioning using Celery
         task_chain = (
             tasks.launch_stack.si(stack.id) | 
+            tasks.configure_dns.si(stack.id) | 
             tasks.provision_stack.si(stack.id) |
             tasks.finish_stack.si(stack.id)
         )
@@ -138,3 +140,4 @@ class HostDetailAPIView(generics.RetrieveAPIView):
 class SaltRoleListAPIView(generics.ListAPIView):
     model = SaltRole
     serializer_class = SaltRoleSerializer
+

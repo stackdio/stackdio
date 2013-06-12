@@ -2,14 +2,19 @@ import yaml
 import time
 import os.path
 from datetime import datetime
+from collections import defaultdict
 
 import envoy
 import celery
 from celery.utils.log import get_task_logger
 
+from cloud.utils import get_provider_type_and_class
+
 from .models import Stack
 
 logger = get_task_logger(__name__)
+
+ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
 
 
 @celery.task(name='stacks.launch_stack')
@@ -49,9 +54,66 @@ def launch_stack(stack_id):
         result = envoy.run(cmd)
 
         if result.status_code > 0:
-            err_msg = result.std_err if len(result.std_err) else result.std_out
-            stack.set_status(Stack.ERROR, err_msg)
-            return
+
+            if ERROR_ALL_NODES_EXIST not in (result.std_err, result.std_out):
+                logger.error(result.status_code)
+                logger.error(result.std_out)
+                logger.error(result.std_err)
+                err_msg = result.std_err if len(result.std_err) else result.std_out
+                stack.set_status(Stack.ERROR, err_msg)
+                return
+
+        # All hosts are running (we hope!) so now we can pull the host metadata
+        # and store what we want to keep track of.
+
+        # Update status
+        stack.set_status(Stack.CONFIGURING, 'Updating host metadata from running stack machines.')
+
+        # Use salt-cloud to look up host information we need now that
+        # they machines are running
+        query_results = stack.query_hosts()
+
+        for host in stack.hosts.all():
+            # FIXME: This is cloud provider specific. Should farm it out to
+            # the right implementation
+            host.public_dns = query_results[host.hostname]['extra']['dns_name']
+            host.save()
+
+    except Stack.DoesNotExist:
+        logger.error('Attempted to launch an unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception while launching a Stack')
+        stack.set_status(Stack.ERROR, str(e))
+
+@celery.task(name='stacks.configure_dns')
+def configure_dns(stack_id):
+    '''
+    Must be ran after a Stack is up and running and all host information has
+    been pulled and stored in the database
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Configuring DNS for stack: {0!r}'.format(stack))
+
+        stack.set_status(Stack.CONFIGURING)
+
+        # build up a map of cloud provider to hosts as each host could
+        # be on a separate cloud provider
+        hosts = stack.hosts.all()
+        provider_host_map = defaultdict(list)
+        for host in hosts:
+            provider = host.get_provider()
+            provider_host_map[provider].append(host)
+
+        for provider_obj, hosts in provider_host_map.iteritems():
+            # Lookup the proper cloud provider implementation
+            provider_type, provider_class = \
+                get_provider_type_and_class(provider.provider_type.id)
+
+            # Use the provider implementation to register a set of hosts
+            # with the appropriate cloud's DNS service
+            provider_impl = provider_class(obj=provider_obj)
+            provider_impl.register_dns(hosts)
 
     except Stack.DoesNotExist:
         logger.error('Attempted to launch an unknown Stack with id {}'.format(stack_id))
@@ -101,6 +163,11 @@ def finish_stack(stack_id):
         logger.info('Finishing stack: {0!r}'.format(stack))
 
         # Update status
+        stack.set_status(Stack.FINALIZING, 'Performing any last minute updates and checks.')
+
+        # TODO: Are there any last minute updates and checks?
+
+        # Update status
         stack.set_status(Stack.FINISHED)
 
     except Stack.DoesNotExist:
@@ -108,7 +175,6 @@ def finish_stack(stack_id):
     except Exception, e:
         logger.exception('Unhandled exception while finishing a Stack')
         stack.set_status(Stack.ERROR, str(e))
-
 
 @celery.task(name='stacks.destroy_stack', ignore_result=True)
 def destroy_stack(stack_id):
