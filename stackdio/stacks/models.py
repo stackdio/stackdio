@@ -121,7 +121,9 @@ class StackManager(models.Manager):
 class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     PENDING = 'pending'
     LAUNCHING = 'launching'
+    CONFIGURING = 'configuring'
     PROVISIONING = 'provisioning'
+    FINALIZING = 'finalizing'
     FINISHED = 'finished'
     ERROR = 'error'
     DESTROYING = 'destroying'
@@ -287,11 +289,24 @@ class Host(TimeStampedModel):
                                    related_name='hosts')
 
     hostname = models.CharField(max_length=64)
+
     security_groups = models.ManyToManyField('stacks.SecurityGroup',
                                              related_name='hosts')
 
+    # This must be updated automatically after the host is online.
+    # After salt-cloud has launched VMs, we will need to look up
+    # the DNS name set by whatever cloud provider is being used
+    # and set it here
+    public_dns = models.CharField(max_length=64, blank=True)
+
     def __unicode__(self):
         return self.hostname
+
+    def get_provider(self):
+        return self.cloud_profile.cloud_provider
+
+    def get_provider_type(self):
+        return self.cloud_profile.cloud_provider.provider_type
 
 
 class SecurityGroup(TimeStampedModel):

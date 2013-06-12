@@ -30,6 +30,7 @@ urlpatterns = patterns('stacks.api',
     url(r'^stacks/(?P<pk>[0-9]+)/hosts$', 
         StackHostsAPIView.as_view(), 
         name='stack-hosts'),
+
 )
 
 

@@ -16,6 +16,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'url',
             'hostname', 
+            'public_dns', 
             'created', 
         )
 

@@ -7,9 +7,8 @@ from .models import (
     SecurityGroup,
 )
 
+
 class StackAdmin(admin.ModelAdmin):
-
-
     list_display = [
         'title',
         'slug',
@@ -19,9 +18,8 @@ class StackAdmin(admin.ModelAdmin):
     ]
 admin.site.register(Stack, StackAdmin)
 
-class SaltRoleAdmin(admin.ModelAdmin):
-    
 
+class SaltRoleAdmin(admin.ModelAdmin):
     list_display = [
         'title',
         'slug',
@@ -29,20 +27,19 @@ class SaltRoleAdmin(admin.ModelAdmin):
     ]
 admin.site.register(SaltRole, SaltRoleAdmin)
 
-class HostAdmin(admin.ModelAdmin):
-    
 
+class HostAdmin(admin.ModelAdmin):
     list_display = [
         'stack',
         'cloud_profile',
         'instance_size',
         'hostname',
+        'public_dns',
     ]
 admin.site.register(Host, HostAdmin)
 
-class SecurityGroupAdmin(admin.ModelAdmin):
-    
 
+class SecurityGroupAdmin(admin.ModelAdmin):
     list_display = [
         'group_name',
     ]
