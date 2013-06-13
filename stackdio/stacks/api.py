@@ -63,7 +63,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         # Queue up stack creation and provisioning using Celery
         task_chain = (
             tasks.launch_stack.si(stack.id) | 
-            tasks.configure_dns.si(stack.id) | 
+            tasks.register_dns.si(stack.id) | 
             tasks.provision_stack.si(stack.id) |
             tasks.finish_stack.si(stack.id)
         )
@@ -95,8 +95,14 @@ class StackDetailAPIView(generics.RetrieveDestroyAPIView):
         logger.debug(stack)
         logger.debug(stack.status_detail)
 
-        # Async destroy the stack
-        tasks.destroy_stack.delay(stack.id)
+        # Queue up stack destroy tasks
+        task_chain = (
+            tasks.unregister_dns.si(stack.id) | 
+            tasks.destroy_stack.si(stack.id)
+        )
+        
+        # execute the chain
+        task_chain()
 
         # Return the stack while its deleting
         serializer = self.get_serializer(stack)

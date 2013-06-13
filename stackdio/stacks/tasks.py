@@ -2,13 +2,15 @@ import yaml
 import time
 import os.path
 from datetime import datetime
-from collections import defaultdict
 
 import envoy
 import celery
 from celery.utils.log import get_task_logger
 
-from cloud.utils import get_provider_type_and_class
+from cloud.utils import (
+    get_provider_host_map,
+    get_provider_type_and_class,
+)
 
 from .models import Stack
 
@@ -80,35 +82,28 @@ def launch_stack(stack_id):
             host.save()
 
     except Stack.DoesNotExist:
-        logger.error('Attempted to launch an unknown Stack with id {}'.format(stack_id))
+        logger.exception('Attempted to launch an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while launching a Stack')
         stack.set_status(Stack.ERROR, str(e))
 
-@celery.task(name='stacks.configure_dns')
-def configure_dns(stack_id):
+@celery.task(name='stacks.register_dns')
+def register_dns(stack_id):
     '''
     Must be ran after a Stack is up and running and all host information has
     been pulled and stored in the database
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
-        logger.info('Configuring DNS for stack: {0!r}'.format(stack))
+        logger.info('Registering DNS for stack: {0!r}'.format(stack))
 
         stack.set_status(Stack.CONFIGURING)
 
-        # build up a map of cloud provider to hosts as each host could
-        # be on a separate cloud provider
-        hosts = stack.hosts.all()
-        provider_host_map = defaultdict(list)
-        for host in hosts:
-            provider = host.get_provider()
-            provider_host_map[provider].append(host)
-
+        provider_host_map = get_provider_host_map(stack)
         for provider_obj, hosts in provider_host_map.iteritems():
             # Lookup the proper cloud provider implementation
             provider_type, provider_class = \
-                get_provider_type_and_class(provider.provider_type.id)
+                get_provider_type_and_class(provider_obj.provider_type.id)
 
             # Use the provider implementation to register a set of hosts
             # with the appropriate cloud's DNS service
@@ -116,7 +111,7 @@ def configure_dns(stack_id):
             provider_impl.register_dns(hosts)
 
     except Stack.DoesNotExist:
-        logger.error('Attempted to launch an unknown Stack with id {}'.format(stack_id))
+        logger.exception('Attempted to launch an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while launching a Stack')
         stack.set_status(Stack.ERROR, str(e))
@@ -150,7 +145,7 @@ def provision_stack(stack_id):
         logger.debug(result.std_err)
 
     except Stack.DoesNotExist:
-        logger.error('Attempted to provision an unknown Stack with id {}'.format(stack_id))
+        logger.exception('Attempted to provision an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while provisioning a Stack')
         stack.set_status(Stack.ERROR, str(e))
@@ -171,7 +166,7 @@ def finish_stack(stack_id):
         stack.set_status(Stack.FINISHED)
 
     except Stack.DoesNotExist:
-        logger.error('Attempted to provision an unknown Stack with id {}'.format(stack_id))
+        logger.exception('Attempted to provision an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while finishing a Stack')
         stack.set_status(Stack.ERROR, str(e))
@@ -211,7 +206,36 @@ def destroy_stack(stack_id):
         stack.delete()
 
     except Stack.DoesNotExist:
-        logger.error('Attempted to destroy an unknown Stack with id {}'.format(stack_id))
+        logger.exception('Attempted to destroy an unknown Stack with id {}'.format(stack_id))
     except Exception, e:
         logger.exception('Unhandled exception while finishing a Stack')
+        stack.set_status(Stack.ERROR, str(e))
+
+@celery.task(name='stacks.unregister_dns')
+def unregister_dns(stack_id):
+    '''
+    Removes all host information from DNS. Intended to be used just before a stack
+    is terminated or stopped or put into some state where DNS no longer applies.
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
+
+        stack.set_status(Stack.CONFIGURING, 'Unregistering DNS entries.')
+
+        provider_host_map = get_provider_host_map(stack)
+        for provider_obj, hosts in provider_host_map.iteritems():
+            # Lookup the proper cloud provider implementation
+            provider_type, provider_class = \
+                get_provider_type_and_class(provider_obj.provider_type.id)
+
+            # Use the provider implementation to register a set of hosts
+            # with the appropriate cloud's DNS service
+            provider_impl = provider_class(obj=provider_obj)
+            provider_impl.unregister_dns(hosts)
+
+    except Stack.DoesNotExist:
+        logger.exception('Attempted to unregister DNS for a Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception while unregistering DNS for a stack')
         stack.set_status(Stack.ERROR, str(e))

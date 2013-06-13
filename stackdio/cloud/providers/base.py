@@ -105,3 +105,12 @@ class BaseCloudProvider(object):
         for the given cloud provider (e.g., Route53 on AWS)
         '''
         raise NotImplementedError()
+
+    @classmethod
+    def unregister_dns(self, hosts):
+        '''
+        Given a list of 'stacks.Host' objects, this method's
+        implementation should handle the de-registration of DNS
+        for the given cloud provider (e.g., Route53 on AWS)
+        '''
+        raise NotImplementedError()

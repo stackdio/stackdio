@@ -39,7 +39,7 @@
         "pk": 1,
         "model": "stacks.saltrole",
         "fields": {
-            "description": "This role will provision a machine as a CDH NameNode",
+            "description": "This role will provision a machine as a CDH NameNode.",
             "title": "CDH4 NameNode",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
@@ -51,12 +51,48 @@
         "pk": 2,
         "model": "stacks.saltrole",
         "fields": {
-            "description": "This role will provision a machine as a CDH DataNode",
+            "description": "This role will provision a machine as a CDH DataNode.",
             "title": "CDH4 DataNode",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
             "role_name": "cdh4datanode",
             "slug": "cdh4-datanode"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "stacks.saltrole",
+        "fields": {
+            "description": "This role will provision a machine with an Apache2 webserver.",
+            "title": "Apache2",
+            "created": "2013-05-17T19:41:00Z",
+            "modified": "2013-05-17T19:41:00Z",
+            "role_name": "apache2",
+            "slug": "apache2"
+        }
+    },
+    {
+        "pk": 4,
+        "model": "stacks.saltrole",
+        "fields": {
+            "description": "This role will provision a machine with a NodeJS server.",
+            "title": "NodeJS",
+            "created": "2013-05-17T19:41:00Z",
+            "modified": "2013-05-17T19:41:00Z",
+            "role_name": "nodejs",
+            "slug": "nodejs"
+        }
+    },
+    {
+        "pk": 5,
+        "model": "stacks.saltrole",
+        "fields": {
+            "description": "This role will provision a machine with a MySQL database server.",
+            "title": "MySQL",
+            "created": "2013-05-17T19:41:00Z",
+            "modified": "2013-05-17T19:41:00Z",
+            "role_name": "mysql",
+            "slug": "mysql"
         }
     },
     {

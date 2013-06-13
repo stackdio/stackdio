@@ -2,6 +2,7 @@ import logging
 import yaml
 import os
 import re
+from collections import defaultdict
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -12,6 +13,29 @@ from core import exceptions as core_exceptions
 import models
 
 logger = logging.getLogger(__name__)
+
+def get_provider_host_map(stack):
+    '''
+    Given a Stack object (`stacks.models.Host`), return a dictionary
+    with keys for unique providers objects (`cloud.models.CloudProvider`) and 
+    values being a list of the hosts that use that provider:
+
+    {
+        aws_provider_object: [Host1, Host8, ... ],
+        rackspace_provider_object: [Host7, Host13, ... ],
+        ...
+        ...
+    }
+    '''
+    # build up a map of cloud provider to hosts as each host could
+    # be on a separate cloud provider
+    hosts = stack.hosts.all()
+    provider_host_map = defaultdict(list)
+    for host in hosts:
+        provider = host.get_provider()
+        provider_host_map[provider].append(host)
+
+    return provider_host_map
 
 def get_provider_type_and_class(provider_type_id):
 
@@ -80,7 +104,7 @@ def write_cloud_profiles_file():
             'provider': profile.cloud_provider.slug,
             'image': profile.image_id,
             'size': profile.default_instance_size.title,
-            'ssh-user': profile.ssh_user,
+            'ssh_username': profile.ssh_user,
             'script': profile.script,
         }
 

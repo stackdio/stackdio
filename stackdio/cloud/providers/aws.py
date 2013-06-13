@@ -15,10 +15,137 @@ from cloud.providers.base import BaseCloudProvider
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_ROUTE53_TTL = 30
 
-##
-# Required parameters that must be defined
-##
+
+class Route53Domain(object):
+    def __init__(self, access_key, secret_key, domain):
+        '''
+        `access_key`
+            The AWS access key id
+        `secret_key`
+            The AWS secret access key
+        `domain`
+            An existing Route53 domain to manage
+        '''
+        self.access_key = access_key
+        self.secret_key = secret_key
+        self.domain = domain
+
+        # Loaded after connection is made
+        self.hosted_zone = None
+        self.zone_id = None
+        
+        self.conn = boto.connect_route53(self.access_key,
+                                         self.secret_key)
+
+        self._load_domain()
+
+    def _load_domain(self):
+        '''
+        Attempts to look up a Route53 hosted zone given a domain name (they're
+        much easier to remember than a zone id). Once loaded, pulls out the
+        zone id and stores it in `zone_id`
+        '''
+        # look up the hosted zone based on the domain
+        response = self.conn.get_hosted_zone_by_name(self.domain)
+        self.hosted_zone = response['GetHostedZoneResponse']['HostedZone']
+
+        # Get the zone id, but strip off the first part /hostedzone/
+        self.zone_id = self.hosted_zone['Id'][len('/hostedzone/'):]
+
+    def get_rrnames_set(self):
+        '''
+        Returns a set of resource record names for our zone id
+        '''
+        rr_sets = self.conn.get_all_rrsets(self.zone_id)
+        logger.debug('get_all_rrsets: {0!r}'.format(rr_sets))
+        return set([rr.name for rr in rr_sets])
+
+    def start_rr_transcation(self):
+        '''
+        Creates a new Route53 ResourceRecordSets object that is used
+        internally like a transaction of sorts. You may add or delete 
+        many resource records using a single set by calling the
+        `add_rr_cname` and `delete_rr_cname` methods. Finish the transcation
+        with `finish_rr_transcation`
+
+        NOTE: Calling this method again before finishing will not finish
+        an existing transcation or delete it. To cancel an existing
+        transaction use the `cancel_rr_transaction`.
+        '''
+
+        if not hasattr(self, '_rr_txn') or self._rr_txn is None:
+            # Return a new ResourceRecordSets "transaction"
+            self._rr_txn = ResourceRecordSets(self.conn, self.zone_id)
+
+    def finish_rr_transaction(self):
+        '''
+        If a transcation exists, commit the changes to Route53
+        '''
+        if self._rr_txn is not None:
+            self._rr_txn.commit()
+            self._rr_txn = None
+
+    def cancel_rr_transaction(self):
+        '''
+        Basically deletes the existing transaction.
+        '''
+        self._rr_txn = None
+
+    def add_rr_cname(self, record_name, record_value, ttl=86400):
+        '''
+        NOTE: This method must be called after `start_rr_transcation`.
+
+        Adds a new record to the existing resource record transaction.
+
+        `record_name`
+            The subdomain part of the CNAME record (e.g., web-1 for a domain
+            like web-1.dev.example.com)
+
+        `record_value`
+            The host or IP the CNAME record will point to.
+
+        `ttl`
+            The TTL for the record in seconds, default is 24 hours
+        '''
+        # Update the record name to be fully qualified with the domain
+        # for this instance. The period on the end is required.
+        record_name += '.{}.'.format(self.domain)
+
+        # Check for an existing CNAME record and remove it before
+        # updating it
+        rr_names = self.get_rrnames_set()
+        if record_name in rr_names:
+            self._delete_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
+
+        self._add_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
+
+    def delete_rr_cname(self, record_name, record_value, ttl=86400):
+        '''
+        Almost the same as `add_rr_cname` but it deletes the CNAME record
+
+        NOTE: The name, value, and ttl must all match an existing CNAME record
+        or Route53 will not allow it to be removed.
+        '''
+        # Update the record name to be fully qualified with the domain
+        # for this instance. The period on the end is required.
+        record_name += '.{}.'.format(self.domain)
+
+        # Only remove the record if it exists
+        rr_names = self.get_rrnames_set()
+        if record_name in rr_names:
+            self._delete_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
+
+    def _add_rr_record(self, record_name, record_values, record_type, **kwargs):
+        rr = self._rr_txn.add_change('CREATE', record_name, record_type, **kwargs)
+        for v in record_values:
+            rr.add_value(v)
+
+    def _delete_rr_record(self, record_name, record_values, record_type, **kwargs):
+        rr = self._rr_txn.add_change('DELETE', record_name, record_type, **kwargs)
+        for v in record_values:
+            rr.add_value(v)
 
 class AWSCloudProvider(BaseCloudProvider):
     SHORT_NAME = 'aws'
@@ -111,12 +238,7 @@ class AWSCloudProvider(BaseCloudProvider):
         
         return result, errors
 
-    def register_dns(self, hosts):
-        '''
-        Given a list of 'stacks.Host' objects, this method's
-        implementation should handle the registration of DNS
-        for the given cloud provider (e.g., Route53 on AWS)
-        '''
+    def route53_domain_connection(self):
 
         # Load the configuration file to get a few things we'll need
         # to manage DNS
@@ -127,50 +249,45 @@ class AWSCloudProvider(BaseCloudProvider):
         secret_key = config_data['key']
         domain = config_data['route53_domain']
 
-        # make sure the domain ends in a period
-        #if not domain.endswith('.'):
-        #    domain += '.'
+        # load a new Route53Domain class and return it
+        return Route53Domain(access_key, secret_key, domain)
 
-        logger.debug('%s', access_key)
-        logger.debug('%s', secret_key)
-        logger.debug('%s', domain)
-
-        # connect to Route53
-        conn = boto.connect_route53(access_key, secret_key)
-
-        # look up the zone id based on the domain
-        hosted_zone = conn.get_hosted_zone_by_name(domain)['GetHostedZoneResponse']['HostedZone']
-        logger.debug('HOSTED ZONE: %r', hosted_zone)
-
-        # Get the zone id, but strip off the first part /hostedzone/
-        zone_id = hosted_zone['Id'][len('/hostedzone/'):]
-        logger.debug('ZONE ID: %s', zone_id)
-
-        # All the current resource records for the zone
-        rr_sets = conn.get_all_rrsets(zone_id)
-        rr_names = set([rr.name for rr in rr_sets])
+    def register_dns(self, hosts):
+        '''
+        Given a list of 'stacks.Host' objects, this method's
+        implementation should handle the registration of DNS
+        for the given cloud provider (e.g., Route53 on AWS)
+        '''
 
         # Start a resource record "transaction"
-        rr_changes = ResourceRecordSets(conn, zone_id)
+        r53_domain = self.route53_domain_connection()
+        r53_domain.start_rr_transcation()
 
-        # for each host, add an entry to the resource record set
+        # for each host, create a CNAME record
         for host in hosts:
-            # TODO: What do we do if the CNAME does exist? We can't assume it's not
-            # valid, right or do we depend on the hostname being unique in the DB
-            # before we ever get here???
-            name = host.hostname + '.' + domain
-            logger.debug('Setting CNAME for {}'.format(name))
+            r53_domain.add_rr_cname(host.hostname,
+                                    host.public_dns, 
+                                    ttl=DEFAULT_ROUTE53_TTL)
 
-            # If the CNAME record already exists, delete it
-            if name in rr_names:
-                logger.debug('CNAME alread exists for {}. Deleting.'.format(name))
-                rr = rr_changes.add_change('DELETE', name, 'CNAME')
-                rr.add_value(host.public_dns)
-            
-            # Add the CNAME record and point it at the public DNS of the instance
-            rr = rr_changes.add_change('CREATE', name, 'CNAME', ttl=30)
-            rr.add_value(host.public_dns)
+        # Finish the transaction
+        r53_domain.finish_rr_transaction()
+        
+    def unregister_dns(self, hosts):
+        '''
+        Given a list of 'stacks.Host' objects, this method's
+        implementation should handle the de-registration of DNS
+        for the given cloud provider (e.g., Route53 on AWS)
+        '''
 
-        # Commit the resource set changes
-        logger.debug(repr(rr_changes))
-        rr_changes.commit()
+        # Start a resource record "transaction"
+        r53_domain = self.route53_domain_connection()
+        r53_domain.start_rr_transcation()
+
+        # for each host, delete the CNAME record
+        for host in hosts:
+            r53_domain.delete_rr_cname(host.hostname, 
+                                       host.public_dns,
+                                       ttl=DEFAULT_ROUTE53_TTL)
+
+        # Finish the transaction
+        r53_domain.finish_rr_transaction()
