@@ -9,3 +9,7 @@ reload.sh
 tooling/.meteor
 tooling/public/node_modules
 ui/.meteor
+stackdui/server/node_modules
+stackdui/src/.sencha
+stackdui/src/ext
+stackdui/src/packages

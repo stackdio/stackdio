@@ -25,6 +25,7 @@ def api_root(request, format=None):
         },
         'hosts': reverse('host-list', request=request, format=format),
         'stacks': reverse('stack-list', request=request, format=format),
+        'roles': reverse('saltrole-list', request=request, format=format),
         # 'blueprints': reverse('blueprint-list', request=request, format=format),
         # 'layers': reverse('layer-list', request=request, format=format),
         # 'states': reverse('state-list', request=request, format=format),

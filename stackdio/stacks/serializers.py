@@ -54,7 +54,9 @@ class SaltRoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = SaltRole
         fields = (
+            'id', 
             'url', 
             'created', 
             'title', 
+            'role_name', 
         )

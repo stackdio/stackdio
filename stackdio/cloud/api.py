@@ -42,21 +42,6 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-class SaltRolesListAPIView(generics.ListAPIView):
-    def get(self, request, *args, **kwargs):
-        slsFiles = []
-        roles = []
-        for root, dirs, files in os.walk(settings.SALT_ROOT):
-            for filename in fnmatch.filter(files, '*.sls'):
-                slsFiles.append(os.path.join(root, filename))
-
-        for slsFile in slsFiles:
-            for role in findRoles(slsFile, '^(?:(\s){4}-\s{1})(?!match\:)'):
-                roles.append({'name':role.split('-')[1].strip()})
-
-        return Response(roles)
-
-
 class CloudProviderTypeListAPIView(generics.ListAPIView):
     model = CloudProviderType
     serializer_class = CloudProviderTypeSerializer

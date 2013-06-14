@@ -7,6 +7,8 @@ from .api import (
     StackDetailAPIView,
     HostListAPIView, 
     HostDetailAPIView,
+    SaltRoleListAPIView,
+    SaltRoleDetailAPIView,
 )
 
 urlpatterns = patterns('stacks.api',
@@ -30,6 +32,14 @@ urlpatterns = patterns('stacks.api',
     url(r'^stacks/(?P<pk>[0-9]+)/hosts$', 
         StackHostsAPIView.as_view(), 
         name='stack-hosts'),
+
+    url(r'^roles/$', 
+        SaltRoleListAPIView.as_view(), 
+        name='saltrole-list'),
+
+    url(r'^roles/(?P<pk>[0-9]+)/$', 
+        SaltRoleDetailAPIView.as_view(), 
+        name='saltrole-detail'),
 
 )
 

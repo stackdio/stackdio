@@ -147,3 +147,8 @@ class SaltRoleListAPIView(generics.ListAPIView):
     model = SaltRole
     serializer_class = SaltRoleSerializer
 
+
+class SaltRoleDetailAPIView(generics.RetrieveAPIView):
+    model = SaltRole
+    serializer_class = SaltRoleSerializer
+
