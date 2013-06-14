@@ -27,6 +27,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Stack
         fields = (
+            'id',
             'url',
             'user',
             'hosts',

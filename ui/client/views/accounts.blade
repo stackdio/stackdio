@@ -1,6 +1,18 @@
 div.view
     h2
         !Provider Accounts
+
+        div.btn-group.pull-right(ng-controller='providerTypeCtrl' ng-class='{open: open}')
+            a.btn.btn-primary.dropdown-toggle(data-toggle='dropdown' href='#' ng-click='open=!open')
+                i.icon-plus-sign
+                !  New Account
+                !  
+                span.caret
+            ul.dropdown-menu
+                li(ng-repeat="type in ProviderTypes | orderBy: id" ng-class="sel($index)")
+                    a(data-toggle="modal" href="#account-form" open-dialog)
+                        !{{type.title}}
+
     table#stack-table.table.table-bordered(ng-controller="accountCtrl")
         thead
             tr

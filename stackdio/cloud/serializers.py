@@ -52,6 +52,7 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = CloudProviderType
         fields = (
+            'id',
             'url',
             'title', 
             'type_name', 

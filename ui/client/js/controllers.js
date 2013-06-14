@@ -32,3 +32,12 @@ stackCtrl = function ($scope) {
     $scope.Stacks = Stacks;
     $scope.Stacks = $scope.Stacks.find({}).fetch();
 }
+
+ModalCtrl = function ($scope) {
+   this.setModel = function (data) {
+      $scope.$apply(function () {
+         $scope.data = data;
+      });
+   }
+   $scope.setModel = this.setModel;    
+}

@@ -52,7 +52,7 @@ class SaltRolesListAPIView(generics.ListAPIView):
 
         for slsFile in slsFiles:
             for role in findRoles(slsFile, '^(?:(\s){4}-\s{1})(?!match\:)'):
-                roles.append(role.split('-')[1].strip())
+                roles.append({'name':role.split('-')[1].strip()})
 
         return Response(roles)
 
@@ -111,7 +111,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
             raise core_exceptions.BadRequest('Provider types does not exist.')
 
 
-class CloudProviderDetailAPIView(generics.RetrieveDestroyAPIView):
+class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = CloudProvider
     serializer_class = CloudProviderSerializer
 
@@ -134,7 +134,7 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
         write_cloud_profiles_file()
 
 
-class CloudProfileDetailAPIView(generics.RetrieveDestroyAPIView):
+class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = CloudProfile
     serializer_class = CloudProfileSerializer
 

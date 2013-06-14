@@ -1,6 +1,11 @@
 div.view
     h2
         !Stacks
+        div.pull-right
+            a.btn.btn-primary(data-toggle="modal" href="#stack-form")
+                i.icon-plus-sign
+                !  New Stack
+
     table#stack-table.table.table-bordered(ng-controller="stackCtrl")
         thead
             tr
