@@ -218,6 +218,21 @@ Ext.define('stackdio.controller.Application', {
                     me.selectedAccount = grid.getSelectionModel().getSelection()[0];
                     me.showAccountForm(me.selectedAccount);
                 }
+            },
+
+
+
+
+            '#accounts-button': {
+                click: function (btn, e) {
+                    Ext.getCmp('content-area').getLayout().setActiveItem(1);
+                }
+            },
+
+            '#dashboard-button': {
+                click: function (btn, e) {
+                    Ext.getCmp('content-area').getLayout().setActiveItem(0);
+                }
             }
         });
 
@@ -354,7 +369,7 @@ Ext.define('stackdio.controller.Application', {
 
     */
     refs: [{
-        ref: 'resultsPanel', selector: '#results-panel'
+        ref: 'newAccountButon', selector: '#results-panel'
     }]
 });
 

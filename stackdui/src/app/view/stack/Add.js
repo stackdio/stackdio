@@ -61,7 +61,7 @@ Ext.define('stackdio.view.stack.Add', {
             ,ui: 'inverse'
             ,scale: 'small'
             ,iconCls: 'icon-plus-sign'
-            ,style: { float: 'right', margin: '10px 10px 0 0' }
+            ,style: 'float: right; margin: 10px 10px 0 0'
         },
         {
             xtype:'grid',

@@ -16,7 +16,8 @@ Ext.define('stackdio.view.Viewport', {
         id: 'title-panel',
         title: false,
         border: true,
-        height: 45
+        height: 40,
+        margin: '5px 20px'
     },{
         region: 'west',
         xtype: 'container',
@@ -25,178 +26,174 @@ Ext.define('stackdio.view.Viewport', {
         border: true,
         layout: 'anchor',
         defaults: {
-            xtype: 'button'
-            ,margin: '0 4px'
-            ,anchor: '100%'
-        },
-        style: {
-            margin: '30px 10px'
+            xtype: 'button',
+            margin: 4,
+            anchor: '100%',
+            style: {
+                textAlign: 'left'
+            }
         },
 
         items: [
             {
-                id: 'dashboard-button'
-                ,text: 'Dashboard'
-                ,ui: 'default'
-                ,scale: 'medium'
-                ,iconCls: 'icon-home'
+                id: 'dashboard-button',
+                text: 'Dashboard',
+                ui: 'default',
+                scale: 'medium',
+                iconCls: 'icon-home'
             },
             {
-                id: 'accounts-button'
-                ,text: 'Providers Accounts'
-                ,ui: 'default'
-                ,scale: 'medium'
-                ,iconCls: 'icon-hdd'
+                id: 'accounts-button',
+                text: 'Providers Accounts',
+                ui: 'default',
+                scale: 'medium',
+                iconCls: 'icon-hdd'
             },
             {
-                id: 'profiles-button'
-                ,text: 'Account Profiles'
-                ,ui: 'default'
-                ,scale: 'medium'
-                ,iconCls: 'icon-off'
+                id: 'profiles-button',
+                text: 'Account Profiles',
+                ui: 'default',
+                scale: 'medium',
+                iconCls: 'icon-off'
             },
             {
-                id: 'stacks-button'
-                ,text: 'Stacks'
-                ,ui: 'default'
-                ,scale: 'medium'
-                ,iconCls: 'icon-tasks'
+                id: 'stacks-button',
+                text: 'Stacks',
+                ui: 'default',
+                scale: 'medium',
+                iconCls: 'icon-tasks'
             },
             {
-                id: 'roles-button'
-                ,text: 'Roles'
-                ,ui: 'default'
-                ,scale: 'medium'
-                ,iconCls: 'icon-user'
+                id: 'roles-button',
+                text: 'Roles',
+                ui: 'default',
+                scale: 'medium',
+                iconCls: 'icon-user'
             }
         ]
     },{
         region: 'center',
         xtype: 'panel',
+        id: 'content-area',
         title: false,
         border: false,
         margin: '20px 50px',
+        layout: 'card',
 
         items: [
             {
                 xtype: 'container',
-                layout: 'hbox',
                 items: [
-                {
-                    xtype: 'container'
-                    ,html: '<h3>Provider Accounts</h3>'
-                    ,flex: 1
-                },
-                {
-                    xtype: 'container',
-                    items: {
-                        xtype: 'button'
-                        ,id: 'create-account'
-                        ,width: 120
-                        ,text: 'New Account'
-                        ,ui: 'info'
-                        ,iconCls: 'icon-plus-sign'
-                        ,style: {
-                            margin: '20px 0 0 0'
-                            ,float: 'right'
+                    {
+                        xtype: 'container',
+                        layout: 'hbox',
+                        items: [
+                            {
+                                xtype: 'container',
+                                html: '<h3>Provider Accounts</h3>',
+                                flex: 1
+                            },
+                            {
+                                xtype: 'container',
+                                items: {
+                                    xtype: 'button',
+                                    id: 'create-account',
+                                    width: 120,
+                                    text: 'New Account',
+                                    ui: 'info',
+                                    iconCls: 'icon-plus-sign',
+                                    style: 'margin: 20px 0 0 0; float: right'
+                                },
+                                flex: 1
+                            }
+                        ]
+                    },
+                    {
+                        xtype: 'accountList',
+                        id: 'accountList'
+                    },
+                    {
+                        xtype: 'container',
+                        layout: 'hbox',
+                        items: [
+                        {
+                            xtype: 'container',
+                            html: '<h3>Account Profiles</h3>',
+                            flex: 1
+                        },
+                        {
+                            xtype: 'container',
+                            items: {
+                                xtype: 'button',
+                                id: 'create-profile',
+                                width: 120,
+                                text: 'New Profile',
+                                ui: 'info',
+                                iconCls: 'icon-plus-sign',
+                                style: 'margin: 20px 0 0 0; float: right'
+                            },
+                            flex: 1
                         }
-                    }
-                    ,flex: 1
-                }
-                ]
-            },
-            {
-                xtype: 'accountList'
-            },
-            {
-                xtype: 'container',
-                layout: 'hbox',
-                items: [
-                {
-                    xtype: 'container'
-                    ,html: '<h3>Account Profiles</h3>'
-                    ,flex: 1
-                },
-                {
-                    xtype: 'container',
-                    items: {
-                        xtype: 'button'
-                        ,id: 'create-profile'
-                        ,width: 120
-                        ,text: 'New Profile'
-                        ,ui: 'info'
-                        ,iconCls: 'icon-plus-sign'
-                        ,style: {
-                            margin: '20px 0 0 0'
-                            ,float: 'right'
+                        ]
+                    },
+                    {
+                        xtype: 'profileList'
+                    },
+                    {
+                        xtype: 'container',
+                        layout: 'hbox',
+                        items: [
+                        {
+                            xtype: 'container',
+                            html: '<h3>Stacks</h3>',
+                            flex: 1
+                        },
+                        {
+                            xtype: 'container',
+                            items: {
+                                xtype: 'button',
+                                id: 'create-stack',
+                                width: 120,
+                                text: 'New Stack',
+                                ui: 'info',
+                                iconCls: 'icon-plus-sign',
+                                style: 'margin: 20px 0 0 0; float: right'
+                            },
+                            flex: 1
                         }
+                        ]
+                    },
+                    {
+                        xtype: 'stackList'
+                    },
+                    {
+                        xtype: 'container',
+                        layout: 'hbox',
+                        items: [
+                            {
+                                xtype: 'container',
+                                html: '<h3>Roles</h3>',
+                                flex: 1
+                            },
+                            {
+                                xtype: 'container',
+                                items: {
+                                    xtype: 'button',
+                                    id: 'create-role',
+                                    width: 120,
+                                    text: 'New Role',
+                                    ui: 'info',
+                                    iconCls: 'icon-plus-sign',
+                                    style: 'margin: 20px 0 0 0; float: right'
+                                },
+                                flex: 1
+                            }
+                        ]
+                    },
+                    {
+                        xtype: 'roleList'
                     }
-                    ,flex: 1
-                }
                 ]
-            },
-            {
-                xtype: 'profileList'
-            },
-            {
-                xtype: 'container',
-                layout: 'hbox',
-                items: [
-                {
-                    xtype: 'container'
-                    ,html: '<h3>Stacks</h3>'
-                    ,flex: 1
-                },
-                {
-                    xtype: 'container',
-                    items: {
-                        xtype: 'button'
-                        ,id: 'create-stack'
-                        ,width: 120
-                        ,text: 'New Stack'
-                        ,ui: 'info'
-                        ,iconCls: 'icon-plus-sign'
-                        ,style: {
-                            margin: '20px 0 0 0'
-                            ,float: 'right'
-                        }
-                    }
-                    ,flex: 1
-                }
-                ]
-            },
-            {
-                xtype: 'stackList'
-            },
-            {
-                xtype: 'container',
-                layout: 'hbox',
-                items: [
-                {
-                    xtype: 'container'
-                    ,html: '<h3>Roles</h3>'
-                    ,flex: 1
-                },
-                {
-                    xtype: 'container',
-                    items: {
-                        xtype: 'button'
-                        ,id: 'create-role'
-                        ,width: 120
-                        ,text: 'New Role'
-                        ,ui: 'info'
-                        ,iconCls: 'icon-plus-sign'
-                        ,style: {
-                            margin: '20px 0 0 0'
-                            ,float: 'right'
-                        }
-                    }
-                    ,flex: 1
-                }
-                ]
-            },
-            {
-                xtype: 'roleList'
             }
         ]
     }]
