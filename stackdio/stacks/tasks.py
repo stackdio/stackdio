@@ -17,6 +17,7 @@ from .models import Stack
 logger = get_task_logger(__name__)
 
 ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
+ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found already running'
 
 
 @celery.task(name='stacks.launch_stack')
@@ -57,13 +58,16 @@ def launch_stack(stack_id):
 
         if result.status_code > 0:
 
-            if ERROR_ALL_NODES_EXIST not in (result.std_err, result.std_out):
-                logger.error(result.status_code)
-                logger.error(result.std_out)
-                logger.error(result.std_err)
+            if ERROR_ALL_NODES_EXIST not in result.std_err and \
+               ERROR_ALL_NODES_EXIST not in result.std_out and \
+               ERROR_ALL_NODES_RUNNING not in result.std_err and \
+               ERROR_ALL_NODES_RUNNING not in result.std_out:
+                logger.error('launch command status_code: {}'.format(result.status_code))
+                logger.error('launch command std_out: "{}"'.format(result.std_out))
+                logger.error('launch command std_err: "{}"'.format(result.std_err))
                 err_msg = result.std_err if len(result.std_err) else result.std_out
                 stack.set_status(Stack.ERROR, err_msg)
-                return
+                return False
 
         # All hosts are running (we hope!) so now we can pull the host metadata
         # and store what we want to keep track of.
@@ -78,7 +82,10 @@ def launch_stack(stack_id):
         for host in stack.hosts.all():
             # FIXME: This is cloud provider specific. Should farm it out to
             # the right implementation
-            host.public_dns = query_results[host.hostname]['extra']['dns_name']
+            dns_name = query_results[host.hostname]['extra']['dns_name']
+            logger.debug('{} = {}'.format(host.hostname, dns_name))
+
+            host.public_dns = dns_name
             host.save()
 
     except Stack.DoesNotExist:

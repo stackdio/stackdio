@@ -59,7 +59,6 @@ class Route53Domain(object):
         Returns a set of resource record names for our zone id
         '''
         rr_sets = self.conn.get_all_rrsets(self.zone_id)
-        logger.debug('get_all_rrsets: {0!r}'.format(rr_sets))
         return set([rr.name for rr in rr_sets])
 
     def start_rr_transcation(self):

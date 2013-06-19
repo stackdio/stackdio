@@ -256,13 +256,31 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
             logger.debug('Query hosts command: {0}'.format(query_cmd))
             result = envoy.run(query_cmd)
+            yaml_result = yaml.safe_load(result.std_out)
 
             # Run the envoy stdout through the yaml parser. The format
             # will always be a dictionary with one key (the provider type)
             # and a value that's a dictionary containing keys for every
             # host in the stack. 
-            provider_type, result = yaml.safe_load(result.std_out).popitem()
-            return result
+            logger.debug('Query hosts result: {0!r}'.format(result.std_out))
+
+            # yaml_result contains all host information in the stack, but
+            # we have to dig a bit to get individual host metadata out
+            # of provider and provider type dictionaries
+            host_result = {}
+            for host in self.hosts.all():
+                cloud_provider = host.cloud_profile.cloud_provider
+                provider_type = cloud_provider.provider_type
+
+                # each host is buried in a cloud provider type dict that's 
+                # inside a cloud provider name dict
+                host_result[host.hostname] = yaml_result \
+                    .get(cloud_provider.slug, {}) \
+                    .get(provider_type.type_name, {}) \
+                    .get(host.hostname, None)
+
+            logger.debug('query_hosts transform: {0!r}'.format(host_result))
+            return host_result
 
         except Exception, e:
             logger.exception('Unhandled exception')
