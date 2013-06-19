@@ -11,15 +11,6 @@ Ext.define('stackdio.view.stack.List', {
         startCollapsed: true
     }],
 
-    // tbar: [
-    //     {
-    //         xtype: 'button',
-    //         text: 'New Stack',
-    //         iconCls: 'add-icon',
-    //         id: 'create-stack'
-    //     }
-    // ],
-
     columns: [
         { 
             header: 'Title',
@@ -29,12 +20,12 @@ Ext.define('stackdio.view.stack.List', {
         { 
             header: 'Purpose',
             dataIndex: 'description',
-            flex: 4
+            flex: 3
         },
         { 
             header: 'Status',
             dataIndex: 'status',
-            flex: 4
+            flex: 1
         }
     ]
 });

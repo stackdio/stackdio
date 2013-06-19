@@ -120,14 +120,14 @@ class StackManager(models.Manager):
 
 
 class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
+    ERROR = 'error'
     PENDING = 'pending'
+    FINISHED = 'finished'
     LAUNCHING = 'launching'
+    FINALIZING = 'finalizing'
+    DESTROYING = 'destroying'
     CONFIGURING = 'configuring'
     PROVISIONING = 'provisioning'
-    FINALIZING = 'finalizing'
-    FINISHED = 'finished'
-    ERROR = 'error'
-    DESTROYING = 'destroying'
     STATUS = Choices(PENDING, 
                      LAUNCHING, 
                      PROVISIONING, 

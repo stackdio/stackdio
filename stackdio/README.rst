@@ -96,6 +96,7 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     # ahead and set them.
         
     export SALT_ROOT=/opt/salt_root
+    export SALT_STATE_ROOT=/opt/salt_root/srv/salt
     export SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
     export SALT_CLOUD_CONFIG=/opt/salt_root/etc/salt/cloud
     export SALT_CLOUDVM_CONFIG=/opt/salt_root/etc/salt/cloud.profiles

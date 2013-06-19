@@ -64,13 +64,15 @@ Ext.define('stackdio.controller.Application', {
             },
             '#create-stack': {
                 click: function (btn, e) {
+                    // When creating a new stack, clear out the store that hold host definitions for stack creation
+                    Ext.getStore('StackHosts').removeAll();
                     me.showStackForm();
                 }
             },
             '#save-stack': {
                 click: function (btn, e) {
                     var r, rec, record = me.stackForm.down('form').getForm().getValues();
-                    var h, host, hosts = Ext.getStore('Hosts').data.items;
+                    var h, host, hosts = Ext.getStore('StackHosts').data.items;
                     var stack = {
                         title: record.title,
                         description: record.description,
@@ -89,7 +91,6 @@ Ext.define('stackdio.controller.Application', {
                         });
                     }
 
-                    console.log(record);
                     console.log(stack);
 
                     StackdIO.request({
