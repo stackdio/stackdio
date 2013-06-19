@@ -1,6 +1,6 @@
 import yaml
 import time
-import os.path
+import os
 from datetime import datetime
 
 import envoy
@@ -33,10 +33,10 @@ def launch_stack(stack_id):
         # TODO: It would be nice if we could control the salt-cloud log
         # file at runtime
 
-        # Get paths
-        now = datetime.now().strftime('%Y%m%d_%H%M%S')
-        map_file = stack.map_file.path
-        log_file = stack.map_file.path + '.{}.log'.format(now)
+        # Set up logging for this launch
+        log_dir = stack.get_log_directory()
+        log_file = os.path.join(log_dir, 
+                                '{}.launch.log'.format(stack.slug))
 
         # Launch stack
         cmd = ' '.join([
@@ -50,7 +50,7 @@ def launch_stack(stack_id):
             '--out-indent -1',       # don't format them; this is because of
                                      # a bug in salt-cloud
             '-m {1}',                # the map file to use for launching
-        ]).format(log_file, map_file)
+        ]).format(log_file, stack.map_file.path)
 
         logger.debug('Excuting command: {0}'.format(cmd))
         result = envoy.run(cmd)
@@ -125,6 +125,11 @@ def provision_stack(stack_id):
         # Update status
         stack.set_status(Stack.PROVISIONING)
 
+        # Set up logging for this task
+        log_dir = stack.get_log_directory()
+        log_file = os.path.join(log_dir, 
+                                '{}.provision.log'.format(stack.slug))
+
         # Run the appropriate top file
         cmd = ' '.join([
             'salt',
@@ -132,17 +137,24 @@ def provision_stack(stack_id):
             'G@stack_id:{}'.format(stack_id),  # target the nodes in this stack only
             'state.top',            # run this stack's top file
             stack.top_file.name,
-            '--out yaml'            # output in yaml format
+            '--out yaml',           # output in yaml format
         ]).format(stack_id)
 
         logger.debug('Excuting command: {0}'.format(cmd))
         result = envoy.run(cmd)
 
-        logger.debug('salt state.top stdout:')
-        logger.debug(result.std_out)
+        logger.debug('Command results:')
+        logger.debug('status_code = {}'.format(result.status_code))
+        logger.debug('std_out = {}'.format(result.std_out))
+        logger.debug('std_err = {}'.format(result.std_err))
 
-        logger.debug('salt state.top stderr:')
-        logger.debug(result.std_err)
+        with open(log_file, 'a') as f:
+            f.write('\n')
+            f.write(result.std_out)
+
+        # TODO: probably should figure out if an error occurred. A 
+        # good mix of looking at envoy's status_code and parsing
+        # the log file would be nice.
 
     except Stack.DoesNotExist:
         logger.exception('Attempted to provision an unknown Stack with id {}'.format(stack_id))

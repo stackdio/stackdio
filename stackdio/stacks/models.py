@@ -1,3 +1,4 @@
+import os
 import logging
 import collections
 import socket
@@ -169,7 +170,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
         profiles = collections.defaultdict(list)
 
-        for host in self.hosts.all():
+        hosts = self.hosts.all()
+        cluster_size = len(hosts)
+
+        for host in hosts:
             # load provider yaml to extract default security groups
             cloud_provider = host.cloud_profile.cloud_provider
             cloud_provider_yaml = yaml.safe_load(
@@ -186,6 +190,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             # add in cloud provider security groups
             security_groups.add(*cloud_provider_yaml['securitygroup'])
 
+            fqdn = '{0}.{1}'.format(host.hostname, 
+                                    cloud_provider_yaml['append_domain'])
+
             profiles[host.cloud_profile.slug].append({
                 host.hostname: {
                     'size': instance_size,
@@ -195,6 +202,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                         'grains': {
                             'roles': roles,
                             'stack_id': int(self.id),
+                            'fqdn': fqdn,
+                            'cluster_size': cluster_size,
                         }
                     },
                 }
@@ -209,7 +218,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                 f.write(map_file_yaml)
 
     def _generate_top_file(self):
-        top_file_data = {}
+        top_file_data = {
+            '*': [
+                'core',
+            ]     
+        }
 
         for host in self.hosts.all():
             top_file_data[host.hostname] = [r.role_name for r in host.roles.all()]
@@ -255,16 +268,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             logger.exception('Unhandled exception')
             raise
 
-    def create_dns_resource_records(self):
-        '''
-        '''
-        hosts = self.query_hosts()
-
-    def delete_dns_resource_records(self):
-        '''
-        '''
-        hosts = self.query_hosts()
-
+    def get_log_directory(self):
+        log_dir = os.path.join(os.path.dirname(self.map_file.path), 'logs')
+        if not os.path.isdir(log_dir):
+            os.makedirs(log_dir)
+        return log_dir
 
 class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):
     role_name = models.CharField(max_length=64)

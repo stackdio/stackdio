@@ -199,9 +199,9 @@ class AWSCloudProvider(BaseCloudProvider):
             'id': data[self.ACCESS_KEY],
             'key': data[self.SECRET_KEY], 
             'keyname': data[self.KEYPAIR],
-            'route53_domain': data[self.ROUTE53_DOMAIN],
             'securitygroup': security_groups,
             'private_key': private_key_path,
+            'append_domain': data[self.ROUTE53_DOMAIN],
 
             'ssh_interface': 'public_ips',
             'rename_on_destroy': True,
@@ -247,7 +247,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
         access_key = config_data['id']
         secret_key = config_data['key']
-        domain = config_data['route53_domain']
+        domain = config_data['append_domain']
 
         # load a new Route53Domain class and return it
         return Route53Domain(access_key, secret_key, domain)
