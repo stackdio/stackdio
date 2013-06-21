@@ -197,8 +197,6 @@ API endpoints can be found at http://localhost:8000/api/
     # First, we're going to change the default location of where salt will pull
     # its configuration from (I'm using /opt/salt_root, and you should too :) )
     mkdir -p /opt/salt_root/etc/salt
-    mkdir -p /opt/salt_root/srv/salt
-    mkdir -p /opt/salt_root/srv/pillar
     
     # Copy in the master and cloud configuration files for defaults
     cd <stackdio_root_directory>
@@ -213,6 +211,9 @@ API endpoints can be found at http://localhost:8000/api/
     # The cloud file should be ready to go as there's not much going on, but if
     # you can change the default log directory, just make sure the path exists
     # and the user running salt-cloud has the right permissions.
+
+    # Symlink the salt states into the right location under our salt_root. 
+    ln -s /path/to/stackdsalt /opt/salt_root/srv
 
 ###### Running:
     
