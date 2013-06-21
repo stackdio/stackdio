@@ -19,6 +19,10 @@ logger = get_task_logger(__name__)
 ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
 ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found already running'
 
+def symlink(source, target):
+    if os.path.isfile(target):
+        os.remove(target)
+    os.symlink(source, target)
 
 @celery.task(name='stacks.launch_stack')
 def launch_stack(stack_id):
@@ -35,9 +39,18 @@ def launch_stack(stack_id):
         # file at runtime
 
         # Set up logging for this launch
+        root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
+
+        now = datetime.now().strftime('%Y%m%d-%H%M%S')
         log_file = os.path.join(log_dir, 
-                                '{}.launch.log'.format(stack.slug))
+                                '{}-{}.launch.log'.format(stack.slug, now))
+        log_symlink = os.path.join(root_dir, '{}.launch.latest'.format(stack.slug))
+        
+        # "touch" the log file and symlink it to the latest
+        with open(log_file, 'w') as f:
+            pass
+        symlink(log_file, log_symlink)
 
         # Launch stack
         cmd = ' '.join([
@@ -133,9 +146,11 @@ def provision_stack(stack_id):
         stack.set_status(Stack.PROVISIONING)
 
         # Set up logging for this task
+        root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
+        now = datetime.now().strftime('%Y%m%d-%H%M%S')
         log_file = os.path.join(log_dir, 
-                                '{}.provision.log'.format(stack.slug))
+                                '{}-{}.provision.log'.format(stack.slug, now))
 
         # Run the appropriate top file
         cmd = ' '.join([
@@ -144,7 +159,6 @@ def provision_stack(stack_id):
             'G@stack_id:{}'.format(stack_id),  # target the nodes in this stack only
             'state.top',            # run this stack's top file
             stack.top_file.name,
-            '--out yaml',           # output in yaml format
         ]).format(stack_id)
 
         logger.debug('Excuting command: {0}'.format(cmd))
@@ -159,6 +173,11 @@ def provision_stack(stack_id):
             f.write('\n')
             f.write(result.std_out)
 
+        # symlink the logfile
+        log_symlink = os.path.join(root_dir, 
+                                   '{}.provision.latest'.format(stack.slug))
+        symlink(log_file, log_symlink)
+        
         # TODO: probably should figure out if an error occurred. A 
         # good mix of looking at envoy's status_code and parsing
         # the log file would be nice.

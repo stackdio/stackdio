@@ -286,6 +286,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             logger.exception('Unhandled exception')
             raise
 
+    def get_root_directory(self):
+        return os.path.dirname(self.map_file.path)
+
     def get_log_directory(self):
         log_dir = os.path.join(os.path.dirname(self.map_file.path), 'logs')
         if not os.path.isdir(log_dir):

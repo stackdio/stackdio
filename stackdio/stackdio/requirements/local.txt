@@ -1,5 +1,5 @@
 # Load the base requirements first
 -r base.txt
 
--e git://github.com/abemusic/salt.git@develop#egg=salt
+-e git://github.com/saltstack/salt.git@develop#egg=salt
 -e git://github.com/saltstack/salt-cloud.git@develop#egg=salt-cloud

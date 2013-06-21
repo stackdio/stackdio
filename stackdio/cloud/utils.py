@@ -105,7 +105,9 @@ def write_cloud_profiles_file():
             'image': profile.image_id,
             'size': profile.default_instance_size.title,
             'ssh_username': profile.ssh_user,
-            'script': profile.script,
+            #'script': profile.script,
+            'script': 'bootstrap-salt',
+            'script_args': '-D git develop',
         }
 
     with open(settings.SALT_CLOUDVM_CONFIG, 'w') as f:
