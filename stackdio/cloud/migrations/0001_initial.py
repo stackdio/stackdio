@@ -53,7 +53,6 @@ class Migration(SchemaMigration):
             ('cloud_provider', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudProvider'])),
             ('image_id', self.gf('django.db.models.fields.CharField')(max_length=64)),
             ('default_instance_size', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudInstanceSize'])),
-            ('script', self.gf('django.db.models.fields.CharField')(max_length=64)),
             ('ssh_user', self.gf('django.db.models.fields.CharField')(max_length=64)),
         ))
         db.send_create_signal(u'cloud', ['CloudProfile'])
@@ -101,7 +100,6 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'image_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'script': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'ssh_user': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})

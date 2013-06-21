@@ -14,6 +14,8 @@ import models
 
 logger = logging.getLogger(__name__)
 
+STACKDIO_CONFIG = settings.STACKDIO_CONFIG
+
 def get_provider_host_map(stack):
     '''
     Given a Stack object (`stacks.models.Host`), return a dictionary
@@ -105,9 +107,8 @@ def write_cloud_profiles_file():
             'image': profile.image_id,
             'size': profile.default_instance_size.title,
             'ssh_username': profile.ssh_user,
-            #'script': profile.script,
             'script': 'bootstrap-salt',
-            'script_args': '-D git develop',
+            'script_args': STACKDIO_CONFIG['SALT_CLOUD_BOOTSTRAP_ARGS'],
         }
 
     with open(settings.SALT_CLOUDVM_CONFIG, 'w') as f:

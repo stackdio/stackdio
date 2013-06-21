@@ -3,6 +3,13 @@ from .base import *
 
 # Override at will!
 
+##
+# stackd.io overrides
+## 
+STACKDIO_CONFIG.update({
+    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git develop',
+})
+
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ['*']

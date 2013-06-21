@@ -45,7 +45,6 @@ class CloudProfileAdmin(admin.ModelAdmin):
         'cloud_provider',
         'image_id',
         'default_instance_size',
-        'script',
         'ssh_user',
     ]
 admin.site.register(CloudProfile, CloudProfileAdmin)

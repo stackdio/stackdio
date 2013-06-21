@@ -87,6 +87,5 @@ class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
             'cloud_provider',
             'image_id',
             'default_instance_size',
-            'script',
             'ssh_user',
         )

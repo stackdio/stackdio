@@ -150,7 +150,6 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'image_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'script': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'ssh_user': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})

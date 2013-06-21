@@ -52,12 +52,6 @@ class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
     serializer_class = CloudProviderTypeSerializer
 
 
-class CloudProfileScriptsListAPIView(generics.ListAPIView):
-    def get(self, request, *args, **kwargs):
-        scripts = [{'os': k, 'script': v} for k,v in [choice for choice in CloudProfile.SCRIPT_CHOICES]]
-        return Response(scripts)
-
-
 class CloudProviderListAPIView(generics.ListCreateAPIView):
     model = CloudProvider
     serializer_class = CloudProviderSerializer

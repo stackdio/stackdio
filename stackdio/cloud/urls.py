@@ -9,7 +9,6 @@ from .api import (
     CloudInstanceSizeDetailAPIView,
     CloudProfileListAPIView, 
     CloudProfileDetailAPIView,
-    CloudProfileScriptsListAPIView,
 )
 
 
@@ -42,10 +41,6 @@ urlpatterns = patterns('cloud.api',
     url(r'^profiles/$',
         CloudProfileListAPIView.as_view(), 
         name='cloudprofile-list'),
-
-    url(r'^profile_scripts/$',
-        CloudProfileScriptsListAPIView.as_view(), 
-        name='cloudprofilescripts-list'),
 
     url(r'^profiles/(?P<pk>[0-9]+)/$', 
         CloudProfileDetailAPIView.as_view(), 

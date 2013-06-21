@@ -44,6 +44,15 @@ SALT_CLOUDVM_CONFIG = getenv('SALT_CLOUDVM_CONFIG')
 SALT_CLOUD_PROVIDERS_CONFIG = getenv('SALT_CLOUD_PROVIDERS_CONFIG')
 
 ##
+# stackd.io settings
+##
+STACKDIO_CONFIG = {
+    # Adds additional args to the boostrap-salt script. See:
+    # http://bootstrap.saltstack.org
+    'SALT_CLOUD_BOOTSTRAP_ARGS': '',
+}
+
+##
 #
 ##
 DEBUG = True

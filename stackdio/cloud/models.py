@@ -73,13 +73,6 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'cloud_provider')
 
-    # Script choices available to the `script` field
-    SCRIPT_CHOICES = (
-        ('Ubuntu',)*2,
-        ('RHEL5',)*2,
-        ('RHEL6',)*2,
-        ('Fedora',)*2,
-    )
     # What cloud provider is this under?
     cloud_provider = models.ForeignKey('CloudProvider')
     
@@ -89,10 +82,6 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     # The default instance size of this profile, may be overridden
     # by the user at creation time
     default_instance_size = models.ForeignKey('CloudInstanceSize')
-
-    # The salt-cloud `script` parameter. Will most likely correspond to the
-    # type of OS for this profile (e.g., Ubuntu, RHEL6, Fedora, etc)
-    script = models.CharField(max_length=64, choices=SCRIPT_CHOICES)
 
     # The SSH user that will have default access to the box. Salt-cloud 
     # needs this to provision the box as a salt-minion and connect it
