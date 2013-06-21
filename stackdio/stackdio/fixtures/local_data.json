@@ -43,7 +43,7 @@
             "title": "CDH4 NameNode",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
-            "role_name": "cdh4namenode",
+            "role_name": "cdh4.namenode",
             "slug": "cdh4-namenode"
         }
     },
@@ -55,7 +55,7 @@
             "title": "CDH4 DataNode",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
-            "role_name": "cdh4datanode",
+            "role_name": "cdh4.datanode",
             "slug": "cdh4-datanode"
         }
     },
