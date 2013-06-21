@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<configuration>
+    <property>
+      <name>io.sort.factor</name>
+      <value>{{ io_sort_factor }}</value>
+    </property>
+    <property>
+      <name>io.sort.mb</name>
+      <value>{{ io_sort_mb }}</value>
+    </property>
+    <property>
+      <name>mapred.job.tracker</name>
+      <value>{{ salt['publish.publish']('roles:cdh4.namenode', 'grains.item', 'fqdn', 'grain').values()[0]['fqdn'] }}:8021</value>
+    </property>
+    <property>
+      <name>mapred.local.dir</name>
+      <value>{{ mapred_local_dir }}</value>
+      <final>true</final>
+    </property>
+    <property>
+      <name>mapred.reduce.tasks</name>
+      <value>{{ mapred_reduce_tasks }}</value>
+    </property>
+    <property>
+      <name>mapred.jobtracker.taskScheduler</name>
+      <value>org.apache.hadoop.mapred.FairScheduler</value>
+    </property>
+    <property>
+      <name>mapred.tasktracker.map.tasks.maximum</name>
+      <value>{{ mapred_map_tasks_max }}</value>
+      <final>true</final>
+    </property>
+    <property>
+      <name>mapred.tasktracker.reduce.tasks.maximum</name>
+      <value>{{ mapred_reduce_tasks_max }}</value>
+      <final>true</final>
+    </property>
+    <property>
+      <name>mapred.child.java.opts</name>
+      <value>{{ mapred_child_java_opts }}</value>
+    </property>
+    <property>
+      <name>mapred.child.ulimit</name>
+      <value>{{ mapred_child_ulimit }}</value>
+      <final>true</final>
+    </property>
+    <property>
+      <name>mapred.reduce.parallel.copies</name>
+      <value>10</value>
+    </property>
+    <property>
+      <name>mapred.system.dir</name>
+      <value>/hadoop/system/mapred</value>
+    </property>
+    <property>
+      <name>mapred.job.tracker.handler.count</name>
+      <value>64</value>
+      <final>true</final>
+    </property>
+    <property>
+      <name>mapred.map.tasks.speculative.execution</name>
+      <value>true</value>
+    </property>
+    <property>
+      <name>mapred.reduce.tasks.speculative.execution</name>
+      <value>false</value>
+    </property>
+    <property>
+      <name>mapred.submit.replication</name>
+      <value>10</value>
+    </property>
+    <property>
+      <name>tasktracker.http.threads</name>
+      <value>40</value>
+      <final>true</final>
+    </property>
+    <property>
+      <name>mapred.output.compress</name>
+      <value>true</value>
+    </property>
+    <property>
+      <name>mapred.output.compression.type</name>
+      <value>BLOCK</value>
+    </property>
+    <property>
+      <name>mapred.compress.map.output</name>
+      <value>true</value>
+    </property>
+    <property>
+      <name>mapred.map.output.compression.codec</name>
+      <value>org.apache.hadoop.io.compress.SnappyCodec</value>
+    </property>
+    <!--<property>
+      <name>mapred.hosts.exclude</name>
+      <value>/etc/hadoop/conf/exclude</value>
+      <final>true</final>
+    </property>-->
+    <property>
+      <name>hadoop.rpc.socket.factory.class.JobSubmissionProtocol</name>
+      <value></value>
+      <final>true</final>
+    </property>
+    <property>
+      <name>mapred.userlog.retain.hours</name>
+      <value>456</value>
+    </property>
+    <property>
+      <name>mapreduce.job.counters.limit</name>
+      <value>240</value>
+    </property>
+    <property>
+      <name>mapred.reduce.slowstart.completed.maps</name>
+      <value>0.05</value>
+    </property>
+    <property>
+      <name>mapred.job.shuffle.input.buffer.percent</name>
+      <value>0.4</value>
+    </property>
+</configuration>
