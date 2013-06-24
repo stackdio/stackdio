@@ -258,42 +258,39 @@ API endpoints can be found at http://localhost:8000/api/
 
     # See celery documentation for ways of daemonizing the process
 
+### Unit Tests
+
+We are using the [django-nose] library to utilize the Nose testing framework from within our Django project. At any time, you can execute the tests by running:
+
+    ./manage.py test
+
 ### User Interface
 
-The stackd.io framework comes with a default user interface that uses the Node.js-based Meteor framework. For full documentation, please visit 
-
-    http://docs.meteor.com/#quickstart
-
-#### Installation
-
-You can install Meteor by executing the following command.
-
-    curl https://install.meteor.com | /bin/sh
-    
-#### Django CORS configuration
-
-In order to access the API running on port 8000, you need to enable CORS access in Django. Do do this, uncomment the corsheader middleware statement in the __settings/base.py__ file.
-
-    # 'corsheaders.middleware.CorsMiddleware',
-    
-Then uncomment the CORS whitelist setting. Search for 'whitelist' and you'll find it.
-
-    # CORS_ORIGIN_WHITELIST = (
-    #    'localhost:3000',
-    # )
-
-Obviously, this has to match the port on which the Meteor process is running. If you start Meteor on a different port, reflect that change in the whitelist.
+The stackd.io framework comes with a default user interface that uses the [Sencha ExtJS] application framework, which, by default, is pre-compiled into the __stackdio/core/static__ directory of the project.
 
 #### Running
 
-To start the user interface, simply run meteor in the tooling directory. This will start a Node server on port 3000.
+To start using it, simply point your browser to:
 
-    cd tooling
-    meteor
+    http://{ip|host}:{port}/static/index.html
+
+#### Compiling
+
+##### Setting up Sencha Command
+
+If you want to make changes or add to the UI, you need to compile the source code when you are done. By default, the software needed to compile the user interface is not installed when you download the project.
+
+To do this, first, download and install [Sencha Command].
+
+For full documentation on Sencha Command, please visit the [Introduction to Sencha Cmd for ExtJS] page.
+
+##### Compile the Code
+
+From the CLI, in the __stackdui/src__ directory, run the following command:
+
+    sencha app build
     
-Then open your browser and start the initial setup
-
-    http://localhost:3000/
+Once that process is complete, you can refresh your browser and your new code will be live.
 
 ### Technology
 
@@ -305,8 +302,7 @@ stackd.io uses a number of open source projects to work properly. For a more up-
 * [Celery] - asynchronous task queue/job queue based on distributed message passing
 * [django-celery] - Django integration for Celery
 * [RabbitMQ] - complete and highly reliable enterprise messaging system based on the emerging AMQP standard
-* [Twitter Bootstrap] - great UI boilerplate for modern web apps
-* [Meteor] - An open-source platform for building real-time, top-quality web apps
+* [Sencha ExtJS] - an advanced web application framework
 
   [Abe Music]: https://wiki.corp.digitalreasoning.com/confluence/display/~abe.music
   [Charlie Penner]: https://wiki.corp.digitalreasoning.com/confluence/display/~charlie.penner
@@ -323,3 +319,7 @@ stackd.io uses a number of open source projects to work properly. For a more up-
   [virtualenv-burrito]: https://github.com/brainsik/virtualenv-burrito
   [pythonbrew]: https://github.com/utahta/pythonbrew
   [MySQL]: http://dev.mysql.com/downloads/
+  [django-nose]: https://github.com/jbalogh/django-nose
+  [Sencha ExtJS]: http://www.sencha.com/products/extjs/
+  [Sencha Command]: http://www.sencha.com/products/sencha-cmd/download
+  [Introduction to Sencha Cmd for ExtJS]: http://docs.sencha.com/extjs/4.2.1/#!/guide/command

@@ -8,6 +8,5 @@ dev.db
 reload.sh
 stackdio/core/static
 stackdui/server/node_modules
-stackdui/src/ext
-stackdui/src/packages
+stackdui/src/packages/theme/sass/.sass-cache
 stackdui/src/resources/sass/bootstrap/.sass-cache
