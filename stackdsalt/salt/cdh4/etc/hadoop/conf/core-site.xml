@@ -14,7 +14,7 @@
       <value>org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.SnappyCodec</value>
     </property>
     <property>
-      <name>fs.defaultFS</name>
+      <name>fs.default.name</name>
       <value>hdfs://{{ salt['publish.publish']('roles:cdh4.namenode', 'grains.get', 'fqdn', 'grain').values()[0]['ret'] }}:8020/</value>
     </property>
     <property>

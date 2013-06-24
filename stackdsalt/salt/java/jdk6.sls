@@ -30,6 +30,6 @@ oracle-java6-installer:
 /etc/environment:
   file:
     - append
-    - text: JAVA_HOME="/usr/lib/jvm/java-6-oracle"
+    - text: 'JAVA_HOME="{{ pillar.jdk6.java_home }}"'
     - require:
       - pkgrepo: jdk6_repo

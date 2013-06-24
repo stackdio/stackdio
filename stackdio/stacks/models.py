@@ -28,6 +28,9 @@ def get_map_file_path(obj, filename):
 def get_top_file_path(obj, filename):
     return "stack_{}_top.sls".format(obj.id)
 
+def get_pillar_file_path(obj, filename):
+    return "stacks/{0}/{1}.pillar".format(obj.user.username, obj.slug)
+
 
 class StatusDetailModel(model_utils.models.StatusModel):
     status_detail = models.TextField(blank=True)
@@ -113,8 +116,12 @@ class StackManager(models.Manager):
                 host_obj.roles.add(*role_objs)
 
         # generate salt and salt-cloud files
-        stack_obj._generate_map_file()
+        # NOTE: The order is important here. pillar must be available before
+        # the map file is rendered or else we'll miss important grains that
+        # need to be set
+        stack_obj._generate_pillar_file()
         stack_obj._generate_top_file()
+        stack_obj._generate_map_file()
 
         return stack_obj
 
@@ -156,6 +163,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         blank=True,
         default=None,
         storage=FileSystemStorage(location=settings.SALT_STATE_ROOT))
+
+    pillar_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_pillar_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
     objects = StackManager()
 
@@ -199,11 +214,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     'securitygroup': list(security_groups),
                     'minion': {
                         'master': master,
+                        'log_level': 'debug',
                         'grains': {
                             'roles': roles,
                             'stack_id': int(self.id),
                             'fqdn': fqdn,
                             'cluster_size': cluster_size,
+                            'stack_pillar_file': self.pillar_file.path,
                         }
                     },
                 }
@@ -237,6 +254,20 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         else:
             with open(self.top_file.file, 'w') as f:
                 f.write(top_file_yaml)
+
+    def _generate_pillar_file(self):
+        pillar_file_yaml = yaml.safe_dump({
+            'custom_var_1': 'one',
+            'custom_var_2': 'two',
+            'custom_var_3': 'three',
+        }, default_flow_style=False)
+
+        if not self.pillar_file:
+            self.pillar_file.save('{}.pillar'.format(self.slug), 
+                                  ContentFile(pillar_file_yaml))
+        else:
+            with open(self.pillar_file.file, 'w') as f:
+                f.write(pillar_file_yaml)
 
     def query_hosts(self):
         '''
