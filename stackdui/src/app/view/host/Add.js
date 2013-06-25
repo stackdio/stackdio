@@ -25,17 +25,6 @@ Ext.define('stackdio.view.host.Add', {
         },
         items: [
         {
-            xtype:        'combo',
-            name:         'cloud_profile',
-            hideLabel:    false,
-            fieldLabel:   'Profile',
-            labelWidth:   110,
-            store:        'AccountProfiles',
-            displayField: 'title',
-            valueField:   'id',
-            queryMode:    'local',
-            editable:     false
-        },{
             xtype:        'multiselect',
             name:         'role',
             hideLabel:    false,

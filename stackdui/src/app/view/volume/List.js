@@ -1,15 +1,9 @@
-Ext.define('stackdio.view.account.List', {
+Ext.define('stackdio.view.volume.List', {
     extend: 'Ext.grid.Panel',
-    alias: 'widget.accountList',
-    store: 'ProviderAccounts',
+    alias: 'widget.volumeList',
+    store: 'Volumes',
 
     autoScroll: true,
-    features: [{
-        ftype:'grouping',
-        groupHeaderTpl: 'Provider: {provider_type_name}',
-        startCollapsed: true,
-        id: 'typeGrouping'
-    }],
 
     columns: [
         { 

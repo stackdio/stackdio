@@ -1,3 +1,4 @@
+import logging
 from django import forms
 from django.conf import settings
 from rest_framework import serializers
@@ -10,6 +11,8 @@ from .models import (
 )
 
 from .utils import get_provider_type_and_class
+
+logger = logging.getLogger(__name__)
 
 class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
@@ -34,8 +37,10 @@ class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
         # validate provider specific request data
         request = self.context['request']
 
-        provider_type, provider_class = \
-            get_provider_type_and_class(request.DATA.get('provider_type'))
+        provider_type, provider_class = get_provider_type_and_class(request.DATA.get('provider_type'))
+
+        logger.debug(provider_type)
+        logger.debug(provider_class)
 
         provider = provider_class()
         result, errors = provider.validate_provider_data(request.DATA, 

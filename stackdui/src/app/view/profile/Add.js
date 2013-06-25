@@ -39,18 +39,6 @@ Ext.define('stackdio.view.profile.Add', {
             labelWidth: 150,
             enableKeyEvents: true
         },{
-            xtype:        'combo',
-            id:           'profile-cloud-provider',
-            name:         'cloud_provider',
-            hideLabel:    false,
-            fieldLabel:   'Account',
-            labelWidth:   150,
-            store:        'ProviderAccounts',
-            displayField: 'title',
-            valueField:   'id',
-            queryMode:    'local',
-            editable:     false
-        },{
             xtype:'textfield',
             id: 'profile-ami',
             name: 'image_id',
@@ -67,18 +55,6 @@ Ext.define('stackdio.view.profile.Add', {
             store:        'InstanceSizes',
             displayField: 'title',
             valueField:   'id',
-            queryMode:    'local',
-            editable:     false
-        },{
-            xtype:        'combo',
-            id:           'profile-script',
-            name:         'script',
-            hideLabel:    false,
-            fieldLabel:   'Script',
-            labelWidth:   150,
-            store:        'ProfileScripts',
-            displayField: 'script',
-            valueField:   'script',
             queryMode:    'local',
             editable:     false
         },{

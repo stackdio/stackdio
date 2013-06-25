@@ -1,4 +1,4 @@
-Ext.define('stackdio.controller.Application', {
+Ext.define('stackdio.controller.Volume', {
     extend: 'Ext.app.Controller',
 
 
@@ -17,18 +17,6 @@ Ext.define('stackdio.controller.Application', {
         */
         me.control({
 
-            '#accounts-button': {
-                click: function (btn, e) {
-                    Ext.getCmp('content-area').getLayout().setActiveItem(1);
-                }
-            }
-
-            ,'#dashboard-button': {
-                click: function (btn, e) {
-                    Ext.getCmp('content-area').getLayout().setActiveItem(0);
-                }
-            }
-
         });
 
 
@@ -41,7 +29,6 @@ Ext.define('stackdio.controller.Application', {
                 |_____|  \_/  |_____|_| \_| |_|    |_| |_/_/   \_\_| \_|____/|_____|_____|_| \_\____/
         
         */
-
 
     },
 
@@ -57,6 +44,20 @@ Ext.define('stackdio.controller.Application', {
 
     */
 
+    showVolumeForm: function (record) {
+        var me = this; 
+
+        if (!me.hasOwnProperty('accountForm')) {
+            me.accountForm = Ext.widget('addAccount');
+        }
+
+        me.accountForm.show();
+
+        if (typeof record !== 'undefined') {
+            console.log(record);
+            me.accountForm.down('form').getForm().loadRecord(record);
+        }
+    },
 
 
 
@@ -72,26 +73,16 @@ Ext.define('stackdio.controller.Application', {
 
     */
     views: [
-        'Title'
-        ,'account.List'
-        ,'profile.List'
-        ,'role.List'
+         'volume.Add'
         ,'volume.List'
     ],
 
     models: [
+        'Volume'
     ],
 
     stores: [
-        'AccountProfiles'
-        ,'Hosts'
-        ,'StackHosts'
-        ,'InstanceSizes'
-        ,'ProviderAccounts'
-        ,'ProviderTypes'
-        ,'Roles'
-        ,'Stacks'
-        ,'Volumes'
+        'Volumes'
     ],
 
 
@@ -105,12 +96,7 @@ Ext.define('stackdio.controller.Application', {
 
     */
     refs: [
-        {
-            ref: 'newAccount', selector: '#create-account'
-        }
-        ,{
-            ref: 'newProfile', selector: '#create-profile'
-        }
+
     ]
 });
 

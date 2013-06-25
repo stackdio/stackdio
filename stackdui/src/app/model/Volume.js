@@ -1,16 +1,18 @@
-Ext.define('stackdio.model.ProfileScript', {
+Ext.define('stackdio.model.Volume', {
     extend: 'Ext.data.Model'
 
     ,fields: [
-        { name: 'os',         type: 'string' },
-        { name: 'script',       type: 'string' }
+        { name: 'id',               type: 'int' },
+        { name: 'title',            type: 'string' }
     ]
+
 
     ,proxy: {
         type: 'rest',
-        url: 'http://localhost:8000/api/profile_scripts/',
+        url: 'http://localhost:8000/api/volumes/',
         reader: {
-            type: 'json'
+            type: 'json',
+            root: 'results'
         },
         headers: {
             "Authorization": "Basic " + Base64.encode('testuser:password')

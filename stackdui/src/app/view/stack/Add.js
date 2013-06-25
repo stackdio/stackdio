@@ -2,7 +2,7 @@ Ext.define('stackdio.view.stack.Add', {
     extend  : 'Ext.window.Window',
     alias: 'widget.addStack',
     
-    width   : 1000,
+    width   : 800,
     title   : 'Stack',
     modal   : true,
     closable: true,
@@ -11,20 +11,6 @@ Ext.define('stackdio.view.stack.Add', {
 
     defaults: {},
     layout: 'anchor',
-
-    // constructor: function (config) {
-    //     console.log('making add form');
-    //     this.callParent(arguments);
-    // },
-
-    // tbar: [
-    //     {
-    //         xtype: 'button',
-    //         text: 'New Host',
-    //         iconCls: 'add-icon',
-    //         id: 'create-stack-host'
-    //     }
-    // ],
 
     items: [
         {
@@ -55,13 +41,15 @@ Ext.define('stackdio.view.stack.Add', {
             }]
         },
         {
-            xtype: 'button'
+            xtype: 'splitbutton'
             ,id: 'create-stack-host'
             ,text: 'New Host'
-            ,ui: 'inverse'
+            ,ui: 'info'
             ,scale: 'small'
             ,iconCls: 'icon-plus-sign'
             ,style: 'float: right; margin: 10px 10px 0 0'
+            ,menu: {}
+            ,width: 130
         },
         {
             xtype:'grid',
@@ -112,6 +100,7 @@ Ext.define('stackdio.view.stack.Add', {
                     header: 'Size',
                     dataIndex: 'instance_size',
                     flex: 3
+                    ,hidden: true
                     ,renderer: function (id, metaData, record, rowIndex, colIndex, store, view) {
                         var store = Ext.getStore('InstanceSizes'), size = '', index = store.findExact('id', id);
 
@@ -123,14 +112,16 @@ Ext.define('stackdio.view.stack.Add', {
                     }
                 },
                 {
-                    header: 'Host Pattern',
-                    dataIndex: 'hostname',
-                    flex: 1
+                    header: 'Host Pattern'
+                    ,dataIndex: 'hostname'
+                    ,flex: 1
+                    ,hidden: true
                 },
                 {
-                    header: 'Security Groups',
-                    dataIndex: 'security_groups',
-                    flex: 2
+                    header: 'Security Groups'
+                    ,dataIndex: 'security_groups'
+                    ,flex: 2
+                    ,hidden: true
                 }
             ]
         }

@@ -47,3 +47,16 @@ BROKER_URL = 'amqp://guest:guest@localhost:5672/'
 # The local storage directory for storing file data
 ##
 FILE_STORAGE_DIRECTORY = normpath(join(SITE_ROOT, 'storage'))
+
+MIDDLEWARE_CLASSES = (
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+)
+
+CORS_ORIGIN_WHITELIST = (
+   'localhost:3000',
+)

@@ -19,65 +19,47 @@ Ext.define('stackdio.view.account.Add', {
         xtype: 'form',
         layout: 'anchor',
         defaults: {
-            anchor: '100%'
+            anchor: '100%',
+            labelWidth: 130
         },
         id: 'account-form',
         items: [
         {
-            xtype:        'combo',
-            name:         'provider_type',
-            hideLabel:    false,
-            fieldLabel:   'Provider',
-            labelWidth:   110,
-            store:        'ProviderTypes',
-            displayField: 'title',
-            valueField:   'id',
-            queryMode:    'local',
-            editable:     false
-        },{
             xtype:'textfield',
             id: 'account-title',
             name: 'title',
             fieldLabel: 'Title',
-            labelWidth: 110,
             enableKeyEvents: true
         },{
             xtype:'textareafield',
             id: 'account-description',
             name: 'description',
             fieldLabel: 'Description',
-            labelWidth: 110,
             enableKeyEvents: true
         },{
             xtype:'textfield',
             name: 'access_key_id',
-            fieldLabel: 'AWS Access Key',
-            labelWidth: 110
+            fieldLabel: 'AWS Access Key'
         },{
             xtype:'textfield',
             name: 'secret_access_key',
-            fieldLabel: 'AWS Secret Key',
-            labelWidth: 110
+            fieldLabel: 'AWS Secret Key'
         },{
             xtype:'textfield',
             name: 'keypair',
-            fieldLabel: 'AWS Keypair Name',
-            labelWidth: 110
+            fieldLabel: 'AWS Keypair Name'
         },{
             xtype:'textfield',
             name: 'security_groups',
-            fieldLabel: 'Security Groups',
-            labelWidth: 110
+            fieldLabel: 'Security Groups'
         },{
             xtype:'textfield',
             name: 'route53_domain',
-            fieldLabel: 'Route 53 Domain',
-            labelWidth: 110
+            fieldLabel: 'Route 53 Domain'
         },{
             xtype:'filefield',
             name: 'private_key_file',
-            fieldLabel: 'Private Key File',
-            labelWidth: 110
+            fieldLabel: 'Private Key File'
         }]
     }],
 
@@ -90,6 +72,10 @@ Ext.define('stackdio.view.account.Add', {
     },{
         text: 'Save',
         id: 'save-account',
+        iconCls: 'save-icon'
+    },{
+        text: 'Save &amp; Add Another',
+        id: 'save-account-add',
         iconCls: 'save-icon'
     }]
 });

@@ -16,8 +16,7 @@ Ext.define('stackdio.view.Viewport', {
         id: 'title-panel',
         title: false,
         border: true,
-        height: 40,
-        margin: '5px 20px'
+        height: 60
     },{
         region: 'west',
         xtype: 'container',
@@ -77,7 +76,7 @@ Ext.define('stackdio.view.Viewport', {
         id: 'content-area',
         title: false,
         border: false,
-        margin: '20px 50px',
+        margin: '10px 50px',
         layout: 'card',
 
         items: [
@@ -96,13 +95,14 @@ Ext.define('stackdio.view.Viewport', {
                             {
                                 xtype: 'container',
                                 items: {
-                                    xtype: 'button',
+                                    xtype: 'splitbutton',
                                     id: 'create-account',
-                                    width: 120,
                                     text: 'New Account',
                                     ui: 'info',
                                     iconCls: 'icon-plus-sign',
-                                    style: 'margin: 20px 0 0 0; float: right'
+                                    width: 130,
+                                    style: 'margin: 20px 0 0 0; float: right',
+                                    menu: {}
                                 },
                                 flex: 1
                             }
@@ -124,13 +124,14 @@ Ext.define('stackdio.view.Viewport', {
                         {
                             xtype: 'container',
                             items: {
-                                xtype: 'button',
+                                xtype: 'splitbutton',
                                 id: 'create-profile',
-                                width: 120,
+                                width: 130,
                                 text: 'New Profile',
                                 ui: 'info',
                                 iconCls: 'icon-plus-sign',
-                                style: 'margin: 20px 0 0 0; float: right'
+                                style: 'margin: 20px 0 0 0; float: right',
+                                menu: {}
                             },
                             flex: 1
                         }
@@ -153,7 +154,7 @@ Ext.define('stackdio.view.Viewport', {
                             items: {
                                 xtype: 'button',
                                 id: 'create-stack',
-                                width: 120,
+                                width: 130,
                                 text: 'New Stack',
                                 ui: 'info',
                                 iconCls: 'icon-plus-sign',
@@ -180,7 +181,7 @@ Ext.define('stackdio.view.Viewport', {
                                 items: {
                                     xtype: 'button',
                                     id: 'create-role',
-                                    width: 120,
+                                    width: 130,
                                     text: 'New Role',
                                     ui: 'info',
                                     iconCls: 'icon-plus-sign',
@@ -192,6 +193,33 @@ Ext.define('stackdio.view.Viewport', {
                     },
                     {
                         xtype: 'roleList'
+                    },
+                    {
+                        xtype: 'container',
+                        layout: 'hbox',
+                        items: [
+                            {
+                                xtype: 'container',
+                                html: '<h3>Volumes</h3>',
+                                flex: 1
+                            },
+                            {
+                                xtype: 'container',
+                                items: {
+                                    xtype: 'button',
+                                    id: 'create-volume',
+                                    width: 130,
+                                    text: 'New Volume',
+                                    ui: 'info',
+                                    iconCls: 'icon-plus-sign',
+                                    style: 'margin: 20px 0 0 0; float: right'
+                                },
+                                flex: 1
+                            }
+                        ]
+                    },
+                    {
+                        xtype: 'volumeList'
                     }
                 ]
             }

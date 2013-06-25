@@ -134,6 +134,7 @@ INSTALLED_APPS = (
     'core',
     'cloud',
     'stacks',
+    'volumes',
 )
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'

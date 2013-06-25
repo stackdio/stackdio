@@ -257,6 +257,7 @@ API endpoints can be found at http://localhost:8000/api/
     manage.py celery worker -lDEBUG
 
     # See celery documentation for ways of daemonizing the process
+    http://docs.celeryproject.org/en/latest/tutorials/daemonizing.html#daemonizing
 
 ### Unit Tests
 
