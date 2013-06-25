@@ -24,19 +24,16 @@ def symlink(source, target):
         os.remove(target)
     os.symlink(source, target)
 
-@celery.task(name='stacks.launch_stack')
-def launch_stack(stack_id):
+@celery.task(name='stacks.launch_hosts')
+def launch_hosts(stack_id, host_ids=None):
     try:
         stack = Stack.objects.get(id=stack_id)
-        logger.info('Launching new stack: {0!r}'.format(stack))
+        logger.info('Launching hosts for stack: {0!r}'.format(stack))
 
         # Use SaltCloud to launch machines using the given stack's
         # map_file that should already be generated
 
         stack.set_status(Stack.LAUNCHING)
-
-        # TODO: It would be nice if we could control the salt-cloud log
-        # file at runtime
 
         # Set up logging for this launch
         root_dir = stack.get_root_directory()
@@ -95,10 +92,14 @@ def launch_stack(stack_id):
         for host in stack.hosts.all():
             # FIXME: This is cloud provider specific. Should farm it out to
             # the right implementation
-            dns_name = query_results[host.hostname]['extra']['dns_name']
+            dns_name = query_results[host.hostname]['dnsName']
             logger.debug('{} = {}'.format(host.hostname, dns_name))
 
-            host.public_dns = dns_name
+            # update the state of the host as provided by ec2
+            state = query_results[host.hostname]['state']
+
+            host.provider_dns = dns_name
+            host.state = state
             host.save()
 
     except Stack.DoesNotExist:
@@ -108,10 +109,10 @@ def launch_stack(stack_id):
         stack.set_status(Stack.ERROR, str(e))
 
 @celery.task(name='stacks.register_dns')
-def register_dns(stack_id):
+def register_dns(stack_id, host_ids=None):
     '''
     Must be ran after a Stack is up and running and all host information has
-    been pulled and stored in the database
+    been pulled and stored in the database.
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
@@ -119,7 +120,7 @@ def register_dns(stack_id):
 
         stack.set_status(Stack.CONFIGURING)
 
-        provider_host_map = get_provider_host_map(stack)
+        provider_host_map = get_provider_host_map(stack, host_ids=host_ids)
         for provider_obj, hosts in provider_host_map.iteritems():
             # Lookup the proper cloud provider implementation
             provider_type, provider_class = \
@@ -136,11 +137,11 @@ def register_dns(stack_id):
         logger.exception('Unhandled exception while launching a Stack')
         stack.set_status(Stack.ERROR, str(e))
 
-@celery.task(name='stacks.provision_stack')
-def provision_stack(stack_id):
+@celery.task(name='stacks.provision_hosts')
+def provision_hosts(stack_id, host_ids=None):
     try:
         stack = Stack.objects.get(id=stack_id)
-        logger.info('Provisioning stack: {0!r}'.format(stack))
+        logger.info('Provisioning hosts for stack: {0!r}'.format(stack))
 
         # Update status
         stack.set_status(Stack.PROVISIONING)
@@ -152,14 +153,22 @@ def provision_stack(stack_id):
         log_file = os.path.join(log_dir, 
                                 '{}-{}.provision.log'.format(stack.slug, now))
 
-        # Run the appropriate top file
-        cmd = ' '.join([
+        # TODO: do we want to handle a subset of the hosts in a stack (e.g.,
+        # when adding additional hosts?) for the moment it seems just fine
+        # to run the highstate on all hosts even if some have already been
+        # provisioned.
+
+        # build up the command for salt
+        cmd_args = [
             'salt',
             '-C',                   # compound targeting
             'G@stack_id:{}'.format(stack_id),  # target the nodes in this stack only
             'state.top',            # run this stack's top file
             stack.top_file.name,
-        ]).format(stack_id)
+        ]
+
+        # Run the appropriate top file
+        cmd = ' '.join(cmd_args)
 
         logger.debug('Excuting command: {0}'.format(cmd))
         result = envoy.run(cmd)
@@ -209,39 +218,70 @@ def finish_stack(stack_id):
         logger.exception('Unhandled exception while finishing a Stack')
         stack.set_status(Stack.ERROR, str(e))
 
-@celery.task(name='stacks.destroy_stack', ignore_result=True)
-def destroy_stack(stack_id):
+@celery.task(name='stacks.destroy_hosts', ignore_result=True)
+def destroy_hosts(stack_id, host_ids=None):
+    '''
+    Destroy the given stack id or a subset of the stack if host_ids
+    is set.
+    '''
     try:
         stack = Stack.objects.get(id=stack_id)
-        logger.info('Destroying stack: {0!r}'.format(stack))
 
-        # Check for map file, and if it doesn't exist just remove
-        # the stack and return
-        if not os.path.isfile(stack.map_file.path):
-            logger.warn('Map file for stack {} does not exist. '
-                        'Deleting stack anyway.'.format(stack))
-            stack.delete()
-            return
-
-        # Run the appropriate top file
-        cmd = ' '.join([
+        # Build up the salt-cloud command
+        cmd_args = [
             'salt-cloud',
             '-y',                   # assume yes
             '-P',                   # destroy in parallel
-            '-m {0}',               # the map file to use for launching
-            '-d',                   # destroy the stack
+            '-d',                   # destroy argument
             '--out yaml',           # output in yaml
-        ]).format(stack.map_file.path)
+        ]
+
+        # if host ids is given, we're going to terminate only those hosts
+        if host_ids:
+            stack.set_status(Stack.DESTROYING, 'Destroying hosts.')
+            hosts = stack.hosts.filter(id__in=host_ids)
+            logger.info('Destroying hosts {0!r} on stack {1!r}'.format(
+                hosts, 
+                stack
+            ))
+
+            # add the machines to destory on to the cmd_args list
+            cmd_args.extend([h.hostname for h in hosts])
+
+        # or we'll destroy the entire stack by giving the map file with all
+        # hosts defined
+        else:
+            stack.set_status(Stack.DESTROYING, 'Destroying stack.')
+            logger.info('Destroying complete stack: {0!r}'.format(stack))
+
+            # Check for map file, and if it doesn't exist just remove
+            # the stack and return
+            if not os.path.isfile(stack.map_file.path):
+                logger.warn('Map file for stack {} does not exist. '
+                            'Deleting stack anyway.'.format(stack))
+                stack.delete()
+                return
+
+            # Add the location to the map to destroy the entire stack
+            cmd_args.append('-m {}'.format(stack.map_file.path))
+
+        # Use salt-cloud to destroy the stack or hosts
+        cmd = ' '.join(cmd_args)
 
         logger.debug('Excuting command: {0}'.format(cmd))
         result = envoy.run(cmd)
 
         if result.status_code > 0:
-            err_msg = result.std_err if len(result.std_err) else result.std_out
+            err_msg = result.std_err if result.std_err else result.std_out
             stack.set_status(Stack.ERROR, err_msg)
             return
 
-        stack.delete()
+        # delete the stack or delete the hosts
+        if host_ids is None:
+            stack.delete()
+        else:
+            hosts.delete()
+            stack.set_status(Stack.OK, 'Hosts deleted.')
 
     except Stack.DoesNotExist:
         logger.exception('Attempted to destroy an unknown Stack with id {}'.format(stack_id))
@@ -250,7 +290,7 @@ def destroy_stack(stack_id):
         stack.set_status(Stack.ERROR, str(e))
 
 @celery.task(name='stacks.unregister_dns')
-def unregister_dns(stack_id):
+def unregister_dns(stack_id, host_ids=None):
     '''
     Removes all host information from DNS. Intended to be used just before a stack
     is terminated or stopped or put into some state where DNS no longer applies.
@@ -261,7 +301,7 @@ def unregister_dns(stack_id):
 
         stack.set_status(Stack.CONFIGURING, 'Unregistering DNS entries.')
 
-        provider_host_map = get_provider_host_map(stack)
+        provider_host_map = get_provider_host_map(stack, host_ids=host_ids)
         for provider_obj, hosts in provider_host_map.iteritems():
             # Lookup the proper cloud provider implementation
             provider_type, provider_class = \

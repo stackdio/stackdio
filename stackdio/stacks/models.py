@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 import collections
 import socket
@@ -19,6 +20,9 @@ from core.fields import DeletingFileField
 from cloud.models import CloudProfile, CloudInstanceSize
 
 logger = logging.getLogger(__name__)
+
+
+HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
 
 
 def get_map_file_path(obj, filename):
@@ -79,54 +83,14 @@ class StackManager(models.Manager):
                                user=user)
         stack_obj.save()
 
-        for host in data['hosts']:
-            host_count = host['host_count']
-            host_size = host['host_size']
-            host_pattern = host['host_pattern']
-            cloud_profile = host['cloud_profile']
-            salt_roles = host['salt_roles']
-
-            # Get the security group objects
-            security_group_objs = [
-                SecurityGroup.objects.get_or_create(group_name=g)[0] for
-                g in filter(
-                    None,
-                    set(h.strip() for
-                        h in host['host_security_groups'].split(','))
-                )]
-
-            # lookup other objects
-            role_objs = SaltRole.objects.filter(id__in=salt_roles)
-            cloud_profile_obj = CloudProfile.objects.get(id=cloud_profile)
-            host_size_obj = CloudInstanceSize.objects.get(id=host_size)
-
-            # create hosts
-            for i in xrange(1, host_count+1):
-                host_obj = stack_obj.hosts.create(
-                    stack=stack_obj,
-                    cloud_profile=cloud_profile_obj,
-                    instance_size=host_size_obj,
-                    hostname='%s-%d' % (host_pattern, i),
-                )
-
-                # set security groups
-                host_obj.security_groups.add(*security_group_objs)
-
-                # set roles
-                host_obj.roles.add(*role_objs)
-
-        # generate salt and salt-cloud files
-        # NOTE: The order is important here. pillar must be available before
-        # the map file is rendered or else we'll miss important grains that
-        # need to be set
-        stack_obj._generate_pillar_file()
-        stack_obj._generate_top_file()
-        stack_obj._generate_map_file()
+        if data['hosts']:
+            stack_obj.add_hosts(data['hosts'])
 
         return stack_obj
 
 
 class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
+    OK = 'ok'
     ERROR = 'error'
     PENDING = 'pending'
     FINISHED = 'finished'
@@ -135,12 +99,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     DESTROYING = 'destroying'
     CONFIGURING = 'configuring'
     PROVISIONING = 'provisioning'
-    STATUS = Choices(PENDING, 
-                     LAUNCHING, 
-                     PROVISIONING, 
-                     FINISHED, 
+    STATUS = Choices(OK,
                      ERROR,
-                     DESTROYING)
+                     PENDING, 
+                     FINISHED, 
+                     LAUNCHING, 
+                     FINALIZING, 
+                     DESTROYING,
+                     CONFIGURING,
+                     PROVISIONING)
 
     class Meta:
 
@@ -176,6 +143,74 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     def __unicode__(self):
         return self.title
+    
+    def add_hosts(self, hosts=[]):
+        '''
+        See StackManager.create_stack for host data format requirements.
+        '''
+
+        new_hosts = []
+        for host in hosts:
+            host_count = host['host_count']
+            host_size = host['host_size']
+            host_pattern = host['host_pattern']
+            cloud_profile = host['cloud_profile']
+            salt_roles = host['salt_roles']
+
+            # Get the security group objects
+            security_group_objs = [
+                SecurityGroup.objects.get_or_create(group_name=g)[0] for
+                g in filter(
+                    None,
+                    set(h.strip() for
+                        h in host['host_security_groups'].split(','))
+                )]
+
+            # lookup other objects
+            role_objs = SaltRole.objects.filter(id__in=salt_roles)
+            cloud_profile_obj = CloudProfile.objects.get(id=cloud_profile)
+            host_size_obj = CloudInstanceSize.objects.get(id=host_size)
+
+            # if user is adding hosts, they may be adding hosts that will
+            # use the same host pattern as an existing hostname. in that case
+            # we need to find which starting index of the hostname pattern to
+            # use
+            existing_hosts = self.hosts.filter(
+                hostname__contains=host_pattern
+            )
+            matches = [int(HOST_INDEX_PATTERN.match(h.hostname).groups()[0]) 
+                for h in existing_hosts]
+            start_index = max(matches) if matches else 0
+
+            # create hosts
+            for i in xrange(start_index+1, start_index+host_count+1):
+                host_obj = self.hosts.create(
+                    stack=self,
+                    cloud_profile=cloud_profile_obj,
+                    instance_size=host_size_obj,
+                    hostname='{}-{}-{}'.format(host_pattern, 
+                                               self.user.username, 
+                                               i)
+                )
+
+                # set security groups
+                host_obj.security_groups.add(*security_group_objs)
+
+                # set roles
+                host_obj.roles.add(*role_objs)
+
+                new_hosts.append(host_obj)
+
+        # generate salt and salt-cloud files
+        # NOTE: The order is important here. pillar must be available before
+        # the map file is rendered or else we'll miss important grains that
+        # need to be set
+        self._generate_pillar_file()
+        self._generate_top_file()
+        self._generate_map_file()
+
+        # return the newly added host objects
+        return new_hosts
 
     def _generate_map_file(self):
 
@@ -231,7 +266,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         if not self.map_file:
             self.map_file.save(self.slug+'.map', ContentFile(map_file_yaml))
         else:
-            with open(self.map_file.file, 'w') as f:
+            with open(self.map_file.path, 'w') as f:
                 f.write(map_file_yaml)
 
     def _generate_top_file(self):
@@ -252,7 +287,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         if not self.top_file:
             self.top_file.save('stack_{}_top.sls'.format(self.id), ContentFile(top_file_yaml))
         else:
-            with open(self.top_file.file, 'w') as f:
+            with open(self.top_file.path, 'w') as f:
                 f.write(top_file_yaml)
 
     def _generate_pillar_file(self):
@@ -266,7 +301,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             self.pillar_file.save('{}.pillar'.format(self.slug), 
                                   ContentFile(pillar_file_yaml))
         else:
-            with open(self.pillar_file.file, 'w') as f:
+            with open(self.pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
 
     def query_hosts(self):
@@ -333,7 +368,11 @@ class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):
         return self.title
 
 
-class Host(TimeStampedModel):
+class Host(TimeStampedModel, StatusDetailModel):
+    OK = 'ok'
+    DELETING = 'deleting'
+    STATUS = Choices(OK, DELETING)
+
     # TODO: We should be using generic foreign keys here to a cloud provider
     # specific implementation of a Host object. I'm not exactly sure how this
     # will work, but I think by using Django's content type system we can make
@@ -348,16 +387,23 @@ class Host(TimeStampedModel):
     roles = models.ManyToManyField('stacks.SaltRole',
                                    related_name='hosts')
 
-    hostname = models.CharField(max_length=64)
+    hostname = models.CharField(max_length=255)
 
     security_groups = models.ManyToManyField('stacks.SecurityGroup',
                                              related_name='hosts')
+    
+    # The machine state as provided by the cloud provider
+    state = models.CharField(max_length=32, default='unknown')
 
     # This must be updated automatically after the host is online.
     # After salt-cloud has launched VMs, we will need to look up
     # the DNS name set by whatever cloud provider is being used
     # and set it here
-    public_dns = models.CharField(max_length=64, blank=True)
+    provider_dns = models.CharField(max_length=64, blank=True)
+
+    # The FQDN for the host. This includes the hostname and the
+    # domain if it was registered with DNS
+    fqdn = models.CharField(max_length=255, blank=True)
 
     def __unicode__(self):
         return self.hostname

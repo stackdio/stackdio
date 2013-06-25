@@ -34,7 +34,8 @@ class HostAdmin(admin.ModelAdmin):
         'cloud_profile',
         'instance_size',
         'hostname',
-        'public_dns',
+        'provider_dns',
+        'fqdn',
     ]
 admin.site.register(Host, HostAdmin)
 

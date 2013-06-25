@@ -16,13 +16,20 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'url',
             'hostname', 
-            'public_dns', 
+            'provider_dns', 
+            'fqdn', 
+            'state',
+            'status',
+            'status_detail',
             'created', 
         )
 
 class StackSerializer(serializers.HyperlinkedModelSerializer):
     user = serializers.Field()
     hosts = serializers.HyperlinkedIdentityField(view_name='stack-hosts')
+    host_count = serializers.Field(source='hosts.count')
+    status = serializers.Field()
+    status_detail = serializers.Field()
 
     class Meta:
         model = Stack
@@ -30,25 +37,15 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'id',
             'url',
             'user',
+            'host_count',
             'hosts',
             'created', 
             'title', 
+            'slug',
             'description',
             'status',
             'status_detail',
         )
-
-    def validate(self, attrs):
-
-        # validate provider specific request data
-        request = self.context['request']
-
-        errors = {
-            'foo': ['Missing some stuff'],
-        }
-        raise serializers.ValidationError(errors)
-
-        return attrs    
 
 class SaltRoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

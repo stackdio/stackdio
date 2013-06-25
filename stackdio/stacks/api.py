@@ -35,36 +35,26 @@ class StackListAPIView(generics.ListCreateAPIView):
     serializer_class = StackSerializer
     parser_classes = (parsers.JSONParser,)
 
-    def pre_save(self, obj):
-        '''
-        Check for duplicates and also make sure Stacks are owned
-        by the right user.
-        '''
-
-        # check for duplicates
-        if Stack.objects.filter(user=self.request.user, title=obj.title).count():
-            raise ResourceConflict('A Stack resource already exists with '
-                                   'the given parameters.')
-
-        obj.user = self.request.user
-
     def post(self, request, *args, **kwargs):
         '''
         Overriding post to create roles and metadata objects for this Stack
         as well as generating the salt-cloud map that will be used to launch
         machines
         '''
-        # XXX: remove me when in production
-        Stack.objects.all().delete()
+        # check for duplicates
+        title = request.DATA.get('title')
+        if Stack.objects.filter(user=self.request.user, title=title).count():
+            raise ResourceConflict('A Stack already exists with the given '
+                                   'title.')
 
         # create the stack object and foreign key objects
         stack = Stack.objects.create_stack(request.user, request.DATA)
 
         # Queue up stack creation and provisioning using Celery
         task_chain = (
-            tasks.launch_stack.si(stack.id) | 
+            tasks.launch_hosts.si(stack.id) | 
             tasks.register_dns.si(stack.id) | 
-            tasks.provision_stack.si(stack.id) |
+            tasks.provision_hosts.si(stack.id) |
             tasks.finish_stack.si(stack.id)
         )
         
@@ -78,9 +68,34 @@ class StackListAPIView(generics.ListCreateAPIView):
         return Response(serializer.data)
 
 
-class StackDetailAPIView(generics.RetrieveDestroyAPIView):
+class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = Stack
     serializer_class = StackSerializer
+    parser_classes = (parsers.JSONParser,)
+
+    def put(self, request, *args, **kwargs):
+        '''
+        Overriding PUT for a stack to be able to add additional
+        hosts after a stack has already been created.
+        '''
+        
+        stack = self.get_object()
+        new_hosts = stack.add_hosts(request.DATA['hosts'])
+        host_ids = [h.id for h in new_hosts]
+
+        # Queue up stack creation and provisioning using Celery
+        task_chain = (
+            tasks.launch_hosts.si(stack.id, host_ids=host_ids) | 
+            tasks.register_dns.si(stack.id, host_ids=host_ids) | 
+            tasks.provision_hosts.si(stack.id, host_ids=host_ids) |
+            tasks.finish_stack.si(stack.id, host_ids=host_ids)
+        )
+        
+        # execute the chain
+        task_chain()
+
+        serializer = self.get_serializer(stack)
+        return Response(serializer.data)
 
     def delete(self, request, *args, **kwargs):
         '''
@@ -98,7 +113,7 @@ class StackDetailAPIView(generics.RetrieveDestroyAPIView):
         # Queue up stack destroy tasks
         task_chain = (
             tasks.unregister_dns.si(stack.id) | 
-            tasks.destroy_stack.si(stack.id)
+            tasks.destroy_hosts.si(stack.id)
         )
         
         # execute the chain
@@ -134,13 +149,36 @@ class StackHostsAPIView(HostListAPIView):
         # implementation to format into a generic result for the user
         for host in result.data['results']:
             hostname = host['hostname']
-            host.update(query_results[hostname]['extra'])
+            host['ec2_metadata'] = query_results[hostname]
 
         return result
 
-class HostDetailAPIView(generics.RetrieveAPIView):
+class HostDetailAPIView(generics.RetrieveDestroyAPIView):
     model = Host
     serializer_class = HostSerializer
+
+    def delete(self, request, *args, **kwargs):
+        '''
+        Override the delete method to first terminate the host
+        before destroying the object.
+        '''
+        # get the stack id for the host
+        host = self.get_object()
+
+        host.set_status(Host.DELETING, 'Deleting host.')
+
+        # unregister DNS and destroy the host
+        task_chain = (
+            tasks.unregister_dns.si(host.stack.id, host_ids=[host.id]) | 
+            tasks.destroy_hosts.si(host.stack.id, host_ids=[host.id])
+        )
+        
+        # execute the chain
+        task_chain()
+
+        # Return the host while its deleting
+        serializer = self.get_serializer(host)
+        return Response(serializer.data)
 
 
 class SaltRoleListAPIView(generics.ListAPIView):

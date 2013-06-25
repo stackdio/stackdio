@@ -147,7 +147,7 @@ class Route53Domain(object):
             rr.add_value(v)
 
 class AWSCloudProvider(BaseCloudProvider):
-    SHORT_NAME = 'aws'
+    SHORT_NAME = 'ec2'
     LONG_NAME  = 'Amazon Web Services' 
 
     # The AWS access key id
@@ -265,11 +265,16 @@ class AWSCloudProvider(BaseCloudProvider):
         # for each host, create a CNAME record
         for host in hosts:
             r53_domain.add_rr_cname(host.hostname,
-                                    host.public_dns, 
+                                    host.provider_dns, 
                                     ttl=DEFAULT_ROUTE53_TTL)
 
         # Finish the transaction
         r53_domain.finish_rr_transaction()
+
+        # update hosts to include fqdn
+        for host in hosts:
+            host.fqdn = '{}.{}'.format(host.hostname, r53_domain.domain)
+            host.save()
         
     def unregister_dns(self, hosts):
         '''
@@ -285,8 +290,13 @@ class AWSCloudProvider(BaseCloudProvider):
         # for each host, delete the CNAME record
         for host in hosts:
             r53_domain.delete_rr_cname(host.hostname, 
-                                       host.public_dns,
+                                       host.provider_dns,
                                        ttl=DEFAULT_ROUTE53_TTL)
 
         # Finish the transaction
         r53_domain.finish_rr_transaction()
+
+        # update hosts to remove fqdn
+        for host in hosts:
+            host.fqdn = ''
+            host.save()
