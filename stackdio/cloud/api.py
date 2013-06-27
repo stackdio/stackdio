@@ -19,10 +19,8 @@ from core import (
 )
 
 from .utils import (
-    get_provider_type_and_class,
     write_cloud_providers_file,
     write_cloud_profiles_file,
-    findRoles,
 )
 
 from .models import (
@@ -30,6 +28,7 @@ from .models import (
     CloudProviderType,
     CloudInstanceSize,
     CloudProfile,
+    Snapshot
 )
 
 from .serializers import (
@@ -37,6 +36,7 @@ from .serializers import (
     CloudProviderTypeSerializer,
     CloudInstanceSizeSerializer,
     CloudProfileSerializer,
+    SnapshotSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,16 +65,12 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
 
         # Lookup provider type
         try:
-            provider_type, provider_class = \
-                get_provider_type_and_class(data.get('provider_type'))
+            driver = obj.get_driver()
 
-            # Instantiate the class with the saved ORM object
-            provider = provider_class(obj)
-
-            # Levarage the provider to generate its required data that
+            # Levarage the driver to generate its required data that
             # will be serialized down to yaml and stored in both the database
             # and the salt cloud providers file
-            provider_data = provider.get_provider_data(data, files)
+            provider_data = driver.get_provider_data(data, files)
             
             # Generate the yaml and store in the database
             yaml_data = {}
@@ -118,3 +114,10 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CloudProfileSerializer
 
 
+class SnapshotListAPIView(generics.ListCreateAPIView):
+    model = Snapshot
+    serializer_class = SnapshotSerializer
+
+class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    model = Snapshot
+    serializer_class = SnapshotSerializer

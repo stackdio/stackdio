@@ -19,6 +19,7 @@ def api_root(request, format=None):
         'provider_types': reverse('cloudprovidertype-list', request=request, format=format),
         'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),
         'profiles': reverse('cloudprofile-list', request=request, format=format),
+        'snapshots': reverse('snapshot-list', request=request, format=format),
         'hosts': reverse('host-list', request=request, format=format),
         'stacks': reverse('stack-list', request=request, format=format),
         'roles': reverse('saltrole-list', request=request, format=format),

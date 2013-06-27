@@ -8,10 +8,12 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 
 from .utils import get_cloud_provider_choices
 
+from cloud.utils import get_provider_type_and_class
+
 logger = logging.getLogger(__name__)
 
-class CloudProviderType(models.Model):
 
+class CloudProviderType(models.Model):
     PROVIDER_CHOICES = get_cloud_provider_choices()
     type_name = models.CharField(max_length=32, 
                                  choices=PROVIDER_CHOICES, 
@@ -20,12 +22,12 @@ class CloudProviderType(models.Model):
     def __unicode__(self):
         return self.type_name
 
+
 class CloudProviderManager(models.Manager):
     pass
 
+
 class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
-
-
     class Meta:
         unique_together = ('title', 'provider_type')
 
@@ -40,16 +42,20 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     objects = CloudProviderManager()
 
     def __unicode__(self):
-
         return self.title
 
+    def get_driver(self):
+        # determine the type and implementation class for this provider
+        ptype, pclass = get_provider_type_and_class(self.provider_type.id)
+
+        # instantiate the implementation class and return it
+        return pclass(self)
+
+
 class CloudInstanceSize(TitleSlugDescriptionModel):
-
-
     class Meta:
         ordering = ['title']
     
-
     # `title` field will be the type used by salt-cloud for the `size` 
     # parameter in the providers yaml file (e.g., 'Micro Instance' or
     # '512MB Standard Instance'
@@ -64,12 +70,12 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
         
         return '{0} ({1})'.format(self.title, self.instance_id)
 
+
 class CloudProfileManager(models.Manager):
     pass
 
-class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
-    
 
+class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'cloud_provider')
 
@@ -94,3 +100,17 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     def __unicode__(self):
 
         return self.title
+
+
+class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
+    
+    # The cloud provider that has access to this snapshot
+    cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='snapshots')
+
+    # The snapshot id. Must exist already, be preformatted, and available
+    # to the associated cloud provider
+    snapshot_id = models.CharField(max_length=32)
+
+    # How big the snapshot is...this doesn't actually affect the actual
+    # volume size, but mainly a useful hint to the user
+    size_in_gb = models.IntegerField()

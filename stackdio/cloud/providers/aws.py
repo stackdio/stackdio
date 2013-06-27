@@ -177,6 +177,15 @@ class AWSCloudProvider(BaseCloudProvider):
             self.SECURITY_GROUPS
         ]
 
+    def get_config(self):
+        with open(self.get_config_file_path(), 'r') as f:
+            config_data = yaml.safe_load(f)
+        return config_data
+
+    def get_credentials(self):
+        config_data = self.get_config()
+        return (config_data['id'], config_data['key'])
+
     def get_private_key_path(self):
         return os.path.join(self.provider_storage, 'id_rsa')
 
@@ -237,12 +246,11 @@ class AWSCloudProvider(BaseCloudProvider):
         
         return result, errors
 
-    def route53_domain_connection(self):
+    def connect_route53(self):
 
         # Load the configuration file to get a few things we'll need
         # to manage DNS
-        with open(self.get_config_file_path(), 'r') as f:
-            config_data = yaml.safe_load(f)
+        config_data = self.get_config()
 
         access_key = config_data['id']
         secret_key = config_data['key']
@@ -250,6 +258,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # load a new Route53Domain class and return it
         return Route53Domain(access_key, secret_key, domain)
+
+    def connect_ec2(self):
+        credentials = self.get_credentials()
+        return boto.connect_ec2(*credentials)
 
     def register_dns(self, hosts):
         '''
@@ -259,7 +271,7 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
 
         # Start a resource record "transaction"
-        r53_domain = self.route53_domain_connection()
+        r53_domain = self.connect_route53()
         r53_domain.start_rr_transcation()
 
         # for each host, create a CNAME record
@@ -284,7 +296,7 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
 
         # Start a resource record "transaction"
-        r53_domain = self.route53_domain_connection()
+        r53_domain = self.connect_route53()
         r53_domain.start_rr_transcation()
 
         # for each host, delete the CNAME record
@@ -300,3 +312,25 @@ class AWSCloudProvider(BaseCloudProvider):
         for host in hosts:
             host.fqdn = ''
             host.save()
+
+    def register_volumes_for_delete(self, hosts):
+        ec2 = self.connect_ec2()
+
+        # for each host, modify the instance attribute to enable automatic
+        # volume deletion automatically when the host is terminated
+        for h in hosts:
+            # get current block device mappings
+            _, devices = ec2.get_instance_attribute(h.instance_id,
+                                                    'blockDeviceMapping').popitem()
+
+            # find those devices that aren't already registered for deletion
+            # and build a list of the modify strings
+            mods = []
+            for device_name, device in devices.iteritems():
+                if not device.delete_on_termination:
+                    mods.append('{}=true'.format(device_name))
+
+            # use the modify strings to change the existing volumes flag
+            if mods:
+                ec2.modify_instance_attribute(h.instance_id, 'blockDeviceMapping', mods)
+

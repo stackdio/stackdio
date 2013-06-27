@@ -8,6 +8,7 @@ from .models import (
     CloudProviderType,
     CloudInstanceSize,
     CloudProfile,
+    Snapshot,
 )
 
 from .utils import get_provider_type_and_class
@@ -78,6 +79,7 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
             'instance_id', 
         )
 
+
 class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
     cloud_provider = serializers.PrimaryKeyRelatedField()
     default_instance_size = serializers.PrimaryKeyRelatedField()
@@ -94,3 +96,21 @@ class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
             'default_instance_size',
             'ssh_user',
         )
+
+
+class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
+    cloud_provider = serializers.PrimaryKeyRelatedField()
+    default_instance_size = serializers.PrimaryKeyRelatedField()
+    class Meta:
+        model = Snapshot
+        fields = (
+            'id',
+            'url',
+            'title', 
+            'slug',
+            'description',
+            'cloud_provider',
+            'snapshot_id',
+            'size_in_gb',
+        )
+

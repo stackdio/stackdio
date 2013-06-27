@@ -7,10 +7,7 @@ import envoy
 import celery
 from celery.utils.log import get_task_logger
 
-from cloud.utils import (
-    get_provider_host_map,
-    get_provider_type_and_class,
-)
+from volumes.models import Volume
 
 from .models import Stack
 
@@ -79,34 +76,87 @@ def launch_hosts(stack_id, host_ids=None):
                 stack.set_status(Stack.ERROR, err_msg)
                 return False
 
-        # All hosts are running (we hope!) so now we can pull the host metadata
-        # and store what we want to keep track of.
+        return True
+
+    except Stack.DoesNotExist:
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception.')
+        stack.set_status(Stack.ERROR, str(e))
+
+    return False
+
+@celery.task(name='stacks.update_metadata')
+def update_metadata(stack_id, host_ids=None):
+    try:
+
+        # All hosts are running (we hope!) so now we can pull the various
+        # metadata and store what we want to keep track of.
+
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Updating metadata for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(Stack.CONFIGURING, 'Updating host metadata from running stack machines.')
+        stack.set_status(Stack.CONFIGURING, 
+                         'Updating host metadata from running stack machines.')
 
         # Use salt-cloud to look up host information we need now that
-        # they machines are running
+        # the machines are running
         query_results = stack.query_hosts()
 
         for host in stack.hosts.all():
+            host_data = query_results[host.hostname]
+
             # FIXME: This is cloud provider specific. Should farm it out to
             # the right implementation
-            dns_name = query_results[host.hostname]['dnsName']
-            logger.debug('{} = {}'.format(host.hostname, dns_name))
+
+            # The instance id of the host
+            host.instance_id = host_data['instanceId']
+
+            # Get the host's public IP/host set by the cloud provider. This is
+            # used later when we tie the machine to DNS
+            host.provider_dns = host_data['dnsName']
 
             # update the state of the host as provided by ec2
-            state = query_results[host.hostname]['state']
+            host.state = host_data['state']
 
-            host.provider_dns = dns_name
-            host.state = state
+            # update volume information
+            block_device_mappings = host_data \
+                .get('blockDeviceMapping', {}) \
+                .get('item', [])
+
+            # for each block device mapping found on the running host,
+            # try to match the device name up with that stored in the DB
+            # if a match is found, fill in the metadata and save the volume
+            for bdm in block_device_mappings:
+                try:
+                    # attempt to get the volume for this host that
+                    # has been created
+                    volume = host.volumes.get(device=bdm['deviceName'])
+
+                    # update the volume information from what was provided
+                    # by the cloud provider
+                    volume.volume_id = bdm['ebs']['volumeId']
+                    volume.attach_time = bdm['ebs']['attachTime']
+
+                    # save the new volume info
+                    volume.save()
+                except Volume.DoesNotExist, e:
+                    # This is most likely fine. Usually means that the 
+                    # EBS volume for the root drive was used
+                    pass
+
+            # save the host
             host.save()
 
+            return True
+
     except Stack.DoesNotExist:
-        logger.exception('Attempted to launch an unknown Stack with id {}'.format(stack_id))
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
     except Exception, e:
-        logger.exception('Unhandled exception while launching a Stack')
+        logger.exception('Unhandled exception.')
         stack.set_status(Stack.ERROR, str(e))
+    return False
 
 @celery.task(name='stacks.register_dns')
 def register_dns(stack_id, host_ids=None):
@@ -120,22 +170,21 @@ def register_dns(stack_id, host_ids=None):
 
         stack.set_status(Stack.CONFIGURING)
 
-        provider_host_map = get_provider_host_map(stack, host_ids=host_ids)
-        for provider_obj, hosts in provider_host_map.iteritems():
-            # Lookup the proper cloud provider implementation
-            provider_type, provider_class = \
-                get_provider_type_and_class(provider_obj.provider_type.id)
-
+        provider_hosts_map = stack.get_provider_hosts_map() 
+        for provider, hosts in provider_hosts_map.iteritems():
             # Use the provider implementation to register a set of hosts
             # with the appropriate cloud's DNS service
-            provider_impl = provider_class(obj=provider_obj)
-            provider_impl.register_dns(hosts)
+            driver = provider.get_driver()
+            driver.register_dns(hosts)
+
+        return True
 
     except Stack.DoesNotExist:
-        logger.exception('Attempted to launch an unknown Stack with id {}'.format(stack_id))
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
     except Exception, e:
-        logger.exception('Unhandled exception while launching a Stack')
+        logger.exception('Unhandled exception.')
         stack.set_status(Stack.ERROR, str(e))
+    return False
 
 @celery.task(name='stacks.provision_hosts')
 def provision_hosts(stack_id, host_ids=None):
@@ -191,12 +240,14 @@ def provision_hosts(stack_id, host_ids=None):
         # good mix of looking at envoy's status_code and parsing
         # the log file would be nice.
 
-    except Stack.DoesNotExist:
-        logger.exception('Attempted to provision an unknown Stack with id {}'.format(stack_id))
-    except Exception, e:
-        logger.exception('Unhandled exception while provisioning a Stack')
-        stack.set_status(Stack.ERROR, str(e))
+        return True
 
+    except Stack.DoesNotExist:
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception.')
+        stack.set_status(Stack.ERROR, str(e))
+    return False
 
 @celery.task(name='stacks.finish_stack')
 def finish_stack(stack_id):
@@ -212,13 +263,45 @@ def finish_stack(stack_id):
         # Update status
         stack.set_status(Stack.FINISHED)
 
-    except Stack.DoesNotExist:
-        logger.exception('Attempted to provision an unknown Stack with id {}'.format(stack_id))
-    except Exception, e:
-        logger.exception('Unhandled exception while finishing a Stack')
-        stack.set_status(Stack.ERROR, str(e))
+        return True
 
-@celery.task(name='stacks.destroy_hosts', ignore_result=True)
+    except Stack.DoesNotExist:
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception.')
+        stack.set_status(Stack.ERROR, str(e))
+    return False
+
+@celery.task(name='stacks.register_volume_delete')
+def register_volume_delete(stack_id, host_ids=None):
+    '''
+    Modifies the instance attributes for the volumes in a stack (or host_ids)
+    that will automatically delete the volumes when the machines are
+    terminated.
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        hosts = stack.get_hosts(host_ids) 
+
+        provider_hosts_map = stack.get_provider_hosts_map() 
+
+        for provider, hosts in provider_hosts_map.iteritems():
+            driver = provider.get_driver()
+
+            # use the driver to register all volumes on the hosts to
+            # automatically delete after the host is terminated
+            driver.register_volumes_for_delete(hosts)
+
+        return True
+
+    except Stack.DoesNotExist:
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception.')
+        stack.set_status(Stack.ERROR, str(e))
+    return False
+
+@celery.task(name='stacks.destroy_hosts')
 def destroy_hosts(stack_id, host_ids=None):
     '''
     Destroy the given stack id or a subset of the stack if host_ids
@@ -226,6 +309,7 @@ def destroy_hosts(stack_id, host_ids=None):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
+        hosts = stack.get_hosts(host_ids)
 
         # Build up the salt-cloud command
         cmd_args = [
@@ -239,7 +323,6 @@ def destroy_hosts(stack_id, host_ids=None):
         # if host ids is given, we're going to terminate only those hosts
         if host_ids:
             stack.set_status(Stack.DESTROYING, 'Destroying hosts.')
-            hosts = stack.hosts.filter(id__in=host_ids)
             logger.info('Destroying hosts {0!r} on stack {1!r}'.format(
                 hosts, 
                 stack
@@ -283,11 +366,14 @@ def destroy_hosts(stack_id, host_ids=None):
             hosts.delete()
             stack.set_status(Stack.OK, 'Hosts deleted.')
 
+        return True
+
     except Stack.DoesNotExist:
-        logger.exception('Attempted to destroy an unknown Stack with id {}'.format(stack_id))
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
     except Exception, e:
-        logger.exception('Unhandled exception while finishing a Stack')
+        logger.exception('Unhandled exception.')
         stack.set_status(Stack.ERROR, str(e))
+    return False
 
 @celery.task(name='stacks.unregister_dns')
 def unregister_dns(stack_id, host_ids=None):
@@ -301,19 +387,19 @@ def unregister_dns(stack_id, host_ids=None):
 
         stack.set_status(Stack.CONFIGURING, 'Unregistering DNS entries.')
 
-        provider_host_map = get_provider_host_map(stack, host_ids=host_ids)
-        for provider_obj, hosts in provider_host_map.iteritems():
-            # Lookup the proper cloud provider implementation
-            provider_type, provider_class = \
-                get_provider_type_and_class(provider_obj.provider_type.id)
-
+        provider_hosts_map = stack.get_provider_hosts_map() 
+        for provider, hosts in provider_hosts_map.iteritems():
             # Use the provider implementation to register a set of hosts
             # with the appropriate cloud's DNS service
-            provider_impl = provider_class(obj=provider_obj)
-            provider_impl.unregister_dns(hosts)
+            driver = provider.get_driver()
+            driver.unregister_dns(hosts)
+
+        return True
 
     except Stack.DoesNotExist:
-        logger.exception('Attempted to unregister DNS for a Stack with id {}'.format(stack_id))
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
     except Exception, e:
-        logger.exception('Unhandled exception while unregistering DNS for a stack')
+        logger.exception('Unhandled exception.')
         stack.set_status(Stack.ERROR, str(e))
+    return False
+

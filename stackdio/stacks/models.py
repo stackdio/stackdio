@@ -68,6 +68,14 @@ class StackManager(models.Manager):
                     "cloud_profile": 1,     # what cloud_profile object to use
                     "salt_roles": [1,2,3],  # what salt_roles to use
                     "host_security_groups": "foo,bar,baz",
+                    "volumes": [            # list of volumes to create and 
+                                            # attach to the launched hosts
+                        {
+                            "snapshot": 1,
+                            "device": "/dev/sdj"
+                        }
+                        ...
+                    ]
                 },
                 {
                     ...
@@ -143,6 +151,21 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     def __unicode__(self):
         return self.title
+
+    def get_provider_hosts_map(self):
+        '''
+        returns a dictionary where the keys are provider objects and values
+        are a list of host objects in that provider.
+        '''
+        providers = collections.defaultdict(list)
+        for host in self.hosts.all():
+            providers[host.cloud_profile.cloud_provider].append(host)
+        return providers
+
+    def get_hosts(self, host_ids=None):
+        if not host_ids:
+            return self.hosts.all()
+        return self.hosts.filter(id__in=host_ids)
     
     def add_hosts(self, hosts=[]):
         '''
@@ -156,6 +179,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             host_pattern = host['host_pattern']
             cloud_profile = host['cloud_profile']
             salt_roles = host['salt_roles']
+            # optional
+            volumes = host.get('volumes', [])
 
             # Get the security group objects
             security_group_objs = [
@@ -199,6 +224,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                 # set roles
                 host_obj.roles.add(*role_objs)
 
+                # add volumes
+                cloud_provider = host_obj.cloud_profile.cloud_provider
+                for volume in volumes:
+                    host_obj.volumes.create(
+                        user=self.user,
+                        snapshot=cloud_provider.snapshots.get(id=volume['snapshot']),
+                        device=volume['device'],
+                        mount_point=volume['mount_point'])
+
+                # keep track of the hosts we're creating so we can return them
                 new_hosts.append(host_obj)
 
         # generate salt and salt-cloud files
@@ -236,13 +271,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                 sg.group_name for
                 sg in host.security_groups.all()
             ])
+            volumes = host.volumes.all()
 
             # add in cloud provider security groups
             security_groups.add(*cloud_provider_yaml['securitygroup'])
 
             fqdn = '{0}.{1}'.format(host.hostname, 
                                     cloud_provider_yaml['append_domain'])
-
             profiles[host.cloud_profile.slug].append({
                 host.hostname: {
                     'size': instance_size,
@@ -258,8 +293,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                             'stack_pillar_file': self.pillar_file.path,
                         }
                     },
+                    'volumes': [{
+                        'snapshot': v.snapshot.snapshot_id,
+                        'device': v.device,
+                        'mount_point': v.mount_point,
+                    } for v in volumes]
                 }
             })
+
         map_file_yaml = yaml.safe_dump(dict(profiles),
                                        default_flow_style=False)
 
@@ -404,6 +445,10 @@ class Host(TimeStampedModel, StatusDetailModel):
     # The FQDN for the host. This includes the hostname and the
     # domain if it was registered with DNS
     fqdn = models.CharField(max_length=255, blank=True)
+
+    # Instance id of the running host. This is provided by the cloud
+    # provider
+    instance_id = models.CharField(max_length=32, blank=True)
 
     def __unicode__(self):
         return self.hostname

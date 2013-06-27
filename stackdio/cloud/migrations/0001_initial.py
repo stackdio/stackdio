@@ -60,6 +60,20 @@ class Migration(SchemaMigration):
         # Adding unique constraint on 'CloudProfile', fields ['title', 'cloud_provider']
         db.create_unique(u'cloud_cloudprofile', ['title', 'cloud_provider_id'])
 
+        # Adding model 'Snapshot'
+        db.create_table(u'cloud_snapshot', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
+            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('cloud_provider', self.gf('django.db.models.fields.related.ForeignKey')(related_name='snapshots', to=orm['cloud.CloudProvider'])),
+            ('snapshot_id', self.gf('django.db.models.fields.CharField')(max_length=32)),
+            ('size_in_gb', self.gf('django.db.models.fields.IntegerField')()),
+        ))
+        db.send_create_signal(u'cloud', ['Snapshot'])
+
 
     def backwards(self, orm):
         # Removing unique constraint on 'CloudProfile', fields ['title', 'cloud_provider']
@@ -79,6 +93,9 @@ class Migration(SchemaMigration):
 
         # Deleting model 'CloudProfile'
         db.delete_table(u'cloud_cloudprofile')
+
+        # Deleting model 'Snapshot'
+        db.delete_table(u'cloud_snapshot')
 
 
     models = {
@@ -119,6 +136,18 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'CloudProviderType'},
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'type_name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '32'})
+        },
+        u'cloud.snapshot': {
+            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Snapshot'},
+            'cloud_provider': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'snapshots'", 'to': u"orm['cloud.CloudProvider']"}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'size_in_gb': ('django.db.models.fields.IntegerField', [], {}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'snapshot_id': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         }
     }
 

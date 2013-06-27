@@ -3,10 +3,41 @@ import logging
 from django.conf import settings
 from django.db import models
 from django.core.files.storage import FileSystemStorage
+from django.contrib.auth import get_user_model
 
-from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
+from django_extensions.db.models import (
+    TimeStampedModel,
+)
 
-class Volume(TimeStampedModel, TitleSlugDescriptionModel):
+
+class Volume(TimeStampedModel):
+
+    # the volume id as provided by the cloud provider. This can only
+    # be populated after the volume has been created, thus allowing
+    # blank values
+    volume_id = models.CharField(max_length=32, blank=True)
+
+    # when the last attach time for the volume was. This is also set
+    # after the volume has been created
+    attach_time = models.DateTimeField(default=None, null=True, blank=True)
+
+    # the user who owns this volume
+    user = models.ForeignKey(get_user_model(), related_name='volumes')
+
+    # the host this volume is associated to
+    host = models.ForeignKey('stacks.Host', related_name='volumes')
+
+    # the snapshot used when this volume is created. The size of the volume
+    # is determined by the snapshot
+    snapshot = models.ForeignKey('cloud.Snapshot')
+
+    # the device id (e.g, /dev/sdj or /dev/sdk) the volume will assume when
+    # it's attached to its host
+    device = models.CharField(max_length=32)
+
+    # where on the machine should this volume be mounted?
+    mount_point = models.CharField(max_length=255)
 
     def __unicode__(self):
-        return self.title
+        return '{}'.format(self.volume_id)
+

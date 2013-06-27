@@ -8,105 +8,25 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'Stack'
-        db.create_table(u'stacks_stack', (
+        # Adding model 'Volume'
+        db.create_table(u'volumes_volume', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
-            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('status', self.gf('model_utils.fields.StatusField')(default='ok', max_length=100, no_check_for_status=True)),
-            ('status_changed', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status')),
-            ('status_detail', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['auth.User'])),
-            ('map_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
-            ('top_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
-            ('pillar_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
+            ('volume_id', self.gf('django.db.models.fields.CharField')(max_length=32, blank=True)),
+            ('attach_time', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True, blank=True)),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='volumes', to=orm['auth.User'])),
+            ('host', self.gf('django.db.models.fields.related.ForeignKey')(related_name='volumes', to=orm['stacks.Host'])),
+            ('snapshot', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.Snapshot'])),
+            ('device', self.gf('django.db.models.fields.CharField')(max_length=32)),
+            ('mount_point', self.gf('django.db.models.fields.CharField')(max_length=255)),
         ))
-        db.send_create_signal(u'stacks', ['Stack'])
-
-        # Adding unique constraint on 'Stack', fields ['user', 'title']
-        db.create_unique(u'stacks_stack', ['user_id', 'title'])
-
-        # Adding model 'SaltRole'
-        db.create_table(u'stacks_saltrole', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
-            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('role_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
-        ))
-        db.send_create_signal(u'stacks', ['SaltRole'])
-
-        # Adding model 'Host'
-        db.create_table(u'stacks_host', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('status', self.gf('model_utils.fields.StatusField')(default='ok', max_length=100, no_check_for_status=True)),
-            ('status_changed', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status')),
-            ('status_detail', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['stacks.Stack'])),
-            ('cloud_profile', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['cloud.CloudProfile'])),
-            ('instance_size', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['cloud.CloudInstanceSize'])),
-            ('hostname', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('state', self.gf('django.db.models.fields.CharField')(default='unknown', max_length=32)),
-            ('provider_dns', self.gf('django.db.models.fields.CharField')(max_length=64, blank=True)),
-            ('fqdn', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
-            ('instance_id', self.gf('django.db.models.fields.CharField')(max_length=32, blank=True)),
-        ))
-        db.send_create_signal(u'stacks', ['Host'])
-
-        # Adding M2M table for field roles on 'Host'
-        db.create_table(u'stacks_host_roles', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('host', models.ForeignKey(orm[u'stacks.host'], null=False)),
-            ('saltrole', models.ForeignKey(orm[u'stacks.saltrole'], null=False))
-        ))
-        db.create_unique(u'stacks_host_roles', ['host_id', 'saltrole_id'])
-
-        # Adding M2M table for field security_groups on 'Host'
-        db.create_table(u'stacks_host_security_groups', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('host', models.ForeignKey(orm[u'stacks.host'], null=False)),
-            ('securitygroup', models.ForeignKey(orm[u'stacks.securitygroup'], null=False))
-        ))
-        db.create_unique(u'stacks_host_security_groups', ['host_id', 'securitygroup_id'])
-
-        # Adding model 'SecurityGroup'
-        db.create_table(u'stacks_securitygroup', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('group_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
-        ))
-        db.send_create_signal(u'stacks', ['SecurityGroup'])
+        db.send_create_signal(u'volumes', ['Volume'])
 
 
     def backwards(self, orm):
-        # Removing unique constraint on 'Stack', fields ['user', 'title']
-        db.delete_unique(u'stacks_stack', ['user_id', 'title'])
-
-        # Deleting model 'Stack'
-        db.delete_table(u'stacks_stack')
-
-        # Deleting model 'SaltRole'
-        db.delete_table(u'stacks_saltrole')
-
-        # Deleting model 'Host'
-        db.delete_table(u'stacks_host')
-
-        # Removing M2M table for field roles on 'Host'
-        db.delete_table('stacks_host_roles')
-
-        # Removing M2M table for field security_groups on 'Host'
-        db.delete_table('stacks_host_security_groups')
-
-        # Deleting model 'SecurityGroup'
-        db.delete_table(u'stacks_securitygroup')
+        # Deleting model 'Volume'
+        db.delete_table(u'volumes_volume')
 
 
     models = {
@@ -177,6 +97,18 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'type_name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '32'})
         },
+        u'cloud.snapshot': {
+            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Snapshot'},
+            'cloud_provider': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'snapshots'", 'to': u"orm['cloud.CloudProvider']"}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'size_in_gb': ('django.db.models.fields.IntegerField', [], {}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'snapshot_id': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
         u'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
             'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
@@ -235,7 +167,20 @@ class Migration(SchemaMigration):
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'top_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['auth.User']"})
+        },
+        u'volumes.volume': {
+            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Volume'},
+            'attach_time': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'device': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'host': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'volumes'", 'to': u"orm['stacks.Host']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'mount_point': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'snapshot': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.Snapshot']"}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'volumes'", 'to': u"orm['auth.User']"}),
+            'volume_id': ('django.db.models.fields.CharField', [], {'max_length': '32', 'blank': 'True'})
         }
     }
 
-    complete_apps = ['stacks']
+    complete_apps = ['volumes']

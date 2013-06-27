@@ -41,6 +41,9 @@ class StackListAPIView(generics.ListCreateAPIView):
         as well as generating the salt-cloud map that will be used to launch
         machines
         '''
+        # set some defaults
+        launch_stack = request.DATA.setdefault('launch', True)
+
         # check for duplicates
         title = request.DATA.get('title')
         if Stack.objects.filter(user=self.request.user, title=title).count():
@@ -53,13 +56,15 @@ class StackListAPIView(generics.ListCreateAPIView):
         # Queue up stack creation and provisioning using Celery
         task_chain = (
             tasks.launch_hosts.si(stack.id) | 
+            tasks.update_metadata.si(stack.id) | 
             tasks.register_dns.si(stack.id) | 
             tasks.provision_hosts.si(stack.id) |
             tasks.finish_stack.si(stack.id)
         )
         
         # execute the chain
-        task_chain()
+        if launch_stack:
+            task_chain()
 
         # return serialized stack object
         serializer = StackSerializer(stack, context={
@@ -86,6 +91,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         # Queue up stack creation and provisioning using Celery
         task_chain = (
             tasks.launch_hosts.si(stack.id, host_ids=host_ids) | 
+            tasks.update_metadata.si(stack.id, host_ids=host_ids) | 
             tasks.register_dns.si(stack.id, host_ids=host_ids) | 
             tasks.provision_hosts.si(stack.id, host_ids=host_ids) |
             tasks.finish_stack.si(stack.id, host_ids=host_ids)
@@ -112,6 +118,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         # Queue up stack destroy tasks
         task_chain = (
+            tasks.register_volume_delete.si(stack.id) |
             tasks.unregister_dns.si(stack.id) | 
             tasks.destroy_hosts.si(stack.id)
         )
@@ -164,11 +171,13 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         '''
         # get the stack id for the host
         host = self.get_object()
+        volume_ids = [v.id for v in host.volumes.all()]
 
         host.set_status(Host.DELETING, 'Deleting host.')
 
         # unregister DNS and destroy the host
         task_chain = (
+            tasks.register_volume_delete.si(host.stack.id, host_ids=[host.id]) |
             tasks.unregister_dns.si(host.stack.id, host_ids=[host.id]) | 
             tasks.destroy_hosts.si(host.stack.id, host_ids=[host.id])
         )

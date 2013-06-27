@@ -11,9 +11,9 @@ from rest_framework.response import Response
 
 from core.exceptions import ResourceConflict
 
-# from .models import (
-#     Volume,
-# )
+from .models import (
+    Volume,
+)
 
 from .serializers import (
     VolumeSerializer, 
@@ -23,15 +23,9 @@ logger = logging.getLogger(__name__)
 
 
 class VolumeListAPIView(generics.ListCreateAPIView):
+    model = Volume
     serializer_class = VolumeSerializer
-
-    def get(self, request, *args, **kwargs):
-        return Response([{'id': 1, 'title': 'Sample Volume 1', 'description': 'Sample volume description'},{'id': 2, 'title': 'Sample Volume 3', 'description': 'Sample volume description'},{'id': 3, 'title': 'Sample Volume 4', 'description': 'Sample volume description'},{'id':4, 'title': 'Sample Volume 10', 'description': 'Sample volume description'}])
 
 
 class VolumeDetailAPIView(generics.RetrieveDestroyAPIView):
     serializer_class = VolumeSerializer
-
-    def get(self, request, *args, **kwargs):
-        return Response({'title': 'Sample Volume'})
-

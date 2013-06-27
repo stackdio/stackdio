@@ -5,6 +5,7 @@ from .models import (
     CloudProvider, 
     CloudInstanceSize,
     CloudProfile,
+    Snapshot,
 )
 
 class CloudProviderTypeAdmin(admin.ModelAdmin):
@@ -48,3 +49,14 @@ class CloudProfileAdmin(admin.ModelAdmin):
         'ssh_user',
     ]
 admin.site.register(CloudProfile, CloudProfileAdmin)
+
+
+class SnapshotAdmin(admin.ModelAdmin):
+    list_display = [
+        'title',
+        'slug',
+        'cloud_provider',
+        'snapshot_id',
+        'size_in_gb',
+    ]
+admin.site.register(Snapshot, SnapshotAdmin)

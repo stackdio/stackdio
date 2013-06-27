@@ -16,36 +16,6 @@ logger = logging.getLogger(__name__)
 
 STACKDIO_CONFIG = settings.STACKDIO_CONFIG
 
-def get_provider_host_map(stack, host_ids=None):
-    '''
-    Given a Stack object (`stacks.models.Stack`), return a dictionary
-    with keys for unique providers objects (`cloud.models.CloudProvider`) and 
-    values being a list of the hosts that use that provider:
-
-    {
-        aws_provider_object: [Host1, Host8, ... ],
-        rackspace_provider_object: [Host7, Host13, ... ],
-        ...
-        ...
-    }
-
-    Optionally provide a list of host ids to lookup a subset of the hosts
-    for the given stack.
-    '''
-    # build up a map of cloud provider to hosts as each host could
-    # be on a separate cloud provider
-    if host_ids is None:
-        hosts = stack.hosts.all()
-    else:
-        hosts = stack.hosts.filter(id__in=host_ids)
-
-    provider_host_map = defaultdict(list)
-    for host in hosts:
-        provider = host.get_provider()
-        provider_host_map[provider].append(host)
-
-    return provider_host_map
-
 def get_provider_type_and_class(provider_type_id):
 
     try:

@@ -14,5 +14,11 @@ class VolumeSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id',
             'url',
-            'title', 
+            'volume_id',
+            'attach_time',
+            'user',
+            'host',
+            'snapshot',
+            'device',
+            'mount_point',
         )

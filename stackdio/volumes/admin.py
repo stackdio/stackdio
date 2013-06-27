@@ -7,9 +7,13 @@ from .models import (
 
 class VolumeAdmin(admin.ModelAdmin):
     list_display = [
-        'title',
-        'slug',
-        'created',
-        'modified',
+        'volume_id',
+        'attach_time',
+        'user',
+        'host',
+        'snapshot',
+        'device',
+        'mount_point',
     ]
 admin.site.register(Volume, VolumeAdmin)
+
