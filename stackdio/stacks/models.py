@@ -313,7 +313,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     def _generate_top_file(self):
         top_file_data = {
             '*': [
-                'core',
+                'core.*',
             ]     
         }
 
