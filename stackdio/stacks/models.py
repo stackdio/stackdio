@@ -278,6 +278,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
             fqdn = '{0}.{1}'.format(host.hostname, 
                                     cloud_provider_yaml['append_domain'])
+
+            # The volumes will be defined on the map as well as in the grains.
+            # Those in the map are used by salt-cloud to create and attach
+            # the volumes (using the snapshot), whereas those on the grains
+            # are available for states and modules to play with (e.g., to
+            # mount the devices)
+            volumes = [{
+                'snapshot': v.snapshot.snapshot_id,
+                'device': v.device,
+                'mount_point': v.mount_point,
+            } for v in volumes]
+
             profiles[host.cloud_profile.slug].append({
                 host.hostname: {
                     'size': instance_size,
@@ -291,13 +303,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                             'fqdn': fqdn,
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
+                            'volumes': volumes,
                         }
                     },
-                    'volumes': [{
-                        'snapshot': v.snapshot.snapshot_id,
-                        'device': v.device,
-                        'mount_point': v.mount_point,
-                    } for v in volumes]
+                    'volumes': volumes,
                 }
             })
 
