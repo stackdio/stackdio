@@ -1,4 +1,4 @@
-{% for vol in grains['ebs_mounts'] %}  
+{% for vol in grains['volumes'] %}  
 
 # Mount the device to the given mount point, but first
 # make sure the device exists. AWS requires the device
@@ -13,8 +13,9 @@
 {{ vol['mount_point'] }}:
   mount:
     - mounted
+    - order: 1
     - device: {{ device_name }}
-    - fstype: {{ vol['fs_type'] }}
+    - fstype: ''
     - mkmnt: True
 {% endif %}
 

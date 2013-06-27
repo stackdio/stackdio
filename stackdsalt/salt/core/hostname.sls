@@ -10,4 +10,7 @@ set_hostname:
 /etc/hosts:
   file:
     - append
+    - order: 1
     - text: "{{ grains['ip_interfaces']['eth0'][0] }} {{ grains['fqdn'] }}"
+    - require:
+      - cmd: set_hostname
