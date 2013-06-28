@@ -5,10 +5,12 @@ Amazon Web Services provider for stackd.io
 import os
 import stat
 import logging
-import yaml
+from uuid import uuid4
 
 import boto
+import yaml
 from boto.route53.record import ResourceRecordSets
+
 from django.core.exceptions import ValidationError
 
 from cloud.providers.base import BaseCloudProvider
@@ -332,5 +334,40 @@ class AWSCloudProvider(BaseCloudProvider):
 
             # use the modify strings to change the existing volumes flag
             if mods:
-                ec2.modify_instance_attribute(h.instance_id, 'blockDeviceMapping', mods)
+                ec2.modify_instance_attribute(h.instance_id, 
+                                              'blockDeviceMapping', 
+                                              mods)
+
+            # for each volume, rename them so we can create new volumes with
+            # the same now, just in case
+            for v in h.volumes.all():
+                name = 'stackdio::volume::{0!s}-DEL-{1}'.format(v.id, uuid4().hex)
+                logger.debug('tagging volume {}: {}'.format(v.volume_id, name))
+                ec2.create_tags([v.volume_id], {
+                    'Name': name,
+                })
+
+
+    def tag_resources(self, stack, hosts=[], volumes=[]):
+        ec2 = self.connect_ec2()
+
+        # Tag each volume with a unique name. This makes it easier to view
+        # the volumes in the AWS console
+        for v in volumes:
+            name = 'stackdio::volume::{0!s}'.format(v.id)
+            logger.debug('tagging volume {}: {}'.format(v.volume_id, name))
+            ec2.create_tags([v.volume_id], {
+                'Name': name,
+            })
+
+        # Next tag all resources with a set of common fields
+        resource_ids = [v.volume_id for v in volumes] + \
+                       [h.instance_id for h in hosts]
+
+        if resource_ids:
+            logger.debug('tagging {0!r}'.format(resource_ids))
+            ec2.create_tags(resource_ids, {
+                'stack_id': str(stack.id),
+                'owner': stack.user.username,
+            })
 

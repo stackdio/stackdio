@@ -158,6 +158,39 @@ def update_metadata(stack_id, host_ids=None):
         stack.set_status(Stack.ERROR, str(e))
     return False
 
+@celery.task(name='stacks.tag_infrastructure')
+def tag_infrastructure(stack_id, host_ids=None):
+    '''
+    Tags hosts and volumes with certain metadata that should prove useful
+    to anyone using the AWS console.
+
+    ORDER MATTERS! Make sure that tagging only comes after you've executed
+    the `update_metadata` task as that task actually pulls in information
+    we need to use the tagging API effectively.
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
+
+        # Update status
+        stack.set_status(Stack.CONFIGURING, 
+                         'Tagging hosts and volumes for stack.')
+
+        provider_hosts_map = stack.get_provider_hosts_map()
+        for provider, hosts in provider_hosts_map.iteritems():
+            driver = provider.get_driver()
+            volumes = Volume.objects.filter(host__in=hosts)
+            driver.tag_resources(stack, hosts, volumes)
+
+        return True
+
+    except Stack.DoesNotExist:
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception.')
+        stack.set_status(Stack.ERROR, str(e))
+    return False
+
 @celery.task(name='stacks.register_dns')
 def register_dns(stack_id, host_ids=None):
     '''

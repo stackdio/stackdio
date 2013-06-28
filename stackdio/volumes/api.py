@@ -23,4 +23,5 @@ class VolumeListAPIView(generics.ListAPIView):
 
 
 class VolumeDetailAPIView(generics.RetrieveAPIView):
+    model = Volume
     serializer_class = VolumeSerializer

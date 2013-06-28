@@ -57,6 +57,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         task_chain = (
             tasks.launch_hosts.si(stack.id) | 
             tasks.update_metadata.si(stack.id) | 
+            tasks.tag_infrastructure.si(stack.id) | 
             tasks.register_dns.si(stack.id) | 
             tasks.provision_hosts.si(stack.id) |
             tasks.finish_stack.si(stack.id)
@@ -92,6 +93,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         task_chain = (
             tasks.launch_hosts.si(stack.id, host_ids=host_ids) | 
             tasks.update_metadata.si(stack.id, host_ids=host_ids) | 
+            tasks.tag_infrastructure.si(stack.id, host_ids=host_ids) | 
             tasks.register_dns.si(stack.id, host_ids=host_ids) | 
             tasks.provision_hosts.si(stack.id, host_ids=host_ids) |
             tasks.finish_stack.si(stack.id, host_ids=host_ids)

@@ -11,7 +11,7 @@ urlpatterns = patterns('volumes.api',
         VolumeListAPIView.as_view(), 
         name='volume-list'),
 
-    url(r'^volume/(?P<pk>[0-9]+)/$', 
+    url(r'^volumes/(?P<pk>[0-9]+)/$', 
         VolumeDetailAPIView.as_view(), 
         name='volume-detail'),
 
