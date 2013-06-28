@@ -69,7 +69,7 @@ Ext.define('stackdio.view.host.Add', {
             }
             ,{
                 xtype: 'button'
-                ,id: 'create-hot-volume'
+                ,id: 'create-host-volume'
                 ,text: 'Attach Volume'
                 ,ui: 'info'
                 ,scale: 'small'

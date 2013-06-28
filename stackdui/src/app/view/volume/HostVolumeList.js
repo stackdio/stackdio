@@ -20,13 +20,13 @@ Ext.define('stackdio.view.volume.HostVolumeList', {
             header: 'Snapshot',
             dataIndex: 'snapshot',
             flex: 1
-            // ,renderer: function (ids, metaData, record, rowIndex, colIndex, store, view) {
-            //     var r, rr = [], store = Ext.getStore('Volumes');
+            ,renderer: function (ids, metaData, record, rowIndex, colIndex, store, view) {
+                var r, store = Ext.getStore('Snapshots');
 
-            //     r = store.getRecord('id', record.data.snapshot)
+                r = store.findRecord('id', record.data.snapshot).data.title;
 
-            //     return rr.join(',');
-            // }
+                return r;
+            }
         }
     ]
 });

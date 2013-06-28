@@ -125,7 +125,7 @@ Ext.define('stackdio.controller.Stack', {
 
                         Ext.Msg.show({
                             title: 'Are you really sure?',
-                            msg:   'You are about to terminate a stack. This means all hosts and attached volumes will be terminated as well. Are you really sure about this?',
+                            msg:   'You are about to delete a stack. This means all hosts and attached volumes will be terminated as well. Are you really sure about this?',
                             buttons: Ext.Msg.YESNO,
                             icon: Ext.Msg.QUESTION,
                             fn: function (btnId) {

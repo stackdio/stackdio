@@ -25,29 +25,28 @@ Ext.define('stackdio.view.volume.Add', {
         },
         items: [
             {
+                xtype:        'combo',
+                name:         'snapshot',
+                hideLabel:    false,
+                fieldLabel:   'Snapshot',
+                labelWidth:   110,
+                store:        'Snapshots',
+                displayField: 'title',
+                valueField:   'id',
+                queryMode:    'local',
+                editable:     false
+            }
+            ,{
                 xtype:'textfield',
-                name: 'title',
-                fieldLabel: 'Title',
+                name: 'device',
+                fieldLabel: 'Device',
                 labelWidth: 110,
                 enableKeyEvents: true
             }
             ,{
-                xtype:'textareafield',
-                name: 'description',
-                fieldLabel: 'Description',
-                labelWidth: 110,
-                enableKeyEvents: true
-            }
-            ,{
                 xtype:'textfield',
-                name: 'snapshot_id',
+                name: 'mount_point',
                 fieldLabel: 'ID',
-                labelWidth: 110
-            }
-            ,{
-                xtype:'textfield',
-                name: 'size_in_gb',
-                fieldLabel: 'Size (in GB)',
                 labelWidth: 110
             }
         ]
@@ -61,7 +60,7 @@ Ext.define('stackdio.view.volume.Add', {
         }
     },{
         text: 'Save',
-        id: 'save-snapshot',
+        id: 'save-host-volume',
         iconCls: 'save-icon'
     }]
 });

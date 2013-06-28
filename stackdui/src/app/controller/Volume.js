@@ -5,9 +5,6 @@ Ext.define('stackdio.controller.Volume', {
     init: function () {
         var me = this;
 
-        // me.volumeWindow = Ext.widget('volumeWindow');
-
-
         /*
 
               ____ ___  _   _ _____ ____   ___  _        _     ___   ____ ___ ____ 
@@ -19,39 +16,19 @@ Ext.define('stackdio.controller.Volume', {
         */
         me.control({
 
-            '#save-volume': {
+            '#create-host-volume': {
                 click: function (btn, e) {
-                    var verb, urlSuffix = '', r, rec, record = me.volumeForm.down('form').getForm().getValues();
+                    me.showVolumeForm();
+                }
+            }
 
-                    if (record.hasOwnProperty('id')) {
-                        verb = 'PUT';
-                        urlSuffix = me.selectedProfile.data.id + '/';
-                    } else {
-                        verb = 'POST';
-                    }
+            ,'#save-host-volume': {
+                click: function (btn, e) {
+                    var r, rec, record = me.volumeForm.down('form').getForm().getValues();
 
-                    record.cloud_provider = me.providerAccount;
-                    console.log(record);
+                    Ext.getStore('Volumes').add(record);
 
-                    StackdIO.request({
-                        url: '/api/snapshots/' + urlSuffix,
-                        method: verb,
-                        jsonData: record,
-                        success: function (response) {
-                            var res = Ext.JSON.decode(response.responseText);
-
-                            if (res.hasOwnProperty('id')) {
-                                me.application.notification.howl('Snapshot saved...', 2000);
-                                btn.up('window').hide();
-                                Ext.getStore('Volumes').load();
-                            } else {
-                                me.application.notification.scold('Snapshot did not save. Update your data and try again', 3000);
-                            }
-                        },
-                        failure: function (response) {
-                            me.application.notification.scold('Snapshot did not save. Update your data and try again', 3000);
-                        }
-                    });
+                    btn.up('window').hide();
                 }
             }
 
@@ -69,7 +46,7 @@ Ext.define('stackdio.controller.Volume', {
         */
         me.getProviderAccountsStore().on('load', function (store, records, successful, eOpts) {
             var t, type, types;
-            var btn = me.getCreate();
+            // var btn = me.getCreate();
 
             // for (t in records) {
             //     type = records[t];
@@ -88,9 +65,6 @@ Ext.define('stackdio.controller.Volume', {
             me.showVolumeForm();
         });
 
-        me.application.addListener('stackdio.showvolumes', function () {
-            me.volumeWindow.show();
-        });
     },
 
 
@@ -135,7 +109,6 @@ Ext.define('stackdio.controller.Volume', {
     views: [
          'volume.Add'
         ,'volume.List'
-        ,'volume.Window'
     ],
 
     models: [
@@ -143,8 +116,9 @@ Ext.define('stackdio.controller.Volume', {
     ],
 
     stores: [
-        'Volumes'
+         'Volumes'
         ,'ProviderAccounts'
+        ,'Snapshots'
     ],
 
 
@@ -159,10 +133,10 @@ Ext.define('stackdio.controller.Volume', {
     */
     refs: [
         {
-            ref: 'create', selector: '#create-snapshot'
+            ref: 'create', selector: '#create-volume'
         }
         ,{
-            ref: 'save', selector: '#save-snapshot'
+            ref: 'save', selector: '#save-host-volume'
         }
     ]
 });

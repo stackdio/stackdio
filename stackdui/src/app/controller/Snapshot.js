@@ -31,7 +31,6 @@ Ext.define('stackdio.controller.Snapshot', {
                     }
 
                     record.cloud_provider = me.providerAccount;
-                    console.log(record);
 
                     StackdIO.request({
                         url: '/api/snapshots/' + urlSuffix,
@@ -43,7 +42,7 @@ Ext.define('stackdio.controller.Snapshot', {
                             if (res.hasOwnProperty('id')) {
                                 me.application.notification.howl('Snapshot saved...', 2000);
                                 btn.up('window').hide();
-                                Ext.getStore('Volumes').load();
+                                me.getSnapshotsStore().load();
                             } else {
                                 me.application.notification.scold('Snapshot did not save. Update your data and try again', 3000);
                             }
