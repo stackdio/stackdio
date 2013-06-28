@@ -9,6 +9,10 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 class VolumeSerializer(serializers.HyperlinkedModelSerializer):
+
+    snapshot_id = serializers.Field(source='snapshot.id')
+    snapshot_name = serializers.Field(source='snapshot.snapshot_id')
+
     class Meta:
         model = Volume
         fields = (
@@ -19,6 +23,8 @@ class VolumeSerializer(serializers.HyperlinkedModelSerializer):
             'user',
             'host',
             'snapshot',
+            'snapshot_id',
+            'snapshot_name',
             'device',
             'mount_point',
         )

@@ -5,6 +5,8 @@ Ext.define('stackdio.controller.Account', {
     init: function () {
         var me = this;
 
+        me.accountWindow = Ext.widget('accountWindow');
+
 
         /*
 
@@ -17,13 +19,13 @@ Ext.define('stackdio.controller.Account', {
         */
         me.control({
 
-            '#create-account': {
+            '#accounts-button': {
                 click: function (btn, e) {
-                    // me.showAccountForm();
+                    me.accountWindow.show();
                 }
-            },
+            }
             
-            '#save-account': {
+            ,'#save-account': {
                 click: function (btn, e) {
                     var closeOnSuccess = true;
 
@@ -32,9 +34,9 @@ Ext.define('stackdio.controller.Account', {
 
                     me.createAccount(closeOnSuccess);
                 }
-            },
+            }
 
-            '#save-account-add': {
+            ,'#save-account-add': {
                 click: function (btn, e) {
                     var closeOnSuccess = false;
                     
@@ -43,18 +45,12 @@ Ext.define('stackdio.controller.Account', {
 
                     me.createAccount(closeOnSuccess);
                 }
-            },
+            }
 
-            'accountList': {
+            ,'accountList': {
                 itemdblclick : function (grid, item, domEl, evt, eopts, fn) {
                     me.selectedAccount = grid.getSelectionModel().getSelection()[0];
                     me.showAccountForm(me.selectedAccount);
-                }
-            },
-
-            '#accounts-button': {
-                click: function (btn, e) {
-                    Ext.getCmp('content-area').getLayout().setActiveItem(1);
                 }
             }
 
@@ -76,9 +72,8 @@ Ext.define('stackdio.controller.Account', {
          */
         me.getProviderTypesStore().on('load', function (store, records, successful, eOpts) {
             var t, type, types;
-            var btn = Ext.getCmp('create-account');
-            var mnu = btn.menu;
-             
+            var btn = me.getNewAccountButton();
+
             for (t in records) {
                 type = records[t];
                 btn.menu.add({
@@ -92,10 +87,26 @@ Ext.define('stackdio.controller.Account', {
         });
 
         me.application.addListener('stackdio.newaccount', function (typeId) {
+
+            if (typeId === null) {
+                typeId = me.getProviderTypesStore().getAt(0).data.id;
+            }
+
             me.providerType = typeId;
             me.showAccountForm();
         });
 
+        me.application.addListener('stackdio.showaccounts', function () {
+            me.accountWindow.show();
+        });
+
+        me.application.addListener('stackdio.showaccountform', function () {
+            me.showAccountForm();
+
+            if (!me.hasOwnProperty('providerType')) {
+                me.providerType = me.getProviderAccountsStore().getAt(0);
+            }
+        });
     },
 
 
@@ -132,7 +143,7 @@ Ext.define('stackdio.controller.Account', {
         }
 
         // Open the connection to the provider URI and set authorization header
-        xhr.open('POST', 'http://localhost:8000/api/providers/');
+        xhr.open('POST', '/api/providers/');
         xhr.setRequestHeader('Authorization', 'Basic ' + Base64.encode('testuser:password'));
 
         // Define any actions to take once the upload is complete
@@ -190,6 +201,7 @@ Ext.define('stackdio.controller.Account', {
     views: [
          'account.List'
         ,'account.Add'
+        ,'account.Window'
     ],
 
     models: [
@@ -214,7 +226,10 @@ Ext.define('stackdio.controller.Account', {
     */
     refs: [
         {
-            ref: 'newAccount', selector: '#create-account'
+            ref: 'newAccountButton', selector: '#create-account'
+        }
+        ,{
+            ref: 'showAccountsButton', selector: '#accounts-button'
         }
     ]
 });

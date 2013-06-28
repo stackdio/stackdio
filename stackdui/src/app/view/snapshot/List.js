@@ -1,15 +1,9 @@
-Ext.define('stackdio.view.profile.List', {
+Ext.define('stackdio.view.snapshot.List', {
     extend: 'Ext.grid.Panel',
-    alias: 'widget.profileList',
-    store: 'AccountProfiles',
+    alias: 'widget.snapshotList',
+    store: 'Snapshots',
 
     autoScroll: true,
-    features: [{
-        ftype:'grouping',
-        groupHeaderTpl: 'Provider: {cloud_provider}',
-        startCollapsed: true,
-        id: 'typeGrouping'
-    }],
 
     columns: [
         { 

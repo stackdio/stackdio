@@ -1,10 +1,3 @@
-.title {
-    font-size: 1.9em;
-    color: #606060;
-    padding: 10px 15px;
-    float:left;
-}
-
 img.logo {
     height: auto;
     max-width: 100%;
@@ -13,43 +6,68 @@ img.logo {
     float:left;
 }
 
+.title-text {
+    font-size: 1.9em;
+    color: #606060;
+    float:left;
+    padding: 8px 0 0 20px;
+}
+
+.title-bar {
+    text-align: center;
+    padding: 20px;
+
+
+background: #f6f8f9; /* Old browsers */
+background: -moz-linear-gradient(top,  #f6f8f9 0%, #e5ebee 50%, #d7dee3 50%, #b8b9ba 100%); /* FF3.6+ */
+background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f6f8f9), color-stop(50%,#e5ebee), color-stop(50%,#d7dee3), color-stop(100%,#b8b9ba)); /* Chrome,Safari4+ */
+background: -webkit-linear-gradient(top,  #f6f8f9 0%,#e5ebee 50%,#d7dee3 50%,#b8b9ba 100%); /* Chrome10+,Safari5.1+ */
+background: -o-linear-gradient(top,  #f6f8f9 0%,#e5ebee 50%,#d7dee3 50%,#b8b9ba 100%); /* Opera 11.10+ */
+background: -ms-linear-gradient(top,  #f6f8f9 0%,#e5ebee 50%,#d7dee3 50%,#b8b9ba 100%); /* IE10+ */
+background: linear-gradient(to bottom,  #f6f8f9 0%,#e5ebee 50%,#d7dee3 50%,#b8b9ba 100%); /* W3C */
+filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f6f8f9', endColorstr='#b8b9ba',GradientType=0 ); /* IE6-9 */
+
+
+
+}
+
 /*
     ===================================================================================
     I C O N S
     ===================================================================================
 */
-.activate-icon {background: transparent url(/img/icons/activate.png) 0 0 no-repeat; }
-.add-icon {background: transparent url(/img/icons/add.png) 0 0 no-repeat; }
-.annotate-icon {background: transparent url(/img/icons/annotate.png) 0 0 no-repeat; }
-.annotated-icon {background: transparent url(/img/icons/annotated.png) 0 0 no-repeat; }
-.cancel-icon {background: transparent url(/img/icons/cancel.png) 0 0 no-repeat; }
-.chart-icon {background: transparent url(/img/icons/chart.png) 0 0 no-repeat; }
-.create-icon {background: transparent url(/img/icons/create.png) 0 0 no-repeat; }
-.deactivate-icon {background: transparent url(/img/icons/deactivate.png) 0 0 no-repeat; }
-.delete-icon {background: transparent url(/img/icons/delete.png) 0 0 no-repeat; }
-.details-icon {background: transparent url(/img/icons/details.png) 0 0 no-repeat; }
-.download-icon {background: transparent url(/img/icons/download.png) 0 0 no-repeat; }
-.drsi-icon {background: transparent url(/img/icons/drsi.png) 0 0 no-repeat; }
-.edit-icon {background: transparent url(/img/icons/edit.png) 0 0 no-repeat; }
-.export-icon {background: transparent url(/img/icons/export.png) 0 0 no-repeat; }
-.export-metrics-icon {background: transparent url(/img/icons/table-export.png) 0 0 no-repeat; }
-.file-icon {background: transparent url(/img/icons/file.png) 0 0 no-repeat; }
-.filter-icon {background: transparent url(/img/icons/filter.png) 0 0 no-repeat; }
-.help-icon {background: transparent url(/img/icons/help_16.png) 0 0 no-repeat; }
-.left-arrow-icon {background: transparent url(/img/icons/import.png) 0 0 no-repeat; }
-.manage-icon {background: transparent url(/img/icons/process.png) 0 0 no-repeat; }
-.metadata-icon {background: transparent url(/img/icons/metadata.png) 0 0 no-repeat; }
-.metadata-annotated-icon {background: transparent url(/img/icons/metadata-annotated.png) 0 0 no-repeat; }
-.metrics-icon {background: transparent url(/img/icons/details.png) 0 0 no-repeat; }
-.monitor-icon {background: transparent url(/img/icons/monitor.png) 0 0 no-repeat; }
-.package-icon {background: transparent url(/img/icons/package.png) 0 0 no-repeat; }
-.predict-icon {background: transparent url(/img/icons/predict.png) 0 0 no-repeat; }
-.reload-icon {background: transparent url(/img/icons/reload.png) 0 0 no-repeat; }
-.save-icon {background: transparent url(/img/icons/save.png) 0 0 no-repeat; }
-.security-icon {background: transparent url(/img/icons/security.png) 0 0 no-repeat; }
-.share-icon {background: transparent url(/img/icons/share.png) 0 0 no-repeat; }
-.upload-icon {background: transparent url(/img/icons/upload.png) 0 0 no-repeat; }
-.upload-red-icon {background: transparent url(/img/icons/upload-red.png) 0 0 no-repeat; }
+.activate-icon {background: transparent url(/static/img/icons/activate.png) 0 0 no-repeat; }
+.add-icon {background: transparent url(/static/img/icons/add.png) 0 0 no-repeat; }
+.annotate-icon {background: transparent url(/static/img/icons/annotate.png) 0 0 no-repeat; }
+.annotated-icon {background: transparent url(/static/img/icons/annotated.png) 0 0 no-repeat; }
+.cancel-icon {background: transparent url(/static/img/icons/cancel.png) 0 0 no-repeat; }
+.chart-icon {background: transparent url(/static/img/icons/chart.png) 0 0 no-repeat; }
+.create-icon {background: transparent url(/static/img/icons/create.png) 0 0 no-repeat; }
+.deactivate-icon {background: transparent url(/static/img/icons/deactivate.png) 0 0 no-repeat; }
+.delete-icon {background: transparent url(/static/img/icons/delete.png) 0 0 no-repeat; }
+.details-icon {background: transparent url(/static/img/icons/details.png) 0 0 no-repeat; }
+.download-icon {background: transparent url(/static/img/icons/download.png) 0 0 no-repeat; }
+.drsi-icon {background: transparent url(/static/img/icons/drsi.png) 0 0 no-repeat; }
+.edit-icon {background: transparent url(/static/img/icons/edit.png) 0 0 no-repeat; }
+.export-icon {background: transparent url(/static/img/icons/export.png) 0 0 no-repeat; }
+.export-metrics-icon {background: transparent url(/static/img/icons/table-export.png) 0 0 no-repeat; }
+.file-icon {background: transparent url(/static/img/icons/file.png) 0 0 no-repeat; }
+.filter-icon {background: transparent url(/static/img/icons/filter.png) 0 0 no-repeat; }
+.help-icon {background: transparent url(/static/img/icons/help_16.png) 0 0 no-repeat; }
+.left-arrow-icon {background: transparent url(/static/img/icons/import.png) 0 0 no-repeat; }
+.manage-icon {background: transparent url(/static/img/icons/process.png) 0 0 no-repeat; }
+.metadata-icon {background: transparent url(/static/img/icons/metadata.png) 0 0 no-repeat; }
+.metadata-annotated-icon {background: transparent url(/static/img/icons/metadata-annotated.png) 0 0 no-repeat; }
+.metrics-icon {background: transparent url(/static/img/icons/details.png) 0 0 no-repeat; }
+.monitor-icon {background: transparent url(/static/img/icons/monitor.png) 0 0 no-repeat; }
+.package-icon {background: transparent url(/static/img/icons/package.png) 0 0 no-repeat; }
+.predict-icon {background: transparent url(/static/img/icons/predict.png) 0 0 no-repeat; }
+.reload-icon {background: transparent url(/static/img/icons/reload.png) 0 0 no-repeat; }
+.save-icon {background: transparent url(/static/img/icons/save.png) 0 0 no-repeat; }
+.security-icon {background: transparent url(/static/img/icons/security.png) 0 0 no-repeat; }
+.share-icon {background: transparent url(/static/img/icons/share.png) 0 0 no-repeat; }
+.upload-icon {background: transparent url(/static/img/icons/upload.png) 0 0 no-repeat; }
+.upload-red-icon {background: transparent url(/static/img/icons/upload-red.png) 0 0 no-repeat; }
 
 .combo-icon {
     content: '';
@@ -73,6 +91,14 @@ img.logo {
     position:           relative;
     background:         transparent url(/static/images/icons/help_16.png) 0 0 no-repeat;
     text-decoration:    underline;
+}
+
+.tip {
+    font-style: italic;
+    font-size: 0.8em;
+    letter-spacing: 0.1em;
+    float: left;
+    padding: 0 10px;
 }
 
 /*
@@ -513,6 +539,13 @@ img.logo {
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#efe07c', endColorstr='#fefcea',GradientType=0 ); /* IE6-9 */
 }
 
+
+
+/*
+    ===================================================================================
+    B O O T S T R A P   &   E X T J S   O V E R R I D E S
+    ===================================================================================
+*/
 .x-btn-group-header-text-default-framed {
     font: normal 1.15em tahoma,arial,verdana,sans-serif;
     color: #3e6aaa;

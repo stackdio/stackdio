@@ -17,17 +17,7 @@ Ext.define('stackdio.controller.Application', {
         */
         me.control({
 
-            '#accounts-button': {
-                click: function (btn, e) {
-                    Ext.getCmp('content-area').getLayout().setActiveItem(1);
-                }
-            }
 
-            ,'#dashboard-button': {
-                click: function (btn, e) {
-                    Ext.getCmp('content-area').getLayout().setActiveItem(0);
-                }
-            }
 
         });
 
@@ -73,25 +63,13 @@ Ext.define('stackdio.controller.Application', {
     */
     views: [
         'Title'
-        ,'account.List'
-        ,'profile.List'
-        ,'role.List'
-        ,'volume.List'
+
     ],
 
     models: [
     ],
 
     stores: [
-        'AccountProfiles'
-        ,'Hosts'
-        ,'StackHosts'
-        ,'InstanceSizes'
-        ,'ProviderAccounts'
-        ,'ProviderTypes'
-        ,'Roles'
-        ,'Stacks'
-        ,'Volumes'
     ],
 
 
@@ -105,12 +83,6 @@ Ext.define('stackdio.controller.Application', {
 
     */
     refs: [
-        {
-            ref: 'newAccount', selector: '#create-account'
-        }
-        ,{
-            ref: 'newProfile', selector: '#create-profile'
-        }
     ]
 });
 

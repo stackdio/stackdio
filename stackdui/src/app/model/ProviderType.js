@@ -9,7 +9,7 @@ Ext.define('stackdio.model.ProviderType', {
 
     ,proxy: {
         type: 'rest',
-        url: 'http://localhost:8000/api/provider_types/',
+        url: '/api/provider_types/',
         reader: {
             type: 'json',
             root: 'results'

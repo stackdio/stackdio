@@ -18,6 +18,7 @@ Ext.require([
     'Ext.form.field.Radio',
     'Ext.form.Panel',
     'Ext.form.RadioGroup',
+    'Ext.grid.column.Action',
     'Ext.grid.column.Template',
     'Ext.grid.plugin.DragDrop',
     'Ext.grid.RowNumberer',
@@ -55,6 +56,7 @@ Ext.onReady(function () {
             ,'Profile'
             ,'Stack'
             ,'Volume'
+            ,'Snapshot'
         ],
 
         name: 'stackdio',
@@ -69,37 +71,36 @@ Ext.onReady(function () {
             Ext.FocusManager.enable();
 
             me.commandKeyMap = new Ext.util.KeyMap(Ext.getBody(), [
-                // {
-                //     key: "f",
-                //     handler: function (code, e) {
-                //         var field = Ext.ComponentManager.get('filter-terms');
-                //         var nonTrackingFields = ['master-label',
-                //                                  'document-labels',
-                //                                  'prediction-document-labels',
-                //                                  'resource-master-label',
-                //                                  'resource-document-labels',
-                //                                  'add-document-labels',
-                //                                  'segment-labels',
-                //                                  'metadata-type',
-                //                                  'metadata-value',
-                //                                  'filter-terms',
-                //                                  'newModelName',
-                //                                  'trainingSetName',
-                //                                  'resourceSetName'];
-
-                //         if (nonTrackingFields.indexOf(Ext.FocusManager.focusedCmp.id) === -1) {
-                //             e.preventDefault();
-                //             field.focus();
-                //             field.selectText();
-                //         }
-                //     }
-                // },
                 {
-                    key: "m",
-                    ctrl: true,
-                    shift: true,
+                    key: "k",
+                    alt: true,
+                    shift: false,
                     handler: function (code, e) {
-                        me.fireEvent('DRSI.Training.BuildNewModel');
+                        me.fireEvent('stackdio.showstacks');
+                    }
+                }
+                ,{
+                    key: "a",
+                    alt: true,
+                    shift: false,
+                    handler: function (code, e) {
+                        me.fireEvent('stackdio.showaccounts');
+                    }
+                }
+                ,{
+                    key: "p",
+                    alt: true,
+                    shift: false,
+                    handler: function (code, e) {
+                        me.fireEvent('stackdio.showprofiles');
+                    }
+                }
+                ,{
+                    key: "s",
+                    alt: true,
+                    shift: false,
+                    handler: function (code, e) {
+                        me.fireEvent('stackdio.showsnapshots');
                     }
                 }
             ]);
@@ -109,7 +110,7 @@ Ext.onReady(function () {
              *      Load settings file
              */
             Ext.Ajax.request({
-                url: '/settings/local.json',
+                url: 'settings/local.json',
                 method: 'GET',
                 failure: function (response) {
                     me.notification.scold('Unable to load settings file. Please check that it exists.', 3000);

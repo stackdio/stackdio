@@ -14,7 +14,7 @@ Ext.define('stackdio.model.Stack', {
 
     ,proxy: {
         type: 'rest',
-        url: 'http://localhost:8000/api/stacks/',
+        url: '/api/stacks/',
         reader: {
             type: 'json',
             root: 'results'

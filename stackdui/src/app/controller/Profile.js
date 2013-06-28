@@ -5,6 +5,8 @@ Ext.define('stackdio.controller.Profile', {
     init: function () {
         var me = this;
 
+        me.profileWindow = Ext.widget('profileWindow');
+
 
         /*
 
@@ -17,13 +19,13 @@ Ext.define('stackdio.controller.Profile', {
         */
         me.control({
 
-            '#create-profile': {
+            '#profiles-button': {
                 click: function (btn, e) {
-                    me.showProfileForm();
+                    me.profileWindow.show();
                 }
-            },
+            }
 
-            '#save-profile': {
+            ,'#save-profile': {
                 click: function (btn, e) {
                     var verb, urlSuffix = '', r, rec, record = me.profileForm.down('form').getForm().getValues();
 
@@ -37,7 +39,7 @@ Ext.define('stackdio.controller.Profile', {
                     record.cloud_provider = me.providerAccount;
 
                     StackdIO.request({
-                        url: 'http://localhost:8000/api/profiles/' + urlSuffix,
+                        url: '/api/profiles/' + urlSuffix,
                         method: verb,
                         jsonData: record,
                         success: function (response) {
@@ -55,9 +57,9 @@ Ext.define('stackdio.controller.Profile', {
                         }
                     });
                 }
-            },
+            }
 
-            'profileList': {
+            ,'profileList': {
                 itemdblclick : function (grid, item, domEl, evt, eopts, fn) {
                     me.selectedProfile = grid.getSelectionModel().getSelection()[0];
                     me.showProfileForm(me.selectedProfile);
@@ -88,7 +90,7 @@ Ext.define('stackdio.controller.Profile', {
                 type = records[t];
                 btn.menu.add({
                     text: type.data.title,
-                    id: 'account-' + type.data.id,
+                    id: 'profileaccount-' + type.data.id,
                     handler: function () {
                         me.application.fireEvent('stackdio.newprofile', this.id.split('-')[1]);
                     }
@@ -97,8 +99,16 @@ Ext.define('stackdio.controller.Profile', {
         });
 
         me.application.addListener('stackdio.newprofile', function (accountId) {
+            if (accountId === null) {
+                accountId = me.getProviderAccountsStore().getAt(0).data.id;
+            }
+
             me.providerAccount = accountId;
             me.showProfileForm();
+        });
+
+        me.application.addListener('stackdio.showprofiles', function () {
+            me.profileWindow.show();
         });
 
     },
@@ -125,7 +135,6 @@ Ext.define('stackdio.controller.Profile', {
         me.profileForm.show();
 
         if (typeof record !== 'undefined') {
-            console.log(record);
             me.profileForm.down('form').getForm().loadRecord(record);
         }
     },
@@ -146,6 +155,7 @@ Ext.define('stackdio.controller.Profile', {
     views: [
          'profile.List'
         ,'profile.Add'
+        ,'profile.Window'
     ],
 
     models: [
@@ -155,6 +165,7 @@ Ext.define('stackdio.controller.Profile', {
     stores: [
         'AccountProfiles'
         ,'ProviderAccounts'
+        ,'InstanceSizes'
     ],
 
 

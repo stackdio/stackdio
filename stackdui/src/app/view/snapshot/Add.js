@@ -1,9 +1,9 @@
-Ext.define('stackdio.view.volume.Add', {
+Ext.define('stackdio.view.snapshot.Add', {
     extend  : 'Ext.window.Window',
-    alias: 'widget.addVolume',
+    alias: 'widget.addSnapshot',
     
     width   : 800,
-    title   : 'Attachable Volume',
+    title   : 'New snapshot',
     modal   : true,
     closable: true,
     closeAction: 'hide',

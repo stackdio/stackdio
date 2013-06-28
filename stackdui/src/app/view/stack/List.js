@@ -4,12 +4,6 @@ Ext.define('stackdio.view.stack.List', {
     store: 'Stacks',
 
     autoScroll: true,
-    features: [{
-        id:             'typeGrouping',
-        ftype:          'grouping',
-        groupHeaderTpl: 'Status: {status}',
-        startCollapsed: true
-    }],
 
     columns: [
         { 
@@ -26,6 +20,17 @@ Ext.define('stackdio.view.stack.List', {
             header: 'Status',
             dataIndex: 'status',
             flex: 1
+        },
+        {
+            xtype: 'actioncolumn',
+            width: 25,
+            items: [{
+                icon: '/static/img/icons/delete.png',  // Use a URL in the icon config
+                tooltip: 'Delete',
+                handler: function (grid, rowIndex, colIndex) {
+
+                }
+            }]
         }
     ]
 });

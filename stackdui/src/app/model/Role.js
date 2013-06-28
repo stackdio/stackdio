@@ -9,7 +9,7 @@ Ext.define('stackdio.model.Role', {
 
     ,proxy: {
         type: 'rest',
-        url: 'http://localhost:8000/api/roles/',
+        url: '/api/roles/',
         reader: {
             type: 'json',
             root: 'results'

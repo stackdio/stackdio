@@ -5,6 +5,8 @@ Ext.define('stackdio.controller.Stack', {
     init: function () {
         var me = this;
 
+        me.stackForm = Ext.widget('addStack');
+
 
         /*
 
@@ -67,53 +69,11 @@ Ext.define('stackdio.controller.Stack', {
             },
             '#save-stack': {
                 click: function (btn, e) {
-                    var r, rec, record = me.stackForm.down('form').getForm().getValues();
-                    var h, host, hosts = Ext.getStore('StackHosts').data.items;
-                    var stack = {
-                        title: record.title,
-                        description: record.description,
-                        hosts: []
-                    };
-
-                    for (h in hosts) {
-                        host = hosts[h];
-                        stack.hosts.push({
-                             host_count: host.data.count
-                            ,host_size: host.data.instance_size
-                            ,host_pattern: host.data.hostname
-                            ,cloud_profile: host.data.cloud_profile
-                            ,salt_roles: host.data.roles.split(',')
-                            ,host_security_groups: host.data.security_groups
-                        });
-                    }
-
-                    console.log(stack);
-
-                    StackdIO.request({
-                        url: 'http://localhost:8000/api/stacks/',
-                        method: 'POST',
-                        jsonData: stack,
-                        success: function (response) {
-                            var res = Ext.JSON.decode(response.responseText);
-                            if (res.hasOwnProperty('id')) {
-                                me.application.notification.howl('Stack saved. Will now launch the stack...', 2000);
-
-                                btn.up('window').destroy();
-                                me.stackHostForm.down('form').getForm().reset();
-
-                                Ext.getStore('StackHosts').removeAll();
-                            } else {
-                                me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
-                            }
-                        },
-                        failure: function (response) {
-                            me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
-                        }
-                    });
+                    me.saveStack();
                 }
-            },
+            }
 
-            'addStack': {
+            ,'addStack': {
                 boxready: function (widget, w, h, e) {
                     var i, item, items;
                     var store = me.getAccountProfilesStore().data.items;
@@ -129,8 +89,95 @@ Ext.define('stackdio.controller.Stack', {
                             }
                         });
                     }
+
+                    var stackKeyMap = new Ext.util.KeyMap(widget.el.dom.id, [
+                        {
+                            key: 'h',
+                            alt: true,
+                            fn: function (code, e) {
+                                e.preventDefault();
+                                me.application.fireEvent('stackdio.newhost', null);
+                            },
+                            scope: me
+                        }
+                        ,{
+                            key: 13, 
+                            alt: false,
+                            fn: function (code, e) {
+                                e.preventDefault();
+                                me.saveStack();
+                            },
+                            scope: me
+                        }
+                    ]);
+
                 }
             }
+
+            ,'stackList': {
+                itemdblclick : function (grid, item, domEl, evt, eopts, fn) {
+                    me.selectedStack = grid.getSelectionModel().getSelection()[0];
+                    me.showStackForm(me.selectedStack);
+                }
+                ,cellclick : function (grid, td, cellIndex, record, tr, rowIndex, e, eOpts) {
+                    if (cellIndex === 3) {      // The delete icon
+
+
+                        Ext.Msg.show({
+                            title: 'Are you really sure?',
+                            msg:   'You are about to terminate a stack. This means all hosts and attached volumes will be terminated as well. Are you really sure about this?',
+                            buttons: Ext.Msg.YESNO,
+                            icon: Ext.Msg.QUESTION,
+                            fn: function (btnId) {
+                                if (btnId === 'yes') {
+                                    StackdIO.request({
+                                        url: record.data.url,
+                                        method: 'DELETE',
+                                        success: function (response) {
+                                            var res = Ext.JSON.decode(response.responseText);
+                                            me.application.notification.howl('The stack will now be terminated.', 2000);
+                                            Ext.getStore('Stacks').load();
+                                        },
+                                        failure: function (response) {
+                                            me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+            ,'newStackHosts': {
+                cellclick : function (grid, td, cellIndex, record, tr, rowIndex, e, eOpts) {
+                    if (cellIndex === 6) {      // The delete icon
+                        Ext.getStore('StackHosts').remove(record);
+                    }
+                }
+            }
+
+            ,'launchedStackHosts': {
+                cellclick : function (grid, td, cellIndex, record, tr, rowIndex, e, eOpts) {
+                    if (cellIndex === 4) {      // The delete icon
+                        StackdIO.request({
+                            url: record.data.url,
+                            method: 'DELETE',
+                            success: function (response) {
+                                var res = Ext.JSON.decode(response.responseText);
+
+                                me.getStackHosts(me.selectedStack.data.hosts);
+
+                                me.application.notification.howl('Host removed.', 2000);
+                            },
+                            failure: function (response) {
+                                me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
+                            }
+                        });
+                    }
+                }
+            }
+
 
         });
 
@@ -149,6 +196,15 @@ Ext.define('stackdio.controller.Stack', {
          */
 
         me.application.addListener('stackdio.newhost', function (profileId) {
+            var profile;
+
+            if (profileId === null) {
+                profile = me.getAccountProfilesStore().getAt(0);
+                profileId = profile.data.id;
+            } else {
+                profile = me.getAccountProfilesStore().findRecord('id', profileId);
+            }
+
             me.hostProfileId = profileId;
 
             if (!me.hasOwnProperty('stackHostForm')) {
@@ -156,9 +212,14 @@ Ext.define('stackdio.controller.Stack', {
             }
 
             me.stackHostForm.show();
-
+            me.stackHostForm.setTitle(profile.data.title + ' host');
+            me.stackHostForm.down('combo').setValue(profile.data.default_instance_size);
         });
-       
+
+        me.application.addListener('stackdio.showstacks', function () {
+            me.showStackForm();
+        });
+
     },
 
 
@@ -172,9 +233,102 @@ Ext.define('stackdio.controller.Stack', {
              \____\___/|_| \_| |_| |_| \_\\___/|_____|_____|_____|_| \_\  |_|    \___/|_| \_|\____| |_| |___\___/|_| \_|____/ 
 
     */
+
+    saveStack: function () {
+        var me = this;
+        var r, rec, record = me.stackForm.down('form').getForm().getValues();
+        var h, host, hosts = Ext.getStore('StackHosts').data.items;
+        var stack = {
+            title: record.title,
+            description: record.description,
+            hosts: []
+        };
+
+        for (h in hosts) {
+            host = hosts[h];
+            stack.hosts.push({
+                 host_count: host.data.count
+                ,host_size: host.data.instance_size
+                ,host_pattern: host.data.hostname
+                ,cloud_profile: host.data.cloud_profile
+                ,salt_roles: host.data.roles.split(',')
+                ,host_security_groups: host.data.security_groups
+            });
+        }
+
+        console.log(stack);
+
+        StackdIO.request({
+            url: '/api/stacks/',
+            method: 'POST',
+            jsonData: stack,
+            success: function (response) {
+                var res = Ext.JSON.decode(response.responseText);
+                if (res.hasOwnProperty('id')) {
+                    // Alert user to success
+                    me.application.notification.howl('Stack saved. Will now launch the stack...', 2000);
+
+                    // Clear the store that holds hosts for a new stack
+                    Ext.getStore('StackHosts').removeAll();
+
+                    // Clear the stack form by loading an empty record
+                    me.stackForm.down('form').getForm().loadRecord(Ext.create('stackdio.model.Stack'));
+
+                    // Hide the stack form
+                    me.stackForm.hide();
+
+                    // Reload stack store
+                    Ext.getStore('Stacks').load();
+                } else {
+                    me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
+                }
+            },
+            failure: function (response) {
+                me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
+            }
+        });
+
+    }
    
-    showStackForm: function (record) {
-        var me = this; 
+    ,showStackForm: function (record) {
+        var me = this;
+        var accounts = me.getProviderAccountsStore();
+        var profiles = me.getAccountProfilesStore();
+
+        // Check if there are accounts and profiles before showing stack form
+        if (accounts.data.length === 0) {
+            Ext.Msg.show({
+                title: 'Setup incomplete',
+                msg:   'There are no provider accounts set up yet. Would you like to create one now?',
+                buttons: Ext.Msg.YESNO,
+                icon: Ext.Msg.QUESTION,
+                fn: function (btnId) {
+                    if (btnId === 'yes') {
+                        me.application.fireEvent('stackdio.showaccounts');
+                        me.application.fireEvent('stackdio.newaccount', null);
+                    }
+                }
+            });
+
+            return;
+        }
+
+        if (profiles.data.length === 0) {
+            Ext.Msg.show({
+                title: 'Setup incomplete',
+                msg:   'There are no provider profiles set up yet. Would you like to create one now?',
+                buttons: Ext.Msg.YESNO,
+                icon: Ext.Msg.QUESTION,
+                fn: function (btnId) {
+                    if (btnId === 'yes') {
+                        me.application.fireEvent('stackdio.newprofile', null);
+                        me.application.fireEvent('stackdio.showprofiles');
+                    }
+                }
+            });
+
+            return;
+        }
 
         if (!me.hasOwnProperty('stackForm')) {
             me.stackForm = Ext.widget('addStack');
@@ -184,8 +338,41 @@ Ext.define('stackdio.controller.Stack', {
 
         if (typeof record !== 'undefined') {
             me.stackForm.down('form').getForm().loadRecord(record);
+            me.stackForm.down('launchedStackHosts').show();
+            me.stackForm.down('newStackHosts').hide();
+
+            me.getStackHosts(record.data.hosts);
+        } else {
+            me.stackForm.down('form').getForm().loadRecord(Ext.create('stackdio.model.Stack'));
+            me.stackForm.down('launchedStackHosts').hide();
+            me.stackForm.down('newStackHosts').show();
         }
-    },
+
+    }
+
+    ,getStackHosts: function (hostUrl) {
+        var me = this;
+
+        StackdIO.request({
+            url: hostUrl,
+            method: 'GET',
+            success: function (response) {
+                var res = Ext.JSON.decode(response.responseText);
+                var i, item, items = res.results;
+                var store = me.getLaunchedHostsStore();
+
+                store.removeAll();
+
+                for (i in items) {
+                    item = items[i];
+                    store.add(item);
+                }
+            },
+            failure: function (response) {
+                me.application.notification.scold('Error retrieving list of hosts for your stack.', 3000);
+            }
+        });
+    }
 
 
 
@@ -199,21 +386,29 @@ Ext.define('stackdio.controller.Stack', {
 
 
     */
-    views: [
+    ,views: [
          'stack.List'
         ,'stack.Add'
         ,'stack.HostContextMenu'
         ,'host.Add'
-    ],
+        ,'stack.NewHosts'
+        ,'stack.LaunchedHosts'
+        ,'volume.HostVolumeList'
+    ]
 
-    models: [
-        'Stack'
-    ],
+    ,models: [
+         'Stack'
+        ,'StackHost'
+    ]
 
-    stores: [
+    ,stores: [
          'StackHosts'
         ,'Stacks'
         ,'AccountProfiles'
+        ,'LaunchedHosts'
+        ,'InstanceSizes'
+        ,'Roles'
+        ,'ProviderAccounts'
     ],
 
 

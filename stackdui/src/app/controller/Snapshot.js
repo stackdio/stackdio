@@ -1,11 +1,11 @@
-Ext.define('stackdio.controller.Volume', {
+Ext.define('stackdio.controller.Snapshot', {
     extend: 'Ext.app.Controller',
 
 
     init: function () {
         var me = this;
 
-        // me.volumeWindow = Ext.widget('volumeWindow');
+        me.snapshotWindow = Ext.widget('snapshotWindow');
 
 
         /*
@@ -19,9 +19,9 @@ Ext.define('stackdio.controller.Volume', {
         */
         me.control({
 
-            '#save-volume': {
+            '#save-snapshot': {
                 click: function (btn, e) {
-                    var verb, urlSuffix = '', r, rec, record = me.volumeForm.down('form').getForm().getValues();
+                    var verb, urlSuffix = '', r, rec, record = me.snapshotForm.down('form').getForm().getValues();
 
                     if (record.hasOwnProperty('id')) {
                         verb = 'PUT';
@@ -71,25 +71,25 @@ Ext.define('stackdio.controller.Volume', {
             var t, type, types;
             var btn = me.getCreate();
 
-            // for (t in records) {
-            //     type = records[t];
-            //     btn.menu.add({
-            //         text: type.data.title,
-            //         id: 'snapshotaccount-' + type.data.id,
-            //         handler: function () {
-            //             me.application.fireEvent('stackdio.newvolume', this.id.split('-')[1]);
-            //         }
-            //     })
-            // }
+            for (t in records) {
+                type = records[t];
+                btn.menu.add({
+                    text: type.data.title,
+                    id: 'snapshotaccount-' + type.data.id,
+                    handler: function () {
+                        me.application.fireEvent('stackdio.newsnapshot', this.id.split('-')[1]);
+                    }
+                })
+            }
         });
 
-        me.application.addListener('stackdio.newvolume', function (accountId) {
+        me.application.addListener('stackdio.newsnapshot', function (accountId) {
             me.providerAccount = accountId;
-            me.showVolumeForm();
+            me.showSnapshotForm();
         });
 
-        me.application.addListener('stackdio.showvolumes', function () {
-            me.volumeWindow.show();
+        me.application.addListener('stackdio.showsnapshots', function () {
+            me.snapshotWindow.show();
         });
     },
 
@@ -105,17 +105,17 @@ Ext.define('stackdio.controller.Volume', {
 
     */
 
-    showVolumeForm: function (record) {
+    showSnapshotForm: function (record) {
         var me = this; 
 
-        if (!me.hasOwnProperty('volumeForm')) {
-            me.volumeForm = Ext.widget('addVolume');
+        if (!me.hasOwnProperty('snapshotForm')) {
+            me.snapshotForm = Ext.widget('addSnapshot');
         }
 
-        me.volumeForm.show();
+        me.snapshotForm.show();
 
         if (typeof record !== 'undefined') {
-            me.volumeForm.down('form').getForm().loadRecord(record);
+            me.snapshotForm.down('form').getForm().loadRecord(record);
         }
     },
 
@@ -133,17 +133,17 @@ Ext.define('stackdio.controller.Volume', {
 
     */
     views: [
-         'volume.Add'
-        ,'volume.List'
-        ,'volume.Window'
+         'snapshot.Add'
+        ,'snapshot.List'
+        ,'snapshot.Window'
     ],
 
     models: [
-        'Volume'
+        'Snapshot'
     ],
 
     stores: [
-        'Volumes'
+         'Snapshots'
         ,'ProviderAccounts'
     ],
 
