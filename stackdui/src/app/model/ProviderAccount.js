@@ -13,7 +13,7 @@ Ext.define('stackdio.model.ProviderAccount', {
 
     ,proxy: {
         type: 'rest',
-        url: '/api/providers/',
+        url: Settings.api_url + '/api/providers/',
         reader: {
             type: 'json',
             root: 'results'

@@ -1,8 +1,0 @@
-{
-    "proxy": "http://localhost:6767/synthesysserver",
-    "target": {
-        "host": "ec2-50-17-28-101.compute-1.amazonaws.com",
-        "port": "8999"  
-    },
-    "knowledgeBase": "Fetch-06Oct2012_digitalreasoning"
-}

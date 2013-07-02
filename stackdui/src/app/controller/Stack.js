@@ -161,7 +161,7 @@ Ext.define('stackdio.controller.Stack', {
                 cellclick : function (grid, td, cellIndex, record, tr, rowIndex, e, eOpts) {
                     if (cellIndex === 4) {      // The delete icon
                         StackdIO.request({
-                            url: record.data.url,
+                            url: Settings.api_url + record.data.url,
                             method: 'DELETE',
                             success: function (response) {
                                 var res = Ext.JSON.decode(response.responseText);
@@ -259,7 +259,7 @@ Ext.define('stackdio.controller.Stack', {
         console.log(stack);
 
         StackdIO.request({
-            url: '/api/stacks/',
+            url: Settings.api_url + '/api/stacks/',
             method: 'POST',
             jsonData: stack,
             success: function (response) {
@@ -354,7 +354,7 @@ Ext.define('stackdio.controller.Stack', {
         var me = this;
 
         StackdIO.request({
-            url: hostUrl,
+            url: Settings.api_url + hostUrl,
             method: 'GET',
             success: function (response) {
                 var res = Ext.JSON.decode(response.responseText);

@@ -39,7 +39,7 @@ Ext.define('stackdio.controller.Profile', {
                     record.cloud_provider = me.providerAccount;
 
                     StackdIO.request({
-                        url: '/api/profiles/' + urlSuffix,
+                        url: Settings.api_url + '/api/profiles/' + urlSuffix,
                         method: verb,
                         jsonData: record,
                         success: function (response) {

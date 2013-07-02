@@ -11,7 +11,7 @@ Ext.define('stackdio.model.HostVolume', {
 
     ,proxy: {
         type: 'rest',
-        url: '/api/volumes/',
+        url: Settings.api_url + '/api/volumes/',
         reader: {
             type: 'json',
             root: 'results'

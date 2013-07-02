@@ -14,7 +14,7 @@ Ext.define('stackdio.model.InstanceSize', {
 
     ,proxy: {
         type: 'rest',
-        url: '/api/instance_sizes/',
+        url: Settings.api_url + '/api/instance_sizes/',
         reader: {
             type: 'json',
             root: 'results'

@@ -36,14 +36,6 @@
 
 
     <target name="-after-build">
-        <!-- <property name="build.dir" location="${workspace.build.dir}/${args.environment}"/> -->
-<!--         <property name="build.dir" location="${workspace.build.dir}../../../../stackdio/core/static"/>
-        <property name="deploy.dir" location="${workspace.build.dir}../../../../stackdio/core/static"/>
-
-        <echo>${basedir}</echo>
-        <echo>${build.dir}</echo>
-        <echo>${workspace.build.dir}</echo>
-        <echo>${deploy.dir}</echo> -->
         <echo>Copying required application resources to build folder</echo>
 
         <copy todir="${build.dir}/css">
@@ -58,6 +50,7 @@
             <fileset dir="img"/>
         </copy>
 
+        <copy file="settings/production_settings.js" tofile="${build.dir}/settings/settings.js"/>
 
     </target>
 

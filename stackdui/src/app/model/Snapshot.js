@@ -14,7 +14,7 @@ Ext.define('stackdio.model.Snapshot', {
 
     ,proxy: {
         type: 'rest',
-        url: '/api/snapshots/',
+        url: Settings.api_url + '/api/snapshots/',
         reader: {
             type: 'json',
             root: 'results'

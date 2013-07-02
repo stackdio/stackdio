@@ -15,7 +15,7 @@ Ext.define('stackdio.model.AccountProfile', {
 
     ,proxy: {
         type: 'rest',
-        url: '/api/profiles/',
+        url: Settings.api_url + '/api/profiles/',
         reader: {
             type: 'json',
             root: 'results'

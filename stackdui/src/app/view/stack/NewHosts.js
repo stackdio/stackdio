@@ -76,7 +76,7 @@ Ext.define('stackdio.view.stack.NewHosts', {
             xtype: 'actioncolumn',
             width: 25,
             items: [{
-                icon: '/static/img/icons/delete.png',  // Use a URL in the icon config
+                icon: '/img/icons/delete.png',  // Use a URL in the icon config
                 tooltip: 'Delete',
                 handler: function (grid, rowIndex, colIndex) {
 

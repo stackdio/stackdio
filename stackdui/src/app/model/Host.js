@@ -15,7 +15,7 @@ Ext.define('stackdio.model.Host', {
 
     ,proxy: {
         type: 'rest',
-        url: '/api/hosts/',
+        url: Settings.api_url + '/api/hosts/',
         reader: {
             type: 'json',
             root: 'results'

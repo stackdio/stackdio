@@ -33,7 +33,7 @@ Ext.define('stackdio.controller.Snapshot', {
                     record.cloud_provider = me.providerAccount;
 
                     StackdIO.request({
-                        url: '/api/snapshots/' + urlSuffix,
+                        url: Settings.api_url + '/api/snapshots/' + urlSuffix,
                         method: verb,
                         jsonData: record,
                         success: function (response) {

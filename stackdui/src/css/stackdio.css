@@ -36,38 +36,38 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f6f8f9', end
     I C O N S
     ===================================================================================
 */
-.activate-icon {background: transparent url(/static/img/icons/activate.png) 0 0 no-repeat; }
-.add-icon {background: transparent url(/static/img/icons/add.png) 0 0 no-repeat; }
-.annotate-icon {background: transparent url(/static/img/icons/annotate.png) 0 0 no-repeat; }
-.annotated-icon {background: transparent url(/static/img/icons/annotated.png) 0 0 no-repeat; }
-.cancel-icon {background: transparent url(/static/img/icons/cancel.png) 0 0 no-repeat; }
-.chart-icon {background: transparent url(/static/img/icons/chart.png) 0 0 no-repeat; }
-.create-icon {background: transparent url(/static/img/icons/create.png) 0 0 no-repeat; }
-.deactivate-icon {background: transparent url(/static/img/icons/deactivate.png) 0 0 no-repeat; }
-.delete-icon {background: transparent url(/static/img/icons/delete.png) 0 0 no-repeat; }
-.details-icon {background: transparent url(/static/img/icons/details.png) 0 0 no-repeat; }
-.download-icon {background: transparent url(/static/img/icons/download.png) 0 0 no-repeat; }
-.drsi-icon {background: transparent url(/static/img/icons/drsi.png) 0 0 no-repeat; }
-.edit-icon {background: transparent url(/static/img/icons/edit.png) 0 0 no-repeat; }
-.export-icon {background: transparent url(/static/img/icons/export.png) 0 0 no-repeat; }
-.export-metrics-icon {background: transparent url(/static/img/icons/table-export.png) 0 0 no-repeat; }
-.file-icon {background: transparent url(/static/img/icons/file.png) 0 0 no-repeat; }
-.filter-icon {background: transparent url(/static/img/icons/filter.png) 0 0 no-repeat; }
-.help-icon {background: transparent url(/static/img/icons/help_16.png) 0 0 no-repeat; }
-.left-arrow-icon {background: transparent url(/static/img/icons/import.png) 0 0 no-repeat; }
-.manage-icon {background: transparent url(/static/img/icons/process.png) 0 0 no-repeat; }
-.metadata-icon {background: transparent url(/static/img/icons/metadata.png) 0 0 no-repeat; }
-.metadata-annotated-icon {background: transparent url(/static/img/icons/metadata-annotated.png) 0 0 no-repeat; }
-.metrics-icon {background: transparent url(/static/img/icons/details.png) 0 0 no-repeat; }
-.monitor-icon {background: transparent url(/static/img/icons/monitor.png) 0 0 no-repeat; }
-.package-icon {background: transparent url(/static/img/icons/package.png) 0 0 no-repeat; }
-.predict-icon {background: transparent url(/static/img/icons/predict.png) 0 0 no-repeat; }
-.reload-icon {background: transparent url(/static/img/icons/reload.png) 0 0 no-repeat; }
-.save-icon {background: transparent url(/static/img/icons/save.png) 0 0 no-repeat; }
-.security-icon {background: transparent url(/static/img/icons/security.png) 0 0 no-repeat; }
-.share-icon {background: transparent url(/static/img/icons/share.png) 0 0 no-repeat; }
-.upload-icon {background: transparent url(/static/img/icons/upload.png) 0 0 no-repeat; }
-.upload-red-icon {background: transparent url(/static/img/icons/upload-red.png) 0 0 no-repeat; }
+.activate-icon {background: transparent url(/img/icons/activate.png) 0 0 no-repeat; }
+.add-icon {background: transparent url(/img/icons/add.png) 0 0 no-repeat; }
+.annotate-icon {background: transparent url(/img/icons/annotate.png) 0 0 no-repeat; }
+.annotated-icon {background: transparent url(/img/icons/annotated.png) 0 0 no-repeat; }
+.cancel-icon {background: transparent url(/img/icons/cancel.png) 0 0 no-repeat; }
+.chart-icon {background: transparent url(/img/icons/chart.png) 0 0 no-repeat; }
+.create-icon {background: transparent url(/img/icons/create.png) 0 0 no-repeat; }
+.deactivate-icon {background: transparent url(/img/icons/deactivate.png) 0 0 no-repeat; }
+.delete-icon {background: transparent url(/img/icons/delete.png) 0 0 no-repeat; }
+.details-icon {background: transparent url(/img/icons/details.png) 0 0 no-repeat; }
+.download-icon {background: transparent url(/img/icons/download.png) 0 0 no-repeat; }
+.drsi-icon {background: transparent url(/img/icons/drsi.png) 0 0 no-repeat; }
+.edit-icon {background: transparent url(/img/icons/edit.png) 0 0 no-repeat; }
+.export-icon {background: transparent url(/img/icons/export.png) 0 0 no-repeat; }
+.export-metrics-icon {background: transparent url(/img/icons/table-export.png) 0 0 no-repeat; }
+.file-icon {background: transparent url(/img/icons/file.png) 0 0 no-repeat; }
+.filter-icon {background: transparent url(/img/icons/filter.png) 0 0 no-repeat; }
+.help-icon {background: transparent url(/img/icons/help_16.png) 0 0 no-repeat; }
+.left-arrow-icon {background: transparent url(/img/icons/import.png) 0 0 no-repeat; }
+.manage-icon {background: transparent url(/img/icons/process.png) 0 0 no-repeat; }
+.metadata-icon {background: transparent url(/img/icons/metadata.png) 0 0 no-repeat; }
+.metadata-annotated-icon {background: transparent url(/img/icons/metadata-annotated.png) 0 0 no-repeat; }
+.metrics-icon {background: transparent url(/img/icons/details.png) 0 0 no-repeat; }
+.monitor-icon {background: transparent url(/img/icons/monitor.png) 0 0 no-repeat; }
+.package-icon {background: transparent url(/img/icons/package.png) 0 0 no-repeat; }
+.predict-icon {background: transparent url(/img/icons/predict.png) 0 0 no-repeat; }
+.reload-icon {background: transparent url(/img/icons/reload.png) 0 0 no-repeat; }
+.save-icon {background: transparent url(/img/icons/save.png) 0 0 no-repeat; }
+.security-icon {background: transparent url(/img/icons/security.png) 0 0 no-repeat; }
+.share-icon {background: transparent url(/img/icons/share.png) 0 0 no-repeat; }
+.upload-icon {background: transparent url(/img/icons/upload.png) 0 0 no-repeat; }
+.upload-red-icon {background: transparent url(/img/icons/upload-red.png) 0 0 no-repeat; }
 
 .combo-icon {
     content: '';
@@ -89,7 +89,7 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f6f8f9', end
     cursor:             pointer;
     padding:            0 0 0 20px;
     position:           relative;
-    background:         transparent url(/static/images/icons/help_16.png) 0 0 no-repeat;
+    background:         transparent url(/images/icons/help_16.png) 0 0 no-repeat;
     text-decoration:    underline;
 }
 

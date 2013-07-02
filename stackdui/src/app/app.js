@@ -64,8 +64,12 @@ Ext.onReady(function () {
 
         launch: function() {
             var me = this;
+
             me.notification     = Ext.widget('howler', { parentEl: 'title-panel' });
             me.animatedMessage  = Ext.widget('notify');
+            me.settings         = {};
+
+            me.settings.api_url = '';
 
             // Enable the focus manager
             Ext.FocusManager.enable();
@@ -104,23 +108,6 @@ Ext.onReady(function () {
                     }
                 }
             ]);
-
-
-            /*
-             *      Load settings file
-             */
-            Ext.Ajax.request({
-                url: 'settings/local.json',
-                method: 'GET',
-                failure: function (response) {
-                    me.notification.scold('Unable to load settings file. Please check that it exists.', 3000);
-                },
-                success: function (response) {
-                    me.settings = Ext.JSON.decode(response.responseText);
-                }
-            });
-
-
         }
     });
 });
