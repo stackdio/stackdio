@@ -1,0 +1,131 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>stackd.io</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
+    <link rel="stylesheet" href="css/stackdio.css">
+    <link rel="stylesheet" href="css/jquery.dataTables.css">
+    
+    <script src="js/base64.js"></script>
+    <script src="js/jquery.js"></script>
+    <script src="js/sammy.js"></script>
+    <script src="js/knockout.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script src="js/jquery.dataTables.min.js"></script>
+
+    <script src="js/stackdio.js"></script>
+</head>
+
+<body id='mainBody'>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="#">stackd.io [ a modern cloud provisioning framework ]</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="active"><a href="#">Home</a></li>
+              <li><a href="#about">About</a></li>
+              <li><a href="#contact">Source</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="sidebar">
+        <ul class="nav nav-list" data-bind="foreach: sections">
+            <li id="dashboard-href" class="navlink" data-bind="css: { active: $data == $root.currentSection() }, click: $root.gotoSection">
+              <a href="#">
+                <i class="icon-dashboard"></i>
+                <span data-bind="text: $data"></span>
+              </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="view" data-bind='visible: $root.currentSection() == "Stacks"'>
+        
+        <a href="#stack-form" role="button" class="btn btn-primary pull-right" data-toggle="modal" data-bind="click: $root.loadProfiles">New Stack</a>
+        <table id="stacks">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: stacks">
+                <tr>
+                    <td data-bind="text: id"></td>
+                    <td data-bind="text: title"></td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: status"></td>
+                </tr>     
+            </tbody>
+        </table>
+    </div>
+
+    <form id="stack-form" class="hide form-newstack modal">
+        <legend>Stack Details</legend>
+
+        <input id="stack-title" type="text" class="input-block-level" placeholder="Title">
+        <textarea id="stack-purpose"  class="span7" rows="4" placeholder="Description"></textarea>
+
+        <legend>
+            Stack Hosts 
+            <span class="pull-right">
+                <div class="btn-group">
+                    <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#host-form">
+                        <i class="icon-plus-sign"></i>
+                        Add Host
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu" data-bind="foreach: accountProfiles">
+                        <li>
+                            <a href="#" data-bind="text: title"></a>
+                        </li>
+                    </ul>
+                </div>
+            </span>
+        </legend>
+
+        <div class="well">
+            <table id="stacks-hosts">
+                <thead>
+                    <tr>
+                        <th>Roles</th>
+                        <th>Count</th>
+                        <th>Profile</th>
+                        <th>Size</th>
+                        <th>Host Pattern</th>
+                        <th>Security Groups</th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stacks">
+                    <tr>
+                        <td data-bind="text: id"></td>
+                        <td data-bind="text: title"></td>
+                        <td data-bind="text: description"></td>
+                        <td data-bind="text: status"></td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <button class="btn btn-large btn-primary" type="submit">Launch Stack</button>
+    </form>
+
+</body>
+
+</html>

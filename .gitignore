@@ -6,7 +6,7 @@ dev.db
 *.swp
 *.un~
 reload.sh
-stackdio/core/static
+#stackdio/core/static
 stackdui/server/node_modules
 stackdui/src/packages/theme/sass/.sass-cache
 stackdui/src/resources/sass/bootstrap/.sass-cache
