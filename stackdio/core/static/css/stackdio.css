@@ -15,8 +15,8 @@ img.logo {
     F O R M S
     ===================================================================================
 */
-.form-newstack {
-    max-width: 620px;
+.stackd-form {
+    max-width: 850px;
     padding: 19px 20px 20px;
     background-color: #fff;
     border: 1px solid #e5e5e5;
@@ -28,9 +28,45 @@ img.logo {
     box-shadow: 0 1px 2px rgba(0,0,0,.05);
 }
 
-.form-newstack .form-newstack-heading,
-.form-newstack .checkbox {
+.stackd-form .modal-body {
+    max-height: 500px !important;
+    height: 450px !important;
+}
+
+.form-newstack {
+    width: 800px;
+    height: 600px;
+}
+
+.stackd-form .stackd-form-heading,
+.stackd-form .checkbox {
     margin-bottom: 10px;
+}
+
+.modal-form {
+    background-color: #DEE7FB !important;
+}
+
+.data-grid {
+    font-size: 0.8em;
+}
+
+.data-grid thead {
+    background-color: #D4D9DB;
+    color: #000;
+}
+
+.data-grid tbody tr {
+    background-color: #FAFDFF !important;
+    color: #000;
+}
+
+.data-grid thead tr th,
+.data-grid tbody tr td
+ {
+    border-width: 1px 1px 1px 1px;
+    border-style: solid;
+    border-color: #D2D2D2;
 }
 
 /*

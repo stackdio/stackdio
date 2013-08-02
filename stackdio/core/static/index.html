@@ -7,11 +7,13 @@
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
-    <link rel="stylesheet" href="css/stackdio.css">
     <link rel="stylesheet" href="css/jquery.dataTables.css">
+    <link rel="stylesheet" href="css/flick/jquery-ui-1.10.3.custom.css">
+    <link rel="stylesheet" href="css/stackdio.css">
     
     <script src="js/base64.js"></script>
     <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
     <script src="js/sammy.js"></script>
     <script src="js/knockout.js"></script>
     <script src="js/bootstrap.min.js"></script>
@@ -53,9 +55,13 @@
         </ul>
     </div>
 
+    <!-- 
+        ======================================================================
+        S T A C K   L I S T
+        ======================================================================
+     -->
     <div class="view" data-bind='visible: $root.currentSection() == "Stacks"'>
-        
-        <a href="#stack-form" role="button" class="btn btn-primary pull-right" data-toggle="modal" data-bind="click: $root.loadProfiles">New Stack</a>
+        <a href="#" role="button" class="btn btn-primary pull-right" data-bind="click: $root.showStackForm">New Stack</a>
         <table id="stacks">
             <thead>
                 <tr>
@@ -63,6 +69,7 @@
                     <th>Title</th>
                     <th>Description</th>
                     <th>Status</th>
+                    <th style="width:50px"></th>
                 </tr>
             </thead>
             <tbody data-bind="foreach: stacks">
@@ -71,60 +78,105 @@
                     <td data-bind="text: title"></td>
                     <td data-bind="text: description"></td>
                     <td data-bind="text: status"></td>
+                    <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">Remove</button></td>
                 </tr>     
             </tbody>
         </table>
     </div>
 
-    <form id="stack-form" class="hide form-newstack modal">
-        <legend>Stack Details</legend>
 
-        <input id="stack-title" type="text" class="input-block-level" placeholder="Title">
-        <textarea id="stack-purpose"  class="span7" rows="4" placeholder="Description"></textarea>
+    <!-- 
+        ======================================================================
+        N E W   S T A C K   F O R M
+        ======================================================================
+     -->
+    <div id="stack-form-container" title="Stack Details" class="modal-form">
+        <!-- <div class="modal-body"> -->
+            <form id="stack-form">
+                <input id="stack-title" type="text" class="input-block-level" placeholder="Title">
+                <textarea id="stack-purpose"  class="span7" rows="4" placeholder="Description"></textarea>
 
-        <legend>
-            Stack Hosts 
-            <span class="pull-right">
-                <div class="btn-group">
-                    <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#host-form">
-                        <i class="icon-plus-sign"></i>
-                        Add Host
-                        <span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu" data-bind="foreach: accountProfiles">
-                        <li>
-                            <a href="#" data-bind="text: title"></a>
-                        </li>
-                    </ul>
+                <legend>
+                    Stack Hosts 
+                    <span class="pull">
+                        <div class="btn-group">
+                            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                                <i class="icon-plus-sign"></i>
+                                Add Host
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu" data-bind="foreach: accountProfiles">
+                                <li>
+                                    <a href="#host-form-container" role="button" data-toggle="modal" data-bind="text: title, click: $root.profileSelected"></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </span>
+                </legend>
+
+                <div class="well">
+                    <table id="stack-hosts" class="data-grid">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Roles</th>
+                                <th>Count</th>
+                                <th>Profile</th>
+                                <th>Size</th>
+                                <th>Host Pattern</th>
+                                <th>Security Groups</th>
+                                <th style="width:50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody data-bind="foreach: newHosts">
+                            <tr>
+                                <td data-bind="text: id"></td>
+                                <td data-bind="text: roles"></td>
+                                <td data-bind="text: count"></td>
+                                <td data-bind="text: cloud_profile"></td>
+                                <td data-bind="text: instance_size"></td>
+                                <td data-bind="text: hostname"></td>
+                                <td data-bind="text: security_groups"></td>
+                                <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">Remove</button></td>
+                            </tr>     
+                        </tbody>
+                    </table>
                 </div>
-            </span>
-        </legend>
+            </form>
+        <!-- </div> -->
 
-        <div class="well">
-            <table id="stacks-hosts">
-                <thead>
-                    <tr>
-                        <th>Roles</th>
-                        <th>Count</th>
-                        <th>Profile</th>
-                        <th>Size</th>
-                        <th>Host Pattern</th>
-                        <th>Security Groups</th>
-                    </tr>
-                </thead>
-                <tbody data-bind="foreach: stacks">
-                    <tr>
-                        <td data-bind="text: id"></td>
-                        <td data-bind="text: title"></td>
-                        <td data-bind="text: description"></td>
-                        <td data-bind="text: status"></td>
-                    </tr>     
-                </tbody>
-            </table>
+        <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+            <button class="btn btn-primary">Launch Stack</button>
+        </div>
+    </div>
+
+
+
+    <!-- 
+        ======================================================================
+        N E W   H O S T   F O R M
+        ======================================================================
+     -->
+    <div id="host-form-container" class="hide stackd-form modal fade">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="myModalLabel">Host Details</h3>
         </div>
 
-        <button class="btn btn-large btn-primary" type="submit">Launch Stack</button>
-    </form>
+        <div class="modal-body">
+            <form id="host-form">
+                <input id="host-count" type="text" class="input-block-level" placeholder="Count">
+                <select id="host-instance-size" data-bind="options: $root.instanceSizes, value: 'id', optionsText: 'title'"></select>
+
+            </form>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+            <button class="btn btn-primary">Save Host</button>
+        </div>
+    </div>
 
 </body>
 
