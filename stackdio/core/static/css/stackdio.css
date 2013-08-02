@@ -47,6 +47,10 @@ img.logo {
     background-color: #DEE7FB !important;
 }
 
+.modal-footer {
+    background-color: #DEE7FB !important;
+}
+
 .data-grid {
     font-size: 0.8em;
 }
