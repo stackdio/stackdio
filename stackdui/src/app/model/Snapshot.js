@@ -3,12 +3,12 @@ Ext.define('stackdio.model.Snapshot', {
 
     ,fields: [
          { name: 'id',              type: 'int' }
+        ,{ name: 'url',             type: 'string' }
+        ,{ name: 'title',           type: 'string' }
+        ,{ name: 'description',     type: 'string' }
         ,{ name: 'cloud_provider',  type: 'int' }
         ,{ name: 'size_in_gb',      type: 'float' }
-        ,{ name: 'title',           type: 'string' }
-        ,{ name: 'url',             type: 'string' }
         ,{ name: 'snapshot_id',     type: 'string' }
-        ,{ name: 'description',     type: 'string' }
     ]
 
 

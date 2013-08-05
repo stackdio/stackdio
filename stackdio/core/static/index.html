@@ -62,6 +62,7 @@
      -->
     <div class="view" data-bind='visible: $root.currentSection() == "Stacks"'>
         <a href="#" role="button" class="btn btn-primary pull-right" data-bind="click: $root.showStackForm">New Stack</a>
+        <!-- <a href="#stack-form-container" role="button" class="btn btn-primary pull-right" data-toggle="modal" data-bind="click: $root.showStackForm">New Stack</a> -->
         <table id="stacks">
             <thead>
                 <tr>
@@ -90,31 +91,122 @@
         N E W   S T A C K   F O R M
         ======================================================================
      -->
-    <div id="stack-form-container" title="Stack Details" class="modal-form">
-        <!-- <div class="modal-body"> -->
-            <form id="stack-form">
-                <input id="stack-title" type="text" class="input-block-level" placeholder="Title">
-                <textarea id="stack-purpose"  class="span7" rows="4" placeholder="Description"></textarea>
+    <div id="stack-form-container" title="Stack Details" class="">
+        <div class="span12 no-margin">
+            <span class="span2 no-margin">Title</span>
+            <span class="span4 no-margin">
+                <input id="stack-title" type="text" class="input-block-level" placeholder="Stack title">
+            </span>
+            <span class="span2">Description</span>
+            <span class="span4 no-margin">
+                <input id="stack-purpose" type="text" class="input-block-level" placeholder="Purpose of stack">
+            </span>
+            
+            <!-- <textarea id="stack-purpose" class="span6" rows="4" placeholder="Description"></textarea> -->
+        </div>
 
-                <legend>
-                    Stack Hosts 
-                    <span class="pull">
-                        <div class="btn-group">
-                            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
-                                <i class="icon-plus-sign"></i>
-                                Add Host
-                                <span class="caret"></span>
-                            </a>
-                            <ul class="dropdown-menu" data-bind="foreach: accountProfiles">
-                                <li>
-                                    <a href="#host-form-container" role="button" data-toggle="modal" data-bind="text: title, click: $root.profileSelected"></a>
-                                </li>
-                            </ul>
-                        </div>
-                    </span>
-                </legend>
+        <div class="span12 no-margin">
 
-                <!-- <div class="well"> -->
+
+            <div class="span5 no-margin">
+                <form id="host-form">
+                    <legend>Add Host</legend>
+                    <div>
+                        <span class="span2 no-margin">Profile</span>
+                        <span class="span3 no-margin">
+                            <select id="host-profile" data-bind="options: $root.accountProfiles, value: 'id', optionsText: 'title'" class="stretch-full"></select>
+                        </span>
+                    </div>
+                    <div>
+                        <span class="span2 no-margin">Count</span>
+                        <span class="span3 no-margin">
+                            <input id="host-count" type="text" class="input-block-level" placeholder="Count">
+                        </span>
+                    </div>
+                    <div>
+                        <span class="span2 no-margin">Instance size</span>
+                        <span class="span3 no-margin">
+                            <select id="host-instance-size" 
+                                    data-bind="options: $root.instanceSizes, value: 'id', optionsText: 'title'" 
+                                    placeholder="Instance size" 
+                                    class="stretch-full"></select>
+                        </span>
+                    </div>
+                    <div>
+                        <span class="span2 no-margin">Security groups</span>
+                        <span class="span3 no-margin">
+                            <input id="host-security-groups" type="text" class="input-block-level" placeholder="Comma separated list">
+                        </span>
+                    </div>
+                    <div>
+                        <span class="span2 no-margin">Host pattern</span>
+                        <span class="span3 no-margin">
+                            <input id="host-hostname" type="text" class="input-block-level" placeholder="{name}.synthesyscloud.com">
+                        </span>
+                    </div>
+                    <div>
+                        <span class="span2 no-margin">Roles</span>
+                        <span class="span3 no-margin">
+                            <select id="host-roles" 
+                                    multiple="multiple" 
+                                    data-bind="options: $root.roles, value: 'id', optionsText: 'title'" 
+                                    class="stretch-full"></select>
+                        </span>
+                    </div>
+                    <div>
+                        <span class="span2 no-margin">Volumes <button class="btn-small btn-info" data-bind="click: $root.toggleVolumeForm">Add</button></span>
+                        <span class="span3 no-margin">
+                            <table id="host-volumes" class="data-grid stretch-full">
+                                <thead>
+                                    <tr>
+                                        <th>Snapshot</th>
+                                        <th>Mount point</th>
+                                        <th style="width:50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody data-bind="foreach: newHostVolumes">
+                                    <tr>
+                                        <td data-bind="text: snapshot"></td>
+                                        <td data-bind="text: mount_point"></td>
+                                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeVolume">Remove</button></td>
+                                    </tr>     
+                                </tbody>
+                            </table>
+                        </span>
+                    </div>
+                    <div>
+                        <span class="span2 no-margin"></span>
+                        <span class="span3 no-margin" style="margin-top: 20px;">
+                            <button class="btn btn-primary pull-right" data-bind="click: $root.addHost">Save Host</button>
+                        </span>
+                    </div>
+                </form>
+
+                <form id="host-volume-form" data-bind="visible: $root.showVolumes() === true">
+                    <legend>Host Volume</legend>
+                    <div class="span5 no-margin">
+                        <span class="span2 no-margin">Snapshot</span>
+                        <span class="span3 no-margin">
+                            <select id="volume-snapshot" data-bind="options: $root.snapshots, value: 'id', optionsText: 'title'"></select>
+                        </span>
+                    </div>
+                    <div class="span5 no-margin">
+                        <span class="span2 no-margin">Device</span>
+                        <span class="span3 no-margin"><input id="volume-device" type="text" class="input-block-level" placeholder="Device name"></span>
+                    </div>
+                    <div class="span5 no-margin">
+                        <span class="span2 no-margin">Mount point</span>
+                        <span class="span3 no-margin"><input id="volume-mount-point" type="text" class="input-block-level" placeholder="Where to mount volume"></span>
+                    </div>
+                    <div class="span5 no-margin">
+                        <button class="btn btn-primary" data-bind="click: $root.addHostVolume">Save Volume</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="span7 no-margin">
+                <form id="stack-form">
+                    <legend>Stack Hosts</legend>
                     <table id="stack-hosts" class="data-grid">
                         <thead>
                             <tr>
@@ -141,14 +233,20 @@
                             </tr>     
                         </tbody>
                     </table>
-                <!-- </div> -->
-            </form>
-        <!-- </div> -->
+                </form>
+            </div>
+        </div>
 
+
+
+
+
+<!-- 
         <div class="modal-footer">
             <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
             <button class="btn btn-primary">Launch Stack</button>
         </div>
+ -->        
     </div>
 
 
@@ -158,23 +256,26 @@
         N E W   H O S T   F O R M
         ======================================================================
      -->
-    <div id="host-form-container" class="hide stackd-form modal fade">
-        <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-            <h3 id="myModalLabel">Host Details</h3>
-        </div>
-
+    <!-- <div id="host-form-container" class="hide modal fade stackd-form "> -->
+    <div id="host-form-container" class="modal-form" title="Stack Host">
         <div class="modal-body">
             <form id="host-form">
-                <input id="host-count" type="text" class="input-block-level" placeholder="Count">
-                <select id="host-instance-size" data-bind="options: $root.instanceSizes, value: 'id', optionsText: 'title'"></select>
-
+                <div class="span8">
+                    <span class="span2">Count</span>
+                    <span class="span5"><input id="host-count" type="text" class="input-block-level" placeholder="Count"></span>
+                </div>
+                <div class="span9">
+                    <span class="span2">Instance size</span>
+                    <span class="span5">
+                        <select id="host-instance-size" class="span5" data-bind="options: $root.instanceSizes, value: 'id', optionsText: 'title'" placeholder="Instance size"></select>
+                    </span>
+                </div>
             </form>
         </div>
 
         <div class="modal-footer">
-            <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-            <button class="btn btn-primary">Save Host</button>
+            <button class="btn" data-dismiss="modal" aria-hidden="true" class="pull-right">Close</button>
+            <button class="btn btn-primary" class="pull-right">Save Host</button>
         </div>
     </div>
 

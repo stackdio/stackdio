@@ -10,6 +10,14 @@ img.logo {
      margin: 60px 40px 0 220px;
 }
 
+.no-margin {
+    margin: 0;
+}
+
+.stretch-full {
+    width: 100%;
+}
+
 /*
     ===================================================================================
     F O R M S
@@ -44,11 +52,11 @@ img.logo {
 }
 
 .modal-form {
-    background-color: #DEE7FB !important;
+    /*background-color: #DEE7FB !important;*/
 }
 
 .modal-footer {
-    background-color: #DEE7FB !important;
+    /*background-color: #DEE7FB !important;*/
 }
 
 .data-grid {
