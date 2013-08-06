@@ -3,7 +3,9 @@ import re
 import logging
 import collections
 import socket
+
 import envoy
+import simplejson
 
 from django.conf import settings
 from django.db import models, transaction
@@ -17,17 +19,22 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 from model_utils import Choices
 
 from core.fields import DeletingFileField
-from cloud.models import CloudProfile, CloudInstanceSize
+from cloud.models import (
+    CloudProvider,
+    CloudProfile,
+    CloudInstanceSize
+)
 
 logger = logging.getLogger(__name__)
 
 
 HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
 
+def get_hosts_file_path(obj, filename):
+    return "stacks/{0}/{1}.hosts".format(obj.user.username, obj.slug)
 
 def get_map_file_path(obj, filename):
     return "stacks/{0}/{1}.map".format(obj.user.username, obj.slug)
-
 
 def get_top_file_path(obj, filename):
     return "stack_{}_top.sls".format(obj.id)
@@ -58,6 +65,7 @@ class StackManager(models.Manager):
         {
             "title": "Abe's CDH4 Cluster",
             "description": "Abe's personal cluster for testing CDH4 and stuff...",
+            "cloud_provider": 1,
             "hosts": [
                 {
                     "host_count": 1,
@@ -86,13 +94,27 @@ class StackManager(models.Manager):
         }
         '''
 
+        cloud_provider = CloudProvider.objects.get(id=data['cloud_provider'])
         stack_obj = self.model(title=data['title'],
                                description=data.get('description'),
-                               user=user)
+                               user=user,
+                               cloud_provider=cloud_provider)
         stack_obj.save()
 
         if data['hosts']:
-            stack_obj.add_hosts(data['hosts'])
+            hosts_json = simplejson.dumps(data['hosts'], indent=4)
+            # Save the hosts file with the JSON so that we can relaunch the
+            # stack later after its hosts have been terminated
+            hosts_json
+            if not stack_obj.hosts_file:
+                stack_obj.hosts_file.save(stack_obj.slug+'.hosts', 
+                                          ContentFile(hosts_json))
+            else:
+                with open(stack_obj.hosts_file.path, 'w') as f:
+                    f.write(hosts_json)
+
+            # generation of host objects for the stack is now being
+            # handled in the launch_hosts task.
 
         return stack_obj
 
@@ -107,6 +129,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     DESTROYING = 'destroying'
     CONFIGURING = 'configuring'
     PROVISIONING = 'provisioning'
+    STOPPING = 'stopping'
+    STARTING = 'starting'
+    TERMINATING = 'terminating'
+    REBOOTING = 'rebooting'
+    EXECUTING_ACTION = 'executing_action'
+
     STATUS = Choices(OK,
                      ERROR,
                      PENDING, 
@@ -118,11 +146,25 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                      PROVISIONING)
 
     class Meta:
-
         unique_together = ('user', 'title')
 
+    # The "owner" of the stack and all of its infrastructure
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
 
+    # The cloud provider this stack will use -- it may use any cloud profile
+    # defined for that provider.
+    cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='stacks')
+
+    # Where on disk a JSON representation of the hosts file is stored
+    hosts_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_hosts_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
+    # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(
         max_length=255,
         upload_to=get_map_file_path,
@@ -131,6 +173,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         default=None,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
+    # Where on disk is the custom salt top.sls file stored
     top_file = DeletingFileField(
         max_length=255,
         upload_to=get_top_file_path,
@@ -139,6 +182,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         default=None,
         storage=FileSystemStorage(location=settings.SALT_STATE_ROOT))
 
+    # Where on disk is the custom pillar file for custom configuration for
+    # all salt states used by the top file
     pillar_file = DeletingFileField(
         max_length=255,
         upload_to=get_pillar_file_path,
@@ -147,30 +192,43 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         default=None,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
+    # Use our custom manager object
     objects = StackManager()
 
     def __unicode__(self):
         return self.title
 
-    def get_provider_hosts_map(self):
-        '''
-        returns a dictionary where the keys are provider objects and values
-        are a list of host objects in that provider.
-        '''
-        providers = collections.defaultdict(list)
-        for host in self.hosts.all():
-            providers[host.cloud_profile.cloud_provider].append(host)
-        return providers
+    def get_driver(self):
+        return self.cloud_provider.get_driver()
 
     def get_hosts(self, host_ids=None):
+        '''
+        Quick way of getting all hosts or a subset for this stack.
+        '''
         if not host_ids:
             return self.hosts.all()
         return self.hosts.filter(id__in=host_ids)
     
-    def add_hosts(self, hosts=[]):
+    def create_hosts(self):
         '''
-        See StackManager.create_stack for host data format requirements.
+        See StackManager.create_stack for host data format requirements and
+        how the Stack.hosts_file is populated. 
+        
+        Calling create_hosts after hosts are already attached to the Stack
+        object will log a warning and return. 
         '''
+        # TODO: We probably need to think about adding and deleting
+        # individual hosts.
+
+        # if the stack already has hosts, do nothing
+        if self.get_hosts().count() > 0:
+            logger.warn('Stack already has host objects attached. '
+                        'Skipping create_hosts')
+            return
+
+        # load the stack's hosts file
+        with open(self.hosts_file.path, 'r') as f:
+            hosts = simplejson.loads(f.read())
 
         new_hosts = []
         for host in hosts:
@@ -193,7 +251,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
             # lookup other objects
             role_objs = SaltRole.objects.filter(id__in=salt_roles)
-            cloud_profile_obj = CloudProfile.objects.get(id=cloud_profile)
+
+            # cloud profiles are restricted to only those in this stack's
+            # cloud provider
+            cloud_profile_obj = CloudProfile.objects.get(
+                id=cloud_profile,
+                cloud_provider=self.cloud_provider
+            )
             host_size_obj = CloudInstanceSize.objects.get(id=host_size)
 
             # if user is adding hosts, they may be adding hosts that will
@@ -248,6 +312,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return new_hosts
 
     def _generate_map_file(self):
+        # TODO: Figure out a way to make this provider agnostic
 
         # TODO: Should we store this somewhere instead of assuming
         # the master will always be this box?
@@ -292,11 +357,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
             profiles[host.cloud_profile.slug].append({
                 host.hostname: {
-                    'size': instance_size,
-                    'securitygroup': list(security_groups),
+                    # The parameters in the minion dict will be passed on
+                    # to the minion and set in its default configuration
+                    # at /etc/salt/minion. This is where you would override
+                    # any default values set by salt-minion
                     'minion': {
                         'master': master,
                         'log_level': 'debug',
+
+                        # Grains are very useful when you need to set some 
+                        # static information about a machine (e.g., what stack 
+                        # id its registered under or how many total machines
+                        # are in the cluster)
                         'grains': {
                             'roles': roles,
                             'stack_id': int(self.id),
@@ -304,8 +376,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
                             'volumes': volumes,
-                        }
+                        },
                     },
+
+                    # The rest of the settings in the map are salt-cloud
+                    # specific and control the VM in various ways 
+                    # depending on the cloud provider being used.
+                    'size': instance_size,
+                    'securitygroup': list(security_groups),
                     'volumes': volumes,
                 }
             })
@@ -372,13 +450,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
             logger.debug('Query hosts command: {0}'.format(query_cmd))
             result = envoy.run(query_cmd)
-            yaml_result = yaml.safe_load(result.std_out)
 
             # Run the envoy stdout through the yaml parser. The format
             # will always be a dictionary with one key (the provider type)
             # and a value that's a dictionary containing keys for every
             # host in the stack. 
-            logger.debug('Query hosts result: {0!r}'.format(result.std_out))
+            yaml_result = yaml.safe_load(result.std_out)
 
             # yaml_result contains all host information in the stack, but
             # we have to dig a bit to get individual host metadata out

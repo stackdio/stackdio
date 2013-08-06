@@ -37,6 +37,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'id',
             'url',
             'user',
+            'cloud_provider',
             'host_count',
             'hosts',
             'created', 

@@ -1,6 +1,8 @@
 import logging
-import celery
 from collections import defaultdict
+from operator import or_
+
+import celery
 
 from rest_framework import (
     generics,
@@ -9,7 +11,10 @@ from rest_framework import (
 )
 from rest_framework.response import Response
 
-from core.exceptions import ResourceConflict
+from core.exceptions import (
+    ResourceConflict,
+    BadRequest,
+)
 
 from . import tasks
 from .models import (
@@ -42,7 +47,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         machines
         '''
         # set some defaults
-        launch_stack = request.DATA.setdefault('launch', True)
+        launch_stack = request.DATA.setdefault('auto_launch', True)
 
         # check for duplicates
         title = request.DATA.get('title')
@@ -79,32 +84,6 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = StackSerializer
     parser_classes = (parsers.JSONParser,)
 
-    def put(self, request, *args, **kwargs):
-        '''
-        Overriding PUT for a stack to be able to add additional
-        hosts after a stack has already been created.
-        '''
-        
-        stack = self.get_object()
-        new_hosts = stack.add_hosts(request.DATA['hosts'])
-        host_ids = [h.id for h in new_hosts]
-
-        # Queue up stack creation and provisioning using Celery
-        task_chain = (
-            tasks.launch_hosts.si(stack.id, host_ids=host_ids) | 
-            tasks.update_metadata.si(stack.id, host_ids=host_ids) | 
-            tasks.tag_infrastructure.si(stack.id, host_ids=host_ids) | 
-            tasks.register_dns.si(stack.id, host_ids=host_ids) | 
-            tasks.provision_hosts.si(stack.id, host_ids=host_ids) |
-            tasks.finish_stack.si(stack.id, host_ids=host_ids)
-        )
-        
-        # execute the chain
-        task_chain()
-
-        serializer = self.get_serializer(stack)
-        return Response(serializer.data)
-
     def delete(self, request, *args, **kwargs):
         '''
         Overriding the delete method to make sure the stack
@@ -132,14 +111,169 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(stack)
         return Response(serializer.data)
 
+    def put(self, request, *args, **kwargs):
+        '''
+        PUT request on a stack allows RPC-like actions to be called to
+        interact with the stack. Request data is JSON, and must provide
+        an `action` parameter. Actions may require additional arguments 
+        which may be provided via the `args` parameter. 
+        
+        Valid actions: stop, start, restart, terminate
+        '''
+
+        stack = self.get_object()
+        hosts = stack.get_hosts()
+        host_count = hosts.count()
+        action = request.DATA.get('action', None)
+        args = request.DATA.get('args', [])
+
+        if not action:
+            raise BadRequest('action is a required parameter.')
+
+        driver = stack.get_driver()
+        available_actions = driver.get_available_actions()
+
+        if action not in available_actions:
+            raise BadRequest('action is not alowed. Only the following '
+                             'actions are allowed: {}'.format(', '.join(available_actions)))
+
+
+        # In case of a launch action, the stack must not have any available 
+        # hosts (ie, the stack must have already been terminated.)
+        if action == driver.ACTION_LAUNCH and host_count > 0:
+            raise BadRequest('Launching a stack is only available when '
+                             'the stack is in a terminated state. This '
+                             'stack has %d hosts available.' % host_count)
+
+        # All other actions require hosts to be available
+        elif action != driver.ACTION_LAUNCH and host_count == 0:
+            raise BadRequest('The submitted action requires the stack to have '
+                             'available hosts. Perhaps you meant to run the '
+                             'launch action instead.')
+
+        # check the action against current states (e.g., starting can't happen
+        # unless the hosts are in the stopped state.)
+        # XXX: Assuming that host metadata is accurate here
+        for host in hosts:
+            if action == driver.ACTION_START and \
+               host.state != driver.STATE_STOPPED:
+                raise BadRequest('Start action requires all hosts to be in '
+                                 'the stopped state first. At least one host '
+                                 'is reporting an invalid '
+                                 'state: %s' % host.state)
+            if action == driver.ACTION_STOP and \
+               host.state != driver.STATE_RUNNING:
+                raise BadRequest('Stop action requires all hosts to be in '
+                                 'the running state first. At least one host '
+                                 'is reporting an invalid '
+                                 'state: %s' % host.state)
+            if action == driver.ACTION_TERMINATE and \
+               host.state not in (driver.STATE_RUNNING, driver.STATE_STOPPED):
+                raise BadRequest('Terminate action requires all hosts to be '
+                                 'in the either the running or stopped state '
+                                 'first. At least one host is reporting an '
+                                 'invalid state: %s' % host.state)
+            
+
+        # Kick off the celery task for the given action
+        stack.set_status(Stack.EXECUTING_ACTION, 
+                         'Stack is executing action \'{}\''.format(action))
+
+        # Keep track of the tasks we need to run for this execution
+        task_list = []
+
+        # FIXME: not generic
+        if action in (driver.ACTION_STOP, driver.ACTION_TERMINATE):
+            # Unregister DNS when executing the above actions
+            task_list.append(tasks.unregister_dns.si(stack.id))
+
+        # Launch is slightly different than other actions
+        if action == driver.ACTION_LAUNCH:
+            task_list.append(tasks.launch_hosts.si(stack.id))
+
+        # Terminate should leverage salt-cloud or salt gets confused about
+        # the state of things
+        elif action == driver.ACTION_TERMINATE:
+            task_list.append(tasks.destroy_hosts.si(stack.id, delete_stack=False))
+
+        # Execute other actions
+        else:
+            task_list.append(tasks.execute_action.si(stack.id, action, *args))
+
+        # TODO: need a task that will wait for the action to finish as the actions
+        # on AWS are completely asynchronous (ie, we need to poll for the hosts to be
+        # in the same state -- either stopped, terminated, or running)
+
+        # Update the metadata after the action has been executed
+        task_list.append(tasks.update_metadata.si(stack.id))
+
+        # Launching requires us to tag the newly available infrastructure
+        if action in (driver.ACTION_LAUNCH,):
+            tasks.tag_infrastructure.si(stack.id)
+
+        # These actions require new DNS and provisioning
+        if action in (driver.ACTION_START, driver.ACTION_LAUNCH):
+            # Register DNS when executing the above actions
+            task_list.append(tasks.register_dns.si(stack.id))
+            # Also reprovision just in case?
+            # TODO: do we need this and are there cases where special things
+            # need to happen after a host is restarted?
+            task_list.append(tasks.provision_hosts.si(stack.id))
+
+        task_list.append(tasks.finish_stack.si(stack.id))
+
+        # chain together our tasks using the bitwise or operator
+        task_chain = reduce(or_, task_list)
+
+        # Update all host states
+        hosts.update(state='actioning')
+
+        # execute the chain
+        task_chain()
+
+        serializer = self.get_serializer(stack)
+        return Response(serializer.data)
+
+
 class HostListAPIView(generics.ListAPIView):
     model = Host
     serializer_class = HostSerializer
 
 
 class StackHostsAPIView(HostListAPIView):
+    parser_classes = (parsers.JSONParser,)
+
+    def get_object():
+        return Stack.objects.get(id=self.kwargs.get('pk'))
+
     def get_queryset(self):
         return Host.objects.filter(stack__pk=self.kwargs.get('pk'))
+
+    def put(self, request, *args, **kwargs):
+        '''
+        Overriding PUT for a stack to be able to add additional
+        hosts after a stack has already been created.
+        '''
+        
+        stack = self.get_object()
+        new_hosts = stack.add_hosts(request.DATA['hosts'])
+        host_ids = [h.id for h in new_hosts]
+
+        # Queue up stack creation and provisioning using Celery
+        task_chain = (
+            tasks.launch_hosts.si(stack.id, host_ids=host_ids) | 
+            tasks.update_metadata.si(stack.id, host_ids=host_ids) | 
+            tasks.tag_infrastructure.si(stack.id, host_ids=host_ids) | 
+            tasks.register_dns.si(stack.id, host_ids=host_ids) | 
+            tasks.provision_hosts.si(stack.id, host_ids=host_ids) |
+            tasks.finish_stack.si(stack.id)
+        )
+        
+        # execute the chain
+        task_chain()
+
+        serializer = self.get_serializer(stack)
+        return Response(serializer.data)
 
     def get(self, request, *args, **kwargs):
         '''

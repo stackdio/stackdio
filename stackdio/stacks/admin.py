@@ -13,6 +13,7 @@ class StackAdmin(admin.ModelAdmin):
         'title',
         'slug',
         'user',
+        'cloud_provider',
         'created',
         'modified',
     ]

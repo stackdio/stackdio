@@ -14,7 +14,7 @@
 cdh4_gpg:
   cmd:
     - run
-    - name: 'curl -s http://archive.cloudera.com/cdh4/ubuntu/{{ grains["lsb_codename"] }}/amd64/cdh/archive.key | sudo apt-key add -'
+    - name: 'curl -s http://archive.cloudera.com/cdh4/ubuntu/{{ grains["lsb_distrib_codename"] }}/amd64/cdh/archive.key | sudo apt-key add -'
     - unless: 'apt-key list | grep "Cloudera Apt Repository"'
     - require:
       - file: /etc/apt/sources.list.d/cloudera.list

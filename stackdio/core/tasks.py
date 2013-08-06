@@ -1,10 +1,7 @@
-from celery import task
-from time import sleep
+import celery
+import time
 
-@task
-def create_user(**kwargs):
-    sleep(4)
-    return {
-        'name': 'abe',
-    }
-
+@celery.task(name='core.sleep')
+def sleep(seconds=10):
+    time.sleep(seconds)
+    return True

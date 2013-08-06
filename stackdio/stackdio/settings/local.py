@@ -7,7 +7,10 @@ from .base import *
 # stackd.io overrides
 ## 
 STACKDIO_CONFIG.update({
-    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git develop',
+    # Don't pull the develop branch until salt-cloud/#700 is fixed. Stick
+    # with the stabile build.
+    #'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git develop',
+    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D',
 })
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False

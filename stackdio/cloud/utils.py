@@ -86,6 +86,9 @@ def write_cloud_profiles_file():
             'ssh_username': profile.ssh_user,
             'script': 'bootstrap-salt',
             'script_args': STACKDIO_CONFIG['SALT_CLOUD_BOOTSTRAP_ARGS'],
+            # PI-44: Need to add an empty minion config until salt-cloud/701
+            # is fixed.
+            'minion': {},
         }
 
     with open(settings.SALT_CLOUDVM_CONFIG, 'w') as f:

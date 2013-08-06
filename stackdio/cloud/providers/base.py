@@ -6,6 +6,9 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+class TimeoutException(Exception): pass
+class MaxFailuresException(Exception): pass
+
 class BaseCloudProvider(object):
     
     REQUIRED_MESSAGE = 'This field is required.'

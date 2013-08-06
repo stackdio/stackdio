@@ -1,0 +1,20 @@
+
+Welcome to host {{ grains['fqdn'] }}:
+ - Salt ID: {{ grains['id'] }}
+ - Architecture: {{ grains['cpuarch'] }}
+ - OS: {{ grains['os'] }}
+ - CPU: {{ grains['num_cpus'] }}
+ - Memory: {{ grains['mem_total'] }} Mb
+
+{%- if 'availabilityZone' in grains %}
+
+AWS Information:
+ - Availability Zone: {{ grains['availabilityZone'] }}
+ - Instance ID: {{ grains['instanceId'] }}
+ - Instance Type: {{ grains['instanceType'] }}
+ - AMI: {{ grains['imageId'] }}
+ - Private IP: {{ grains ['local-ipv4'] }}
+ - Public IP: {{ grains['public-ipv4'] }}
+ - Public hostname: {{ grains['public-hostname'] }}
+{% endif %}
+
