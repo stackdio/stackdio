@@ -1,2 +1,2 @@
-deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/{{ grains['lsb_codename'] }}/amd64/cdh {{ grains['lsb_codename'] }}-cdh4 contrib 
-deb-src http://archive.cloudera.com/cdh4/ubuntu/{{ grains['lsb_codename'] }}/amd64/cdh {{ grains['lsb_codename'] }}-cdh4 contrib
+deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/{{ grains['lsb_distrib_codename'] }}/amd64/cdh {{ grains['lsb_distrib_codename'] }}-cdh4 contrib 
+deb-src http://archive.cloudera.com/cdh4/ubuntu/{{ grains['lsb_distrib_codename'] }}/amd64/cdh {{ grains['lsb_distrib_codename'] }}-cdh4 contrib

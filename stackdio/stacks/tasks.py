@@ -22,9 +22,14 @@ def symlink(source, target):
     os.symlink(source, target)
 
 @celery.task(name='stacks.launch_hosts')
-def launch_hosts(stack_id, host_ids=None):
+def launch_hosts(stack_id):
     try:
         stack = Stack.objects.get(id=stack_id)
+        hosts = stack.get_hosts()
+
+        # generate the hosts for the stack
+        stack.create_hosts()
+
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
 
         # Use SaltCloud to launch machines using the given stack's
@@ -104,8 +109,15 @@ def update_metadata(stack_id, host_ids=None):
         # the machines are running
         query_results = stack.query_hosts()
 
+        # keep track of terminated hosts for future removal
+        hosts_to_remove = []
+
         for host in stack.hosts.all():
             host_data = query_results[host.hostname]
+
+            if 'state' in host_data and host_data['state'] == 'terminated':
+                hosts_to_remove.append(host)
+                continue
 
             # FIXME: This is cloud provider specific. Should farm it out to
             # the right implementation
@@ -115,7 +127,7 @@ def update_metadata(stack_id, host_ids=None):
 
             # Get the host's public IP/host set by the cloud provider. This is
             # used later when we tie the machine to DNS
-            host.provider_dns = host_data['dnsName']
+            host.provider_dns = host_data['dnsName'] or ''
 
             # update the state of the host as provided by ec2
             host.state = host_data['state']
@@ -124,6 +136,9 @@ def update_metadata(stack_id, host_ids=None):
             block_device_mappings = host_data \
                 .get('blockDeviceMapping', {}) \
                 .get('item', [])
+
+            if type(block_device_mappings) is not list:
+                block_device_mappings = [block_device_mappings]
 
             # for each block device mapping found on the running host,
             # try to match the device name up with that stored in the DB
@@ -145,11 +160,18 @@ def update_metadata(stack_id, host_ids=None):
                     # This is most likely fine. Usually means that the 
                     # EBS volume for the root drive was used
                     pass
+                except Exception, e:
+                    logger.exception('Unhandled exception while updating volume metadata.')
+                    logger.debug(block_device_mappings)
+                    pass
 
             # save the host
             host.save()
 
-            return True
+        for h in hosts_to_remove:
+            h.delete()
+
+        return True
 
     except Stack.DoesNotExist:
         logger.exception('Unknown Stack with id {}'.format(stack_id))
@@ -170,17 +192,17 @@ def tag_infrastructure(stack_id, host_ids=None):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
+        hosts = stack.get_hosts()
+
         logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
 
         # Update status
         stack.set_status(Stack.CONFIGURING, 
                          'Tagging hosts and volumes for stack.')
 
-        provider_hosts_map = stack.get_provider_hosts_map()
-        for provider, hosts in provider_hosts_map.iteritems():
-            driver = provider.get_driver()
-            volumes = Volume.objects.filter(host__in=hosts)
-            driver.tag_resources(stack, hosts, volumes)
+        driver = stack.get_driver()
+        volumes = Volume.objects.filter(host__in=hosts)
+        driver.tag_resources(stack, hosts, volumes)
 
         return True
 
@@ -203,12 +225,10 @@ def register_dns(stack_id, host_ids=None):
 
         stack.set_status(Stack.CONFIGURING)
 
-        provider_hosts_map = stack.get_provider_hosts_map() 
-        for provider, hosts in provider_hosts_map.iteritems():
-            # Use the provider implementation to register a set of hosts
-            # with the appropriate cloud's DNS service
-            driver = provider.get_driver()
-            driver.register_dns(hosts)
+        # Use the provider implementation to register a set of hosts
+        # with the appropriate cloud's DNS service
+        driver = stack.get_driver()
+        driver.register_dns(stack.get_hosts())
 
         return True
 
@@ -316,14 +336,10 @@ def register_volume_delete(stack_id, host_ids=None):
         stack = Stack.objects.get(id=stack_id)
         hosts = stack.get_hosts(host_ids) 
 
-        provider_hosts_map = stack.get_provider_hosts_map() 
-
-        for provider, hosts in provider_hosts_map.iteritems():
-            driver = provider.get_driver()
-
-            # use the driver to register all volumes on the hosts to
-            # automatically delete after the host is terminated
-            driver.register_volumes_for_delete(hosts)
+        # use the stack driver to register all volumes on the hosts to
+        # automatically delete after the host is terminated
+        driver = stack.get_driver()
+        driver.register_volumes_for_delete(stack.get_hosts())
 
         return True
 
@@ -335,7 +351,7 @@ def register_volume_delete(stack_id, host_ids=None):
     return False
 
 @celery.task(name='stacks.destroy_hosts')
-def destroy_hosts(stack_id, host_ids=None):
+def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
     '''
     Destroy the given stack id or a subset of the stack if host_ids
     is set.
@@ -372,7 +388,7 @@ def destroy_hosts(stack_id, host_ids=None):
 
             # Check for map file, and if it doesn't exist just remove
             # the stack and return
-            if not os.path.isfile(stack.map_file.path):
+            if not stack.map_file or not os.path.isfile(stack.map_file.path):
                 logger.warn('Map file for stack {} does not exist. '
                             'Deleting stack anyway.'.format(stack))
                 stack.delete()
@@ -392,12 +408,13 @@ def destroy_hosts(stack_id, host_ids=None):
             stack.set_status(Stack.ERROR, err_msg)
             return
 
-        # delete the stack or delete the hosts
-        if host_ids is None:
+        # delete hosts
+        hosts.delete()
+        stack.set_status(Stack.OK, 'Hosts deleted.')
+
+        # optionally delete the stack as well
+        if delete_stack:
             stack.delete()
-        else:
-            hosts.delete()
-            stack.set_status(Stack.OK, 'Hosts deleted.')
 
         return True
 
@@ -420,12 +437,36 @@ def unregister_dns(stack_id, host_ids=None):
 
         stack.set_status(Stack.CONFIGURING, 'Unregistering DNS entries.')
 
-        provider_hosts_map = stack.get_provider_hosts_map() 
-        for provider, hosts in provider_hosts_map.iteritems():
-            # Use the provider implementation to register a set of hosts
-            # with the appropriate cloud's DNS service
-            driver = provider.get_driver()
-            driver.unregister_dns(hosts)
+        # Use the provider implementation to register a set of hosts
+        # with the appropriate cloud's DNS service
+        driver = stack.get_driver()
+        driver.unregister_dns(stack.get_hosts())
+
+        return True
+
+    except Stack.DoesNotExist:
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception.')
+        stack.set_status(Stack.ERROR, str(e))
+    return False
+
+@celery.task(name='stacks.execute_action')
+def execute_action(stack_id, action, *args, **kwargs):
+    '''
+    Executes a defined action using the stack's cloud provider implementation.
+    Actions are defined on the implementation class (e.g, _action_{action})
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Executing action \'{0}\' on stack: {1!r}'.format(action, stack))
+
+        # Use the provider implementation to register a set of hosts
+        # with the appropriate cloud's DNS service
+        driver = stack.get_driver()
+        hosts = stack.get_hosts()
+        fun = getattr(driver, '_action_{}'.format(action))
+        fun(stack=stack, *args, **kwargs)
 
         return True
 

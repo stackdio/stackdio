@@ -6,6 +6,7 @@ import os
 import stat
 import logging
 from uuid import uuid4
+from time import sleep
 
 import boto
 import yaml
@@ -13,7 +14,11 @@ from boto.route53.record import ResourceRecordSets
 
 from django.core.exceptions import ValidationError
 
-from cloud.providers.base import BaseCloudProvider
+from cloud.providers.base import (
+    BaseCloudProvider,
+    TimeoutException,
+    MaxFailuresException,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +45,6 @@ class Route53Domain(object):
         
         self.conn = boto.connect_route53(self.access_key,
                                          self.secret_key)
-
         self._load_domain()
 
     def _load_domain(self):
@@ -51,6 +55,7 @@ class Route53Domain(object):
         '''
         # look up the hosted zone based on the domain
         response = self.conn.get_hosted_zone_by_name(self.domain)
+        logger.debug(response)
         self.hosted_zone = response['GetHostedZoneResponse']['HostedZone']
 
         # Get the zone id, but strip off the first part /hostedzone/
@@ -170,6 +175,17 @@ class AWSCloudProvider(BaseCloudProvider):
     # The route53 zone to use for managing DNS
     ROUTE53_DOMAIN = 'route53_domain'
 
+    # Actions that may be executed. Implement these 
+    # actions below
+    ACTION_STOP = 'stop'
+    ACTION_START = 'start'
+    ACTION_TERMINATE = 'terminate'
+    ACTION_LAUNCH = 'launch'
+
+    STATE_STOPPED = 'stopped'
+    STATE_RUNNING = 'running'
+    STATE_TERMINATED = 'terminated'
+
     @classmethod
     def get_required_fields(self):
         return [
@@ -179,6 +195,21 @@ class AWSCloudProvider(BaseCloudProvider):
             self.SECURITY_GROUPS
         ]
 
+    @classmethod
+    def get_available_actions(self):
+        return [
+            self.ACTION_STOP,
+            self.ACTION_START,
+            self.ACTION_TERMINATE,
+            self.ACTION_LAUNCH,
+        ]
+
+    def get_private_key_path(self):
+        return os.path.join(self.provider_storage, 'id_rsa')
+
+    def get_config_file_path(self):
+        return os.path.join(self.provider_storage, 'config')
+
     def get_config(self):
         with open(self.get_config_file_path(), 'r') as f:
             config_data = yaml.safe_load(f)
@@ -187,12 +218,6 @@ class AWSCloudProvider(BaseCloudProvider):
     def get_credentials(self):
         config_data = self.get_config()
         return (config_data['id'], config_data['key'])
-
-    def get_private_key_path(self):
-        return os.path.join(self.provider_storage, 'id_rsa')
-
-    def get_config_file_path(self):
-        return os.path.join(self.provider_storage, 'config')
 
     def get_provider_data(self, data, files):
         # write the private key to the proper location
@@ -262,8 +287,10 @@ class AWSCloudProvider(BaseCloudProvider):
         return Route53Domain(access_key, secret_key, domain)
 
     def connect_ec2(self):
-        credentials = self.get_credentials()
-        return boto.connect_ec2(*credentials)
+        if not hasattr(self, '_ec2_connection'):
+            credentials = self.get_credentials()
+            self._ec2_connection = boto.connect_ec2(*credentials)
+        return self._ec2_connection
 
     def register_dns(self, hosts):
         '''
@@ -342,7 +369,7 @@ class AWSCloudProvider(BaseCloudProvider):
             # the same now, just in case
             for v in h.volumes.all():
                 name = 'stackdio::volume::{0!s}-DEL-{1}'.format(v.id, uuid4().hex)
-                logger.debug('tagging volume {}: {}'.format(v.volume_id, name))
+                logger.info('tagging volume {}: {}'.format(v.volume_id, name))
                 ec2.create_tags([v.volume_id], {
                     'Name': name,
                 })
@@ -355,7 +382,7 @@ class AWSCloudProvider(BaseCloudProvider):
         # the volumes in the AWS console
         for v in volumes:
             name = 'stackdio::volume::{0!s}'.format(v.id)
-            logger.debug('tagging volume {}: {}'.format(v.volume_id, name))
+            logger.info('tagging volume {}: {}'.format(v.volume_id, name))
             ec2.create_tags([v.volume_id], {
                 'Name': name,
             })
@@ -364,10 +391,169 @@ class AWSCloudProvider(BaseCloudProvider):
         resource_ids = [v.volume_id for v in volumes] + \
                        [h.instance_id for h in hosts]
 
+        # filter out empty strings
+        resource_ids = filter(None, resource_ids)
+
         if resource_ids:
-            logger.debug('tagging {0!r}'.format(resource_ids))
+            logger.info('tagging {0!r}'.format(resource_ids))
             ec2.create_tags(resource_ids, {
                 'stack_id': str(stack.id),
                 'owner': stack.user.username,
             })
 
+    def get_ec2_instances(self, hosts):
+        ec2 = self.connect_ec2()
+
+        instance_ids = [i.instance_id for i in hosts]
+        return [i for r in ec2.get_all_instances(instance_ids) \
+                     for i in r.instances]
+
+    def _wait(self,
+              fun,
+              fun_args=None,
+              fun_kwargs=None,
+              timeout=5*60,
+              interval=5,
+              max_failures=5):
+        '''
+        Generic function that will call the given function `fun` with 
+        `fun_args` and `fun_kwargs` until the function returns a valid result 
+        or the `timeout` or `max_failures` is reached. A valid result is a 
+        tuple with the first element being boolean True and the second element
+        being the return value for `fun`. If False is the first element of the
+        tuple it will *not* be considered a failure and the loop will continue
+        waiting for a valid result. All exceptions from `fun` will be 
+        considered failures.
+        '''
+
+        if fun_args is None:
+            fun_args = ()
+        if fun_kwargs is None:
+            fun_kwargs = {}
+
+        # start the loop
+        while True:
+            logger.debug(
+                'Calling given method {0!r}. Giving up in 00:{1:02d}:{2:02d}'.format(
+                    fun,
+                    int(timeout // 60),
+                    int(timeout % 60)
+                )
+            )
+            try:
+                ok, result = fun(*fun_args, **fun_kwargs)
+                if ok:
+                    return result
+            except Exception, e:
+                logger.exception('Function {0!r} threw exception. Remaining '
+                                 'failures: {1}'.format(fun, max_failures))
+
+                max_failures -= 1
+                if max_failures <= 0:
+                    raise MaxFailuresException(
+                        'Too many failures occurred while waiting for '
+                        'valid return value. Giving up.'
+                    )
+
+            if timeout < 0:
+                raise TimeoutException(
+                    'Unable to reach {0} state in {1}s'.format(
+                        state,
+                        timeout
+                    )
+                )
+            sleep(interval)
+            timeout -= interval
+
+    def _wait_for_state(self, hosts, state):
+        '''
+        Checks if all hosts are in the given state. Returns a 2-element tuple
+        with the first element a boolean representing if all hosts are in the
+        required state and the second element being the list of EC2 instance
+        objects. This method is suitable as a handler for the `_wait` method.
+        '''
+        instances = self.get_ec2_instances(hosts)
+        if not instances:
+            raise RuntimeError('get_ec2_instances returned zero results!')
+
+        # get the state for all instances
+        states = set(i.update() for i in instances)
+
+        # Multiple states found, requirement failed
+        if len(states) > 1:
+            return False, instances
+
+        # One state found, return true if the state requirement has been met
+        return states.pop() == state, instances
+
+    ##
+    # ACTION IMPLEMENTATIONS BELOW
+    ##
+
+    def _execute_action(self, stack, status, success_state, state_fun, *args, **kwargs):
+        '''
+        Generic function to handle most all states accordingly. If you need
+        custom logic in the state handling, do so in the _action* methods.
+        '''
+        stack.set_status(status, 
+                         '%s all hosts in this stack.' % status.capitalize())
+
+        hosts = stack.get_hosts()
+        instance_ids = [h.instance_id for h in hosts]
+
+        state_fun(instance_ids, *args, **kwargs)
+
+        # Wait for success_state
+        try:
+            instances = self._wait(
+                self._wait_for_state,
+                fun_args=(hosts, success_state)
+            )
+            return True
+        except MaxFailuresException, e:
+            logger.error('Max number of failures reached while waiting '
+                         'for state: %s' % success_state)
+        except TimeoutException, e:
+            logger.error('Timeout reached while waiting for state: '
+                         '%s.' % success_state)
+
+        return False
+
+    def _action_stop(self, stack, *args, **kwargs):
+        '''
+        Stop all of the hosts on the given stack.
+        '''
+        ec2 = self.connect_ec2() 
+        return self._execute_action(stack, 
+                                    stack.STOPPING,
+                                    self.STATE_STOPPED,
+                                    ec2.stop_instances,
+                                    *args,
+                                    **kwargs)
+
+    def _action_start(self, stack, *args, **kwargs):
+        '''
+        Starts all of the hosts on the given stack.
+        '''
+        ec2 = self.connect_ec2() 
+        return self._execute_action(stack, 
+                                    stack.STARTING,
+                                    self.STATE_RUNNING,
+                                    ec2.start_instances,
+                                    *args,
+                                    **kwargs)
+
+    def _action_terminate(self, stack, *args, **kwargs):
+        '''
+        Terminates all of the hosts on the given stack.
+        '''
+        ec2 = self.connect_ec2() 
+        return self._execute_action(stack, 
+                                    stack.TERMINATING,
+                                    self.STATE_TERMINATED,
+                                    ec2.terminate_instances,
+                                    *args,
+                                    **kwargs)
+    ##
+    # END ACTION IMPLEMENTATIONS
+    ##

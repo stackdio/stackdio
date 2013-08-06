@@ -1,4 +1,4 @@
-{% for vol in grains['volumes'] %}  
+{% for vol in grains.get('volumes', []) %}  
 
 # Mount the device to the given mount point, but first
 # make sure the device exists. AWS requires the device
