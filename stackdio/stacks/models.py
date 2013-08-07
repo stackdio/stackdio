@@ -76,11 +76,15 @@ class StackManager(models.Manager):
                     "cloud_profile": 1,     # what cloud_profile object to use
                     "salt_roles": [1,2,3],  # what salt_roles to use
                     "host_security_groups": "foo,bar,baz",
-                    "volumes": [            # list of volumes to create and 
-                                            # attach to the launched hosts
+                    "volumes": [            # list of volumes to attach to the
+                                            # launched hosts, creation of 
+                                            # volumes occurs automatically the
+                                            # first time we see the stack
+                                            # and volumes
                         {
                             "snapshot": 1,
-                            "device": "/dev/sdj"
+                            "device": "/dev/sdj",
+                            "mount_point": "/mnt/ebs"
                         }
                         ...
                     ]
@@ -112,10 +116,7 @@ class StackManager(models.Manager):
             else:
                 with open(stack_obj.hosts_file.path, 'w') as f:
                     f.write(hosts_json)
-
-            # generation of host objects for the stack is now being
-            # handled in the launch_hosts task.
-
+            
         return stack_obj
 
 
@@ -288,14 +289,31 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                 # set roles
                 host_obj.roles.add(*role_objs)
 
-                # add volumes
                 cloud_provider = host_obj.cloud_profile.cloud_provider
-                for volume in volumes:
-                    host_obj.volumes.create(
-                        user=self.user,
-                        snapshot=cloud_provider.snapshots.get(id=volume['snapshot']),
-                        device=volume['device'],
-                        mount_point=volume['mount_point'])
+
+                # add volumes - first, we need to check the stack to see
+                # if existing volumes are available
+                existing_volumes = self.volumes.filter(hostname=host_obj.hostname)
+
+                # in this case, the volumes have already been created,
+                # so we need to match up the volumes with the host
+                # objects based on the hostname
+                if existing_volumes:
+                    existing_volumes.update(host=host_obj)
+
+                # this case means we're dealing with a stack that hasn't
+                # had volumes before, so we create them in the database.
+                # The volume_id for the new volumes will be assigned
+                # after hosts have been launched and the volumes created
+                # and attached to the hosts
+                else:
+                    for volume in volumes:
+                        self.volumes.create(
+                            hostname=host_obj.hostname,
+                            host=host_obj,
+                            snapshot=cloud_provider.snapshots.get(id=volume['snapshot']),
+                            device=volume['device'],
+                            mount_point=volume['mount_point'])
 
                 # keep track of the hosts we're creating so we can return them
                 new_hosts.append(host_obj)
@@ -349,11 +367,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             # the volumes (using the snapshot), whereas those on the grains
             # are available for states and modules to play with (e.g., to
             # mount the devices)
-            volumes = [{
-                'snapshot': v.snapshot.snapshot_id,
-                'device': v.device,
-                'mount_point': v.mount_point,
-            } for v in volumes]
+            map_volumes = []
+            for vol in volumes:
+                v = {
+                    'device': vol.device,
+                    'mount_point': vol.mount_point,
+                }
+                if vol.volume_id:
+                    v['volume_id'] = vol.volume_id
+                else:
+                    v['snapshot'] = vol.snapshot.snapshot_id
+
+                map_volumes.append(v)
 
             profiles[host.cloud_profile.slug].append({
                 host.hostname: {
@@ -375,7 +400,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                             'fqdn': fqdn,
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
-                            'volumes': volumes,
+                            'volumes': map_volumes,
                         },
                     },
 
@@ -384,7 +409,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     # depending on the cloud provider being used.
                     'size': instance_size,
                     'securitygroup': list(security_groups),
-                    'volumes': volumes,
+                    'volumes': map_volumes,
                 }
             })
 
@@ -514,7 +539,7 @@ class Host(TimeStampedModel, StatusDetailModel):
     roles = models.ManyToManyField('stacks.SaltRole',
                                    related_name='hosts')
 
-    hostname = models.CharField(max_length=255)
+    hostname = models.CharField(max_length=64)
 
     security_groups = models.ManyToManyField('stacks.SecurityGroup',
                                              related_name='hosts')

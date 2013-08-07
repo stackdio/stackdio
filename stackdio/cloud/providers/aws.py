@@ -368,6 +368,9 @@ class AWSCloudProvider(BaseCloudProvider):
             # for each volume, rename them so we can create new volumes with
             # the same now, just in case
             for v in h.volumes.all():
+                if not v.volume_id:
+                    logger.warn('{0!r} missing volume_id. Skipping delete retag.'.format(v))
+                    continue
                 name = 'stackdio::volume::{0!s}-DEL-{1}'.format(v.id, uuid4().hex)
                 logger.info('tagging volume {}: {}'.format(v.volume_id, name))
                 ec2.create_tags([v.volume_id], {

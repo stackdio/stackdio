@@ -9,7 +9,8 @@ class VolumeAdmin(admin.ModelAdmin):
     list_display = [
         'volume_id',
         'attach_time',
-        'user',
+        'stack',
+        'hostname',
         'host',
         'snapshot',
         'device',

@@ -4,6 +4,7 @@ from .api import (
     StackListAPIView, 
     StackDetailAPIView,
     StackHostsAPIView, 
+    StackVolumesAPIView, 
     StackDetailAPIView,
     HostListAPIView, 
     HostDetailAPIView,
@@ -29,9 +30,13 @@ urlpatterns = patterns('stacks.api',
         StackDetailAPIView.as_view(), 
         name='stack-detail'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/hosts$', 
+    url(r'^stacks/(?P<pk>[0-9]+)/hosts/$', 
         StackHostsAPIView.as_view(), 
         name='stack-hosts'),
+
+    url(r'^stacks/(?P<pk>[0-9]+)/volumes/$', 
+        StackVolumesAPIView.as_view(), 
+        name='stack-volumes'),
 
     url(r'^roles/$', 
         SaltRoleListAPIView.as_view(), 

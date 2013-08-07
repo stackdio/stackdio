@@ -28,7 +28,8 @@ def launch_hosts(stack_id):
         hosts = stack.get_hosts()
 
         # generate the hosts for the stack
-        stack.create_hosts()
+        if not hosts:
+            stack.create_hosts()
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
 

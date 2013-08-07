@@ -12,11 +12,12 @@
 {% if device_name %}
 {{ vol['mount_point'] }}:
   mount:
-    - mounted
+    - mounted 
     - order: 1
     - device: {{ device_name }}
     - fstype: ''
     - mkmnt: True
+    - persist: False
 {% endif %}
 
 {% endfor %}

@@ -29,6 +29,9 @@ from .serializers import (
     SaltRoleSerializer,
 )
 
+from volumes.api import VolumeListAPIView
+from volumes.models import Volume
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,18 +61,18 @@ class StackListAPIView(generics.ListCreateAPIView):
         # create the stack object and foreign key objects
         stack = Stack.objects.create_stack(request.user, request.DATA)
 
-        # Queue up stack creation and provisioning using Celery
-        task_chain = (
-            tasks.launch_hosts.si(stack.id) | 
-            tasks.update_metadata.si(stack.id) | 
-            tasks.tag_infrastructure.si(stack.id) | 
-            tasks.register_dns.si(stack.id) | 
-            tasks.provision_hosts.si(stack.id) |
-            tasks.finish_stack.si(stack.id)
-        )
-        
-        # execute the chain
         if launch_stack:
+            # Queue up stack creation and provisioning using Celery
+            task_chain = (
+                tasks.launch_hosts.si(stack.id) | 
+                tasks.update_metadata.si(stack.id) | 
+                tasks.tag_infrastructure.si(stack.id) | 
+                tasks.register_dns.si(stack.id) | 
+                tasks.provision_hosts.si(stack.id) |
+                tasks.finish_stack.si(stack.id)
+            )
+
+            # execute the chain
             task_chain()
 
         # return serialized stack object
@@ -295,6 +298,13 @@ class StackHostsAPIView(HostListAPIView):
             host['ec2_metadata'] = query_results[hostname]
 
         return result
+
+
+class StackVolumesAPIView(VolumeListAPIView):
+
+    def get_queryset(self):
+        return Volume.objects.filter(stack__pk=self.kwargs.get('pk'))
+
 
 class HostDetailAPIView(generics.RetrieveDestroyAPIView):
     model = Host
