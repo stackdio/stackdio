@@ -130,6 +130,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     DESTROYING = 'destroying'
     CONFIGURING = 'configuring'
     PROVISIONING = 'provisioning'
+    SYNCING = 'syncing'
     STOPPING = 'stopping'
     STARTING = 'starting'
     TERMINATING = 'terminating'

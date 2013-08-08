@@ -68,6 +68,7 @@ class StackListAPIView(generics.ListCreateAPIView):
                 tasks.update_metadata.si(stack.id) | 
                 tasks.tag_infrastructure.si(stack.id) | 
                 tasks.register_dns.si(stack.id) | 
+                tasks.sync_all.si(stack.id) | 
                 tasks.provision_hosts.si(stack.id) |
                 tasks.finish_stack.si(stack.id)
             )
@@ -221,6 +222,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             # Also reprovision just in case?
             # TODO: do we need this and are there cases where special things
             # need to happen after a host is restarted?
+            task_list.append(tasks.sync_all.si(stack.id))
             task_list.append(tasks.provision_hosts.si(stack.id))
 
         task_list.append(tasks.finish_stack.si(stack.id))
@@ -268,6 +270,7 @@ class StackHostsAPIView(HostListAPIView):
             tasks.update_metadata.si(stack.id, host_ids=host_ids) | 
             tasks.tag_infrastructure.si(stack.id, host_ids=host_ids) | 
             tasks.register_dns.si(stack.id, host_ids=host_ids) | 
+            tasks.sync_all.si(stack.id) |
             tasks.provision_hosts.si(stack.id, host_ids=host_ids) |
             tasks.finish_stack.si(stack.id)
         )

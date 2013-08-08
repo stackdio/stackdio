@@ -240,6 +240,42 @@ def register_dns(stack_id, host_ids=None):
         stack.set_status(Stack.ERROR, str(e))
     return False
 
+@celery.task(name='stacks.sync_all')
+def sync_all(stack_id):
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
+
+        # Update status
+        stack.set_status(Stack.SYNCING)
+
+        # build up the command for salt
+        cmd_args = [
+            'salt',
+            '-C',                               # compound targeting
+            'G@stack_id:{}'.format(stack_id),   # target the nodes in this stack only
+            'saltutil.sync_all',                # sync all systems
+        ]
+
+        # Execute
+        cmd = ' '.join(cmd_args)
+        logger.debug('Excuting command: {0}'.format(cmd))
+        result = envoy.run(cmd)
+
+        logger.debug('Command results:')
+        logger.debug('status_code = {}'.format(result.status_code))
+        logger.debug('std_out = {}'.format(result.std_out))
+        logger.debug('std_err = {}'.format(result.std_err))
+
+        return True
+
+    except Stack.DoesNotExist:
+        logger.exception('Unknown Stack with id {}'.format(stack_id))
+    except Exception, e:
+        logger.exception('Unhandled exception.')
+        stack.set_status(Stack.ERROR, str(e))
+    return False
+
 @celery.task(name='stacks.provision_hosts')
 def provision_hosts(stack_id, host_ids=None):
     try:
