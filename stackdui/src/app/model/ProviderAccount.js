@@ -2,13 +2,13 @@ Ext.define('stackdio.model.ProviderAccount', {
     extend: 'Ext.data.Model'
 
     ,fields: [
-        { name: 'id',         type: 'int' },
-        { name: 'title',         type: 'string' },
-        { name: 'description',         type: 'string' },
-        { name: 'slug',         type: 'string' },
-        { name: 'provider_type',         type: 'string' },
-        { name: 'provider_type_name',         type: 'string' },
-        { name: 'yaml',       type: 'string' }
+         { name: 'id',                  type: 'int' },
+        ,{ name: 'title',               type: 'string' }
+        ,{ name: 'description',         type: 'string' }
+        ,{ name: 'slug',                type: 'string' }
+        ,{ name: 'provider_type',       type: 'string' }
+        ,{ name: 'provider_type_name',  type: 'string' }
+        ,{ name: 'yaml',                type: 'string' }
     ]
 
     ,proxy: {

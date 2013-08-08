@@ -37,8 +37,7 @@ img.logo {
 }
 
 .stackd-form .modal-body {
-    max-height: 500px !important;
-    height: 450px !important;
+    max-height: 700px !important;
 }
 
 .form-newstack {
@@ -46,17 +45,14 @@ img.logo {
     height: 600px;
 }
 
+.form-small {
+    width: 600px;
+    height: 300px;
+}
+
 .stackd-form .stackd-form-heading,
 .stackd-form .checkbox {
     margin-bottom: 10px;
-}
-
-.modal-form {
-    /*background-color: #DEE7FB !important;*/
-}
-
-.modal-footer {
-    /*background-color: #DEE7FB !important;*/
 }
 
 .data-grid {
