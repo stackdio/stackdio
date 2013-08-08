@@ -100,6 +100,7 @@ def update_metadata(stack_id, host_ids=None):
         # metadata and store what we want to keep track of.
 
         stack = Stack.objects.get(id=stack_id)
+        driver = stack.get_driver()
         logger.info('Updating metadata for stack: {0!r}'.format(stack))
 
         # Update status
@@ -113,10 +114,13 @@ def update_metadata(stack_id, host_ids=None):
         # keep track of terminated hosts for future removal
         hosts_to_remove = []
 
+        # also keep track if volume information was updated
+        bdm_updated = False
+
         for host in stack.hosts.all():
             host_data = query_results[host.hostname]
 
-            if 'state' in host_data and host_data['state'] == 'terminated':
+            if 'state' in host_data and host_data['state'] == driver.STATE_TERMINATED:
                 hosts_to_remove.append(host)
                 continue
 
@@ -145,21 +149,24 @@ def update_metadata(stack_id, host_ids=None):
             # try to match the device name up with that stored in the DB
             # if a match is found, fill in the metadata and save the volume
             for bdm in block_device_mappings:
+                bdm_volume_id = bdm['ebs']['volumeId']
                 try:
                     # attempt to get the volume for this host that
                     # has been created
                     volume = host.volumes.get(device=bdm['deviceName'])
 
-                    # update the volume information from what was provided
-                    # by the cloud provider
-                    volume.volume_id = bdm['ebs']['volumeId']
-                    volume.attach_time = bdm['ebs']['attachTime']
+                    # update the volume information if needed
+                    if volume.volume_id != bdm_volume_id:
+                        volume.volume_id = bdm['ebs']['volumeId']
+                        volume.attach_time = bdm['ebs']['attachTime']
 
-                    # save the new volume info
-                    volume.save()
+                        # save the new volume info
+                        volume.save()
+                        bdm_updated = True
+
                 except Volume.DoesNotExist, e:
                     # This is most likely fine. Usually means that the 
-                    # EBS volume for the root drive was used
+                    # EBS volume for the root drive was found instead.
                     pass
                 except Exception, e:
                     logger.exception('Unhandled exception while updating volume metadata.')
@@ -171,6 +178,11 @@ def update_metadata(stack_id, host_ids=None):
 
         for h in hosts_to_remove:
             h.delete()
+
+        # if volume metadata was updated, regenerate the map file
+        # to account for the volume_id changes
+        if bdm_updated:
+            stack._generate_map_file()
 
         return True
 

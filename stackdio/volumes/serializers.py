@@ -8,10 +8,11 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
-class VolumeSerializer(serializers.HyperlinkedModelSerializer):
 
-    snapshot_id = serializers.Field(source='snapshot.id')
+class VolumeSerializer(serializers.HyperlinkedModelSerializer):
     snapshot_name = serializers.Field(source='snapshot.snapshot_id')
+    size_in_gb = serializers.Field(source='snapshot.size_in_gb')
+
 
     class Meta:
         model = Volume
@@ -24,8 +25,8 @@ class VolumeSerializer(serializers.HyperlinkedModelSerializer):
             'hostname',
             'host',
             'snapshot',
-            'snapshot_id',
             'snapshot_name',
+            'size_in_gb',
             'device',
             'mount_point',
         )

@@ -21,7 +21,10 @@ class Volume(TimeStampedModel):
     # The host is the actual host this volume is attached to, but
     # it can only be assigned after the host is up and the volume is
     # actually attached
-    host = models.ForeignKey('stacks.Host', null=True, related_name='volumes')
+    host = models.ForeignKey('stacks.Host',
+                             null=True,
+                             on_delete=models.SET_NULL,
+                             related_name='volumes')
 
     # the volume id as provided by the cloud provider. This can only
     # be populated after the volume has been created, thus allowing
