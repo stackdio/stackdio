@@ -1,9 +1,12 @@
 var stackdio = {};
 
-
 $(document).ready(function () {
 
-
+    /*
+     *  ==================================================================================
+     *  D A T A   T A B L E   E L E M E N T S
+     *  ==================================================================================
+     */
     $('#snapshots').dataTable({
         "bPaginate": false,
         "bLengthChange": false,
@@ -58,9 +61,14 @@ $(document).ready(function () {
 
 
 
+    /*
+     *  ==================================================================================
+     *  D I A L O G   E L E M E N T S
+     *  ==================================================================================
+     */
     $( "#stack-form-container" ).dialog({
         autoOpen: false,
-        width: 1200,
+        width: window.innerWidth - 225,
         position: [200,50],
         modal: false
     });
@@ -93,15 +101,18 @@ $(document).ready(function () {
 
 
     /*
+     *  **********************************************************************************
      *  ==================================================================================
      *  V I E W   M O D E L
      *  ==================================================================================
+     *  **********************************************************************************
      */
     function stackdioModel() {
         var self = this;
 
         self.showVolumes = ko.observable(false);
         self.sections = ['Stacks', 'Accounts', 'Profiles', 'Snapshots'];
+        self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch'];
         self.currentSection = ko.observable();
 
         /*
@@ -109,7 +120,6 @@ $(document).ready(function () {
          *  C O L L E C T I O N S
          *  ==================================================================================
          */
-        self.stacks = ko.observableArray([]);
         self.roles = ko.observableArray([]);
         self.launchedHosts = ko.observableArray([]);
         self.instanceSizes = ko.observableArray([]);
@@ -117,6 +127,74 @@ $(document).ready(function () {
         self.providerTypes = ko.observableArray([]);
         self.selectedProviderType = null;
 
+
+        //
+        //      S T A C K S
+        //
+        self.stacks = ko.observableArray([]);
+        self.saveStack = function (autoLaunch) {
+            var h, host, hosts = self.newHosts();
+
+            var stack = {
+                auto_launch: autoLaunch === true,
+                title: document.getElementById('stack_title').value,
+                description: document.getElementById('stack_purpose').value,
+                hosts: []
+            };
+
+            for (h in hosts) {
+                host = hosts[h];
+                stack.hosts.push({
+                     host_count: host.count
+                    ,host_size: host.instance_size
+                    ,host_pattern: host.hostname
+                    ,cloud_profile: host.cloud_profile
+                    ,salt_roles: host.roles.split(',')
+                    ,host_security_groups: host.security_groups
+                });
+            }
+
+            console.log(stack);
+            return;
+
+            StackdIO.request({
+                url: Settings.api_url + '/api/stacks/',
+                method: 'POST',
+                jsonData: stack,
+                success: function (response) {
+                    var res = Ext.JSON.decode(response.responseText);
+                    if (res.hasOwnProperty('id')) {
+                        // Alert user to success
+                        me.application.notification.howl('Stack saved. Will now launch the stack...', 2000);
+
+                        // Clear the store that holds hosts for a new stack
+                        Ext.getStore('StackHosts').removeAll();
+
+                        // Clear the stack form by loading an empty record
+                        me.stackForm.down('form').getForm().loadRecord(Ext.create('stackdio.model.Stack'));
+
+                        // Hide the stack form
+                        me.stackForm.hide();
+
+                        // Reload stack store
+                        Ext.getStore('Stacks').load();
+                    } else {
+                        me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
+                    }
+                },
+                failure: function (response) {
+                    me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
+                }
+            });
+        }
+        self.launchStack = function (model, evt) {
+            self.saveStack(true);
+        };
+
+
+        // 
+        //      P R O F I L E S
+        // 
         self.profiles = ko.observableArray([]);
         self.selectedProfile = null;
         self.addProfile = function (model, evt) {
@@ -148,10 +226,24 @@ $(document).ready(function () {
             });
         };
         self.removeProfile = function (profile) {
-            self.profiles.remove(profile);
+
+            $.ajax({
+                url: '/api/profiles/' + profile.id,
+                method: 'DELETE',
+                headers: {
+                    "Authorization": "Basic " + Base64.encode('testuser:password'),
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    self.profiles.remove(profile);
+                }
+            });
         };
 
 
+        // 
+        //      A C C O U N T S
+        // 
         self.accounts = ko.observableArray([]);
         self.selectedAccount = null;
         self.addAccount = function (model, evt) {
@@ -185,11 +277,11 @@ $(document).ready(function () {
                 // Show an animated message containing the result of the upload
                 if (evt.target.status === 200 || evt.target.status === 201 || evt.target.status === 302) {
                     $( "#accounts-form-container" ).dialog( "close" );
-                    self.accounts.push(new Account(record.id.text, 
-                                                    record.title.text,
-                                                    record.description.text,
-                                                    record.provider_type.text,
-                                                    record.provider_type_name.text
+                    self.accounts.push(new Account(record.id.value, 
+                                                    record.title.value,
+                                                    record.description.value,
+                                                    record.provider_type.value,
+                                                    record.provider_type_name.value
                                                   ));
                     console.log('accounts', self.accounts());
                 } else {
@@ -211,6 +303,9 @@ $(document).ready(function () {
         };
 
 
+        // 
+        //      S N A P S H O T S
+        // 
         self.snapshots = ko.observableArray([]);
         self.addSnapshot = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
@@ -219,28 +314,38 @@ $(document).ready(function () {
                 url: '/api/snapshots/',
                 method: 'POST',
                 data: {
-                    title: record.snapshot_title.text,
-                    description: record.snapshot_description.text,
+                    title: record.snapshot_title.value,
+                    description: record.snapshot_description.value,
                     cloud_provider: self.selectedAccount.id,
-                    size_in_gb: record.snapshot_size.text,
-                    snapshot_id: record.snapshot_id.text
+                    size_in_gb: record.snapshot_size.value,
+                    snapshot_id: record.snapshot_id.value
                 },
                 headers: {
                     "Authorization": "Basic " + Base64.encode('testuser:password'),
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response.results;
+                    // Create new snapshot
+                    var snapshot = new Snapshot(
+                            response.id,
+                            response.url,
+                            response.title,
+                            response.description,
+                            response.cloud_provider,
+                            response.size_in_gb,
+                            response.snapshot_id
+                        );
 
-                    console.log(items);
+                    // Inject account name
+                    snapshot.account_name = _.find(self.accounts(), function (account) {
+                        return account.id === response.cloud_provider;
+                    }).title;
 
-                    // self.snapshots.removeAll();
-                    // self.snapshots.push(snapshot);
+                    // Add to observable collection
+                    self.snapshots.push(snapshot);
 
-                    // for (i in items) {
-                    //     item = items[i];
-                    //     self.snapshots.push(new Snapshot(item.id, item.url, item.title, item.description, item.cloud_provider, item.size_in_gb, item.snapshot_id));
-                    // }
+                    // Close dialog
+                    $( "#snapshot-form-container" ).dialog("close");
                 }
             });
         };
@@ -250,37 +355,36 @@ $(document).ready(function () {
 
 
 
+        // 
+        //      N E W   H O S T   V O L U M E S
+        // 
         self.newHostVolumes = ko.observableArray([]);
         self.addHostVolume = function (model, evt) {
             var form = self.collectFormFields(evt.target.form);
 
-            self.newHostVolumes.push(new NewHostVolume(0, form['volume-snapshot'].text, form['volume-device'].text, form['volume-mount-point'].text));
+            self.newHostVolumes.push(new NewHostVolume(0, form['volume-snapshot'].value, form['volume-device'].value, form['volume-mount-point'].value));
         };
         self.removeHostVolume = function (volume) {
             self.newHostVolumes.remove(volume);
         };
 
 
-
-        // id, stack, count, cloud_profile, instance_size, roles, hostname, security_groups
-        self.newHosts = ko.observableArray([
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg'),
-            // new NewHost(1, 'rwvf', 4, 'vfwvf', 'wvwgvfgw', 'vgr42hnntg', 'jikjimjunhjnb', 'rgbhrtbnhtg')
-        ]);
-
+        // 
+        //      N E W   H O S T S
+        // 
+        self.newHosts = ko.observableArray([]);
         self.addHost = function (model, evt) {
-            var form = self.collectFormFields(evt.target.form);
-            console.log(form);
-            return;
-            self.newHosts.push(new NewHost(0, 0, count, cloud_profile, instance_size, roles, hostname, security_groups));
+            var record = self.collectFormFields(evt.target.form);
+
+            self.newHosts.push(new NewHost(0, 0, 
+                    record.host_count.value,
+                    self.selectedProfile.id,
+                    record.host_instance_size.text,
+                    record.host_roles.value,
+                    record.host_hostname.value,
+                    record.host_security_groups.value
+                )
+            );
         };
         self.removeHost = function (host) {
             self.newHosts.remove(host);
@@ -292,6 +396,10 @@ $(document).ready(function () {
          *  M E T H O D S
          *  ==================================================================================
          */
+
+        self.doStackAction = function (action) {
+            console.log('action', action);
+        };
 
         self.collectFormFields = function (obj) {
             var i, item, el, form = {}, id, idx;
@@ -333,7 +441,6 @@ $(document).ready(function () {
         }
 
         self.showProfileForm = function (account) {
-            console.log(account);
             self.selectedAccount = account;
             $( "#profile-form-container" ).dialog("open");
         }
@@ -348,8 +455,13 @@ $(document).ready(function () {
             $( "#accounts-form-container" ).dialog("open");
         }
 
-        self.showStackForm = function () {
+        self.showStackForm = function (profile) {
+            self.selectedProfile = profile;
             $( "#stack-form-container" ).dialog("open");
+        }
+
+        self.closeStackForm = function () {
+            $( "#stack-form-container" ).dialog("close");
         }
 
         self.showHostForm = function () {
@@ -362,7 +474,7 @@ $(document).ready(function () {
         };
 
         self.profileSelected = function (profile) { 
-            console.log(profile);
+            self.selectedProfile = profile;
         };
 
         self.toggleVolumeForm = function () { 
@@ -397,8 +509,6 @@ $(document).ready(function () {
         self.loadStacks = function () {
             var deferred = Q.defer();
 
-            console.log('loading stacks');
-
             $.ajax({
                 url: '/api/stacks/',
                 headers: {
@@ -426,8 +536,6 @@ $(document).ready(function () {
 
         self.loadAccounts = function () {
             var deferred = Q.defer();
-
-            console.log('loading accounts');
 
             $.ajax({
                 url: '/api/providers/',
@@ -457,8 +565,6 @@ $(document).ready(function () {
         self.loadSnapshots = function () {
             var deferred = Q.defer();
 
-            console.log('loading snapshots');
-
             $.ajax({
                 url: '/api/snapshots/',
                 headers: {
@@ -466,7 +572,7 @@ $(document).ready(function () {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response.results, snapshot;
+                    var i, item, items = response.results, snapshot, accounts = self.accounts();
 
                     deferred.resolve(items);
 
@@ -485,8 +591,8 @@ $(document).ready(function () {
                                    );
 
                         // Inject the name of the provider account used to create the snapshot
-                        snapshot.account_name = _.find(self.accounts(), function (account) {
-                            return account.id = item.cloud_provider;
+                        snapshot.account_name = _.find(accounts, function (account) {
+                            return account.id === item.cloud_provider;
                         }).title;
 
                         self.snapshots.push(snapshot);
@@ -558,8 +664,6 @@ $(document).ready(function () {
             var deferred = Q.defer();
             var profile;
 
-            console.log('loading profiles');
-
             $.ajax({
                 url: '/api/profiles/',
                 headers: {
@@ -585,11 +689,10 @@ $(document).ready(function () {
                                         item.image_id,
                                         item.ssh_user
                                         );
-                        console.log(profile);
 
                         // Inject the name of the provider account used to create the snapshot
                         profile.account_name = _.find(self.accounts(), function (account) {
-                            return account.id = item.cloud_provider;
+                            return account.id === item.cloud_provider;
                         }).title;
 
                         self.profiles.push(profile);
@@ -654,7 +757,6 @@ $(document).ready(function () {
     };
 
     stackdio.mainModel = new stackdioModel();
-    console.log(stackdio.mainModel);
     ko.applyBindings(stackdio.mainModel);
 
 });

@@ -65,8 +65,17 @@
      -->
     <div id="stacks-binding-target">
         <div class="view" data-bind='visible: $root.currentSection() == "Stacks"'>
-            <a href="#" role="button" class="btn btn-primary pull-right" data-bind="click: $root.showStackForm">New Stack</a>
-            <!-- <a href="#stack-form-container" role="button" class="btn btn-primary pull-right" data-toggle="modal" data-bind="click: $root.showStackForm">New Stack</a> -->
+            <div class="btn-group pull-right">
+                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                    New Stack <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu" data-bind="foreach: profiles">
+                    <li>
+                        <a href="#" data-bind="text: title, click: $root.showStackForm"></a>
+                    </li>
+                </ul>
+            </div>
+
             <table id="stacks">
                 <thead>
                     <tr>
@@ -83,7 +92,19 @@
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td data-bind="text: status"></td>
-                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">Remove</button></td>
+                        <td>
+                            <!-- <button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">Remove</button> -->
+                            <div class="btn-group pull-right">
+                                <a class="btn-mini btn-warning dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu" data-bind="foreach: stackActions">
+                                    <li>
+                                        <a href="#" data-bind="click: $root.doStackAction"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
                     </tr>     
                 </tbody>
             </table>
@@ -95,72 +116,64 @@
             N E W   S T A C K   F O R M
             ======================================================================
          -->
-        <div id="stack-form-container" title="Stack Details" class="">
-            <div class="span12 no-margin">
-                <span class="span2 no-margin">Title</span>
-                <span class="span4 no-margin">
-                    <input id="stack-title" type="text" class="input-block-level" placeholder="Stack title">
-                </span>
-                <span class="span2">Description</span>
-                <span class="span4 no-margin">
-                    <input id="stack-purpose" type="text" class="input-block-level" placeholder="Purpose of stack">
-                </span>
-                
-                <!-- <textarea id="stack-purpose" class="span6" rows="4" placeholder="Description"></textarea> -->
-            </div>
+        <div id="stack-form-container" title="Stack Details">
 
-            <div class="span12 no-margin">
+            <div class="modal-body">
 
+                <div>
+                    <span class="span1">Title</span>
+                    <span class="span4">
+                        <input id="stack_title" type="text" class="input-block-level" placeholder="Stack title">
+                    </span>
+                    <span class="span1">Description</span>
+                    <span class="span4">
+                        <input id="stack_purpose" type="text" class="input-block-level" placeholder="Purpose of stack">
+                    </span>
+                </div>
 
-                <div class="span5 no-margin">
+                <div>
                     <form id="host-form">
-                        <legend>Add Host</legend>
+                        <legend class="lead">Add Host</legend>
                         <div>
-                            <span class="span2 no-margin">Profile</span>
-                            <span class="span3 no-margin">
-                                <select id="host-profile" data-bind="options: $root.accountProfiles, value: 'id', optionsText: 'title'" class="stretch-full"></select>
+                            <span class="span2">Count</span>
+                            <span class="span3">
+                                <input id="host_count" type="text" class="input-block-level" placeholder="Count">
                             </span>
                         </div>
                         <div>
-                            <span class="span2 no-margin">Count</span>
-                            <span class="span3 no-margin">
-                                <input id="host-count" type="text" class="input-block-level" placeholder="Count">
-                            </span>
-                        </div>
-                        <div>
-                            <span class="span2 no-margin">Instance size</span>
-                            <span class="span3 no-margin">
-                                <select id="host-instance-size" 
+                            <span class="span2">Instance size</span>
+                            <span class="span3">
+                                <select id="host_instance_size" 
                                         data-bind="options: $root.instanceSizes, value: 'id', optionsText: 'title'" 
                                         placeholder="Instance size" 
                                         class="stretch-full"></select>
                             </span>
                         </div>
                         <div>
-                            <span class="span2 no-margin">Security groups</span>
-                            <span class="span3 no-margin">
-                                <input id="host-security-groups" type="text" class="input-block-level" placeholder="Comma separated list">
+                            <span class="span2">Security groups</span>
+                            <span class="span3">
+                                <input id="host_security_groups" type="text" class="input-block-level" placeholder="Comma separated list">
                             </span>
                         </div>
                         <div>
-                            <span class="span2 no-margin">Host pattern</span>
-                            <span class="span3 no-margin">
-                                <input id="host-hostname" type="text" class="input-block-level" placeholder="{name}.synthesyscloud.com">
+                            <span class="span2">Host pattern</span>
+                            <span class="span3">
+                                <input id="host_hostname" type="text" class="input-block-level" placeholder="{name}.synthesyscloud.com">
                             </span>
                         </div>
                         <div>
-                            <span class="span2 no-margin">Roles</span>
-                            <span class="span3 no-margin">
-                                <select id="host-roles" 
+                            <span class="span2">Roles</span>
+                            <span class="span3">
+                                <select id="host_roles" 
                                         multiple="multiple" 
                                         data-bind="options: $root.roles, value: 'id', optionsText: 'title'" 
                                         class="stretch-full"></select>
                             </span>
                         </div>
                         <div>
-                            <span class="span2 no-margin">Volumes <button class="btn-small btn-info" data-bind="click: $root.toggleVolumeForm">Add</button></span>
-                            <span class="span3 no-margin">
-                                <table id="host-volumes" class="data-grid stretch-full">
+                            <span class="span2">Volumes <button class="btn-small btn-info" data-bind="click: $root.toggleVolumeForm">Attach</button></span>
+                            <span class="span3">
+                                <table id="host_volumes" class="data-grid stretch-full">
                                     <thead>
                                         <tr>
                                             <th>Snapshot</th>
@@ -179,73 +192,76 @@
                             </span>
                         </div>
                         <div>
-                            <span class="span2 no-margin"></span>
-                            <span class="span3 no-margin" style="margin-top: 20px;">
-                                <button class="btn btn-primary pull-right" data-bind="click: $root.addHost">Save Host</button>
+                            <span class="span2"></span>
+                            <span class="span3" style="margin-top: 20px;">
+                                <button class="btn btn-primary pull-right" data-bind="click: $root.addHost">Add Host</button>
                             </span>
                         </div>
                     </form>
 
+                    <!--        H O S T   V O L U M E   F O R M       -->
                     <form id="host-volume-form" data-bind="visible: $root.showVolumes() === true">
-                        <legend>Host Volume</legend>
-                        <div class="span5 no-margin">
-                            <span class="span2 no-margin">Snapshot</span>
-                            <span class="span3 no-margin">
+                        <legend class="lead">Host Volume</legend>
+                        <div class="span5">
+                            <span class="span2">Snapshot</span>
+                            <span class="span3">
                                 <select id="volume-snapshot" data-bind="options: $root.snapshots, value: 'id', optionsText: 'title'"></select>
                             </span>
                         </div>
-                        <div class="span5 no-margin">
-                            <span class="span2 no-margin">Device</span>
-                            <span class="span3 no-margin"><input id="volume-device" type="text" class="input-block-level" placeholder="Device name"></span>
+                        <div class="span5">
+                            <span class="span2">Device</span>
+                            <span class="span3"><input id="volume-device" type="text" class="input-block-level" placeholder="Device name"></span>
                         </div>
-                        <div class="span5 no-margin">
-                            <span class="span2 no-margin">Mount point</span>
-                            <span class="span3 no-margin"><input id="volume-mount-point" type="text" class="input-block-level" placeholder="Where to mount volume"></span>
+                        <div class="span5">
+                            <span class="span2">Mount point</span>
+                            <span class="span3"><input id="volume-mount-point" type="text" class="input-block-level" placeholder="Where to mount volume"></span>
                         </div>
-                        <div class="span5 no-margin">
+                        <div class="span5">
                             <button class="btn btn-primary" data-bind="click: $root.addHostVolume">Save Volume</button>
                         </div>
                     </form>
                 </div>
 
-                <div class="span7 no-margin">
-                    <form id="stack-form">
-                        <legend>Stack Hosts</legend>
-                        <table id="stack-hosts" class="data-grid">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Roles</th>
-                                    <th>Count</th>
-                                    <th>Profile</th>
-                                    <th>Size</th>
-                                    <th>Host Pattern</th>
-                                    <th>Security Groups</th>
-                                    <th style="width:50px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody data-bind="foreach: newHosts">
-                                <tr>
-                                    <td data-bind="text: id"></td>
-                                    <td data-bind="text: roles"></td>
-                                    <td data-bind="text: count"></td>
-                                    <td data-bind="text: cloud_profile"></td>
-                                    <td data-bind="text: instance_size"></td>
-                                    <td data-bind="text: hostname"></td>
-                                    <td data-bind="text: security_groups"></td>
-                                    <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">Remove</button></td>
-                                </tr>     
-                            </tbody>
-                        </table>
-                    </form>
+
+                <!--        S T A C K   H O S T   L I S T       -->
+                <div>
+                    <legend class="lead">Stack Hosts</legend>
+                    <table id="stack_hosts" class="data-grid stretch-full">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Roles</th>
+                                <th>Count</th>
+                                <th>Profile</th>
+                                <th>Size</th>
+                                <th>Host Pattern</th>
+                                <th>Security Groups</th>
+                                <th style="width:50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody data-bind="foreach: newHosts">
+                            <tr>
+                                <td data-bind="text: id"></td>
+                                <td data-bind="text: roles"></td>
+                                <td data-bind="text: count"></td>
+                                <td data-bind="text: cloud_profile"></td>
+                                <td data-bind="text: instance_size"></td>
+                                <td data-bind="text: hostname"></td>
+                                <td data-bind="text: security_groups"></td>
+                                <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">Remove</button></td>
+                            </tr>     
+                        </tbody>
+                    </table>
                 </div>
+
             </div>
-    <!-- 
+    
             <div class="modal-footer">
-                <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-                <button class="btn btn-primary">Launch Stack</button>
+                <button class="btn" data-bind="click: closeStackForm">Close</button>
+                <button class="btn btn-primary" data-bind="click: launchStack">Launch Stack</button>
+                <button class="btn btn-info" data-bind="click: saveStack">Save Stack</button>
             </div>
-     -->        
+            
         </div>
 
 
@@ -255,8 +271,7 @@
             N E W   H O S T   F O R M
             ======================================================================
          -->
-        <!-- <div id="host-form-container" class="hide modal fade stackd-form "> -->
-        <div id="host-form-container" class="modal-form" title="Stack Host">
+<!--         <div id="host-form-container" class="modal-form" title="Stack Host">
             <div class="modal-body">
                 <form id="host-form">
                     <div class="span8">
@@ -274,10 +289,10 @@
 
             <div class="modal-footer">
                 <button class="btn" data-dismiss="modal" aria-hidden="true" class="pull-right">Close</button>
-                <button class="btn btn-primary" class="pull-right">Save Host</button>
+                <button class="btn btn-primary" class="pull-right">Add Host</button>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- 
         ======================================================================
@@ -286,7 +301,6 @@
      -->
     <div id="snapshots-binding-target">
         <div class="view" data-bind='visible: $root.currentSection() == "Snapshots"'>
-            <!-- <a href="#" role="button" class="btn btn-primary pull-right" data-bind="click: $root.showSnapshotForm">New Snapshot</a> -->
 
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
