@@ -16,12 +16,12 @@
     <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
     <script src="js/sammy.js"></script>
     <script src="js/underscore_1.5.1.js"></script>
-    <script src="js/q.js"></script>
+    <script src="js/q.min.js"></script>
     <script src="js/knockout.js"></script>
     <script src="js/bootstrap.min.js"></script>
-
     <script src="js/jquery.dataTables.min.js"></script>
 
+    <script src="js/app/models.js"></script>
     <script src="js/stackdio.js"></script>
     
 </head>
@@ -240,11 +240,6 @@
                     </form>
                 </div>
             </div>
-
-
-
-
-
     <!-- 
             <div class="modal-footer">
                 <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
@@ -469,6 +464,89 @@
         </div>
     </div>
 
+
+
+
+    <!-- 
+        ======================================================================
+        P R O F I L E   L I S T
+        ======================================================================
+     -->
+    <div id="profile-binding-target" data-bind='visible: $root.currentSection() == "Profiles"'>
+        <div class="view">
+            <div class="btn-group pull-right">
+                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                    New Profile
+                    <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu" data-bind="foreach: accounts">
+                    <li>
+                        <a href="#" data-bind="text: title, click: $root.showProfileForm"></a>
+                    </li>
+                </ul>
+            </div>
+
+            <table id="profiles">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th style="width:50px"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: profiles">
+                    <tr>
+                        <td data-bind="text: id"></td>
+                        <td data-bind="text: title"></td>
+                        <td data-bind="text: description"></td>
+                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeProfile">X</button></td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 
+            ======================================================================
+            P R O F I L E   F O R M
+            ======================================================================
+         -->
+        <div id="profile-form-container" title="New Profile Details" class="stackd-form form-small">
+            <form id="snapshot-form">
+            <div class="modal-body">
+                <div class="span2">Title</div>
+                <div class="span4 no-margin">
+                    <input id="profile_title" type="text" class="input-block-level" placeholder="">
+                </div>
+
+                <div class="span2">Description</div>
+                <div class="span4 no-margin">
+                    <input id="profile_description" type="text" class="input-block-level" placeholder="">
+                </div>
+
+                <div class="span2">AMI</div>
+                <div class="span4 no-margin">
+                    <input id="image_id" type="text" class="input-block-level" placeholder="">
+                </div>
+
+                <div class="span2">Default Instance Size</div>
+                <div class="span4 no-margin">
+                    <select id="default_instance_size" data-bind="options: instanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" class="stretch-full"></select>
+                </div>
+
+                <div class="span2">SSH User</div>
+                <div class="span4 no-margin">
+                    <input id="ssh_user" type="text" class="input-block-level" placeholder="">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+                <button class="btn btn-primary" data-bind="click: $root.addProfile">Save</button>
+            </div>
+            </form>
+        </div>
+    </div>
 
 
 </body>

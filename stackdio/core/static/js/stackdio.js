@@ -1,3 +1,6 @@
+var stackdio = {};
+
+
 $(document).ready(function () {
 
 
@@ -41,6 +44,16 @@ $(document).ready(function () {
         "bFilter": false
     });
 
+    $('#profiles').dataTable({
+        "bPaginate": false,
+        "bLengthChange": false,
+        "bFilter": true,
+        "bSort": false,
+        "bInfo": false,
+        "bAutoWidth": true,
+        "bFilter": false
+    });
+
 
 
 
@@ -70,6 +83,15 @@ $(document).ready(function () {
         modal: false
     });
 
+    $( "#profile-form-container" ).dialog({
+        autoOpen: false,
+        width: 650,
+        modal: false
+    });
+
+
+
+
     /*
      *  ==================================================================================
      *  V I E W   M O D E L
@@ -95,8 +117,39 @@ $(document).ready(function () {
         self.providerTypes = ko.observableArray([]);
         self.selectedProviderType = null;
 
-        self.accountProfiles = ko.observableArray([]);
+        self.profiles = ko.observableArray([]);
         self.selectedProfile = null;
+        self.addProfile = function (model, evt) {
+            var record = self.collectFormFields(evt.target.form);
+
+            $.ajax({
+                url: '/api/profiles/',
+                method: 'POST',
+                data: {
+                    title: record.profile_title.value,
+                    description: record.profile_description.value,
+                    cloud_provider: self.selectedAccount.id,
+                    image_id: record.image_id.value,
+                    default_instance_size: record.default_instance_size.value,
+                    ssh_user: record.ssh_user.value
+                },
+                headers: {
+                    "Authorization": "Basic " + Base64.encode('testuser:password'),
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    var i, item = response;
+
+                    if (item.hasOwnProperty('id')) {
+                        self.profiles.push(item);
+                        $( "#profile-form-container" ).dialog("close");
+                    }
+                }
+            });
+        };
+        self.removeProfile = function (profile) {
+            self.profiles.remove(profile);
+        };
 
 
         self.accounts = ko.observableArray([]);
@@ -132,11 +185,11 @@ $(document).ready(function () {
                 // Show an animated message containing the result of the upload
                 if (evt.target.status === 200 || evt.target.status === 201 || evt.target.status === 302) {
                     $( "#accounts-form-container" ).dialog( "close" );
-                    self.accounts.push(new Account(record.id, 
-                                                    record.title,
-                                                    record.description,
-                                                    record.provider_type,
-                                                    record.provider_type_name
+                    self.accounts.push(new Account(record.id.text, 
+                                                    record.title.text,
+                                                    record.description.text,
+                                                    record.provider_type.text,
+                                                    record.provider_type_name.text
                                                   ));
                     console.log('accounts', self.accounts());
                 } else {
@@ -162,18 +215,15 @@ $(document).ready(function () {
         self.addSnapshot = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
 
-            console.log(form);
-            console.log(snapshot);
-
             $.ajax({
                 url: '/api/snapshots/',
                 method: 'POST',
                 data: {
-                    title: record.snapshot_title,
-                    description: record.snapshot_description,
+                    title: record.snapshot_title.text,
+                    description: record.snapshot_description.text,
                     cloud_provider: self.selectedAccount.id,
-                    size_in_gb: record.snapshot_size,
-                    snapshot_id: record.snapshot_id
+                    size_in_gb: record.snapshot_size.text,
+                    snapshot_id: record.snapshot_id.text
                 },
                 headers: {
                     "Authorization": "Basic " + Base64.encode('testuser:password'),
@@ -193,8 +243,6 @@ $(document).ready(function () {
                     // }
                 }
             });
-
-
         };
         self.removeSnapshot = function (snapshot) {
             self.snapshots.remove(snapshot);
@@ -206,7 +254,7 @@ $(document).ready(function () {
         self.addHostVolume = function (model, evt) {
             var form = self.collectFormFields(evt.target.form);
 
-            self.newHostVolumes.push(new NewHostVolume(0, form['volume-snapshot'], form['volume-device'], form['volume-mount-point']));
+            self.newHostVolumes.push(new NewHostVolume(0, form['volume-snapshot'].text, form['volume-device'].text, form['volume-mount-point'].text));
         };
         self.removeHostVolume = function (volume) {
             self.newHostVolumes.remove(volume);
@@ -231,6 +279,7 @@ $(document).ready(function () {
         self.addHost = function (model, evt) {
             var form = self.collectFormFields(evt.target.form);
             console.log(form);
+            return;
             self.newHosts.push(new NewHost(0, 0, count, cloud_profile, instance_size, roles, hostname, security_groups));
         };
         self.removeHost = function (host) {
@@ -245,24 +294,35 @@ $(document).ready(function () {
          */
 
         self.collectFormFields = function (obj) {
-            var i, item, el, form = {};
+            var i, item, el, form = {}, id, idx;
 
             // Collect the fields from the form
             for (i in obj) {
                 item = obj[i];
                 if (item !== null && item.hasOwnProperty('localName') && ['select','input'].indexOf(item.localName) !== -1) {
+
+                    id = item.id;
+                    form[id] = {};
+
                     switch (item.localName) {
                         case 'input':
                             if (item.files === null) {
-                                form[item.id] = item.value;
+                                form[id].text = item.text;
+                                form[id].value = item.value;
                             } else {
-                                form[item.id] = item.files;
+                                form[id].text = '';
+                                form[id].value = '';
+                                form[id].files = item.files;
                             }
                             break;
                         case 'select':
-                            var el = document.getElementById(item.id);
-                            if (el.selectedIndex !== -1) {
-                                form[item.id] = el[el.selectedIndex].text;
+                            el = document.getElementById(id);
+                            idx = el.selectedIndex;
+
+                            if (idx !== -1) {
+                                form[id].text = el[idx].text;
+                                form[id].value = el[idx].value;
+                                form[id].selectedIndex = idx;
                             }
                             break;
                     }
@@ -272,28 +332,28 @@ $(document).ready(function () {
             return form;
         }
 
+        self.showProfileForm = function (account) {
+            console.log(account);
+            self.selectedAccount = account;
+            $( "#profile-form-container" ).dialog("open");
+        }
+
         self.showSnapshotForm = function (account) {
             self.selectedAccount = account;
-            $( "#snapshot-form-container" ).dialog( "open" );
+            $( "#snapshot-form-container" ).dialog("open");
         }
 
         self.showAccountForm = function (type) {
             self.selectedProviderType = type;
-            $( "#accounts-form-container" ).dialog( "open" );
+            $( "#accounts-form-container" ).dialog("open");
         }
 
         self.showStackForm = function () {
-            self.loadProfiles();
-            self.loadInstanceSizes();
-            self.loadRoles();
-            self.loadSnapshots();
-
-            $( "#stack-form-container" ).dialog( "open" );
+            $( "#stack-form-container" ).dialog("open");
         }
 
         self.showHostForm = function () {
-            self.loadProfiles();
-            $( "#host-form-container" ).dialog( "open" );
+            $( "#host-form-container" ).dialog("open");
         }
 
         self.gotoSection = function (section) { 
@@ -315,23 +375,6 @@ $(document).ready(function () {
          *  A P I   C A L L S
          *  ==================================================================================
          */
-        $.ajax({
-            url: '/api/stacks/',
-            headers: {
-                "Authorization": "Basic " + Base64.encode('testuser:password'),
-                "Accept": "application/json"
-            },
-            success: function (response) {
-                var s, stack, stacks = response.results;
-
-                for (s in stacks) {
-                    stack = stacks[s];
-                    self.stacks.push(new Stack(stack.title, stack.description, stack.status, stack.created, stack.host_count, stack.id, stack.slug, stack.user, stack.url));
-                }
-
-                console.log('stacks',self.stacks());
-            }
-        });
 
         $.ajax({
             url: '/api/provider_types/',
@@ -351,6 +394,36 @@ $(document).ready(function () {
             }
         });
 
+        self.loadStacks = function () {
+            var deferred = Q.defer();
+
+            console.log('loading stacks');
+
+            $.ajax({
+                url: '/api/stacks/',
+                headers: {
+                    "Authorization": "Basic " + Base64.encode('testuser:password'),
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    var i, item, items = response.results;
+
+                    deferred.resolve();
+                    self.stacks.removeAll();
+
+                    for (i in items) {
+                        item = items[i];
+                        self.stacks.push(new Stack(item.title, item.description, item.status, item.created, item.host_count, item.id, item.slug, item.user, item.url));
+                    }
+
+                    console.log('stacks', self.stacks());
+                }
+            });
+
+            return deferred.promise
+        };
+
+
         self.loadAccounts = function () {
             var deferred = Q.defer();
 
@@ -366,6 +439,7 @@ $(document).ready(function () {
                     var i, item, items = response.results;
 
                     deferred.resolve();
+                    self.accounts.removeAll();
 
                     for (i in items) {
                         item = items[i];
@@ -412,13 +486,13 @@ $(document).ready(function () {
 
                         // Inject the name of the provider account used to create the snapshot
                         snapshot.account_name = _.find(self.accounts(), function (account) {
-                            return account.id = item.id;
+                            return account.id = item.cloud_provider;
                         }).title;
 
                         self.snapshots.push(snapshot);
                     }
 
-                    console.log(self.snapshots());
+                    console.log('snapshots', self.snapshots());
                 }
             });
 
@@ -446,6 +520,8 @@ $(document).ready(function () {
         };
 
         self.loadInstanceSizes = function () {
+            var deferred = Q.defer();
+
             $.ajax({
                 url: '/api/instance_sizes/',
                 headers: {
@@ -455,6 +531,7 @@ $(document).ready(function () {
                 success: function (response) {
                     var i, item, items = response.results;
 
+                    deferred.resolve(items);
                     self.instanceSizes.removeAll();
 
                     for (i in items) {
@@ -469,12 +546,20 @@ $(document).ready(function () {
                                                                 )
                         );
                     }
+                    console.log('instance sizes', self.instanceSizes());
                 }
             });
+
+            return deferred.promise
         };
 
 
         self.loadProfiles = function () {
+            var deferred = Q.defer();
+            var profile;
+
+            console.log('loading profiles');
+
             $.ajax({
                 url: '/api/profiles/',
                 headers: {
@@ -484,24 +569,37 @@ $(document).ready(function () {
                 success: function (response) {
                     var i, item, items = response.results;
 
-                    self.accountProfiles.removeAll();
+                    deferred.resolve(items);
+
+                    self.profiles.removeAll();
 
                     for (i in items) {
                         item = items[i];
-                        self.accountProfiles.push(new AccountProfile(item.id,
-                                                                    item.url,
-                                                                    item.title, 
-                                                                    item.description,
-                                                                    item.slug,
-                                                                    item.cloud_provider,
-                                                                    item.default_instance_size,
-                                                                    item.image_id,
-                                                                    item.ssh_user
-                                                                    )
-                        );
+                        profile = new AccountProfile(item.id,
+                                        item.url,
+                                        item.title, 
+                                        item.description,
+                                        item.slug,
+                                        item.cloud_provider,
+                                        item.default_instance_size,
+                                        item.image_id,
+                                        item.ssh_user
+                                        );
+                        console.log(profile);
+
+                        // Inject the name of the provider account used to create the snapshot
+                        profile.account_name = _.find(self.accounts(), function (account) {
+                            return account.id = item.cloud_provider;
+                        }).title;
+
+                        self.profiles.push(profile);
                     }
+
+                    console.log('profiles', self.profiles());
                 }
             });
+
+            return deferred.promise
         };
 
 
@@ -517,130 +615,46 @@ $(document).ready(function () {
                 self.currentSection(this.params.section);
 
                 switch (this.params.section) {
+                    case 'Stacks':
+                        self.loadInstanceSizes();
+                        self.loadRoles();
+                        self.loadStacks();
+
+                        Q.fcall(self.loadAccounts)
+                            .then(self.loadSnapshots)
+                            .then(self.loadProfiles)
+                            .catch(function (error) {
+                                console.log(error);
+                            })
+                            .done();
+                        break;
                     case 'Snapshots':
                         Q.fcall(self.loadAccounts)
-                        .then(
-                            function (accounts) {
-                                console.log('deferred result accounts', accounts);
-                                self.loadSnapshots();
-                            }
-                        )
-                        .catch(function (error) {
-                            console.log(error);
-                        })
-                        .done();
+                            .then(self.loadSnapshots)
+                            .catch(function (error) {
+                                console.log(error);
+                            })
+                            .done();
+                        break;
+                    case 'Profiles':
+                        self.loadInstanceSizes();
+
+                        Q.fcall(self.loadAccounts)
+                            .then(self.loadProfiles)
+                            .catch(function (error) {
+                                console.log(error);
+                            })
+                            .done();
                         break;
                 }
             });
 
             this.get('', function() { this.app.runRoute('get', '#Stacks') });
         }).run();
-
-
     };
 
-    /*
-     *  ==================================================================================
-     *  D A T A   M O D E L S
-     *  ==================================================================================
-     */
-    var Stack = function (title, description, status, created, host_count, id, slug, user, url) {
-        var self = this;
-        self.id = id;
-        self.title = ko.observable(title);
-        self.description = ko.observable(description);
-        self.slug = slug;
-        self.url = url;
-        self.created = created;
-        self.status = ko.observable(status);
-        self.host_count = host_count;
-        self.user = user;
-    };
-
-    var ProviderType = function (id, url, type_name, title) {
-        var self = this;
-        self.id = id;
-        self.title = title;
-        self.url = url;
-        self.type_name = type_name;
-    };
-
-
-    var Account = function (id, title, description, slug, provider_type, provider_type_name, yaml) {
-        var self = this;
-        self.id = id;
-        self.title = title;
-        self.description = description;
-        self.slug = slug;
-        self.provider_type = provider_type;
-        self.provider_type_name = provider_type_name;
-        self.yaml = yaml;
-    };
-
-    var AccountProfile = function (id, url, title, description, slug, cloud_provider, default_instance_size, image_id, ssh_user) {
-        var self = this;
-        self.cloud_provider = cloud_provider;
-        self.title = title;
-        self.description = description;
-        self.default_instance_size = default_instance_size;
-        self.image_id = image_id;
-        self.ssh_user = ssh_user;
-        self.id = id;
-        self.slug = slug;
-        self.url = url;
-    };
-
-    var NewHost = function (id, stack, count, cloud_profile, instance_size, roles, hostname, security_groups) {
-        var self = this;
-        self.id = id;
-        self.stack = stack;
-        self.count = count;
-        self.cloud_profile = cloud_profile;
-        self.instance_size = instance_size;
-        self.roles = roles;
-        self.hostname = hostname;
-        self.security_groups = security_groups;
-    };
-
-    var NewHostVolume = function (id, snapshot, device, mount_point) {
-        var self = this;
-        self.id = id;
-        self.snapshot = snapshot;
-        self.device = device;
-        self.mount_point = mount_point;
-    };
-
-    var InstanceSize = function (id, url, title, description, slug, provider_type, instance_id) {
-        var self = this;
-        self.id = id;
-        self.url = url;
-        self.title = title;
-        self.description = description;
-        self.slug = slug;
-        self.provider_type = provider_type;
-        self.instance_id = instance_id;
-    };
-
-    var Role = function (id, url, title, role_name) {
-        var self = this;
-        self.id = id;
-        self.url = url;
-        self.title = title;
-        self.role_name = role_name;
-    };
-
-    var Snapshot = function (id, url, title, description, cloud_provider, size_in_gb, snapshot_id) {
-        var self = this;
-        self.id = id;
-        self.url = url;
-        self.title = title;
-        self.description = description;
-        self.cloud_provider = cloud_provider;
-        self.account_name = null;
-        self.size_in_gb = size_in_gb;
-        self.snapshot_id = snapshot_id;
-    };
-
-    ko.applyBindings(new stackdioModel());
+    stackdio.mainModel = new stackdioModel();
+    console.log(stackdio.mainModel);
+    ko.applyBindings(stackdio.mainModel);
 
 });
