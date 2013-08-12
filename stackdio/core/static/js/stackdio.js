@@ -149,7 +149,7 @@ $(document).ready(function () {
                     ,host_size: host.instance_size
                     ,host_pattern: host.hostname
                     ,cloud_profile: host.cloud_profile
-                    ,salt_roles: host.roles.split(',')
+                    ,salt_roles: _.map(host.roles, function (r) { return r.value; })
                     ,host_security_groups: host.security_groups
                 });
             }
@@ -374,13 +374,15 @@ $(document).ready(function () {
         // 
         self.newHosts = ko.observableArray([]);
         self.addHost = function (model, evt) {
+            console.log(evt);
             var record = self.collectFormFields(evt.target.form);
+            console.log(record);
 
             self.newHosts.push(new NewHost(0, 0, 
                     record.host_count.value,
                     self.selectedProfile.id,
                     record.host_instance_size.text,
-                    record.host_roles.value,
+                    record.host_roles,
                     record.host_hostname.value,
                     record.host_security_groups.value
                 )
@@ -403,6 +405,7 @@ $(document).ready(function () {
 
         self.collectFormFields = function (obj) {
             var i, item, el, form = {}, id, idx;
+            var o, option, options, selectedOptions;
 
             // Collect the fields from the form
             for (i in obj) {
@@ -425,13 +428,25 @@ $(document).ready(function () {
                             break;
                         case 'select':
                             el = document.getElementById(id);
-                            idx = el.selectedIndex;
 
-                            if (idx !== -1) {
-                                form[id].text = el[idx].text;
-                                form[id].value = el[idx].value;
-                                form[id].selectedIndex = idx;
+                            if (el.multiple) {
+                                form[id] = [];
+                                options = el.selectedOptions;
+                                for (o in options) {
+                                    option = options[o];
+                                    if (typeof option.text !== 'undefined') {
+                                        form[id].push({ text: option.text, value: option.value });
+                                    }
+                                }
+                            } else {
+                                idx = el.selectedIndex;
+                                if (idx !== -1) {
+                                    form[id].text = el[idx].text;
+                                    form[id].value = el[idx].value;
+                                    form[id].selectedIndex = idx;
+                                }
                             }
+
                             break;
                     }
                 }
