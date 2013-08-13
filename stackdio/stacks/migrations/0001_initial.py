@@ -59,6 +59,8 @@ class Migration(SchemaMigration):
             ('provider_dns', self.gf('django.db.models.fields.CharField')(max_length=64, blank=True)),
             ('fqdn', self.gf('django.db.models.fields.CharField')(max_length=255, blank=True)),
             ('instance_id', self.gf('django.db.models.fields.CharField')(max_length=32, blank=True)),
+            ('sir_id', self.gf('django.db.models.fields.CharField')(default='unknown', max_length=32)),
+            ('sir_max_price', self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=5, decimal_places=2)),
         ))
         db.send_create_signal(u'stacks', ['Host'])
 
@@ -199,6 +201,8 @@ class Migration(SchemaMigration):
             'provider_dns': ('django.db.models.fields.CharField', [], {'max_length': '64', 'blank': 'True'}),
             'roles': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'hosts'", 'symmetrical': 'False', 'to': u"orm['stacks.SaltRole']"}),
             'security_groups': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'hosts'", 'symmetrical': 'False', 'to': u"orm['stacks.SecurityGroup']"}),
+            'sir_id': ('django.db.models.fields.CharField', [], {'default': "'unknown'", 'max_length': '32'}),
+            'sir_max_price': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2'}),
             'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['stacks.Stack']"}),
             'state': ('django.db.models.fields.CharField', [], {'default': "'unknown'", 'max_length': '32'}),
             'status': ('model_utils.fields.StatusField', [], {'default': "'ok'", 'max_length': '100', 'no_check_for_status': 'True'}),
