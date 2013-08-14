@@ -18,6 +18,10 @@ img.logo {
     width: 100%;
 }
 
+.dotted-border {
+    border: 1px dotted black;
+}
+
 /*
     ===================================================================================
     F O R M S
@@ -75,6 +79,7 @@ img.logo {
     border-width: 1px 1px 1px 1px;
     border-style: solid;
     border-color: #D2D2D2;
+    padding: 5px;
 }
 
 /*

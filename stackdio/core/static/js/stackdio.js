@@ -68,7 +68,7 @@ $(document).ready(function () {
      */
     $( "#stack-form-container" ).dialog({
         autoOpen: false,
-        width: window.innerWidth - 225,
+        width: (window.innerWidth - 225 > 1100) ? window.innerWidth - 225 : 1100,
         position: [200,50],
         modal: false
     });
@@ -86,9 +86,17 @@ $(document).ready(function () {
     });
 
     $( "#host-form-container" ).dialog({
+        position: [(window.innerWidth / 2) - 275,50],
         autoOpen: false,
-        width: 800,
-        modal: false
+        width: 550,
+        modal: true
+    });
+
+    $( "#volume-form-container" ).dialog({
+        position: [(window.innerWidth / 2) - 250,50],
+        autoOpen: false,
+        width: 500,
+        modal: true
     });
 
     $( "#profile-form-container" ).dialog({
@@ -360,9 +368,14 @@ $(document).ready(function () {
         // 
         self.newHostVolumes = ko.observableArray([]);
         self.addHostVolume = function (model, evt) {
-            var form = self.collectFormFields(evt.target.form);
+            var record = self.collectFormFields(evt.target.form);
+            var volume = new NewHostVolume(0, record.volume_snapshot.value, record.volume_device.value, record.volume_mount_point.value);
 
-            self.newHostVolumes.push(new NewHostVolume(0, form['volume-snapshot'].value, form['volume-device'].value, form['volume-mount-point'].value));
+            volume.snapshot = _.find(self.snapshots(), function (s) {
+                return s.id === parseInt(record.volume_snapshot.value, 10);
+            });
+
+            self.newHostVolumes.push(volume);
         };
         self.removeHostVolume = function (volume) {
             self.newHostVolumes.remove(volume);
@@ -374,19 +387,24 @@ $(document).ready(function () {
         // 
         self.newHosts = ko.observableArray([]);
         self.addHost = function (model, evt) {
-            console.log(evt);
             var record = self.collectFormFields(evt.target.form);
-            console.log(record);
-
-            self.newHosts.push(new NewHost(0, 0, 
+            var newHost = new NewHost(0, 0, 
                     record.host_count.value,
                     self.selectedProfile.id,
-                    record.host_instance_size.text,
+                    record.host_instance_size.value,
                     record.host_roles,
                     record.host_hostname.value,
                     record.host_security_groups.value
-                )
-            );
+                );
+
+            newHost.instance_size = _.find(self.instanceSizes(), function (i) {
+                console.log(i.id,record.host_instance_size.value);
+                return i.id === parseInt(record.host_instance_size.value, 10);
+            });
+
+            console.log(newHost);
+
+            self.newHosts.push(newHost);
         };
         self.removeHost = function (host) {
             self.newHosts.remove(host);
@@ -481,6 +499,19 @@ $(document).ready(function () {
 
         self.showHostForm = function () {
             $( "#host-form-container" ).dialog("open");
+        }
+
+        self.closeHostForm = function () {
+            $( "#host-form-container" ).dialog("close");
+        }
+
+
+        self.showVolumeForm = function () {
+            $( "#volume-form-container" ).dialog("open");
+        }
+
+        self.closeVolumeForm = function () {
+            $( "#volume-form-container" ).dialog("close");
         }
 
         self.gotoSection = function (section) { 

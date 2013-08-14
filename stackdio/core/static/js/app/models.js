@@ -56,9 +56,17 @@ var NewHost = function (id, stack, count, cloud_profile, instance_size, roles, h
     self.count = count;
     self.cloud_profile = cloud_profile;
     self.instance_size = instance_size;
-    self.roles = roles;
+    self.instance_size_name = null;
+    self.roles = ko.observable(roles);
     self.hostname = hostname;
     self.security_groups = security_groups;
+    
+    self.flat_roles = ko.computed(function () {
+        return _.map(self.roles(), function (r) { 
+            return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
+        }).join('');
+    });
+
 };
 
 var NewHostVolume = function (id, snapshot, device, mount_point) {
