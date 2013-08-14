@@ -14,7 +14,8 @@ from .models import Stack
 logger = get_task_logger(__name__)
 
 ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
-ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found already running'
+ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found ' \
+                          'already running'
 
 def symlink(source, target):
     if os.path.isfile(target):
@@ -45,7 +46,9 @@ def launch_hosts(stack_id):
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
         log_file = os.path.join(log_dir, 
                                 '{}-{}.launch.log'.format(stack.slug, now))
-        log_symlink = os.path.join(root_dir, '{}.launch.latest'.format(stack.slug))
+        log_symlink = os.path.join(root_dir, '{}.launch.latest'.format(
+            stack.slug)
+        )
         
         # "touch" the log file and symlink it to the latest
         with open(log_file, 'w') as f:
@@ -64,7 +67,10 @@ def launch_hosts(stack_id):
             '--out-indent -1',       # don't format them; this is because of
                                      # a bug in salt-cloud
             '-m {1}',                # the map file to use for launching
-        ]).format(log_file, stack.map_file.path)
+        ]).format(
+            log_file,
+            stack.map_file.path
+        )
 
         logger.debug('Excuting command: {0}'.format(cmd))
         result = envoy.run(cmd)
@@ -75,10 +81,16 @@ def launch_hosts(stack_id):
                ERROR_ALL_NODES_EXIST not in result.std_out and \
                ERROR_ALL_NODES_RUNNING not in result.std_err and \
                ERROR_ALL_NODES_RUNNING not in result.std_out:
-                logger.error('launch command status_code: {}'.format(result.status_code))
-                logger.error('launch command std_out: "{}"'.format(result.std_out))
-                logger.error('launch command std_err: "{}"'.format(result.std_err))
-                err_msg = result.std_err if len(result.std_err) else result.std_out
+                logger.error('launch command status_code: {}'.format(
+                    result.status_code)
+                )
+                logger.error('launch command std_out: "{}"'.format(
+                    result.std_out)
+                )
+                logger.error('launch command std_err: "{}"'.format(
+                    result.std_err)
+                )
+                err_msg = result.std_err if result.std_err else result.std_out
                 stack.set_status(Stack.ERROR, err_msg)
                 return False
 
@@ -105,7 +117,8 @@ def update_metadata(stack_id, host_ids=None):
 
         # Update status
         stack.set_status(Stack.CONFIGURING, 
-                         'Updating host metadata from running stack machines.')
+                         'Updating host metadata from running stack '
+                         'machines.')
 
         # Use salt-cloud to look up host information we need now that
         # the machines are running
@@ -120,7 +133,9 @@ def update_metadata(stack_id, host_ids=None):
         for host in stack.hosts.all():
             host_data = query_results[host.hostname]
 
-            if 'state' in host_data and host_data['state'] == driver.STATE_TERMINATED:
+            if 'state' in host_data \
+                and host_data['state'] == driver.STATE_TERMINATED:
+
                 hosts_to_remove.append(host)
                 continue
 
@@ -169,9 +184,16 @@ def update_metadata(stack_id, host_ids=None):
                     # EBS volume for the root drive was found instead.
                     pass
                 except Exception, e:
-                    logger.exception('Unhandled exception while updating volume metadata.')
+                    logger.exception('Unhandled exception while updating '
+                                     'volume metadata.')
                     logger.debug(block_device_mappings)
                     pass
+
+            # Update spot instance metadata
+            if 'spotInstanceRequestId' in host_data:
+                host.sir_id = host_data['spotInstanceRequestId']
+            else:
+                host.sir_id = 'NA'
 
             # save the host
             host.save()
@@ -265,7 +287,8 @@ def sync_all(stack_id):
         cmd_args = [
             'salt',
             '-C',                               # compound targeting
-            'G@stack_id:{}'.format(stack_id),   # target the nodes in this stack only
+            'G@stack_id:{}'.format(stack_id),   # target the nodes in this
+                                                # stack only
             'saltutil.sync_all',                # sync all systems
         ]
 
@@ -313,7 +336,8 @@ def provision_hosts(stack_id, host_ids=None):
         cmd_args = [
             'salt',
             '-C',                   # compound targeting
-            'G@stack_id:{}'.format(stack_id),  # target the nodes in this stack only
+            'G@stack_id:{}'.format(stack_id),   # target the nodes in this
+                                                #stack only
             'state.top',            # run this stack's top file
             stack.top_file.name,
         ]
@@ -358,12 +382,13 @@ def finish_stack(stack_id):
         logger.info('Finishing stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(Stack.FINALIZING, 'Performing any last minute updates and checks.')
+        stack.set_status(Stack.FINALIZING,
+                         'Performing any last minute updates and checks.')
 
         # TODO: Are there any last minute updates and checks?
 
         # Update status
-        stack.set_status(Stack.FINISHED)
+        stack.set_status(Stack.RUNNING)
 
         return True
 
@@ -477,8 +502,9 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
 @celery.task(name='stacks.unregister_dns')
 def unregister_dns(stack_id, host_ids=None):
     '''
-    Removes all host information from DNS. Intended to be used just before a stack
-    is terminated or stopped or put into some state where DNS no longer applies.
+    Removes all host information from DNS. Intended to be used just before a
+    stack is terminated or stopped or put into some state where DNS no longer
+    applies.
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
@@ -508,7 +534,10 @@ def execute_action(stack_id, action, *args, **kwargs):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
-        logger.info('Executing action \'{0}\' on stack: {1!r}'.format(action, stack))
+        logger.info('Executing action \'{0}\' on stack: {1!r}'.format(
+            action,
+            stack)
+        )
 
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service

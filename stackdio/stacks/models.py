@@ -3,6 +3,7 @@ import re
 import logging
 import collections
 import socket
+from decimal import Decimal
 
 import envoy
 import simplejson
@@ -76,6 +77,9 @@ class StackManager(models.Manager):
                     "cloud_profile": 1,     # what cloud_profile object to use
                     "salt_roles": [1,2,3],  # what salt_roles to use
                     "host_security_groups": "foo,bar,baz",
+                    "spot_config": {        # If you need spot instances
+                        "max_price": "0.1"
+                    },
                     "volumes": [            # list of volumes to attach to the
                                             # launched hosts, creation of 
                                             # volumes occurs automatically the
@@ -109,14 +113,13 @@ class StackManager(models.Manager):
             hosts_json = simplejson.dumps(data['hosts'], indent=4)
             # Save the hosts file with the JSON so that we can relaunch the
             # stack later after its hosts have been terminated
-            hosts_json
             if not stack_obj.hosts_file:
                 stack_obj.hosts_file.save(stack_obj.slug+'.hosts', 
                                           ContentFile(hosts_json))
             else:
                 with open(stack_obj.hosts_file.path, 'w') as f:
                     f.write(hosts_json)
-            
+
         return stack_obj
 
 
@@ -135,6 +138,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     STARTING = 'starting'
     TERMINATING = 'terminating'
     REBOOTING = 'rebooting'
+    RUNNING = 'running'
     EXECUTING_ACTION = 'executing_action'
 
     STATUS = Choices(OK,
@@ -242,6 +246,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             # optional
             volumes = host.get('volumes', [])
 
+            # PI-48: Spot instance support
+            spot_config = host.get('spot_config', {})
+            sir_max_price = spot_config.get('max_price')
+
             # Get the security group objects
             security_group_objs = [
                 SecurityGroup.objects.get_or_create(group_name=g)[0] for
@@ -281,7 +289,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     instance_size=host_size_obj,
                     hostname='{}-{}-{}'.format(host_pattern, 
                                                self.user.username, 
-                                               i)
+                                               i),
+                    sir_max_price=Decimal(sir_max_price)
                 )
 
                 # set security groups
@@ -381,7 +390,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
                 map_volumes.append(v)
 
-            profiles[host.cloud_profile.slug].append({
+            host_metadata = {
                 host.hostname: {
                     # The parameters in the minion dict will be passed on
                     # to the minion and set in its default configuration
@@ -412,7 +421,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     'securitygroup': list(security_groups),
                     'volumes': map_volumes,
                 }
-            })
+            }
+
+            # Add in spot instance config if needed
+            if host.sir_max_price:
+                host_metadata[host.hostname]['spot_config'] = {
+                    'spot_price': str(host.sir_max_price) # convert to string
+                }
+
+            profiles[host.cloud_profile.slug].append(host_metadata)
 
         map_file_yaml = yaml.safe_dump(dict(profiles),
                                        default_flow_style=False)
@@ -539,9 +556,7 @@ class Host(TimeStampedModel, StatusDetailModel):
                                       related_name='hosts')
     roles = models.ManyToManyField('stacks.SaltRole',
                                    related_name='hosts')
-
     hostname = models.CharField(max_length=64)
-
     security_groups = models.ManyToManyField('stacks.SecurityGroup',
                                              related_name='hosts')
     
@@ -561,6 +576,18 @@ class Host(TimeStampedModel, StatusDetailModel):
     # Instance id of the running host. This is provided by the cloud
     # provider
     instance_id = models.CharField(max_length=32, blank=True)
+
+    # Spot instance request ID will be populated when metadata is refreshed
+    # if the host has been configured to launch spot instances. By default,
+    # it will be unknown and will be set to NA if spot instances were not
+    # used.
+    sir_id = models.CharField(max_length=32,
+                              default='unknown')
+
+    # The maximum spot instance price for this host if using spot instances
+    sir_max_price = models.DecimalField(max_digits=5,
+                                      decimal_places=2,
+                                      null=True)
 
     def __unicode__(self):
         return self.hostname

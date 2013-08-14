@@ -21,7 +21,9 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'state',
             'status',
             'status_detail',
-            'created', 
+            'created',
+            'sir_id',
+            'sir_max_price'
         )
 
 class StackSerializer(serializers.HyperlinkedModelSerializer):
