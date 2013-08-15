@@ -45,7 +45,13 @@ Ext.require([
 
 var StackdIO;
 
+Ext.Loader.setConfig({
+    enabled: true,
+    disableCaching: false
+});
+
 Ext.onReady(function () {
+
 
     StackdIO = Ext.widget('apiRequest');
 

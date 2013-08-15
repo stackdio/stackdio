@@ -68,7 +68,8 @@ $(document).ready(function () {
      */
     $( "#stack-form-container" ).dialog({
         autoOpen: false,
-        width: (window.innerWidth - 225 > 1100) ? window.innerWidth - 225 : 1100,
+        width: window.innerWidth - 225,
+        height: 400,
         position: [200,50],
         modal: false
     });
@@ -144,6 +145,7 @@ $(document).ready(function () {
             var h, host, hosts = self.newHosts();
 
             var stack = {
+                cloud_provider: self.selectedAccount.id,
                 auto_launch: autoLaunch === true,
                 title: document.getElementById('stack_title').value,
                 description: document.getElementById('stack_purpose').value,
@@ -154,44 +156,42 @@ $(document).ready(function () {
                 host = hosts[h];
                 stack.hosts.push({
                      host_count: host.count
-                    ,host_size: host.instance_size
+                    ,host_size: host.instance_size.id
                     ,host_pattern: host.hostname
-                    ,cloud_profile: host.cloud_profile
+                    ,cloud_profile: self.selectedProfile.id
                     ,salt_roles: _.map(host.roles, function (r) { return r.value; })
                     ,host_security_groups: host.security_groups
                 });
             }
 
             console.log(stack);
-            return;
+            console.log(JSON.stringify(stack));
+            stack.hosts = JSON.stringify(stack.hosts);
+            // return;
 
-            StackdIO.request({
-                url: Settings.api_url + '/api/stacks/',
-                method: 'POST',
-                jsonData: stack,
-                success: function (response) {
-                    var res = Ext.JSON.decode(response.responseText);
-                    if (res.hasOwnProperty('id')) {
-                        // Alert user to success
-                        me.application.notification.howl('Stack saved. Will now launch the stack...', 2000);
 
-                        // Clear the store that holds hosts for a new stack
-                        Ext.getStore('StackHosts').removeAll();
-
-                        // Clear the stack form by loading an empty record
-                        me.stackForm.down('form').getForm().loadRecord(Ext.create('stackdio.model.Stack'));
-
-                        // Hide the stack form
-                        me.stackForm.hide();
-
-                        // Reload stack store
-                        Ext.getStore('Stacks').load();
-                    } else {
-                        me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
-                    }
+            $.ajax({
+                url: '/api/stacks/',
+                type: 'POST',
+                data: stack,
+                headers: {
+                    "Authorization": "Basic " + Base64.encode('testuser:password'),
+                    "Accept": "application/json"
                 },
-                failure: function (response) {
-                    me.application.notification.scold('Stack did not save. Update your data and try again.', 3000);
+                success: function (response) {
+                    var i, item = response;
+
+                    // Clear the store that holds hosts for a new stack
+                    self.newHosts().removeAll();
+                    
+                    // Clear the stack form
+                    $('#stack_title').val('');
+                    $('#stack_purpose').val('');
+
+                    // Hide the stack form
+                    $( "#stack-form-container" ).dialog("close");
+
+                    self.loadStacks();
                 }
             });
         }
@@ -210,7 +210,7 @@ $(document).ready(function () {
 
             $.ajax({
                 url: '/api/profiles/',
-                method: 'POST',
+                type: 'POST',
                 data: {
                     title: record.profile_title.value,
                     description: record.profile_description.value,
@@ -237,7 +237,7 @@ $(document).ready(function () {
 
             $.ajax({
                 url: '/api/profiles/' + profile.id,
-                method: 'DELETE',
+                type: 'DELETE',
                 headers: {
                     "Authorization": "Basic " + Base64.encode('testuser:password'),
                     "Accept": "application/json"
@@ -263,7 +263,7 @@ $(document).ready(function () {
             console.log(record);
 
             // Append private key file to the FormData() object
-            formData.append('private_key_file', record.private_key_file[0]);
+            formData.append('private_key_file', record.private_key_file.files[0]);
 
             // Add the provider type that the user chose from the account split button
             formData.append('provider_type', self.selectedProviderType.id);
@@ -271,7 +271,7 @@ $(document).ready(function () {
             // Append all other required fields to the form data
             for (r in record) {
                 rec = record[r];
-                formData.append(r, rec);
+                formData.append(r, rec.value);
             }
 
             // Open the connection to the provider URI and set authorization header
@@ -320,7 +320,7 @@ $(document).ready(function () {
 
             $.ajax({
                 url: '/api/snapshots/',
-                method: 'POST',
+                type: 'POST',
                 data: {
                     title: record.snapshot_title.value,
                     description: record.snapshot_description.value,
@@ -398,7 +398,6 @@ $(document).ready(function () {
                 );
 
             newHost.instance_size = _.find(self.instanceSizes(), function (i) {
-                console.log(i.id,record.host_instance_size.value);
                 return i.id === parseInt(record.host_instance_size.value, 10);
             });
 
@@ -417,8 +416,25 @@ $(document).ready(function () {
          *  ==================================================================================
          */
 
-        self.doStackAction = function (action) {
-            console.log('action', action);
+        self.doStackAction = function (action, evt, stack) {
+            var data = JSON.stringify({
+                action: action.toLowerCase()
+            });
+
+            $.ajax({
+                url: '/api/stacks/' + stack.id + '/',
+                type: 'PUT',
+                data: data,
+                headers: {
+                    "Authorization": "Basic " + Base64.encode('testuser:password'),
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                success: function (response) {
+                    console.log(response);
+                    self.loadStacks();
+                }
+            });
         };
 
         self.collectFormFields = function (obj) {
@@ -488,8 +504,8 @@ $(document).ready(function () {
             $( "#accounts-form-container" ).dialog("open");
         }
 
-        self.showStackForm = function (profile) {
-            self.selectedProfile = profile;
+        self.showStackForm = function (account) {
+            self.selectedAccount = account;
             $( "#stack-form-container" ).dialog("open");
         }
 
@@ -497,7 +513,8 @@ $(document).ready(function () {
             $( "#stack-form-container" ).dialog("close");
         }
 
-        self.showHostForm = function () {
+        self.showHostForm = function (profile) {
+            self.selectedProfile = profile;
             $( "#host-form-container" ).dialog("open");
         }
 
@@ -534,23 +551,32 @@ $(document).ready(function () {
          *  ==================================================================================
          */
 
-        $.ajax({
-            url: '/api/provider_types/',
-            headers: {
-                "Authorization": "Basic " + Base64.encode('testuser:password'),
-                "Accept": "application/json"
-            },
-            success: function (response) {
-                var i, item, items = response.results;
+        self.loadProviderTypes = function () {
+            var deferred = Q.defer();
 
-                for (i in items) {
-                    item = items[i];
-                    self.providerTypes.push(new ProviderType(item.id, item.url, item.type_name, item.title));
+            $.ajax({
+                url: '/api/provider_types/',
+                headers: {
+                    "Authorization": "Basic " + Base64.encode('testuser:password'),
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    var i, item, items = response.results;
+
+                    deferred.resolve();
+                    self.providerTypes.removeAll();
+
+                    for (i in items) {
+                        item = items[i];
+                        self.providerTypes.push(new ProviderType(item.id, item.url, item.type_name, item.title));
+                    }
+
+                    console.log('providerTypes', self.providerTypes());
                 }
+            });
 
-                console.log('providerTypes', self.providerTypes());
-            }
-        });
+            return deferred.promise
+        };
 
         self.loadStacks = function () {
             var deferred = Q.defer();
@@ -769,7 +795,8 @@ $(document).ready(function () {
                         self.loadRoles();
                         self.loadStacks();
 
-                        Q.fcall(self.loadAccounts)
+                        Q.fcall(self.loadProviderTypes)
+                            .then(self.loadAccounts)
                             .then(self.loadSnapshots)
                             .then(self.loadProfiles)
                             .catch(function (error) {
@@ -778,7 +805,8 @@ $(document).ready(function () {
                             .done();
                         break;
                     case 'Snapshots':
-                        Q.fcall(self.loadAccounts)
+                        Q.fcall(self.loadProviderTypes)
+                            .then(self.loadAccounts)
                             .then(self.loadSnapshots)
                             .catch(function (error) {
                                 console.log(error);
@@ -788,8 +816,17 @@ $(document).ready(function () {
                     case 'Profiles':
                         self.loadInstanceSizes();
 
-                        Q.fcall(self.loadAccounts)
+                        Q.fcall(self.loadProviderTypes)
+                            .then(self.loadAccounts)
                             .then(self.loadProfiles)
+                            .catch(function (error) {
+                                console.log(error);
+                            })
+                            .done();
+                        break;
+                    case 'Accounts':
+                        Q.fcall(self.loadProviderTypes)
+                            .then(self.loadAccounts)
                             .catch(function (error) {
                                 console.log(error);
                             })

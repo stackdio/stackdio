@@ -50,13 +50,15 @@ class StackListAPIView(generics.ListCreateAPIView):
         machines
         '''
         # set some defaults
-        launch_stack = request.DATA.setdefault('auto_launch', True)
+        launch_stack = request.DATA.get('auto_launch', True)
 
         # check for duplicates
         title = request.DATA.get('title')
         if Stack.objects.filter(user=self.request.user, title=title).count():
             raise ResourceConflict('A Stack already exists with the given '
                                    'title.')
+
+        print(request.DATA)
 
         # create the stack object and foreign key objects
         stack = Stack.objects.create_stack(request.user, request.DATA)
@@ -124,6 +126,8 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         
         Valid actions: stop, start, restart, terminate
         '''
+
+        logger.debug(request)
 
         stack = self.get_object()
         hosts = stack.get_hosts()

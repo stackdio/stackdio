@@ -2,7 +2,7 @@ Ext.define('stackdio.model.ProviderAccount', {
     extend: 'Ext.data.Model'
 
     ,fields: [
-         { name: 'id',                  type: 'int' },
+         { name: 'id',                  type: 'int' }
         ,{ name: 'title',               type: 'string' }
         ,{ name: 'description',         type: 'string' }
         ,{ name: 'slug',                type: 'string' }

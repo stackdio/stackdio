@@ -65,11 +65,13 @@
      -->
     <div id="stacks-binding-target">
         <div class="view" data-bind='visible: $root.currentSection() == "Stacks"'>
+            <!-- <button class="btn btn-primary pull-right" data-bind="click: showStackForm">New Stack</button> -->
+
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Stack <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: profiles">
+                <ul class="dropdown-menu" data-bind="foreach: accounts">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showStackForm"></a>
                     </li>
@@ -93,14 +95,13 @@
                         <td data-bind="text: description"></td>
                         <td data-bind="text: status"></td>
                         <td>
-                            <!-- <button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">Remove</button> -->
                             <div class="btn-group pull-right">
-                                <a class="btn-mini btn-warning dropdown-toggle" data-toggle="dropdown" href="#">
+                                <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu" data-bind="foreach: stackActions">
+                                <ul class="dropdown-menu" data-bind="foreach: $root.stackActions">
                                     <li>
-                                        <a href="#" data-bind="click: $root.doStackAction"></a>
+                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.doStackAction(data, event, $parent) }"></a>
                                     </li>
                                 </ul>
                             </div>
@@ -260,7 +261,18 @@
                 </div>
 
                 <div>
-                    <legend class="lead">Stack Hosts</legend>
+                    <legend class="lead">Stack Hosts
+                        <div class="btn-group pull-right">
+                            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                                Add Host <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu" data-bind="foreach: profiles">
+                                <li>
+                                    <a href="#" data-bind="text: title, click: $root.showHostForm"></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </legend>
                     <table id="stack_hosts" class="data-grid stretch-full">
                         <thead>
                             <tr>
@@ -290,7 +302,6 @@
             </div>
     
             <div class="modal-footer">
-                <button class="btn btn-info" data-bind="click: $root.showHostForm">Add Host</button>
                 <button class="btn btn-primary" data-bind="click: launchStack">Launch Stack</button>
                 <button class="btn btn-info" data-bind="click: saveStack">Save Stack</button>
                 <button class="btn" data-bind="click: closeStackForm">Close</button>
@@ -431,54 +442,54 @@
             ======================================================================
          -->
         <div id="accounts-form-container" title="New Provider Account Details" class="stackd-form form-small">
-            <form id="snapshot-form">
-            <div class="modal-body">
-                <div class="span2">Title</div>
-                <div class="span4 no-margin">
-                    <input id="title" type="text" class="input-block-level" placeholder="">
+            <form id="account-form">
+                <div class="modal-body">
+                    <div class="span2">Title</div>
+                    <div class="span4 no-margin">
+                        <input id="title" type="text" class="input-block-level" placeholder="">
+                    </div>
+
+                    <div class="span2">Description</div>
+                    <div class="span4 no-margin">
+                        <input id="description" type="text" class="input-block-level" placeholder="">
+                    </div>
+
+                    <div class="span2">AWS Access Key</div>
+                    <div class="span4 no-margin">
+                        <input id="access_key_id" type="text" class="input-block-level" placeholder="">
+                    </div>
+
+                    <div class="span2">AWS Secret Key</div>
+                    <div class="span4 no-margin">
+                        <input id="secret_access_key" type="text" class="input-block-level" placeholder="">
+                    </div>
+
+                    <div class="span2">AWS Keypair Name</div>
+                    <div class="span4 no-margin">
+                        <input id="keypair" type="text" class="input-block-level" placeholder="">
+                    </div>
+
+                    <div class="span2">Security Groups</div>
+                    <div class="span4 no-margin">
+                        <input id="security_groups" type="text" class="input-block-level" placeholder="comma separated list">
+                    </div>
+
+                    <div class="span2">Route 53 Domain</div>
+                    <div class="span4 no-margin">
+                        <input id="route53_domain" type="text" class="input-block-level" placeholder="e.g. dev.synthesyscloud.com">
+                    </div>
+
+                    <div class="span2">Private Key File</div>
+                    <div class="span4 no-margin">
+                        <input id="private_key_file" type="file" class="input-block-level" placeholder="">
+                    </div>
+
                 </div>
 
-                <div class="span2">Description</div>
-                <div class="span4 no-margin">
-                    <input id="description" type="text" class="input-block-level" placeholder="">
+                <div class="modal-footer">
+                    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+                    <button class="btn btn-primary" data-bind="click: $root.addAccount">Save</button>
                 </div>
-
-                <div class="span2">AWS Access Key</div>
-                <div class="span4 no-margin">
-                    <input id="access_key_id" type="text" class="input-block-level" placeholder="">
-                </div>
-
-                <div class="span2">AWS Secret Key</div>
-                <div class="span4 no-margin">
-                    <input id="secret_access_key" type="text" class="input-block-level" placeholder="">
-                </div>
-
-                <div class="span2">AWS Keypair Name</div>
-                <div class="span4 no-margin">
-                    <input id="keypair" type="text" class="input-block-level" placeholder="">
-                </div>
-
-                <div class="span2">Security Groups</div>
-                <div class="span4 no-margin">
-                    <input id="security_groups" type="text" class="input-block-level" placeholder="comma separated list">
-                </div>
-
-                <div class="span2">Route 53 Domain</div>
-                <div class="span4 no-margin">
-                    <input id="route53_domain" type="text" class="input-block-level" placeholder="e.g. dev.synthesyscloud.com">
-                </div>
-
-                <div class="span2">Private Key File</div>
-                <div class="span4 no-margin">
-                    <input id="private_key_file" type="file" class="input-block-level" placeholder="">
-                </div>
-
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-                <button class="btn btn-primary" data-bind="click: $root.addAccount">Save</button>
-            </div>
             </form>
         </div>
     </div>
