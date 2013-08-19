@@ -290,8 +290,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     hostname='{}-{}-{}'.format(host_pattern, 
                                                self.user.username, 
                                                i),
-                    sir_max_price=Decimal(sir_max_price)
                 )
+
+                if sir_max_price is not None:
+                    host_obj.sir_max_price = Decimal(sir_max_price)
+                    host_obj.save()
 
                 # set security groups
                 host_obj.security_groups.add(*security_group_objs)

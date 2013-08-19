@@ -3,6 +3,7 @@ from collections import defaultdict
 from operator import or_
 
 import celery
+from django.shortcuts import get_object_or_404
 
 from rest_framework import (
     generics,
@@ -42,6 +43,9 @@ class StackListAPIView(generics.ListCreateAPIView):
     model = Stack
     serializer_class = StackSerializer
     parser_classes = (parsers.JSONParser,)
+
+    def get_queryset(self):
+        return self.request.user.stacks.all()
 
     def post(self, request, *args, **kwargs):
         '''
@@ -89,6 +93,10 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = Stack
     serializer_class = StackSerializer
     parser_classes = (parsers.JSONParser,)
+
+    def get_object(self):
+        return get_object_or_404(Stack, id=self.kwargs.get('pk'),
+                                 user=self.request.user)
 
     def delete(self, request, *args, **kwargs):
         '''
@@ -248,15 +256,16 @@ class HostListAPIView(generics.ListAPIView):
     model = Host
     serializer_class = HostSerializer
 
+    def get_queryset(self):
+        return Host.objects.filter(stack__user=self.request.user)
+
 
 class StackHostsAPIView(HostListAPIView):
     parser_classes = (parsers.JSONParser,)
 
-    def get_object():
-        return Stack.objects.get(id=self.kwargs.get('pk'))
-
     def get_queryset(self):
-        return Host.objects.filter(stack__pk=self.kwargs.get('pk'))
+        return Host.objects.filter(stack__pk=self.kwargs.get('pk'),
+                                   stack__user=self.request.user)
 
     def put(self, request, *args, **kwargs):
         '''
@@ -291,6 +300,8 @@ class StackHostsAPIView(HostListAPIView):
         to the result that is looked up via salt.
         '''
         result = super(StackHostsAPIView, self).get(request, *args, **kwargs)
+        if not result.data['results']:
+            return result
 
         stack = request.user.stacks.get(id=kwargs.get('pk'))
         query_results = stack.query_hosts()
