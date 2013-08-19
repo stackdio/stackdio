@@ -3,6 +3,8 @@ from django import forms
 from django.conf import settings
 from rest_framework import serializers
 
+from core.mixins import SuperuserFieldsMixin
+
 from .models import (
     CloudProvider, 
     CloudProviderType,
@@ -15,7 +17,8 @@ from .utils import get_provider_type_and_class
 
 logger = logging.getLogger(__name__)
 
-class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
+class CloudProviderSerializer(SuperuserFieldsMixin,
+                              serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
     provider_type = serializers.PrimaryKeyRelatedField()
     provider_type_name = serializers.Field(source='provider_type.type_name')
@@ -33,15 +36,14 @@ class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
             'yaml',
         )
 
+        superuser_fields = ('yaml',)
+
     def validate(self, attrs):
 
         # validate provider specific request data
         request = self.context['request']
 
         provider_type, provider_class = get_provider_type_and_class(request.DATA.get('provider_type'))
-
-        logger.debug(provider_type)
-        logger.debug(provider_class)
 
         provider = provider_class()
         result, errors = provider.validate_provider_data(request.DATA, 
@@ -80,7 +82,8 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
+class CloudProfileSerializer(SuperuserFieldsMixin,
+                             serializers.HyperlinkedModelSerializer):
     cloud_provider = serializers.PrimaryKeyRelatedField()
     default_instance_size = serializers.PrimaryKeyRelatedField()
     class Meta:
@@ -96,6 +99,8 @@ class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
             'default_instance_size',
             'ssh_user',
         )
+
+        superuser_fields = ('image_id',)
 
 
 class SnapshotSerializer(serializers.HyperlinkedModelSerializer):

@@ -10,6 +10,7 @@ from django.conf import settings
 from rest_framework import (
     generics,
     parsers,
+    permissions,
 )
 from rest_framework.response import Response
 
@@ -55,6 +56,7 @@ class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
 class CloudProviderListAPIView(generics.ListCreateAPIView):
     model = CloudProvider
     serializer_class = CloudProviderSerializer
+    permission_classes = (permissions.DjangoModelPermissions,)
 
     def post_save(self, obj, created=False):
         
@@ -89,6 +91,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = CloudProvider
     serializer_class = CloudProviderSerializer
+    permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
@@ -104,6 +107,7 @@ class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
 class CloudProfileListAPIView(generics.ListCreateAPIView):
     model = CloudProfile
     serializer_class = CloudProfileSerializer
+    permission_classes = (permissions.DjangoModelPermissions,)
 
     def post_save(self, obj, created=False):
         write_cloud_profiles_file()
@@ -112,12 +116,16 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = CloudProfile
     serializer_class = CloudProfileSerializer
+    permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
     model = Snapshot
     serializer_class = SnapshotSerializer
+    permission_classes = (permissions.DjangoModelPermissions,)
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = Snapshot
     serializer_class = SnapshotSerializer
+    permission_classes = (permissions.DjangoModelPermissions,)
+
