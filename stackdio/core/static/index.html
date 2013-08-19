@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
     <link rel="stylesheet" href="css/jquery.dataTables.css">
-    <link rel="stylesheet" href="css/flick/jquery-ui-1.10.3.custom.css">
+    <link rel="stylesheet" href="css/jquery.dataTables.css">
+    <link rel="stylesheet" href="css/w2ui-1.2.min.css">
     <link rel="stylesheet" href="css/stackdio.css">
     
     <script src="js/base64.js"></script>
@@ -20,13 +20,21 @@
     <script src="js/knockout.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/w2ui-1.2.min.js"></script>
 
+    <script src="js/app/app.js"></script>
     <script src="js/app/models.js"></script>
+    <script src="js/app/stores.js"></script>
+    <script src="js/app/api/Stacks.js"></script>
+    <script src="js/app/api/InstanceSizes.js"></script>
     <script src="js/stackdio.js"></script>
     
 </head>
 
-<body id='mainBody'>
+<body>
+<div id='dummy'>
+</div>
+<div id='mainBody'>
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
@@ -65,8 +73,8 @@
      -->
     <div id="stacks-binding-target">
         <div class="view" data-bind='visible: $root.currentSection() == "Stacks"'>
-            <!-- <button class="btn btn-primary pull-right" data-bind="click: showStackForm">New Stack</button> -->
 
+            
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Stack <span class="caret"></span>
@@ -78,6 +86,8 @@
                 </ul>
             </div>
 
+            <div id="stack_grid" style="height: 250px; clear:both;"></div>
+<!-- 
             <table id="stacks">
                 <thead>
                     <tr>
@@ -108,7 +118,7 @@
                         </td>
                     </tr>     
                 </tbody>
-            </table>
+            </table> -->
         </div>
 
         
@@ -578,7 +588,6 @@
         </div>
     </div>
 
-
+</div>
 </body>
-
 </html>

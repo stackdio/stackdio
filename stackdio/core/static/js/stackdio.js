@@ -1,5 +1,3 @@
-var stackdio = {};
-
 $(document).ready(function () {
 
     /*
@@ -55,6 +53,18 @@ $(document).ready(function () {
         "bInfo": false,
         "bAutoWidth": true,
         "bFilter": false
+    });
+
+
+
+    $('#stack_grid').w2grid({ 
+        name: 'stacks', 
+        columns: [              
+            { field: 'recid', caption: '', size: '40px' },
+            { field: 'title', caption: 'Title', size: '40%' },
+            { field: 'description', caption: 'Description', size: '50%' },
+            { field: 'status', caption: 'Status', size: '120px' },
+        ]
     });
 
 
@@ -182,7 +192,7 @@ $(document).ready(function () {
                     var i, item = response;
 
                     // Clear the store that holds hosts for a new stack
-                    self.newHosts().removeAll();
+                    self.newHosts.removeAll();
                     
                     // Clear the stack form
                     $('#stack_title').val('');
@@ -580,6 +590,7 @@ $(document).ready(function () {
 
         self.loadStacks = function () {
             var deferred = Q.defer();
+            var stack;
 
             $.ajax({
                 url: '/api/stacks/',
@@ -591,14 +602,36 @@ $(document).ready(function () {
                     var i, item, items = response.results;
 
                     deferred.resolve();
-                    self.stacks.removeAll();
+
+                    // Clear the store and the grid
+                    stackdio.stores.Stacks.removeAll();
+                    w2ui['stacks'].clear();
 
                     for (i in items) {
                         item = items[i];
-                        self.stacks.push(new Stack(item.title, item.description, item.status, item.created, item.host_count, item.id, item.slug, item.user, item.url));
+
+                        stack = new stackdio.models.Stack().create({
+                            id: item.id,
+                            recid: item.id,
+                            title: item.title,
+                            description: item.description,
+                            status: item.status,
+                            created: item.created,
+                            host_count: item.host_count,
+                            slug: item.slug,
+                            user: item.user,
+                            url: item.url
+                        });
+
+                        // Inject the record into the store
+                        stackdio.stores.Stacks.push(stack);
+
                     }
 
-                    console.log('stacks', self.stacks());
+                    // Add the store records to the grid
+                    w2ui['stacks'].add(stackdio.stores.Stacks());
+
+                    console.log('stacks', stackdio.stores.Stacks());
                 }
             });
 
@@ -791,18 +824,17 @@ $(document).ready(function () {
 
                 switch (this.params.section) {
                     case 'Stacks':
-                        self.loadInstanceSizes();
-                        self.loadRoles();
-                        self.loadStacks();
 
-                        Q.fcall(self.loadProviderTypes)
-                            .then(self.loadAccounts)
-                            .then(self.loadSnapshots)
-                            .then(self.loadProfiles)
-                            .catch(function (error) {
-                                console.log(error);
-                            })
-                            .done();
+                        stackdio.api.InstanceSizes.load()
+                            .then(stackdio.api.ProviderTypes.load)
+                            .then(stackdio.api.Accounts.load)
+                            .then(stackdio.api.Profiles.load)
+                            .then(stackdio.api.Stacks.load)
+                            .then(function (stacks) {
+                                w2ui['stacks'].clear();
+                                w2ui['stacks'].add(stacks);
+                            });
+
                         break;
                     case 'Snapshots':
                         Q.fcall(self.loadProviderTypes)
@@ -814,7 +846,8 @@ $(document).ready(function () {
                             .done();
                         break;
                     case 'Profiles':
-                        self.loadInstanceSizes();
+                        // self.loadInstanceSizes();
+                        stackdio.api.InstanceSizes.load(stackdio.models.InstanceSize, stackdio.stores.InstanceSizes);
 
                         Q.fcall(self.loadProviderTypes)
                             .then(self.loadAccounts)
@@ -837,9 +870,11 @@ $(document).ready(function () {
 
             this.get('', function() { this.app.runRoute('get', '#Stacks') });
         }).run();
+
+
     };
 
     stackdio.mainModel = new stackdioModel();
-    ko.applyBindings(stackdio.mainModel);
+    ko.applyBindings(stackdio.mainModel, document.getElementById('mainBody'));
 
 });
