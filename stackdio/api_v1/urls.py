@@ -13,18 +13,27 @@ def api_root(request, format=None):
     to them.
 
     '''
-    return Response({
-        'hosts': reverse('host-list', request=request, format=format),
-        'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),
-        'providers': reverse('cloudprovider-list', request=request, format=format),
-        'provider_types': reverse('cloudprovidertype-list', request=request, format=format),
-        'profiles': reverse('cloudprofile-list', request=request, format=format),
-        'roles': reverse('saltrole-list', request=request, format=format),
-        'snapshots': reverse('snapshot-list', request=request, format=format),
-        'stacks': reverse('stack-list', request=request, format=format),
-        'users': reverse('user-list', request=request, format=format),
-        'volumes': reverse('volume-list', request=request, format=format),
-    })
+    api = { 
+        'cloud': {
+            'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),
+            'providers': reverse('cloudprovider-list', request=request, format=format),
+            'provider_types': reverse('cloudprovidertype-list', request=request, format=format),
+            'profiles': reverse('cloudprofile-list', request=request, format=format),
+        },
+        'stacks': {
+            'hosts': reverse('host-list', request=request, format=format),
+            'roles': reverse('saltrole-list', request=request, format=format),
+            'snapshots': reverse('snapshot-list', request=request, format=format),
+            'stacks': reverse('stack-list', request=request, format=format),
+            'volumes': reverse('volume-list', request=request, format=format),
+        }
+    }
+
+    if request.user.is_superuser:
+        api['core'] = {
+            'users': reverse('user-list', request=request, format=format),
+        }
+    return Response(api)
 
 urlpatterns = patterns('',
 
