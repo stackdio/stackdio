@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>stackd.io</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="stackd.io | modern cloud deployment frameworkx">
+    <meta name="author" content="Steve Brownlee">
+    <meta name="copyright" content="">
+
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+  </head>
+
+  <body>
+
+    <div class="container">
+        <div class="row">
+            <div class="span5" style="float: none; margin: 0 auto;">
+                <p>
+                    <img src="{% static 'images/dg-logo.png' %}">
+                </p>
+            </div>
+
+            <div class="span6" style="float: none; margin: 0 auto;">
+                <form class="form-horizontal" action="{% url login %}" method="POST">
+                    {% csrf_token %}
+                    <div class="control-group">
+                        <label class="control-label" for="inputUsername">Username</label>
+                        <div class="controls">
+                            <input id="inputUsername" type="text" name="username" placeholder="Username">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="inputPassword">Password</label>
+                        <div class="controls">
+                            <input type="password" name="password" placeholder="Password">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <div class="controls">
+                            <button type="submit" class="btn">Sign in</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="container">
+            <footer>
+                <p class="muted text-center">
+                    <span>Copyright &copy; 2013, Digital Reasoning Systems, Inc.</span>
+                </p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="{% static 'js/less-1.3.3.min.js' %}"></script>
+    <script src="{% static 'js/jquery-1.10.2.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    
+</body>
+</html>
+
