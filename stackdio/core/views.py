@@ -32,7 +32,8 @@ def login(request):
             return redirect(next_url)
         else:
             # Failed
-            messages.error(request, 'Login was unsuccessful.  Please try again.')
+            messages.error(request, 'Sorry, your username and password are '
+                                    'incorrect - please try again.')
             return redirect(index)
     else:
         messages.error(request, 'Invalid method \'{0}\' used. Please use '
@@ -41,5 +42,6 @@ def login(request):
 
 def logout(request):
     auth.logout(request)
-    messages.success(request, 'Logout successfull. You may login again if you wish')
+    messages.success(request, 'You are now logged out. You may log in again '
+                              'below.')
     return redirect('index')
