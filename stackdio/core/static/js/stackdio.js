@@ -56,21 +56,6 @@ $(document).ready(function () {
     });
 
 
-
-    $('#stack_grid').w2grid({ 
-        name: 'stacks', 
-        columns: [              
-            { field: 'recid', caption: '', size: '40px' },
-            { field: 'title', caption: 'Title', size: '40%' },
-            { field: 'description', caption: 'Description', size: '50%' },
-            { field: 'status', caption: 'Status', size: '120px' },
-        ]
-    });
-
-
-
-
-
     /*
      *  ==================================================================================
      *  D I A L O G   E L E M E N T S
@@ -150,9 +135,8 @@ $(document).ready(function () {
         //
         //      S T A C K S
         //
-        self.stacks = ko.observableArray([]);
         self.saveStack = function (autoLaunch) {
-            var h, host, hosts = self.newHosts();
+            var h, host, hosts = stackdio.stores.NewHosts();
 
             var stack = {
                 cloud_provider: self.selectedAccount.id,
@@ -174,36 +158,17 @@ $(document).ready(function () {
                 });
             }
 
-            console.log(stack);
-            console.log(JSON.stringify(stack));
-            stack.hosts = JSON.stringify(stack.hosts);
-            // return;
+            stackdio.api.Stacks.save(stack)
+                .then(function () {
+                    stackdio.stores.NewHosts.removeAll();
 
-
-            $.ajax({
-                url: '/api/stacks/',
-                type: 'POST',
-                data: stack,
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item = response;
-
-                    // Clear the store that holds hosts for a new stack
-                    self.newHosts.removeAll();
-                    
                     // Clear the stack form
                     $('#stack_title').val('');
                     $('#stack_purpose').val('');
 
                     // Hide the stack form
                     $( "#stack-form-container" ).dialog("close");
-
-                    self.loadStacks();
-                }
-            });
+                });
         }
         self.launchStack = function (model, evt) {
             self.saveStack(true);
@@ -213,56 +178,20 @@ $(document).ready(function () {
         // 
         //      P R O F I L E S
         // 
-        self.profiles = ko.observableArray([]);
         self.selectedProfile = null;
         self.addProfile = function (model, evt) {
-            var record = self.collectFormFields(evt.target.form);
-
-            $.ajax({
-                url: '/api/profiles/',
-                type: 'POST',
-                data: {
-                    title: record.profile_title.value,
-                    description: record.profile_description.value,
-                    cloud_provider: self.selectedAccount.id,
-                    image_id: record.image_id.value,
-                    default_instance_size: record.default_instance_size.value,
-                    ssh_user: record.ssh_user.value
-                },
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item = response;
-
-                    if (item.hasOwnProperty('id')) {
-                        self.profiles.push(item);
-                        $( "#profile-form-container" ).dialog("close");
-                    }
-                }
-            });
+            var profile = self.collectFormFields(evt.target.form);
+            stackdio.api.Profiles.save(profile);
         };
         self.removeProfile = function (profile) {
 
-            $.ajax({
-                url: '/api/profiles/' + profile.id,
-                type: 'DELETE',
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    self.profiles.remove(profile);
-                }
-            });
+
         };
 
 
         // 
         //      A C C O U N T S
         // 
-        self.accounts = ko.observableArray([]);
         self.selectedAccount = null;
         self.addAccount = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
@@ -324,7 +253,6 @@ $(document).ready(function () {
         // 
         //      S N A P S H O T S
         // 
-        self.snapshots = ko.observableArray([]);
         self.addSnapshot = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
 
@@ -376,7 +304,6 @@ $(document).ready(function () {
         // 
         //      N E W   H O S T   V O L U M E S
         // 
-        self.newHostVolumes = ko.observableArray([]);
         self.addHostVolume = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
             var volume = new NewHostVolume(0, record.volume_snapshot.value, record.volume_device.value, record.volume_mount_point.value);
@@ -395,28 +322,32 @@ $(document).ready(function () {
         // 
         //      N E W   H O S T S
         // 
-        self.newHosts = ko.observableArray([]);
         self.addHost = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
-            var newHost = new NewHost(0, 0, 
-                    record.host_count.value,
-                    self.selectedProfile.id,
-                    record.host_instance_size.value,
-                    record.host_roles,
-                    record.host_hostname.value,
-                    record.host_security_groups.value
-                );
 
-            newHost.instance_size = _.find(self.instanceSizes(), function (i) {
+            var host = new stackdio.models.NewHost().create({ 
+                id: '',
+                count: record.host_count.value,
+                cloud_profile: self.selectedProfile.id,
+                instance_size: record.host_instance_size.value,
+                roles: record.host_roles,
+                hostname: record.host_hostname.value,
+                security_groups: record.host_security_groups.value
+            });
+
+            host.size = _.find(stackdio.stores.InstanceSizes(), function (i) {
                 return i.id === parseInt(record.host_instance_size.value, 10);
             });
 
-            console.log(newHost);
+            host.flat_roles = _.map(host.roles, function (r) { 
+                return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
+            }).join('');
 
-            self.newHosts.push(newHost);
+            stackdio.stores.NewHosts.push(host);
         };
+
         self.removeHost = function (host) {
-            self.newHosts.remove(host);
+            stackdio.stores.NewHosts.remove(host);
         };
 
 
@@ -532,7 +463,6 @@ $(document).ready(function () {
             $( "#host-form-container" ).dialog("close");
         }
 
-
         self.showVolumeForm = function () {
             $( "#volume-form-container" ).dialog("open");
         }
@@ -555,263 +485,6 @@ $(document).ready(function () {
         };
 
 
-        /*
-         *  ==================================================================================
-         *  A P I   C A L L S
-         *  ==================================================================================
-         */
-
-        self.loadProviderTypes = function () {
-            var deferred = Q.defer();
-
-            $.ajax({
-                url: '/api/provider_types/',
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-
-                    deferred.resolve();
-                    self.providerTypes.removeAll();
-
-                    for (i in items) {
-                        item = items[i];
-                        self.providerTypes.push(new ProviderType(item.id, item.url, item.type_name, item.title));
-                    }
-
-                    console.log('providerTypes', self.providerTypes());
-                }
-            });
-
-            return deferred.promise
-        };
-
-        self.loadStacks = function () {
-            var deferred = Q.defer();
-            var stack;
-
-            $.ajax({
-                url: '/api/stacks/',
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-
-                    deferred.resolve();
-
-                    // Clear the store and the grid
-                    stackdio.stores.Stacks.removeAll();
-                    w2ui['stacks'].clear();
-
-                    for (i in items) {
-                        item = items[i];
-
-                        stack = new stackdio.models.Stack().create({
-                            id: item.id,
-                            recid: item.id,
-                            title: item.title,
-                            description: item.description,
-                            status: item.status,
-                            created: item.created,
-                            host_count: item.host_count,
-                            slug: item.slug,
-                            user: item.user,
-                            url: item.url
-                        });
-
-                        // Inject the record into the store
-                        stackdio.stores.Stacks.push(stack);
-
-                    }
-
-                    // Add the store records to the grid
-                    w2ui['stacks'].add(stackdio.stores.Stacks());
-
-                    console.log('stacks', stackdio.stores.Stacks());
-                }
-            });
-
-            return deferred.promise
-        };
-
-
-        self.loadAccounts = function () {
-            var deferred = Q.defer();
-
-            $.ajax({
-                url: '/api/providers/',
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-
-                    deferred.resolve();
-                    self.accounts.removeAll();
-
-                    for (i in items) {
-                        item = items[i];
-                        // id, title, description, slug, provider_type, provider_type_name, yaml
-                        self.accounts.push(new Account(item.id, item.title, item.description, item.provider_type, item.provider_type_name));
-                    }
-
-                    console.log('accounts', self.accounts());
-                }
-            });
-
-            return deferred.promise
-        };
-
-        self.loadSnapshots = function () {
-            var deferred = Q.defer();
-
-            $.ajax({
-                url: '/api/snapshots/',
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results, snapshot, accounts = self.accounts();
-
-                    deferred.resolve(items);
-
-                    self.snapshots.removeAll();
-
-                    for (i in items) {
-                        item = items[i];
-                        snapshot = new Snapshot(
-                                    item.id,
-                                    item.url,
-                                    item.title,
-                                    item.description,
-                                    item.cloud_provider,
-                                    item.size_in_gb,
-                                    item.snapshot_id
-                                   );
-
-                        // Inject the name of the provider account used to create the snapshot
-                        snapshot.account_name = _.find(accounts, function (account) {
-                            return account.id === item.cloud_provider;
-                        }).title;
-
-                        self.snapshots.push(snapshot);
-                    }
-
-                    console.log('snapshots', self.snapshots());
-                }
-            });
-
-            return deferred.promise
-        };
-
-        self.loadRoles = function () {
-            $.ajax({
-                url: '/api/roles/',
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-
-                    self.roles.removeAll();
-
-                    for (i in items) {
-                        item = items[i];
-                        self.roles.push(new Role(item.id, item.url, item.title, item.role_name));
-                    }
-                }
-            });
-        };
-
-        self.loadInstanceSizes = function () {
-            var deferred = Q.defer();
-
-            $.ajax({
-                url: '/api/instance_sizes/',
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-
-                    deferred.resolve(items);
-                    self.instanceSizes.removeAll();
-
-                    for (i in items) {
-                        item = items[i];
-                        self.instanceSizes.push(new InstanceSize(item.id,
-                                                                 item.url,
-                                                                 item.title, 
-                                                                 item.description,
-                                                                 item.slug,
-                                                                 item.provider_type,
-                                                                 item.instance_id
-                                                                )
-                        );
-                    }
-                    console.log('instance sizes', self.instanceSizes());
-                }
-            });
-
-            return deferred.promise
-        };
-
-
-        self.loadProfiles = function () {
-            var deferred = Q.defer();
-            var profile;
-
-            $.ajax({
-                url: '/api/profiles/',
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-
-                    deferred.resolve(items);
-
-                    self.profiles.removeAll();
-
-                    for (i in items) {
-                        item = items[i];
-                        profile = new AccountProfile(item.id,
-                                        item.url,
-                                        item.title, 
-                                        item.description,
-                                        item.slug,
-                                        item.cloud_provider,
-                                        item.default_instance_size,
-                                        item.image_id,
-                                        item.ssh_user
-                                        );
-
-                        // Inject the name of the provider account used to create the snapshot
-                        profile.account_name = _.find(self.accounts(), function (account) {
-                            return account.id === item.cloud_provider;
-                        }).title;
-
-                        self.profiles.push(profile);
-                    }
-
-                    console.log('profiles', self.profiles());
-                }
-            });
-
-            return deferred.promise
-        };
-
-
-
 
         /*
          *  ==================================================================================
@@ -823,47 +496,36 @@ $(document).ready(function () {
                 self.currentSection(this.params.section);
 
                 switch (this.params.section) {
-                    case 'Stacks':
 
-                        stackdio.api.InstanceSizes.load()
-                            .then(stackdio.api.ProviderTypes.load)
+                    case 'Stacks':
+                        stackdio.api.InstanceSizes.load();
+                        stackdio.api.Roles.load();
+
+                        stackdio.api.ProviderTypes.load()
                             .then(stackdio.api.Accounts.load)
                             .then(stackdio.api.Profiles.load)
-                            .then(stackdio.api.Stacks.load)
-                            .then(function (stacks) {
-                                w2ui['stacks'].clear();
-                                w2ui['stacks'].add(stacks);
-                            });
+                            .then(stackdio.api.Stacks.load);
 
                         break;
+
                     case 'Snapshots':
-                        Q.fcall(self.loadProviderTypes)
-                            .then(self.loadAccounts)
-                            .then(self.loadSnapshots)
-                            .catch(function (error) {
-                                console.log(error);
-                            })
-                            .done();
-                        break;
-                    case 'Profiles':
-                        // self.loadInstanceSizes();
-                        stackdio.api.InstanceSizes.load(stackdio.models.InstanceSize, stackdio.stores.InstanceSizes);
+                        stackdio.api.ProviderTypes.load()
+                            .then(stackdio.api.Accounts.load)
+                            .then(stackdio.api.Snapshots.load)
 
-                        Q.fcall(self.loadProviderTypes)
-                            .then(self.loadAccounts)
-                            .then(self.loadProfiles)
-                            .catch(function (error) {
-                                console.log(error);
-                            })
-                            .done();
                         break;
+
+                    case 'Profiles':
+                        stackdio.api.ProviderTypes.load()
+                            .then(stackdio.api.Accounts.load)
+                            .then(stackdio.api.Profiles.load);
+
+                        break;
+
                     case 'Accounts':
-                        Q.fcall(self.loadProviderTypes)
-                            .then(self.loadAccounts)
-                            .catch(function (error) {
-                                console.log(error);
-                            })
-                            .done();
+                        stackdio.api.ProviderTypes.load()
+                            .then(stackdio.api.Accounts.load);
+
                         break;
                 }
             });
@@ -875,6 +537,6 @@ $(document).ready(function () {
     };
 
     stackdio.mainModel = new stackdioModel();
-    ko.applyBindings(stackdio.mainModel, document.getElementById('mainBody'));
+    ko.applyBindings(stackdio.mainModel);
 
 });

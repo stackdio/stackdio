@@ -5,36 +5,43 @@
     <title>stackd.io</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="stylesheet" href="css/jquery-ui-1.10.3.custom.min.css">
+    <link rel="stylesheet" href="css/jquery.dataTables.css">
+    
     <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/jquery.dataTables.css">
-    <link rel="stylesheet" href="css/jquery.dataTables.css">
-    <link rel="stylesheet" href="css/w2ui-1.2.min.css">
     <link rel="stylesheet" href="css/stackdio.css">
     
     <script src="js/base64.js"></script>
+
     <script src="js/jquery.js"></script>
-    <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
-    <script src="js/sammy.js"></script>
+
     <script src="js/underscore_1.5.1.js"></script>
+
     <script src="js/q.min.js"></script>
+
+    <script src="js/sammy.js"></script>
     <script src="js/knockout.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/jquery.dataTables.min.js"></script>
-    <script src="js/w2ui-1.2.min.js"></script>
+
+
 
     <script src="js/app/app.js"></script>
     <script src="js/app/models.js"></script>
     <script src="js/app/stores.js"></script>
+    <script src="js/app/api/Snapshots.js"></script>
+    <script src="js/app/api/Roles.js"></script>
+    <script src="js/app/api/ProviderTypes.js"></script>
     <script src="js/app/api/Stacks.js"></script>
     <script src="js/app/api/InstanceSizes.js"></script>
+    <script src="js/app/api/Accounts.js"></script>
+    <script src="js/app/api/Profiles.js"></script>
     <script src="js/stackdio.js"></script>
     
+    <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/jquery.dataTables.min.js"></script>
 </head>
 
 <body>
-<div id='dummy'>
-</div>
-<div id='mainBody'>
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container-fluid">
@@ -74,21 +81,18 @@
     <div id="stacks-binding-target">
         <div class="view" data-bind='visible: $root.currentSection() == "Stacks"'>
 
-            
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Stack <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: accounts">
+                <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.Accounts">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showStackForm"></a>
                     </li>
                 </ul>
             </div>
 
-            <div id="stack_grid" style="height: 250px; clear:both;"></div>
-<!-- 
-            <table id="stacks">
+            <table id="stacks" class="data-grid">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -98,7 +102,7 @@
                         <th style="width:50px"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: stacks">
+                <tbody data-bind="foreach: stackdio.stores.Stacks">
                     <tr>
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
@@ -118,7 +122,8 @@
                         </td>
                     </tr>     
                 </tbody>
-            </table> -->
+            </table>
+
         </div>
 
         
@@ -133,7 +138,7 @@
                 <div class="control-group">
                     <label class="control-label" for="volume_snapshot">Snapshot</label>
                     <div class="controls">
-                        <select id="volume_snapshot" data-bind="options: $root.snapshots, optionsValue: 'id', optionsText: 'title'"></select>
+                        <select id="volume_snapshot" data-bind="options: stackdio.stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
                     </div>
                 </div>
 
@@ -182,7 +187,7 @@
                         <label class="control-label" for="host_instance_size">Instance size</label>
                         <div class="controls">
                             <select id="host_instance_size" 
-                                    data-bind="options: $root.instanceSizes, optionsValue: 'id', optionsText: 'title'" 
+                                    data-bind="options: stackdio.stores.InstanceSizes, optionsValue: 'id', optionsText: 'title'" 
                                     placeholder="Instance size" 
                                     class="input-xlarge"></select>
                         </div>
@@ -207,7 +212,7 @@
                         <div class="controls">
                             <select id="host_roles" 
                                     multiple="multiple" 
-                                    data-bind="options: $root.roles, 
+                                    data-bind="options: stackdio.stores.Roles, 
                                     optionsValue: 'id', 
                                     optionsText: 'title'" 
                                     class="input-xlarge"></select>
@@ -227,11 +232,11 @@
                                         <th style="width:50px;"></th>
                                     </tr>
                                 </thead>
-                                <tbody data-bind="foreach: newHostVolumes">
+                                <tbody data-bind="foreach: stackdio.stores.NewHostVolumes">
                                     <tr>
                                         <td data-bind="text: snapshot.title"></td>
                                         <td data-bind="text: mount_point"></td>
-                                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHostVolume">Remove</button></td>
+                                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHostVolume">X</button></td>
                                     </tr>     
                                 </tbody>
                             </table>
@@ -248,7 +253,7 @@
 
         
                 <div class="modal-footer">
-                    <button class="btn btn-info" data-bind="click: $root.showVolumeForm">Add Volume</button>
+                    <button class="btn btn-info" data-bind="click: showVolumeForm">Add Volume</button>
                     <button class="btn btn-primary" data-bind="click: addHost">Save Host</button>
                     <button class="btn" data-bind="click: closeHostForm">Close</button>
                 </div>
@@ -276,7 +281,7 @@
                             <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                                 Add Host <span class="caret"></span>
                             </a>
-                            <ul class="dropdown-menu" data-bind="foreach: profiles">
+                            <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.Profiles">
                                 <li>
                                     <a href="#" data-bind="text: title, click: $root.showHostForm"></a>
                                 </li>
@@ -295,15 +300,15 @@
                                 <th style="width:50px;"></th>
                             </tr>
                         </thead>
-                        <tbody data-bind="foreach: newHosts">
+                        <tbody data-bind="foreach: stackdio.stores.NewHosts">
                             <tr>
                                 <td data-bind="text: id"></td>
                                 <td data-bind="html: flat_roles"></td>
                                 <td data-bind="text: count"></td>
-                                <td data-bind="text: instance_size.title"></td>
+                                <td data-bind="text: size.title"></td>
                                 <td data-bind="text: hostname"></td>
                                 <td data-bind="text: security_groups"></td>
-                                <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">Remove</button></td>
+                                <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">X</button></td>
                             </tr>     
                         </tbody>
                     </table>
@@ -333,7 +338,7 @@
                     New Snapshot
                     <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: accounts">
+                <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.Accounts">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showSnapshotForm"></a>
                     </li>
@@ -352,7 +357,7 @@
                         <th style="width:50px"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: snapshots">
+                <tbody data-bind="foreach: stackdio.stores.Snapshots">
                     <tr>
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
@@ -360,7 +365,7 @@
                         <td data-bind="text: snapshot_id"></td>
                         <td data-bind="text: size_in_gb"></td>
                         <td data-bind="text: account_name"></td>
-                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeSnapshot">Remove</button></td>
+                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeSnapshot">X</button></td>
                     </tr>     
                 </tbody>
             </table>
@@ -419,7 +424,7 @@
                     New Account
                     <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: providerTypes">
+                <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.ProviderTypes">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showAccountForm"></a>
                     </li>
@@ -435,12 +440,12 @@
                         <th style="width:50px"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: accounts">
+                <tbody data-bind="foreach: stackdio.stores.Accounts">
                     <tr>
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
-                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeAccount">Remove</button></td>
+                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeAccount">X</button></td>
                     </tr>     
                 </tbody>
             </table>
@@ -519,7 +524,7 @@
                     New Profile
                     <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: accounts">
+                <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.Accounts">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showProfileForm"></a>
                     </li>
@@ -535,12 +540,13 @@
                         <th style="width:50px"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: profiles">
+                <tbody data-bind="foreach: stackdio.stores.Profiles">
                     <tr>
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
-                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeProfile">X</button></td>
+                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: stackdio.api.Profiles.delete">X</button></td>
+                        <!-- <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeProfile">X</button></td> -->
                     </tr>     
                 </tbody>
             </table>
@@ -571,7 +577,7 @@
 
                 <div class="span2">Default Instance Size</div>
                 <div class="span4 no-margin">
-                    <select id="default_instance_size" data-bind="options: instanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" class="stretch-full"></select>
+                    <select id="default_instance_size" data-bind="options: stackdio.stores.InstanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" class="stretch-full"></select>
                 </div>
 
                 <div class="span2">SSH User</div>
@@ -588,6 +594,5 @@
         </div>
     </div>
 
-</div>
 </body>
 </html>

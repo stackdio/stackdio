@@ -3,9 +3,8 @@ $(document).ready(function () {
         var self = this;
 
         return {
-            load : function (callback) {
+            load : function () {
                 var deferred = Q.defer();
-                var stack;
 
                 $.ajax({
                     url: '/api/stacks/',
@@ -29,6 +28,8 @@ $(document).ready(function () {
                             stackdio.stores.Stacks.push(stack);
                         }
 
+                        console.log('stacks', stackdio.stores.Stacks());
+
                         // Resolve the promise and pass back the loaded stacks
                         deferred.resolve(stackdio.stores.Stacks());
 
@@ -37,8 +38,26 @@ $(document).ready(function () {
 
                 return deferred.promise;
             },
-            save: function (record) {
+            save: function (stack) {
+                var deferred = Q.defer();
 
+                stack.hosts = JSON.stringify(stack.hosts);
+
+                $.ajax({
+                    url: '/api/stacks/',
+                    type: 'POST',
+                    data: stack,
+                    headers: {
+                        "Authorization": "Basic " + Base64.encode('testuser:password'),
+                        "Accept": "application/json"
+                    },
+                    success: function (response) {
+                        self.load();
+                        deferred.resolve();
+                    }
+                });
+
+                return deferred.promise;
             },
             delete: function (record) {
 
