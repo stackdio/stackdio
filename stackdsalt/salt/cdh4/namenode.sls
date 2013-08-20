@@ -18,7 +18,6 @@ include:
 hadoop-hdfs-namenode:
   pkg:
     - installed 
-    - version: 4.2.1
     - require:
       - pkg: oracle-java6-installer
       - module: cdh4_refresh_db
@@ -47,7 +46,6 @@ hadoop-hdfs-namenode:
 hadoop-0.20-mapreduce-jobtracker:
   pkg:
     - installed
-    - version: 4.2.1
     - require:
       - pkg: oracle-java6-installer
       - module: cdh4_refresh_db

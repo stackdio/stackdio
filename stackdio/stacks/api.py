@@ -135,8 +135,6 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         Valid actions: stop, start, restart, terminate
         '''
 
-        logger.debug(request)
-
         stack = self.get_object()
         hosts = stack.get_hosts()
         host_count = hosts.count()

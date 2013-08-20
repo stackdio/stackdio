@@ -1,4 +1,5 @@
 cdh4:
+  version: 4.2.1
   io:
     sort_factor: 25
     sort_mb: 250

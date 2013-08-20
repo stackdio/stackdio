@@ -16,7 +16,6 @@ include:
 hadoop-hdfs-datanode:
   pkg:
     - installed 
-    - version: 4.2.1
     - require:
       - pkg: oracle-java6-installer
       - module: cdh4_refresh_db
@@ -43,7 +42,6 @@ hadoop-hdfs-datanode:
 hadoop-0.20-mapreduce-tasktracker:
   pkg:
     - installed 
-    - version: 4.2.1
     - require:
       - pkg: oracle-java6-installer
       - module: cdh4_refresh_db

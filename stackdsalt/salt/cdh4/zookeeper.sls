@@ -3,7 +3,6 @@
 zookeeper-server:
   pkg:
     - installed
-    - version: 4.2.1
   service:
     - running
     - require:
