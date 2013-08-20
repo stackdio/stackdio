@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.contrib import messages, auth
@@ -7,6 +9,8 @@ from django.template import RequestContext
 DEFAULT_REDIRECT = 'index'
 APPLICATION_TEMPLATE = 'main_application.html'
 LANDING_PAGE_TEMPLATE = 'index.html'
+
+logger = logging.getLogger(__name__)
 
 def render(request, view, context={}):
     if (request):

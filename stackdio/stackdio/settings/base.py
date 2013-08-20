@@ -62,6 +62,7 @@ TEMPLATE_DEBUG = DEBUG
 # Some convenience variables
 ##
 SITE_ROOT = '/'.join(dirname(__file__).split('/')[0:-2])
+PROJECT_ROOT = SITE_ROOT + '/stackdio'
 
 ##
 # Define your admin tuples like ('full name', 'email@address.com')
@@ -147,6 +148,7 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+    '%s/templates' % PROJECT_ROOT,
 )
 
 ##
@@ -219,7 +221,7 @@ LOGGING = {
             'class': 'django.utils.log.AdminEmailHandler'
         },
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',
             'formatter': 'default',
             'class': 'logging.StreamHandler',
         },
