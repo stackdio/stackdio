@@ -11,6 +11,12 @@ admin.autodiscover()
 
 
 urlpatterns = patterns('',
+    # Main application
+    url(r'^$', 'core.views.index', name='index'),
+
+    # Session views
+    url(r'^login/$', 'core.views.login', name='login'),
+    url(r'^logout/$', 'core.views.logout', name='logout'),
 
     # Admin interface
     url(r'^__private/admin/', include(admin.site.urls)),
@@ -18,7 +24,6 @@ urlpatterns = patterns('',
     # API v1 root endpoint -- add additional URLs to urls.py in
     # the api_v1 module. 
     url(r'^api/', include('api_v1.urls')),
-
 )
 
 # Format suffixes

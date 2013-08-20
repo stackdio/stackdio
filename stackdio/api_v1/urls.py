@@ -26,13 +26,14 @@ def api_root(request, format=None):
             'snapshots': reverse('snapshot-list', request=request, format=format),
             'stacks': reverse('stack-list', request=request, format=format),
             'volumes': reverse('volume-list', request=request, format=format),
-        }
+        },
     }
 
     if request.user.is_superuser:
         api['core'] = {
             'users': reverse('user-list', request=request, format=format),
         }
+
     return Response(api)
 
 urlpatterns = patterns('',
