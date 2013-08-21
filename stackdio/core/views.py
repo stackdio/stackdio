@@ -7,7 +7,7 @@ from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
 
 DEFAULT_REDIRECT = 'index'
-APPLICATION_TEMPLATE = 'main_application.html'
+APPLICATION_TEMPLATE = 'stackdio.html'
 LANDING_PAGE_TEMPLATE = 'index.html'
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def login(request):
         if user is not None and user.is_active:
             # Login the user
             auth.login(request, user)
-            return redirect(next_url)
+            return redirect(index)
         else:
             # Failed
             messages.error(request, 'Sorry, your username and password are '
@@ -42,7 +42,7 @@ def login(request):
     else:
         messages.error(request, 'Invalid method \'{0}\' used. Please use '
                                 'POST.'.format(request.method))
-        return redirect(next_url)
+        return redirect(index)
 
 def logout(request):
     auth.logout(request)

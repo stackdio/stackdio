@@ -10,6 +10,7 @@
     <meta name="copyright" content="">
 
     <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">
   </head>
 
   <body>
@@ -31,10 +32,12 @@
 
     <div class="container">
         <div class="row">
-            <div class="span5" style="float: none; margin: 0 auto;">
-                <p>
-                    <img src="{% static 'images/dg-logo.png' %}">
-                </p>
+            <div class="span9" style="text-align: center; float: none; margin: 0 auto;">
+                <p id="slider"><img src="{% static 'img/clouds02.jpg' %}"></p>
+                <div class="hero-unit serene">
+                    <h1><img src="{% static 'img/stackd_32x32.png' %}">stackd.io</h1>
+                    <p>a modern cloud provisioning and deployment application</p>
+                </div>
             </div>
 
             <div class="span6" style="float: none; margin: 0 auto;">
@@ -61,19 +64,17 @@
             </div>
         </div>
 
-        <hr>
+        <!-- <hr> -->
 
         <div class="container">
             <footer>
                 <p class="muted text-center">
-                    <span>Copyright &copy; 2013, Digital Reasoning Systems, Inc.</span>
+                    <span></span>
                 </p>
             </footer>
         </div>
     </div>
 
-    <script src="{% static 'js/less-1.3.3.min.js' %}"></script>
-    <script src="{% static 'js/jquery-1.10.2.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     
 </body>

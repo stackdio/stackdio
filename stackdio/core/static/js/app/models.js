@@ -2,12 +2,7 @@
 stackdio.models.Model = function () {};
 stackdio.models.Model.prototype.create = function (record) {
     var self = this;
-
-    self.recid = record.id;
-    for (k in record) {
-        self[k] = record[k];
-    }
-
+    for (k in record) { self[k] = record[k]; }
     return self;
 };
 

@@ -1,3 +1,4 @@
+{% load staticfiles %}
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -5,40 +6,12 @@
     <title>stackd.io</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="css/jquery-ui-1.10.3.custom.min.css">
-    <link rel="stylesheet" href="css/jquery.dataTables.css">
-    
-    <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/stackdio.css">
-    
-    <script src="js/base64.js"></script>
-
-    <script src="js/jquery.js"></script>
-
-    <script src="js/underscore_1.5.1.js"></script>
-
-    <script src="js/q.min.js"></script>
-
-    <script src="js/sammy.js"></script>
-    <script src="js/knockout.js"></script>
+    <link href="{% static 'css/flick/jquery-ui-1.10.3.custom.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/jquery.dataTables.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">
 
 
-
-    <script src="js/app/app.js"></script>
-    <script src="js/app/models.js"></script>
-    <script src="js/app/stores.js"></script>
-    <script src="js/app/api/Snapshots.js"></script>
-    <script src="js/app/api/Roles.js"></script>
-    <script src="js/app/api/ProviderTypes.js"></script>
-    <script src="js/app/api/Stacks.js"></script>
-    <script src="js/app/api/InstanceSizes.js"></script>
-    <script src="js/app/api/Accounts.js"></script>
-    <script src="js/app/api/Profiles.js"></script>
-    <script src="js/stackdio.js"></script>
-    
-    <script src="js/jquery-ui-1.10.3.custom.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/jquery.dataTables.min.js"></script>
 </head>
 
 <body>
@@ -53,10 +26,11 @@
           <a class="brand" href="#">stackd.io [ <small class="text-warning">if you got a problem, yo, I'll solve it</small class="muted"> ]</a>
           <div class="nav-collapse collapse">
             <ul class="nav">
-              <li class="active"><a href="#">Home</a></li>
-              <li><a href="#about">About</a></li>
-              <li><a href="#contact">Source</a></li>
+              <li class="active"><a href="#">home</a></li>
+              <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
+              <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
             </ul>
+              <button class="btn btn-inverse btn-small pull-right" data-bind="click: function () { location.href='/logout'; } ">logout</button>
           </div>
         </div>
       </div>
@@ -72,6 +46,20 @@
             </li>
         </ul>
     </div>
+
+
+    <div class="view">
+        <div id="alert-error" class="alert hide alert-error">
+            <button type="button" class="close" data-bind="click: closeError">&times;</button>
+            <strong>Error!</strong> Please try that again.
+        </div>
+
+        <div id="alert-success" class="alert hide alert-success">
+            <button type="button" class="close" data-bind="click: closeSuccess">&times;</button>
+            <strong>Success!</strong> 
+        </div>
+    </div>
+
 
     <!-- 
         ======================================================================
@@ -345,16 +333,16 @@
                 </ul>
             </div>
 
-            <table id="snapshots">
+            <table id="snapshots" class="data-grid">
                 <thead>
                     <tr>
                         <th style="width:20px">#</th>
-                        <th style="width:100px">Title</th>
-                        <th style="width:150px">Description</th>
-                        <th style="width:50px">ID</th>
-                        <th style="width:50px">Size (GB)</th>
-                        <th style="width:50px">Account</th>
-                        <th style="width:50px"></th>
+                        <th style="width:20%">Title</th>
+                        <th style="width:25%">Description</th>
+                        <th style="width:10%">ID</th>
+                        <th style="width:10%">Size (GB)</th>
+                        <th style="width:20%">Account</th>
+                        <th style="width:5%"></th>
                     </tr>
                 </thead>
                 <tbody data-bind="foreach: stackdio.stores.Snapshots">
@@ -364,7 +352,7 @@
                         <td data-bind="text: description"></td>
                         <td data-bind="text: snapshot_id"></td>
                         <td data-bind="text: size_in_gb"></td>
-                        <td data-bind="text: account_name"></td>
+                        <td data-bind="text: account.title"></td>
                         <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeSnapshot">X</button></td>
                     </tr>     
                 </tbody>
@@ -417,8 +405,6 @@
      -->
     <div id="accounts-binding-target" data-bind='visible: $root.currentSection() == "Accounts"'>
         <div class="view">
-            <!-- <a href="#" role="button" class="btn btn-primary pull-right" data-bind="click: $root.showAccountForm">New Account</a> -->
-
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Account
@@ -431,13 +417,13 @@
                 </ul>
             </div>
 
-            <table id="accounts">
+            <table id="accounts" class="data-grid">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Title</th>
                         <th>Description</th>
-                        <th style="width:50px"></th>
+                        <th style="width:5%"></th>
                     </tr>
                 </thead>
                 <tbody data-bind="foreach: stackdio.stores.Accounts">
@@ -502,8 +488,8 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-                    <button class="btn btn-primary" data-bind="click: $root.addAccount">Save</button>
+                    <button class="btn" data-bind="click: closeAccountForm">Close</button>
+                    <button class="btn btn-primary" data-bind="click: addAccount">Save</button>
                 </div>
             </form>
         </div>
@@ -519,6 +505,7 @@
      -->
     <div id="profile-binding-target" data-bind='visible: $root.currentSection() == "Profiles"'>
         <div class="view">
+
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Profile
@@ -531,13 +518,14 @@
                 </ul>
             </div>
 
-            <table id="profiles">
+            <table id="profiles" class="data-grid">
                 <thead>
                     <tr>
                         <th>#</th>
                         <th>Title</th>
                         <th>Description</th>
-                        <th style="width:50px"></th>
+                        <th>ID</th>
+                        <th style="width:5%"></th>
                     </tr>
                 </thead>
                 <tbody data-bind="foreach: stackdio.stores.Profiles">
@@ -545,8 +533,8 @@
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
-                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: stackdio.api.Profiles.delete">X</button></td>
-                        <!-- <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeProfile">X</button></td> -->
+                        <td data-bind="text: image_id"></td>
+                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.deleteProfile">X</button></td>
                     </tr>     
                 </tbody>
             </table>
@@ -594,5 +582,51 @@
         </div>
     </div>
 
+
+
+    <script src="{% static 'js/jquery.js' %}"></script>
+    <script src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
+    <script src="{% static 'js/jquery.dataTables.min.js' %}"></script>
+
+    <script src="{% static 'js/base64.js' %}"></script>
+    <script src="{% static 'js/underscore_1.5.1.js' %}"></script>
+    <script src="{% static 'js/q.min.js' %}"></script>
+    <script src="{% static 'js/sammy.js' %}"></script>
+    <script src="{% static 'js/knockout.js' %}"></script>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+
+
+    <script src="{% static 'js/app/app.js' %}"></script>
+    <script src="{% static 'js/app/models.js' %}"></script>
+    <script src="{% static 'js/app/stores.js' %}"></script>
+    <script src="{% static 'js/app/api/Snapshots.js' %}"></script>
+    <script src="{% static 'js/app/api/Roles.js' %}"></script>
+    <script src="{% static 'js/app/api/ProviderTypes.js' %}"></script>
+    <script src="{% static 'js/app/api/Stacks.js' %}"></script>
+    <script src="{% static 'js/app/api/InstanceSizes.js' %}"></script>
+    <script src="{% static 'js/app/api/Accounts.js' %}"></script>
+    <script src="{% static 'js/app/api/Profiles.js' %}"></script>
+    <script src="{% static 'js/app/stackdio.js' %}"></script>
+
+
+    <script>
+    // using jQuery
+    var getCookie = function (name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    stackdio.csrftoken = getCookie('csrftoken');
+    </script>
 </body>
 </html>

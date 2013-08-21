@@ -181,13 +181,32 @@ $(document).ready(function () {
         self.selectedProfile = null;
         self.addProfile = function (model, evt) {
             var profile = self.collectFormFields(evt.target.form);
-            stackdio.api.Profiles.save(profile);
+            profile.account = self.selectedAccount;
+            stackdio.api.Profiles.save(profile)
+                .then(function () {
+                    $("#profile-form-container").dialog("close");
+                    $("#alert-success").show();
+                    setTimeout('$("#alert-success").hide()', 3000);
+                });
         };
-        self.removeProfile = function (profile) {
-
-
+        self.deleteProfile = function (profile) {
+            stackdio.api.Profiles.delete(profile)
+                .then(function () {
+                    $("#alert-success").show();
+                    setTimeout('$("#alert-success").hide()', 3000);
+                });
         };
 
+        $("#alert-error").alert();
+        $("#alert-success").alert();
+
+        self.closeError = function () {
+            $("#alert-error").hide();
+        };
+
+        self.closeSuccess = function () {
+            $("#alert-success").hide();
+        };
 
         // 
         //      A C C O U N T S
@@ -195,58 +214,27 @@ $(document).ready(function () {
         self.selectedAccount = null;
         self.addAccount = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
-            var files, formData = new FormData(), xhr = new XMLHttpRequest();
+            record.providerType = self.selectedProviderType;
 
-            // A reference to the files selected
-            // files = me.accountForm.down('filefield').fileInputEl.dom.files;
-            console.log(record);
-
-            // Append private key file to the FormData() object
-            formData.append('private_key_file', record.private_key_file.files[0]);
-
-            // Add the provider type that the user chose from the account split button
-            formData.append('provider_type', self.selectedProviderType.id);
-
-            // Append all other required fields to the form data
-            for (r in record) {
-                rec = record[r];
-                formData.append(r, rec.value);
-            }
-
-            // Open the connection to the provider URI and set authorization header
-            xhr.open('POST', '/api/providers/');
-            xhr.setRequestHeader('Authorization', 'Basic ' + Base64.encode('testuser:password'));
-
-            // Define any actions to take once the upload is complete
-            xhr.onloadend = function (evt) {
-                var record = JSON.parse(evt.target.response);
-
-                // Show an animated message containing the result of the upload
-                if (evt.target.status === 200 || evt.target.status === 201 || evt.target.status === 302) {
-                    $( "#accounts-form-container" ).dialog( "close" );
-                    self.accounts.push(new Account(record.id.value, 
-                                                    record.title.value,
-                                                    record.description.value,
-                                                    record.provider_type.value,
-                                                    record.provider_type_name.value
-                                                  ));
-                    console.log('accounts', self.accounts());
-                } else {
-                    // var html=[], response = JSON.parse(evt.target.response);
-
-                    // for (key in response) {
-                    //     failure = response[key];
-                    //     html.push('<p>' + key + ': ' + failure + '</p>');
-                    // }
-                    // me.application.notification.scold('New account failed to save. Check your data and try again...'+html, 5000);
-                }
-            };
-
-            // Start the upload process
-            xhr.send(formData);
+            stackdio.api.Accounts.save(record)
+                .then(function () {
+                    $("#accounts-form-container").dialog("close");
+                    $("#alert-success").show();
+                    setTimeout('$("#alert-success").hide()', 3000);
+                })
+                .catch(function (error) {
+                    $("#alert-error").show();
+                })
         };
         self.removeAccount = function (account) {
-            self.accounts.remove(account);
+            stackdio.api.Accounts.delete(account)
+                .then(function () {
+                    $("#alert-success").show();
+                    setTimeout('$("#alert-success").hide()', 3000);
+                })
+                .catch(function (error) {
+                    $("#alert-error").show();
+                }).done();
         };
 
 
@@ -445,6 +433,11 @@ $(document).ready(function () {
             $( "#accounts-form-container" ).dialog("open");
         }
 
+        self.closeAccountForm = function (type) {
+            self.selectedProviderType = type;
+            $( "#accounts-form-container" ).dialog("close");
+        }
+
         self.showStackForm = function (account) {
             self.selectedAccount = account;
             $( "#stack-form-container" ).dialog("open");
@@ -485,6 +478,14 @@ $(document).ready(function () {
         };
 
 
+        stackdio.api.InstanceSizes.load();
+        stackdio.api.Roles.load();
+
+        stackdio.api.ProviderTypes.load()
+            .then(stackdio.api.Accounts.load)
+            .then(stackdio.api.Profiles.load)
+            .then(stackdio.api.Snapshots.load)
+            .then(stackdio.api.Stacks.load);
 
         /*
          *  ==================================================================================
@@ -494,37 +495,22 @@ $(document).ready(function () {
         $.sammy(function() {
             this.get('#:section', function () {
                 self.currentSection(this.params.section);
-
+                    
                 switch (this.params.section) {
 
                     case 'Stacks':
-                        stackdio.api.InstanceSizes.load();
-                        stackdio.api.Roles.load();
-
-                        stackdio.api.ProviderTypes.load()
-                            .then(stackdio.api.Accounts.load)
-                            .then(stackdio.api.Profiles.load)
-                            .then(stackdio.api.Stacks.load);
 
                         break;
 
                     case 'Snapshots':
-                        stackdio.api.ProviderTypes.load()
-                            .then(stackdio.api.Accounts.load)
-                            .then(stackdio.api.Snapshots.load)
 
                         break;
 
                     case 'Profiles':
-                        stackdio.api.ProviderTypes.load()
-                            .then(stackdio.api.Accounts.load)
-                            .then(stackdio.api.Profiles.load);
 
                         break;
 
                     case 'Accounts':
-                        stackdio.api.ProviderTypes.load()
-                            .then(stackdio.api.Accounts.load);
 
                         break;
                 }

@@ -23,6 +23,11 @@ $(document).ready(function () {
                         for (i in items) {
                             snapshot = new stackdio.models.Snapshot().create(items[i]);
 
+                            // Inject the name of the account used to create the snapshot
+                            snapshot.account = _.find(stackdio.stores.Accounts(), function (account) {
+                                return account.id === snapshot.cloud_provider;
+                            });
+
                             // Inject the record into the store
                             stackdio.stores.Snapshots.push(snapshot);
                         }

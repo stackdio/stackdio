@@ -22,6 +22,10 @@ img.logo {
     background-size:16px 16px;
 }
 
+.serene {
+    background: url(/core/static/img/well-background.jpg) no-repeat;
+}
+
 
 .title-bar {
     text-align: center;

@@ -18,12 +18,12 @@ $(document).ready(function () {
                         var profile;
 
                         // Clear the store and the grid
-                        stackdio.stores.Stacks.removeAll();
+                        stackdio.stores.Profiles.removeAll();
 
                         for (i in items) {
                             profile = new stackdio.models.Profile().create(items[i]);
 
-                            // Inject the name of the provider account used to create the snapshot
+                            // Inject the name of the provider account used to create the profile
                             profile.account = _.find(stackdio.stores.Accounts(), function (account) {
                                 return account.id === profile.cloud_provider;
                             });
@@ -43,46 +43,52 @@ $(document).ready(function () {
                 return deferred.promise;
             },
             save: function (record) {
+                var deferred = Q.defer();
+
                 $.ajax({
                     url: '/api/profiles/',
                     type: 'POST',
                     data: {
                         title: record.profile_title.value,
                         description: record.profile_description.value,
-                        cloud_provider: self.selectedAccount.id,
+                        cloud_provider: record.account.id,
                         image_id: record.image_id.value,
                         default_instance_size: record.default_instance_size.value,
                         ssh_user: record.ssh_user.value
                     },
                     headers: {
-                        "Authorization": "Basic " + Base64.encode('testuser:password'),
+                        "X-CSRFToken": stackdio.csrftoken,
                         "Accept": "application/json"
                     },
                     success: function (response) {
                         var i, item = response;
 
                         if (item.hasOwnProperty('id')) {
-                            self.profiles.push(item);
-                            $( "#profile-form-container" ).dialog("close");
+                            stackdio.stores.Profiles.push(item);
+                            deferred.resolve(item);
                         }
                     }
                 });
+
+                return deferred.promise;
             },
             delete: function (profile) {
-                console.log(profile);
-                return;
+                var deferred = Q.defer();
 
                 $.ajax({
                     url: '/api/profiles/' + profile.id,
                     type: 'DELETE',
                     headers: {
-                        "Authorization": "Basic " + Base64.encode('testuser:password'),
+                        "X-CSRFToken": stackdio.csrftoken,
                         "Accept": "application/json"
                     },
                     success: function (response) {
-                        self.profiles.remove(profile);
+                        stackdio.stores.Profiles.remove(profile);
+                        deferred.resolve(profile);
                     }
                 });
+                
+                return deferred.promise;
             }
         }
     })();
