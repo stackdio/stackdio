@@ -80,7 +80,7 @@ class StackListAPIView(generics.ListCreateAPIView):
             )
 
             # execute the chain
-            task_chain()
+            task_chain(link_error=tasks.handle_error.s(stack.id))
 
         # return serialized stack object
         serializer = StackSerializer(stack, context={

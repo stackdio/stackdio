@@ -329,18 +329,21 @@ class AWSCloudProvider(BaseCloudProvider):
         r53_domain.start_rr_transcation()
 
         # for each host, delete the CNAME record
+        finish = False
         for host in hosts:
+            if not host.provider_dns:
+                continue
             r53_domain.delete_rr_cname(host.hostname, 
                                        host.provider_dns,
                                        ttl=DEFAULT_ROUTE53_TTL)
+            finish = True
 
-        # Finish the transaction
-        r53_domain.finish_rr_transaction()
+        if finish:
+            # Finish the transaction
+            r53_domain.finish_rr_transaction()
 
         # update hosts to remove fqdn
-        for host in hosts:
-            host.fqdn = ''
-            host.save()
+        hosts.update(fqdn='')
 
     def register_volumes_for_delete(self, hosts):
         ec2 = self.connect_ec2()
@@ -348,6 +351,9 @@ class AWSCloudProvider(BaseCloudProvider):
         # for each host, modify the instance attribute to enable automatic
         # volume deletion automatically when the host is terminated
         for h in hosts:
+            if not h.instance_id:
+                continue
+
             # get current block device mappings
             _, devices = ec2.get_instance_attribute(h.instance_id,
                                                     'blockDeviceMapping').popitem()
