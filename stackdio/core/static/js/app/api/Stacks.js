@@ -1,7 +1,4 @@
-$(document).ready(function () {
-    stackdio.api.Stacks = (function () {
-        var self = this;
-
+define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
         return {
             load : function () {
                 var deferred = Q.defer();
@@ -10,7 +7,7 @@ $(document).ready(function () {
                     url: '/api/stacks/',
                     type: 'GET',
                     headers: {
-                        "Authorization": "Basic " + Base64.encode('testuser:password'),
+                        "X-CSRFToken": stackdio.csrftoken,
                         "Accept": "application/json"
                     },
                     success: function (response) {
@@ -19,19 +16,19 @@ $(document).ready(function () {
 
 
                         // Clear the store and the grid
-                        stackdio.stores.Stacks.removeAll();
+                        stores.Stacks.removeAll();
 
                         for (i in items) {
-                            stack = new stackdio.models.Stack().create(items[i]);
+                            stack = new models.Stack().create(items[i]);
 
                             // Inject the record into the store
-                            stackdio.stores.Stacks.push(stack);
+                            stores.Stacks.push(stack);
                         }
 
-                        console.log('stacks', stackdio.stores.Stacks());
+                        console.log('stacks', stores.Stacks());
 
                         // Resolve the promise and pass back the loaded stacks
-                        deferred.resolve(stackdio.stores.Stacks());
+                        deferred.resolve(stores.Stacks());
 
                     }
                 });
@@ -48,7 +45,7 @@ $(document).ready(function () {
                     type: 'POST',
                     data: stack,
                     headers: {
-                        "Authorization": "Basic " + Base64.encode('testuser:password'),
+                        "X-CSRFToken": stackdio.csrftoken,
                         "Accept": "application/json"
                     },
                     success: function (response) {
@@ -63,5 +60,4 @@ $(document).ready(function () {
 
             }
         }
-    })();
 });

@@ -1,7 +1,4 @@
-$(document).ready(function () {
-    stackdio.api.ProviderTypes = (function () {
-        var self = this;
-
+define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
         return {
             load : function () {
                 var deferred = Q.defer();
@@ -10,7 +7,7 @@ $(document).ready(function () {
                     url: '/api/provider_types/',
                     type: 'GET',
                     headers: {
-                        "Authorization": "Basic " + Base64.encode('testuser:password'),
+                        "X-CSRFToken": stackdio.csrftoken,
                         "Accept": "application/json"
                     },
                     success: function (response) {
@@ -18,19 +15,19 @@ $(document).ready(function () {
                         var type;
 
                         // Clear the store and the grid
-                        stackdio.stores.ProviderTypes.removeAll();
+                        stores.ProviderTypes.removeAll();
 
                         for (i in items) {
-                            type = new stackdio.models.ProviderType().create(items[i]);
+                            type = new models.ProviderType().create(items[i]);
 
                             // Inject the record into the store
-                            stackdio.stores.ProviderTypes.push(type);
+                            stores.ProviderTypes.push(type);
                         }
 
-                        console.log('types', stackdio.stores.ProviderTypes());
+                        console.log('types', stores.ProviderTypes());
 
                         // Resolve the promise and pass back the loaded items
-                        deferred.resolve(stackdio.stores.ProviderTypes());
+                        deferred.resolve(stores.ProviderTypes());
                     }
                 });
 
@@ -43,5 +40,4 @@ $(document).ready(function () {
 
             }
         }
-    })();
 });

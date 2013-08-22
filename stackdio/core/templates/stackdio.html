@@ -10,8 +10,6 @@
     <link href="{% static 'css/jquery.dataTables.css' %}" rel="stylesheet">
     <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">
-
-
 </head>
 
 <body>
@@ -73,7 +71,7 @@
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Stack <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.Accounts">
+                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showStackForm"></a>
                     </li>
@@ -90,7 +88,7 @@
                         <th style="width:50px"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: stackdio.stores.Stacks">
+                <tbody data-bind="foreach: stores.Stacks">
                     <tr>
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
@@ -126,7 +124,7 @@
                 <div class="control-group">
                     <label class="control-label" for="volume_snapshot">Snapshot</label>
                     <div class="controls">
-                        <select id="volume_snapshot" data-bind="options: stackdio.stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
+                        <select id="volume_snapshot" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
                     </div>
                 </div>
 
@@ -175,7 +173,7 @@
                         <label class="control-label" for="host_instance_size">Instance size</label>
                         <div class="controls">
                             <select id="host_instance_size" 
-                                    data-bind="options: stackdio.stores.InstanceSizes, optionsValue: 'id', optionsText: 'title'" 
+                                    data-bind="options: stores.InstanceSizes, optionsValue: 'id', optionsText: 'title'" 
                                     placeholder="Instance size" 
                                     class="input-xlarge"></select>
                         </div>
@@ -200,7 +198,7 @@
                         <div class="controls">
                             <select id="host_roles" 
                                     multiple="multiple" 
-                                    data-bind="options: stackdio.stores.Roles, 
+                                    data-bind="options: stores.Roles, 
                                     optionsValue: 'id', 
                                     optionsText: 'title'" 
                                     class="input-xlarge"></select>
@@ -220,7 +218,7 @@
                                         <th style="width:50px;"></th>
                                     </tr>
                                 </thead>
-                                <tbody data-bind="foreach: stackdio.stores.NewHostVolumes">
+                                <tbody data-bind="foreach: stores.NewHostVolumes">
                                     <tr>
                                         <td data-bind="text: snapshot.title"></td>
                                         <td data-bind="text: mount_point"></td>
@@ -256,7 +254,7 @@
          -->
         <div id="stack-form-container" title="Stack Details">
 
-            <div class="modal-body">
+            <div class="modal-body" style="min-height: 330px;">
 
                 <div class="controls controls-row">
                     <input class="span5" id="stack_title" type="text" placeholder="Stack title">
@@ -269,7 +267,7 @@
                             <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                                 Add Host <span class="caret"></span>
                             </a>
-                            <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.Profiles">
+                            <ul class="dropdown-menu" data-bind="foreach: stores.Profiles">
                                 <li>
                                     <a href="#" data-bind="text: title, click: $root.showHostForm"></a>
                                 </li>
@@ -288,7 +286,7 @@
                                 <th style="width:50px;"></th>
                             </tr>
                         </thead>
-                        <tbody data-bind="foreach: stackdio.stores.NewHosts">
+                        <tbody data-bind="foreach: stores.NewHosts">
                             <tr>
                                 <td data-bind="text: id"></td>
                                 <td data-bind="html: flat_roles"></td>
@@ -326,7 +324,7 @@
                     New Snapshot
                     <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.Accounts">
+                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showSnapshotForm"></a>
                     </li>
@@ -345,7 +343,7 @@
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: stackdio.stores.Snapshots">
+                <tbody data-bind="foreach: stores.Snapshots">
                     <tr>
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
@@ -410,7 +408,7 @@
                     New Account
                     <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.ProviderTypes">
+                <ul class="dropdown-menu" data-bind="foreach: stores.ProviderTypes">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showAccountForm"></a>
                     </li>
@@ -426,7 +424,7 @@
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: stackdio.stores.Accounts">
+                <tbody data-bind="foreach: stores.Accounts">
                     <tr>
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
@@ -511,7 +509,7 @@
                     New Profile
                     <span class="caret"></span>
                 </a>
-                <ul class="dropdown-menu" data-bind="foreach: stackdio.stores.Accounts">
+                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
                     <li>
                         <a href="#" data-bind="text: title, click: $root.showProfileForm"></a>
                     </li>
@@ -528,7 +526,7 @@
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: stackdio.stores.Profiles">
+                <tbody data-bind="foreach: stores.Profiles">
                     <tr>
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
@@ -565,7 +563,7 @@
 
                 <div class="span2">Default Instance Size</div>
                 <div class="span4 no-margin">
-                    <select id="default_instance_size" data-bind="options: stackdio.stores.InstanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" class="stretch-full"></select>
+                    <select id="default_instance_size" data-bind="options: stores.InstanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" class="stretch-full"></select>
                 </div>
 
                 <div class="span2">SSH User</div>
@@ -582,51 +580,7 @@
         </div>
     </div>
 
+    <script data-main="{% static 'js/app' %}" src="{% static 'js/require.js' %}"></script>
 
-
-    <script src="{% static 'js/jquery.js' %}"></script>
-    <script src="{% static 'js/jquery-ui-1.10.3.custom.min.js' %}"></script>
-    <script src="{% static 'js/jquery.dataTables.min.js' %}"></script>
-
-    <script src="{% static 'js/base64.js' %}"></script>
-    <script src="{% static 'js/underscore_1.5.1.js' %}"></script>
-    <script src="{% static 'js/q.min.js' %}"></script>
-    <script src="{% static 'js/sammy.js' %}"></script>
-    <script src="{% static 'js/knockout.js' %}"></script>
-    <script src="{% static 'js/bootstrap.min.js' %}"></script>
-
-
-    <script src="{% static 'js/app/app.js' %}"></script>
-    <script src="{% static 'js/app/models.js' %}"></script>
-    <script src="{% static 'js/app/stores.js' %}"></script>
-    <script src="{% static 'js/app/api/Snapshots.js' %}"></script>
-    <script src="{% static 'js/app/api/Roles.js' %}"></script>
-    <script src="{% static 'js/app/api/ProviderTypes.js' %}"></script>
-    <script src="{% static 'js/app/api/Stacks.js' %}"></script>
-    <script src="{% static 'js/app/api/InstanceSizes.js' %}"></script>
-    <script src="{% static 'js/app/api/Accounts.js' %}"></script>
-    <script src="{% static 'js/app/api/Profiles.js' %}"></script>
-    <script src="{% static 'js/app/stackdio.js' %}"></script>
-
-
-    <script>
-    // using jQuery
-    var getCookie = function (name) {
-        var cookieValue = null;
-        if (document.cookie && document.cookie != '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = jQuery.trim(cookies[i]);
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    stackdio.csrftoken = getCookie('csrftoken');
-    </script>
 </body>
 </html>

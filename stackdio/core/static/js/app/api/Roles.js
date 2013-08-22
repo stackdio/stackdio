@@ -1,7 +1,4 @@
-$(document).ready(function () {
-    stackdio.api.Roles = (function () {
-        var self = this;
-
+define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
         return {
             load : function () {
                 var deferred = Q.defer();
@@ -10,7 +7,7 @@ $(document).ready(function () {
                     url: '/api/roles/',
                     type: 'GET',
                     headers: {
-                        "Authorization": "Basic " + Base64.encode('testuser:password'),
+                        "X-CSRFToken": stackdio.csrftoken,
                         "Accept": "application/json"
                     },
                     success: function (response) {
@@ -18,19 +15,19 @@ $(document).ready(function () {
                         var role;
 
                         // Clear the store and the grid
-                        stackdio.stores.Roles.removeAll();
+                        stores.Roles.removeAll();
 
                         for (i in items) {
-                            role = new stackdio.models.Role().create(items[i]);
+                            role = new models.Role().create(items[i]);
 
                             // Inject the record into the store
-                            stackdio.stores.Roles.push(role);
+                            stores.Roles.push(role);
                         }
 
-                        console.log('roles', stackdio.stores.Roles());
+                        console.log('roles', stores.Roles());
 
                         // Resolve the promise and pass back the loaded items
-                        deferred.resolve(stackdio.stores.Roles());
+                        deferred.resolve(stores.Roles());
                     }
                 });
 
@@ -43,5 +40,4 @@ $(document).ready(function () {
 
             }
         }
-    })();
 });

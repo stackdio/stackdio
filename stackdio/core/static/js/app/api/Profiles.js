@@ -1,6 +1,4 @@
-$(document).ready(function () {
-    stackdio.api.Profiles = (function () {
-        var self = this;
+define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
 
         return {
             load : function () {
@@ -10,7 +8,7 @@ $(document).ready(function () {
                     url: '/api/profiles/',
                     type: 'GET',
                     headers: {
-                        "Authorization": "Basic " + Base64.encode('testuser:password'),
+                        "X-CSRFToken": stackdio.csrftoken,
                         "Accept": "application/json"
                     },
                     success: function (response) {
@@ -18,24 +16,24 @@ $(document).ready(function () {
                         var profile;
 
                         // Clear the store and the grid
-                        stackdio.stores.Profiles.removeAll();
+                        stores.Profiles.removeAll();
 
                         for (i in items) {
-                            profile = new stackdio.models.Profile().create(items[i]);
+                            profile = new models.Profile().create(items[i]);
 
                             // Inject the name of the provider account used to create the profile
-                            profile.account = _.find(stackdio.stores.Accounts(), function (account) {
+                            profile.account = _.find(stores.Accounts(), function (account) {
                                 return account.id === profile.cloud_provider;
                             });
 
                             // Inject the record into the store
-                            stackdio.stores.Profiles.push(profile);
+                            stores.Profiles.push(profile);
                         }
 
-                        console.log('profiles', stackdio.stores.Profiles());
+                        console.log('profiles', stores.Profiles());
 
                         // Resolve the promise and pass back the loaded items
-                        deferred.resolve(stackdio.stores.Profiles());
+                        deferred.resolve(stores.Profiles());
 
                     }
                 });
@@ -64,7 +62,7 @@ $(document).ready(function () {
                         var i, item = response;
 
                         if (item.hasOwnProperty('id')) {
-                            stackdio.stores.Profiles.push(item);
+                            stores.Profiles.push(item);
                             deferred.resolve(item);
                         }
                     }
@@ -83,13 +81,12 @@ $(document).ready(function () {
                         "Accept": "application/json"
                     },
                     success: function (response) {
-                        stackdio.stores.Profiles.remove(profile);
+                        stores.Profiles.remove(profile);
                         deferred.resolve(profile);
                     }
                 });
-                
+
                 return deferred.promise;
             }
         }
-    })();
 });

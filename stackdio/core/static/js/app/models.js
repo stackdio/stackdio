@@ -1,38 +1,51 @@
+define(function () {
 
-stackdio.models.Model = function () {};
-stackdio.models.Model.prototype.create = function (record) {
-    var self = this;
-    for (k in record) { self[k] = record[k]; }
-    return self;
-};
+    var Model = function () {};
+    Model.prototype.create = function (record) {
+        var self = this;
+        for (k in record) { self[k] = record[k]; }
+        return self;
+    };
 
-stackdio.models.Stack = function () {};
-stackdio.models.Stack.prototype = new stackdio.models.Model();
+    var Stack = function () {};
+    Stack.prototype = new Model();
 
-stackdio.models.ProviderType = function () {};
-stackdio.models.ProviderType.prototype = new stackdio.models.Model();
+    var ProviderType = function () {};
+    ProviderType.prototype = new Model();
 
-stackdio.models.Account = function () {};
-stackdio.models.Account.prototype = new stackdio.models.Model();
+    var Account = function () {};
+    Account.prototype = new Model();
 
-stackdio.models.Profile = function () {};
-stackdio.models.Profile.prototype = new stackdio.models.Model();
+    var Profile = function () {};
+    Profile.prototype = new Model();
 
-stackdio.models.InstanceSize = function () {};
-stackdio.models.InstanceSize.prototype = new stackdio.models.Model();
+    var InstanceSize = function () {};
+    InstanceSize.prototype = new Model();
 
-stackdio.models.Snapshot = function () {};
-stackdio.models.Snapshot.prototype = new stackdio.models.Model();
+    var Snapshot = function () {};
+    Snapshot.prototype = new Model();
 
-stackdio.models.NewHost = function () {};
-stackdio.models.NewHost.prototype = new stackdio.models.Model();
+    var NewHost = function () {};
+    NewHost.prototype = new Model();
 
-stackdio.models.NewHostVolume = function () {};
-stackdio.models.NewHostVolume.prototype = new stackdio.models.Model();
+    var NewHostVolume = function () {};
+    NewHostVolume.prototype = new Model();
 
-stackdio.models.Role = function () {};
-stackdio.models.Role.prototype = new stackdio.models.Model();
+    var Role = function () {};
+    Role.prototype = new Model();
 
+    return {
+        Stack: Stack,
+        ProviderType: ProviderType,
+        Account: Account,
+        Profile: Profile,
+        InstanceSize: InstanceSize,
+        Snapshot: Snapshot,
+        NewHost: NewHost,
+        NewHostVolume: NewHostVolume,
+        Role: Role
+    }
+});
 
 
 // var ProviderType = function (id, url, type_name, title) {

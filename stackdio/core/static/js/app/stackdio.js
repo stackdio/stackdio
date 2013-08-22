@@ -1,106 +1,5 @@
-$(document).ready(function () {
-
-    /*
-     *  ==================================================================================
-     *  D A T A   T A B L E   E L E M E N T S
-     *  ==================================================================================
-     */
-    $('#snapshots').dataTable({
-        "bPaginate": false,
-        "bLengthChange": false,
-        "bFilter": true,
-        "bSort": false,
-        "bInfo": false,
-        "bAutoWidth": true,
-        "bFilter": false
-    });
-
-    $('#stacks').dataTable({
-        "bPaginate": false,
-        "bLengthChange": false,
-        "bFilter": true,
-        "bSort": false,
-        "bInfo": false,
-        "bAutoWidth": true,
-        "bFilter": false
-    });
-
-    $('#accounts').dataTable({
-        "bPaginate": false,
-        "bLengthChange": false,
-        "bFilter": true,
-        "bSort": false,
-        "bInfo": false,
-        "bAutoWidth": true,
-        "bFilter": false
-    });
-
-    $('#stack-hosts').dataTable({
-        "bPaginate": false,
-        "bLengthChange": false,
-        "bFilter": true,
-        "bSort": false,
-        "bInfo": false,
-        "bAutoWidth": true,
-        "bFilter": false
-    });
-
-    $('#profiles').dataTable({
-        "bPaginate": false,
-        "bLengthChange": false,
-        "bFilter": true,
-        "bSort": false,
-        "bInfo": false,
-        "bAutoWidth": true,
-        "bFilter": false
-    });
-
-
-    /*
-     *  ==================================================================================
-     *  D I A L O G   E L E M E N T S
-     *  ==================================================================================
-     */
-    $( "#stack-form-container" ).dialog({
-        autoOpen: false,
-        width: window.innerWidth - 225,
-        height: 400,
-        position: [200,50],
-        modal: false
-    });
-
-    $( "#snapshot-form-container" ).dialog({
-        autoOpen: false,
-        width: 650,
-        modal: false
-    });
-
-    $( "#accounts-form-container" ).dialog({
-        autoOpen: false,
-        width: 650,
-        modal: false
-    });
-
-    $( "#host-form-container" ).dialog({
-        position: [(window.innerWidth / 2) - 275,50],
-        autoOpen: false,
-        width: 550,
-        modal: true
-    });
-
-    $( "#volume-form-container" ).dialog({
-        position: [(window.innerWidth / 2) - 250,50],
-        autoOpen: false,
-        width: 500,
-        modal: true
-    });
-
-    $( "#profile-form-container" ).dialog({
-        autoOpen: false,
-        width: 650,
-        modal: false
-    });
-
+define(["knockout", "sammy", "app/models", "app/stores", "app/api/api"], 
+    function (ko, sammy, models, stores, API) {
 
 
 
@@ -114,29 +13,25 @@ $(document).ready(function () {
     function stackdioModel() {
         var self = this;
 
+        self.stores = stores;
+        self.models = models;
+        self.API = API;
+
         self.showVolumes = ko.observable(false);
         self.sections = ['Stacks', 'Accounts', 'Profiles', 'Snapshots'];
         self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch'];
         self.currentSection = ko.observable();
 
-        /*
-         *  ==================================================================================
-         *  C O L L E C T I O N S
-         *  ==================================================================================
-         */
-        self.roles = ko.observableArray([]);
-        self.launchedHosts = ko.observableArray([]);
-        self.instanceSizes = ko.observableArray([]);
-
-        self.providerTypes = ko.observableArray([]);
         self.selectedProviderType = null;
+        self.selectedProfile = null;
+        self.selectedAccount = null;
 
 
         //
         //      S T A C K S
         //
         self.saveStack = function (autoLaunch) {
-            var h, host, hosts = stackdio.stores.NewHosts();
+            var h, host, hosts = stores.NewHosts();
 
             var stack = {
                 cloud_provider: self.selectedAccount.id,
@@ -158,9 +53,9 @@ $(document).ready(function () {
                 });
             }
 
-            stackdio.api.Stacks.save(stack)
+            API.Stacks.save(stack)
                 .then(function () {
-                    stackdio.stores.NewHosts.removeAll();
+                    stores.NewHosts.removeAll();
 
                     // Clear the stack form
                     $('#stack_title').val('');
@@ -168,6 +63,8 @@ $(document).ready(function () {
 
                     // Hide the stack form
                     $( "#stack-form-container" ).dialog("close");
+
+                    $("#alert-success").show();
                 });
         }
         self.launchStack = function (model, evt) {
@@ -178,27 +75,19 @@ $(document).ready(function () {
         // 
         //      P R O F I L E S
         // 
-        self.selectedProfile = null;
         self.addProfile = function (model, evt) {
             var profile = self.collectFormFields(evt.target.form);
             profile.account = self.selectedAccount;
-            stackdio.api.Profiles.save(profile)
+            API.Profiles.save(profile)
                 .then(function () {
                     $("#profile-form-container").dialog("close");
-                    $("#alert-success").show();
-                    setTimeout('$("#alert-success").hide()', 3000);
+                    self.showSuccess();
                 });
         };
         self.deleteProfile = function (profile) {
-            stackdio.api.Profiles.delete(profile)
-                .then(function () {
-                    $("#alert-success").show();
-                    setTimeout('$("#alert-success").hide()', 3000);
-                });
+            API.Profiles.delete(profile)
+                .then(self.showSuccess);
         };
-
-        $("#alert-error").alert();
-        $("#alert-success").alert();
 
         self.closeError = function () {
             $("#alert-error").hide();
@@ -211,27 +100,22 @@ $(document).ready(function () {
         // 
         //      A C C O U N T S
         // 
-        self.selectedAccount = null;
         self.addAccount = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
             record.providerType = self.selectedProviderType;
 
-            stackdio.api.Accounts.save(record)
+            API.Accounts.save(record)
                 .then(function () {
                     $("#accounts-form-container").dialog("close");
-                    $("#alert-success").show();
-                    setTimeout('$("#alert-success").hide()', 3000);
+                    self.showSuccess();
                 })
                 .catch(function (error) {
                     $("#alert-error").show();
                 })
         };
         self.removeAccount = function (account) {
-            stackdio.api.Accounts.delete(account)
-                .then(function () {
-                    $("#alert-success").show();
-                    setTimeout('$("#alert-success").hide()', 3000);
-                })
+            API.Accounts.delete(account)
+                .then(self.showSuccess)
                 .catch(function (error) {
                     $("#alert-error").show();
                 }).done();
@@ -243,48 +127,15 @@ $(document).ready(function () {
         // 
         self.addSnapshot = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
-
-            $.ajax({
-                url: '/api/snapshots/',
-                type: 'POST',
-                data: {
-                    title: record.snapshot_title.value,
-                    description: record.snapshot_description.value,
-                    cloud_provider: self.selectedAccount.id,
-                    size_in_gb: record.snapshot_size.value,
-                    snapshot_id: record.snapshot_id.value
-                },
-                headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    // Create new snapshot
-                    var snapshot = new Snapshot(
-                            response.id,
-                            response.url,
-                            response.title,
-                            response.description,
-                            response.cloud_provider,
-                            response.size_in_gb,
-                            response.snapshot_id
-                        );
-
-                    // Inject account name
-                    snapshot.account_name = _.find(self.accounts(), function (account) {
-                        return account.id === response.cloud_provider;
-                    }).title;
-
-                    // Add to observable collection
-                    self.snapshots.push(snapshot);
-
-                    // Close dialog
-                    $( "#snapshot-form-container" ).dialog("close");
-                }
-            });
+            record.account = self.selectedAccount;
+            API.Snapshots.save(record);
         };
         self.removeSnapshot = function (snapshot) {
-            self.snapshots.remove(snapshot);
+            API.Snapshots.delete(snapshot)
+                .then(self.showSuccess)
+                .catch(function (error) {
+                    $("#alert-error").show();
+                });
         };
 
 
@@ -300,7 +151,7 @@ $(document).ready(function () {
                 return s.id === parseInt(record.volume_snapshot.value, 10);
             });
 
-            self.newHostVolumes.push(volume);
+            stores.NewHostVolumes.push(volume);
         };
         self.removeHostVolume = function (volume) {
             self.newHostVolumes.remove(volume);
@@ -313,7 +164,7 @@ $(document).ready(function () {
         self.addHost = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
 
-            var host = new stackdio.models.NewHost().create({ 
+            var host = new models.NewHost().create({ 
                 id: '',
                 count: record.host_count.value,
                 cloud_profile: self.selectedProfile.id,
@@ -323,7 +174,7 @@ $(document).ready(function () {
                 security_groups: record.host_security_groups.value
             });
 
-            host.size = _.find(stackdio.stores.InstanceSizes(), function (i) {
+            host.size = _.find(stores.InstanceSizes(), function (i) {
                 return i.id === parseInt(record.host_instance_size.value, 10);
             });
 
@@ -331,11 +182,11 @@ $(document).ready(function () {
                 return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
             }).join('');
 
-            stackdio.stores.NewHosts.push(host);
+            stores.NewHosts.push(host);
         };
 
         self.removeHost = function (host) {
-            stackdio.stores.NewHosts.remove(host);
+            stores.NewHosts.remove(host);
         };
 
 
@@ -344,6 +195,11 @@ $(document).ready(function () {
          *  M E T H O D S
          *  ==================================================================================
          */
+
+        self.showSuccess = function () {
+            $("#alert-success").show();
+            setTimeout('$("#alert-success").hide()', 3000);
+        };
 
         self.doStackAction = function (action, evt, stack) {
             var data = JSON.stringify({
@@ -478,21 +334,21 @@ $(document).ready(function () {
         };
 
 
-        stackdio.api.InstanceSizes.load();
-        stackdio.api.Roles.load();
+        API.InstanceSizes.load();
+        API.Roles.load();
 
-        stackdio.api.ProviderTypes.load()
-            .then(stackdio.api.Accounts.load)
-            .then(stackdio.api.Profiles.load)
-            .then(stackdio.api.Snapshots.load)
-            .then(stackdio.api.Stacks.load);
+        API.ProviderTypes.load()
+            .then(API.Accounts.load)
+            .then(API.Profiles.load)
+            .then(API.Snapshots.load)
+            .then(API.Stacks.load);
 
         /*
          *  ==================================================================================
          *  N A V I G A T I O N   H A N D L E R
          *  ==================================================================================
          */
-        $.sammy(function() {
+        sammy(function() {
             this.get('#:section', function () {
                 self.currentSection(this.params.section);
                     
@@ -518,11 +374,79 @@ $(document).ready(function () {
 
             this.get('', function() { this.app.runRoute('get', '#Stacks') });
         }).run();
-
-
     };
+
+    /*
+     *  ==================================================================================
+     *  D I A L O G   E L E M E N T S
+     *  ==================================================================================
+     */
+    $("#stack-form-container").dialog({autoOpen: false, width: window.innerWidth - 225, height: 500, position: [200,50], modal: false });
+    $("#snapshot-form-container").dialog({autoOpen: false, width: 650, modal: false });
+    $("#accounts-form-container").dialog({autoOpen: false, width: 650, modal: false });
+    $("#host-form-container").dialog({position: [(window.innerWidth / 2) - 275,50], autoOpen: false, width: 550, modal: true });
+    $("#volume-form-container").dialog({position: [(window.innerWidth / 2) - 250,50], autoOpen: false, width: 500, modal: true });
+    $("#profile-form-container").dialog({autoOpen: false, width: 650, modal: false });
+
+
+    /*
+     *  ==================================================================================
+     *  D A T A   T A B L E   E L E M E N T S
+     *  ==================================================================================
+     */
+    $('#snapshots').dataTable({
+        "bPaginate": false,
+        "bLengthChange": false,
+        "bFilter": true,
+        "bSort": false,
+        "bInfo": false,
+        "bAutoWidth": true,
+        "bFilter": false
+    });
+
+    $('#stacks').dataTable({
+        "bPaginate": false,
+        "bLengthChange": false,
+        "bFilter": true,
+        "bSort": false,
+        "bInfo": false,
+        "bAutoWidth": true,
+        "bFilter": false
+    });
+
+    $('#accounts').dataTable({
+        "bPaginate": false,
+        "bLengthChange": false,
+        "bFilter": true,
+        "bSort": false,
+        "bInfo": false,
+        "bAutoWidth": true,
+        "bFilter": false
+    });
+
+    $('#stack-hosts').dataTable({
+        "bPaginate": false,
+        "bLengthChange": false,
+        "bFilter": true,
+        "bSort": false,
+        "bInfo": false,
+        "bAutoWidth": true,
+        "bFilter": false
+    });
+
+    $('#profiles').dataTable({
+        "bPaginate": false,
+        "bLengthChange": false,
+        "bFilter": true,
+        "bSort": false,
+        "bInfo": false,
+        "bAutoWidth": true,
+        "bFilter": false
+    });
+
 
     stackdio.mainModel = new stackdioModel();
     ko.applyBindings(stackdio.mainModel);
 
 });
+
