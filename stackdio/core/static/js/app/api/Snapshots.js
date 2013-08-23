@@ -39,6 +39,8 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
             return deferred.promise;
         },
         save: function (record) {
+            var deferred = Q.defer();
+
             $.ajax({
                 url: '/api/snapshots/',
                 type: 'POST',
@@ -55,28 +57,21 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
                 },
                 success: function (response) {
                     // Create new snapshot
-                    var snapshot = new models.Snapshot(
-                            response.id,
-                            response.url,
-                            response.title,
-                            response.description,
-                            response.cloud_provider,
-                            response.size_in_gb,
-                            response.snapshot_id
-                        );
+                    var snapshot = new models.Snapshot().create(response);
 
                     // Inject account name
-                    snapshot.account_name = _.find(stores.Accounts(), function (account) {
+                    snapshot.account = _.find(stores.Accounts(), function (account) {
                         return account.id === response.cloud_provider;
-                    }).title;
+                    });
 
                     // Add to observable collection
                     stores.Snapshots.push(snapshot);
 
-                    // Close dialog
-                    $( "#snapshot-form-container" ).dialog("close");
+                    deferred.resolve(snapshot);
                 }
             });
+
+            return deferred.promise;
         },
         delete: function (snapshot) {
             var deferred = Q.defer();

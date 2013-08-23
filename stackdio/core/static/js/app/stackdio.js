@@ -1,5 +1,5 @@
-define(["knockout", "sammy", "app/models", "app/stores", "app/api/api"], 
-    function (ko, sammy, models, stores, API) {
+define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/models", "app/stores", "app/api/api"], 
+    function (ko, sammy, datatables, jUI, settings, models, stores, API) {
 
 
 
@@ -128,7 +128,15 @@ define(["knockout", "sammy", "app/models", "app/stores", "app/api/api"],
         self.addSnapshot = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
             record.account = self.selectedAccount;
-            API.Snapshots.save(record);
+            console.log(record);
+            API.Snapshots.save(record)
+                .then(function () {
+                    $("#snapshot-form-container").dialog("close");
+                    self.showSuccess();
+                })
+                .catch(function (error) {
+                    $("#alert-error").show();
+                });
         };
         self.removeSnapshot = function (snapshot) {
             API.Snapshots.delete(snapshot)
@@ -279,9 +287,18 @@ define(["knockout", "sammy", "app/models", "app/stores", "app/api/api"],
             $( "#profile-form-container" ).dialog("open");
         }
 
+        self.closeProfileForm = function () {
+            $( "#profile-form-container" ).dialog("close");
+        }
+
         self.showSnapshotForm = function (account) {
             self.selectedAccount = account;
             $( "#snapshot-form-container" ).dialog("open");
+        }
+
+        self.closeSnapshotForm = function () {
+            self.selectedAccount = account;
+            $( "#snapshot-form-container" ).dialog("close");
         }
 
         self.showAccountForm = function (type) {

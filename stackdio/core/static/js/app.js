@@ -22,32 +22,6 @@ requirejs.config({
 
 });
 
-require(["sammy"], function() { });
-require(["underscore"], function() { });
-require(["bootstrap"], function() { });
-require(["datatables"], function() { });
-require(["jquery-ui"], function() { });
+require(["bootstrap"], function () { });
+require(["underscore"], function () { });
 require(["app/stackdio"], function () { });
-
-
-        
-// Start the main app logic.
-requirejs(['jquery'],
-    function   () {
-        var getCookie = function (name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie != '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = $.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-        stackdio.csrftoken = getCookie('csrftoken');
-});
