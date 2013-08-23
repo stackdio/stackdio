@@ -233,7 +233,7 @@ define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/mod
                 },
                 success: function (response) {
                     console.log(response);
-                    self.loadStacks();
+                    API.Stacks.load();
                 }
             });
         };

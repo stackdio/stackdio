@@ -14,7 +14,6 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
                     var i, item, items = response.results;
                     var stack;
 
-
                     // Clear the store and the grid
                     stores.Stacks.removeAll();
 
