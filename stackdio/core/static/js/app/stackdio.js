@@ -227,7 +227,7 @@ define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/mod
                 type: 'PUT',
                 data: data,
                 headers: {
-                    "Authorization": "Basic " + Base64.encode('testuser:password'),
+                    "X-CSRFToken": stackdio.csrftoken,
                     "Accept": "application/json",
                     "Content-Type": "application/json"
                 },
