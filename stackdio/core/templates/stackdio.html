@@ -90,10 +90,10 @@
                 </thead>
                 <tbody data-bind="foreach: stores.Stacks">
                     <tr>
-                        <td data-bind="text: id"></td>
-                        <td data-bind="text: title"></td>
-                        <td data-bind="text: description"></td>
-                        <td data-bind="text: status"></td>
+                        <td data-bind="text: $data.id"></td>
+                        <td data-bind="text: $data.title"></td>
+                        <td data-bind="text: $data.description"></td>
+                        <td><a href='#' data-bind="bootstrapPopover : {content : $data.status_detail  }, text: $data.status"></a></td>
                         <td>
                             <div class="btn-group pull-right">
                                 <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">

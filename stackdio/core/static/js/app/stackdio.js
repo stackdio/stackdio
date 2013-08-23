@@ -1,7 +1,15 @@
 define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/models", "app/stores", "app/api/api"], 
     function (ko, sammy, datatables, jUI, settings, models, stores, API) {
 
-
+    ko.bindingHandlers.bootstrapPopover = {
+        init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+            var options = valueAccessor();
+            var defaultOptions = {};
+            options = $.extend(true, {}, defaultOptions, options);
+            options.trigger = "hover";
+            $(element).popover(options);
+        }
+    };
 
     /*
      *  **********************************************************************************
