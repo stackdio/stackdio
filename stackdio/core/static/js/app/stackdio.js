@@ -43,7 +43,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
                 host = hosts[h];
                 stack.hosts.push({
                      host_count: host.count
-                    ,host_size: host.instance_size.id
+                    ,host_size: host.instance_size
                     ,host_pattern: host.hostname
                     ,cloud_profile: self.selectedProfile.id
                     ,salt_roles: _.map(host.roles, function (r) { return r.value; })
@@ -192,6 +192,8 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             host.flat_roles = _.map(host.roles, function (r) { 
                 return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
             }).join('');
+
+            console.log('new host', host);
 
             stores.NewHosts.push(host);
         };
@@ -361,17 +363,17 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
          */
         self.gotoSection = function (section) {
 
-            // Force user to create a profile if none exist
-            if (section !== "Profiles" && stores.Profiles().length === 0) {
-                self.currentSection("Profiles")
-                self.showMessage("#alert-no-profiles");
-                return;
-            }
-
             // Force user to create a account if none exist
             if (section !== "Accounts" && stores.Accounts().length === 0) {
                 self.currentSection("Accounts")
                 self.showMessage("#alert-no-accounts");
+                return;
+            }
+
+            // Force user to create a profile if none exist
+            if (section !== "Profiles" && section !== "Accounts" && stores.Profiles().length === 0) {
+                self.currentSection("Profiles")
+                self.showMessage("#alert-no-profiles");
                 return;
             }
 

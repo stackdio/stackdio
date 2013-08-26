@@ -50,7 +50,7 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
             }
 
             // Open the connection to the provider URI and set authorization header
-            xhr.open('POST', '/api/providers1/');
+            xhr.open('POST', '/api/providers/');
             xhr.setRequestHeader('X-CSRFToken', stackdio.csrftoken);
             xhr.setRequestHeader('Accept', 'application/json');
 
