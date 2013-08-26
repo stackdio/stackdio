@@ -1,15 +1,5 @@
-define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/models", "app/stores", "app/api/api"], 
-    function (ko, sammy, datatables, jUI, settings, models, stores, API) {
-
-    ko.bindingHandlers.bootstrapPopover = {
-        init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-            var options = valueAccessor();
-            var defaultOptions = {};
-            options = $.extend(true, {}, defaultOptions, options);
-            options.trigger = "hover";
-            $(element).popover(options);
-        }
-    };
+define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "app/stores", "app/api/api"], 
+    function (ko, datatables, jUI, settings, models, stores, API) {
 
     /*
      *  **********************************************************************************
@@ -90,6 +80,11 @@ define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/mod
                 .then(function () {
                     $("#profile-form-container").dialog("close");
                     self.showSuccess();
+
+                    if (stores.Accounts().length > 0) {
+                        $("#alert-no-accounts").show();
+                        self.gotoSection("Accounts");
+                    }
                 });
         };
         self.deleteProfile = function (profile) {
@@ -215,6 +210,11 @@ define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/mod
         self.showSuccess = function () {
             $("#alert-success").show();
             setTimeout('$("#alert-success").hide()', 3000);
+        };
+
+        self.showMessage = function (id) {
+            $(id).show();
+            setTimeout('$("'+id+'").hide()', 3000);
         };
 
         self.doStackAction = function (action, evt, stack) {
@@ -345,11 +345,6 @@ define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/mod
             $( "#volume-form-container" ).dialog("close");
         }
 
-        self.gotoSection = function (section) { 
-            location.hash = section;
-            self.currentSection(section);
-        };
-
         self.profileSelected = function (profile) { 
             self.selectedProfile = profile;
         };
@@ -359,6 +354,37 @@ define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/mod
         };
 
 
+        /*
+         *  ==================================================================================
+         *  N A V I G A T I O N   H A N D L E R
+         *  ==================================================================================
+         */
+        self.gotoSection = function (section) {
+
+            // Force user to create a profile if none exist
+            if (section !== "Profiles" && stores.Profiles().length === 0) {
+                self.currentSection("Profiles")
+                self.showMessage("#alert-no-profiles");
+                return;
+            }
+
+            // Force user to create a account if none exist
+            if (section !== "Accounts" && stores.Accounts().length === 0) {
+                self.currentSection("Accounts")
+                self.showMessage("#alert-no-accounts");
+                return;
+            }
+
+            location.hash = section;
+            self.currentSection(section);
+        };
+
+
+        /*
+         *  ==================================================================================
+         *  L O A D I N G   D A T A . . .   I N   O R D E R 
+         *  ==================================================================================
+         */
         API.InstanceSizes.load();
         API.Roles.load();
 
@@ -366,40 +392,38 @@ define(["knockout", "sammy", "datatables", "jquery-ui", "app/settings", "app/mod
             .then(API.Accounts.load)
             .then(API.Profiles.load)
             .then(API.Snapshots.load)
-            .then(API.Stacks.load);
-
-        /*
-         *  ==================================================================================
-         *  N A V I G A T I O N   H A N D L E R
-         *  ==================================================================================
-         */
-        sammy(function() {
-            this.get('#:section', function () {
-                self.currentSection(this.params.section);
-                    
-                switch (this.params.section) {
-
-                    case 'Stacks':
-
-                        break;
-
-                    case 'Snapshots':
-
-                        break;
-
-                    case 'Profiles':
-
-                        break;
-
-                    case 'Accounts':
-
-                        break;
-                }
+            .then(API.Stacks.load)
+            .then(function () {
+                self.gotoSection("Stacks");
             });
-
-            this.get('', function() { this.app.runRoute('get', '#Stacks') });
-        }).run();
     };
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+     *  ==================================================================================
+     *  C U S T O M   B I N D I N G S
+     *  ==================================================================================
+     */
+    ko.bindingHandlers.bootstrapPopover = {
+        init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+            var options = valueAccessor();
+            var defaultOptions = {};
+            options = $.extend(true, {}, defaultOptions, options);
+            options.trigger = "hover";
+            $(element).popover(options);
+        }
+    };
+
 
     /*
      *  ==================================================================================

@@ -56,6 +56,16 @@
             <button type="button" class="close" data-bind="click: closeSuccess">&times;</button>
             <strong>Success!</strong> 
         </div>
+
+        <div id="alert-no-profiles" class="alert hide alert-warning">
+            <button type="button" class="close" data-bind="click: function () { $('#alert-no-profiles').hide(); }">&times;</button>
+            <strong>Warning!</strong> You do not have any profiles created yet. Please create one now.
+        </div>
+
+        <div id="alert-no-accounts" class="alert hide alert-warning">
+            <button type="button" class="close" data-bind="click: function () { $('#alert-no-accounts').hide(); }">&times;</button>
+            <strong>Warning!</strong> You do not have any accounts created yet. Please create one now.
+        </div>
     </div>
 
 
@@ -85,6 +95,7 @@
                         <th>Title</th>
                         <th>Description</th>
                         <th>Status</th>
+                        <th>History</th>
                         <th style="width:50px"></th>
                     </tr>
                 </thead>
@@ -94,6 +105,7 @@
                         <td data-bind="text: $data.title"></td>
                         <td data-bind="text: $data.description"></td>
                         <td><a href='#' data-bind="bootstrapPopover : {content : $data.status_detail  }, text: $data.status"></a></td>
+                        <td data-bind="text: $data.description"></td>
                         <td>
                             <div class="btn-group pull-right">
                                 <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
