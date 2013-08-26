@@ -422,9 +422,18 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             var defaultOptions = {};
             options = $.extend(true, {}, defaultOptions, options);
             options.trigger = "hover";
+            options.placement = "bottom";
+            options.html = true;
+            options.title = "Stack History";
             $(element).popover(options);
         }
     };
+
+
+
+
+
+
 
 
     /*
