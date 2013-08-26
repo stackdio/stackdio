@@ -37,13 +37,15 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
         save: function (stack) {
             var deferred = Q.defer();
 
-            stack.hosts = JSON.stringify(stack.hosts);
+            stack = JSON.stringify(stack);
 
             $.ajax({
                 url: '/api/stacks/',
                 type: 'POST',
                 data: stack,
+                dataType: 'json',
                 headers: {
+                    "Content-Type": "application/json",
                     "X-CSRFToken": stackdio.csrftoken,
                     "Accept": "application/json"
                 },
