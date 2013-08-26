@@ -20,12 +20,14 @@ from core.exceptions import (
 from . import tasks
 from .models import (
     Stack,
+    StackHistory,
     Host,
     SaltRole,
 )
 
 from .serializers import (
     StackSerializer, 
+    StackHistorySerializer, 
     HostSerializer, 
     SaltRoleSerializer,
 )
@@ -55,6 +57,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         '''
         # set some defaults
         launch_stack = request.DATA.get('auto_launch', True)
+        provision_stack = request.DATA.get('auto_provision', True)
 
         # check for duplicates
         title = request.DATA.get('title')
@@ -69,15 +72,25 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         if launch_stack:
             # Queue up stack creation and provisioning using Celery
-            task_chain = (
-                tasks.launch_hosts.si(stack.id) | 
-                tasks.update_metadata.si(stack.id) | 
-                tasks.tag_infrastructure.si(stack.id) | 
-                tasks.register_dns.si(stack.id) | 
-                tasks.sync_all.si(stack.id) | 
-                tasks.provision_hosts.si(stack.id) |
-                tasks.finish_stack.si(stack.id)
-            )
+            task_list = [
+                tasks.launch_hosts.si(stack.id),
+                tasks.update_metadata.si(stack.id),
+                tasks.tag_infrastructure.si(stack.id),
+                tasks.register_dns.si(stack.id),
+                tasks.sync_all.si(stack.id)
+            ]
+
+            # provisioning is optional (mainly useful for getting machines
+            # up so you can play with salt states)
+            if provision_stack:
+                task_list.append(tasks.provision_hosts.si(stack.id))
+
+            # always finish
+            task_list.append(tasks.finish_stack.si(stack.id))
+
+        if task_list:
+            logger.debug(task_list)
+            task_chain = reduce(or_, task_list)
 
             # execute the chain
             task_chain(link_error=tasks.handle_error.s(stack.id))
@@ -108,8 +121,6 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         msg = 'Stack will be removed upon successful termination ' \
               'of all machines'
         stack.set_status(Stack.DESTROYING, msg)
-        logger.debug(stack)
-        logger.debug(stack.status_detail)
 
         # Queue up stack destroy tasks
         task_chain = (
@@ -187,11 +198,17 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                  'in the either the running or stopped state '
                                  'first. At least one host is reporting an '
                                  'invalid state: %s' % host.state)
+            if action == driver.ACTION_PROVISION and \
+               host.state not in (driver.STATE_RUNNING,):
+                raise BadRequest('Provision action requires all hosts to be '
+                                 'in the running state first. At least one '
+                                 'host is reporting an '
+                                 'invalid state: %s' % host.state)
             
 
         # Kick off the celery task for the given action
         stack.set_status(Stack.EXECUTING_ACTION, 
-                         'Stack is executing action \'{}\''.format(action))
+                         'Stack is executing action \'{0}\''.format(action))
 
         # Keep track of the tasks we need to run for this execution
         task_list = []
@@ -213,10 +230,6 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         # Execute other actions
         else:
             task_list.append(tasks.execute_action.si(stack.id, action, *args))
-
-        # TODO: need a task that will wait for the action to finish as the actions
-        # on AWS are completely asynchronous (ie, we need to poll for the hosts to be
-        # in the same state -- either stopped, terminated, or running)
 
         # Update the metadata after the action has been executed
         task_list.append(tasks.update_metadata.si(stack.id))
@@ -248,6 +261,11 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         serializer = self.get_serializer(stack)
         return Response(serializer.data)
+
+
+class StackHistoryList(generics.ListAPIView):
+    model = StackHistory
+    serializer_class = StackHistorySerializer
 
 
 class HostListAPIView(generics.ListAPIView):

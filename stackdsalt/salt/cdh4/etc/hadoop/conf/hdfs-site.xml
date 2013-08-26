@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <configuration>
-    {% if 'cdh4.namenode' in grains['roles'] %}
+    {% if 'cdh4.hadoop.namenode' in grains['roles'] %}
     <property>
       <name>dfs.name.dir</name>
       <value>{{ pillar.cdh4.dfs.name_dir}}</value>
@@ -13,7 +13,7 @@
     </property>
     {% endif %}
 
-    {% if 'cdh4.datanode' in grains['roles'] %}
+    {% if 'cdh4.hadoop.datanode' in grains['roles'] %}
     <property>
       <name>dfs.data.dir</name>
       <value>{{ pillar.cdh4.dfs.data_dir }}</value>

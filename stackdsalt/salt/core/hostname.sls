@@ -6,22 +6,19 @@ set_hostname:
     - name: "hostname {{ grains['fqdn'] }}"
     - unless: "hostname | grep {{ grains['fqdn'] }}"
 
-# clean out old entries
-cleanup_etc_hosts:
-  file:
-    - sed
-    - order: 1
-    - name: /etc/hosts
-    - before: "^.* {{ grains['fqdn'] }}$"
-    - after: ''
-    - require:
-      - cmd: set_hostname
-
 # Add a mapping to FQDN from local IP address
-/etc/hosts:
+append_fqdn_etc_hosts:
   file:
     - append
-    - order: 1
+    - name: /etc/hosts
     - text: "{{ grains['ip_interfaces']['eth0'][0] }} {{ grains['fqdn'] }}"
+  require:
+    - cmd: set_hostname
+
+/etc/hostname:
+  file:
+    - sed
+    - before: "^.*$"
+    - after: "{{ grains['fqdn'] }}"
     - require:
-      - file: cleanup_etc_hosts
+      - cmd: set_hostname

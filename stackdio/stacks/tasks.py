@@ -7,10 +7,14 @@ import envoy
 import celery
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
+from django.utils.translation import ungettext
 
 from volumes.models import Volume
 
-from .models import Stack
+from .models import (
+    Stack,
+    Level,
+)
 
 logger = get_task_logger(__name__)
 
@@ -51,7 +55,9 @@ def launch_hosts(stack_id):
         # Use SaltCloud to launch machines using the given stack's
         # map_file that should already be generated
 
-        stack.set_status(Stack.LAUNCHING)
+        stack.set_status(
+            launch_hosts.name,
+            'Hosts are being launched. This could take a while.')
 
         # Set up logging for this launch
         root_dir = stack.get_root_directory()
@@ -105,21 +111,23 @@ def launch_hosts(stack_id):
                     result.std_err)
                 )
                 err_msg = result.std_err if result.std_err else result.std_out
-                stack.set_status(Stack.ERROR, err_msg)
+                stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error launching stack {0} with '
                                          'salt-cloud: {1!r}'.format(
                                             stack_id, 
-                                            err_msg)
-                                         )
+                                            err_msg))
+
+        stack.set_status(launch_hosts.name,
+                         'Finished launching hosts.')
     except Stack.DoesNotExist, e:
         err_msg = 'Unknown stack id {0}'.format(stack_id)
         logger.exception(err_msg)
         raise StackTaskException(err_msg)
     except Exception, e:
-        err_msg = 'Unhandled exception'
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(launch_hosts.name, err_msg, level.ERROR)
         logger.exception(err_msg)
-        stack.set_status(Stack.ERROR, str(e))
-        raise StackTaskException(err_msg)
+        raise
 
 @celery.task(name='stacks.update_metadata')
 def update_metadata(stack_id, host_ids=None):
@@ -133,9 +141,8 @@ def update_metadata(stack_id, host_ids=None):
         logger.info('Updating metadata for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(Stack.CONFIGURING, 
-                         'Updating host metadata from running stack '
-                         'machines.')
+        stack.set_status(update_metadata.name, 
+                         'Collecting host metadata from cloud provider.')
 
         # Use salt-cloud to look up host information we need now that
         # the machines are running
@@ -205,7 +212,7 @@ def update_metadata(stack_id, host_ids=None):
                               'metadata.'
                     logger.exception(err_msg)
                     logger.debug(block_device_mappings)
-                    raise StackTaskException(err_msg)
+                    raise
 
             # Update spot instance metadata
             if 'spotInstanceRequestId' in host_data:
@@ -228,9 +235,10 @@ def update_metadata(stack_id, host_ids=None):
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(update_metadata.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.tag_infrastructure')
 def tag_infrastructure(stack_id, host_ids=None):
@@ -249,8 +257,8 @@ def tag_infrastructure(stack_id, host_ids=None):
         logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(Stack.CONFIGURING, 
-                         'Tagging hosts and volumes for stack.')
+        stack.set_status(tag_infrastructure.name, 
+                         'Tagging stack infrastructure.')
 
         driver = stack.get_driver()
         volumes = Volume.objects.filter(host__in=hosts)
@@ -260,9 +268,10 @@ def tag_infrastructure(stack_id, host_ids=None):
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(tag_infrastructure.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.register_dns')
 def register_dns(stack_id, host_ids=None):
@@ -274,7 +283,8 @@ def register_dns(stack_id, host_ids=None):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Registering DNS for stack: {0!r}'.format(stack))
 
-        stack.set_status(Stack.CONFIGURING)
+        stack.set_status(register_dns.name, 
+                         'Registering hosts with DNS provider.')
 
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
@@ -285,9 +295,10 @@ def register_dns(stack_id, host_ids=None):
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(register_dns.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.sync_all')
 def sync_all(stack_id):
@@ -296,7 +307,8 @@ def sync_all(stack_id):
         logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(Stack.SYNCING)
+        stack.set_status(sync_all.name,
+                         'Synchronizing salt systems on all hosts.')
 
         # build up the command for salt
         cmd_args = [
@@ -319,7 +331,7 @@ def sync_all(stack_id):
             logger.debug('std_err = {}'.format(result.std_err))
 
             err_msg = result.std_err if result.std_err else result.std_out
-            stack.set_status(Stack.ERROR, err_msg)
+            stack.set_status(sync_all.name, err_msg, Level.ERROR)
             raise StackTaskException('Error syncing salt data on stack {0}: '
                                      '{1!r}'.format(
                                         stack_id, 
@@ -330,9 +342,10 @@ def sync_all(stack_id):
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(sync_all.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.provision_hosts')
 def provision_hosts(stack_id, host_ids=None):
@@ -341,7 +354,8 @@ def provision_hosts(stack_id, host_ids=None):
         logger.info('Provisioning hosts for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(Stack.PROVISIONING)
+        stack.set_status(provision_hosts.name,
+                         'Provisioning all hosts.')
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
@@ -358,6 +372,8 @@ def provision_hosts(stack_id, host_ids=None):
         # build up the command for salt
         cmd_args = [
             'salt',
+            '--out yaml',           # yaml formatted output
+            '--out-indent 2',       # make the output a bit easier to read
             '-C',                   # compound targeting
             'G@stack_id:{}'.format(stack_id),   # target the nodes in this
                                                 #stack only
@@ -378,7 +394,7 @@ def provision_hosts(stack_id, host_ids=None):
             logger.debug('std_err = {}'.format(result.std_err))
 
             err_msg = result.std_err if result.std_err else result.std_out
-            stack.set_status(Stack.ERROR, err_msg)
+            stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
             raise StackTaskException('Error provisioning stack {0}: '
                                      '{1!r}'.format(
                                         stack_id, 
@@ -394,17 +410,36 @@ def provision_hosts(stack_id, host_ids=None):
                                    '{}.provision.latest'.format(stack.slug))
         symlink(log_file, log_symlink)
         
-        # TODO: probably should figure out if an error occurred. A 
-        # good mix of looking at envoy's status_code and parsing
-        # the log file would be nice.
+        # load yaml so we can attempt to catch provisioning errors
+        output = yaml.safe_load(result.std_out)
 
+        # each key in the dict is a host, and the value of the host
+        # is either a list or dict. Those that are lists we can
+        # assume to be a list of errors
+        if output is not None:
+            errors = {}
+            for host, host_result in output.iteritems():
+                if type(host_result) is list:
+                    errors[host] = host_result
+
+                # TODO: go deeper into the host_result dictionaries
+                # looking for bad salt state executions
+
+            if errors:
+                err_msg = 'Provisioning errors on hosts: {0}. Please see the ' \
+                          'provisioning log for more details.'.format(
+                            ', '.join(errors.keys()))
+                stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
+                raise StackTaskException(err_msg)
+        
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.finish_stack')
 def finish_stack(stack_id):
@@ -413,21 +448,22 @@ def finish_stack(stack_id):
         logger.info('Finishing stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(Stack.FINALIZING,
-                         'Performing any last minute updates and checks.')
+        stack.set_status(finish_stack.name,
+                         'Performing final updates to Stack.')
 
         # TODO: Are there any last minute updates and checks?
 
         # Update status
-        stack.set_status(Stack.RUNNING)
+        stack.set_status(finish_stack.name, 'Finished executing tasks.')
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(finish_stack.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.register_volume_delete')
 def register_volume_delete(stack_id, host_ids=None):
@@ -451,9 +487,10 @@ def register_volume_delete(stack_id, host_ids=None):
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(Stack.ERROR, err_msg)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.destroy_hosts')
 def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
@@ -476,7 +513,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
 
         # if host ids is given, we're going to terminate only those hosts
         if host_ids:
-            stack.set_status(Stack.DESTROYING, 'Destroying hosts.')
+            stack.set_status(Stack.DESTROYING, 
+                             'Destroying hosts {0!r}.'.format(hosts))
             logger.info('Destroying hosts {0!r} on stack {1!r}'.format(
                 hosts, 
                 stack
@@ -488,7 +526,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
         # or we'll destroy the entire stack by giving the map file with all
         # hosts defined
         else:
-            stack.set_status(Stack.DESTROYING, 'Destroying stack.')
+            stack.set_status(Stack.DESTROYING, 'Destroying all hosts.')
             logger.info('Destroying complete stack: {0!r}'.format(stack))
 
             # Check for map file, and if it doesn't exist just remove
@@ -507,13 +545,12 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
 
         logger.debug('Excuting command: {0}'.format(cmd))
         result = envoy.run(cmd)
+        logger.debug('Command results:')
+        logger.debug('status_code = {}'.format(result.status_code))
+        logger.debug('std_out = {}'.format(result.std_out))
+        logger.debug('std_err = {}'.format(result.std_err))
 
         if result.status_code > 0:
-            logger.debug('Command results:')
-            logger.debug('status_code = {}'.format(result.status_code))
-            logger.debug('std_out = {}'.format(result.std_out))
-            logger.debug('std_err = {}'.format(result.std_err))
-
             err_msg = result.std_err if result.std_err else result.std_out
             stack.set_status(Stack.ERROR, err_msg)
             raise StackTaskException('Error destroying hosts on stack {0}: '
@@ -524,7 +561,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
 
         # delete hosts
         hosts.delete()
-        stack.set_status(Stack.OK, 'Hosts deleted.')
+        stack.set_status(Stack.OK, 'Hosts successfully deleted.')
 
         # optionally delete the stack as well
         if delete_stack:
@@ -534,9 +571,10 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(Stack.ERROR, err_msg)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.unregister_dns')
 def unregister_dns(stack_id, host_ids=None):
@@ -549,20 +587,25 @@ def unregister_dns(stack_id, host_ids=None):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
 
-        stack.set_status(Stack.CONFIGURING, 'Unregistering DNS entries.')
+        stack.set_status(Stack.CONFIGURING,
+                         'Unregistering hosts with DNS provider.')
 
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
         driver = stack.get_driver()
         driver.unregister_dns(stack.get_hosts())
 
+        stack.set_status(Stack.CONFIGURING,
+                         'Finished unregistering hosts with DNS provider.')
+
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(Stack.ERROR, err_msg)
+        logger.exception(err_msg)
+        raise
 
 @celery.task(name='stacks.execute_action')
 def execute_action(stack_id, action, *args, **kwargs):
@@ -588,7 +631,8 @@ def execute_action(stack_id, action, *args, **kwargs):
         err_msg = 'Unknown Stack with id {}'.format(stack_id)
         raise StackTaskException(err_msg)
     except Exception, e:
-        stack.set_status(Stack.ERROR, str(e))
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        raise StackTaskException(err_msg)
+        stack.set_status(Stack.ERROR, err_msg)
+        logger.exception(err_msg)
+        raise
 

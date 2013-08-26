@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from .models import (
     Stack, 
+    StackHistory, 
     SaltRole, 
     Host,
     SecurityGroup,
@@ -18,6 +19,16 @@ class StackAdmin(admin.ModelAdmin):
         'modified',
     ]
 admin.site.register(Stack, StackAdmin)
+
+
+class StackHistoryAdmin(admin.ModelAdmin):
+    list_display = [
+        'event',
+        'status',
+        'level',
+        'created',
+    ]
+admin.site.register(StackHistory, StackHistoryAdmin)
 
 
 class SaltRoleAdmin(admin.ModelAdmin):

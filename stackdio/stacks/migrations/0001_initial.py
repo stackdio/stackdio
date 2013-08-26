@@ -16,9 +16,6 @@ class Migration(SchemaMigration):
             ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
             ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
             ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('status', self.gf('model_utils.fields.StatusField')(default='ok', max_length=100, no_check_for_status=True)),
-            ('status_changed', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status')),
-            ('status_detail', self.gf('django.db.models.fields.TextField')(blank=True)),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['auth.User'])),
             ('cloud_provider', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['cloud.CloudProvider'])),
             ('hosts_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
@@ -30,6 +27,18 @@ class Migration(SchemaMigration):
 
         # Adding unique constraint on 'Stack', fields ['user', 'title']
         db.create_unique(u'stacks_stack', ['user_id', 'title'])
+
+        # Adding model 'StackHistory'
+        db.create_table(u'stacks_stackhistory', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='history', to=orm['stacks.Stack'])),
+            ('event', self.gf('django.db.models.fields.CharField')(max_length=128)),
+            ('status', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('level', self.gf('django.db.models.fields.CharField')(max_length=16)),
+        ))
+        db.send_create_signal(u'stacks', ['StackHistory'])
 
         # Adding model 'SaltRole'
         db.create_table(u'stacks_saltrole', (
@@ -96,6 +105,9 @@ class Migration(SchemaMigration):
 
         # Deleting model 'Stack'
         db.delete_table(u'stacks_stack')
+
+        # Deleting model 'StackHistory'
+        db.delete_table(u'stacks_stackhistory')
 
         # Deleting model 'SaltRole'
         db.delete_table(u'stacks_saltrole')
@@ -237,12 +249,19 @@ class Migration(SchemaMigration):
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'pillar_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
-            'status': ('model_utils.fields.StatusField', [], {'default': "'ok'", 'max_length': '100', 'no_check_for_status': 'True'}),
-            'status_changed': ('model_utils.fields.MonitorField', [], {'default': 'datetime.datetime.now', 'monitor': "'status'"}),
-            'status_detail': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'top_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['auth.User']"})
+        },
+        u'stacks.stackhistory': {
+            'Meta': {'ordering': "['-created']", 'object_name': 'StackHistory'},
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'event': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'level': ('django.db.models.fields.CharField', [], {'max_length': '16'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'history'", 'to': u"orm['stacks.Stack']"}),
+            'status': ('django.db.models.fields.TextField', [], {'blank': 'True'})
         }
     }
 
