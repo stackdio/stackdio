@@ -125,7 +125,7 @@ def launch_hosts(stack_id):
         raise StackTaskException(err_msg)
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(launch_hosts.name, err_msg, level.ERROR)
+        stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
