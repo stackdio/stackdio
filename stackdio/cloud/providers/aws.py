@@ -68,16 +68,16 @@ class Route53Domain(object):
         rr_sets = self.conn.get_all_rrsets(self.zone_id)
         return set([rr.name for rr in rr_sets])
 
-    def start_rr_transcation(self):
+    def start_rr_transaction(self):
         '''
         Creates a new Route53 ResourceRecordSets object that is used
         internally like a transaction of sorts. You may add or delete 
         many resource records using a single set by calling the
-        `add_rr_cname` and `delete_rr_cname` methods. Finish the transcation
-        with `finish_rr_transcation`
+        `add_rr_cname` and `delete_rr_cname` methods. Finish the transaction
+        with `finish_rr_transaction`
 
         NOTE: Calling this method again before finishing will not finish
-        an existing transcation or delete it. To cancel an existing
+        an existing transaction or delete it. To cancel an existing
         transaction use the `cancel_rr_transaction`.
         '''
 
@@ -87,7 +87,7 @@ class Route53Domain(object):
 
     def finish_rr_transaction(self):
         '''
-        If a transcation exists, commit the changes to Route53
+        If a transaction exists, commit the changes to Route53
         '''
         if self._rr_txn is not None:
             self._rr_txn.commit()
@@ -101,7 +101,7 @@ class Route53Domain(object):
 
     def add_rr_cname(self, record_name, record_value, ttl=86400):
         '''
-        NOTE: This method must be called after `start_rr_transcation`.
+        NOTE: This method must be called after `start_rr_transaction`.
 
         Adds a new record to the existing resource record transaction.
 
@@ -142,6 +142,8 @@ class Route53Domain(object):
         rr_names = self.get_rrnames_set()
         if record_name in rr_names:
             self._delete_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
+            return True
+        return False
 
     def _add_rr_record(self, record_name, record_values, record_type, **kwargs):
         rr = self._rr_txn.add_change('CREATE', record_name, record_type, **kwargs)
@@ -181,6 +183,7 @@ class AWSCloudProvider(BaseCloudProvider):
     ACTION_START = 'start'
     ACTION_TERMINATE = 'terminate'
     ACTION_LAUNCH = 'launch'
+    ACTION_PROVISION = 'provision'
 
     STATE_STOPPED = 'stopped'
     STATE_RUNNING = 'running'
@@ -202,6 +205,7 @@ class AWSCloudProvider(BaseCloudProvider):
             self.ACTION_START,
             self.ACTION_TERMINATE,
             self.ACTION_LAUNCH,
+            self.ACTION_PROVISION,
         ]
 
     def get_private_key_path(self):
@@ -299,12 +303,15 @@ class AWSCloudProvider(BaseCloudProvider):
         for the given cloud provider (e.g., Route53 on AWS)
         '''
 
+        logger.debug('register_dns for hosts {0!r}'.format(hosts))
+
         # Start a resource record "transaction"
         r53_domain = self.connect_route53()
-        r53_domain.start_rr_transcation()
+        r53_domain.start_rr_transaction()
 
         # for each host, create a CNAME record
         for host in hosts:
+            logger.debug('add_rr_cname for host {0!r} -> {1} : {2}'.format(host, host.hostname, host.provider_dns))
             r53_domain.add_rr_cname(host.hostname,
                                     host.provider_dns, 
                                     ttl=DEFAULT_ROUTE53_TTL)
@@ -326,20 +333,24 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # Start a resource record "transaction"
         r53_domain = self.connect_route53()
-        r53_domain.start_rr_transcation()
+        r53_domain.start_rr_transaction()
 
         # for each host, delete the CNAME record
         finish = False
         for host in hosts:
             if not host.provider_dns:
                 continue
-            r53_domain.delete_rr_cname(host.hostname, 
-                                       host.provider_dns,
-                                       ttl=DEFAULT_ROUTE53_TTL)
-            finish = True
+            logger.debug(host.hostname)
+            logger.debug(host.provider_dns)
+            if r53_domain.delete_rr_cname(host.hostname, 
+                                          host.provider_dns,
+                                          ttl=DEFAULT_ROUTE53_TTL):
+                finish = True
 
         if finish:
             # Finish the transaction
+            logger.debug(r53_domain)
+            logger.debug(dir(r53_domain))
             r53_domain.finish_rr_transaction()
 
         # update hosts to remove fqdn

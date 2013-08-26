@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from .models import (
     Stack, 
+    StackHistory,
     Host, 
     SaltRole,
 )
@@ -26,14 +27,26 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'sir_max_price'
         )
 
+
+class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
+
+    class Meta:
+        model = StackHistory
+        fields = (
+            'event',
+            'status',
+            'level',
+            'created'
+        )
+
+
 class StackSerializer(serializers.HyperlinkedModelSerializer):
     user = serializers.Field()
     hosts = serializers.HyperlinkedIdentityField(view_name='stack-hosts')
     host_count = serializers.Field(source='hosts.count')
     volumes = serializers.HyperlinkedIdentityField(view_name='stack-volumes')
     volume_count = serializers.Field(source='volumes.count')
-    status = serializers.Field()
-    status_detail = serializers.Field()
+    history = StackHistorySerializer(many=True)
 
     class Meta:
         model = Stack
@@ -50,9 +63,9 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'title', 
             'slug',
             'description',
-            'status',
-            'status_detail',
+            'history',
         )
+
 
 class SaltRoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

@@ -15,3 +15,8 @@ cdh4:
     reduce_tasks_max: 3
     child_java_opts: '-Xmx2000m'
     child_ulimit: 8000000
+  hbase:
+    tmp_dir: /mnt/hbase/tmp
+    replication: 3
+  zookeeper:
+    data_dir: /mnt/zk/data

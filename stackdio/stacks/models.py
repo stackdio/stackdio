@@ -44,6 +44,13 @@ def get_pillar_file_path(obj, filename):
     return "stacks/{0}/{1}.pillar".format(obj.user.username, obj.slug)
 
 
+class Level(object):
+    DEBUG = 'DEBUG'
+    INFO = 'INFO'
+    WARN = 'WARNING'
+    ERROR = 'ERROR'
+
+
 class StatusDetailModel(model_utils.models.StatusModel):
     status_detail = models.TextField(blank=True)
 
@@ -123,7 +130,7 @@ class StackManager(models.Manager):
         return stack_obj
 
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
+class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     OK = 'ok'
     ERROR = 'error'
     PENDING = 'pending'
@@ -140,16 +147,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     REBOOTING = 'rebooting'
     RUNNING = 'running'
     EXECUTING_ACTION = 'executing_action'
-
-    STATUS = Choices(OK,
-                     ERROR,
-                     PENDING, 
-                     FINISHED, 
-                     LAUNCHING, 
-                     FINALIZING, 
-                     DESTROYING,
-                     CONFIGURING,
-                     PROVISIONING)
 
     class Meta:
         unique_together = ('user', 'title')
@@ -203,6 +200,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     def __unicode__(self):
         return self.title
+
+    def set_status(self, event, status, level=Level.INFO):
+        self.history.create(event=event, status=status, level=level)
 
     def get_driver(self):
         return self.cloud_provider.get_driver()
@@ -402,6 +402,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     'minion': {
                         'master': master,
                         'log_level': 'debug',
+                        'log_level_logfile': 'debug',
 
                         # Grains are very useful when you need to set some 
                         # static information about a machine (e.g., what stack 
@@ -533,6 +534,31 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         if not os.path.isdir(log_dir):
             os.makedirs(log_dir)
         return log_dir
+
+class StackHistory(TimeStampedModel):
+
+    class Meta:
+        verbose_name_plural = 'stack history'
+        ordering = ['-created', '-id']
+
+    stack = models.ForeignKey('Stack', related_name='history')
+
+    # What 'event' (method name, task name, etc) that caused 
+    # this status update
+    event = models.CharField(max_length=128)
+
+    # The human-readable description of the event
+    status = models.TextField(blank=True)
+
+    # Optional: level (DEBUG, INFO, WARNING, ERROR, etc)
+    level = models.CharField(max_length=16,
+                             choices=(
+                                (Level.DEBUG, Level.DEBUG),
+                                (Level.INFO, Level.INFO),
+                                (Level.WARN, Level.WARN),
+                                (Level.ERROR, Level.ERROR),
+                             ))
+
 
 class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):
     role_name = models.CharField(max_length=64)

@@ -15,7 +15,7 @@
     </property>
     <property>
       <name>fs.default.name</name>
-      <value>hdfs://{{ salt['publish.publish']('roles:cdh4.namenode', 'grains.get', 'fqdn', 'grain').values()[0] }}:8020/</value>
+      <value>hdfs://{{ salt['publish.publish']('roles:cdh4.hadoop.namenode', 'grains.get', 'fqdn', 'grain').values()[0] }}:8020/</value>
     </property>
     <property>
       <name>fs.trash.interval</name>

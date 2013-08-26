@@ -1,3 +1,6 @@
+include:
+  - java.jdk6
+
 {% if grains['os'] == 'Ubuntu' %}
 # Add the appropriate CDH4 repository. See http://archive.cloudera.com/cdh4
 # for which distributions and versions are supported.
@@ -10,6 +13,8 @@
     - group: root
     - mode: 644
     - template: jinja
+    - require:
+      - pkg: oracle-java6-installer
 
 cdh4_gpg:
   cmd:

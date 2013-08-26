@@ -79,7 +79,7 @@
             "title": "CDH4 NameNode",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
-            "role_name": "cdh4.namenode",
+            "role_name": "cdh4.hadoop.namenode",
             "slug": "cdh4-namenode"
         }
     },
@@ -91,7 +91,7 @@
             "title": "CDH4 DataNode",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
-            "role_name": "cdh4.datanode",
+            "role_name": "cdh4.hadoop.datanode",
             "slug": "cdh4-datanode"
         }
     },
@@ -99,50 +99,24 @@
         "pk": 3,
         "model": "stacks.saltrole",
         "fields": {
-            "description": "This role will provision a machine with an Apache2 webserver.",
-            "title": "Apache2",
+            "description": "This role will provision a machine as a CDH ZooKeeper.",
+            "title": "CDH4 ZooKeeper",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
-            "role_name": "apache2",
-            "slug": "apache2"
+            "role_name": "cdh4.zookeeper",
+            "slug": "cdh4-zookeeper"
         }
     },
     {
         "pk": 4,
         "model": "stacks.saltrole",
         "fields": {
-            "description": "This role will provision a machine with a NodeJS server.",
-            "title": "NodeJS",
+            "description": "This role will Oozie.",
+            "title": "CDH4 Oozie",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
-            "role_name": "nodejs",
-            "slug": "nodejs"
-        }
-    },
-    {
-        "pk": 5,
-        "model": "stacks.saltrole",
-        "fields": {
-            "description": "This role will provision a machine with a MySQL database server.",
-            "title": "MySQL",
-            "created": "2013-05-17T19:41:00Z",
-            "modified": "2013-05-17T19:41:00Z",
-            "role_name": "mysql",
-            "slug": "mysql"
-        }
-    },
-    {
-        "pk": 1,
-        "model": "cloud.cloudprovidertype",
-        "fields": {
-            "type_name": "ec2"
-        }
-    },
-    {
-        "pk": 2,
-        "model": "cloud.cloudprovidertype",
-        "fields": {
-            "type_name": "openstack"
+            "role_name": "cdh4.oozie",
+            "slug": "cdh4-oozie"
         }
     }
 ]
