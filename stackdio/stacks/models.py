@@ -238,10 +238,26 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         new_hosts = []
         for host in hosts:
-            host_count = host['host_count']
-            host_size = host['host_size']
+            host_count = int(host['host_count'])
             host_pattern = host['host_pattern']
-            cloud_profile = host['cloud_profile']
+            cloud_profile_id = host['cloud_profile']
+            host_size_id = host.get('host_size')
+
+            # cloud profiles are restricted to only those in this stack's
+            # cloud provider
+            cloud_profile_obj = CloudProfile.objects.get(
+                id=cloud_profile_id,
+                cloud_provider=self.cloud_provider
+            )
+
+            # default to the cloud profile instance size
+            # if the user is not overriding it
+            if host_size_id is None:
+                host_size_id = cloud_profile_obj.default_instance_size.id
+
+            host_size_obj = CloudInstanceSize.objects.get(id=host_size_id)
+
+
             salt_roles = host['salt_roles']
             # optional
             volumes = host.get('volumes', [])
@@ -261,14 +277,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
             # lookup other objects
             role_objs = SaltRole.objects.filter(id__in=salt_roles)
-
-            # cloud profiles are restricted to only those in this stack's
-            # cloud provider
-            cloud_profile_obj = CloudProfile.objects.get(
-                id=cloud_profile,
-                cloud_provider=self.cloud_provider
-            )
-            host_size_obj = CloudInstanceSize.objects.get(id=host_size)
 
             # if user is adding hosts, they may be adding hosts that will
             # use the same host pattern as an existing hostname. in that case
