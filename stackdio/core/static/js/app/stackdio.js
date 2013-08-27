@@ -100,6 +100,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             $("#alert-success").hide();
         };
 
+
         // 
         //      A C C O U N T S
         // 
@@ -156,16 +157,20 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         // 
         self.addHostVolume = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
-            var volume = new NewHostVolume(0, record.volume_snapshot.value, record.volume_device.value, record.volume_mount_point.value);
+            var volume = new models.NewHostVolume().create({
+                snapshot: record.volume_snapshot.value,
+                device: record.volume_device.value,
+                mount_point: record.volume_mount_point.value
+            });
 
-            volume.snapshot = _.find(self.snapshots(), function (s) {
+            volume.snapshot = _.find(stores.Snapshots(), function (s) {
                 return s.id === parseInt(record.volume_snapshot.value, 10);
             });
 
-            stores.NewHostVolumes.push(volume);
+            stores.HostVolumes.push(volume);
         };
         self.removeHostVolume = function (volume) {
-            self.newHostVolumes.remove(volume);
+            stores.HostVolumes.remove(volume);
         };
 
 
@@ -174,6 +179,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         // 
         self.addHost = function (model, evt) {
             var record = self.collectFormFields(evt.target.form);
+            var v, vol;
 
             var host = new models.NewHost().create({ 
                 id: '',
@@ -193,7 +199,16 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
                 return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
             }).join('');
 
-            console.log('new host', host);
+            // Add volumes to the host
+            host.volumes = [];
+            for (v in stores.HostVolumes()) {
+                vol = stores.HostVolumes()[v];
+                host.volumes.push({
+                    snapshot: vol.snapshot.id,
+                    device: vol.device,
+                    mount_point: vol.mount_point
+                });
+            }
 
             stores.NewHosts.push(host);
         };
