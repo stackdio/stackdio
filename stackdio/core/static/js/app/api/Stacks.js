@@ -37,6 +37,8 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
         save: function (stack) {
             var deferred = Q.defer();
 
+            console.log('saving stack', stack);
+
             stack = JSON.stringify(stack);
 
             $.ajax({

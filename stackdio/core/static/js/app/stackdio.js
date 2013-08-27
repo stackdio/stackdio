@@ -36,20 +36,8 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
                 auto_launch: autoLaunch === true,
                 title: document.getElementById('stack_title').value,
                 description: document.getElementById('stack_purpose').value,
-                hosts: []
+                hosts: hosts
             };
-
-            for (h in hosts) {
-                host = hosts[h];
-                stack.hosts.push({
-                     host_count: host.count
-                    ,host_size: host.instance_size
-                    ,host_pattern: host.hostname
-                    ,cloud_profile: self.selectedProfile.id
-                    ,salt_roles: _.map(host.roles, function (r) { return r.value; })
-                    ,host_security_groups: host.security_groups
-                });
-            }
 
             API.Stacks.save(stack)
                 .then(function () {
@@ -184,13 +172,15 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             // Create a new host definition
             var host = new models.NewHost().create({ 
                 id: '',
-                count: record.host_count.value,
+                host_count: record.host_count.value,
+                host_pattern: record.host_hostname.value,
+                host_size: record.host_instance_size.value,
                 cloud_profile: self.selectedProfile.id,
-                instance_size: record.host_instance_size.value,
                 roles: record.host_roles,
-                hostname: record.host_hostname.value,
-                security_groups: record.host_security_groups.value
+                host_security_groups: record.host_security_groups.value
             });
+
+            host.salt_roles = _.map(host.roles, function (r) { return r.value; });
 
             // Add the chosen instance size to the host definition
             host.size = _.find(stores.InstanceSizes(), function (i) {
@@ -218,8 +208,10 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             }
 
             console.log('new host', host);
-
             stores.NewHosts.push(host);
+
+            // Clear out the spot instance bid price field
+            document.getElementById('spot_instance_price').value = "";
         };
 
         self.removeHost = function (host) {
