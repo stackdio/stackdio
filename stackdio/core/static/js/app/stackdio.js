@@ -181,6 +181,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             var record = self.collectFormFields(evt.target.form);
             var v, vol;
 
+            // Create a new host definition
             var host = new models.NewHost().create({ 
                 id: '',
                 count: record.host_count.value,
@@ -191,13 +192,19 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
                 security_groups: record.host_security_groups.value
             });
 
+            // Add the chosen instance size to the host definition
             host.size = _.find(stores.InstanceSizes(), function (i) {
                 return i.id === parseInt(record.host_instance_size.value, 10);
             });
 
+            // Add some HTML to display for the chosen roles
             host.flat_roles = _.map(host.roles, function (r) { 
                 return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
             }).join('');
+
+            // Add spot instance config
+            host.spot_config = {};
+            host.spot_config.spot_price = (record.spot_instance_price.value !== '') ? record.spot_instance_price.value : 0;
 
             // Add volumes to the host
             host.volumes = [];
@@ -209,6 +216,8 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
                     mount_point: vol.mount_point
                 });
             }
+
+            console.log('new host', host);
 
             stores.NewHosts.push(host);
         };
@@ -223,6 +232,34 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
          *  M E T H O D S
          *  ==================================================================================
          */
+
+        self.clearForm = function (id) {
+            var i, form = document.getElementById(id), elements = form.elements;
+
+            for (i = 0; i < elements.length; i++) {
+                field_type = elements[i].type.toLowerCase();
+                switch (field_type) {
+                case "text":
+                case "password":
+                case "textarea":
+                case "hidden":
+                    elements[i].value = "";
+                    break;
+                case "radio":
+                case "checkbox":
+                    if (elements[i].checked) {
+                        elements[i].checked = false;
+                    }
+                    break;
+                case "select-one":
+                case "select-multi":
+                    elements[i].selectedIndex = -1;
+                    break;
+                default:
+                    break;
+                }
+            }
+        };
 
         self.showSuccess = function () {
             $("#alert-success").show();
@@ -351,6 +388,10 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         }
 
         self.closeHostForm = function () {
+            // Clear out the host form
+            self.clearForm('host-form');
+
+            // Hide the window
             $( "#host-form-container" ).dialog("close");
         }
 
