@@ -39,6 +39,7 @@ define(function () {
 
     return {
         Stack: Stack,
+        StackHost: StackHost,
         ProviderType: ProviderType,
         Account: Account,
         Profile: Profile,
