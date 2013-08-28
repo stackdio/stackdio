@@ -8,7 +8,8 @@ define(["knockout"], function (ko) {
         InstanceSizes : ko.observableArray([]),
         Roles : ko.observableArray([]),
         Snapshots : ko.observableArray([]),
-        Stacks : ko.observableArray([])
+        Stacks : ko.observableArray([]),
+        StackHosts : ko.observableArray([])
     }
 });
 

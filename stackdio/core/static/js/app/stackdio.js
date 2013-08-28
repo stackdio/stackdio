@@ -53,8 +53,17 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
                     $("#alert-success").show();
                 });
         }
+
         self.launchStack = function (model, evt) {
             self.saveStack(true);
+        };
+
+        self.showStackDetails = function (stack) {
+            API.StackHosts.load(stack)
+                .then(function (response) {
+                    console.log(response);
+                });
+            return;
         };
 
 

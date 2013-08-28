@@ -8,7 +8,7 @@
 
     <link href="{% static 'css/flick/jquery-ui-1.10.3.custom.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/jquery.dataTables.css' %}" rel="stylesheet">
-    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
     <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">
 </head>
 
@@ -34,6 +34,11 @@
       </div>
     </div>
 
+    <!-- 
+        ======================================================================
+        S I D E B A R
+        ======================================================================
+     -->
     <div id="sidebar">
         <ul class="nav nav-list" data-bind="foreach: sections">
             <li id="dashboard-href" class="navlink" data-bind="css: { active: $data == $root.currentSection() }, click: $root.gotoSection">
@@ -46,6 +51,11 @@
     </div>
 
 
+    <!-- 
+        ======================================================================
+        M E S S A G E S
+        ======================================================================
+     -->
     <div class="view">
         <div id="alert-error" class="alert hide alert-error">
             <button type="button" class="close" data-bind="click: closeError">&times;</button>
@@ -101,7 +111,7 @@
                 <tbody data-bind="foreach: stores.Stacks">
                     <tr>
                         <td data-bind="text: $data.id"></td>
-                        <td data-bind="text: $data.title"></td>
+                        <td><a href="#" data-bind="text: $data.title, click: $root.showStackDetails"></a></td>
                         <td data-bind="text: $data.description"></td>
                         <td><a href='#' data-bind="bootstrapPopover : {content : $data.history.map(function (h) { return '<div class=\'dotted-border xxsmall-padding\'>' + h.status + '</div>'; }).join('') }, text: 'Hover over to view (' + $data.history.length + ') messages'"></a></td>
                         <td>
