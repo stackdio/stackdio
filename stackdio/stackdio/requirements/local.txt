@@ -3,4 +3,4 @@
 
 -e git://github.com/saltstack/salt.git@develop#egg=salt
 #-e git://github.com/saltstack/salt-cloud.git@develop#egg=salt-cloud
--e git://github.com/abemusic/salt-cloud.git@features/ec2-spot-instances#egg=salt-cloud
+-e git://github.com/abemusic/salt-cloud.git@issues/root-device-name#egg=salt-cloud

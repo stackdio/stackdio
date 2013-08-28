@@ -79,7 +79,7 @@ def launch_hosts(stack_id):
         cmd = ' '.join([
             'salt-cloud',
             '-y',                    # assume yes
-            '-P',                    # parallelize VM launching
+            #'-P',                    # parallelize VM launching
             '-lquiet',               # no logging on console
             '--log-file {0}',        # where to log
             '--log-file-level all',  # full logging
