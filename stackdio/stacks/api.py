@@ -65,8 +65,6 @@ class StackListAPIView(generics.ListCreateAPIView):
             raise ResourceConflict('A Stack already exists with the given '
                                    'title.')
 
-        print(request.DATA)
-
         # create the stack object and foreign key objects
         stack = Stack.objects.create_stack(request.user, request.DATA)
 
@@ -88,7 +86,6 @@ class StackListAPIView(generics.ListCreateAPIView):
             # always finish
             task_list.append(tasks.finish_stack.si(stack.id))
 
-        if task_list:
             logger.debug(task_list)
             task_chain = reduce(or_, task_list)
 

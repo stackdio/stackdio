@@ -254,7 +254,7 @@ class Migration(SchemaMigration):
             'user': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['auth.User']"})
         },
         u'stacks.stackhistory': {
-            'Meta': {'ordering': "['-created']", 'object_name': 'StackHistory'},
+            'Meta': {'ordering': "['-created', '-id']", 'object_name': 'StackHistory'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'event': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
