@@ -1,0 +1,25 @@
+user: stackdio
+root_dir: /mnt/stackdio_root/stackdsalt
+verify_env: True
+
+file_roots:
+  base:
+    - /mnt/stackdio_root/stackdsalt/states
+
+pillar_roots:
+  base:
+    - /mnt/stackdio_root/stackdsalt/pillar
+
+# Disable master config from showing in pillar
+pillar_opts: False
+
+peer:
+  .*:
+      - .*
+
+# Where our external pillar and other custom modules live
+extension_modules: /mnt/stackdio_root/stackdsalt/extmods
+
+# Enable our custom external pillar
+ext_pillar:
+  - stack_pillar: ''

@@ -10,3 +10,5 @@ reload.sh
 stackdui/server/node_modules
 stackdui/src/packages/theme/sass/.sass-cache
 stackdui/src/resources/sass/bootstrap/.sass-cache
+stackdsalt/etc/salt/pki
+stackdsalt/var
