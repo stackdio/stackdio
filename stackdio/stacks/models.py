@@ -378,7 +378,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             volumes = host.volumes.all()
 
             # add in cloud provider security groups
-            security_groups.add(*cloud_provider_yaml['securitygroup'])
+            security_groups.update(cloud_provider_yaml['securitygroup'])
 
             fqdn = '{0}.{1}'.format(host.hostname, 
                                     cloud_provider_yaml['append_domain'])

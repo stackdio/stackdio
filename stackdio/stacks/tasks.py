@@ -106,8 +106,15 @@ def launch_hosts(stack_id):
             errors = set()
             for h, v in result_json.iteritems():
                 logger.debug('Checking host {0} for errors.'.format(h))
+
+                # Error format #1
                 if 'Errors' in v and 'Error' in v['Errors']:
                     errors.add(v['Errors']['Error']['Message'])
+
+                # Error format #2
+                elif 'Error' in v:
+                    errors.add(v['Error'])
+
             if errors:
                 logger.debug('Errors found!: {0!r}'.format(errors))
                 for err_msg in errors:
