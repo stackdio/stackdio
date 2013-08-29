@@ -157,7 +157,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         if action not in available_actions:
             raise BadRequest('action is not alowed. Only the following '
-                             'actions are allowed: {}'.format(', '.join(available_actions)))
+                             'actions are allowed: {0}'.format(', '.join(available_actions)))
 
 
         # In case of a launch action, the stack must not have any available 

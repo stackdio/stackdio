@@ -47,5 +47,5 @@ class Volume(TimeStampedModel):
     mount_point = models.CharField(max_length=255)
 
     def __unicode__(self):
-        return '{}'.format(self.volume_id)
+        return '{0}'.format(self.volume_id)
 

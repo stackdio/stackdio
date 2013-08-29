@@ -13,7 +13,7 @@ def get_provider_instances(provider_id):
         logger.info('CloudProvider: {0!r}'.format(provider))
 
     except CloudProvider.DoesNotExist:
-        logger.error('Unknown CloudProvider with id {}'.format(
+        logger.error('Unknown CloudProvider with id {0}'.format(
             provider_id))
     except Exception, e:
         logger.exception('Unhandled exception retrieving instance sizes.')

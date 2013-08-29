@@ -117,7 +117,7 @@ class Route53Domain(object):
         '''
         # Update the record name to be fully qualified with the domain
         # for this instance. The period on the end is required.
-        record_name += '.{}.'.format(self.domain)
+        record_name += '.{0}.'.format(self.domain)
 
         # Check for an existing CNAME record and remove it before
         # updating it
@@ -136,7 +136,7 @@ class Route53Domain(object):
         '''
         # Update the record name to be fully qualified with the domain
         # for this instance. The period on the end is required.
-        record_name += '.{}.'.format(self.domain)
+        record_name += '.{0}.'.format(self.domain)
 
         # Only remove the record if it exists
         rr_names = self.get_rrnames_set()
@@ -321,7 +321,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # update hosts to include fqdn
         for host in hosts:
-            host.fqdn = '{}.{}'.format(host.hostname, r53_domain.domain)
+            host.fqdn = '{0}.{1}'.format(host.hostname, r53_domain.domain)
             host.save()
         
     def unregister_dns(self, hosts):
@@ -374,7 +374,7 @@ class AWSCloudProvider(BaseCloudProvider):
             mods = []
             for device_name, device in devices.iteritems():
                 if not device.delete_on_termination:
-                    mods.append('{}=true'.format(device_name))
+                    mods.append('{0}=true'.format(device_name))
 
             # use the modify strings to change the existing volumes flag
             if mods:
@@ -389,7 +389,7 @@ class AWSCloudProvider(BaseCloudProvider):
                     logger.warn('{0!r} missing volume_id. Skipping delete retag.'.format(v))
                     continue
                 name = 'stackdio::volume::{0!s}-DEL-{1}'.format(v.id, uuid4().hex)
-                logger.info('tagging volume {}: {}'.format(v.volume_id, name))
+                logger.info('tagging volume {0}: {1}'.format(v.volume_id, name))
                 ec2.create_tags([v.volume_id], {
                     'Name': name,
                 })
@@ -402,7 +402,7 @@ class AWSCloudProvider(BaseCloudProvider):
         # the volumes in the AWS console
         for v in volumes:
             name = 'stackdio::volume::{0!s}'.format(v.id)
-            logger.info('tagging volume {}: {}'.format(v.volume_id, name))
+            logger.info('tagging volume {0}: {1}'.format(v.volume_id, name))
             ec2.create_tags([v.volume_id], {
                 'Name': name,
             })
