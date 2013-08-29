@@ -1,6 +1,7 @@
 import yaml
 import time
 import os
+import json
 from datetime import datetime
 
 import envoy
@@ -65,8 +66,8 @@ def launch_hosts(stack_id):
 
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
         log_file = os.path.join(log_dir, 
-                                '{}-{}.launch.log'.format(stack.slug, now))
-        log_symlink = os.path.join(root_dir, '{}.launch.latest'.format(
+                                '{0}-{1}.launch.log'.format(stack.slug, now))
+        log_symlink = os.path.join(root_dir, '{0}.launch.latest'.format(
             stack.slug)
         )
         
@@ -92,37 +93,51 @@ def launch_hosts(stack_id):
             stack.map_file.path
         )
 
-        logger.debug('Excuting command: {0}'.format(cmd))
+        logger.debug('Executing command: {0}'.format(cmd))
         result = envoy.run(cmd)
+        logger.debug('Command results:')
+        logger.debug('status_code = {0}'.format(result.status_code))
+        logger.debug('std_out = {0}'.format(result.std_out))
+        logger.debug('std_err = {0}'.format(result.std_err))
+
+        try:
+            # Look for errors if we got valid JSON
+            result_json = json.loads(result.std_out)
+            errors = set()
+            for h, v in result_json.iteritems():
+                logger.debug('Checking host {0} for errors.'.format(h))
+                if 'Errors' in v and 'Error' in v['Errors']:
+                    errors.add(v['Errors']['Error']['Message'])
+            if errors:
+                logger.debug('Errors found!: {0!r}'.format(errors))
+                for err_msg in errors:
+                    stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+                raise StackTaskException('Error(s) while launching stack '
+                                         '{0}'.format(stack_id))
+        except ValueError, e:
+            logger.debug('Invalid JSON returned in envoy stdout')
+            pass
 
         if result.status_code > 0:
-
             if ERROR_ALL_NODES_EXIST not in result.std_err and \
                ERROR_ALL_NODES_EXIST not in result.std_out and \
                ERROR_ALL_NODES_RUNNING not in result.std_err and \
                ERROR_ALL_NODES_RUNNING not in result.std_out:
-                logger.error('launch command status_code: {}'.format(
-                    result.status_code)
-                )
-                logger.error('launch command std_out: "{}"'.format(
-                    result.std_out)
-                )
-                logger.error('launch command std_err: "{}"'.format(
-                    result.std_err)
-                )
                 err_msg = result.std_err if result.std_err else result.std_out
                 stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error launching stack {0} with '
                                          'salt-cloud: {1!r}'.format(
                                             stack_id, 
                                             err_msg))
+        else:
+            stack.set_status(launch_hosts.name, 'Finished launching hosts.')
 
-        stack.set_status(launch_hosts.name,
-                         'Finished launching hosts.')
     except Stack.DoesNotExist, e:
         err_msg = 'Unknown stack id {0}'.format(stack_id)
         logger.exception(err_msg)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
@@ -232,8 +247,10 @@ def update_metadata(stack_id, host_ids=None):
             stack._generate_map_file()
 
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(update_metadata.name, err_msg, Level.ERROR)
@@ -265,8 +282,10 @@ def tag_infrastructure(stack_id, host_ids=None):
         driver.tag_resources(stack, hosts, volumes)
 
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(tag_infrastructure.name, err_msg, Level.ERROR)
@@ -292,8 +311,10 @@ def register_dns(stack_id, host_ids=None):
         driver.register_dns(stack.get_hosts())
 
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(register_dns.name, err_msg, Level.ERROR)
@@ -314,22 +335,21 @@ def sync_all(stack_id):
         cmd_args = [
             'salt',
             '-C',                               # compound targeting
-            'G@stack_id:{}'.format(stack_id),   # target the nodes in this
+            'G@stack_id:{0}'.format(stack_id),   # target the nodes in this
                                                 # stack only
             'saltutil.sync_all',                # sync all systems
         ]
 
         # Execute
         cmd = ' '.join(cmd_args)
-        logger.debug('Excuting command: {0}'.format(cmd))
+        logger.debug('Executing command: {0}'.format(cmd))
         result = envoy.run(cmd)
+        logger.debug('Command results:')
+        logger.debug('status_code = {0}'.format(result.status_code))
+        logger.debug('std_out = {0}'.format(result.std_out))
+        logger.debug('std_err = {0}'.format(result.std_err))
 
         if result.status_code > 0:
-            logger.debug('Command results:')
-            logger.debug('status_code = {}'.format(result.status_code))
-            logger.debug('std_out = {}'.format(result.std_out))
-            logger.debug('std_err = {}'.format(result.std_err))
-
             err_msg = result.std_err if result.std_err else result.std_out
             stack.set_status(sync_all.name, err_msg, Level.ERROR)
             raise StackTaskException('Error syncing salt data on stack {0}: '
@@ -339,8 +359,10 @@ def sync_all(stack_id):
                                      )
 
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(sync_all.name, err_msg, Level.ERROR)
@@ -362,7 +384,7 @@ def provision_hosts(stack_id, host_ids=None):
         log_dir = stack.get_log_directory()
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
         log_file = os.path.join(log_dir, 
-                                '{}-{}.provision.log'.format(stack.slug, now))
+                                '{0}-{1}.provision.log'.format(stack.slug, now))
 
         # TODO: do we want to handle a subset of the hosts in a stack (e.g.,
         # when adding additional hosts?) for the moment it seems just fine
@@ -375,7 +397,7 @@ def provision_hosts(stack_id, host_ids=None):
             '--out yaml',           # yaml formatted output
             '--out-indent 2',       # make the output a bit easier to read
             '-C',                   # compound targeting
-            'G@stack_id:{}'.format(stack_id),   # target the nodes in this
+            'G@stack_id:{0}'.format(stack_id),   # target the nodes in this
                                                 #stack only
             'state.top',            # run this stack's top file
             stack.top_file.name,
@@ -384,15 +406,14 @@ def provision_hosts(stack_id, host_ids=None):
         # Run the appropriate top file
         cmd = ' '.join(cmd_args)
 
-        logger.debug('Excuting command: {0}'.format(cmd))
+        logger.debug('Executing command: {0}'.format(cmd))
         result = envoy.run(cmd)
+        logger.debug('Command results:')
+        logger.debug('status_code = {0}'.format(result.status_code))
+        logger.debug('std_out = {0}'.format(result.std_out))
+        logger.debug('std_err = {0}'.format(result.std_err))
 
         if result.status_code > 0:
-            logger.debug('Command results:')
-            logger.debug('status_code = {}'.format(result.status_code))
-            logger.debug('std_out = {}'.format(result.std_out))
-            logger.debug('std_err = {}'.format(result.std_err))
-
             err_msg = result.std_err if result.std_err else result.std_out
             stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
             raise StackTaskException('Error provisioning stack {0}: '
@@ -407,7 +428,7 @@ def provision_hosts(stack_id, host_ids=None):
 
         # symlink the logfile
         log_symlink = os.path.join(root_dir, 
-                                   '{}.provision.latest'.format(stack.slug))
+                                   '{0}.provision.latest'.format(stack.slug))
         symlink(log_file, log_symlink)
         
         # load yaml so we can attempt to catch provisioning errors
@@ -433,8 +454,10 @@ def provision_hosts(stack_id, host_ids=None):
                 raise StackTaskException(err_msg)
         
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
@@ -457,8 +480,10 @@ def finish_stack(stack_id):
         stack.set_status(finish_stack.name, 'Finished executing tasks.')
 
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(finish_stack.name, err_msg, Level.ERROR)
@@ -484,8 +509,10 @@ def register_volume_delete(stack_id, host_ids=None):
         driver.register_volumes_for_delete(hosts)
 
     except Stack.DoesNotExist, e:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, err_msg)
@@ -532,23 +559,23 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
             # Check for map file, and if it doesn't exist just remove
             # the stack and return
             if not stack.map_file or not os.path.isfile(stack.map_file.path):
-                logger.warn('Map file for stack {} does not exist. '
+                logger.warn('Map file for stack {0} does not exist. '
                             'Deleting stack anyway.'.format(stack))
                 stack.delete()
                 return
 
             # Add the location to the map to destroy the entire stack
-            cmd_args.append('-m {}'.format(stack.map_file.path))
+            cmd_args.append('-m {0}'.format(stack.map_file.path))
 
         # Use salt-cloud to destroy the stack or hosts
         cmd = ' '.join(cmd_args)
 
-        logger.debug('Excuting command: {0}'.format(cmd))
+        logger.debug('Executing command: {0}'.format(cmd))
         result = envoy.run(cmd)
         logger.debug('Command results:')
-        logger.debug('status_code = {}'.format(result.status_code))
-        logger.debug('std_out = {}'.format(result.std_out))
-        logger.debug('std_err = {}'.format(result.std_err))
+        logger.debug('status_code = {0}'.format(result.status_code))
+        logger.debug('std_out = {0}'.format(result.std_out))
+        logger.debug('std_err = {0}'.format(result.std_err))
 
         if result.status_code > 0:
             err_msg = result.std_err if result.std_err else result.std_out
@@ -568,8 +595,10 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
             stack.delete()
 
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, err_msg)
@@ -599,8 +628,10 @@ def unregister_dns(stack_id, host_ids=None):
                          'Finished unregistering hosts with DNS provider.')
 
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, err_msg)
@@ -624,12 +655,14 @@ def execute_action(stack_id, action, *args, **kwargs):
         # with the appropriate cloud's DNS service
         driver = stack.get_driver()
         hosts = stack.get_hosts()
-        fun = getattr(driver, '_action_{}'.format(action))
+        fun = getattr(driver, '_action_{0}'.format(action))
         fun(stack=stack, *args, **kwargs)
 
     except Stack.DoesNotExist:
-        err_msg = 'Unknown Stack with id {}'.format(stack_id)
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, err_msg)

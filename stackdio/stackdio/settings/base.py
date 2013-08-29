@@ -220,6 +220,10 @@ LOGGING = {
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
         },
+        'null': {
+            'level': 'DEBUG',
+            'class': 'django.utils.log.NullHandler',
+        },
         'console': {
             'level': 'DEBUG',
             'formatter': 'default',
@@ -231,6 +235,11 @@ LOGGING = {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': True,
+        },
+        'django.db.backends': {
+            'handlers': ['null'],
+            'propagate': False,
+	    'level': 'DEBUG',
         },
         'core': {
             'handlers': ['console'],

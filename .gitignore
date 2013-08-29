@@ -11,4 +11,7 @@ stackdui/server/node_modules
 stackdui/src/packages/theme/sass/.sass-cache
 stackdui/src/resources/sass/bootstrap/.sass-cache
 stackdsalt/etc/salt/pki
+stackdsalt/etc/salt/cloud.profiles
+stackdsalt/etc/salt/cloud.providers
+stackdsalt/states/stack_*_top.sls
 stackdsalt/var

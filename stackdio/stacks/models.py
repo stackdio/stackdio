@@ -38,7 +38,7 @@ def get_map_file_path(obj, filename):
     return "stacks/{0}/{1}.map".format(obj.user.username, obj.slug)
 
 def get_top_file_path(obj, filename):
-    return "stack_{}_top.sls".format(obj.id)
+    return "stack_{0}_top.sls".format(obj.id)
 
 def get_pillar_file_path(obj, filename):
     return "stacks/{0}/{1}.pillar".format(obj.user.username, obj.slug)
@@ -295,7 +295,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     stack=self,
                     cloud_profile=cloud_profile_obj,
                     instance_size=host_size_obj,
-                    hostname='{}-{}-{}'.format(host_pattern, 
+                    hostname='{0}-{1}-{2}'.format(host_pattern, 
                                                self.user.username, 
                                                i),
                 )
@@ -468,7 +468,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
 
         if not self.top_file:
-            self.top_file.save('stack_{}_top.sls'.format(self.id), ContentFile(top_file_yaml))
+            self.top_file.save('stack_{0}_top.sls'.format(self.id), ContentFile(top_file_yaml))
         else:
             with open(self.top_file.path, 'w') as f:
                 f.write(top_file_yaml)
@@ -481,7 +481,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         }, default_flow_style=False)
 
         if not self.pillar_file:
-            self.pillar_file.save('{}.pillar'.format(self.slug), 
+            self.pillar_file.save('{0}.pillar'.format(self.slug), 
                                   ContentFile(pillar_file_yaml))
         else:
             with open(self.pillar_file.path, 'w') as f:
