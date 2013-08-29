@@ -36,6 +36,17 @@ For assistance, please see one of the following Dintinguished Gentlemen:
 
     sudo yum install python-devel ncurses-devel swig openssl-devel
 
+### Users and paths
+
+    The standard user we'll be using is 'stackdio', so we'll need to create the account:
+
+    useradd -m -s/bin/bash -U stackdio
+
+    We'll be setting everything up in /mnt/stackdio_root. You can change it to
+    wherever you'd like, but some of the details below will also need to change
+    and most of the defaults won't work without modifying some environment variables
+    and settings.
+
 ### virtualenv-burrito
 
 ###### Install it
@@ -85,39 +96,28 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     mkvirtualenv stackdio
     workon stackdio
 
-###### Clone and initialize stackdio:
-    
-    # Set the django secret key environment variable. For development purposes
-    # this can be just about anything, but when in production, choose something
-    # very, very hard to guess - random gibberish is mostly preferred :)
-    export DJANGO_SECRET_KEY='randomgibberishgobbeltygook'
-    
-    # Set the following environment variables for MySQL
-    export MYSQL_USER='stackdio'
-    export MYSQL_PASS='password'
-    
-    # Setting the following environment variables is also required. Again, I
-    # suggest putting them in your virtualenv's postactivate file. These are
-    # so Django and celery tasks know where to get to salt configuration and
-    # scripts. We won't be installing salt or salt cloud for a bit, but go
-    # ahead and set them.
-        
-    export SALT_ROOT=/opt/salt_root
-    export SALT_STATE_ROOT=/opt/salt_root/srv/salt
-    export SALT_MASTER_CONFIG=/opt/salt_root/etc/salt/master
-    export SALT_CLOUD_CONFIG=/opt/salt_root/etc/salt/cloud
-    export SALT_CLOUDVM_CONFIG=/opt/salt_root/etc/salt/cloud.profiles
-    export SALT_CLOUD_PROVIDERS_CONFIG=/opt/salt_root/etc/salt/cloud.providers
+###### Clone and initialize stackdio: 
 
-    NOTE: If using virtualenv-wrapper it's best to put these in your postactivate
-    script as you may be using multiple projects that require the same environment
-    variables, but with different values.
+    # Clone the source down
+
+    hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management /mnt/stackdio_root
+
+    # Set up some environment variables
     
-    # Reinitialize your virtualenv to get those new environment variables
+    The file `/mnt/stackdio_root/postactivate` contains several environment
+    variables that need to be exported. You can put these in your stackdio
+    users bash_profile or in your stackdio virtual environments
+    bin/postactivate file. Be sure to take a look at them and make any 
+    appropriate changes and if you don't use virtualenv, make sure to
+    source the appropriate file to get the new variables.
+
+    # Initialize your virtualenv
+
     workon stackdio
 
-    hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management stackdio_root
-    cd stackdio_root/stackdio
+    # Install stackd.io's Python dependencies into the virtualenv
+
+    cd /mnt/stackdio_root/stackdio
     pip install -r stackdio/requirements/local.txt
 
     # NOTE: On CentOS, you'll likely get an error like "This openssl-devel package does not work your architecture"
@@ -132,6 +132,7 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     # If you're running a newer version of Ubuntu, please see the next section
     # before proceeding.
     
+    # Initialize the database and start Django's built-in web server
     python manage.py syncdb --noinput
     python manage.py migrate
     python manage.py loaddata local_data

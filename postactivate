@@ -1,11 +1,12 @@
 # Copy these contents into your venv/bin/postactivate file
 # making sure that STACKDIO_ROOT is correct
 
+export DJANGO_SECRET_KEY='SET_THIS_TO_SOMETHING_RANDOMLY_COMPLEX'
+
 export MYSQL_USER='stackdio'
 export MYSQL_PASS='password'
-export STACKDIO_ROOT=/mnt/stackdio_root
 
-export SALT_ROOT=$STACKDIO_ROOT/stackdsalt
+export SALT_ROOT=/mnt/stackdio_root/stackdsalt
 export SALT_STATE_ROOT=$SALT_ROOT/states
 export SALT_MASTER_CONFIG=$SALT_ROOT/etc/salt/master
 export SALT_CLOUD_CONFIG=$SALT_ROOT/etc/salt/cloud
