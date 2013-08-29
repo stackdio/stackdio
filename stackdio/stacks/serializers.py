@@ -15,6 +15,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Host
         fields = (
+            'id',
             'url',
             'hostname', 
             'provider_dns', 

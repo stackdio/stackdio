@@ -18,6 +18,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         self.showVolumes = ko.observable(false);
         self.sections = ['Stacks', 'Accounts', 'Profiles', 'Snapshots'];
         self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch'];
+        self.stackHostActions = ['Stop', 'Terminate', 'Start'];
         self.currentSection = ko.observable();
 
         self.selectedProviderType = null;
@@ -61,7 +62,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         self.showStackDetails = function (stack) {
             API.StackHosts.load(stack)
                 .then(function (response) {
-                    console.log(response);
+                    self.showStackHosts();
                 });
             return;
         };
@@ -172,6 +173,20 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
 
 
         // 
+        //      S T A C K   H O S T S
+        // 
+        self.hostMetaData = function (host) {
+            var metadata = '';
+
+            _.each(host.ec2_metadata, function (v, k, l) {
+                if (typeof v !== "object") {
+                    metadata += '<div class="dotted-border xxsmall-padding">'+k+': '+v+'</div>';
+                }
+            });
+            return metadata;
+        };
+
+        // 
         //      N E W   H O S T S
         // 
         self.addHost = function (model, evt) {
@@ -270,6 +285,27 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         self.showMessage = function (id) {
             $(id).show();
             setTimeout('$("'+id+'").hide()', 3000);
+        };
+
+        self.doStackHostAction = function (action, evt, host) {
+            var data = JSON.stringify({
+                action: action.toLowerCase()
+            });
+
+            // $.ajax({
+            //     url: '/api/stacks/' + stack.id + '/',
+            //     type: 'PUT',
+            //     data: data,
+            //     headers: {
+            //         "X-CSRFToken": stackdio.csrftoken,
+            //         "Accept": "application/json",
+            //         "Content-Type": "application/json"
+            //     },
+            //     success: function (response) {
+            //         console.log(response);
+            //         API.Stacks.load();
+            //     }
+            // });
         };
 
         self.doStackAction = function (action, evt, stack) {
@@ -404,6 +440,15 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             $( "#volume-form-container" ).dialog("close");
         }
 
+
+        self.showStackHosts = function () {
+            $( "#stack-details-container" ).dialog("open");
+        }
+
+        self.closeStackHosts = function () {
+            $( "#stack-details-container" ).dialog("close");
+        }
+
         self.profileSelected = function (profile) { 
             self.selectedProfile = profile;
         };
@@ -474,7 +519,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
      *  ==================================================================================
      */
     ko.bindingHandlers.bootstrapPopover = {
-        init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
             var options = valueAccessor();
             var defaultOptions = {};
             options = $.extend(true, {}, defaultOptions, options);
@@ -482,6 +527,23 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             options.placement = "bottom";
             options.html = true;
             options.title = "Stack History";
+            $(element).popover(options);
+        }
+    };
+
+    ko.bindingHandlers.metadataPopover = {
+        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+            var options = valueAccessor();
+            var defaultOptions = {};
+
+
+            options = $.extend(true, {}, defaultOptions, options);
+            options.trigger = "click";
+            options.placement = "right";
+            options.html = true;
+            options.title = "Host Metadata";
+
+            console.log(options);
             $(element).popover(options);
         }
     };
@@ -504,6 +566,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
     $("#host-form-container").dialog({position: [(window.innerWidth / 2) - 275,50], autoOpen: false, width: 550, modal: true });
     $("#volume-form-container").dialog({position: [(window.innerWidth / 2) - 250,50], autoOpen: false, width: 500, modal: true });
     $("#profile-form-container").dialog({autoOpen: false, width: 650, modal: false });
+    $("#stack-details-container").dialog({autoOpen: false, width: 650, modal: false });
 
 
     /*

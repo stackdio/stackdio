@@ -129,8 +129,58 @@
                     </tr>     
                 </tbody>
             </table>
-
         </div>
+
+    <!-- 
+        ======================================================================
+        S T A C K   D E T A I L S
+        ======================================================================
+     -->
+    <div id="stack-details-container" title="Stack Hosts">
+         <div class="modal-body">
+            <table id="stack-details" class="data-grid">
+                <thead>
+                    <tr>
+                        <th style="width:25px">#</th>
+                        <th style="width:10%">State</th>
+                        <th style="width:40%">Host name</th>
+                        <th style="width:40%">Created</th>
+                        <th style="width:50px"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.StackHosts">
+                    <tr>
+                        <td>
+                            <a href='#' data-bind="metadataPopover: 
+                            { content: $root.hostMetaData($data) }, 
+                            text: id"></a>
+                        </td>
+                        <td data-bind="text: state"></td>
+                        <td>
+                            <a href='#' target="_blank" data-bind="text: hostname, attr: { href: 'http://'+fqdn, title: hostname }"></a>
+                        </td>
+                        <td data-bind="text: created"></td>
+                        <td>
+                            <div class="btn-group pull-right">
+                                <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu" data-bind="foreach: $root.stackHostActions">
+                                    <li>
+                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.doStackHostAction(data, event, $parent) }"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: closeStackHosts">Close</button>
+        </div>
+    </div>
 
         
         <!-- 

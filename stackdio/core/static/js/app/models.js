@@ -29,7 +29,7 @@ define(function () {
     NewHost.prototype = new Model();
 
     var StackHost = function () {};
-    NewHost.prototype = new Model();
+    StackHost.prototype = new Model();
 
     var NewHostVolume = function () {};
     NewHostVolume.prototype = new Model();
