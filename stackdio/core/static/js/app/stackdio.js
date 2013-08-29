@@ -186,6 +186,21 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             return metadata;
         };
 
+        self.showHostMetadata = function (host) {
+            _.each(host.ec2_metadata, function (v, k, l) {
+                if (typeof v !== "object") {
+                    stores.HostMetadata.push({ key: k, value: v });
+                }
+            });
+
+            $("#host-metadata-container").dialog("open");
+        };
+
+        self.closeHostMetadata = function () {
+            $( "#host-metadata-container" ).dialog("close");
+        };
+
+
         // 
         //      N E W   H O S T S
         // 
@@ -499,6 +514,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
             .then(API.Stacks.load)
             .then(function () {
                 self.gotoSection("Stacks");
+                $('select').selectpicker();
             });
     };
 
@@ -563,10 +579,11 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
     $("#stack-form-container").dialog({autoOpen: false, width: window.innerWidth - 225, height: 500, position: [200,50], modal: false });
     $("#snapshot-form-container").dialog({autoOpen: false, width: 650, modal: false });
     $("#accounts-form-container").dialog({autoOpen: false, width: 650, modal: false });
-    $("#host-form-container").dialog({position: [(window.innerWidth / 2) - 275,50], autoOpen: false, width: 550, modal: true });
+    $("#host-form-container").dialog({position: [(window.innerWidth / 2) - 275,50], autoOpen: false, width: 600, modal: true });
     $("#volume-form-container").dialog({position: [(window.innerWidth / 2) - 250,50], autoOpen: false, width: 500, modal: true });
     $("#profile-form-container").dialog({autoOpen: false, width: 650, modal: false });
     $("#stack-details-container").dialog({autoOpen: false, width: 650, modal: false });
+    $("#host-metadata-container").dialog({autoOpen: false, width: 500, modal: false });
 
 
     /*

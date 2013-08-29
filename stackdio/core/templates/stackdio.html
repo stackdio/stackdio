@@ -8,7 +8,8 @@
 
     <link href="{% static 'css/flick/jquery-ui-1.10.3.custom.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/jquery.dataTables.css' %}" rel="stylesheet">
-    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">
 </head>
 
@@ -130,6 +131,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
 
     <!-- 
         ======================================================================
@@ -151,9 +153,10 @@
                 <tbody data-bind="foreach: stores.StackHosts">
                     <tr>
                         <td>
-                            <a href='#' data-bind="metadataPopover: 
+                            <!-- <a href='#' data-bind="metadataPopover: 
                             { content: $root.hostMetaData($data) }, 
-                            text: id"></a>
+                            text: id"></a> -->
+                            <a href='#' data-bind='click: showHostMetadata, text: id'></a>
                         </td>
                         <td data-bind="text: state"></td>
                         <td>
@@ -182,213 +185,241 @@
         </div>
     </div>
 
+    <!-- 
+        ======================================================================
+        S T A C K   D E T A I L S
+        ======================================================================
+     -->
+    <div id="host-metadata-container" title="Host Metadata">
+         <div class="modal-body">
+            <table id="host-metadata" class="data-grid">
+                <thead>
+                    <tr>
+                        <th style="width:50%">Metadata</th>
+                        <th style="width:50%">Value</th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.HostMetadata">
+                    <tr>
+                        <td data-bind="text: key"></td>
+                        <td data-bind="text: value"></td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: closeHostMetadata">Close</button>
+        </div>
+    </div>
+
         
-        <!-- 
-            ======================================================================
-            N E W   V O L U M E   F O R M
-            ======================================================================
-         -->
-        <div id="volume-form-container" title="Volume Details">
-            <form id="host-volume-form" class="form-horizontal">
+    <!-- 
+        ======================================================================
+        N E W   V O L U M E   F O R M
+        ======================================================================
+     -->
+    <div id="volume-form-container" title="Volume Details">
+        <form id="host-volume-form" class="form-horizontal">
+        <div class="modal-body">
+            <div class="control-group">
+                <label class="control-label" for="volume_snapshot">Snapshot</label>
+                <div class="controls">
+                    <select id="volume_snapshot" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
+                </div>
+            </div>
+
+
+            <div class="control-group">
+                <label class="control-label" for="volume_device">Device</label>
+                <div class="controls">
+                    <input id="volume_device" type="text" class="input-block-level" placeholder="Device name">
+                </div>
+            </div>
+
+
+            <div class="control-group">
+                <label class="control-label" for="volume_mount_point">Mount point</label>
+                <div class="controls">
+                    <input type="text" id="volume_mount_point" class="input-mini" placeholder="/mnt/x">
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: addHostVolume">Save Volume</button>
+            <button class="btn" data-bind="click: closeVolumeForm">Close</button>
+        </div>
+        </form>
+
+    </div>
+
+
+    <!-- 
+        ======================================================================
+        N E W   H O S T   F O R M
+        ======================================================================
+     -->
+    <div id="host-form-container" title="Host Details">
+       <form id="host-form" class="form-horizontal">
             <div class="modal-body">
                 <div class="control-group">
-                    <label class="control-label" for="volume_snapshot">Snapshot</label>
+                    <label class="control-label" for="host_count">Count</label>
                     <div class="controls">
-                        <select id="volume_snapshot" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
+                        <input type="text" id="host_count" class="input-mini" placeholder="">
                     </div>
                 </div>
-
 
                 <div class="control-group">
-                    <label class="control-label" for="volume_device">Device</label>
+                    <label class="control-label" for="host_instance_size">Instance size</label>
                     <div class="controls">
-                        <input id="volume_device" type="text" class="input-block-level" placeholder="Device name">
+                        <select id="host_instance_size" 
+                                data-bind="options: stores.InstanceSizes, optionsValue: 'id', optionsText: 'title'" 
+                                data-size="8"
+                                placeholder="Instance size" 
+                                class="input-xlarge "></select>
                     </div>
                 </div>
-
 
                 <div class="control-group">
-                    <label class="control-label" for="volume_mount_point">Mount point</label>
+                    <label class="control-label" for="host_security_groups">Security groups</label>
                     <div class="controls">
-                        <input type="text" id="volume_mount_point" class="input-mini" placeholder="/mnt/x">
+                        <input type="text" id="host_security_groups" class="input-xlarge" placeholder="Comma separated list">
                     </div>
                 </div>
-            </div>
+
+                <div class="control-group">
+                    <label class="control-label" for="host_hostname">Host pattern</label>
+                    <div class="controls">
+                        <input type="text" id="host_hostname" class="input-xlarge" placeholder="{name}.yourdomain.com">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label" for="host_roles">SLS</label>
+                    <div class="controls">
+                        <select id="host_roles" 
+                                multiple
+                                data-selected-text-format="count"
+                                data-bind="options: stores.Roles, 
+                                optionsValue: 'id', 
+                                optionsText: 'title'" 
+                                class="input-xlarge"></select>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label" for="host_volumes">
+                        Volumes
+                    </label>
+                    <div class="controls">
+                        <table id="host_volumes" class="data-grid">
+                            <thead>
+                                <tr>
+                                    <th>Snapshot</th>
+                                    <th>Mount point</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="foreach: stores.HostVolumes">
+                                <tr>
+                                    <td data-bind="text: snapshot.title"></td>
+                                    <td data-bind="text: mount_point"></td>
+                                    <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHostVolume">X</button></td>
+                                </tr>     
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row">
+
+                    <div class="control-group">
+                        <label class="control-label" for="spot_instance"></label>
+                        <div class="controls">
+                            <input type="checkbox" id="spot_instance"> Request spot instances
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="spot_instance_price"></label>
+                        <div class="controls">
+                            <input type="text" id="spot_instance_price" class="input-medium" placeholder="Bid price for instances">
+                        </div>
+                    </div>
+                </div>
+            </div>  
     
             <div class="modal-footer">
-                <button class="btn btn-primary" data-bind="click: addHostVolume">Save Volume</button>
-                <button class="btn" data-bind="click: closeVolumeForm">Close</button>
+                <button class="btn btn-info" data-bind="click: showVolumeForm">Add Volume</button>
+                <button class="btn btn-primary" data-bind="click: addHost">Save Host</button>
+                <button class="btn" data-bind="click: closeHostForm">Close</button>
             </div>
-            </form>
+        </form>
+    </div>        
+
+
+    <!-- 
+        ======================================================================
+        N E W   S T A C K   F O R M
+        ======================================================================
+     -->
+    <div id="stack-form-container" title="Stack Details">
+
+        <div class="modal-body" style="min-height: 330px;">
+
+            <div class="controls controls-row">
+                <input class="span5" id="stack_title" type="text" placeholder="Stack title">
+                <input class="span5" id="stack_purpose" type="text" placeholder="Purpose of stack">
+            </div>
+
+            <div>
+                <legend class="lead">Stack Hosts
+                    <div class="btn-group pull-right">
+                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                            Add Host <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" data-bind="foreach: stores.Profiles">
+                            <li>
+                                <a href="#" data-bind="text: title, click: $root.showHostForm"></a>
+                            </li>
+                        </ul>
+                    </div>
+                </legend>
+                <table id="stack_hosts" class="data-grid stretch-full">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Roles</th>
+                            <th>Count</th>
+                            <th>Size</th>
+                            <th>Host Pattern</th>
+                            <th>Security Groups</th>
+                            <th style="width:50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: stores.NewHosts">
+                        <tr>
+                            <td data-bind="text: id"></td>
+                            <td data-bind="html: flat_roles"></td>
+                            <td data-bind="text: host_count"></td>
+                            <td data-bind="text: size.title"></td>
+                            <td data-bind="text: host_pattern"></td>
+                            <td data-bind="text: host_security_groups"></td>
+                            <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">X</button></td>
+                        </tr>     
+                    </tbody>
+                </table>
+            </div>
 
         </div>
 
-
-        <!-- 
-            ======================================================================
-            N E W   H O S T   F O R M
-            ======================================================================
-         -->
-        <div id="host-form-container" title="Host Details">
-           <form id="host-form" class="form-horizontal">
-                <div class="modal-body">
-                    <div class="control-group">
-                        <label class="control-label" for="host_count">Count</label>
-                        <div class="controls">
-                            <input type="text" id="host_count" class="input-mini" placeholder="">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_instance_size">Instance size</label>
-                        <div class="controls">
-                            <select id="host_instance_size" 
-                                    data-bind="options: stores.InstanceSizes, optionsValue: 'id', optionsText: 'title'" 
-                                    placeholder="Instance size" 
-                                    class="input-xlarge"></select>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_security_groups">Security groups</label>
-                        <div class="controls">
-                            <input type="text" id="host_security_groups" class="input-xlarge" placeholder="Comma separated list">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_hostname">Host pattern</label>
-                        <div class="controls">
-                            <input type="text" id="host_hostname" class="input-xlarge" placeholder="{name}.yourdomain.com">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_roles">SLS</label>
-                        <div class="controls">
-                            <select id="host_roles" 
-                                    multiple="multiple" 
-                                    data-bind="options: stores.Roles, 
-                                    optionsValue: 'id', 
-                                    optionsText: 'title'" 
-                                    class="input-xlarge"></select>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_volumes">
-                            Volumes
-                        </label>
-                        <div class="controls">
-                            <table id="host_volumes" class="data-grid">
-                                <thead>
-                                    <tr>
-                                        <th>Snapshot</th>
-                                        <th>Mount point</th>
-                                        <th style="width:50px;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody data-bind="foreach: stores.HostVolumes">
-                                    <tr>
-                                        <td data-bind="text: snapshot.title"></td>
-                                        <td data-bind="text: mount_point"></td>
-                                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHostVolume">X</button></td>
-                                    </tr>     
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="row">
-
-                        <div class="control-group">
-                            <label class="control-label" for="spot_instance"></label>
-                            <div class="controls">
-                                <input type="checkbox" id="spot_instance"> Request spot instances
-                            </div>
-                        </div>
-
-                        <div class="control-group">
-                            <label class="control-label" for="spot_instance_price"></label>
-                            <div class="controls">
-                                <input type="text" id="spot_instance_price" class="input-medium" placeholder="Bid price for instances">
-                            </div>
-                        </div>
-                    </div>
-                </div>  
-
-        
-                <div class="modal-footer">
-                    <button class="btn btn-info" data-bind="click: showVolumeForm">Add Volume</button>
-                    <button class="btn btn-primary" data-bind="click: addHost">Save Host</button>
-                    <button class="btn" data-bind="click: closeHostForm">Close</button>
-                </div>
-            </form>
-        </div>        
-
-
-        <!-- 
-            ======================================================================
-            N E W   S T A C K   F O R M
-            ======================================================================
-         -->
-        <div id="stack-form-container" title="Stack Details">
-
-            <div class="modal-body" style="min-height: 330px;">
-
-                <div class="controls controls-row">
-                    <input class="span5" id="stack_title" type="text" placeholder="Stack title">
-                    <input class="span5" id="stack_purpose" type="text" placeholder="Purpose of stack">
-                </div>
-
-                <div>
-                    <legend class="lead">Stack Hosts
-                        <div class="btn-group pull-right">
-                            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                                Add Host <span class="caret"></span>
-                            </a>
-                            <ul class="dropdown-menu" data-bind="foreach: stores.Profiles">
-                                <li>
-                                    <a href="#" data-bind="text: title, click: $root.showHostForm"></a>
-                                </li>
-                            </ul>
-                        </div>
-                    </legend>
-                    <table id="stack_hosts" class="data-grid stretch-full">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th>Roles</th>
-                                <th>Count</th>
-                                <th>Size</th>
-                                <th>Host Pattern</th>
-                                <th>Security Groups</th>
-                                <th style="width:50px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody data-bind="foreach: stores.NewHosts">
-                            <tr>
-                                <td data-bind="text: id"></td>
-                                <td data-bind="html: flat_roles"></td>
-                                <td data-bind="text: host_count"></td>
-                                <td data-bind="text: size.title"></td>
-                                <td data-bind="text: host_pattern"></td>
-                                <td data-bind="text: host_security_groups"></td>
-                                <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">X</button></td>
-                            </tr>     
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
-    
-            <div class="modal-footer">
-                <button class="btn btn-primary" data-bind="click: launchStack">Launch Stack</button>
-                <button class="btn btn-info" data-bind="click: saveStack">Save Stack</button>
-                <button class="btn" data-bind="click: closeStackForm">Close</button>
-            </div>
-            
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: launchStack">Launch Stack</button>
+            <button class="btn btn-info" data-bind="click: saveStack">Save Stack</button>
+            <button class="btn" data-bind="click: closeStackForm">Close</button>
         </div>
+    </div>
 
 
     <!-- 
@@ -643,7 +674,10 @@
 
                 <div class="span2">Default Instance Size</div>
                 <div class="span4 no-margin">
-                    <select id="default_instance_size" data-bind="options: stores.InstanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" class="stretch-full"></select>
+                    <select id="default_instance_size" 
+                        data-bind="options: stores.InstanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" 
+                        data-size="4"
+                        class="stretch-full"></select>
                 </div>
 
                 <div class="span2">SSH User</div>
