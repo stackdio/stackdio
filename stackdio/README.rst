@@ -34,7 +34,7 @@ For assistance, please see one of the following Dintinguished Gentlemen:
 
 ### CentOS
 
-    sudo yum install python-devel ncurses-devel swig
+    sudo yum install python-devel ncurses-devel swig openssl-devel
 
 ### virtualenv-burrito
 
@@ -50,11 +50,20 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     
     Ubuntu: sudo apt-get install mysql-server mysql-client libmysqlclient-dev
 
-    CentOS: sudo yum install mysql mysql-server
+    CentOS: sudo yum install mysql mysql-server mysql-devel
+
+###### Start the service
+
+    Ubuntu: sudo service mysql start
+
+    CentOS: sudo service mysqld start
     
 ###### Set up your database and users:
 
-    # In mysql shell (hint: run `mysql`)
+    # start the mysql shell
+    mysql -hlocalhost -uroot
+
+    # In mysql shell 
     create database stackdio;
     create user stackdio;
     grant all on stackdio.* to 'stackdio'@'localhost' identified by 'password';
