@@ -28,9 +28,13 @@ For assistance, please see one of the following Dintinguished Gentlemen:
   - [RabbitMQ] - again, Homebrew is nice
   - [swig] - yup, Homebrew
 
-### Ubuntu stuff
+### Ubuntu: 
 
-    sudo apt-get install mercurial python-pip python-dev libssl-dev libncurses5-dev
+    sudo apt-get install mercurial python-pip python-dev libssl-dev libncurses5-dev swig
+
+### CentOS
+
+    sudo yum install python-devel ncurses-devel swig
 
 ### virtualenv-burrito
 
@@ -38,14 +42,6 @@ For assistance, please see one of the following Dintinguished Gentlemen:
 
     curl -s https://raw.github.com/brainsik/virtualenv-burrito/master/virtualenv-burrito.sh | $SHELL
     
-### Swig
-
-###### Install it
-
-    Homebrew: brew install swig
-    
-    Ubuntu: sudo apt-get install swig
-
 ### MySQL
 
 ###### Install it:
@@ -53,6 +49,8 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     With Homebrew: brew update && brew install mysql
     
     Ubuntu: sudo apt-get install mysql-server mysql-client libmysqlclient-dev
+
+    CentOS: sudo yum install mysql mysql-server
     
 ###### Set up your database and users:
 
@@ -112,6 +110,15 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management stackdio_root
     cd stackdio_root/stackdio
     pip install -r stackdio/requirements/local.txt
+
+    # NOTE: On CentOS, you'll likely get an error like "This openssl-devel package does not work your architecture"
+    # when it starts installing M2Crypto. To fix this, go into your virtual env direct (with
+    # virtualenv-wrapper its cdvirtualenv), into the build/M2Crypto and run
+    #
+    # bash fedora_setup.sh build
+    # bash fedora_setup.sh install
+    #
+    # You will then need to re-run the pip install command above once more.
     
     # If you're running a newer version of Ubuntu, please see the next section
     # before proceeding.
