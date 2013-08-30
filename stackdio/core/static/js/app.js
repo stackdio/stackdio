@@ -15,15 +15,12 @@ requirejs.config({
     shim: {
         'bootstrap': ['jquery'],
         'bootstrap-select': ['bootstrap'],
-        'knockout': ['jquery'],
         'datatables': ['jquery'],
         'jquery-ui': ['jquery']
     },
 
 });
 
-require(["bootstrap", "bootstrap-select"], function () {
-    $('.selectpicker').selectpicker();
-});
+require(["bootstrap", "bootstrap-select"], function () { });
 require(["underscore"], function () { });
 require(["app/stackdio"], function () { });

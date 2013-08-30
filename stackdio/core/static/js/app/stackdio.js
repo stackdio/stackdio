@@ -435,15 +435,13 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         }
 
         self.showHostForm = function (profile) {
-            self.selectedProfile = profile;
+            self.selectedProfile(profile);
+            $('#host_instance_size').selectpicker('val', profile.default_instance_size);
             $( "#host-form-container" ).dialog("open");
         }
 
         self.closeHostForm = function () {
-            // Clear out the host form
             self.clearForm('host-form');
-
-            // Hide the window
             $( "#host-form-container" ).dialog("close");
         }
 
@@ -521,14 +519,6 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
 
 
 
-
-
-
-
-
-
-
-
     /*
      *  ==================================================================================
      *  C U S T O M   B I N D I N G S
@@ -547,24 +537,28 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         }
     };
 
-    ko.bindingHandlers.metadataPopover = {
-        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
-            var options = valueAccessor();
-            var defaultOptions = {};
+    ko.bindingHandlers.selectedValue = {
+        init: function (element, valueAccessor) {
+            //parse binding options
+            var params = ko.utils.unwrapObservable(valueAccessor());
 
+            //update option element according to the observable
+            $(element).find('option[value="' + params.value() + '"]').prop('selected', true);
 
-            options = $.extend(true, {}, defaultOptions, options);
-            options.trigger = "click";
-            options.placement = "right";
-            options.html = true;
-            options.title = "Host Metadata";
+            //when select changes, update the observables
+            $(element).change(function () {
+                params.value($(element).find('option:selected').val());
+                // params.text($(element).find('option:selected').text());
+            });
+        },
+        update: function (element, valueAccessor) {
+            //parse binding params
+            var params = ko.utils.unwrapObservable(valueAccessor());
 
-            console.log(options);
-            $(element).popover(options);
+            //when select changes, update the observable
+            $(element).find('option[value="' + params.value() + '"]').prop('selected', true);
         }
     };
-
-
 
 
 

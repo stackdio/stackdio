@@ -251,7 +251,6 @@
             <button class="btn" data-bind="click: closeVolumeForm">Close</button>
         </div>
         </form>
-
     </div>
 
 
@@ -274,9 +273,11 @@
                     <label class="control-label" for="host_instance_size">Instance size</label>
                     <div class="controls">
                         <select id="host_instance_size" 
-                                data-bind="options: stores.InstanceSizes, optionsValue: 'id', optionsText: 'title'" 
+                                data-bind="options: stores.InstanceSizes, 
+                                           optionsValue: 'id',
+                                           optionsText: 'title'"
                                 data-size="8"
-                                placeholder="Instance size" 
+                                data-header="Select a host size"
                                 class="input-xlarge "></select>
                     </div>
                 </div>
@@ -333,7 +334,6 @@
                 </div>
 
                 <div class="row">
-
                     <div class="control-group">
                         <label class="control-label" for="spot_instance"></label>
                         <div class="controls">
@@ -428,12 +428,11 @@
         ======================================================================
      -->
     <div id="snapshots-binding-target">
-        <div class="view" data-bind='visible: $root.currentSection() == "Snapshots"'>
+        <div class="view" data-bind='visible: $root.currentSection() === "Snapshots"'>
 
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                    New Snapshot
-                    <span class="caret"></span>
+                    New Snapshot <span class="caret"></span>
                 </a>
                 <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
                     <li>
