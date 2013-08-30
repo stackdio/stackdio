@@ -22,7 +22,7 @@ define(["knockout", "datatables", "jquery-ui", "app/settings", "app/models", "ap
         self.currentSection = ko.observable();
 
         self.selectedProviderType = null;
-        self.selectedProfile = null;
+        self.selectedProfile = ko.observable(null);
         self.selectedAccount = null;
 
 
