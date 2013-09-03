@@ -85,7 +85,7 @@ class StackManager(models.Manager):
                     "salt_roles": [1,2,3],  # what salt_roles to use
                     "host_security_groups": "foo,bar,baz",
                     "spot_config": {        # If you need spot instances
-                        "max_price": "0.1"
+                        "spot_price": "0.1"
                     },
                     "volumes": [            # list of volumes to attach to the
                                             # launched hosts, creation of 
@@ -265,7 +265,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
             # PI-48: Spot instance support
             spot_config = host.get('spot_config', {})
-            sir_max_price = spot_config.get('max_price')
+            sir_price = spot_config.get('spot_price')
 
             # Get the security group objects
             security_group_objs = [
@@ -301,8 +301,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                                                i),
                 )
 
-                if sir_max_price is not None:
-                    host_obj.sir_max_price = Decimal(sir_max_price)
+                if sir_price is not None:
+                    host_obj.sir_price = Decimal(sir_price)
                     host_obj.save()
 
                 # set security groups
@@ -437,9 +437,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             }
 
             # Add in spot instance config if needed
-            if host.sir_max_price:
+            if host.sir_price:
                 host_metadata[host.hostname]['spot_config'] = {
-                    'spot_price': str(host.sir_max_price) # convert to string
+                    'spot_price': str(host.sir_price) # convert to string
                 }
 
             profiles[host.cloud_profile.slug].append(host_metadata)
@@ -622,10 +622,10 @@ class Host(TimeStampedModel, StatusDetailModel):
     sir_id = models.CharField(max_length=32,
                               default='unknown')
 
-    # The maximum spot instance price for this host if using spot instances
-    sir_max_price = models.DecimalField(max_digits=5,
-                                      decimal_places=2,
-                                      null=True)
+    # The spot instance price for this host if using spot instances
+    sir_price = models.DecimalField(max_digits=5,
+                                    decimal_places=2,
+                                    null=True)
 
     def __unicode__(self):
         return self.hostname

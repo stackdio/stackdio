@@ -25,7 +25,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'status_detail',
             'created',
             'sir_id',
-            'sir_max_price'
+            'sir_price'
         )
 
 
