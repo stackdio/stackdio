@@ -203,7 +203,7 @@
         ======================================================================
      -->
     <div id="stack-details-container" title="Stack Hosts">
-         <div class="modal-body">
+         <!-- <div class="modal-body"> -->
             <table id="stack-details" class="data-grid">
                 <thead>
                     <tr>
@@ -225,6 +225,13 @@
                         </td>
                         <td data-bind="text: created"></td>
                         <td>
+                            <select id="host-action" class="dropup" data-container="body"
+                                    data-bind="options: $root.stack.stackHostActions, 
+                                               optionsValue: $data,
+                                               optionsText: $data,
+                                               click: function (data, event) { $root.stack.doStackHostAction(data, event, $parent) }"
+                                    data-header="Perform action"></select>
+<!-- 
                             <div class="btn-group pull-right">
                                 <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
@@ -235,15 +242,17 @@
                                     </li>
                                 </ul>
                             </div>
+ -->
+
                         </td>
                     </tr>     
                 </tbody>
             </table>
-        </div>
+        <!-- </div> -->
 
-        <div class="modal-footer">
+        <!-- <div class="modal-footer"> -->
             <button class="btn btn-primary" data-bind="click: $root.stack.closeStackHosts">Close</button>
-        </div>
+        <!-- </div> -->
     </div>
 
     <!-- 

@@ -91,6 +91,7 @@ define(["knockout",
             API.StackHosts.load(stack)
                 .then(function (response) {
                     self.showStackHosts();
+                    $('select').selectpicker();
                 });
             return;
         };
