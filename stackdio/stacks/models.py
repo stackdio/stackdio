@@ -235,6 +235,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # load the stack's hosts file
         with open(self.hosts_file.path, 'r') as f:
             hosts = simplejson.loads(f.read())
+            logger.debug('Hosts: {0}'.format(hosts))
 
         new_hosts = []
         for host in hosts:
