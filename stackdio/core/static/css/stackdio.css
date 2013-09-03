@@ -258,3 +258,46 @@ top: 10px;
 z-index: 1;
 background-color: #FFF;
 }
+
+
+
+
+@-webkit-keyframes animateImage {
+    0% {opacity: 0.1; -webkit-animation-timing-function: ease-in; }
+    8% {opacity: 0.15; -webkit-transform: scale(1.05); -webkit-animation-timing-function: ease-out; }
+    17% {opacity: 0.20; -webkit-transform: scale(1.1) rotate(2deg); -webkit-animation-timing-function: ease-out; }
+    25% {opacity: 0.20; -webkit-transform: scale(1.2) rotate(3deg); -webkit-animation-timing-function: ease-out; }
+    40% {opacity: 0.20; -webkit-transform: scale(1.3) rotate(4deg); -webkit-animation-timing-function: ease-out; }
+    55% {opacity: 0.25; -webkit-transform: scale(1.4) rotate(5deg); -webkit-animation-timing-function: ease-out; }
+    100% { opacity: 0.33 }
+}
+
+@keyframes animateImage {
+    0% {opacity: 0.1; -webkit-animation-timing-function: ease-in; }
+    8% {opacity: 0.15; -webkit-transform: scale(1.05); -webkit-animation-timing-function: ease-out; }
+    17% {opacity: 0.20; -webkit-transform: scale(1.1) rotate(2deg); -webkit-animation-timing-function: ease-out; } 
+    25% {opacity: 0.20; -webkit-transform: scale(1.2) rotate(3deg); -webkit-animation-timing-function: ease-out; }
+    40% {opacity: 0.20; -webkit-transform: scale(1.3) rotate(4deg); -webkit-animation-timing-function: ease-out; }
+    55% {opacity: 0.25; -webkit-transform: scale(1.4) rotate(5deg); -webkit-animation-timing-function: ease-out; }
+    100% { opacity: 0.33 }
+}
+
+
+#slider img {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    color: transparent;
+    background-size: cover;
+    background-position: 50% 50%;
+    background-repeat: none;
+    opacity: 0;
+    z-index: -2000;
+
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-animation: animateImage 60s linear infinite;
+    animation: animateImage 60s linear infinite;
+}

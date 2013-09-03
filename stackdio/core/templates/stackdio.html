@@ -86,7 +86,7 @@
         ======================================================================
      -->
     <div id="stacks-binding-target">
-        <div class="view" data-bind='visible: $root.currentSection() == "Stacks"'>
+        <div class="view" data-bind='visible: $root.currentSection() === "Stacks"'>
 
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
@@ -94,7 +94,7 @@
                 </a>
                 <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
                     <li>
-                        <a href="#" data-bind="text: title, click: $root.showStackForm"></a>
+                        <a href="#" data-bind="text: title, click: $root.stack.showStackForm"></a>
                     </li>
                 </ul>
             </div>
@@ -112,7 +112,7 @@
                 <tbody data-bind="foreach: stores.Stacks">
                     <tr>
                         <td data-bind="text: $data.id"></td>
-                        <td><a href="#" data-bind="text: $data.title, click: $root.showStackDetails"></a></td>
+                        <td><a href="#" data-bind="text: $data.title, click: $root.stack.showStackDetails"></a></td>
                         <td data-bind="text: $data.description"></td>
                         <td><a href='#' data-bind="bootstrapPopover : {content : $data.history.map(function (h) { return '<div class=\'dotted-border xxsmall-padding\'>' + h.status + '</div>'; }).join('') }, text: 'Hover over to view (' + $data.history.length + ') messages'"></a></td>
                         <td>
@@ -120,9 +120,9 @@
                                 <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu" data-bind="foreach: $root.stackActions">
+                                <ul class="dropdown-menu" data-bind="foreach: $root.stack.stackActions">
                                     <li>
-                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.doStackAction(data, event, $parent) }"></a>
+                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.stack.doStackAction(data, event, $parent) }"></a>
                                     </li>
                                 </ul>
                             </div>
@@ -132,6 +132,70 @@
             </table>
         </div>
     </div>
+
+
+    <!-- 
+        ======================================================================
+        N E W   S T A C K   F O R M
+        ======================================================================
+     -->
+    <div id="stack-form-container" title="Stack Details">
+
+        <div class="modal-body" style="min-height: 330px;">
+
+            <div class="controls controls-row">
+                <input class="span5" id="stack_title" type="text" placeholder="Stack title">
+                <input class="span5" id="stack_purpose" type="text" placeholder="Purpose of stack">
+            </div>
+
+            <div>
+                <legend class="lead">Stack Hosts
+                    <div class="btn-group pull-right">
+                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                            Add Host <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" data-bind="foreach: stores.Profiles">
+                            <li>
+                                <a href="#" data-bind="text: title, click: $root.stack.showHostForm"></a>
+                            </li>
+                        </ul>
+                    </div>
+                </legend>
+                <table id="stack_hosts" class="data-grid stretch-full">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Roles</th>
+                            <th>Count</th>
+                            <th>Size</th>
+                            <th>Host Pattern</th>
+                            <th>Security Groups</th>
+                            <th style="width:50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: stores.NewHosts">
+                        <tr>
+                            <td data-bind="text: id"></td>
+                            <td data-bind="html: flat_roles"></td>
+                            <td data-bind="text: host_count"></td>
+                            <td data-bind="text: size.title"></td>
+                            <td data-bind="text: host_pattern"></td>
+                            <td data-bind="text: host_security_groups"></td>
+                            <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.stack.removeHost">X</button></td>
+                        </tr>     
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: $root.stack.launchStack">Launch Stack</button>
+            <button class="btn btn-info" data-bind="click: $root.stack.saveStack">Save Stack</button>
+            <button class="btn" data-bind="click: $root.stack.closeStackForm">Close</button>
+        </div>
+    </div>
+
 
     <!-- 
         ======================================================================
@@ -153,10 +217,7 @@
                 <tbody data-bind="foreach: stores.StackHosts">
                     <tr>
                         <td>
-                            <!-- <a href='#' data-bind="metadataPopover: 
-                            { content: $root.hostMetaData($data) }, 
-                            text: id"></a> -->
-                            <a href='#' data-bind='click: $root.showHostMetadata, text: id'></a>
+                            <a href='#' data-bind='click: $root.stack.showHostMetadata, text: id'></a>
                         </td>
                         <td data-bind="text: state"></td>
                         <td>
@@ -168,9 +229,9 @@
                                 <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu" data-bind="foreach: $root.stackHostActions">
+                                <ul class="dropdown-menu" data-bind="foreach: $root.stack.stackHostActions">
                                     <li>
-                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.doStackHostAction(data, event, $parent) }"></a>
+                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.stack.doStackHostAction(data, event, $parent) }"></a>
                                     </li>
                                 </ul>
                             </div>
@@ -181,7 +242,7 @@
         </div>
 
         <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: closeStackHosts">Close</button>
+            <button class="btn btn-primary" data-bind="click: $root.stack.closeStackHosts">Close</button>
         </div>
     </div>
 
@@ -209,50 +270,11 @@
         </div>
 
         <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: closeHostMetadata">Close</button>
+            <button class="btn btn-primary" data-bind="click: $root.stack.closeHostMetadata">Close</button>
         </div>
     </div>
 
         
-    <!-- 
-        ======================================================================
-        N E W   V O L U M E   F O R M
-        ======================================================================
-     -->
-    <div id="volume-form-container" title="Volume Details">
-        <form id="host-volume-form" class="form-horizontal">
-        <div class="modal-body">
-            <div class="control-group">
-                <label class="control-label" for="volume_snapshot">Snapshot</label>
-                <div class="controls">
-                    <select id="volume_snapshot" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
-                </div>
-            </div>
-
-
-            <div class="control-group">
-                <label class="control-label" for="volume_device">Device</label>
-                <div class="controls">
-                    <input id="volume_device" type="text" class="input-block-level" placeholder="Device name">
-                </div>
-            </div>
-
-
-            <div class="control-group">
-                <label class="control-label" for="volume_mount_point">Mount point</label>
-                <div class="controls">
-                    <input type="text" id="volume_mount_point" class="input-mini" placeholder="/mnt/x">
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: addHostVolume">Save Volume</button>
-            <button class="btn" data-bind="click: closeVolumeForm">Close</button>
-        </div>
-        </form>
-    </div>
-
 
     <!-- 
         ======================================================================
@@ -326,7 +348,7 @@
                                 <tr>
                                     <td data-bind="text: snapshot.title"></td>
                                     <td data-bind="text: mount_point"></td>
-                                    <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHostVolume">X</button></td>
+                                    <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.volume.removeHostVolume">X</button></td>
                                 </tr>     
                             </tbody>
                         </table>
@@ -351,75 +373,52 @@
             </div>  
     
             <div class="modal-footer">
-                <button class="btn btn-info" data-bind="click: showVolumeForm">Add Volume</button>
-                <button class="btn btn-primary" data-bind="click: addHost">Save Host</button>
-                <button class="btn" data-bind="click: closeHostForm">Close</button>
+                <button class="btn btn-info" data-bind="click: $root.volume.showVolumeForm">Add Volume</button>
+                <button class="btn btn-primary" data-bind="click: $root.stack.addHost">Save Host</button>
+                <button class="btn" data-bind="click: $root.stack.closeHostForm">Close</button>
             </div>
         </form>
-    </div>        
-
+    </div>
 
     <!-- 
         ======================================================================
-        N E W   S T A C K   F O R M
+        N E W   V O L U M E   F O R M
         ======================================================================
      -->
-    <div id="stack-form-container" title="Stack Details">
-
-        <div class="modal-body" style="min-height: 330px;">
-
-            <div class="controls controls-row">
-                <input class="span5" id="stack_title" type="text" placeholder="Stack title">
-                <input class="span5" id="stack_purpose" type="text" placeholder="Purpose of stack">
+    <div id="volume-form-container" title="Volume Details">
+        <form id="host-volume-form" class="form-horizontal">
+        <div class="modal-body">
+            <div class="control-group">
+                <label class="control-label" for="volume_snapshot">Snapshot</label>
+                <div class="controls">
+                    <select id="volume_snapshot" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
+                </div>
             </div>
 
-            <div>
-                <legend class="lead">Stack Hosts
-                    <div class="btn-group pull-right">
-                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                            Add Host <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu" data-bind="foreach: stores.Profiles">
-                            <li>
-                                <a href="#" data-bind="text: title, click: $root.showHostForm"></a>
-                            </li>
-                        </ul>
-                    </div>
-                </legend>
-                <table id="stack_hosts" class="data-grid stretch-full">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>Roles</th>
-                            <th>Count</th>
-                            <th>Size</th>
-                            <th>Host Pattern</th>
-                            <th>Security Groups</th>
-                            <th style="width:50px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody data-bind="foreach: stores.NewHosts">
-                        <tr>
-                            <td data-bind="text: id"></td>
-                            <td data-bind="html: flat_roles"></td>
-                            <td data-bind="text: host_count"></td>
-                            <td data-bind="text: size.title"></td>
-                            <td data-bind="text: host_pattern"></td>
-                            <td data-bind="text: host_security_groups"></td>
-                            <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeHost">X</button></td>
-                        </tr>     
-                    </tbody>
-                </table>
+
+            <div class="control-group">
+                <label class="control-label" for="volume_device">Device</label>
+                <div class="controls">
+                    <input id="volume_device" type="text" class="input-block-level" placeholder="Device name">
+                </div>
             </div>
 
+
+            <div class="control-group">
+                <label class="control-label" for="volume_mount_point">Mount point</label>
+                <div class="controls">
+                    <input type="text" id="volume_mount_point" class="input-mini" placeholder="/mnt/x">
+                </div>
+            </div>
         </div>
 
         <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: launchStack">Launch Stack</button>
-            <button class="btn btn-info" data-bind="click: saveStack">Save Stack</button>
-            <button class="btn" data-bind="click: closeStackForm">Close</button>
+            <button class="btn btn-primary" data-bind="click: $root.volume.addHostVolume">Save Volume</button>
+            <button class="btn" data-bind="click: $root.volume.closeVolumeForm">Close</button>
         </div>
+        </form>
     </div>
+
 
 
     <!-- 
@@ -436,7 +435,7 @@
                 </a>
                 <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
                     <li>
-                        <a href="#" data-bind="text: title, click: $root.showSnapshotForm"></a>
+                        <a href="#" data-bind="text: title, click: $root.snapshot.showSnapshotForm"></a>
                     </li>
                 </ul>
             </div>
@@ -461,7 +460,7 @@
                         <td data-bind="text: snapshot_id"></td>
                         <td data-bind="text: size_in_gb"></td>
                         <td data-bind="text: account.title"></td>
-                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeSnapshot">X</button></td>
+                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.snapshot.removeSnapshot">X</button></td>
                     </tr>     
                 </tbody>
             </table>
@@ -497,8 +496,8 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn" data-bind="click: $root.closeSnapshotForm">Close</button>
-                <button class="btn btn-primary" data-bind="click: $root.addSnapshot">Save</button>
+                <button class="btn" data-bind="click: $root.snapshot.closeSnapshotForm">Close</button>
+                <button class="btn btn-primary" data-bind="click: $root.snapshot.addSnapshot">Save</button>
             </div>
             </form>
         </div>
@@ -520,7 +519,7 @@
                 </a>
                 <ul class="dropdown-menu" data-bind="foreach: stores.ProviderTypes">
                     <li>
-                        <a href="#" data-bind="text: title, click: $root.showAccountForm"></a>
+                        <a href="#" data-bind="text: title, click: $root.account.showAccountForm"></a>
                     </li>
                 </ul>
             </div>
@@ -539,7 +538,7 @@
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
-                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.removeAccount">X</button></td>
+                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.account.removeAccount">X</button></td>
                     </tr>     
                 </tbody>
             </table>
@@ -596,8 +595,8 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn" data-bind="click: closeAccountForm">Close</button>
-                    <button class="btn btn-primary" data-bind="click: addAccount">Save</button>
+                    <button class="btn" data-bind="click: $root.account.closeAccountForm">Close</button>
+                    <button class="btn btn-primary" data-bind="click: $root.account.addAccount">Save</button>
                 </div>
             </form>
         </div>
@@ -621,7 +620,7 @@
                 </a>
                 <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
                     <li>
-                        <a href="#" data-bind="text: title, click: $root.showProfileForm"></a>
+                        <a href="#" data-bind="text: title, click: $root.profile.showProfileForm"></a>
                     </li>
                 </ul>
             </div>
@@ -642,7 +641,7 @@
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td data-bind="text: image_id"></td>
-                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.deleteProfile">X</button></td>
+                        <td><button type="button" class="btn-mini btn-danger" data-bind="click: $root.profile.deleteProfile">X</button></td>
                     </tr>     
                 </tbody>
             </table>
@@ -686,8 +685,8 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn" data-bind="click: closeProfileForm">Close</button>
-                <button class="btn btn-primary" data-bind="click: $root.addProfile">Save</button>
+                <button class="btn" data-bind="click: $root.profile.closeProfileForm">Close</button>
+                <button class="btn btn-primary" data-bind="click: $root.profile.addProfile">Save</button>
             </div>
             </form>
         </div>

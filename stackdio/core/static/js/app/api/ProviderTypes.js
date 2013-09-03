@@ -1,43 +1,43 @@
-define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
-        return {
-            load : function () {
-                var deferred = Q.defer();
+define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, models) {
+    return {
+        load : function () {
+            var deferred = Q.defer();
 
-                $.ajax({
-                    url: '/api/provider_types/',
-                    type: 'GET',
-                    headers: {
-                        "X-CSRFToken": stackdio.csrftoken,
-                        "Accept": "application/json"
-                    },
-                    success: function (response) {
-                        var i, item, items = response.results;
-                        var type;
+            $.ajax({
+                url: '/api/provider_types/',
+                type: 'GET',
+                headers: {
+                    "X-CSRFToken": stackdio.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    var i, item, items = response.results;
+                    var type;
 
-                        // Clear the store and the grid
-                        stores.ProviderTypes.removeAll();
+                    // Clear the store and the grid
+                    stores.ProviderTypes.removeAll();
 
-                        for (i in items) {
-                            type = new models.ProviderType().create(items[i]);
+                    for (i in items) {
+                        type = new models.ProviderType().create(items[i]);
 
-                            // Inject the record into the store
-                            stores.ProviderTypes.push(type);
-                        }
-
-                        console.log('types', stores.ProviderTypes());
-
-                        // Resolve the promise and pass back the loaded items
-                        deferred.resolve(stores.ProviderTypes());
+                        // Inject the record into the store
+                        stores.ProviderTypes.push(type);
                     }
-                });
 
-                return deferred.promise;
-            },
-            save: function (record) {
+                    console.log('types', stores.ProviderTypes());
 
-            },
-            delete: function (record) {
+                    // Resolve the promise and pass back the loaded items
+                    deferred.resolve(stores.ProviderTypes());
+                }
+            });
 
-            }
+            return deferred.promise;
+        },
+        save: function (record) {
+
+        },
+        delete: function (record) {
+
         }
+    }
 });

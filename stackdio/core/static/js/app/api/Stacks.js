@@ -1,4 +1,4 @@
-define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
+define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, models) {
     return {
         load : function () {
             var deferred = Q.defer();

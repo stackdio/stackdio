@@ -11,7 +11,6 @@ requirejs.config({
         'jquery-ui': 'lib/jquery-ui-min',
     }, 
 
-    // Use shim for plugins that does not support AMD
     shim: {
         'bootstrap': ['jquery'],
         'bootstrap-select': ['bootstrap'],
@@ -21,6 +20,4 @@ requirejs.config({
 
 });
 
-require(["bootstrap", "bootstrap-select"], function () { });
-require(["underscore"], function () { });
-require(["app/stackdio"], function () { });
+require(["bootstrap-select", "datatables", "jquery-ui", "underscore", "app/viewmodel/stackdio"], function () { });

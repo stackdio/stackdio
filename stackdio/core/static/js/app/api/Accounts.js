@@ -1,4 +1,4 @@
-define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
+define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, models) {
     return {
         load : function () {
             var deferred = Q.defer();
@@ -58,6 +58,8 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
             xhr.onloadend = function (evt) {
                 var item;
 
+                console.log(evt);
+
                 // Check if the upload succeeded
                 if (evt.target.status === 200 || evt.target.status === 201 || evt.target.status === 302) {
                     // Parse the response to get the created item
@@ -73,7 +75,6 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
 
                     try {
                         var response = JSON.parse(evt.target.response);
-
 
                         for (key in response) {
                             failure = response[key];
@@ -102,7 +103,7 @@ define(["lib/q", "app/stores", "app/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    stackdio.stores.Accounts.remove(account);
+                    stores.Accounts.remove(account);
                     deferred.resolve(account);
                 }
             });
