@@ -100,6 +100,7 @@ define(["knockout",
         //      S T A C K   H O S T S
         // 
         self.showHostMetadata = function (host) {
+            stores.HostMetadata.removeAll();
             _.each(host.ec2_metadata, function (v, k, l) {
                 if (typeof v !== "object") {
                     stores.HostMetadata.push({ key: k, value: v });
@@ -146,8 +147,10 @@ define(["knockout",
             }).join('');
 
             // Add spot instance config
-            host.spot_config = {};
-            host.spot_config.spot_price = (record.spot_instance_price.value !== '') ? record.spot_instance_price.value : 0;
+            if (record.spot_instance_price.value !== '') {
+                host.spot_config = {};
+                host.spot_config.spot_price = record.spot_instance_price.value;
+            }
 
             // Add volumes to the host
             host.volumes = [];
