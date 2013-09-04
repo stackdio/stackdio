@@ -14,6 +14,12 @@ define(["knockout",
         self.selectedProfile = null;
         self.selectedAccount = null;
 
+        // Only show spot instance price box if the spot instance checkbox is checked
+        self.isSpotInstance = ko.observable(false);
+        $('#spot_instance').click(function () {
+            self.isSpotInstance(this.checked);
+        });
+
         self.doStackAction = function (action, evt, stack) {
             var data = JSON.stringify({
                 action: action.toLowerCase()
