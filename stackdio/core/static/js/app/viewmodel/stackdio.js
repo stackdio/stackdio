@@ -1,4 +1,5 @@
 define([
+        "moment", 
         "knockout", 
         "datatables", 
         "app/settings",
@@ -12,7 +13,7 @@ define([
         "app/viewmodel/snapshots",
         "app/viewmodel/stacks"
     ],
-    function (ko, datatables, settings, formutil, models, stores, API, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
+    function (moment, ko, datatables, settings, formutil, models, stores, API, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
 
     /*
      *  ==================================================================================
@@ -22,6 +23,7 @@ define([
     function stackdioModel() {
         var self = this;
 
+        self.moment = moment;
         self.stores = stores;
         self.models = models;
         self.API = API;
@@ -115,7 +117,7 @@ define([
             var options = valueAccessor();
             var defaultOptions = {};
             options = $.extend(true, {}, defaultOptions, options);
-            options.trigger = "hover";
+            options.trigger = "click";
             options.placement = "bottom";
             options.html = true;
             options.title = "Stack History";

@@ -20,6 +20,31 @@ define(["knockout",
             self.isSpotInstance(this.checked);
         });
 
+        self.popoverBuilder = function (stack) { 
+            console.log(arguments);
+            
+            return stack.history.map(function (h) {
+                var content = [];
+
+                content.push("<div class=\'dotted-border xxsmall-padding\'>");
+                content.push("<div");
+                if (h.level === 'ERROR') {
+                    content.push(" class='btn-danger'");
+                
+                }
+                content.push('>');
+                content.push(h.status);
+                content.push('</div>');
+                content.push("<div class='grey'>");
+                content.push(moment(h.created).fromNow());
+                content.push('</div>');
+                content.push('</div>');
+
+                return content.join('');
+
+            }).join('');
+        };
+
         self.doStackAction = function (action, evt, stack) {
             var data = JSON.stringify({
                 action: action.toLowerCase()
@@ -222,7 +247,7 @@ define(["knockout",
          *  ==================================================================================
          */
         $("#stack-details-container").dialog({autoOpen: false, width: 650, modal: false });
-        $("#host-metadata-container").dialog({autoOpen: false, width: 500, modal: false });
+        $("#host-metadata-container").dialog({autoOpen: false, width: 500, height: 600, modal: true });
         $("#host-form-container").dialog({position: [(window.innerWidth / 2) - 275,50], autoOpen: false, width: 600, modal: true });
         $("#stack-form-container").dialog({autoOpen: false, width: window.innerWidth - 225, height: 500, position: [200,50], modal: false });
 

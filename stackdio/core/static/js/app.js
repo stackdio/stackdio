@@ -9,6 +9,7 @@ requirejs.config({
         'underscore': 'lib/underscore',
         'datatables': 'lib/jquery.dataTables.min',
         'jquery-ui': 'lib/jquery-ui-min',
+        'moment': 'lib/moment'
     }, 
 
     shim: {

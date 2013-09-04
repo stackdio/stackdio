@@ -114,7 +114,7 @@
                         <td data-bind="text: $data.id"></td>
                         <td><a href="#" data-bind="text: $data.title, click: $root.stack.showStackDetails"></a></td>
                         <td data-bind="text: $data.description"></td>
-                        <td><a href='#' data-bind="bootstrapPopover : {content : $data.history.map(function (h) { return '<div class=\'dotted-border xxsmall-padding\'>' + h.status + '</div>'; }).join('') }, text: 'Hover over to view (' + $data.history.length + ') messages'"></a></td>
+                        <td><a href='#' data-bind="bootstrapPopover : {content : $root.stack.popoverBuilder($data) }, text: 'View (' + $data.history.length + ') messages'"></a></td>
                         <td>
                             <div class="btn-group pull-right">
                                 <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
@@ -140,9 +140,7 @@
         ======================================================================
      -->
     <div id="stack-form-container" title="Stack Details">
-
         <div class="modal-body" style="min-height: 330px;">
-
             <div class="controls controls-row">
                 <input class="span5" id="stack_title" type="text" placeholder="Stack title">
                 <input class="span5" id="stack_purpose" type="text" placeholder="Purpose of stack">
@@ -203,7 +201,7 @@
         ======================================================================
      -->
     <div id="stack-details-container" title="Stack Hosts">
-         <!-- <div class="modal-body"> -->
+         <div class="modal-body">
             <table id="stack-details" class="data-grid">
                 <thead>
                     <tr>
@@ -225,43 +223,35 @@
                         </td>
                         <td data-bind="text: created"></td>
                         <td>
-                            <select id="host-action" class="dropup" data-container="body"
+                            <select id="host-action"
+                                    data-width="100px"
+                                    header="Perform action"
+                                    title="Perform action"
+                                    class="dropup" 
+                                    data-container="body"
                                     data-bind="options: $root.stack.stackHostActions, 
                                                optionsValue: $data,
                                                optionsText: $data,
                                                click: function (data, event) { $root.stack.doStackHostAction(data, event, $parent) }"
-                                    data-header="Perform action"></select>
-<!-- 
-                            <div class="btn-group pull-right">
-                                <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
-                                    Action <span class="caret"></span>
-                                </a>
-                                <ul class="dropdown-menu" data-bind="foreach: $root.stack.stackHostActions">
-                                    <li>
-                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.stack.doStackHostAction(data, event, $parent) }"></a>
-                                    </li>
-                                </ul>
-                            </div>
- -->
-
+                            ></select>
                         </td>
                     </tr>     
                 </tbody>
             </table>
-        <!-- </div> -->
+        </div>
 
-        <!-- <div class="modal-footer"> -->
+        <div class="modal-footer">
             <button class="btn btn-primary" data-bind="click: $root.stack.closeStackHosts">Close</button>
-        <!-- </div> -->
+        </div>
     </div>
 
     <!-- 
         ======================================================================
-        S T A C K   D E T A I L S
+        H O S T   M E T A D A T A
         ======================================================================
      -->
     <div id="host-metadata-container" title="Host Metadata">
-         <div class="modal-body">
+         <div class="small-modal-body">
             <table id="host-metadata" class="data-grid">
                 <thead>
                     <tr>
@@ -308,6 +298,7 @@
                                            optionsValue: 'id',
                                            optionsText: 'title'"
                                 data-size="8"
+                                data-container="body"
                                 data-header="Select a host size"
                                 class="input-xlarge "></select>
                     </div>
@@ -611,17 +602,13 @@
         </div>
     </div>
 
-
-
-
     <!-- 
         ======================================================================
         P R O F I L E   L I S T
         ======================================================================
      -->
-    <div id="profile-binding-target" data-bind='visible: $root.currentSection() == "Profiles"'>
+    <div id="profile-binding-target" data-bind='visible: currentSection() === "Profiles"'>
         <div class="view">
-
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Profile
@@ -683,7 +670,8 @@
                 <div class="span4 no-margin">
                     <select id="default_instance_size" 
                         data-bind="options: stores.InstanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" 
-                        data-size="4"
+                        data-size="8"
+                        data-container="body"
                         class="stretch-full"></select>
                 </div>
 
