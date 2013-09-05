@@ -3,7 +3,7 @@ var stackdio = {};
 requirejs.config({
    paths: {
         'jquery': 'lib/jquery',
-        'bootstrap': 'lib/bootstrap',
+        'bootstrap': 'lib/bootstrap.min',
         'bootstrap-select': 'lib/bootstrap-select.min',
         'knockout': 'lib/knockout',
         'underscore': 'lib/underscore',

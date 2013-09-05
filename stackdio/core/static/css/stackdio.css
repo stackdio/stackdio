@@ -6,6 +6,10 @@ img.logo {
     float:left;
 }
 
+form {
+    margin: 0 !important;
+}
+
 .view {
      margin: 60px 40px 0 220px;
 }
@@ -35,6 +39,12 @@ img.logo {
     max-height: 450px;
     overflow-y: auto;
 }
+
+.ui-dialog-content {
+    padding: .3em 0.2em !important;
+}
+
+
 
 
 /*
