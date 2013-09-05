@@ -20,9 +20,8 @@ define(["knockout",
             self.isSpotInstance(this.checked);
         });
 
+        // This builds the HTML for the stack history popover element
         self.popoverBuilder = function (stack) { 
-            console.log(arguments);
-            
             return stack.history.map(function (h) {
                 var content = [];
 

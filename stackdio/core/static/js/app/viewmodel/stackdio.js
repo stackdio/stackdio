@@ -1,5 +1,6 @@
 define([
         "moment", 
+        "jquery-ui", 
         "knockout", 
         "datatables", 
         "app/settings",
@@ -13,7 +14,7 @@ define([
         "app/viewmodel/snapshots",
         "app/viewmodel/stacks"
     ],
-    function (moment, ko, datatables, settings, formutil, models, stores, API, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
+    function (moment, jui, ko, datatables, settings, formutil, models, stores, API, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
 
     /*
      *  ==================================================================================
@@ -23,10 +24,10 @@ define([
     function stackdioModel() {
         var self = this;
 
-        self.moment = moment;
         self.stores = stores;
         self.models = models;
         self.API = API;
+        self.moment = moment;
 
         self.sections = ['Stacks', 'Accounts', 'Profiles', 'Snapshots'];
         self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch'];
