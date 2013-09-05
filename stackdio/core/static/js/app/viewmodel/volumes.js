@@ -1,10 +1,9 @@
 define(["knockout",
-        "app/settings",
         "app/util/form",
         "app/model/models",
         "app/store/stores",
         "app/api/api"], 
-    function (ko, settings, formutils, models, stores, API) {
+    function (ko, formutils, models, stores, API) {
 
     return function volumeViewModel () {
         var self = this;
@@ -38,7 +37,17 @@ define(["knockout",
             $( "#volume-form-container" ).dialog("close");
         };
 
-        $("#volume-form-container").dialog({position: [(window.innerWidth / 2) - 250,50], autoOpen: false, width: 500, modal: true });
+        /*
+         *  ==================================================================================
+         *  D I A L O G   E L E M E N T S
+         *  ==================================================================================
+         */
+        $("#volume-form-container").dialog({
+            position: [(window.innerWidth / 2) - 250,50],
+            autoOpen: false,
+            width: 500,
+            modal: true
+        });
 
    }
 });

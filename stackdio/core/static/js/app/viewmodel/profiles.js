@@ -1,17 +1,12 @@
 define(["knockout",
-        "app/settings",
         "app/util/form",
         "app/model/models",
         "app/store/stores",
         "app/api/api"], 
-    function (ko, settings, formutils, models, stores, API) {
+    function (ko, formutils, models, stores, API) {
 
     return function profileViewModel () {
         var self = this;
-
-        self.Accounts = stores.Accounts();
-        self.Profiles = stores.Profiles();
-        self.InstanceSizes = stores.InstanceSizes();
 
         self.addProfile = function (model, evt) {
             var profile = formutils.collectFormFields(evt.target.form);
@@ -51,17 +46,15 @@ define(["knockout",
         };
 
 
-        $("#profile-form-container").dialog({autoOpen: false, width: 650, modal: false });
-
-        // $('#profiles').dataTable({
-        //     "bPaginate": false,
-        //     "bLengthChange": false,
-        //     "bFilter": true,
-        //     "bSort": false,
-        //     "bInfo": false,
-        //     "bAutoWidth": true,
-        //     "bFilter": false
-        // });
-
+        /*
+         *  ==================================================================================
+         *  D I A L O G   E L E M E N T S
+         *  ==================================================================================
+         */
+        $("#profile-form-container").dialog({
+            autoOpen: false,
+            width: 650,
+            modal: false
+        });
    }
 });

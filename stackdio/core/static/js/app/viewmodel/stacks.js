@@ -1,10 +1,9 @@
 define(["knockout",
-        "app/settings",
         "app/util/form",
         "app/model/models",
         "app/store/stores",
         "app/api/api"], 
-    function (ko, settings, formutils, models, stores, API) {
+    function (ko, formutils, models, stores, API) {
 
    return function stackViewModel () {
         var self = this;
@@ -245,44 +244,32 @@ define(["knockout",
          *  D I A L O G   E L E M E N T S
          *  ==================================================================================
          */
-        $("#stack-details-container").dialog({autoOpen: false, width: 650, modal: false });
-        $("#host-metadata-container").dialog({autoOpen: false, width: 500, height: 600, modal: true });
-        $("#host-form-container").dialog({position: [(window.innerWidth / 2) - 275,50], autoOpen: false, width: 600, modal: true });
-        $("#stack-form-container").dialog({autoOpen: false, width: window.innerWidth - 225, height: 500, position: [200,50], modal: false });
+        $("#stack-details-container").dialog({
+            autoOpen: false,
+            width: 650,
+            modal: false
+        });
 
+        $("#host-metadata-container").dialog({
+            autoOpen: false,
+            width: 500,
+            height: 600,
+            modal: true
+        });
 
+        $("#host-form-container").dialog({
+            position: [(window.innerWidth / 2) - 275,50],
+            autoOpen: false,
+            width: 600,
+            modal: true
+        });
 
-        /*
-         *  ==================================================================================
-         *  D A T A   T A B L E   E L E M E N T S
-         *  ==================================================================================
-         */
-        // $('#stacks').dataTable({
-        //     "bPaginate": false,
-        //     "bLengthChange": false,
-        //     "bFilter": true,
-        //     "bSort": false,
-        //     "bInfo": false,
-        //     "bAutoWidth": true,
-        //     "bFilter": false
-        // });
-
-        // $('#stack-hosts').dataTable({
-        //     "bPaginate": false,
-        //     "bLengthChange": false,
-        //     "bFilter": true,
-        //     "bSort": false,
-        //     "bInfo": false,
-        //     "bAutoWidth": true,
-        //     "bFilter": false
-        // });
-
-
-
-
-
-
-
+        $("#stack-form-container").dialog({
+            autoOpen: false,
+            width: window.innerWidth - 225,
+            height: 500,
+            position: [200,50],
+            modal: false
+        });
    }
-
 });

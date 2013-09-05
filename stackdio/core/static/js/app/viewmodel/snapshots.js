@@ -1,15 +1,12 @@
 define(["knockout",
-        "app/settings",
         "app/util/form",
         "app/model/models",
         "app/store/stores",
         "app/api/api"], 
-    function (ko, settings, formutils, models, stores, API) {
+    function (ko, formutils, models, stores, API) {
 
     return function snapshotViewModel () {
         var self = this;
-
-        self.stores = stores;
 
         self.addSnapshot = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
@@ -47,17 +44,16 @@ define(["knockout",
         };
 
 
-        $("#snapshot-form-container").dialog({autoOpen: false, width: 650, modal: false });
-
-        // $('#snapshots').dataTable({
-        //     "bPaginate": false,
-        //     "bLengthChange": false,
-        //     "bFilter": true,
-        //     "bSort": false,
-        //     "bInfo": false,
-        //     "bAutoWidth": true,
-        //     "bFilter": false
-        // });
+        /*
+         *  ==================================================================================
+         *  D I A L O G   E L E M E N T S
+         *  ==================================================================================
+         */
+        $("#snapshot-form-container").dialog({
+            autoOpen: false,
+            width: 650,
+            modal: false
+        });
 
    }
 });
