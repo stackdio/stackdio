@@ -6,8 +6,7 @@
     <title>stackd.io</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link href="{% static 'css/flick/jquery-ui-1.10.3.custom.min.css' %}" rel="stylesheet">
-    <link href="{% static 'css/jquery.dataTables.css' %}" rel="stylesheet">
+    <link href="{% static 'css/theme/jquery-ui-1.10.3.custom.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">
@@ -98,12 +97,12 @@
                 </ul>
             </div>
 
-            <table id="stacks" class="data-grid">
+            <table id="stacks" class="table table-striped data-grid">
                 <thead>
                     <tr>
                         <th style="width:20px">#</th>
                         <th style="width:20%">Title</th>
-                        <th style="width:40%">Description</th>
+                        <th style="width:50%">Description</th>
                         <th style="width:20%">Status History</th>
                         <th style="width:50px"></th>
                     </tr>
@@ -115,7 +114,7 @@
                         <td data-bind="text: $data.description"></td>
                         <td><a href='#' data-bind="bootstrapPopover : {content : $root.stack.popoverBuilder($data) }, text: 'View (' + $data.history.length + ') messages'"></a></td>
                         <td>
-                            <div class="btn-group pull-right">
+                            <div class="btn-group ">
                                 <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
@@ -457,7 +456,7 @@
                 </ul>
             </div>
 
-            <table id="snapshots" class="data-grid">
+            <table id="snapshots" class="table table-striped data-grid">
                 <thead>
                     <tr>
                         <th style="width:20px">#</th>
@@ -527,7 +526,7 @@
         A C C O U N T   L I S T
         ======================================================================
      -->
-    <div id="accounts-binding-target"  data-bind='visible: $root.currentSection() == "Accounts"'>
+    <div id="accounts-binding-target" class="hide" data-bind='visible: $root.currentSection() == "Accounts"'>
         <div class="view">
             <div class="btn-group pull-right">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
@@ -541,7 +540,7 @@
                 </ul>
             </div>
 
-            <table id="accounts" class="data-grid">
+            <table id="accounts" class="table table-striped data-grid">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -640,7 +639,7 @@
                 </ul>
             </div>
 
-            <table id="profiles" class="data-grid">
+            <table id="profiles" class="table table-striped data-grid">
                 <thead>
                     <tr>
                         <th>#</th>

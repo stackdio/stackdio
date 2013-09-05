@@ -52,14 +52,14 @@ define(["knockout",
 
         $("#accounts-form-container").dialog({autoOpen: false, width: 650, modal: false });
 
-        $('#accounts').dataTable({
-            "bPaginate": false,
-            "bLengthChange": false,
-            "bFilter": true,
-            "bSort": false,
-            "bInfo": false,
-            "bAutoWidth": true,
-            "bFilter": false
-        });
+        // $('#accounts').dataTable({
+        //     "bPaginate": false,
+        //     "bLengthChange": false,
+        //     "bFilter": true,
+        //     "bSort": false,
+        //     "bInfo": false,
+        //     "bAutoWidth": true,
+        //     "bFilter": false
+        // });
    }
 });

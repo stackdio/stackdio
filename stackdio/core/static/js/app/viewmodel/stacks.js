@@ -257,25 +257,25 @@ define(["knockout",
          *  D A T A   T A B L E   E L E M E N T S
          *  ==================================================================================
          */
-        $('#stacks').dataTable({
-            "bPaginate": false,
-            "bLengthChange": false,
-            "bFilter": true,
-            "bSort": false,
-            "bInfo": false,
-            "bAutoWidth": true,
-            "bFilter": false
-        });
+        // $('#stacks').dataTable({
+        //     "bPaginate": false,
+        //     "bLengthChange": false,
+        //     "bFilter": true,
+        //     "bSort": false,
+        //     "bInfo": false,
+        //     "bAutoWidth": true,
+        //     "bFilter": false
+        // });
 
-        $('#stack-hosts').dataTable({
-            "bPaginate": false,
-            "bLengthChange": false,
-            "bFilter": true,
-            "bSort": false,
-            "bInfo": false,
-            "bAutoWidth": true,
-            "bFilter": false
-        });
+        // $('#stack-hosts').dataTable({
+        //     "bPaginate": false,
+        //     "bLengthChange": false,
+        //     "bFilter": true,
+        //     "bSort": false,
+        //     "bInfo": false,
+        //     "bAutoWidth": true,
+        //     "bFilter": false
+        // });
 
 
 

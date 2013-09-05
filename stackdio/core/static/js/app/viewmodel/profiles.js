@@ -53,15 +53,15 @@ define(["knockout",
 
         $("#profile-form-container").dialog({autoOpen: false, width: 650, modal: false });
 
-        $('#profiles').dataTable({
-            "bPaginate": false,
-            "bLengthChange": false,
-            "bFilter": true,
-            "bSort": false,
-            "bInfo": false,
-            "bAutoWidth": true,
-            "bFilter": false
-        });
+        // $('#profiles').dataTable({
+        //     "bPaginate": false,
+        //     "bLengthChange": false,
+        //     "bFilter": true,
+        //     "bSort": false,
+        //     "bInfo": false,
+        //     "bAutoWidth": true,
+        //     "bFilter": false
+        // });
 
    }
 });

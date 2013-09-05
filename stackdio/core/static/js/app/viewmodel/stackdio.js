@@ -2,7 +2,6 @@ define([
         "moment", 
         "jquery-ui", 
         "knockout", 
-        "datatables", 
         "app/settings",
         "app/util/form",
         "app/model/models",
@@ -14,7 +13,7 @@ define([
         "app/viewmodel/snapshots",
         "app/viewmodel/stacks"
     ],
-    function (moment, jui, ko, datatables, settings, formutil, models, stores, API, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
+    function (moment, jui, ko, settings, formutil, models, stores, API, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
 
     /*
      *  ==================================================================================
@@ -102,9 +101,17 @@ define([
             .then(API.Profiles.load)
             .then(API.Snapshots.load)
             .then(API.Stacks.load)
+
+            // Everything you want to do AFTER all data has loaded
             .then(function () {
-                self.gotoSection("Stacks");
+                // Convert select elements to the nice Bootstrappy style
                 $('select').selectpicker();
+
+                // Remove the hide class from the main sections
+                $("div[class='hide'][data-bind]").removeClass('hide');
+
+                // Take the user to the stacks section
+                self.gotoSection("Stacks");
             });
     };
 

@@ -7,18 +7,16 @@ requirejs.config({
         'bootstrap-select': 'lib/bootstrap-select.min',
         'knockout': 'lib/knockout',
         'underscore': 'lib/underscore',
-        'datatables': 'lib/jquery.dataTables.min',
-        'jquery-ui': 'lib/jquery-ui-min',
+        'jquery-ui': 'lib/jquery-ui-1.10.3.custom.min',
         'moment': 'lib/moment'
     }, 
 
     shim: {
         'bootstrap': ['jquery'],
         'bootstrap-select': ['bootstrap'],
-        'datatables': ['jquery'],
         'jquery-ui': ['jquery']
     },
 
 });
 
-require(["bootstrap-select", "datatables", "jquery-ui", "underscore", "app/viewmodel/stackdio"], function () { });
+require(["bootstrap-select", "jquery-ui", "underscore", "app/viewmodel/stackdio"], function () { });

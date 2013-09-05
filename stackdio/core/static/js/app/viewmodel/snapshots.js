@@ -49,15 +49,15 @@ define(["knockout",
 
         $("#snapshot-form-container").dialog({autoOpen: false, width: 650, modal: false });
 
-        $('#snapshots').dataTable({
-            "bPaginate": false,
-            "bLengthChange": false,
-            "bFilter": true,
-            "bSort": false,
-            "bInfo": false,
-            "bAutoWidth": true,
-            "bFilter": false
-        });
+        // $('#snapshots').dataTable({
+        //     "bPaginate": false,
+        //     "bLengthChange": false,
+        //     "bFilter": true,
+        //     "bSort": false,
+        //     "bInfo": false,
+        //     "bAutoWidth": true,
+        //     "bFilter": false
+        // });
 
    }
 });
