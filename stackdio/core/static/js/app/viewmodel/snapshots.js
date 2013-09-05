@@ -8,6 +8,14 @@ define(["knockout",
     return function snapshotViewModel () {
         var self = this;
 
+        self.userCanModify = ko.observable();
+
+        // Query OPTIONS on /providers and if DELETE is not in allowed verb list, user is not admin
+        API.Snapshots.options()
+            .then(function (allowed) {
+                self.userCanModify(allowed.verbs.indexOf('DELETE') !== -1);
+            });
+
         self.addSnapshot = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
             record.account = self.selectedAccount;

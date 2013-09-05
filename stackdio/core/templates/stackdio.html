@@ -476,7 +476,11 @@
                         <td data-bind="text: snapshot_id"></td>
                         <td data-bind="text: size_in_gb"></td>
                         <td data-bind="text: account.title"></td>
-                        <td><button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.snapshot.removeSnapshot"></button></td>
+                        <td>
+                            <button type="button" 
+                                    class="btn-small btn-danger iconic-trash-stroke"
+                                    data-bind="visible: $root.account.userCanModify,click: $root.account.removeSnapshot"></button>
+                        </td>
                     </tr>     
                 </tbody>
             </table>
@@ -555,7 +559,9 @@
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td>
-                            <button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.account.removeAccount"></button>
+                            <button type="button" 
+                                    class="btn-small btn-danger iconic-trash-stroke"
+                                    data-bind="visible: $root.account.userCanModify,click: $root.account.removeAccount"></button>
                         </td>
                     </tr>     
                 </tbody>
@@ -654,8 +660,12 @@
                         <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
-                        <td data-bind="text: image_id"></td>
-                        <td><button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.profile.deleteProfile"></button></td>
+                        <td data-bind="text: typeof image_id === 'object' ? 'n/a' : image_id"></td>
+                        <td>
+                            <button type="button" 
+                                    class="btn-small btn-danger iconic-trash-stroke"
+                                    data-bind="visible: typeof image_id !== 'object',click: $root.profile.deleteProfile"></button>
+                        </td>
                     </tr>     
                 </tbody>
             </table>

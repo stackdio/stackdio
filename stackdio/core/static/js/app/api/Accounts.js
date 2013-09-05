@@ -10,8 +10,8 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     "X-CSRFToken": stackdio.csrftoken,
                     "Accept": "application/json"
                 },
-                success: function (response) {
-                    var i, item, items = response.results;
+                success: function (data, status, response) {
+                    var i, item, items = data.results;
                     var account;
 
                     // Clear the store and the grid
@@ -25,6 +25,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     }
 
                     console.log('accounts', stores.Accounts());
+                    console.log('response', response);
 
                     // Resolve the promise and pass back the loaded items
                     deferred.resolve(stores.Accounts());
@@ -105,6 +106,24 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 success: function (response) {
                     stores.Accounts.remove(account);
                     deferred.resolve(account);
+                }
+            });
+            
+            return deferred.promise;
+        },
+        options: function () {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: '/api/providers/',
+                type: 'OPTIONS',
+                headers: {
+                    "X-CSRFToken": stackdio.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (data, textStatus, qwerty) {
+                    // console.log(request.getResponseHeader('Allow'));
+                    deferred.resolve({verbs: qwerty.getResponseHeader('Allow').split(',') });
                 }
             });
             

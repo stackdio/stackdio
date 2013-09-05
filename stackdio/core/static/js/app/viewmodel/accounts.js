@@ -10,7 +10,14 @@ define(["knockout",
 
         self.selectedAccount = null;
         self.selectedProviderType = null;
+        self.userCanModify = ko.observable();
 
+        // Query OPTIONS on /providers and if DELETE is not in allowed verb list, user is not admin
+        API.Accounts.options()
+            .then(function (allowed) {
+                self.userCanModify(allowed.verbs.indexOf('DELETE') !== -1);
+            });
+        
         self.showSuccess = function () {
             $("#alert-success").show();
             setTimeout('$("#alert-success").hide()', 3000);

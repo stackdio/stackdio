@@ -94,6 +94,23 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
             });
 
             return deferred.promise;
+        },
+        options: function () {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: '/api/snapshots/',
+                type: 'OPTIONS',
+                headers: {
+                    "X-CSRFToken": stackdio.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (data, textStatus, qwerty) {
+                    deferred.resolve({verbs: qwerty.getResponseHeader('Allow').split(',') });
+                }
+            });
+            
+            return deferred.promise;
         }
     }
 });
