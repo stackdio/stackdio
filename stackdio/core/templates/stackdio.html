@@ -742,5 +742,31 @@
 
     <script data-main="{% static 'js/app' %}" src="{% static 'js/require.js' %}"></script>
 
+
+<!--
+    <script src="{% static 'js/require.js' %}"></script>
+        <script>
+            /*
+             * 
+             *  WHEN READY TO TRY A PRODUCTION BUILD, FOLLOW THESE INSTRUCTIONS
+             *
+             *      1. Ensure you have node.js installed on your system.
+             *      2. npm install -g requirejs
+             *      3. cd /{stackdio_root_dir}/core/static
+             *      4. node r.js -o build.js
+             *      5. Then uncomment this block of code, and comments out the <script> tag above.
+             *
+             */
+            require.config({
+                paths: {
+                    //Comment out this line to go back to loading
+                    //the non-optimized main.js source file.
+                    "app": "{% static 'stackdio-built' %}"
+                }
+            });
+            require(["app"]);
+        </script>
+-->
+
 </body>
 </html>

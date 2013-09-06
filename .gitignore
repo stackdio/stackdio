@@ -6,10 +6,7 @@ dev.db
 *.swp
 *.un~
 reload.sh
-#stackdio/core/static
-stackdui/server/node_modules
-stackdui/src/packages/theme/sass/.sass-cache
-stackdui/src/resources/sass/bootstrap/.sass-cache
+stackdio/core/static/stackdio-built.js
 stackdsalt/etc/salt/pki
 stackdsalt/etc/salt/cloud.profiles
 stackdsalt/etc/salt/cloud.providers
