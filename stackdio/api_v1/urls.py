@@ -16,9 +16,10 @@ def api_root(request, format=None):
     api = { 
         'cloud': {
             'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),
+            'zones': reverse('cloudzone-list', request=request, format=format),
+            'profiles': reverse('cloudprofile-list', request=request, format=format),
             'providers': reverse('cloudprovider-list', request=request, format=format),
             'provider_types': reverse('cloudprovidertype-list', request=request, format=format),
-            'profiles': reverse('cloudprofile-list', request=request, format=format),
         },
         'stacks': {
             'hosts': reverse('host-list', request=request, format=format),

@@ -9,6 +9,8 @@ from .api import (
     CloudInstanceSizeDetailAPIView,
     CloudProfileListAPIView, 
     CloudProfileDetailAPIView,
+    CloudZoneListAPIView, 
+    CloudZoneDetailAPIView,
     SnapshotListAPIView,
     SnapshotDetailAPIView,
 )
@@ -55,6 +57,15 @@ urlpatterns = patterns('cloud.api',
     url(r'^snapshots/(?P<pk>[0-9]+)/$', 
         SnapshotDetailAPIView.as_view(), 
         name='snapshot-detail'),
+
+    url(r'^zones/$',
+        CloudZoneListAPIView.as_view(), 
+        name='cloudzone-list'),
+
+    url(r'^zones/(?P<pk>[0-9]+)/$', 
+        CloudZoneDetailAPIView.as_view(), 
+        name='cloudzone-detail'),
+
 
 )
 

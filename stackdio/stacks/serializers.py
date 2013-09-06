@@ -12,6 +12,8 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
+    availability_zone = serializers.PrimaryKeyRelatedField()
+
     class Meta:
         model = Host
         fields = (
@@ -23,6 +25,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'state',
             'status',
             'status_detail',
+            'availability_zone',
             'created',
             'sir_id',
             'sir_price'

@@ -97,6 +97,7 @@ define([
         API.Roles.load();
 
         API.ProviderTypes.load()
+            .then(API.Zones.load)
             .then(API.Accounts.load)
             .then(API.Profiles.load)
             .then(API.Snapshots.load)

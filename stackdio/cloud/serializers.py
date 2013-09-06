@@ -11,6 +11,7 @@ from .models import (
     CloudInstanceSize,
     CloudProfile,
     Snapshot,
+    CloudZone,
 )
 
 from .utils import get_provider_type_and_class
@@ -21,6 +22,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
     provider_type = serializers.PrimaryKeyRelatedField()
+    default_availability_zone = serializers.PrimaryKeyRelatedField()
     provider_type_name = serializers.Field(source='provider_type.type_name')
 
     class Meta:
@@ -33,6 +35,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'description', 
             'provider_type',
             'provider_type_name',
+            'default_availability_zone',
             'yaml',
         )
 
@@ -119,3 +122,14 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
             'size_in_gb',
         )
 
+
+class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
+    provider_type = serializers.PrimaryKeyRelatedField()
+
+    class Meta:
+        model = CloudZone
+        fields = (
+            'id',
+            'title',
+            'provider_type',
+        )

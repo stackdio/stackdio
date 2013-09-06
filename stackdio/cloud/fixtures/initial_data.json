@@ -15,6 +15,46 @@
     },
     {
         "pk": 1,
+        "model": "cloud.cloudzone",
+        "fields": {
+            "title": "us-east-1a",
+            "description": "",
+            "provider_type": 1,
+            "slug": "us-east-1a"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "cloud.cloudzone",
+        "fields": {
+            "title": "us-east-1b",
+            "description": "",
+            "provider_type": 1,
+            "slug": "us-east-1b"
+        }
+    },
+    {
+        "pk": 3,
+        "model": "cloud.cloudzone",
+        "fields": {
+            "title": "us-east-1c",
+            "description": "",
+            "provider_type": 1,
+            "slug": "us-east-1c"
+        }
+    },
+    {
+        "pk": 4,
+        "model": "cloud.cloudzone",
+        "fields": {
+            "title": "us-east-1d",
+            "description": "",
+            "provider_type": 1,
+            "slug": "us-east-1d"
+        }
+    },
+    {
+        "pk": 1,
         "model": "cloud.cloudinstancesize",
         "fields": {
             "instance_id": "m1.large",

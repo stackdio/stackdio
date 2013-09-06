@@ -7,6 +7,9 @@ define(function () {
         return self;
     };
 
+    var Zone = function () {};
+    Zone.prototype = new Model();
+
     var Stack = function () {};
     Stack.prototype = new Model();
 
@@ -38,6 +41,7 @@ define(function () {
     Role.prototype = new Model();
 
     return {
+        Zone: Zone,
         Stack: Stack,
         StackHost: StackHost,
         ProviderType: ProviderType,

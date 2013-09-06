@@ -23,6 +23,7 @@ from core.fields import DeletingFileField
 from cloud.models import (
     CloudProvider,
     CloudProfile,
+    CloudZone,
     CloudInstanceSize
 )
 
@@ -134,19 +135,19 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     OK = 'ok'
     ERROR = 'error'
     PENDING = 'pending'
-    FINISHED = 'finished'
+    SYNCING = 'syncing'
+    STARTING = 'starting'
     LAUNCHING = 'launching'
     FINALIZING = 'finalizing'
-    DESTROYING = 'destroying'
     CONFIGURING = 'configuring'
     PROVISIONING = 'provisioning'
-    SYNCING = 'syncing'
-    STOPPING = 'stopping'
-    STARTING = 'starting'
-    TERMINATING = 'terminating'
-    REBOOTING = 'rebooting'
-    RUNNING = 'running'
     EXECUTING_ACTION = 'executing_action'
+    TERMINATING = 'terminating'
+    DESTROYING = 'destroying'
+    REBOOTING = 'rebooting'
+    FINISHED = 'finished'
+    STOPPING = 'stopping'
+    RUNNING = 'running'
 
     class Meta:
         unique_together = ('user', 'title')
@@ -243,6 +244,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             host_pattern = host['host_pattern']
             cloud_profile_id = host['cloud_profile']
             host_size_id = host.get('host_size')
+            availability_zone_id = host.get('availability_zone')
 
             # cloud profiles are restricted to only those in this stack's
             # cloud provider
@@ -591,6 +593,8 @@ class Host(TimeStampedModel, StatusDetailModel):
     cloud_profile = models.ForeignKey('cloud.CloudProfile',
                                       related_name='hosts')
     instance_size = models.ForeignKey('cloud.CloudInstanceSize',
+                                      related_name='hosts')
+    availability_zone = models.ForeignKey('cloud.CloudZone',
                                       related_name='hosts')
     roles = models.ManyToManyField('stacks.SaltRole',
                                    related_name='hosts')

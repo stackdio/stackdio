@@ -2,6 +2,7 @@ import logging
 import yaml
 import os
 import re
+import boto.ec2
 from collections import defaultdict
 
 from django.conf import settings

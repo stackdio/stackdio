@@ -7,7 +7,6 @@ from django.core.files.storage import FileSystemStorage
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
 from .utils import get_cloud_provider_choices
-
 from cloud.utils import get_provider_type_and_class
 
 logger = logging.getLogger(__name__)
@@ -37,6 +36,10 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     # Used to store the provider-specifc YAML that will be written
     # to disk in settings.SALT_CLOUD_PROVIDERS_FILE
     yaml = models.TextField()
+
+    # The default availability zone for this account, may be overridden
+    # by the user at stack creation time
+    default_availability_zone = models.ForeignKey('CloudZone', related_name='default_zone', null=True)
 
     # provide additional manager functionality
     objects = CloudProviderManager()
@@ -114,3 +117,12 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
     # How big the snapshot is...this doesn't actually affect the actual
     # volume size, but mainly a useful hint to the user
     size_in_gb = models.IntegerField()
+
+
+class CloudZone(TitleSlugDescriptionModel):
+    # link to the type of provider for this zone
+    provider_type = models.ForeignKey('cloud.CloudProviderType')
+
+    def __unicode__(self):
+        return self.title
+

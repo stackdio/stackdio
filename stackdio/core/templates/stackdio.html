@@ -311,10 +311,23 @@
                             <select id="host_instance_size" 
                                     data-bind="options: stores.InstanceSizes, 
                                                optionsValue: 'id',
-                                               optionsText: 'title'"
-                                    data-size="8"
+                                               optionsText: 'title',
+                                               optionsCaption: 'Choose size...'"
+                                    data-size="12"
                                     data-container="body"
-                                    data-header="Select a host size"
+                                    class="input-xlarge "></select>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" for="availability_zone">Availability zone</label>
+                        <div class="controls">
+                            <select id="availability_zone" 
+                                    data-bind="options: stores.Zones, 
+                                               optionsValue: 'id',
+                                               optionsText: 'title',
+                                               optionsCaption: 'Choose a zone...'"
+                                    data-container="body"
                                     class="input-xlarge "></select>
                         </div>
                     </div>
@@ -340,8 +353,10 @@
                                     multiple
                                     data-selected-text-format="count"
                                     data-bind="options: stores.Roles, 
-                                    optionsValue: 'id', 
-                                    optionsText: 'title'" 
+                                               optionsValue: 'id', 
+                                               optionsText: 'title'",
+                                    data-container="body"
+                                    data-header="Choose states to install"
                                     class="input-xlarge"></select>
                         </div>
                     </div>
@@ -604,6 +619,14 @@
                     <div class="span2">Security Groups</div>
                     <div class="span4 no-margin">
                         <input id="security_groups" type="text" class="input-block-level" placeholder="comma separated list">
+                    </div>
+
+                    <div class="span2">Default Zone</div>
+                    <div class="span4 no-margin">
+                        <select id="default_availability_zone" 
+                            data-bind="options: stores.Zones, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose default zone...'" 
+                            data-container="body"
+                            class="stretch-full"></select>
                     </div>
 
                     <div class="span2">Route 53 Domain</div>

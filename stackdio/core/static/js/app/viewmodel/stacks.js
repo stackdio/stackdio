@@ -161,6 +161,7 @@ define(["knockout",
                 host_size: record.host_instance_size.value,
                 cloud_profile: self.selectedProfile.id,
                 roles: record.host_roles,
+                availability_zone: record.availability_zone,
                 host_security_groups: record.host_security_groups.value
             });
 
@@ -224,7 +225,13 @@ define(["knockout",
 
         self.showHostForm = function (profile) {
             self.selectedProfile = profile;
+
+            // Choose the default instance size assigned to the chosen profile
             $('#host_instance_size').selectpicker('val', profile.default_instance_size);
+
+            // Choose the default zone assigned to the chosen account
+            $('#availability_zone').selectpicker('val', self.selectedAccount.default_availability_zone);
+
             $( "#host-form-container" ).dialog("open");
         };
 

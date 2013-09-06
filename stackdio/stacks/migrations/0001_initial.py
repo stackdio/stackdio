@@ -63,6 +63,7 @@ class Migration(SchemaMigration):
             ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['stacks.Stack'])),
             ('cloud_profile', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['cloud.CloudProfile'])),
             ('instance_size', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['cloud.CloudInstanceSize'])),
+            ('availability_zone', self.gf('django.db.models.fields.related.ForeignKey')(related_name='hosts', to=orm['cloud.CloudZone'])),
             ('hostname', self.gf('django.db.models.fields.CharField')(max_length=64)),
             ('state', self.gf('django.db.models.fields.CharField')(default='unknown', max_length=32)),
             ('provider_dns', self.gf('django.db.models.fields.CharField')(max_length=64, blank=True)),
@@ -180,6 +181,7 @@ class Migration(SchemaMigration):
         u'cloud.cloudprovider': {
             'Meta': {'unique_together': "(('title', 'provider_type'),)", 'object_name': 'CloudProvider'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'default_availability_zone': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'default_zone'", 'null': 'True', 'to': u"orm['cloud.CloudZone']"}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
@@ -193,6 +195,14 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'type_name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '32'})
         },
+        u'cloud.cloudzone': {
+            'Meta': {'object_name': 'CloudZone'},
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'provider_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProviderType']"}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
         u'contenttypes.contenttype': {
             'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
             'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
@@ -202,6 +212,7 @@ class Migration(SchemaMigration):
         },
         u'stacks.host': {
             'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Host'},
+            'availability_zone': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['cloud.CloudZone']"}),
             'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['cloud.CloudProfile']"}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'fqdn': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),

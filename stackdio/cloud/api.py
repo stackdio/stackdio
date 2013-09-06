@@ -29,7 +29,8 @@ from .models import (
     CloudProviderType,
     CloudInstanceSize,
     CloudProfile,
-    Snapshot
+    Snapshot,
+    CloudZone,
 )
 
 from .serializers import (
@@ -38,6 +39,7 @@ from .serializers import (
     CloudInstanceSizeSerializer,
     CloudProfileSerializer,
     SnapshotSerializer,
+    CloudZoneSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -124,8 +126,19 @@ class SnapshotListAPIView(generics.ListCreateAPIView):
     serializer_class = SnapshotSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
+
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = Snapshot
     serializer_class = SnapshotSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
+
+
+class CloudZoneListAPIView(generics.ListAPIView):
+    model = CloudZone
+    serializer_class = CloudZoneSerializer
+
+
+class CloudZoneDetailAPIView(generics.RetrieveAPIView):
+    model = CloudZone
+    serializer_class = CloudZoneSerializer
 
