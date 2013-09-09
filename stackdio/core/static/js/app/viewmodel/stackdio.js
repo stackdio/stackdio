@@ -1,4 +1,5 @@
 define([
+        "lib/q", 
         "moment", 
         "jquery-ui", 
         "knockout", 
@@ -13,7 +14,7 @@ define([
         "app/viewmodel/snapshots",
         "app/viewmodel/stacks"
     ],
-    function (moment, jui, ko, settings, formutil, models, stores, API, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
+    function (Q, moment, jui, ko, settings, formutil, models, stores, API, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
 
     /*
      *  ==================================================================================

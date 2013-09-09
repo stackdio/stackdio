@@ -161,7 +161,7 @@ define(["knockout",
                 host_size: record.host_instance_size.value,
                 cloud_profile: self.selectedProfile.id,
                 roles: record.host_roles,
-                availability_zone: record.availability_zone,
+                availability_zone: record.availability_zone.value,
                 host_security_groups: record.host_security_groups.value
             });
 

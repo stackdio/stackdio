@@ -1,4 +1,6 @@
-define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, models) {
+define(["knockout", "lib/q", "app/store/stores", "app/model/models"], function (ko, Q, stores, models) {
+    var self = this;
+
     return {
         load : function () {
             var deferred = Q.defer();
@@ -27,7 +29,9 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     console.log('accounts', stores.Accounts());
 
                     // Resolve the promise and pass back the loaded items
-                    deferred.resolve(stores.Accounts());
+                    // self.userCanModify = response.getResponseHeader('Allow').split(',').indexOf('DELETE');
+                    
+                    deferred.resolve(response);
                 }
             });
 
@@ -121,7 +125,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     "Accept": "application/json"
                 },
                 success: function (data, textStatus, qwerty) {
-                    // console.log(request.getResponseHeader('Allow'));
+                    // console.log(response.getResponseHeader('Allow'));
                     deferred.resolve({verbs: qwerty.getResponseHeader('Allow').split(',') });
                 }
             });

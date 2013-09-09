@@ -10,7 +10,6 @@ define(["knockout",
 
         self.selectedAccount = null;
         self.selectedProviderType = null;
-        self.userCanModify = ko.observable();
 
         // Query OPTIONS on /providers and if DELETE is not in allowed verb list, user is not admin
         API.Accounts.options()
