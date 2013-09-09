@@ -60,6 +60,7 @@
         <div id="alert-error" class="alert hide alert-error">
             <button type="button" class="close" data-bind="click: closeError">&times;</button>
             <strong>Error!</strong> Please try that again.
+            (<span id="alert-error-details"></span>)
         </div>
 
         <div id="alert-success" class="alert hide alert-success">
@@ -576,7 +577,8 @@
                         <td>
                             <button type="button" 
                                     class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.account.userCanModify,click: $root.account.removeAccount"></button>
+                                    data-bind="visible: $root.account.userCanModify,
+                                               click: $root.account.deleteAccount"></button>
                         </td>
                     </tr>     
                 </tbody>
@@ -687,7 +689,9 @@
                         <td>
                             <button type="button" 
                                     class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: typeof image_id !== 'object',click: $root.profile.deleteProfile"></button>
+                                    data-bind="visible: $root.profile.userCanModify,
+                                               click: $root.profile.deleteProfile"
+                            ></button>
                         </td>
                     </tr>     
                 </tbody>

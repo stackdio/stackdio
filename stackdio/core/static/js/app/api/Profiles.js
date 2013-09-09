@@ -10,8 +10,8 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     "X-CSRFToken": stackdio.csrftoken,
                     "Accept": "application/json"
                 },
-                success: function (response) {
-                    var i, item, items = response.results;
+                success: function (data, status, response) {
+                    var i, item, items = data.results;
                     var profile;
 
                     // Clear the store and the grid
@@ -31,8 +31,8 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
                     console.log('profiles', stores.Profiles());
 
-                    // Resolve the promise and pass back the loaded items
-                    deferred.resolve(stores.Profiles());
+                    // Resolve the promise
+                    deferred.resolve();
 
                 }
             });
@@ -82,6 +82,9 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 success: function (response) {
                     stores.Profiles.remove(profile);
                     deferred.resolve(profile);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 

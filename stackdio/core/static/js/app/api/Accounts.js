@@ -1,4 +1,4 @@
-define(["knockout", "lib/q", "app/store/stores", "app/model/models"], function (ko, Q, stores, models) {
+define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, models) {
     var self = this;
 
     return {
@@ -9,6 +9,7 @@ define(["knockout", "lib/q", "app/store/stores", "app/model/models"], function (
                 url: '/api/providers/',
                 type: 'GET',
                 headers: {
+                    "Content-Type": "application/json",
                     "X-CSRFToken": stackdio.csrftoken,
                     "Accept": "application/json"
                 },
@@ -28,10 +29,8 @@ define(["knockout", "lib/q", "app/store/stores", "app/model/models"], function (
 
                     console.log('accounts', stores.Accounts());
 
-                    // Resolve the promise and pass back the loaded items
-                    // self.userCanModify = response.getResponseHeader('Allow').split(',').indexOf('DELETE');
-                    
-                    deferred.resolve(response);
+                    // Resolve the promise
+                    deferred.resolve(response.getResponseHeader('Allow'));
                 }
             });
 
@@ -103,30 +102,16 @@ define(["knockout", "lib/q", "app/store/stores", "app/model/models"], function (
                 url: '/api/providers/' + account.id,
                 type: 'DELETE',
                 headers: {
+                    "Content-Type": "application/json",
                     "X-CSRFToken": stackdio.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
                     stores.Accounts.remove(account);
                     deferred.resolve(account);
-                }
-            });
-            
-            return deferred.promise;
-        },
-        options: function () {
-            var deferred = Q.defer();
-
-            $.ajax({
-                url: '/api/providers/',
-                type: 'OPTIONS',
-                headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
-                    "Accept": "application/json"
                 },
-                success: function (data, textStatus, qwerty) {
-                    // console.log(response.getResponseHeader('Allow'));
-                    deferred.resolve({verbs: qwerty.getResponseHeader('Allow').split(',') });
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
             
