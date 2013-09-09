@@ -15,5 +15,4 @@ define(["jquery"], function ($) {
         return cookieValue;
     }
     stackdio.csrftoken = getCookie('csrftoken');
-    console.log(stackdio.csrftoken);
 });

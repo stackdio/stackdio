@@ -40,31 +40,29 @@
                 </div>
             </div>
 
-            <div class="span6" style="float: none; margin: 0 auto;">
+            <div class="login">
                 <form class="form-horizontal" action="{% url 'login' %}" method="POST">
                     {% csrf_token %}
                     <div class="control-group">
-                        <label class="control-label" for="inputUsername">Username</label>
-                        <div class="controls">
+                        <label class="control-label" for="inputUsername" style="width: 100px;">Username</label>
+                        <div class="controls" style="margin-left: 100px;">
                             <input id="inputUsername" type="text" name="username" placeholder="Username">
                         </div>
                     </div>
                     <div class="control-group">
-                        <label class="control-label" for="inputPassword">Password</label>
-                        <div class="controls">
+                        <label class="control-label" for="inputPassword" style="width: 100px;">Password</label>
+                        <div class="controls" style="margin-left: 100px;">
                             <input type="password" name="password" placeholder="Password">
                         </div>
                     </div>
                     <div class="control-group">
-                        <div class="controls">
+                        <div class="controls" style="margin-left: 0;">
                             <button type="submit" class="btn">Sign in</button>
                         </div>
                     </div>
                 </form>
             </div>
         </div>
-
-        <!-- <hr> -->
 
         <div class="container">
             <footer>
@@ -76,7 +74,6 @@
     </div>
 
     <script src="{% static 'js/lib/jquery.js' %}"></script>
-    <script src="{% static 'js/lib/bootstrap.js' %}"></script>
     
 </body>
 </html>

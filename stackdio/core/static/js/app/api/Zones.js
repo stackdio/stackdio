@@ -27,7 +27,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     }
 
                     // Resolve the promise and pass back the loaded items
-                    console.log('Zones', stores.Zones());
+                    console.log('zones', stores.Zones());
                     deferred.resolve(stores.Zones());
                 }
             });

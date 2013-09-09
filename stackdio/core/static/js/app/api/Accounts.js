@@ -25,7 +25,6 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     }
 
                     console.log('accounts', stores.Accounts());
-                    console.log('response', response);
 
                     // Resolve the promise and pass back the loaded items
                     deferred.resolve(stores.Accounts());

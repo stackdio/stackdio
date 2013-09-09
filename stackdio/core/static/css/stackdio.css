@@ -44,6 +44,16 @@ form {
     padding: .3em 0.2em !important;
 }
 
+.login {
+    background-color: #eee; 
+    border:1px dotted #bbb;
+    padding: 20px;
+    width: 400px;
+    text-align: center;
+    float: none;
+    margin: 30px auto;
+}
+
 
 
 
