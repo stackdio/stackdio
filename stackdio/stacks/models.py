@@ -394,6 +394,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             fqdn = '{0}.{1}'.format(host.hostname, 
                                     cloud_provider_yaml['append_domain'])
 
+            availability_zone = host.availability_zone.title
+
             # The volumes will be defined on the map as well as in the grains.
             # Those in the map are used by salt-cloud to create and attach
             # the volumes (using the snapshot), whereas those on the grains
@@ -442,6 +444,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     # depending on the cloud provider being used.
                     'size': instance_size,
                     'securitygroup': list(security_groups),
+                    'availability_zone': availability_zone,
                     'volumes': map_volumes,
                 }
             }

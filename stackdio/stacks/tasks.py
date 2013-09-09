@@ -5,6 +5,7 @@ from datetime import datetime
 
 import envoy
 import celery
+import yaml
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.utils.translation import ungettext
@@ -79,13 +80,11 @@ def launch_hosts(stack_id):
         cmd = ' '.join([
             'salt-cloud',
             '-y',                    # assume yes
-            #'-P',                    # parallelize VM launching
+            '-P',                    # parallelize VM launching
             '-lquiet',               # no logging on console
             '--log-file {0}',        # where to log
             '--log-file-level all',  # full logging
-            '--out=json',            # return JSON formatted results
-            '--out-indent=-1',       # don't format them; this is because of
-                                     # a bug in salt-cloud
+            '--out=yaml',            # return YAML formatted results
             '-m {1}',                # the map file to use for launching
         ]).format(
             log_file,
@@ -101,7 +100,7 @@ def launch_hosts(stack_id):
 
         try:
             # Look for errors if we got valid JSON
-            result_json = json.loads(result.std_out)
+            result_json = yaml.safe_load(result.std_out)
             errors = set()
             for h, v in result_json.iteritems():
                 logger.debug('Checking host {0} for errors.'.format(h))
@@ -120,8 +119,8 @@ def launch_hosts(stack_id):
                     stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error(s) while launching stack '
                                          '{0}'.format(stack_id))
-        except ValueError, e:
-            logger.debug('Invalid JSON returned in envoy stdout')
+        except Exception, e:
+            logger.debug('Unable to parse YAML from envoy results.')
             pass
 
         if result.status_code > 0:
@@ -352,9 +351,8 @@ def ping(stack_id, timeout=5*60, interval=5, max_failures=25):
         # Ping
         cmd_args = [
             'salt',
-            '--out=json',
-            '-C',                               # compound targeting
-            'G@stack_id:{0}'.format(stack_id),   # target the nodes in this
+            '--out=yaml',
+            '-G stack_id:{0}'.format(stack_id), # target the nodes in this
                                                 # stack only
             'test.ping',                        # ping all VMs
         ]
@@ -374,12 +372,12 @@ def ping(stack_id, timeout=5*60, interval=5, max_failures=25):
 
             if result.status_code == 0:
                 try:
-                    result_json = json.loads(result.std_out)
+                    result_json = yaml.safe_load(result.std_out)
                     if result_json:
                         break
-                except ValueError, e:
+                except Exception, e:
                     failures += 1
-                    logger.debug('Invalid JSON returned from test.ping. '
+                    logger.debug('Unable to parse YAML from envoy results. '
                                  'Total failures: {0}'.format(failures))
 
             if timeout < 0:
@@ -438,8 +436,7 @@ def sync_all(stack_id):
         # build up the command for salt
         cmd_args = [
             'salt',
-            '-C',                               # compound targeting
-            'G@stack_id:{0}'.format(stack_id),   # target the nodes in this
+            '-G stack_id:{0}'.format(stack_id), # target the nodes in this
                                                 # stack only
             'saltutil.sync_all',                # sync all systems
         ]
@@ -498,11 +495,9 @@ def provision_hosts(stack_id, host_ids=None):
         # build up the command for salt
         cmd_args = [
             'salt',
-            '--out=json',           # json formatted output
-            '--out-indent=4',       # make the output a bit easier to read
-            '-C',                   # compound targeting
-            'G@stack_id:{0}'.format(stack_id),   # target the nodes in this
-                                                #stack only
+            '--out=yaml',           # yaml formatted output
+            '-G stack_id:{0}'.format(stack_id), # target the nodes in this
+                                                # stack only
             'state.top',            # run this stack's top file
             stack.top_file.name,
         ]
@@ -549,7 +544,7 @@ def provision_hosts(stack_id, host_ids=None):
             symlink(log_file, log_symlink)
         
             # load JSON so we can attempt to catch provisioning errors
-            output = json.loads(result.std_out)
+            output = yaml.safe_load(result.std_out)
 
             # each key in the dict is a host, and the value of the host
             # is either a list or dict. Those that are lists we can
@@ -560,8 +555,10 @@ def provision_hosts(stack_id, host_ids=None):
                     if type(host_result) is list:
                         errors[host] = host_result
 
-                    # TODO: go deeper into the host_result dictionaries
-                    # looking for bad salt state executions
+                    elif type(host_result) is dict:
+                        # TODO: go deeper into the host_result dictionaries
+                        # looking for bad salt state executions
+                        pass
 
                 if errors:
                     err_msg = 'Provisioning errors on hosts: {0}. Please see the ' \
@@ -652,7 +649,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
             '-y',                   # assume yes
             '-P',                   # destroy in parallel
             '-d',                   # destroy argument
-            '--out=json',           # output in JSON
+            '--out=yaml',           # output in JSON
         ]
 
         # if host ids is given, we're going to terminate only those hosts
