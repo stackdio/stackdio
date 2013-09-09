@@ -33,7 +33,7 @@ extjs:
       - pkg: oozie
   cmd:
     - run
-    - name: 'unzip -d {{ oozie_data_dir }} /srv/sync/cdh4/{{ extjs_zip }}'
+    - name: 'unzip -d {{ oozie_data_dir }} /srv/sync/cdh4/{{ extjs_zip }} &> /dev/null'
     - unless: 'test -d {{ oozie_data_dir }}/ext-*'
     - require:
       - file: /srv/sync/cdh4/{{ extjs_zip }}

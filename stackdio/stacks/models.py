@@ -244,7 +244,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             host_pattern = host['host_pattern']
             cloud_profile_id = host['cloud_profile']
             host_size_id = host.get('host_size')
-            availability_zone_id = host.get('availability_zone', {}).get('value', None)
+            availability_zone_id = host.get('availability_zone')
 
             # cloud profiles are restricted to only those in this stack's
             # cloud provider

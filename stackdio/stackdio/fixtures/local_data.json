@@ -111,12 +111,36 @@
         "pk": 4,
         "model": "stacks.saltrole",
         "fields": {
-            "description": "This role will Oozie.",
+            "description": "This role will install Oozie.",
             "title": "CDH4 Oozie",
             "created": "2013-05-17T19:41:00Z",
             "modified": "2013-05-17T19:41:00Z",
             "role_name": "cdh4.oozie",
             "slug": "cdh4-oozie"
+        }
+    },
+    {
+        "pk": 5,
+        "model": "stacks.saltrole",
+        "fields": {
+            "description": "This role will provision a machine as an HBase Master.",
+            "title": "HBase Master",
+            "created": "2013-05-17T19:41:00Z",
+            "modified": "2013-05-17T19:41:00Z",
+            "role_name": "cdh4.hbase.master",
+            "slug": "hbase-master"
+        }
+    },
+    {
+        "pk": 6,
+        "model": "stacks.saltrole",
+        "fields": {
+            "description": "This role will provision a machine as an HBase RegionServer.",
+            "title": "HBase RegionServer",
+            "created": "2013-05-17T19:41:00Z",
+            "modified": "2013-05-17T19:41:00Z",
+            "role_name": "cdh4.hbase.regionserver",
+            "slug": "hbase-regionserver"
         }
     }
 ]

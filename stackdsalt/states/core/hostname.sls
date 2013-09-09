@@ -10,6 +10,7 @@ set_hostname:
 append_fqdn_etc_hosts:
   file:
     - append
+    - order: 1
     - name: /etc/hosts
     - text: "{{ grains['ip_interfaces']['eth0'][0] }} {{ grains['fqdn'] }}"
   require:
@@ -19,6 +20,7 @@ append_fqdn_etc_hosts:
 /etc/hostname:
   file:
     - sed
+    - order: 1
     - before: "^.*$"
     - after: "{{ grains['fqdn'] }}"
     - require:
@@ -27,6 +29,7 @@ append_fqdn_etc_hosts:
 /etc/sysconfig/network:
   file:
     - sed
+    - order: 1
     - before: "^HOSTNAME=.*$"
     - after: "HOSTNAME={{ grains['fqdn'] }}"
     - require:
