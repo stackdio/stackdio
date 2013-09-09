@@ -171,6 +171,9 @@ class AWSCloudProvider(BaseCloudProvider):
     # The AWS security groups
     SECURITY_GROUPS = 'security_groups'
 
+    # The default availablity zone to use
+    DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
+
     # The path to the private key for SSH
     PRIVATE_KEY_FILE = 'private_key_file'
 
@@ -246,6 +249,9 @@ class AWSCloudProvider(BaseCloudProvider):
             'rename_on_destroy': True,
             'delvol_on_destroy': True,
         }
+
+        # Add in the default availability zone to be set in the configuration file
+        config_data['availability_zone'] = self.obj.default_availability_zone.title
 
         # Save the data out to a file that can be reused by this provider
         # later if necessary

@@ -1,4 +1,3 @@
-import yaml
 import time
 import os
 import json
@@ -84,8 +83,8 @@ def launch_hosts(stack_id):
             '-lquiet',               # no logging on console
             '--log-file {0}',        # where to log
             '--log-file-level all',  # full logging
-            '--out json',            # return JSON formatted results
-            '--out-indent -1',       # don't format them; this is because of
+            '--out=json',            # return JSON formatted results
+            '--out-indent=-1',       # don't format them; this is because of
                                      # a bug in salt-cloud
             '-m {1}',                # the map file to use for launching
         ]).format(
@@ -94,7 +93,7 @@ def launch_hosts(stack_id):
         )
 
         logger.debug('Executing command: {0}'.format(cmd))
-        result = envoy.run(cmd)
+        result = envoy.run(str(cmd))
         logger.debug('Command results:')
         logger.debug('status_code = {0}'.format(result.status_code))
         logger.debug('std_out = {0}'.format(result.std_out))
@@ -328,6 +327,104 @@ def register_dns(stack_id, host_ids=None):
         logger.exception(err_msg)
         raise
 
+@celery.task(name='stacks.ping')
+def ping(stack_id, timeout=5*60, interval=5, max_failures=25):
+    '''
+    Attempts to use salt's test.ping module to ping the entire stack
+    and confirm that all hosts are reachable by salt.
+
+    @stack_id: The id of the stack to ping. We will use salt's grain
+               system to target the hosts with this stack id
+    @timeout: The maximum amount of time (in seconds) to wait for ping
+              to return valid JSON.
+    @interval: The looping interval, ie, the amount of time to sleep
+               before the next iteration.
+    @max_failures: Number of ping failures before giving up completely.
+                   The timeout does not affect this parameter.
+    @raises StackTaskException
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        stack.set_status(ping.name,
+                         'Attempting to ping all hosts.',
+                         Level.INFO)
+
+        # Ping
+        cmd_args = [
+            'salt',
+            '--out=json',
+            '-C',                               # compound targeting
+            'G@stack_id:{0}'.format(stack_id),   # target the nodes in this
+                                                # stack only
+            'test.ping',                        # ping all VMs
+        ]
+
+        # Execute until successful, failing after a few attempts
+        cmd = ' '.join(cmd_args)
+        failures = 0
+        duration = timeout
+
+        while True: 
+            result = envoy.run(str(cmd))
+            logger.debug('Executing command: {0}'.format(cmd))
+            logger.debug('Command results:')
+            logger.debug('status_code = {0}'.format(result.status_code))
+            logger.debug('std_out = {0}'.format(result.std_out))
+            logger.debug('std_err = {0}'.format(result.std_err))
+
+            if result.status_code == 0:
+                try:
+                    result_json = json.loads(result.std_out)
+                    if result_json:
+                        break
+                except ValueError, e:
+                    failures += 1
+                    logger.debug('Invalid JSON returned from test.ping. '
+                                 'Total failures: {0}'.format(failures))
+
+            if timeout < 0:
+                err_msg = 'Unable to ping hosts in 00:{0:02d}:{1:02d}'.format(
+                    duration // 60,
+                    duration % 60,
+                )
+                stack.set_status(ping.name, err_msg, Level.ERROR)
+                raise StackTaskException(err_msg)
+
+            if failures > max_failures:
+                err_msg = 'Max failures ({0}) reached while pinging ' \
+                          'hosts.'.format(max_failures)
+                stack.set_status(ping.name, err_msg, Level.ERROR)
+                raise StackTaskException(err_msg)
+
+            time.sleep(interval)
+            timeout -= interval
+
+        # make sure all hosts are accounted for
+        false_hosts = []
+        for host, value in result_json.iteritems():
+            if isinstance(value, bool) and not value:
+                false_hosts.append(host)
+
+        if false_hosts:
+            err_msg = 'Unable to ping hosts: {0}'.format(','.join(false_hosts))
+            stack.set_status(ping.name, err_msg, Level.ERROR)
+            raise StackTaskException(err_msg)
+
+        stack.set_status(ping.name, 
+                         'All hosts pinged successfully.',
+                         Level.INFO)
+
+    except Stack.DoesNotExist:
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
+        raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
+    except Exception, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(ping.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
+
 @celery.task(name='stacks.sync_all')
 def sync_all(stack_id):
     try:
@@ -350,7 +447,7 @@ def sync_all(stack_id):
         # Execute
         cmd = ' '.join(cmd_args)
         logger.debug('Executing command: {0}'.format(cmd))
-        result = envoy.run(cmd)
+        result = envoy.run(str(cmd))
         logger.debug('Command results:')
         logger.debug('status_code = {0}'.format(result.status_code))
         logger.debug('std_out = {0}'.format(result.std_out))
@@ -401,8 +498,8 @@ def provision_hosts(stack_id, host_ids=None):
         # build up the command for salt
         cmd_args = [
             'salt',
-            '--out yaml',           # yaml formatted output
-            '--out-indent 2',       # make the output a bit easier to read
+            '--out=json',           # json formatted output
+            '--out-indent=4',       # make the output a bit easier to read
             '-C',                   # compound targeting
             'G@stack_id:{0}'.format(stack_id),   # target the nodes in this
                                                 #stack only
@@ -414,51 +511,64 @@ def provision_hosts(stack_id, host_ids=None):
         cmd = ' '.join(cmd_args)
 
         logger.debug('Executing command: {0}'.format(cmd))
-        result = envoy.run(cmd)
-        logger.debug('Command results:')
-        logger.debug('status_code = {0}'.format(result.status_code))
-        logger.debug('std_out = {0}'.format(result.std_out))
-        logger.debug('std_err = {0}'.format(result.std_err))
-
-        if result.status_code > 0:
-            err_msg = result.std_err if result.std_err else result.std_out
+        try:
+            result = envoy.run(str(cmd))
+        except AttributeError, e:
+            err_msg = 'Error running command: \'{0}\''.format(cmd)
+            logger.exception(err_msg)
             stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
-            raise StackTaskException('Error provisioning stack {0}: '
-                                     '{1!r}'.format(
-                                        stack_id, 
-                                        err_msg)
-                                     )
+            raise StackTaskException(err_msg)
 
-        with open(log_file, 'a') as f:
-            f.write('\n')
-            f.write(result.std_out)
+        if result is None:
+            msg = 'Provisioning command returned None. Status, stdout ' \
+                  'and stderr unknown.'
+            logger.warn(msg)
+            stack.set_status(msg)
+        else:
+            logger.debug('Command results:')
+            logger.debug('status_code = {0}'.format(result.status_code))
+            logger.debug('std_out = {0}'.format(result.std_out))
+            logger.debug('std_err = {0}'.format(result.std_err))
 
-        # symlink the logfile
-        log_symlink = os.path.join(root_dir, 
-                                   '{0}.provision.latest'.format(stack.slug))
-        symlink(log_file, log_symlink)
-        
-        # load yaml so we can attempt to catch provisioning errors
-        output = yaml.safe_load(result.std_out)
-
-        # each key in the dict is a host, and the value of the host
-        # is either a list or dict. Those that are lists we can
-        # assume to be a list of errors
-        if output is not None:
-            errors = {}
-            for host, host_result in output.iteritems():
-                if type(host_result) is list:
-                    errors[host] = host_result
-
-                # TODO: go deeper into the host_result dictionaries
-                # looking for bad salt state executions
-
-            if errors:
-                err_msg = 'Provisioning errors on hosts: {0}. Please see the ' \
-                          'provisioning log for more details.'.format(
-                            ', '.join(errors.keys()))
+            if result.status_code > 0:
+                err_msg = result.std_err if result.std_err else result.std_out
                 stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
-                raise StackTaskException(err_msg)
+                raise StackTaskException('Error provisioning stack {0}: '
+                                         '{1!r}'.format(
+                                            stack_id, 
+                                            err_msg)
+                                         )
+
+            with open(log_file, 'a') as f:
+                f.write('\n')
+                f.write(result.std_out)
+
+            # symlink the logfile
+            log_symlink = os.path.join(root_dir, 
+                                       '{0}.provision.latest'.format(stack.slug))
+            symlink(log_file, log_symlink)
+        
+            # load JSON so we can attempt to catch provisioning errors
+            output = json.loads(result.std_out)
+
+            # each key in the dict is a host, and the value of the host
+            # is either a list or dict. Those that are lists we can
+            # assume to be a list of errors
+            if output is not None:
+                errors = {}
+                for host, host_result in output.iteritems():
+                    if type(host_result) is list:
+                        errors[host] = host_result
+
+                    # TODO: go deeper into the host_result dictionaries
+                    # looking for bad salt state executions
+
+                if errors:
+                    err_msg = 'Provisioning errors on hosts: {0}. Please see the ' \
+                              'provisioning log for more details.'.format(
+                                ', '.join(errors.keys()))
+                    stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
+                    raise StackTaskException(err_msg)
         
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -542,7 +652,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
             '-y',                   # assume yes
             '-P',                   # destroy in parallel
             '-d',                   # destroy argument
-            '--out yaml',           # output in yaml
+            '--out=json',           # output in JSON
         ]
 
         # if host ids is given, we're going to terminate only those hosts
@@ -578,7 +688,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
         cmd = ' '.join(cmd_args)
 
         logger.debug('Executing command: {0}'.format(cmd))
-        result = envoy.run(cmd)
+        result = envoy.run(str(cmd))
         logger.debug('Command results:')
         logger.debug('status_code = {0}'.format(result.status_code))
         logger.debug('std_out = {0}'.format(result.std_out))

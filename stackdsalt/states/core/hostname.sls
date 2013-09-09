@@ -15,6 +15,7 @@ append_fqdn_etc_hosts:
   require:
     - cmd: set_hostname
 
+{% if grains['os_family'] == 'Debian' %}
 /etc/hostname:
   file:
     - sed
@@ -22,3 +23,12 @@ append_fqdn_etc_hosts:
     - after: "{{ grains['fqdn'] }}"
     - require:
       - cmd: set_hostname
+{% elif grains['os_family'] == 'RedHat' %}
+/etc/sysconfig/network:
+  file:
+    - sed
+    - before: "^HOSTNAME=.*$"
+    - after: "HOSTNAME={{ grains['fqdn'] }}"
+    - require:
+      - cmd: set_hostname
+{% endif %}

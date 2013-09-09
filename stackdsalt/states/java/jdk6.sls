@@ -1,3 +1,7 @@
+# Debian OS family only...I couldn't find a yum repository that had
+# java6, so for now we're requiring the OS to already have it installed
+
+{% if grains['os_family'] == 'Debian' %}
 # add the oracle apt repository
 jdk6_repo:
   pkgrepo:
@@ -37,3 +41,4 @@ oracle-java6-installer:
       - cmd: jdk6_installer_selections
       - module: jdk6_refresh_db
       - file: /etc/environment
+{% endif %}

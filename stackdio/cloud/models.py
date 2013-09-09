@@ -39,7 +39,9 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
 
     # The default availability zone for this account, may be overridden
     # by the user at stack creation time
-    default_availability_zone = models.ForeignKey('CloudZone', related_name='default_zone', null=True)
+    default_availability_zone = models.ForeignKey('CloudZone',
+                                                  related_name='default_zone',
+                                                  null=True)
 
     # provide additional manager functionality
     objects = CloudProviderManager()

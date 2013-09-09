@@ -200,7 +200,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     objects = StackManager()
 
     def __unicode__(self):
-        return self.title
+        return u'{0} (id={1})'.format(self.title, self.id)
 
     def set_status(self, event, status, level=Level.INFO):
         self.history.create(event=event, status=status, level=level)
@@ -244,7 +244,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             host_pattern = host['host_pattern']
             cloud_profile_id = host['cloud_profile']
             host_size_id = host.get('host_size')
-            availability_zone_id = host.get('availability_zone')
+            availability_zone_id = host.get('availability_zone', {}).get('value', None)
 
             # cloud profiles are restricted to only those in this stack's
             # cloud provider
@@ -257,9 +257,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # if the user is not overriding it
             if host_size_id is None:
                 host_size_id = cloud_profile_obj.default_instance_size.id
-
             host_size_obj = CloudInstanceSize.objects.get(id=host_size_id)
 
+            # default to the cloud profile availability zone if
+            # the user is not supplying it
+            if availability_zone_id is None:
+                availability_zone_id = cloud_profile_obj \
+                    .cloud_provider \
+                    .default_availability_zone \
+                    .id
+            availability_zone_obj = CloudZone.objects.get(id=availability_zone_id)
 
             salt_roles = host['salt_roles']
             # optional
@@ -298,6 +305,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     stack=self,
                     cloud_profile=cloud_profile_obj,
                     instance_size=host_size_obj,
+                    availability_zone=availability_zone_obj,
                     hostname='{0}-{1}-{2}'.format(host_pattern, 
                                                self.user.username, 
                                                i),
