@@ -7,7 +7,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 url: '/api/provider_types/',
                 type: 'GET',
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {

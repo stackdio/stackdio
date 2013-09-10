@@ -7,7 +7,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 url: '/api/snapshots/',
                 type: 'GET',
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
@@ -52,7 +52,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     snapshot_id: record.snapshot_id.value
                 },
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
@@ -80,7 +80,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 url: '/api/snapshots/' + snapshot.id,
                 type: 'DELETE',
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
@@ -102,7 +102,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 url: '/api/snapshots/',
                 type: 'OPTIONS',
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (data, textStatus, qwerty) {

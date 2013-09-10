@@ -548,7 +548,7 @@
      -->
     <div id="accounts-binding-target" class="hide" data-bind='visible: $root.currentSection() == "Accounts"'>
         <div class="view">
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right" data-bind="visible: isSuperUser">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Account
                     <span class="caret"></span>
@@ -577,7 +577,7 @@
                         <td>
                             <button type="button" 
                                     class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.account.userCanModify,
+                                    data-bind="visible: $root.isSuperUser,
                                                click: $root.account.deleteAccount"></button>
                         </td>
                     </tr>     
@@ -658,7 +658,7 @@
      -->
     <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Profiles"'>
         <div class="view">
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Profile
                     <span class="caret"></span>
@@ -689,7 +689,7 @@
                         <td>
                             <button type="button" 
                                     class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.profile.userCanModify,
+                                    data-bind="visible: $root.isSuperUser,
                                                click: $root.profile.deleteProfile"
                             ></button>
                         </td>
@@ -745,6 +745,9 @@
     </div>
 
     <script data-main="{% static 'js/app' %}" src="{% static 'js/require.js' %}"></script>
+    <script>
+    window.dsu = "{{ user.is_superuser }}";
+    </script>
 
 
 <!--

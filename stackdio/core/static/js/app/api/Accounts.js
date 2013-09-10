@@ -10,7 +10,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 type: 'GET',
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (data, status, response) {
@@ -54,7 +54,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
             // Open the connection to the provider URI and set authorization header
             xhr.open('POST', '/api/providers/');
-            xhr.setRequestHeader('X-CSRFToken', stackdio.csrftoken);
+            xhr.setRequestHeader('X-CSRFToken', stackdio.settings.csrftoken);
             xhr.setRequestHeader('Accept', 'application/json');
 
             // Define any actions to take once the upload is complete
@@ -103,7 +103,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 type: 'DELETE',
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {

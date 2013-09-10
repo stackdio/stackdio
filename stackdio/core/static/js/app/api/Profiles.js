@@ -7,7 +7,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 url: '/api/profiles/',
                 type: 'GET',
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (data, status, response) {
@@ -54,7 +54,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     ssh_user: record.ssh_user.value
                 },
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
@@ -76,7 +76,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 url: '/api/profiles/' + profile.id,
                 type: 'DELETE',
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {

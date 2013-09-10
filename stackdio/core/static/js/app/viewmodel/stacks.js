@@ -54,7 +54,7 @@ define(["knockout",
                     type: 'PUT',
                     data: data,
                     headers: {
-                        "X-CSRFToken": stackdio.csrftoken,
+                        "X-CSRFToken": stackdio.settings.csrftoken,
                         "Accept": "application/json",
                         "Content-Type": "application/json"
                     },
@@ -76,7 +76,7 @@ define(["knockout",
                 //     type: 'PUT',
                 //     data: data,
                 //     headers: {
-                //         "X-CSRFToken": stackdio.csrftoken,
+                //         "X-CSRFToken": stackdio.settings.csrftoken,
                 //         "Accept": "application/json",
                 //         "Content-Type": "application/json"
                 //     },

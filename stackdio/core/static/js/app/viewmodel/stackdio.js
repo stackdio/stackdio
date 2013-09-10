@@ -24,6 +24,7 @@ define([
             self.models = models;
             self.API = API;
             self.moment = moment;
+            self.isSuperUser = ko.observable(stackdio.settings.superuser);
 
             self.sections = ['Stacks', 'Accounts', 'Profiles', 'Snapshots'];
             self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch'];

@@ -1,4 +1,6 @@
 define(["jquery"], function ($) {
+    stackdio.settings = {};
+
     var getCookie = function (name) {
         var cookieValue = null;
         if (document.cookie && document.cookie != '') {
@@ -13,6 +15,13 @@ define(["jquery"], function ($) {
             }
         }
         return cookieValue;
+    };
+
+    stackdio.settings.csrftoken = getCookie('csrftoken');
+    stackdio.settings.superuser = (window.dsu === "True");
+
+    if (Object.hasOwnProperty('freeze')) {
+        Object.freeze(stackdio.settings);
     }
-    stackdio.csrftoken = getCookie('csrftoken');
+
 });

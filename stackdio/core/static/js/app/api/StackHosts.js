@@ -7,7 +7,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 url: stack.hosts,
                 type: 'GET',
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
@@ -42,7 +42,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 data: record,
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
@@ -62,7 +62,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     id: record.id
                 },
                 headers: {
-                    "X-CSRFToken": stackdio.csrftoken,
+                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
