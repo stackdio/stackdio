@@ -28,7 +28,18 @@
               <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
               <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
             </ul>
-              <button class="btn btn-inverse btn-small pull-right" data-bind="click: function () { location.href='/logout'; } ">logout</button>
+              <div class="btn-group pull-right">
+                <button class="btn btn-inverse btn-small">
+                  <span class="icon-white icon-user"></span>
+                  {{ user.get_full_name }}
+                </button>
+                <button class="btn btn-inverse btn-small dropdown-toggle" data-toggle="dropdown">
+                  <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" role="menu">
+                  <li><a href="{% url 'logout' %}">Logout</a></li>
+                </ul>
+              </div>
           </div>
         </div>
       </div>
