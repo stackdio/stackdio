@@ -87,13 +87,27 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
             write_cloud_providers_file()
 
         except CloudProviderType.DoesNotExist, e:
-            raise core_exceptions.BadRequest('Provider types does not exist.')
+            err_msg = 'Provider types does not exist.'
+            logger.exception(err_msg)
+            raise core_exceptions.BadRequest(err_msg)
+
 
 
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = CloudProvider
     serializer_class = CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
+
+    def destroy(self, *args, **kwargs):
+        # ask the driver to clean up after itsef since it's no longer needed
+        driver = self.get_object().get_driver()
+        driver.destroy()
+
+        ret = super(CloudProviderDetailAPIView, self).destroy(*args, **kwargs)
+
+        # Recreate the salt cloud providers file to clean up this provider
+        write_cloud_providers_file()
+        return ret
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
@@ -119,6 +133,13 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = CloudProfile
     serializer_class = CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
+
+    def destroy(self, *args, **kwargs):
+        ret = super(CloudProfileDetailAPIView, self).destroy(*args, **kwargs)
+
+        # Recreate the salt cloud providers file
+        write_cloud_profiles_file()
+        return ret
 
 
 class SnapshotListAPIView(generics.ListCreateAPIView):

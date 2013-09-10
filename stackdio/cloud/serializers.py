@@ -53,6 +53,8 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
                                                          request.FILES)
         
         if not result:
+            logger.error('Cloud provider validation errors: '
+                         '{0}'.format(errors))
             raise serializers.ValidationError(errors)
 
         return attrs

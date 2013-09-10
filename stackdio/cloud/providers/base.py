@@ -1,6 +1,7 @@
-import os
-import logging
 import collections
+import logging
+import os
+import shutil
 
 from django.conf import settings
 
@@ -41,6 +42,22 @@ class BaseCloudProvider(object):
         if self.provider_storage and \
            not os.path.isdir(self.provider_storage):
             os.makedirs(self.provider_storage)
+
+    def destroy(self):
+        '''
+        Cleans up the provider storage. Overrides should call
+        this method to make sure files and directories are
+        properly removed.
+        '''
+        if not self.provider_storage:
+            return
+
+        if os.path.isdir(self.provider_storage):
+            logger.info('Deleting provider storage: {0}'.format(
+                self.provider_storage
+            ))
+            shutil.rmtree(self.provider_storage)
+            self.provider_storage = None
 
     @classmethod
     def get_provider_choice(self):
