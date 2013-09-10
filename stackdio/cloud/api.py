@@ -99,6 +99,9 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.DjangoModelPermissions,)
 
     def destroy(self, *args, **kwargs):
+        # TODO: need to prevent the delete if infrastructure is still up
+        # that depends on this provider
+
         # ask the driver to clean up after itsef since it's no longer needed
         driver = self.get_object().get_driver()
         driver.destroy()
@@ -135,6 +138,8 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.DjangoModelPermissions,)
 
     def destroy(self, *args, **kwargs):
+        # TODO: need to prevent the delete if infrastructure is still up
+        # that depends on this profile
         ret = super(CloudProfileDetailAPIView, self).destroy(*args, **kwargs)
 
         # Recreate the salt cloud providers file
