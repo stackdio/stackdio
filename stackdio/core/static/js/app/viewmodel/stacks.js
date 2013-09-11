@@ -9,7 +9,7 @@ define(["knockout",
         var vm = function () {
             var self = this;
 
-            self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch'];
+            self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch', 'Delete'];
             self.stackHostActions = ['Stop', 'Terminate', 'Start'];
             self.selectedProfile = null;
             self.selectedAccount = null;
@@ -49,20 +49,39 @@ define(["knockout",
                     action: action.toLowerCase()
                 });
 
-                $.ajax({
-                    url: '/api/stacks/' + stack.id + '/',
-                    type: 'PUT',
-                    data: data,
-                    headers: {
-                        "X-CSRFToken": stackdio.settings.csrftoken,
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    success: function (response) {
-                        console.log(response);
-                        API.Stacks.load();
-                    }
-                });
+
+                if (action !== 'Delete') {
+                    $.ajax({
+                        url: '/api/stacks/' + stack.id + '/',
+                        type: 'PUT',
+                        data: data,
+                        headers: {
+                            "X-CSRFToken": stackdio.settings.csrftoken,
+                            "Accept": "application/json",
+                            "Content-Type": "application/json"
+                        },
+                        success: function (response) {
+                            console.log(response);
+                            API.Stacks.load();
+                        }
+                    });
+                } else {
+                    $.ajax({
+                        url: '/api/stacks/' + stack.id + '/',
+                        type: 'DELETE',
+                        headers: {
+                            "X-CSRFToken": stackdio.settings.csrftoken,
+                            "Accept": "application/json",
+                            "Content-Type": "application/json"
+                        },
+                        success: function (response) {
+                            console.log(response);
+                            API.Stacks.load();
+                        }
+                    });
+                    
+                }
+
             };
 
 
@@ -109,7 +128,7 @@ define(["knockout",
                         // Hide the stack form
                         $( "#stack-form-container" ).dialog("close");
 
-                        $("#alert-success").show();
+                        self.showSuccess();
                     });
             }
 
