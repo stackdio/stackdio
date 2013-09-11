@@ -40,7 +40,7 @@ For assistance, please see one of the following Dintinguished Gentlemen:
 
     The standard user we'll be using is 'stackdio', so we'll need to create the account:
 
-    useradd -m -s/bin/bash -U stackdio
+    sudo useradd -m -s/bin/bash -U stackdio
 
     We'll be setting everything up in /mnt/stackdio_root. You can change it to
     wherever you'd like, but some of the details below will also need to change
@@ -51,7 +51,14 @@ For assistance, please see one of the following Dintinguished Gentlemen:
 
 ###### Install it
 
+    # Make sure you're the stackdio user
+
+    sudo su - stackdio
     curl -s https://raw.github.com/brainsik/virtualenv-burrito/master/virtualenv-burrito.sh | $SHELL
+
+    # Finish the install
+
+    source $HOME/.venvburrito/startup.sh
     
 ### MySQL
 
@@ -93,6 +100,8 @@ For assistance, please see one of the following Dintinguished Gentlemen:
 
 ###### Create your virtualenv:
 
+    # NOTE: Do this as the stackdio user
+
     mkvirtualenv stackdio
     workon stackdio
 
@@ -100,7 +109,11 @@ For assistance, please see one of the following Dintinguished Gentlemen:
 
     # Clone the source down
 
-    hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management /mnt/stackdio_root
+    sudo hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management /mnt/stackdio_root
+
+    # Change permissions
+
+    sudo chown -R stackdio:stackdio /mnt/stackdio_root
 
     # Set up some environment variables
     
@@ -120,8 +133,9 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     cd /mnt/stackdio_root/stackdio
     pip install -r stackdio/requirements/local.txt
 
-    # NOTE: On CentOS, you'll likely get an error like "This openssl-devel package does not work your architecture"
-    # when it starts installing M2Crypto. To fix this, go into your virtual env direct (with
+    # NOTE: On CentOS, you'll likely get an error like "This openssl-devel 
+    # package does not work your architecture" when it starts installing 
+    # M2Crypto. To fix this, go into your virtual env direct (with
     # virtualenv-wrapper its cdvirtualenv), into the build/M2Crypto and run
     #
     # bash fedora_setup.sh build
@@ -207,38 +221,17 @@ API endpoints can be found at http://localhost:8000/api/
     cd /opt/local/share/curl
     ln -s /usr/local/share/ca-bundle.crt curl-ca-bundle.crt
 
-###### Configuration:
-
-    # OK, stick with me on this :)
-    
-    # First, we're going to change the default location of where salt will pull
-    # its configuration from (I'm using /opt/salt_root, and you should too :) )
-    mkdir -p /opt/salt_root/etc/salt
-    
-    # Copy in the master and cloud configuration files for defaults
-    cd <stackdio_root_directory>
-    cp stackdio/etc/salt-master /opt/salt_root/etc/salt/master
-    cp stackdio/etc/salt-cloud /opt/salt_root/etc/salt/cloud
-    
-    # Edit the master file  to make sure the 'user' parameter is set correctly. It
-    # should be the user that Django, celery, and salt will all run as (on my box
-    # it's abe, but if you're in EC2 it may be ubuntu or ec2-user or anything else
-    # as long as you're using that user)
-    
-    # The cloud file should be ready to go as there's not much going on, but if
-    # you can change the default log directory, just make sure the path exists
-    # and the user running salt-cloud has the right permissions.
-
-    # Symlink the salt states into the right location under our salt_root. 
-    ln -s /path/to/stackdsalt /opt/salt_root/srv
-
 ###### Running:
     
     # To start the salt master:
     salt-master
+
+    NOTE: You can pass -d to daemonize it.
     
     # To run salt-cloud:
     salt-cloud
+
+    # See http://docs.saltstack.com/ for more info on salt
     
 ### RabbitMQ
 
@@ -248,11 +241,13 @@ API endpoints can be found at http://localhost:8000/api/
     
     Ubuntu: sudo apt-get install rabbitmq-server
 
+    CentOS: sudo yum install rabbitmq-server
+
 ###### Execution
 
     OS X: rabbitmq-server (use nohup if you want it in the background)
     
-    Ubuntu: service rabbitmq-server start/stop
+    Ubuntu/CentOS: sudo service rabbitmq-server start/stop
     
     * See http://www.rabbitmq.com/relocate.html for useful overrides.
     
@@ -261,17 +256,16 @@ API endpoints can be found at http://localhost:8000/api/
 ###### Installation
 
     # Should already be handled by the requirements files, but just in case:
+
     pip install celery django-celery
     
-###### Configuration
-
-    Nothing to see here (yet)
-
 ###### Execution
 
     # NOTE: Make sure RabbitMQ is running first or else the celery worker
     # won't be able to connect to the broker
-    manage.py celery worker -lDEBUG
+
+    cd /mnt/stackdio_root/stackdio
+    ./manage.py celery worker -lDEBUG
 
     # See celery documentation for ways of daemonizing the process
     http://docs.celeryproject.org/en/latest/tutorials/daemonizing.html#daemonizing
