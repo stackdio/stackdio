@@ -20,11 +20,6 @@ define(["knockout",
                     .then(function () {
                         $("#profile-form-container").dialog("close");
                         self.showSuccess();
-
-                        if (stores.Accounts().length > 0) {
-                            $("#alert-no-accounts").show();
-                            self.gotoSection("Accounts");
-                        }
                     });
             };
 
