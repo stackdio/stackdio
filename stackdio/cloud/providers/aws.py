@@ -245,7 +245,7 @@ class AWSCloudProvider(BaseCloudProvider):
             'private_key': private_key_path,
             'append_domain': data[self.ROUTE53_DOMAIN],
 
-            'ssh_interface': 'public_ips',
+            'ssh_interface': 'private_ips',
             'rename_on_destroy': True,
             'delvol_on_destroy': True,
         }
