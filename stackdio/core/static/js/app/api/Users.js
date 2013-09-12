@@ -11,9 +11,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    console.log('user', response);
-                    stackdio_user.public_key = response.public_key;
-                    deferred.resolve();
+                    deferred.resolve(response.public_key);
                 }
             });
 

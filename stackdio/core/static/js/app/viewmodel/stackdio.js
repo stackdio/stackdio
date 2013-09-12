@@ -87,7 +87,11 @@ define([
              *  L O A D I N G   D A T A . . .   I N   O R D E R 
              *  ==================================================================================
              */
-            API.Users.load();
+            API.Users.load()
+                .then(function (key) {
+                    console.log('key',key);
+                    $("#public_key").val(key);
+                });
             API.InstanceSizes.load();
             API.Roles.load();
 
