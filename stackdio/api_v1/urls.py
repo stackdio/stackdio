@@ -16,6 +16,7 @@ def api_root(request, format=None):
     api = { 
         'core': {
             'settings': reverse('usersettings-detail', request=request, format=format),
+            'change_password': reverse('change_password', request=request, format=format),
         },
         'cloud': {
             'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),
