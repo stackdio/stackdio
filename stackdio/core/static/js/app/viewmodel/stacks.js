@@ -49,7 +49,6 @@ define(["knockout",
                     action: action.toLowerCase()
                 });
 
-
                 if (action !== 'Delete') {
                     $.ajax({
                         url: '/api/stacks/' + stack.id + '/',
@@ -61,7 +60,6 @@ define(["knockout",
                             "Content-Type": "application/json"
                         },
                         success: function (response) {
-                            console.log(response);
                             API.Stacks.load();
                         }
                     });
@@ -75,8 +73,9 @@ define(["knockout",
                             "Content-Type": "application/json"
                         },
                         success: function (response) {
-                            console.log(response);
-                            API.Stacks.load();
+                            stores.Stacks.remove(function (s) {
+                                return s.id === stack.id;
+                            });
                         }
                     });
                     
