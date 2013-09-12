@@ -50,7 +50,6 @@ def launch_hosts(stack_id):
         # generate the hosts for the stack
         if not hosts:
             stack.create_hosts()
-
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
 
         # Use SaltCloud to launch machines using the given stack's

@@ -235,7 +235,10 @@ class AWSCloudProvider(BaseCloudProvider):
         # change the file permissions of the RSA key
         os.chmod(private_key_path, stat.S_IRUSR)
 
-        security_groups = filter(None, data[self.SECURITY_GROUPS].split(','))
+        security_groups = filter(
+            None,
+            [g.strip() for g in data[self.SECURITY_GROUPS].split(',')]
+        )
         config_data = {
             'provider': self.SHORT_NAME,
             'id': data[self.ACCESS_KEY],

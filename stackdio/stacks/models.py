@@ -236,7 +236,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # load the stack's hosts file
         with open(self.hosts_file.path, 'r') as f:
             hosts = simplejson.loads(f.read())
-            logger.debug('Hosts: {0}'.format(hosts))
+
+        # load the provider yaml
+        provider_yaml = yaml.safe_load(self.cloud_provider.yaml).values()[0]
 
         new_hosts = []
         for host in hosts:
@@ -276,14 +278,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             spot_config = host.get('spot_config', {})
             sir_price = spot_config.get('spot_price')
 
-            # Get the security group objects
+            # Security groups are a combination of the default groups
+            # set on the provider and those in the host definition
+            provider_groups = provider_yaml['securitygroup']
+            host_groups = [
+                g.strip() for g in host.get('host_security_groups', '').split(',')
+            ]
+            security_groups = set(filter(None, provider_groups + host_groups))
             security_group_objs = [
-                SecurityGroup.objects.get_or_create(group_name=g)[0] for
-                g in filter(
-                    None,
-                    set(h.strip() for
-                        h in host['host_security_groups'].split(','))
-                )]
+                SecurityGroup.objects.get_or_create(group_name=g)[0] 
+                for g in security_groups
+            ]
 
             # lookup other objects
             role_objs = SaltRole.objects.filter(id__in=salt_roles)
