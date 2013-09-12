@@ -4,7 +4,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/users/' + stackdio_user.id,
+                url: '/api/settings/',
                 type: 'GET',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
@@ -12,20 +12,23 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 },
                 success: function (response) {
                     console.log('user', response);
+                    stackdio_user.public_key = response.public_key;
                     deferred.resolve();
-
                 }
             });
 
             return deferred.promise;
         },
-        save: function (user) {
+        save: function (public_key) {
             var deferred = Q.defer();
 
+            var data = JSON.stringify({'public_key': public_key});
+
             $.ajax({
-                url: '/api/users/' + user.id,
-                type: 'POST',
-                data: user,
+                url: '/api/settings/',
+                type: 'PUT',
+                data: data,
+                dataType: 'json',
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRFToken": stackdio.settings.csrftoken,

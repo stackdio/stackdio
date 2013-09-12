@@ -15,7 +15,7 @@ define([
         "app/viewmodel/snapshots",
         "app/viewmodel/stacks"
     ],
-    function (Q, moment, jui, ko, settings, formutil, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
+    function (Q, moment, jui, ko, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
 
         function stackdioModel() {
             var self = this;
@@ -48,7 +48,11 @@ define([
                 $("#user-profile").dialog("close");
             };
 
-            self.saveProfile = function () {
+            self.saveProfile = function (model, evt) {
+                var record = formutils.collectFormFields(evt.target.form);
+
+                API.Users.save(record.public_key.value);
+
                 $("#user-profile").dialog("close");
             };
 

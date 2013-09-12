@@ -34,8 +34,8 @@
                             <span class="icon-white icon-user"></span> {{ user.get_full_name }} <span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu" role="menu">
-                            <li><a href="{% url 'logout' %}">Logout</a></li>
                             <li><a href="#" data-bind="click: showUserProfile">Profile</a></li>
+                            <li><a href="{% url 'logout' %}">Logout</a></li>
                         </ul>
                     </div>
                 </div>
@@ -65,13 +65,13 @@
         U S E R   P R O F I L E
         ======================================================================
      -->
-    <div id="user-profile" title="Your Profile">
+    <div id="user-profile" title="Your Profile" data-bind="" class="hide">
         <form id="user-profile-form" class="form-horizontal">
         <div class="modal-body">
             <div class="control-group">
                 <label class="control-label" style="width: 100px;" for="first_name">First name</label>
                 <div class="controls" style="margin-left: 110px">
-                    <input id="last_name" type="text" class="input-block-level" disabled placeholder="Aoibheann" value="{{ user.first_name }}">
+                    <input id="first_name" type="text" class="input-block-level" disabled placeholder="Aoibheann" value="{{ user.first_name }}">
                 </div>
             </div>
 
@@ -82,12 +82,12 @@
                 </div>
             </div>
 
-            <div class="control-group">
+            <!-- <div class="control-group">
                 <label class="control-label" style="width: 100px;" for="email_address">Email</label>
                 <div class="controls" style="margin-left: 110px">
                     <input type="text" id="email_address" class="input-block-level" placeholder="username@domain.com">
                 </div>
-            </div>
+            </div> -->
 
             <div class="control-group">
                 <label class="control-label" style="width: 100px;" for="public_key">Public key</label>
@@ -802,7 +802,6 @@
     <script>
     window.stackdio_user = {};
     window.stackdio_user.su = "{{ user.is_superuser }}";
-    window.stackdio_user.id = {{ user.id }};
     </script>
 
 
