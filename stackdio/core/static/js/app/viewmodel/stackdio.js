@@ -27,8 +27,6 @@ define([
             self.isSuperUser = ko.observable(stackdio.settings.superuser);
 
             self.sections = ['Stacks', 'Accounts', 'Profiles', 'Snapshots'];
-            self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch'];
-            self.stackHostActions = ['Stop', 'Terminate', 'Start'];
             self.currentSection = ko.observable();
 
             self.profile = new profileVM();
@@ -36,6 +34,23 @@ define([
             self.volume = new volumeVM();
             self.snapshot = new snapshotVM();
             self.stack = new stackVM();
+
+            /*
+             *  ==================================================================================
+             *  N A V I G A T I O N   H A N D L E R
+             *  ==================================================================================
+             */
+            self.showUserProfile = function () {
+                $("#user-profile").dialog("open");
+            };
+
+            self.closeProfileForm = function () {
+                $("#user-profile").dialog("close");
+            };
+
+            self.saveProfile = function () {
+                $("#user-profile").dialog("close");
+            };
 
             /*
              *  ==================================================================================
@@ -68,6 +83,7 @@ define([
              *  L O A D I N G   D A T A . . .   I N   O R D E R 
              *  ==================================================================================
              */
+            API.Users.load();
             API.InstanceSizes.load();
             API.Roles.load();
 
@@ -95,6 +111,18 @@ define([
                     console.log(error);
                 });
         };
+
+        /*
+         *  ==================================================================================
+         *  D I A L O G   E L E M E N T S
+         *  ==================================================================================
+         */
+        $("#user-profile").dialog({
+            autoOpen: false,
+            width: 500,
+            modal: true
+        });
+
 
         /*
          *  ==================================================================================

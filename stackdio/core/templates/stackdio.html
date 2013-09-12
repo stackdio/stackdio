@@ -14,35 +14,33 @@
 
 <body>
     <div class="navbar navbar-inverse navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container-fluid">
-          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="brand" href="#">stackd.io [ <small class="text-warning">if you got a problem, yo, I'll solve it</small class="muted"> ]</a>
-          <div class="nav-collapse collapse">
-            <ul class="nav">
-              <li class="active"><a href="#">home</a></li>
-              <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
-              <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
-            </ul>
-              <div class="btn-group pull-right">
-                <button class="btn btn-inverse btn-small">
-                  <span class="icon-white icon-user"></span>
-                  {{ user.get_full_name }}
+        <div class="navbar-inner">
+            <div class="container-fluid">
+                <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
                 </button>
-                <button class="btn btn-inverse btn-small dropdown-toggle" data-toggle="dropdown">
-                  <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" role="menu">
-                  <li><a href="{% url 'logout' %}">Logout</a></li>
-                </ul>
-              </div>
-          </div>
+                <a class="brand" href="#">stackd.io [ <small class="text-warning">if you got a problem, yo, I'll solve it</small class="muted"> ]</a>
+                <div class="nav-collapse collapse">
+                    <ul class="nav">
+                        <li class="active"><a href="#">home</a></li>
+                        <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
+                        <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
+                    </ul>
+
+                    <div class="btn-group pull-right">
+                        <a class="btn btn-inverse btn-small" data-toggle="dropdown" href="#">
+                            <span class="icon-white icon-user"></span> {{ user.get_full_name }} <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="{% url 'logout' %}">Logout</a></li>
+                            <li><a href="#" data-bind="click: showUserProfile">Profile</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
 
     <!-- 
@@ -59,6 +57,51 @@
               </a>
             </li>
         </ul>
+    </div>
+
+
+    <!-- 
+        ======================================================================
+        U S E R   P R O F I L E
+        ======================================================================
+     -->
+    <div id="user-profile" title="Your Profile">
+        <form id="user-profile-form" class="form-horizontal">
+        <div class="modal-body">
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="first_name">First name</label>
+                <div class="controls" style="margin-left: 110px">
+                    <input id="last_name" type="text" class="input-block-level" disabled placeholder="Aoibheann" value="{{ user.first_name }}">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="last_name">Last name</label>
+                <div class="controls" style="margin-left: 110px">
+                    <input id="last_name" type="text" class="input-block-level" disabled placeholder="O'Shaughnessy" value="{{ user.last_name }}">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="email_address">Email</label>
+                <div class="controls" style="margin-left: 110px">
+                    <input type="text" id="email_address" class="input-block-level" placeholder="username@domain.com">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="public_key">Public key</label>
+                <div class="controls" style="margin-left: 110px">
+                    <textarea id="public_key" class="input-block-level" rows="6"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: $root.saveProfile">Save</button>
+            <button class="btn" data-bind="click: $root.closeProfileForm">Cancel</button>
+        </div>
+        </form>
     </div>
 
 
@@ -126,7 +169,7 @@
                         <td data-bind="text: $data.description"></td>
                         <td><a href='#' data-bind="bootstrapPopover : {content : $root.stack.popoverBuilder($data) }, text: 'View (' + $data.history.length + ') messages'"></a></td>
                         <td>
-                            <div class="btn-group ">
+                            <div class="btn-group">
                                 <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
@@ -757,7 +800,9 @@
 
     <script data-main="{% static 'js/app' %}" src="{% static 'js/require.js' %}"></script>
     <script>
-    window.dsu = "{{ user.is_superuser }}";
+    window.stackdio_user = {};
+    window.stackdio_user.su = "{{ user.is_superuser }}";
+    window.stackdio_user.id = {{ user.id }};
     </script>
 
 

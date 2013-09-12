@@ -1,4 +1,5 @@
 define([
+        "app/api/Users", 
         "app/api/Zones", 
         "app/api/InstanceSizes", 
         "app/api/Profiles", 
@@ -9,9 +10,10 @@ define([
         "app/api/StackHosts", 
         "app/api/Stacks"
         ], 
-    function (Zones, InstanceSizes, Profiles, Accounts, ProviderTypes, Roles, Snapshots, StackHosts, Stacks) {
+    function (Users, Zones, InstanceSizes, Profiles, Accounts, ProviderTypes, Roles, Snapshots, StackHosts, Stacks) {
 
     return {
+        Users: Users,
         Zones: Zones,
         InstanceSizes: InstanceSizes,
         Profiles:      Profiles,
