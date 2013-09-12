@@ -8,6 +8,11 @@ from rest_framework import (
 
 from .serializers import (
     UserSerializer,
+    UserSettingsSerializer,
+)
+
+from .models import (
+    UserSettings,
 )
 
 
@@ -24,3 +29,11 @@ class UserDetailAPIView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAdminUser,)
 
+
+class UserSettingsDetailAPIView(generics.RetrieveUpdateAPIView):
+
+    model = UserSettings
+    serializer_class = UserSettingsSerializer
+
+    def get_object(self):
+        return self.request.user.settings

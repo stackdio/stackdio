@@ -14,6 +14,9 @@ def api_root(request, format=None):
 
     '''
     api = { 
+        'core': {
+            'settings': reverse('usersettings-detail', request=request, format=format),
+        },
         'cloud': {
             'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),
             'zones': reverse('cloudzone-list', request=request, format=format),

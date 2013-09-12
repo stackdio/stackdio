@@ -489,10 +489,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
     def _generate_pillar_file(self):
         pillar_file_yaml = yaml.safe_dump({
-            'custom_var_1': 'one',
-            'custom_var_2': 'two',
-            'custom_var_3': 'three',
+            'stackdio_username': self.user.username,
+            'stackdio_publickey': self.user.settings.public_key,
         }, default_flow_style=False)
+        logger.debug('stack pillar file: {0}'.format(pillar_file_yaml))
 
         if not self.pillar_file:
             self.pillar_file.save('{0}.pillar'.format(self.slug), 
