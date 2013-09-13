@@ -22,6 +22,7 @@ logger = get_task_logger(__name__)
 ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
 ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found ' \
                           'already running'
+ERROR_ALREADY_RUNNING = 'Already running'
 
 
 class StackTaskException(Exception):
@@ -99,9 +100,9 @@ def launch_hosts(stack_id):
 
         try:
             # Look for errors if we got valid JSON
-            result_json = yaml.safe_load(result.std_out)
+            result_yaml = yaml.safe_load(result.std_out)
             errors = set()
-            for h, v in result_json.iteritems():
+            for h, v in result_yaml.iteritems():
                 logger.debug('Checking host {0} for errors.'.format(h))
 
                 # Error format #1
@@ -111,6 +112,11 @@ def launch_hosts(stack_id):
                 # Error format #2
                 elif 'Error' in v:
                     errors.add(v['Error'])
+
+                # Not exactly error format #3
+                elif 'Message' in v and v['Message'] == ERROR_ALREADY_RUNNING:
+                    errors.add('A host with the name {0} already exists for '
+                               'this cloud provider.'.format(h))
 
             if errors:
                 logger.debug('Errors found!: {0!r}'.format(errors))
@@ -371,8 +377,8 @@ def ping(stack_id, timeout=5*60, interval=5, max_failures=25):
 
             if result.status_code == 0:
                 try:
-                    result_json = yaml.safe_load(result.std_out)
-                    if result_json:
+                    result_yaml = yaml.safe_load(result.std_out)
+                    if result_yaml:
                         break
                 except Exception, e:
                     failures += 1
@@ -398,7 +404,7 @@ def ping(stack_id, timeout=5*60, interval=5, max_failures=25):
 
         # make sure all hosts are accounted for
         false_hosts = []
-        for host, value in result_json.iteritems():
+        for host, value in result_yaml.iteritems():
             if isinstance(value, bool) and not value:
                 false_hosts.append(host)
 

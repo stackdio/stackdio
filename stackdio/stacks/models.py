@@ -497,7 +497,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             'stackdio_username': self.user.username,
             'stackdio_publickey': self.user.settings.public_key,
         }, default_flow_style=False)
-        logger.debug('stack pillar file: {0}'.format(pillar_file_yaml))
 
         if not self.pillar_file:
             self.pillar_file.save('{0}.pillar'.format(self.slug), 
