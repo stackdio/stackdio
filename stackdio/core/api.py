@@ -64,18 +64,18 @@ class ChangePasswordAPIView(views.APIView):
 
         errors = []
         if not current_password:
-            errors.append('current_password field is required.')
+            errors.append('Current password field is required.')
         if not new_password:
-            errors.append('new_password field is required.')
+            errors.append('New password field is required.')
         if not confirm_password:
-            errors.append('confirm_password field is required.')
+            errors.append('New password confirmation field is required.')
         if errors:
             raise BadRequest(dict(errors=errors))
 
         if not request.user.check_password(current_password):
-            errors.append('current_password is incorrect.')
+            errors.append('You entered an incorrect current password value.')
         if new_password != confirm_password:
-            errors.append('new_password and confirm_password must match.')
+            errors.append('Your new password and password confirmation fields do not match.')
         if errors:
             raise BadRequest(dict(errors=errors))
 

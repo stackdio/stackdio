@@ -35,6 +35,8 @@
                         </a>
                         <ul class="dropdown-menu" role="menu">
                             <li><a href="#" data-bind="click: showUserProfile">Profile</a></li>
+                            <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
+                            <li class="divider"></li>
                             <li><a href="{% url 'logout' %}">Logout</a></li>
                         </ul>
                     </div>
@@ -57,51 +59,6 @@
               </a>
             </li>
         </ul>
-    </div>
-
-
-    <!-- 
-        ======================================================================
-        U S E R   P R O F I L E
-        ======================================================================
-     -->
-    <div id="user-profile" title="Your Profile" data-bind="" class="hide">
-        <form id="user-profile-form" class="form-horizontal">
-        <div class="modal-body">
-            <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="first_name">First name</label>
-                <div class="controls" style="margin-left: 110px">
-                    <input id="first_name" type="text" class="input-block-level" disabled placeholder="Aoibheann" value="{{ user.first_name }}">
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="last_name">Last name</label>
-                <div class="controls" style="margin-left: 110px">
-                    <input id="last_name" type="text" class="input-block-level" disabled placeholder="O'Shaughnessy" value="{{ user.last_name }}">
-                </div>
-            </div>
-
-            <!-- <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="email_address">Email</label>
-                <div class="controls" style="margin-left: 110px">
-                    <input type="text" id="email_address" class="input-block-level" placeholder="username@domain.com">
-                </div>
-            </div> -->
-
-            <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="public_key">Public key</label>
-                <div class="controls" style="margin-left: 110px">
-                    <textarea id="public_key" class="input-block-level" rows="6"></textarea>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: $root.saveProfile">Save</button>
-            <button class="btn" data-bind="click: $root.closeProfileForm">Cancel</button>
-        </div>
-        </form>
     </div>
 
 
@@ -132,6 +89,88 @@
             <strong>Warning!</strong> You do not have any accounts created yet. Please create one now.
         </div>
     </div>
+
+
+    <!-- 
+        ======================================================================
+        U S E R   P A S S W O R D
+        ======================================================================
+     -->
+    <div id="user-password" title="Change Password" data-bind="" class="hide">
+        <form id="user-password-form" class="form-horizontal">
+        <div class="modal-body">
+            <div class="control-group">
+                <label class="control-label" style="width: 150px;" for="current_password">Current password</label>
+                <div class="controls" style="margin-left: 160px">
+                    <input id="current_password" type="password" class="input-block-level">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 150px;" for="new_password">New password</label>
+                <div class="controls" style="margin-left: 160px">
+                    <input id="new_password" type="password" class="input-block-level">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 150px;" for="new_password_confirm">Confirm password</label>
+                <div class="controls" style="margin-left: 160px">
+                    <input id="new_password_confirm" type="password" class="input-block-level">
+                </div>
+            </div>
+
+            <div id="password-error" class="alert hide alert-error">
+                <button type="button" class="close" data-bind="click: closeError">&times;</button>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: $root.savePassword">Save</button>
+            <button class="btn" data-bind="click: $root.closePasswordForm">Cancel</button>
+        </div>
+        </form>
+    </div>
+
+
+    <!-- 
+        ======================================================================
+        U S E R   P R O F I L E
+        ======================================================================
+     -->
+    <div id="user-profile" title="Your Profile" data-bind="" class="hide">
+        <form id="user-profile-form" class="form-horizontal">
+        <div class="modal-body">
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="first_name">First name</label>
+                <div class="controls" style="margin-left: 110px">
+                    <input id="first_name" type="text" class="input-block-level" disabled placeholder="Aoibheann" value="{{ user.first_name }}">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="last_name">Last name</label>
+                <div class="controls" style="margin-left: 110px">
+                    <input id="last_name" type="text" class="input-block-level" disabled placeholder="O'Shaughnessy" value="{{ user.last_name }}">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="public_key">Public key</label>
+                <div class="controls" style="margin-left: 110px">
+                    <textarea id="public_key" class="input-block-level" rows="6"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: $root.saveProfile">Save</button>
+            <button class="btn" data-bind="click: $root.closeProfileForm">Cancel</button>
+        </div>
+        </form>
+    </div>
+
 
     <!-- 
         ======================================================================

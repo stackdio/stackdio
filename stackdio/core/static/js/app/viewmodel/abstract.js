@@ -24,9 +24,11 @@ define(function () {
             $("#alert-success").hide();
         };
         
-        self.showMessage = function (id) {
+        self.showMessage = function (id, content, delay) {
+            var timeout = (typeof delay === 'undefined') ? 3000 : delay;
+            if (typeof content !== 'undefined') $(id).append(content);
             $(id).show();
-            setTimeout('$("'+id+'").hide()', 3000);
+            setTimeout(function () { $(id).hide(); $(id).empty(); }, delay);
         };
 
         self.closeError = function () {

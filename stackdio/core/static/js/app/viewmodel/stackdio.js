@@ -37,9 +37,40 @@ define([
 
             /*
              *  ==================================================================================
-             *  N A V I G A T I O N   H A N D L E R
+             *  U S E R   M A N A G E M E N T
              *  ==================================================================================
              */
+            self.showPasswordForm = function () {
+                $("#user-password").dialog("open");
+            };
+
+            self.closePasswordForm = function () {
+                $("#user-password").dialog("close");
+                $('#new_password_confirm').popover('hide');
+            };
+
+            self.savePassword = function (model, evt) {
+                var record = formutils.collectFormFields(evt.target.form);
+
+                if (record.new_password.value !== record.new_password_confirm.value) {
+                    self.showMessage('#password-error', 'Your new passwords do not match', 3000);
+                    return;
+                }
+
+                API.Users.savePassword(record.current_password.value, 
+                                       record.new_password.value, 
+                                       record.new_password_confirm.value)
+                    .then(function (error) {
+                        if (typeof error !== 'undefined') {
+                            self.showMessage('#password-error', error, 5000);
+                            return;
+                        }
+                        $("#user-password").dialog("close");
+                        self.showSuccess();
+                    });
+            };
+
+
             self.showUserProfile = function () {
                 $("#user-profile").dialog("open");
             };
@@ -50,9 +81,7 @@ define([
 
             self.saveProfile = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
-
-                API.Users.save(record.public_key.value);
-
+                API.Users.saveKey(record.public_key.value);
                 $("#user-profile").dialog("close");
             };
 
@@ -89,7 +118,6 @@ define([
              */
             API.Users.load()
                 .then(function (key) {
-                    console.log('key',key);
                     $("#public_key").val(key);
                 });
             API.InstanceSizes.load();
@@ -131,6 +159,11 @@ define([
             modal: true
         });
 
+        $("#user-password").dialog({
+            autoOpen: false,
+            width: 500,
+            modal: true
+        });
 
         /*
          *  ==================================================================================
