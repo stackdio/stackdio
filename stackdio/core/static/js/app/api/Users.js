@@ -69,7 +69,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                         deferred.resolve(response.detail.errors[0]);
                     }
                     catch (e) {
-                        deferred.resolve('Request failed for unknown reasons.');
+                        deferred.resolve();
                     }
                 }
             });
