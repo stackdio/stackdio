@@ -837,6 +837,76 @@
         </div>
     </div>
 
+    <!-- 
+        ======================================================================
+        S E C U R I T Y   G R O U P   L I S T
+        ======================================================================
+     -->
+    <div id="security-group-container" class="hide" data-bind='visible: currentSection() === "Security"'>
+        <div class="view">
+            <div class="btn-group pull-right">
+                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                    New Security Group
+                    <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
+                    <li>
+                        <a href="#" data-bind="text: title, click: $root.securityGroup.showSecurityGroupForm"></a>
+                    </li>
+                </ul>
+            </div>
+
+            <table id="profiles" class="table table-striped data-grid">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th style="width:5%"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.SecurityGroups">
+                    <tr>
+                        <td data-bind="text: id"></td>
+                        <td data-bind="text: title"></td>
+                        <td data-bind="text: description"></td>
+                        <td>
+                            <button type="button" 
+                                    class="btn-small btn-danger iconic-trash-stroke"
+                                    data-bind="visible: $root.isSuperUser,
+                                               click: $root.securityGroup.deleteSecurityGroup"
+                            ></button>
+                        </td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 
+            ======================================================================
+            S E C U R I T Y   G R O U P   F O R M
+            ======================================================================
+         -->
+        <div id="securitygroup-form-container" title="New Security Group" class="stackd-form form-small">
+            <form id="securitygroup-form" class="form-horizontal">
+                <div class="modal-body">
+                    <div class="control-group">
+                        <label class="control-label" style="width: 40px;" for="securitygroup_name">Title</label>
+                        <div class="controls" style="margin-left: 60px">
+                            <input id="securitygroup_name" type="text" class="input-block-level">
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="modal-footer">
+                    <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
+                    <button class="btn btn-primary" data-bind="click: $root.securityGroup.addSecurityGroup">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script data-main="{% static 'js/app' %}" src="{% static 'js/require.js' %}"></script>
     <script>
     window.stackdio_user = {};

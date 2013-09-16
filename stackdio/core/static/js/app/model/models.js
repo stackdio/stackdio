@@ -7,6 +7,9 @@ define(function () {
         return self;
     };
 
+    var SecurityGroup = function () {};
+    SecurityGroup.prototype = new Model();
+
     var Zone = function () {};
     Zone.prototype = new Model();
 
@@ -41,6 +44,7 @@ define(function () {
     Role.prototype = new Model();
 
     return {
+        SecurityGroup: SecurityGroup,
         Zone: Zone,
         Stack: Stack,
         StackHost: StackHost,

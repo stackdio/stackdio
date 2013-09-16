@@ -13,9 +13,10 @@ define([
         "app/viewmodel/accounts",
         "app/viewmodel/volumes",
         "app/viewmodel/snapshots",
+        "app/viewmodel/securityGroup",
         "app/viewmodel/stacks"
     ],
-    function (Q, moment, jui, ko, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, stackVM) {
+    function (Q, moment, jui, ko, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, stackVM) {
 
         function stackdioModel() {
             var self = this;
@@ -26,9 +27,10 @@ define([
             self.moment = moment;
             self.isSuperUser = ko.observable(stackdio.settings.superuser);
 
-            self.sections = ['Stacks', 'Accounts', 'Profiles', 'Snapshots'];
+            self.sections = ['Stacks', 'Security', 'Accounts', 'Profiles', 'Snapshots'];
             self.currentSection = ko.observable();
 
+            self.securityGroup = new securityGroupVM();
             self.profile = new profileVM();
             self.account = new accountVM();
             self.volume = new volumeVM();
