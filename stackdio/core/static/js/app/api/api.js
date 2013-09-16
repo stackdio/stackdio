@@ -1,4 +1,5 @@
 define([
+        "app/api/SecurityGroups", 
         "app/api/Users", 
         "app/api/Zones", 
         "app/api/InstanceSizes", 
@@ -10,9 +11,10 @@ define([
         "app/api/StackHosts", 
         "app/api/Stacks"
         ], 
-    function (Users, Zones, InstanceSizes, Profiles, Accounts, ProviderTypes, Roles, Snapshots, StackHosts, Stacks) {
+    function (SecurityGroups, Users, Zones, InstanceSizes, Profiles, Accounts, ProviderTypes, Roles, Snapshots, StackHosts, Stacks) {
 
     return {
+        SecurityGroups: SecurityGroups,
         Users: Users,
         Zones: Zones,
         InstanceSizes: InstanceSizes,

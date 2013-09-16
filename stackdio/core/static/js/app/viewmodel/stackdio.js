@@ -129,6 +129,7 @@ define([
                 .then(API.Zones.load)
                 .then(self.account.loadAccounts)
                 .then(self.profile.loadProfiles)
+                .then(API.SecurityGroups.load)
                 .then(API.Snapshots.load)
                 .then(API.Stacks.load)
 
