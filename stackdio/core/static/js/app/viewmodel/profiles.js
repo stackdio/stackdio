@@ -19,6 +19,7 @@ define(["knockout",
                 API.Profiles.save(profile)
                     .then(function () {
                         $("#profile-form-container").dialog("close");
+                        formutils.clearForm('profile-form');
                         self.showSuccess();
                     });
             };

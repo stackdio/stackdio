@@ -123,6 +123,7 @@ define(["knockout",
                         // Clear the stack form
                         $('#stack_title').val('');
                         $('#stack_purpose').val('');
+                        stores.NewHosts.removeAll();
 
                         // Hide the stack form
                         $( "#stack-form-container" ).dialog("close");

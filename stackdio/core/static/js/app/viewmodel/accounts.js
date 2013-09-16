@@ -21,6 +21,7 @@ define(["knockout",
                 API.Accounts.save(record)
                     .then(function () {
                         $("#accounts-form-container").dialog("close");
+                        formutils.clearForm('account-form');
                         self.showSuccess();
                     })
                     .catch(function (error) {
