@@ -46,6 +46,10 @@ define(["knockout",
                 $("#securitygroup-form-container").dialog("open");
             }
 
+            self.showDefaultGroupForm = function () {
+                $("#default-securitygroup-form-container").dialog("open");
+            }
+
             self.closeSecurityGroupForm = function (type) {
                 $("#securitygroup-form-container").dialog("close");
             }
@@ -58,6 +62,12 @@ define(["knockout",
             $("#securitygroup-form-container").dialog({
                 autoOpen: false,
                 width: 400,
+                modal: false
+            });
+
+            $("#default-securitygroup-form-container").dialog({
+                autoOpen: false,
+                width: 600,
                 modal: false
             });
         };

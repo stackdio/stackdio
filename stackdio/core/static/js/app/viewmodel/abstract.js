@@ -24,11 +24,11 @@ define(function () {
             $("#alert-success").hide();
         };
         
-        self.showMessage = function (id, content, delay) {
-            var timeout = (typeof delay === 'undefined') ? 3000 : delay;
-            if (typeof content !== 'undefined') $(id).append(content);
+        self.showMessage = function (id, content, autohide, delay) {
+            var timeout = (autohide && typeof delay === 'undefined') ? 3000 : delay;
+            if (typeof content !== 'undefined' && content !== '') $(id).append(content);
             $(id).show();
-            setTimeout(function () { $(id).hide(); $(id).empty(); }, delay);
+            if (autohide) setTimeout(function () { $(id).hide(); $(id).empty(); }, timeout);
         };
 
         self.closeError = function () {

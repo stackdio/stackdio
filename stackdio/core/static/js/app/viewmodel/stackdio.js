@@ -55,7 +55,7 @@ define([
                 var record = formutils.collectFormFields(evt.target.form);
 
                 if (record.new_password.value !== record.new_password_confirm.value) {
-                    self.showMessage('#password-error', 'Your new passwords do not match', 3000);
+                    self.showMessage('#password-error', 'Your new passwords do not match', true);
                     return;
                 }
 
@@ -64,7 +64,7 @@ define([
                                        record.new_password_confirm.value)
                     .then(function (error) {
                         if (typeof error !== 'undefined') {
-                            self.showMessage('#password-error', error, 5000);
+                            self.showMessage('#password-error', error, true, 5000);
                             return;
                         }
                         $("#user-password").dialog("close");
@@ -97,14 +97,14 @@ define([
                 // Force user to create a account if none exist
                 if (section !== "Accounts" && stores.Accounts().length === 0) {
                     self.currentSection("Accounts")
-                    self.showMessage("#alert-no-accounts");
+                    self.showMessage("#alert-no-accounts", "", true);
                     return;
                 }
 
                 // Force user to create a profile if none exist
                 if (section !== "Profiles" && section !== "Accounts" && stores.Profiles().length === 0) {
                     self.currentSection("Profiles")
-                    self.showMessage("#alert-no-profiles");
+                    self.showMessage("#alert-no-profiles", "", true);
                     return;
                 }
 
@@ -129,7 +129,7 @@ define([
                 .then(API.Zones.load)
                 .then(self.account.loadAccounts)
                 .then(self.profile.loadProfiles)
-                .then(API.SecurityGroups.load)
+                // .then(API.SecurityGroups.load)
                 .then(API.Snapshots.load)
                 .then(API.Stacks.load)
 
@@ -143,6 +143,8 @@ define([
 
                     // Take the user to the stacks section
                     self.gotoSection("Stacks");
+
+                    // self.showMessage("#alert-default-security-groups");
                 })
 
                 .catch(function (error) {

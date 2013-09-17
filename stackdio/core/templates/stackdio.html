@@ -68,6 +68,13 @@
         ======================================================================
      -->
     <div class="view">
+        <div id="alert-default-security-groups" class="alert hide alert-success">            
+            <div><strong>Account created!</strong></div>
+            <div style="padding:10px 0;">Do you want to define any default security groups that will be assigned to all hosts created under this account?</div>
+            <button class="btn btn-inverted" data-bind="click: function () { $('#alert-default-security-groups').hide(); }">Non</button>
+            <button class="btn btn-primary" data-bind="click: $root.securityGroup.showDefaultGroupForm">Oui</button>
+        </div>
+
         <div id="alert-error" class="alert hide alert-error">
             <button type="button" class="close" data-bind="click: closeError">&times;</button>
             <strong>Error!</strong> Please try that again.
@@ -429,7 +436,15 @@
                     <div class="control-group">
                         <label class="control-label" for="host_security_groups">Security groups</label>
                         <div class="controls">
-                            <input type="text" id="host_security_groups" class="input-xlarge" placeholder="Comma separated list">
+                            <select id="host_security_groups" 
+                                    multiple
+                                    data-selected-text-format="count"
+                                    data-bind="options: stores.SecurityGroups, 
+                                               optionsValue: 'id', 
+                                               optionsText: 'title'",
+                                    data-container="body"
+                                    data-header="Choose security groups"
+                                    class="input-xlarge"></select>
                         </div>
                     </div>
 
@@ -682,7 +697,7 @@
             ======================================================================
             A C C O U N T   F O R M
             ======================================================================
-         -->
+        -->
         <div id="accounts-form-container" title="New Provider Account Details" class="stackd-form form-small">
             <form id="account-form">
                 <div class="modal-body">
@@ -748,7 +763,7 @@
         ======================================================================
         P R O F I L E   L I S T
         ======================================================================
-     -->
+    -->
     <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Profiles"'>
         <div class="view">
             <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
@@ -795,7 +810,7 @@
             ======================================================================
             P R O F I L E   F O R M
             ======================================================================
-         -->
+        -->
         <div id="profile-form-container" title="New Profile Details" class="stackd-form form-small">
             <form id="profile-form">
             <div class="modal-body">
@@ -841,7 +856,7 @@
         ======================================================================
         S E C U R I T Y   G R O U P   L I S T
         ======================================================================
-     -->
+    -->
     <div id="security-group-container" class="hide" data-bind='visible: currentSection() === "Security"'>
         <div class="view">
             <div class="btn-group pull-right">
@@ -886,7 +901,7 @@
             ======================================================================
             S E C U R I T Y   G R O U P   F O R M
             ======================================================================
-         -->
+        -->
         <div id="securitygroup-form-container" title="New Security Group" class="stackd-form form-small">
             <form id="securitygroup-form" class="form-horizontal">
                 <div class="modal-body">
@@ -898,10 +913,64 @@
                     </div>
                 </div>
 
-
                 <div class="modal-footer">
                     <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
                     <button class="btn btn-primary" data-bind="click: $root.securityGroup.addSecurityGroup">Save</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 
+            ======================================================================
+            D E F A U L T   S E C U R I T Y   G R O U P   F O R M
+            ======================================================================
+        -->
+        <div id="default-securitygroup-form-container" title="New Security Group" class="stackd-form form-small">
+            <form id="default-securitygroup-form" class="form-horizontal">
+                <div class="modal-body">
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="account_title">Account</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="default_groups_account_title" type="text" class="input-block-level" disabled data-bind="value: $root.account.selectedAccount.title">
+                        </div>
+                    </div>
+                    
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="securitygroup_name">Import AWS group</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <select id="host_roles" 
+                                    multiple
+                                    data-selected-text-format="count"
+                                    data-bind="options: stores.Roles, 
+                                               optionsValue: 'id', 
+                                               optionsText: 'title'",
+                                    data-container="body"
+                                    data-header="Choose states to install"
+                                    class="input-xlarge"></select>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        
+                        <div class="controls" style="margin-left: 160px">
+                            or
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="securitygroup_name">Create new group</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="securitygroup_name" type="text" class="input-block-level">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
+                    <button class="btn btn-success" data-bind="click: $root.securityGroup.addSecurityGroup">Add</button>
                 </div>
             </form>
         </div>

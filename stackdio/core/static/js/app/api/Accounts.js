@@ -30,7 +30,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     console.log('accounts', stores.Accounts());
 
                     // Resolve the promise
-                    deferred.resolve(response.getResponseHeader('Allow'));
+                    deferred.resolve();
                 }
             });
 

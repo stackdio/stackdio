@@ -10,6 +10,9 @@ define(function () {
     var SecurityGroup = function () {};
     SecurityGroup.prototype = new Model();
 
+    var SecurityGroupRule = function () {};
+    SecurityGroupRule.prototype = new Model();
+
     var Zone = function () {};
     Zone.prototype = new Model();
 

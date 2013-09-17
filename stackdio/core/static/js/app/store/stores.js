@@ -1,5 +1,7 @@
 define(["knockout"], function (ko) {
     return {
+        SecurityGroupRules : ko.observableArray([]),
+        DefaultSecurityGroups : ko.observableArray([]),
         SecurityGroups : ko.observableArray([]),
         Zones : ko.observableArray([]),
         ProviderTypes : ko.observableArray([]),
