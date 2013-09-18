@@ -66,7 +66,10 @@ class StackListAPIView(generics.ListCreateAPIView):
                                    'title.')
 
         # create the stack object and foreign key objects
-        stack = Stack.objects.create_stack(request.user, request.DATA)
+        try:
+            stack = Stack.objects.create_stack(request.user, request.DATA)
+        except Exception, e:
+            raise BadRequest(str(e))
 
         if launch_stack:
             # Queue up stack creation and provisioning using Celery

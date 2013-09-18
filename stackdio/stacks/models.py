@@ -112,12 +112,27 @@ class StackManager(models.Manager):
         }
         '''
 
+        ##
+        # validate incoming data
+        ##
+
+        # security groups
+        for host in data['hosts']:
+            host_sg_ids = set(host['host_security_groups'])
+            known_sg_ids = set([sg.id for sg in SecurityGroup.objects.filter(owner=user, pk__in=host_sg_ids)])
+            missing_sg_ids = list(host_sg_ids.difference(known_sg_ids))
+
+            if missing_sg_ids:
+                raise Exception('The host security group IDs do not exist: {0}'.format(missing_sg_ids))
+
+
         cloud_provider = CloudProvider.objects.get(id=data['cloud_provider'])
         stack_obj = self.model(title=data['title'],
                                description=data.get('description'),
                                user=user,
                                cloud_provider=cloud_provider)
         stack_obj.save()
+
 
         if data['hosts']:
             hosts_json = simplejson.dumps(data['hosts'], indent=4)
@@ -285,12 +300,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # set on the provider and those in the host definition
             
             # pull the default security groups from the provider
-            provider_groups = self.cloud_provider.security_groups.filter(
+            provider_groups = list(self.cloud_provider.security_groups.filter(
                 is_default=True
-            )
+            ))
 
             # groups set by the user on the host
-            host_groups = SecurityGroup.objects.filter(pk__in=security_group_ids)
+            host_groups = list(SecurityGroup.objects.filter(
+                owner=self.user,
+                pk__in=security_group_ids
+            ))
 
             security_group_objs = set(provider_groups+host_groups)
 
@@ -392,13 +410,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             roles = [r.role_name for r in host.roles.all()]
             instance_size = host.instance_size.title
             security_groups = set([
-                sg.group_name for
-                sg in host.security_groups.all()
+                sg.name for sg in host.security_groups.all()
             ])
             volumes = host.volumes.all()
-
-            # add in cloud provider security groups
-            security_groups.update(cloud_provider_yaml['securitygroup'])
 
             fqdn = '{0}.{1}'.format(host.hostname, 
                                     cloud_provider_yaml['append_domain'])
