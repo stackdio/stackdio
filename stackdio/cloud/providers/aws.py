@@ -344,6 +344,15 @@ class AWSCloudProvider(BaseCloudProvider):
                             'format.'.format(rule['rule']))
         return kwargs
 
+    def delete_security_group(self, group_name):
+        ec2 = self.connect_ec2()
+        try:
+            ec2.delete_security_group(group_name)
+        except boto.exception.EC2ResponseError, e:
+            if e.status == 400:
+                raise BadRequest(e.error_message)
+            raise InternalServerError(e.error_message)
+
     def authorize_security_group(self, group_name, rule):
         '''
         @group_name: string, the group name to add the rule to
@@ -363,8 +372,7 @@ class AWSCloudProvider(BaseCloudProvider):
         except boto.exception.EC2ResponseError, e:
             if e.status == 400:
                 raise BadRequest(e.error_message)
-            else:
-                raise InternalServerError(e.error_message)
+            raise InternalServerError(e.error_message)
 
     def revoke_security_group(self, group_name, rule):
         '''

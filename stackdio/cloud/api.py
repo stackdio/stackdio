@@ -290,6 +290,15 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(self.get_object())
         return Response(serializer.data)
 
+    def delete(self, request, *args, **kwargs):
+        sg = self.get_object()
+
+        # Delete from AWS. This will throw the appropriate error
+        # if the group is being used.
+        driver = sg.cloud_provider.get_driver()
+        driver.delete_security_group(sg.name)
+
+        super(SecurityGroupDetailAPIView, self).delete(request, *args, **kwargs)
 
 class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
 
