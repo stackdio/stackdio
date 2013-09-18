@@ -303,7 +303,10 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
         # if admin, return all of the known default security groups on the 
         # account
         if self.request.user.is_superuser:
-            return provider.security_groups.all().with_rules()
+            kwargs = {}
+            if self.request.QUERY_PARAMS.get('filter', '') == 'default':
+                kwargs['is_default'] = True
+            return provider.security_groups.filter(**kwargs).with_rules()
 
         # if user, only get what they own
         else:
