@@ -3,6 +3,7 @@ Amazon Web Services provider for stackd.io
 """
 
 import os
+import re
 import stat
 import logging
 from uuid import uuid4
@@ -19,6 +20,15 @@ from cloud.providers.base import (
     TimeoutException,
     MaxFailuresException,
 )
+
+from core.exceptions import BadRequest, InternalServerError
+
+
+GROUP_PATTERN = re.compile('\d+:[a-zA-Z0-9-_]')
+CIDR_PATTERN = re.compile('[0-9]+(?:\.[0-9]+){3}\/\d{1,2}')
+
+# Boto Errors
+BOTO_DUPLICATE_ERROR_CODE = 'InvalidPermission.Duplicate'
 
 logger = logging.getLogger(__name__)
 
@@ -317,6 +327,54 @@ class AWSCloudProvider(BaseCloudProvider):
         group = ec2.create_security_group(security_group_name, description)
         return group.id
 
+    def _security_group_rule_to_kwargs(self, rule):
+        kwargs = {
+            'ip_protocol': rule['protocol'],
+            'from_port': rule['from_port'],
+            'to_port': rule['to_port'],
+        }
+        if GROUP_PATTERN.match(rule['rule']):
+            src_owner_id, src_group_name = rule['rule'].split(':')
+            kwargs['src_security_group_owner_id'] = src_owner_id
+            kwargs['src_security_group_name'] = src_group_name
+        elif CIDR_PATTERN.match(rule['rule']):
+            kwargs['cidr_ip'] = rule['rule']
+        else:
+            raise Exception('Security group rule \'{0}\' has an invalid '
+                            'format.'.format(rule['rule']))
+        return kwargs
+
+    def authorize_security_group(self, group_name, rule):
+        '''
+        @group_name: string, the group name to add the rule to
+        @rule: dict {
+            'protocol': tcp | udp | icmp
+            'from_port': [1-65535]
+            'to_port': [1-65535]
+            'rule': string (ex. 19.38.48.12/32, 0.0.0.0/0, 4328737383:stackdio-group)
+        }
+        '''
+        ec2 = self.connect_ec2()
+        kwargs = self._security_group_rule_to_kwargs(rule)
+        kwargs['group_name'] = group_name
+
+        try:
+            ec2.authorize_security_group(**kwargs)
+        except boto.exception.EC2ResponseError, e:
+            if e.status == 400:
+                raise BadRequest(e.error_message)
+            else:
+                raise InternalServerError(e.error_message)
+
+    def revoke_security_group(self, group_name, rule):
+        '''
+        See `authorize_security_group`
+        '''
+        ec2 = self.connect_ec2()
+        kwargs = self._security_group_rule_to_kwargs(rule)
+        kwargs['group_name'] = group_name
+        ec2.revoke_security_group(**kwargs)
+
     def get_security_groups(self, group_names=[]):
         ec2 = self.connect_ec2()
         groups = ec2.get_all_security_groups(group_names)
@@ -326,14 +384,12 @@ class AWSCloudProvider(BaseCloudProvider):
             rules = []
             for rule in group.rules:
                 for grant in rule.grants:
-                    rule_type = 'cidr' if grant.cidr_ip else 'group'
-                    rule_string = grant.cidr_ip or ':'.join([grant.owner_id, grant.name]),
+                    rule_string = grant.cidr_ip or ':'.join([grant.owner_id, grant.name])
                     rules.append({
                         'protocol': rule.ip_protocol,
                         'from_port': rule.from_port,
                         'to_port': rule.to_port,
                         'rule': rule_string,
-                        'type': rule_type,
                     })
 
             result[group.name] = {

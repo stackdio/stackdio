@@ -191,7 +191,7 @@ class SecurityGroup(TimeStampedModel, models.Model):
         return self.name
 
     def get_active_hosts(self):
-        return 'TODO'
+        return self.hosts.count()
 
     def rules(self):
         '''

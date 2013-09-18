@@ -18,8 +18,9 @@ from rest_framework.response import Response
 
 from core import (
     renderers as core_renderers,
-    exceptions as core_exceptions,
 )
+
+from core.exceptions import BadRequest, ResourceConflict
 
 from .utils import (
     write_cloud_providers_file,
@@ -93,7 +94,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
         except CloudProviderType.DoesNotExist, e:
             err_msg = 'Provider types does not exist.'
             logger.exception(err_msg)
-            raise core_exceptions.BadRequest(err_msg)
+            raise BadRequest(err_msg)
 
 
 
@@ -208,7 +209,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                 name=name,
                 cloud_provider=provider
             )
-            raise core_exceptions.ResourceConflict('Security group already '
+            raise ResourceConflict('Security group already '
                                                   'exists.')
         except SecurityGroup.DoesNotExist:
             # doesn't exist in our database
@@ -258,9 +259,10 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
         return Response(serializer.data)
 
 
-class SecurityGroupDetailAPIView(generics.RetrieveDestroyAPIView):
+class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = SecurityGroup
     serializer_class = SecurityGroupSerializer
+    parser_classes = (parsers.JSONParser,)
 
     def get_object(self):
         kwargs = {'pk': self.kwargs[self.lookup_field]}
@@ -271,6 +273,22 @@ class SecurityGroupDetailAPIView(generics.RetrieveDestroyAPIView):
             return self.model.objects.get(**kwargs)
         except self.model.DoesNotExist:
             raise Http404()
+
+    def put(self, request, *args, **kwargs):
+        logger.debug(request.DATA)
+        security_group = self.get_object()
+        driver = security_group.cloud_provider.get_driver()
+
+        if request.DATA.get('action') == 'authorize':
+            driver.authorize_security_group(security_group.name, request.DATA)
+        elif request.DATA.get('action') == 'revoke':
+            driver.revoke_security_group(security_group.name, request.DATA)
+        else:
+            raise BadRequest('Missing or invalid `action` parameter. Must be '
+                             'one of \'authorize\' or \'revoke\'')
+
+        serializer = self.get_serializer(self.get_object())
+        return Response(serializer.data)
 
 
 class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
