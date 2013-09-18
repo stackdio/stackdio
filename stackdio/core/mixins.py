@@ -1,3 +1,7 @@
+import logging
+logger = logging.getLogger(__name__)
+
+
 class SuperuserFieldsMixin(object):
     '''
     Filters out the serialized fields found in `superuser_fields` if
@@ -15,7 +19,7 @@ class SuperuserFieldsMixin(object):
         fields = super(SuperuserFieldsMixin, self).get_fields(*args, **kwargs)
 
         # If user is a superuser, let all fields go through
-        if self.context['request'].user.is_superuser:
+        if 'request' in self.context and self.context['request'].user.is_superuser:
             return fields
 
         # If superuser_fields has not been defined, keep the original

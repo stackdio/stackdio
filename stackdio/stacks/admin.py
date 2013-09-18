@@ -5,7 +5,6 @@ from .models import (
     StackHistory, 
     SaltRole, 
     Host,
-    SecurityGroup,
 )
 
 
@@ -51,9 +50,3 @@ class HostAdmin(admin.ModelAdmin):
     ]
 admin.site.register(Host, HostAdmin)
 
-
-class SecurityGroupAdmin(admin.ModelAdmin):
-    list_display = [
-        'group_name',
-    ]
-admin.site.register(SecurityGroup, SecurityGroupAdmin)

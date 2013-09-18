@@ -202,7 +202,6 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                  'in the running state first. At least one '
                                  'host is reporting an '
                                  'invalid state: %s' % host.state)
-            
 
         # Kick off the celery task for the given action
         stack.set_status(Stack.EXECUTING_ACTION, 

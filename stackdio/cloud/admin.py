@@ -6,6 +6,7 @@ from .models import (
     CloudInstanceSize,
     CloudProfile,
     Snapshot,
+    SecurityGroup,
 )
 
 class CloudProviderTypeAdmin(admin.ModelAdmin):
@@ -60,3 +61,15 @@ class SnapshotAdmin(admin.ModelAdmin):
         'size_in_gb',
     ]
 admin.site.register(Snapshot, SnapshotAdmin)
+
+
+class SecurityGroupAdmin(admin.ModelAdmin):
+    list_display = [
+        'name',
+        'group_id',
+        'cloud_provider',
+        'owner',
+        'is_default',
+    ]
+admin.site.register(SecurityGroup, SecurityGroupAdmin)
+

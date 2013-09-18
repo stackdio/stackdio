@@ -305,6 +305,46 @@ class AWSCloudProvider(BaseCloudProvider):
             self._ec2_connection = boto.connect_ec2(*credentials)
         return self._ec2_connection
 
+    def create_security_group(self, security_group_name, description):
+        '''
+        Returns the identifier of the group.
+        '''
+        if not description:
+            description = 'Default description provided by stackd.io'
+
+        # create the group
+        ec2 = self.connect_ec2()
+        group = ec2.create_security_group(security_group_name, description)
+        return group.id
+
+    def get_security_groups(self, group_names=[]):
+        ec2 = self.connect_ec2()
+        groups = ec2.get_all_security_groups(group_names)
+
+        result = {}
+        for group in groups:
+            rules = []
+            for rule in group.rules:
+                for grant in rule.grants:
+                    rule_type = 'cidr' if grant.cidr_ip else 'group'
+                    rule_string = grant.cidr_ip or ':'.join([grant.owner_id, grant.name]),
+                    rules.append({
+                        'protocol': rule.ip_protocol,
+                        'from_port': rule.from_port,
+                        'to_port': rule.to_port,
+                        'rule': rule_string,
+                        'type': rule_type,
+                    })
+
+            result[group.name] = {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'rules': rules,
+            }
+
+        return result
+
     def register_dns(self, hosts):
         '''
         Given a list of 'stacks.Host' objects, this method's
@@ -586,3 +626,4 @@ class AWSCloudProvider(BaseCloudProvider):
     ##
     # END ACTION IMPLEMENTATIONS
     ##
+

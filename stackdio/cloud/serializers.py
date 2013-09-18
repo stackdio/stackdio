@@ -12,11 +12,41 @@ from .models import (
     CloudProfile,
     Snapshot,
     CloudZone,
+    SecurityGroup,
 )
 
 from .utils import get_provider_type_and_class
 
 logger = logging.getLogger(__name__)
+
+
+class SecurityGroupSerializer(SuperuserFieldsMixin,
+                              serializers.HyperlinkedModelSerializer):
+
+    active_hosts = serializers.Field(source='get_active_hosts')
+
+    # Rules are defined in two places depending on the object we're dealing
+    # with. If it's a QuerySet the rules are pulled in one query to the
+    # cloud provider using the SecurityGroupQuerySet::with_rules method.
+    # For single, detail objects we use the rules instance method on the
+    # SecurityGroup object
+    rules = serializers.Field(source='rules')
+
+    class Meta:
+        model = SecurityGroup 
+        fields = (
+            'url',
+            'name',
+            'description',
+            'group_id',
+            'cloud_provider',
+            'owner',
+            'is_default',
+            'active_hosts',
+            'rules',
+        )
+        superuser_fields = ('owner', 'is_default')
+
 
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
@@ -24,6 +54,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
     provider_type = serializers.PrimaryKeyRelatedField()
     default_availability_zone = serializers.PrimaryKeyRelatedField()
     provider_type_name = serializers.Field(source='provider_type.type_name')
+    security_groups = serializers.HyperlinkedIdentityField(view_name='cloudprovider-securitygroup-list')
 
     class Meta:
         model = CloudProvider
@@ -37,6 +68,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'provider_type_name',
             'default_availability_zone',
             'yaml',
+            'security_groups',
         )
 
         superuser_fields = ('yaml',)

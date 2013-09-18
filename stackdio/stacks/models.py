@@ -24,7 +24,8 @@ from cloud.models import (
     CloudProvider,
     CloudProfile,
     CloudZone,
-    CloudInstanceSize
+    CloudInstanceSize,
+    SecurityGroup
 )
 
 logger = logging.getLogger(__name__)
@@ -84,7 +85,8 @@ class StackManager(models.Manager):
                                             # would become 'foo-1'
                     "cloud_profile": 1,     # what cloud_profile object to use
                     "salt_roles": [1,2,3],  # what salt_roles to use
-                    "host_security_groups": "foo,bar,baz",
+                    "host_security_groups": [1,2,3...], # security group IDs
+                                                        # owned by the user
                     "spot_config": {        # If you need spot instances
                         "spot_price": "0.1"
                     },
@@ -247,6 +249,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             cloud_profile_id = host['cloud_profile']
             host_size_id = host.get('host_size')
             availability_zone_id = host.get('availability_zone')
+            security_group_ids = host.get('host_security_groups', [])
 
             # cloud profiles are restricted to only those in this stack's
             # cloud provider
@@ -280,15 +283,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
             # Security groups are a combination of the default groups
             # set on the provider and those in the host definition
-            provider_groups = provider_yaml['securitygroup']
-            host_groups = [
-                g.strip() for g in host.get('host_security_groups', '').split(',')
-            ]
-            security_groups = set(filter(None, provider_groups + host_groups))
-            security_group_objs = [
-                SecurityGroup.objects.get_or_create(group_name=g)[0] 
-                for g in security_groups
-            ]
+            
+            # pull the default security groups from the provider
+            provider_groups = self.cloud_provider.security_groups.filter(
+                is_default=True
+            )
+
+            # groups set by the user on the host
+            host_groups = SecurityGroup.objects.filter(pk__in=security_group_ids)
+
+            security_group_objs = set(provider_groups+host_groups)
 
             # lookup other objects
             role_objs = SaltRole.objects.filter(id__in=salt_roles)
@@ -614,7 +618,7 @@ class Host(TimeStampedModel, StatusDetailModel):
     roles = models.ManyToManyField('stacks.SaltRole',
                                    related_name='hosts')
     hostname = models.CharField(max_length=64)
-    security_groups = models.ManyToManyField('stacks.SecurityGroup',
+    security_groups = models.ManyToManyField('cloud.SecurityGroup',
                                              related_name='hosts')
     
     # The machine state as provided by the cloud provider
@@ -655,6 +659,3 @@ class Host(TimeStampedModel, StatusDetailModel):
     def get_provider_type(self):
         return self.cloud_profile.cloud_provider.provider_type
 
-
-class SecurityGroup(TimeStampedModel):
-    group_name = models.CharField(max_length=64)

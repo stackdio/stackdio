@@ -5,6 +5,7 @@ from django.db import models
 from django.core.files.storage import FileSystemStorage
 
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
+from queryset_transform import TransformManager, TransformQuerySet
 
 from .utils import get_cloud_provider_choices
 from cloud.utils import get_provider_type_and_class
@@ -127,4 +128,76 @@ class CloudZone(TitleSlugDescriptionModel):
 
     def __unicode__(self):
         return self.title
+
+
+class SecurityGroupQuerySet(TransformQuerySet):
+    
+    def with_rules(self):
+        logger.debug('SecurityGroupQuerySet::with_rules called...')
+        return self.transform(self._inject_rules)
+
+    def _inject_rules(self, queryset):
+        '''
+        Pull all the security group rules using the cloud provider's
+        implementation.
+        '''
+        by_provider = {}
+        for group in queryset:
+            by_provider.setdefault(group.cloud_provider, []).append(group)
+
+        for provider, groups in by_provider.iteritems():
+            names = [group.name for group in groups]
+            driver = provider.get_driver()
+            provider_groups = driver.get_security_groups(names)
+
+            # add in the rules
+            for group in groups:
+                group.rules = provider_groups[group.name]['rules']
+            
+
+class SecurityGroupManager(TransformManager):
+
+    def get_query_set(self):
+        return SecurityGroupQuerySet(self.model)
+
+
+class SecurityGroup(TimeStampedModel, models.Model):
+
+    class Meta:
+        unique_together = ('name', 'cloud_provider')
+    objects = SecurityGroupManager()
+
+    # Name of the security group
+    name = models.CharField(max_length=255)
+
+    # Description of the security group
+    description = models.CharField(max_length=255)
+
+    # ID given by the provider
+    group_id = models.CharField(max_length=16, blank=True)
+
+    # the cloud provider for this group
+    cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='security_groups')
+
+    # the owner of this security group
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='security_groups')
+
+    # ADMIN-ONLY: setting this to true will cause this security group
+    # to be added automatically to all machines that get started in
+    # the related cloud provider
+    is_default = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return self.name
+
+    def get_active_hosts(self):
+        return 'TODO'
+
+    def rules(self):
+        '''
+        Pulls the security groups using the cloud provider
+        '''
+        logger.debug('SecurityGroup::rules called...')
+        driver = self.cloud_provider.get_driver()
+        return driver.get_security_groups([self.name])[self.name]['rules']
 
