@@ -129,6 +129,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'rest_framework',
     'rest_framework.authtoken',
+    #'rest_framework_swagger',
     'django_nose',
     'south',
     'djcelery',
@@ -278,6 +279,16 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 
+}
+
+##
+# Swagger configuration
+##
+SWAGGER_SETTINGS = {
+    'exclude_namespaces': ['django'],
+    'api_version': '1.0 alpha',
+    'is_authenticated': True,
+    'is_superuser': False
 }
 
 ##

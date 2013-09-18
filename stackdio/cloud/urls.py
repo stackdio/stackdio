@@ -16,7 +16,6 @@ from .api import (
     SecurityGroupListAPIView,
     SecurityGroupDetailAPIView,
     CloudProviderSecurityGroupListAPIView,
-    CloudProviderSecurityGroupDetailAPIView,
 )
 
 
@@ -41,10 +40,6 @@ urlpatterns = patterns('cloud.api',
     url(r'^providers/(?P<pk>[0-9]+)/security_groups/$', 
         CloudProviderSecurityGroupListAPIView.as_view(), 
         name='cloudprovider-securitygroup-list'),
-
-    url(r'^providers/(?P<pk>[0-9]+)/security_groups/(?P<sg_pk>[0-9]+)/$', 
-        CloudProviderSecurityGroupDetailAPIView.as_view(), 
-        name='cloudprovider-securitygroup-detail'),
 
     url(r'^instance_sizes/$',
         CloudInstanceSizeListAPIView.as_view(), 

@@ -175,6 +175,38 @@ class CloudZoneDetailAPIView(generics.RetrieveAPIView):
 
 
 class SecurityGroupListAPIView(generics.ListCreateAPIView):
+    '''
+    Lists and creates new security groups.
+
+    ### GET
+
+    Retrieves all security groups owned by the authenticated user.
+    The associated rules for each group will also be given in the
+    `rules` attribute. The `active_hosts` field will also be 
+    updated to show the number of hosts known by stackd.io to be
+    using the security group at this time, but please **note**
+    that other machines in the cloud provider could be using
+    the same security group and stackd.io may not be aware.
+
+    ### POST
+
+    Creates a new security group given the following properties
+    in the JSON request:
+
+    `name` -- The name of the security group. This will also be
+              used to create the security group on the provider.
+
+    `description` -- The description or purpose of the group.
+
+    `cloud_provider` -- The id of the cloud provider to associate
+                        this group with.
+    
+    `is_default` -- Boolean representing if this group, for this
+                    provider, is set to automatically be added
+                    to all hosts launched on the provider. **NOTE**
+                    this property may only be set by an admin.
+    '''
+
     model = SecurityGroup
     serializer_class = SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
@@ -260,6 +292,67 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
 
 class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    '''
+    Lists and creates new security groups.
+
+    ### GET
+
+    Retrieves the detail for the security group as defined by its
+    `pk` identifier in the URL. The associated `rules` and 
+    `active_hosts` fields will be populated like with the full
+    list.
+
+    ### PUT
+
+    Authorizes or revokes a rule for the security group. The rule
+    must be valid JSON with the following fields:
+
+    `action` -- the action to take for the rule [authorize, revoke]
+
+    `protocol` -- the protocol of the rule [tcp, udp, icmp]
+
+    `from_port` -- the starting port for the rule's port range [1-65535]
+
+    `to_port` -- the ending port for the rule's port range [1-65535]
+
+    `rule` -- the actual rule, this should be either a CIDR (IP address
+    with associated routing prefix) **or** an existing account ID and 
+    group name combination to authorize or revoke for the rule. See
+    examples below.
+
+    ### DELETE
+
+    Removes the corresponding security group from stackd.io as well as
+    from the underlying cloud provider. **NOTE** that if the security
+    group is currently being used, then it can not be removed. You
+    must first terminate all machines depending on the security group
+    and then delete it.
+
+    ##### To authorize SSH to a single IP address
+        {
+            'action': 'authorize',
+            'protocol': 'tcp',
+            'from_port': 22,
+            'to_port': 22,
+            'rule': '192.168.1.108/32'
+        }
+
+    ##### To authorize a range of UDP ports to another provider's group
+        {
+            'action': 'authorize',
+            'protocol': 'udp',
+            'from_port': 3000,
+            'to_port': 3030,
+            'rule': '<account_number>:<group_name>'
+        }
+
+        Where account_number is the account ID of the provider and 
+        group_name is an existing group name on that provider.
+
+    To revoke either of the rules above, you would just change the `action`
+    field's value to be "revoke"
+    '''
+
     model = SecurityGroup
     serializer_class = SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
@@ -274,7 +367,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         except self.model.DoesNotExist:
             raise Http404()
 
-    def put(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         logger.debug(request.DATA)
         security_group = self.get_object()
         driver = security_group.cloud_provider.get_driver()
@@ -290,7 +383,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(self.get_object())
         return Response(serializer.data)
 
-    def delete(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):
         sg = self.get_object()
 
         # Delete from AWS. This will throw the appropriate error
@@ -301,6 +394,20 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         super(SecurityGroupDetailAPIView, self).delete(request, *args, **kwargs)
 
 class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
+    '''
+    Like the standard, top-level Security Group List API, this API will allow you 
+    to create and pull security groups. The only significant difference is that
+    GET requests will only return security groups associated with the provider.
+    *For regular users*, this will only show security groups owned by you and
+    associated with the provider. *For admins*, this will pull all security groups 
+    on the provider, regardless of ownership.
+
+    Additionally, admins may provide a query parameter and value 
+    `filter=default` to only show the security groups that have been designated
+    as "default" groups to be attached to all hosts started using this provider.
+
+    See the standard, top-level Security Group API for further information.
+    '''
 
     def get_provider(self):
         pk = self.kwargs[self.lookup_field]
@@ -340,9 +447,4 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
         provider_groups = driver.get_security_groups()
         response.data['provider_groups'] = provider_groups
         return response
-
-
-class CloudProviderSecurityGroupDetailAPIView(generics.RetrieveAPIView):
-    model = SecurityGroup
-    serializer_class = SecurityGroupSerializer
 

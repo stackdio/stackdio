@@ -24,6 +24,7 @@ urlpatterns = patterns('',
     # API v1 root endpoint -- add additional URLs to urls.py in
     # the api_v1 module. 
     url(r'^api/', include('api_v1.urls')),
+    #url(r'^api-docs/', include('rest_framework_swagger.urls')),
 )
 
 # Format suffixes
