@@ -9,24 +9,48 @@ define(["knockout",
 
         var vm = function () {
             var self = this;
-
             self.selectedAccount = null;
-            self.selectedProviderType = null;
-            self.userCanModify = ko.observable(true);
 
             self.addSecurityGroup = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
-                record.providerType = self.selectedProviderType;
+                record.provider = self.selectedAccount.id;
+                record.default = false;
 
-                API.Accounts.save(record)
+                API.SecurityGroups.save(record)
                     .then(function () {
-                        $("#accounts-form-container").dialog("close");
-                        formutils.clearForm('account-form');
-                        self.showSuccess();
+                        formutils.clearForm('securitygroup-form');
+                        stores.SecurityGroups.push(record);
                     })
                     .catch(function (error) {
                         $("#alert-error").show();
                     })
+            };
+
+            self.addDefaultSecurityGroup = function (model, evt) {
+                var record = formutils.collectFormFields(evt.target.form);
+                // record.provider = self.selectedAccount.id;
+                // record.default = true;
+
+                var vefvdf = new models.Role().create({ id: 333, title: 'test', description: 'test'});
+                stores.Roles.push(vefvdf);
+                console.log(stores.Roles());
+
+                // API.SecurityGroups.save(record)
+                //     .then(function () {
+                //         formutils.clearForm('default-securitygroup-form');
+                //         stores.DefaultSecurityGroups.push(record);
+                //     })
+                //     .catch(function (error) {
+                //         $("#alert-error").show();
+                //     })
+            };
+
+            self.setForAccount = function (account) {
+                API.SecurityGroups.loadByAccount(account)
+                    .then(function () {
+                        console.log('success');
+                    });
+                self.showDefaultGroupForm();
             };
 
             self.deleteSecurityGroup = function (group) {
@@ -41,13 +65,14 @@ define(["knockout",
                 return API.SecurityGroups.load();
             };
 
-            self.showSecurityGroupForm = function (type) {
-                self.selectedProviderType = type;
+            self.showSecurityGroupForm = function (account) {
+                self.selectedAccount = account;
                 $("#securitygroup-form-container").dialog("open");
             }
 
             self.showDefaultGroupForm = function () {
                 $("#default-securitygroup-form-container").dialog("open");
+                $("#alert-default-security-groups").hide();
             }
 
             self.closeSecurityGroupForm = function (type) {
@@ -67,7 +92,7 @@ define(["knockout",
 
             $("#default-securitygroup-form-container").dialog({
                 autoOpen: false,
-                width: 600,
+                width: 800,
                 modal: false
             });
         };

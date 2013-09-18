@@ -22,6 +22,7 @@ define([
             var self = this;
 
             self.stores = stores;
+            console.log(stores);
             self.models = models;
             self.API = API;
             self.moment = moment;
@@ -129,20 +130,20 @@ define([
                 .then(API.Zones.load)
                 .then(self.account.loadAccounts)
                 .then(self.profile.loadProfiles)
-                // .then(API.SecurityGroups.load)
+                .then(API.SecurityGroups.load)
                 .then(API.Snapshots.load)
                 .then(API.Stacks.load)
 
                 // Everything you want to do AFTER all data has loaded
                 .then(function () {
                     // Convert select elements to the nice Bootstrappy style
-                    $('select').selectpicker();
+                    $('select[id!="aws_security_groups"][id!="stackdio_security_groups"]').selectpicker();
 
                     // Remove the hide class from the main sections
                     $("div[class='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection("Stacks");
+                    self.gotoSection("Accounts");
 
                     // self.showMessage("#alert-default-security-groups");
                 })

@@ -31,7 +31,7 @@
 
                     <div class="btn-group pull-right">
                         <a class="btn btn-inverse btn-small" data-toggle="dropdown" href="#">
-                            <span class="icon-white icon-user"></span> {{ user.get_full_name }} <span class="caret"></span>
+                            <span class="icon-white iconic-user"></span> {{ user.get_full_name }} <span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu" role="menu">
                             <li><a href="#" data-bind="click: showUserProfile">Profile</a></li>
@@ -683,10 +683,19 @@
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td>
-                            <button type="button" 
-                                    class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.isSuperUser,
-                                               click: $root.account.deleteAccount"></button>
+                            <div class="btn-group">
+                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="#" data-bind="text:'Delete', click: $root.account.deleteAccount"></a>
+                                    </li>
+                                    <li>
+                                        <a href="#" data-bind="text:'Edit Security Groups', click: $root.securityGroup.setForAccount"></a>
+                                    </li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>     
                 </tbody>
@@ -925,22 +934,43 @@
             D E F A U L T   S E C U R I T Y   G R O U P   F O R M
             ======================================================================
         -->
-        <div id="default-securitygroup-form-container" title="New Security Group" class="stackd-form form-small">
+        <div id="default-securitygroup-form-container" title="Default Security Groups" class="stackd-form form-small">
             <form id="default-securitygroup-form" class="form-horizontal">
                 <div class="modal-body">
 
                     <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="account_title">Account</label>
-                        <div class="controls" style="margin-left: 160px">
-                            <input id="default_groups_account_title" type="text" class="input-block-level" disabled data-bind="value: $root.account.selectedAccount.title">
-                        </div>
+                        <div class="lead">Option 1. Import AWS group</div>
+                        You can select from the list of security groups that already exists on AWS. By selecting one of these existing groups, 
+                        it will be imported into stackd.io, after which you can start created access rules for it.
                     </div>
-                    
 
                     <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="securitygroup_name">Import AWS group</label>
+                        <label class="control-label" style="width: 140px;" for="aws_security_groups">Import AWS group</label>
                         <div class="controls" style="margin-left: 160px">
-                            <select id="host_roles" 
+                            <!-- <select data-bind="foreach: stores.AWSSecurityGroups">
+                                <option data-bind="text: name, attr: { id: id }"></option>
+                            </select> -->
+                            <select id="aws_security_groups" 
+                                    data-selected-text-format="count"
+                                    data-bind="options: $root.stores.AWSSecurityGroups, 
+                                               optionsValue: 'id', 
+                                               optionsText: 'name',
+                                               click: function () { console.log('clicked'); }
+                                            ",
+                                    data-container="body"
+                                    class="input-xlarge"></select>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="lead">Option 2. Use an existing group</div>
+                        If you previously imported AWS groups, or created your own through stackd.io, you can select one of those groups that are listed here.
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="stackdio_security_groups">Your stackd.io groups</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <select id="stackdio_security_groups" 
                                     multiple
                                     data-selected-text-format="count"
                                     data-bind="options: stores.Roles, 
@@ -953,10 +983,9 @@
                     </div>
 
                     <div class="control-group">
-                        
-                        <div class="controls" style="margin-left: 160px">
-                            or
-                        </div>
+                        <div class="lead">Option 3. Create new group</div>
+                        If you would like to create a new security group that does not already exist on this AWS account, simply type in the name for 
+                        the group here and it will created in stackd.io and also on the AWS account you created.
                     </div>
 
                     <div class="control-group">
@@ -966,11 +995,17 @@
                         </div>
                     </div>
 
+                    <div class="control-group">
+                        <div class="lead">Default Groups</div>
+                        <div id="default_group_list"><span class="label label-inverse">Inverse</span></div>
+                    </div>
+
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
-                    <button class="btn btn-success" data-bind="click: $root.securityGroup.addSecurityGroup">Add</button>
+                    <button class="btn" data-bind="click: $('#default-securitygroup-form-container').dialog('close')">Cancel</button>
+                    <button class="btn btn-success iconic-plus" data-bind="click: $root.securityGroup.addDefaultSecurityGroup"> Add</button>
+                    <button class="btn btn-primary iconic-check" data-bind="click: $('#default-securitygroup-form-container').dialog('close')"> Done</button>
                 </div>
             </form>
         </div>

@@ -57,7 +57,7 @@ define(["knockout",
 
             self.closeAccountForm = function (type) {
                 self.selectedProviderType = type;
-                $( "#accounts-form-container" ).dialog("close");
+                $("#accounts-form-container").dialog("close");
             }
 
             /*

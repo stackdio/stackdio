@@ -7,6 +7,9 @@ define(function () {
         return self;
     };
 
+    var AWSSecurityGroup = function () {};
+    AWSSecurityGroup.prototype = new Model();
+
     var SecurityGroup = function () {};
     SecurityGroup.prototype = new Model();
 
@@ -47,6 +50,7 @@ define(function () {
     Role.prototype = new Model();
 
     return {
+        AWSSecurityGroup: AWSSecurityGroup,
         SecurityGroup: SecurityGroup,
         Zone: Zone,
         Stack: Stack,
