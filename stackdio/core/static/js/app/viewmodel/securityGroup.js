@@ -13,8 +13,8 @@ define(["knockout",
 
             self.addSecurityGroup = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
-                record.provider = self.selectedAccount.id;
-                record.default = false;
+                record.provider_id = self.selectedAccount.id;
+                record.is_default = false;
 
                 API.SecurityGroups.save(record)
                     .then(function () {
@@ -26,29 +26,37 @@ define(["knockout",
                     })
             };
 
-            self.addDefaultSecurityGroup = function (model, evt) {
-                var record = formutils.collectFormFields(evt.target.form);
-                // record.provider = self.selectedAccount.id;
-                // record.default = true;
+            self.addDefaultSecurityGroup = function (name, evt) {
+                var record = {};
+                record.name = name;
+                record.cloud_provider = self.selectedAccount.id;
+                record.is_default = true;
+                record.description = "";
 
-                var vefvdf = new models.Role().create({ id: 333, title: 'test', description: 'test'});
-                stores.Roles.push(vefvdf);
-                console.log(stores.Roles());
-
-                // API.SecurityGroups.save(record)
-                //     .then(function () {
-                //         formutils.clearForm('default-securitygroup-form');
-                //         stores.DefaultSecurityGroups.push(record);
-                //     })
-                //     .catch(function (error) {
-                //         $("#alert-error").show();
-                //     })
+                API.SecurityGroups.save(record)
+                    .then(function () {
+                        formutils.clearForm('default-securitygroup-form');
+                        stores.DefaultSecurityGroups.push(record);
+                        $('#default_group_list').append('<span style="margin: 0 5px;" class="label label-inverse">'+ record.name +'</span>');
+                    })
+                    .catch(function (error) {
+                        $("#alert-error").show();
+                    })
             };
 
             self.setForAccount = function (account) {
+                self.selectedAccount = account;
+
+                $('#default_group_list').empty();
+
                 API.SecurityGroups.loadByAccount(account)
                     .then(function () {
-                        console.log('success');
+                        // For each security group that is default, add a label styled span element in the UI
+                        _.each(stores.SecurityGroups(), function (g) {
+                            if (g.is_default && g.provider_id === account.id) {
+                                $('#default_group_list').append('<span style="margin: 0 5px;" class="label label-inverse"><span class="iconic-x"></span> '+ g.name +'</span>');
+                            }
+                        })
                     });
                 self.showDefaultGroupForm();
             };

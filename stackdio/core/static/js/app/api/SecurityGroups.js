@@ -52,15 +52,60 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
                     // Clear the store and the grid
                     stores.AWSSecurityGroups.removeAll();
+                    stores.SecurityGroups.removeAll();
 
                     for (i in aws) {
                         group = new models.AWSSecurityGroup().create(aws[i]);
                         stores.AWSSecurityGroups.push(group);
                     }
 
+                    for (i in items) {
+                        group = new models.SecurityGroup().create(items[i]);
+                        stores.SecurityGroups.push(group);
+                    }
+
                     // Resolve the promise and pass back the loaded items
-                    console.log('groups', stores.AWSSecurityGroups());
+                    console.log('account aws groups', stores.AWSSecurityGroups());
+                    console.log('account groups', stores.SecurityGroups());
                     deferred.resolve();
+                }
+            });
+
+            return deferred.promise
+        },
+        saveDefault : function (group) {
+            var self = this;
+            var deferred = Q.defer();
+            var securityGroup = JSON.stringify(group);
+
+
+            $.ajax({
+                url: '/api/security_groups/',
+                type: 'POST',
+                data: securityGroup,
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                success: function (response) {
+                    var i, item, items = response.results;
+                    var group;
+
+                    deferred.resolve();
+
+                    // Clear the store and the grid
+                    stores.SecurityGroups.removeAll();
+
+
+                    for (i in items) {
+                        group = new models.SecurityGroup().create(items[i]);
+                        stores.SecurityGroups.push(group);
+                    }
+
+                    // Resolve the promise and pass back the loaded items
+                    console.log('security groups', stores.SecurityGroups());
+                    deferred.resolve(stores.SecurityGroups());
                 }
             });
 

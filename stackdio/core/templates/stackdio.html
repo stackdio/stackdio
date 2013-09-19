@@ -947,18 +947,18 @@
                     <div class="control-group">
                         <label class="control-label" style="width: 140px;" for="aws_security_groups">Import AWS group</label>
                         <div class="controls" style="margin-left: 160px">
-                            <!-- <select data-bind="foreach: stores.AWSSecurityGroups">
-                                <option data-bind="text: name, attr: { id: id }"></option>
-                            </select> -->
-                            <select id="aws_security_groups" 
+                            <select id="aws_security_group" 
                                     data-selected-text-format="count"
-                                    data-bind="options: $root.stores.AWSSecurityGroups, 
+                                    data-bind="options: stores.AWSSecurityGroups, 
                                                optionsValue: 'id', 
-                                               optionsText: 'name',
-                                               click: function () { console.log('clicked'); }
+                                               optionsText: 'name'
                                             ",
                                     data-container="body"
-                                    class="input-xlarge"></select>
+                                    class="input-xlarge"></select> 
+                            <button class="btn btn-success iconic-plus" 
+                                    data-bind="click: function (data, event) { 
+                                        securityGroup.addDefaultSecurityGroup($('#aws_security_group option:selected').text(), event); 
+                                    }"> Add</button>
                         </div>
                     </div>
 
@@ -970,15 +970,18 @@
                     <div class="control-group">
                         <label class="control-label" style="width: 140px;" for="stackdio_security_groups">Your stackd.io groups</label>
                         <div class="controls" style="margin-left: 160px">
-                            <select id="stackdio_security_groups" 
-                                    multiple
+                            <select id="stackdio_security_group" 
                                     data-selected-text-format="count"
-                                    data-bind="options: stores.Roles, 
+                                    data-bind="options: stores.SecurityGroups, 
                                                optionsValue: 'id', 
-                                               optionsText: 'title'",
+                                               optionsText: 'name'",
                                     data-container="body"
-                                    data-header="Choose states to install"
-                                    class="input-xlarge"></select>
+                                    class="input-xlarge"></select> 
+                            <button class="btn btn-success iconic-plus" 
+                                    data-bind="click: function (data, event) { 
+                                        securityGroup.addDefaultSecurityGroup($('#stackdio_security_group option:selected').text(), event); 
+                                    }"> Add</button>
+
                         </div>
                     </div>
 
@@ -989,22 +992,26 @@
                     </div>
 
                     <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="securitygroup_name">Create new group</label>
+                        <label class="control-label" style="width: 140px;" for="new_securitygroup_name">Create new group</label>
                         <div class="controls" style="margin-left: 160px">
-                            <input id="securitygroup_name" type="text" class="input-block-level">
+                            <input id="new_securitygroup_name" type="text" class="input-xlarge"> 
+                            <button class="btn btn-success iconic-plus" 
+                                    data-bind="click: function (data, event) { 
+                                        securityGroup.addDefaultSecurityGroup(document.getElementById('new_securitygroup_name').value, event); 
+                                    }"> Add</button>
                         </div>
                     </div>
 
                     <div class="control-group">
-                        <div class="lead">Default Groups</div>
-                        <div id="default_group_list"><span class="label label-inverse">Inverse</span></div>
+                        <div class="lead">Assigned Default Groups</div>
+                        <div>To remove any default security groups assigned to this account, click on the 'x' in the label below.</div>
+                        <div id="default_group_list"></div>
                     </div>
 
                 </div>
 
                 <div class="modal-footer">
                     <button class="btn" data-bind="click: $('#default-securitygroup-form-container').dialog('close')">Cancel</button>
-                    <button class="btn btn-success iconic-plus" data-bind="click: $root.securityGroup.addDefaultSecurityGroup"> Add</button>
                     <button class="btn btn-primary iconic-check" data-bind="click: $('#default-securitygroup-form-container').dialog('close')"> Done</button>
                 </div>
             </form>

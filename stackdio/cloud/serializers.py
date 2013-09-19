@@ -38,15 +38,18 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     # For single, detail objects we use the rules instance method on the
     # SecurityGroup object
     rules = serializers.Field(source='rules')
+    provider_id = serializers.Field(source='cloud_provider.id')
 
     class Meta:
         model = SecurityGroup 
         fields = (
+            'id',
             'url',
             'name',
             'description',
             'group_id',
             'cloud_provider',
+            'provider_id',
             'owner',
             'is_default',
             'active_hosts',
