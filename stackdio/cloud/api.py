@@ -391,7 +391,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         driver = sg.cloud_provider.get_driver()
         driver.delete_security_group(sg.name)
 
-        super(SecurityGroupDetailAPIView, self).delete(request, *args, **kwargs)
+        return super(SecurityGroupDetailAPIView, self).destroy(request, *args, **kwargs)
 
 class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
     '''

@@ -22,7 +22,14 @@ logger = logging.getLogger(__name__)
 
 class SecurityGroupSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
+    ##
+    # Read-only fields. 
+    ##
+    group_id = serializers.Field()
+    owner = serializers.Field()
 
+    # Field for showing the number of active hosts using this security
+    # group. It is pulled automatically from the model instance method.
     active_hosts = serializers.Field(source='get_active_hosts')
 
     # Rules are defined in two places depending on the object we're dealing

@@ -167,13 +167,15 @@ class SecurityGroup(TimeStampedModel, models.Model):
         unique_together = ('name', 'cloud_provider')
     objects = SecurityGroupManager()
 
-    # Name of the security group
+    # Name of the security group (REQUIRED)
     name = models.CharField(max_length=255)
 
-    # Description of the security group
+    # Description of the security group (REQUIRED)
     description = models.CharField(max_length=255)
 
     # ID given by the provider
+    # NOTE: This will be set automatically after it has been created on the
+    # provider and will be ignored if passed in
     group_id = models.CharField(max_length=16, blank=True)
 
     # the cloud provider for this group
