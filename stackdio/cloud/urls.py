@@ -15,6 +15,7 @@ from .api import (
     SnapshotDetailAPIView,
     SecurityGroupListAPIView,
     SecurityGroupDetailAPIView,
+    SecurityGroupRulesAPIView,
     CloudProviderSecurityGroupListAPIView,
 )
 
@@ -80,6 +81,10 @@ urlpatterns = patterns('cloud.api',
     url(r'^security_groups/(?P<pk>[0-9]+)/$', 
         SecurityGroupDetailAPIView.as_view(), 
         name='securitygroup-detail'),
+
+    url(r'^security_groups/(?P<pk>[0-9]+)/rules/$', 
+        SecurityGroupRulesAPIView.as_view(), 
+        name='securitygroup-rules'),
 
 )
 

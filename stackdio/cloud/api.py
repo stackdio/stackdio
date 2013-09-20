@@ -307,25 +307,6 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     Updates an existing security group's details. Currently, only
     the is_default field may be modified and only by admins.
 
-    # TODO
-    ### PUT (old, needs to be refactored)
-
-    Authorizes or revokes a rule for the security group. The rule
-    must be valid JSON with the following fields:
-
-    `action` -- the action to take for the rule [authorize, revoke]
-
-    `protocol` -- the protocol of the rule [tcp, udp, icmp]
-
-    `from_port` -- the starting port for the rule's port range [1-65535]
-
-    `to_port` -- the ending port for the rule's port range [1-65535]
-
-    `rule` -- the actual rule, this should be either a CIDR (IP address
-    with associated routing prefix) **or** an existing account ID and 
-    group name combination to authorize or revoke for the rule. See
-    examples below.
-
     ### DELETE
 
     Removes the corresponding security group from stackd.io as well as
@@ -333,30 +314,6 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     group is currently being used, then it can not be removed. You
     must first terminate all machines depending on the security group
     and then delete it.
-
-    ##### To authorize SSH to a single IP address
-        {
-            'action': 'authorize',
-            'protocol': 'tcp',
-            'from_port': 22,
-            'to_port': 22,
-            'rule': '192.168.1.108/32'
-        }
-
-    ##### To authorize a range of UDP ports to another provider's group
-        {
-            'action': 'authorize',
-            'protocol': 'udp',
-            'from_port': 3000,
-            'to_port': 3030,
-            'rule': '<account_number>:<group_name>'
-        }
-
-        Where account_number is the account ID of the provider and 
-        group_name is an existing group name on that provider.
-
-    To revoke either of the rules above, you would just change the `action`
-    field's value to be "revoke"
     '''
 
     model = SecurityGroup
@@ -396,7 +353,67 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(obj)
         return Response(serializer.data)
 
-    def old_update(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):
+        sg = self.get_object()
+
+        # Delete from AWS. This will throw the appropriate error
+        # if the group is being used.
+        driver = sg.cloud_provider.get_driver()
+        driver.delete_security_group(sg.name)
+
+        return super(SecurityGroupDetailAPIView, self).destroy(request, *args, **kwargs)
+
+
+class SecurityGroupRulesAPIView(generics.UpdateAPIView):
+    '''
+    ### PUT
+
+    Authorizes or revokes a rule for the security group. The rule
+    must be valid JSON with the following fields:
+
+    `action` -- the action to take for the rule [authorize, revoke]
+
+    `protocol` -- the protocol of the rule [tcp, udp, icmp]
+
+    `from_port` -- the starting port for the rule's port range [1-65535]
+
+    `to_port` -- the ending port for the rule's port range [1-65535]
+
+    `rule` -- the actual rule, this should be either a CIDR (IP address
+    with associated routing prefix) **or** an existing account ID and 
+    group name combination to authorize or revoke for the rule. See
+    examples below.
+
+    ##### To authorize SSH to a single IP address
+        {
+            'action': 'authorize',
+            'protocol': 'tcp',
+            'from_port': 22,
+            'to_port': 22,
+            'rule': '192.168.1.108/32'
+        }
+
+    ##### To authorize a range of UDP ports to another provider's group
+        {
+            'action': 'authorize',
+            'protocol': 'udp',
+            'from_port': 3000,
+            'to_port': 3030,
+            'rule': '<account_number>:<group_name>'
+        }
+
+        Where account_number is the account ID of the provider and 
+        group_name is an existing group name on that provider.
+
+    To revoke either of the rules above, you would just change the `action`
+    field's value to be "revoke"
+    '''
+
+    model = SecurityGroup
+    serializer_class = SecurityGroupSerializer
+    parser_classes = (parsers.JSONParser,)
+
+    def update(self, request, *args, **kwargs):
         logger.debug(request.DATA)
         security_group = self.get_object()
         driver = security_group.cloud_provider.get_driver()
@@ -411,16 +428,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         serializer = self.get_serializer(self.get_object())
         return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        sg = self.get_object()
-
-        # Delete from AWS. This will throw the appropriate error
-        # if the group is being used.
-        driver = sg.cloud_provider.get_driver()
-        driver.delete_security_group(sg.name)
-
-        return super(SecurityGroupDetailAPIView, self).destroy(request, *args, **kwargs)
+    
 
 class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
     '''
