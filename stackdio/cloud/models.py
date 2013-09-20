@@ -109,6 +109,9 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
 
 
 class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
+
+    class Meta:
+        unique_together = ('snapshot_id', 'cloud_provider')
     
     # The cloud provider that has access to this snapshot
     cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='snapshots')
@@ -123,6 +126,10 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 
 
 class CloudZone(TitleSlugDescriptionModel):
+
+    class Meta:
+        unique_together = ('title', 'provider_type')
+
     # link to the type of provider for this zone
     provider_type = models.ForeignKey('cloud.CloudProviderType')
 

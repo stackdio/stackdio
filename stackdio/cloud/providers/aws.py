@@ -183,6 +183,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
     # The default availablity zone to use
     DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
+    DEFAULT_AVAILABILITY_ZONE_NAME = 'default_availability_zone_name'
 
     # The path to the private key for SSH
     PRIVATE_KEY_FILE = 'private_key_file'
@@ -278,28 +279,79 @@ class AWSCloudProvider(BaseCloudProvider):
         result, errors = super(AWSCloudProvider, self) \
             .validate_provider_data(data, files)
 
-        # check keypair
-
-        # check availability zone
-
-        # check route 53 domain
-
-        # check security groups
-        if result:
-            ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])
-
-            try:
-                security_groups = filter(None, data[self.SECURITY_GROUPS].split(','))
-                security_groups = ec2.get_all_security_groups(security_groups)
-            except boto.exception.EC2ResponseError, e:
-                result = False
-                errors['AWS'].append(e.error_message)
-
         # check for required files
         if not files or self.PRIVATE_KEY_FILE not in files:
             result = False
             errors[self.PRIVATE_KEY_FILE].append(self.REQUIRED_MESSAGE)
-        
+
+        if not result:
+            return result, errors
+
+        # check authentication credentials
+        try:
+            ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])
+            ec2.get_all_zones()
+        except boto.exception.EC2ResponseError, e:
+            result = False
+            errors.append(e.error_message)
+            
+        if not result:
+            return result, errors
+
+        # check keypair
+        try:
+            ec2.get_all_key_pairs(data[self.KEYPAIR])
+        except boto.exception.EC2ResponseError, e:
+            result = False
+            errors.append('The keypair \'{0}\' does not exist in this account.'
+                          ''.format(data[self.KEYPAIR]))
+
+        # check availability zone
+        try:
+            ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
+        except boto.exception.EC2ResponseError, e:
+            result = False
+            errors.append('The availability zone \'{0}\' does not exist in '
+                          'this account.'.format(data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
+
+        # check route 53 domain
+        try:
+            if self.ROUTE53_DOMAIN in data:
+                # connect to route53 and check that the domain is available
+                r53 = boto.connect_route53(data[self.ACCESS_KEY], data[self.SECRET_KEY])
+                found_domain = False
+                domain = data[self.ROUTE53_DOMAIN]
+
+                hosted_zones = r53.get_all_hosted_zones()
+                hosted_zones = hosted_zones['ListHostedZonesResponse']['HostedZones']
+                for hosted_zone in hosted_zones:
+                    if hosted_zone['Name'].startswith(domain):
+                        found_domain = True
+                        break
+
+                if not found_domain:
+                    err = 'The Route53 domain \'{0}\' does not exist in ' \
+                          'this account.'.format(domain)
+                    errors.append(err)
+        except boto.exception.DNSServerError, e:
+            result = False
+            errors.append(e.error_message)
+
+        # check security groups
+        security_groups = filter(None, data[self.SECURITY_GROUPS].split(','))
+        security_groups_missing = []
+        for group_name in [g.strip() for g in security_groups]:
+            logger.debug('Checking security group {0}'.format(group_name))
+            try:
+                security_groups = ec2.get_all_security_groups(group_name)
+            except boto.exception.EC2ResponseError, e:
+                security_groups_missing.append(group_name)
+
+        if security_groups_missing:
+            result = False
+            errors.append('The following security groups do not exist in this '
+                          'account: {0}'.format(', '.join(security_groups_missing)))
+ 
         return result, errors
 
     def connect_route53(self):
@@ -414,6 +466,30 @@ class AWSCloudProvider(BaseCloudProvider):
             }
 
         return result
+
+    def has_image(self, image_id):
+        '''
+        Checks to see if the given ami is available in the account
+        '''
+        ec2 = self.connect_ec2()
+        try:
+            ec2.get_all_images(image_id)
+            return True, ''
+        except boto.exception.EC2ResponseError, e:
+            return False, 'The image id \'{0}\' does not exist in this ' \
+                          'account.'.format(image_id)
+
+    def has_snapshot(self, snapshot_id):
+        '''
+        Checks to see if the given snapshot is available in the account
+        '''
+        ec2 = self.connect_ec2()
+        try:
+            ec2.get_all_snapshots(snapshot_id)
+            return True, ''
+        except boto.exception.EC2ResponseError, e:
+            return False, 'The snapshot id \'{0}\' does not exist in this ' \
+                          'account.'.format(snapshot_id)
 
     def register_dns(self, hosts):
         '''

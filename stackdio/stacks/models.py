@@ -123,7 +123,8 @@ class StackManager(models.Manager):
             missing_sg_ids = list(host_sg_ids.difference(known_sg_ids))
 
             if missing_sg_ids:
-                raise Exception('The host security group IDs do not exist: {0}'.format(missing_sg_ids))
+                raise Exception('The following host security group IDs do not '
+                                'exist: {0}'.format(missing_sg_ids))
 
 
         cloud_provider = CloudProvider.objects.get(id=data['cloud_provider'])

@@ -109,11 +109,10 @@ class BaseCloudProvider(object):
         values aren't empty. Override for any additional validation
         required.
         '''
-        errors = collections.defaultdict(list)
-
+        errors = []
         for key in self.get_required_fields():
             if not data.get(key):
-                errors[key].append(self.REQUIRED_MESSAGE)
+                errors.append(self.REQUIRED_MESSAGE)
 
         return len(errors) == 0, errors
 

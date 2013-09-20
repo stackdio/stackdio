@@ -90,6 +90,14 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
 
         provider_type, provider_class = get_provider_type_and_class(request.DATA.get('provider_type'))
 
+        # pull the availability zone name
+        try:
+            zone = CloudZone.objects.get(pk=request.DATA['default_availability_zone'])
+            request.DATA['default_availability_zone_name'] = zone.slug
+        except CloudZone.DoesNotExist:
+            errors = ['foobar']
+            raise serializers.ValidationError({'errors': errors})
+
         provider = provider_class()
         result, errors = provider.validate_provider_data(request.DATA, 
                                                          request.FILES)
@@ -97,7 +105,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         if not result:
             logger.error('Cloud provider validation errors: '
                          '{0}'.format(errors))
-            raise serializers.ValidationError(errors)
+            raise serializers.ValidationError({'errors': errors})
 
         return attrs
 
@@ -149,6 +157,18 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
 
         superuser_fields = ('image_id',)
 
+    def validate(self, attrs):
+        request = self.context['request']
+
+        # validate that the AMI exists by looking it up in the cloud provider
+        provider_id = request.DATA.get('cloud_provider')
+        driver = CloudProvider.objects.get(pk=provider_id).get_driver()
+        
+        result, error = driver.has_image(request.DATA['image_id'])
+        if not result:
+            raise serializers.ValidationError({'errors': [error]})
+        return attrs
+
 
 class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
     cloud_provider = serializers.PrimaryKeyRelatedField()
@@ -165,6 +185,19 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
             'snapshot_id',
             'size_in_gb',
         )
+
+    def validate(self, attrs):
+        request = self.context['request']
+
+        # validate that the snapshot exists by looking it up in the cloud
+        # provider
+        provider_id = request.DATA.get('cloud_provider')
+        driver = CloudProvider.objects.get(pk=provider_id).get_driver()
+        
+        result, error = driver.has_snapshot(request.DATA['snapshot_id'])
+        if not result:
+            raise serializers.ValidationError({'errors': [error]})
+        return attrs
 
 
 class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
