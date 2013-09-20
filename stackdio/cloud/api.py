@@ -115,6 +115,7 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         # Recreate the salt cloud providers file to clean up this provider
         write_cloud_providers_file()
+        write_cloud_profiles_file()
         return ret
 
 
