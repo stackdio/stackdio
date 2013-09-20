@@ -302,7 +302,13 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     `active_hosts` fields will be populated like with the full
     list.
 
-    ### PUT
+    # PUT
+
+    Updates an existing security group's details. Currently, only
+    the is_default field may be modified and only by admins.
+
+    # TODO
+    ### PUT (old, needs to be refactored)
 
     Authorizes or revokes a rule for the security group. The rule
     must be valid JSON with the following fields:
@@ -368,6 +374,29 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             raise Http404()
 
     def update(self, request, *args, **kwargs):
+        '''
+        Allow admins to update the is_default field on security groups.
+        '''
+        if not request.user.is_superuser:
+            raise PermissionDenied('Only admins are allowed to update '
+                                   'security groups.')
+
+        if 'is_default' not in request.DATA:
+            raise BadRequest('is_default is the only field allowed to be updated.')
+
+        is_default = request.DATA.get('is_default')
+        if not isinstance(is_default, bool):
+            raise BadRequest('is_default field must be a boolean.')
+
+        # update the field value
+        obj = self.get_object()
+        obj.is_default = is_default
+        obj.save()
+
+        serializer = self.get_serializer(obj)
+        return Response(serializer.data)
+
+    def old_update(self, request, *args, **kwargs):
         logger.debug(request.DATA)
         security_group = self.get_object()
         driver = security_group.cloud_provider.get_driver()
