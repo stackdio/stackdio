@@ -364,7 +364,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return super(SecurityGroupDetailAPIView, self).destroy(request, *args, **kwargs)
 
 
-class SecurityGroupRulesAPIView(generics.UpdateAPIView):
+class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
     '''
     ### PUT
 
@@ -413,21 +413,28 @@ class SecurityGroupRulesAPIView(generics.UpdateAPIView):
     serializer_class = SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
 
+    def retrieve(self, request, *args, **kwargs):
+        sg = self.get_object()
+        driver = sg.cloud_provider.get_driver()
+        result = driver.get_security_groups(sg.name)
+        return Response(result[sg.name]['rules'])
+        
     def update(self, request, *args, **kwargs):
-        logger.debug(request.DATA)
-        security_group = self.get_object()
-        driver = security_group.cloud_provider.get_driver()
+        sg = self.get_object()
+        driver = sg.cloud_provider.get_driver()
 
         if request.DATA.get('action') == 'authorize':
-            driver.authorize_security_group(security_group.name, request.DATA)
+            driver.authorize_security_group(sg.name, request.DATA)
         elif request.DATA.get('action') == 'revoke':
-            driver.revoke_security_group(security_group.name, request.DATA)
+            driver.revoke_security_group(sg.name, request.DATA)
+        elif request.DATA.get('action') == 'revoke_all':
+            driver.revoke_all_security_groups(sg.name)
         else:
             raise BadRequest('Missing or invalid `action` parameter. Must be '
                              'one of \'authorize\' or \'revoke\'')
 
-        serializer = self.get_serializer(self.get_object())
-        return Response(serializer.data)
+        result = driver.get_security_groups(sg.name)
+        return Response(result[sg.name]['rules'])
     
 
 class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):

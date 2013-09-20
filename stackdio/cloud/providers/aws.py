@@ -441,7 +441,21 @@ class AWSCloudProvider(BaseCloudProvider):
         kwargs['group_name'] = group_name
         ec2.revoke_security_group(**kwargs)
 
+    def revoke_all_security_groups(self, group_name):
+        '''
+        Revokes ALL rules on the security group.
+        '''
+        ec2 = self.connect_ec2()
+
+        groups = self.get_security_groups(group_name)
+        for group_name, group in groups.iteritems():
+            for rule in group['rules']:
+                self.revoke_security_group(group_name, rule)
+
     def get_security_groups(self, group_names=[]):
+        if not isinstance(group_names, list):
+            group_names = [group_names]
+
         ec2 = self.connect_ec2()
         groups = ec2.get_all_security_groups(group_names)
 
