@@ -278,6 +278,12 @@ class AWSCloudProvider(BaseCloudProvider):
         result, errors = super(AWSCloudProvider, self) \
             .validate_provider_data(data, files)
 
+        # check keypair
+
+        # check availability zone
+
+        # check route 53 domain
+
         # check security groups
         if result:
             ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])

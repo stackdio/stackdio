@@ -97,7 +97,6 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
             raise BadRequest(err_msg)
 
 
-
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = CloudProvider
     serializer_class = CloudProviderSerializer
