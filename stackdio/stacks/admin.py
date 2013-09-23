@@ -34,7 +34,7 @@ class SaltRoleAdmin(admin.ModelAdmin):
     list_display = [
         'title',
         'slug',
-        'role_name',
+        'sls_path',
     ]
 admin.site.register(SaltRole, SaltRoleAdmin)
 

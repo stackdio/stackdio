@@ -408,7 +408,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 cloud_provider.yaml)[cloud_provider.slug]
 
             # pull various stuff we need for a host
-            roles = [r.role_name for r in host.roles.all()]
+            roles = [r.slug for r in host.roles.all()]
             instance_size = host.instance_size.title
             security_groups = set([
                 sg.name for sg in host.security_groups.all()
@@ -491,14 +491,28 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 f.write(map_file_yaml)
 
     def _generate_top_file(self):
-        top_file_data = {
-            '*': [
-                'core.*',
-            ]     
-        }
+        top_file_data = {}
 
+        # Core SLS
+        stack_match = 'G@stack_id:{0}'.format(self.id)
+        top_file_data[stack_match] = [
+            {'match': 'compound'},
+            'core.*',
+        ]
+
+        # find the distinct set of roles for this stack
+        roles = set()
         for host in self.hosts.all():
-            top_file_data[host.hostname] = [r.role_name for r in host.roles.all()]
+            roles.update(list(host.roles.all()))
+
+        # build up the top file using compound matching based
+        # on the stack id and roles
+        for role in roles:
+            matcher = stack_match + ' and G@roles:{0}'.format(role.slug)
+            top_file_data[matcher] = [
+                {'match': 'compound'},
+                role.sls_path
+            ]
 
         top_file_data = {
             'base': top_file_data
@@ -606,7 +620,7 @@ class StackHistory(TimeStampedModel):
 
 
 class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):
-    role_name = models.CharField(max_length=64)
+    sls_path = models.CharField(max_length=64)
 
     def __unicode__(self):
         return self.title

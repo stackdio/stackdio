@@ -349,6 +349,7 @@ def ping(stack_id, timeout=5*60, interval=5, max_failures=25):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
+        required_hosts = set([h.hostname for h in stack.get_hosts()])
         stack.set_status(ping.name,
                          'Attempting to ping all hosts.',
                          Level.INFO)
@@ -378,8 +379,21 @@ def ping(stack_id, timeout=5*60, interval=5, max_failures=25):
             if result.status_code == 0:
                 try:
                     result_yaml = yaml.safe_load(result.std_out)
+
+                    # check that we got a report back for all hosts
+                    pinged_hosts = set(result_yaml.keys())
+                    missing_hosts = required_hosts.difference(pinged_hosts)
+                    if missing_hosts:
+                        failures += 1
+                        logger.debug('The following hosts did not respond to '
+                                     'the ping request: {0}; Total failures: '
+                                     '{1}'.format(
+                                        missing_hosts,
+                                        failures))
+
                     if result_yaml:
                         break
+
                 except Exception, e:
                     failures += 1
                     logger.debug('Unable to parse YAML from envoy results. '
@@ -402,7 +416,7 @@ def ping(stack_id, timeout=5*60, interval=5, max_failures=25):
             time.sleep(interval)
             timeout -= interval
 
-        # make sure all hosts are accounted for
+        # make sure all hosts reported a successful ping
         false_hosts = []
         for host, value in result_yaml.iteritems():
             if isinstance(value, bool) and not value:
