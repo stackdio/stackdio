@@ -201,6 +201,35 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
             return deferred.promise
         },
+        delete : function (group) {
+            var self = this;
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: '/api/security_groups/' + group.id + '/',
+                type: 'DELETE',
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    // Remove the Security Group from the local array
+                    stores.SecurityGroups.remove(function (g) {
+                        return g.id === group.id;
+                    });
+
+                    // Resolve the promise
+                    deferred.resolve();
+                },
+                error: function (request, status, error) {
+                    console.log(arguments);
+
+                    deferred.reject(new Error(JSON.parse(request.responseText).detail));
+                }
+            });
+
+            return deferred.promise
+        },
         getRules : function (group) {
             var self = this;
             var deferred = Q.defer();
@@ -215,8 +244,6 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 success: function (response) {
                     var i, item, items = response.results;
                     var rule;
-
-                    deferred.resolve();
 
                     // Clear the store and the grid
                     stores.SecurityGroupRules.removeAll();

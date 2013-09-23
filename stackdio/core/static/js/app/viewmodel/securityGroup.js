@@ -98,10 +98,10 @@ define(["knockout",
             };
 
             self.deleteSecurityGroup = function (group) {
-                API.SecurityGroup.delete(group)
+                API.SecurityGroups.delete(group)
                     .then(self.showSuccess)
                     .catch(function (error) {
-                        self.showError(error);
+                        self.showError(error.toString(), 5000);
                     });
             };
 

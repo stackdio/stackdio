@@ -13,11 +13,13 @@ define(function () {
             setTimeout('$("#alert-success").hide()', 3000);
         };
 
-        self.showError = function (message) {
+        self.showError = function (message, delay) {
+            var timeout = (typeof delay === 'undefined') ? 3000 : delay;
+
             $("#alert-error-details").empty();
             $("#alert-error-details").append(message);
             $("#alert-error").show();
-            setTimeout(function () { $("#alert-error").hide(); $("#alert-error-details").empty(); }, 3000);
+            setTimeout(function () { $("#alert-error").hide(); $("#alert-error-details").empty(); }, timeout);
         };
 
         self.closeSuccess = function () {
