@@ -40,10 +40,6 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
             var deferred = Q.defer();
             var files, formData = new FormData(), xhr = new XMLHttpRequest();
 
-            var item = stores.Accounts()[0];
-            deferred.resolve(item);
-            return deferred.promise;
-
             // Append private key file to the FormData() object
             formData.append('private_key_file', record.private_key_file.files[0]);
 
