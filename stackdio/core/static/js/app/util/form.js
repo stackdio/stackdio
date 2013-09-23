@@ -39,7 +39,6 @@ define(function () {
                     id = item.id;
                     form[id] = {};
 
-                    console.log('item.localName',item.localName);
 
                     switch (item.localName) {
                         case 'textarea':

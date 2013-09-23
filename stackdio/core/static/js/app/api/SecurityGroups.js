@@ -57,6 +57,9 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
                     for (i in items) {
                         group = new models.SecurityGroup().create(items[i]);
+                        group.account = _.find(stores.Accounts(), function (a) {
+                            return a.id === group.provider_id;
+                        })
                         stores.SecurityGroups.push(group);
                     }
 

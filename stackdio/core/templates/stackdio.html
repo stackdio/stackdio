@@ -276,7 +276,7 @@
                                 <td data-bind="text: host_count"></td>
                                 <td data-bind="text: size.title"></td>
                                 <td data-bind="text: host_pattern"></td>
-                                <td data-bind="text: host_security_groups"></td>
+                                <td data-bind="html: flat_security_groups"></td>
                                 <td><button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.stack.removeHost"></button></td>
                             </tr>     
                         </tbody>
@@ -441,10 +441,10 @@
                                     data-selected-text-format="count"
                                     data-bind="options: stores.SecurityGroups, 
                                                optionsValue: 'id', 
-                                               optionsText: 'title'",
+                                               optionsText: 'name'",
                                     data-container="body"
                                     data-header="Choose security groups"
-                                    class="input-xlarge"></select>
+                                    class="input-xlarge"></select> 
                         </div>
                     </div>
 
@@ -918,18 +918,15 @@
                         <label class="control-label" style="width: 40px;" for="securitygroup_name">Title</label>
                         <div class="controls" style="margin-left: 60px">
                             <input id="securitygroup_name" type="text" class="input-block-level">
-                            <button class="btn btn-success iconic-plus" 
-                                    data-bind="click: function (data, event) { 
-                                        securityGroup.addSecurityGroup($('#securitygroup_name').text(), event); 
-                                    }"> Add</button>
-
                         </div>
                     </div>
                 </div>
 
                 <div class="modal-footer">
                     <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
-                    <button class="btn btn-primary" data-bind="click: $root.securityGroup.addSecurityGroup">Save</button>
+                    <button class="btn btn-primary" data-bind="click: function (data, event) { 
+                                        securityGroup.addSecurityGroup($('#securitygroup_name').text(), event); 
+                                    }">Save</button>
                 </div>
             </form>
         </div>
@@ -942,31 +939,7 @@
         <div id="default-securitygroup-form-container" title="Default Security Groups" class="stackd-form form-small">
             <form id="default-securitygroup-form" class="form-horizontal">
                 <div class="modal-body">
-<!-- 
-                    <div class="control-group">
-                        <div class="lead">Option 1. Import AWS group</div>
-                        You can select from the list of security groups that already exists on AWS. By selecting one of these existing groups, 
-                        it will be imported into stackd.io, after which you can start created access rules for it.
-                    </div>
 
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="aws_security_groups">Import AWS group</label>
-                        <div class="controls" style="margin-left: 160px">
-                            <select id="aws_security_group" 
-                                    data-selected-text-format="count"
-                                    data-bind="options: stores.AWSSecurityGroups, 
-                                               optionsValue: 'id', 
-                                               optionsText: 'name'
-                                            ",
-                                    data-container="body"
-                                    class="input-xlarge"></select> 
-                            <button class="btn btn-success iconic-plus" 
-                                    data-bind="click: function (data, event) { 
-                                        securityGroup.addDefaultSecurityGroup($('#aws_security_group option:selected').text(), event); 
-                                    }"> Add</button>
-                        </div>
-                    </div>
- -->
                     <div class="control-group">
                         <div class="lead">Option 1. Use an existing group</div>
                         If you previously imported AWS groups, or created your own through stackd.io, you can select one of 

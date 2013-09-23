@@ -182,7 +182,7 @@ define(["knockout",
                     cloud_profile: self.selectedProfile.id,
                     roles: record.host_roles,
                     availability_zone: record.availability_zone.value,
-                    host_security_groups: record.host_security_groups.value
+                    host_security_groups: record.host_security_groups.map(function (g) { return g.value; })
                 });
 
                 host.salt_roles = _.map(host.roles, function (r) { return r.value; });
@@ -195,6 +195,11 @@ define(["knockout",
                 // Add some HTML to display for the chosen roles
                 host.flat_roles = _.map(host.roles, function (r) { 
                     return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
+                }).join('');
+
+                // Add some HTML to display for the chosen security groups
+                host.flat_security_groups = _.map(record.host_security_groups, function (g) { 
+                    return '<div style="line-height:15px !important;">' + g.text + '</div>'; 
                 }).join('');
 
                 // Add spot instance config
