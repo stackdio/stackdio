@@ -55,6 +55,14 @@ class StackListAPIView(generics.ListCreateAPIView):
         as well as generating the salt-cloud map that will be used to launch
         machines
         '''
+
+        # make sure the user has a public key
+        if not request.user.settings.public_key:
+            raise BadRequest('You have not added a public key to your user '
+                             'profile and will not be able to SSH in to any '
+                             'machines. Please set update your user profile '
+                             'before continuing.')
+
         # set some defaults
         launch_stack = request.DATA.get('auto_launch', True)
         provision_stack = request.DATA.get('auto_provision', True)
