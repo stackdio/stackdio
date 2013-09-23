@@ -3,6 +3,7 @@ define([
         "moment", 
         "jquery-ui", 
         "knockout", 
+        "bootstrap-typeahead", 
         "app/settings",
         "app/util/form",
         "app/model/models",
@@ -16,7 +17,7 @@ define([
         "app/viewmodel/securityGroup",
         "app/viewmodel/stacks"
     ],
-    function (Q, moment, jui, ko, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, stackVM) {
+    function (Q, moment, jui, ko, typeahead, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, stackVM) {
 
         function stackdioModel() {
             var self = this;
@@ -129,7 +130,7 @@ define([
                 .then(API.Zones.load)
                 .then(self.account.loadAccounts)
                 .then(self.profile.loadProfiles)
-                // .then(API.SecurityGroups.load)
+                .then(API.SecurityGroups.load)
                 .then(API.Snapshots.load)
                 .then(API.Stacks.load)
 

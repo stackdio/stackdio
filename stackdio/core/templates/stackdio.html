@@ -683,7 +683,7 @@
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td>
-                            <div class="btn-group">
+                            <div class="btn-group" data-bind="visible: $root.isSuperUser">
                                 <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
@@ -918,6 +918,11 @@
                         <label class="control-label" style="width: 40px;" for="securitygroup_name">Title</label>
                         <div class="controls" style="margin-left: 60px">
                             <input id="securitygroup_name" type="text" class="input-block-level">
+                            <button class="btn btn-success iconic-plus" 
+                                    data-bind="click: function (data, event) { 
+                                        securityGroup.addSecurityGroup($('#securitygroup_name').text(), event); 
+                                    }"> Add</button>
+
                         </div>
                     </div>
                 </div>
@@ -937,7 +942,7 @@
         <div id="default-securitygroup-form-container" title="Default Security Groups" class="stackd-form form-small">
             <form id="default-securitygroup-form" class="form-horizontal">
                 <div class="modal-body">
-
+<!-- 
                     <div class="control-group">
                         <div class="lead">Option 1. Import AWS group</div>
                         You can select from the list of security groups that already exists on AWS. By selecting one of these existing groups, 
@@ -961,10 +966,11 @@
                                     }"> Add</button>
                         </div>
                     </div>
-
+ -->
                     <div class="control-group">
-                        <div class="lead">Option 2. Use an existing group</div>
-                        If you previously imported AWS groups, or created your own through stackd.io, you can select one of those groups that are listed here.
+                        <div class="lead">Option 1. Use an existing group</div>
+                        If you previously imported AWS groups, or created your own through stackd.io, you can select one of 
+                        those groups that are listed here.
                     </div>
 
                     <div class="control-group">
@@ -986,15 +992,19 @@
                     </div>
 
                     <div class="control-group">
-                        <div class="lead">Option 3. Create new group</div>
-                        If you would like to create a new security group that does not already exist on this AWS account, simply type in the name for 
-                        the group here and it will created in stackd.io and also on the AWS account you created.
+                        <div class="lead">Option 2. Create new group</div>
+                        If you would like to create a new security group that does not already exist in stackd.io, 
+                        simply type in the name for the group here and it will created. If there are existing AWS
+                        groups that match what you are entering, you will see suggestions.
                     </div>
 
                     <div class="control-group">
                         <label class="control-label" style="width: 140px;" for="new_securitygroup_name">Create new group</label>
                         <div class="controls" style="margin-left: 160px">
-                            <input id="new_securitygroup_name" type="text" class="input-xlarge"> 
+                            <input id="new_securitygroup_name" 
+                                   type="text"
+                                   class="input-xlarge"
+                                   data-bind="event: { keypress: securityGroup.capture }"> 
                             <button class="btn btn-success iconic-plus" 
                                     data-bind="click: function (data, event) { 
                                         securityGroup.addDefaultSecurityGroup(document.getElementById('new_securitygroup_name').value, event); 
@@ -1005,7 +1015,7 @@
                     <div class="control-group">
                         <div class="lead">Assigned Default Groups</div>
                         <div>To remove any default security groups assigned to this account, click on the 'x' in the label below.</div>
-                        <div id="default_group_list"></div>
+                        <div style="margin: 10px 0 0 0;" id="default_group_list"></div>
                     </div>
 
                 </div>

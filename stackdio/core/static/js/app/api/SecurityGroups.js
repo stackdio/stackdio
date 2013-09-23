@@ -1,5 +1,39 @@
 define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, models) {
     return {
+        get : function (group) {
+            var self = this;
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: '/api/security_groups/',
+                type: 'GET',
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    var i, item, items = response.results;
+                    var group;
+
+                    deferred.resolve();
+
+                    // Clear the store and the grid
+                    stores.SecurityGroups.removeAll();
+
+
+                    for (i in items) {
+                        group = new models.SecurityGroup().create(items[i]);
+                        stores.SecurityGroups.push(group);
+                    }
+
+                    // Resolve the promise and pass back the loaded items
+                    console.log('groups', stores.SecurityGroups());
+                    deferred.resolve(stores.SecurityGroups());
+                }
+            });
+
+            return deferred.promise
+        },
         load : function () {
             var self = this;
             var deferred = Q.defer();
@@ -52,7 +86,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
                     // Clear the store and the grid
                     stores.AWSSecurityGroups.removeAll();
-                    stores.SecurityGroups.removeAll();
+                    stores.DefaultSecurityGroups.removeAll();
 
                     for (i in aws) {
                         group = new models.AWSSecurityGroup().create(aws[i]);
@@ -61,12 +95,27 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
                     for (i in items) {
                         group = new models.SecurityGroup().create(items[i]);
-                        stores.SecurityGroups.push(group);
+
+                        if (items[i].is_default) {
+                            stores.DefaultSecurityGroups.push(group);
+                        } else {
+                            stores.SecurityGroups.push(group);
+                        }
                     }
 
+                    var flattened = stores.AWSSecurityGroups().map(function (g) {
+                        return g.name;
+                    });
+
+                    $('#new_securitygroup_name').typeahead({
+                        source: flattened,
+                        items: 10,
+                        minLength: 2
+                    });
+
                     // Resolve the promise and pass back the loaded items
-                    console.log('account aws groups', stores.AWSSecurityGroups());
                     console.log('account groups', stores.SecurityGroups());
+                    console.log('default groups', stores.DefaultSecurityGroups());
                     deferred.resolve();
                 }
             });
@@ -89,37 +138,45 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     "Content-Type": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response.results;
-                    var group;
+                    var item = response;
+                    var newGroup = new models.SecurityGroup().create(item);
 
-                    deferred.resolve();
+                    console.log('saved group as default');
+                    stores.DefaultSecurityGroups.push(newGroup);
+                    console.log('default groups', stores.DefaultSecurityGroups());
+                    deferred.resolve(group);
+                },
+                error: function (request, status, error) {
+                    var newGroup = new models.SecurityGroup().create(group);
 
-                    // Clear the store and the grid
-                    stores.SecurityGroups.removeAll();
+                    if (error === 'CONFLICT') {
+                        console.log('group already exists, so setting to default');
+                        group.is_default = true;
 
+                        console.log(securityGroup);
 
-                    for (i in items) {
-                        group = new models.SecurityGroup().create(items[i]);
-                        stores.SecurityGroups.push(group);
+                        self.updateDefault(securityGroup)
+                            .then(function () {
+                                deferred.resolve();
+                            });
+
+                    } else {
+                        deferred.reject(new Error(error));
                     }
-
-                    // Resolve the promise and pass back the loaded items
-                    console.log('security groups', stores.SecurityGroups());
-                    deferred.resolve(stores.SecurityGroups());
                 }
             });
 
             return deferred.promise
         },
-        save : function (group) {
+        updateDefault : function (group) {
             var self = this;
             var deferred = Q.defer();
             var securityGroup = JSON.stringify(group);
 
 
             $.ajax({
-                url: '/api/security_groups/',
-                type: 'POST',
+                url: '/api/security_groups/' + group.id + '/',
+                type: 'PUT',
                 data: securityGroup,
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
@@ -127,23 +184,15 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     "Content-Type": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response.results;
-                    var group;
+                    var group = response;
 
-                    deferred.resolve();
-
-                    // Clear the store and the grid
-                    stores.SecurityGroups.removeAll();
-
-
-                    for (i in items) {
-                        group = new models.SecurityGroup().create(items[i]);
-                        stores.SecurityGroups.push(group);
+                    if (!group.is_default) {
+                        stores.DefaultSecurityGroups.remove(function (g) {
+                            return g.id === group.id;
+                        });
                     }
 
-                    // Resolve the promise and pass back the loaded items
-                    console.log('security groups', stores.SecurityGroups());
-                    deferred.resolve(stores.SecurityGroups());
+                    deferred.resolve(group);
                 }
             });
 
