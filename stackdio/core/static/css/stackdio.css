@@ -76,7 +76,7 @@ form {
 }
 
 .stackd-form, .modal-body {
-    max-height: 700px !important;
+    /*max-height: 600px !important;*/
 }
 
 .small-modal-body {
@@ -84,11 +84,6 @@ form {
     max-height: 445px;
     padding: 15px;
     overflow-y: auto;
-}
-
-.form-newstack {
-    width: 800px;
-    height: 600px;
 }
 
 .form-small {

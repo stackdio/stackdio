@@ -10,6 +10,7 @@ define(["knockout",
         var vm = function () {
             var self = this;
             self.selectedAccount = null;
+            self.selectedSecurityGroup = null;
 
             self.addSecurityGroup = function (name, evt) {
                 var record = {};
@@ -105,6 +106,51 @@ define(["knockout",
                     });
             };
 
+            self.deleteGroupRule = function (rule) {
+                rule.action = "revoke";
+
+                API.SecurityGroups.updateRule(self.selectedSecurityGroup, rule)
+                    .then(self.showSuccess)
+                    .catch(function (error) {
+                        self.showError(error.toString(), 5000);
+                    });
+            };
+
+            self.editGroupRules = function (group) {
+                self.selectedSecurityGroup = group;
+                stores.SecurityGroupRules.removeAll();
+
+                _.each(group.rules, function (r) {
+                    stores.SecurityGroupRules.push(new models.SecurityGroupRule().create(r));
+                });
+
+                $("#securitygroup-rules-form-container").dialog("open");
+            };
+
+            self.addRule = function (model, evt) {
+                var record = formutils.collectFormFields(evt.target.form);
+
+                API.SecurityGroups.updateRule(self.selectedSecurityGroup, {
+                    action: 'authorize',
+                    protocol: record.rule_protocol.value,
+                    from_port: record.rule_from_port.value,
+                    to_port: record.rule_to_port.value,
+                    rule: record.rule_ip_address.value
+                })
+                    .then(function () {
+                        self.showSuccess();
+                        formutils.clearForm('group-rule-form');
+                        $("#new-rule-dialog").dialog("close");
+                    })
+                    .catch(function (error) {
+                        self.showError(error.toString(), 5000);
+                    });
+            };
+
+            self.closeRulesForm = function () {
+                $("#securitygroup-rules-form-container").dialog("close");
+            };
+
             self.loadSecurityGroups = function () {
                 return API.SecurityGroups.load();
             };
@@ -112,16 +158,16 @@ define(["knockout",
             self.showSecurityGroupForm = function (account) {
                 self.selectedAccount = account;
                 $("#securitygroup-form-container").dialog("open");
-            }
+            };
 
             self.showDefaultGroupForm = function () {
                 $("#default-securitygroup-form-container").dialog("open");
                 $("#alert-default-security-groups").hide();
-            }
+            };
 
             self.closeSecurityGroupForm = function (type) {
                 $("#securitygroup-form-container").dialog("close");
-            }
+            };
 
             /*
              *  ==================================================================================
@@ -138,6 +184,18 @@ define(["knockout",
                 autoOpen: false,
                 width: 800,
                 modal: false
+            });
+
+            $("#securitygroup-rules-form-container").dialog({
+                autoOpen: false,
+                width: 800,
+                modal: true
+            });
+
+            $("#new-rule-dialog").dialog({
+                autoOpen: false,
+                width: 500,
+                modal: true
             });
 
         };

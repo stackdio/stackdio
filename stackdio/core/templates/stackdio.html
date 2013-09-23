@@ -735,11 +735,6 @@
                         <input id="keypair" type="text" class="input-block-level" placeholder="">
                     </div>
 
-                    <div class="span2">Security Groups</div>
-                    <div class="span4 no-margin">
-                        <input id="security_groups" type="text" class="input-block-level" placeholder="comma separated list">
-                    </div>
-
                     <div class="span2">Default Zone</div>
                     <div class="span4 no-margin">
                         <select id="default_availability_zone" 
@@ -905,6 +900,9 @@
                                     <li>
                                         <a href="#" data-bind="text:'Delete', click: $root.securityGroup.deleteSecurityGroup"></a>
                                     </li>
+                                    <li>
+                                        <a href="#" data-bind="text:'Define Rules', click: $root.securityGroup.editGroupRules"></a>
+                                    </li>
                                 </ul>
                             </div>
                         </td>
@@ -940,6 +938,98 @@
 
         <!-- 
             ======================================================================
+            S E C U R I T Y   G R O U P   R U L E S   L I S T   D I A L O G
+            ======================================================================
+        -->
+        <div id="securitygroup-rules-form-container" title="Security Group Rules" class="stackd-form">
+            <div class="modal-body">
+                <table id="security_group_rules_list" class="table table-striped data-grid">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Protocol</th>
+                            <th style="width:5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: stores.SecurityGroupRules">
+                        <tr>
+                            <td data-bind="text: (rule.split(':').length === 1) ? rule : rule.split(':')[1]"></td>
+                            <td data-bind="text: from_port"></td>
+                            <td data-bind="text: to_port"></td>
+                            <td data-bind="text: protocol"></td>
+                            <td>
+                                <button type="button" 
+                                        class="btn-small btn-danger iconic-trash-stroke"
+                                        data-bind="click: $root.securityGroup.deleteGroupRule"
+                                ></button>
+                            </td>
+                        </tr>     
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" data-bind="click: $root.securityGroup.closeRulesForm">Close</button>
+                <button class="btn btn-success iconic-plus" data-bind="click: function () { 
+                                    $('#new-rule-dialog').dialog('open');
+                                }"> Add</button>
+            </div>
+        </div>
+
+        <!-- 
+            ======================================================================
+            N E W   S E C U R I T Y   G R O U P   R U L E   D I A L O G
+            ======================================================================
+        -->
+        <div id="new-rule-dialog" title="New Access Rule" class="stackd-form">
+            <form id="group-rule-form" class="form-horizontal">
+                <div class="modal-body">
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_protocol">Protocol</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <select id="rule_protocol" 
+                                    data-bind="options: ['tcp','udp','icmp']",
+                                    data-container="body"
+                                    class="input-xlarge"></select> 
+                        </div>
+                    </div>
+
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_from_port">From port</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="rule_from_port"type="text"class="input-xlarge" placeholder="22">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_to_port">To port</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="rule_to_port"type="text"class="input-xlarge" placeholder="22">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_ip_address">IP address</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="rule_ip_address"type="text"class="input-xlarge" placeholder="0.0.0.0/32">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn" data-bind="click: function () { $('#new-rule-dialog').dialog('close') }">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: securityGroup.addRule"> Save</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 
+            ======================================================================
             D E F A U L T   S E C U R I T Y   G R O U P   F O R M
             ======================================================================
         -->
@@ -954,7 +1044,7 @@
                     </div>
 
                     <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="stackdio_security_groups">Your stackd.io groups</label>
+                        <label class="control-label" style="width: 140px;" for="stackdio_security_group">Your stackd.io groups</label>
                         <div class="controls" style="margin-left: 160px">
                             <select id="stackdio_security_group" 
                                     data-selected-text-format="count"

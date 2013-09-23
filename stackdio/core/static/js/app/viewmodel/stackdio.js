@@ -143,7 +143,7 @@ define([
                     $("div[class='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection("Stacks");
+                    self.gotoSection("Security");
 
                     // self.showMessage("#alert-default-security-groups");
                 })

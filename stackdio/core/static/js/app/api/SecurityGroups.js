@@ -230,33 +230,34 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
             return deferred.promise
         },
-        getRules : function (group) {
+        updateRule : function (group, rule, action) {
             var self = this;
             var deferred = Q.defer();
+            var stringifiedRule = JSON.stringify(rule);
 
             $.ajax({
                 url: '/api/security_groups/' + group.id + '/rules/',
-                type: 'GET',
+                data: stringifiedRule,
+                type: 'PUT',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response.results;
-                    var rule;
+                    // Replace the rules array on the current group
+                    group.rules = response;
 
-                    // Clear the store and the grid
+                    // Empty the rules store
                     stores.SecurityGroupRules.removeAll();
 
-                    // Add rules to the store
-                    for (i in items) {
-                        rule = new models.SecurityGroupRule().create(items[i]);
-                        stores.SecurityGroupRules.push(rule);
-                    }
+                    // Push the new rules back into the store
+                    _.each(response, function (r) {
+                        stores.SecurityGroupRules.push(r);
+                    })
 
-                    // Resolve the promise and pass back the loaded items
-                    console.log('groups', stores.SecurityGroupRules());
-                    deferred.resolve(stores.SecurityGroupRules());
+                    // Resolve the promise
+                    deferred.resolve();
                 }
             });
 

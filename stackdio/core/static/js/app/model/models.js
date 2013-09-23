@@ -50,6 +50,7 @@ define(function () {
     Role.prototype = new Model();
 
     return {
+        SecurityGroupRule: SecurityGroupRule,
         AWSSecurityGroup: AWSSecurityGroup,
         SecurityGroup: SecurityGroup,
         Zone: Zone,
