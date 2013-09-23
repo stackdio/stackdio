@@ -16,7 +16,7 @@ define(["knockout",
 
             self.addAccount = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
-                record.providerType = self.selectedProviderType;
+                record.providerType = self.selectedProviderType.id;
 
                 API.Accounts.save(record)
                     .then(function (account) {
