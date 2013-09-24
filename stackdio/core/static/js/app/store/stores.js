@@ -3,6 +3,7 @@ define(["knockout"], function (ko) {
         SecurityGroupRules : ko.observableArray([]),
         AWSSecurityGroups : ko.observableArray([]),
         DefaultSecurityGroups : ko.observableArray([]),
+        AccountSecurityGroups : ko.observableArray([]),
         SecurityGroups : ko.observableArray([]),
         Zones : ko.observableArray([]),
         ProviderTypes : ko.observableArray([]),

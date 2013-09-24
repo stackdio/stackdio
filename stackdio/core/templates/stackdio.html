@@ -72,7 +72,7 @@
             <div><strong>Account created!</strong></div>
             <div style="padding:10px 0;">Do you want to define any default security groups that will be assigned to all hosts created under this account?</div>
             <button class="btn btn-inverted" data-bind="click: function () { $('#alert-default-security-groups').hide(); }">Non</button>
-            <button class="btn btn-primary" data-bind="click: $root.securityGroup.showDefaultGroupForm">Oui</button>
+            <button class="btn btn-primary" data-bind="click: $root.securityGroup.setForAccount">Oui</button>
         </div>
 
         <div id="alert-error" class="alert hide alert-error">
@@ -439,7 +439,7 @@
                             <select id="host_security_groups" 
                                     multiple
                                     data-selected-text-format="count"
-                                    data-bind="options: stores.SecurityGroups, 
+                                    data-bind="options: stores.AccountSecurityGroups, 
                                                optionsValue: 'id', 
                                                optionsText: 'name'",
                                     data-container="body"
@@ -930,7 +930,7 @@
                 <div class="modal-footer">
                     <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
                     <button class="btn btn-primary" data-bind="click: function (data, event) { 
-                                        securityGroup.addSecurityGroup($('#securitygroup_name').text(), event); 
+                                        securityGroup.addSecurityGroup($('#securitygroup_name').val(), event); 
                                     }">Save</button>
                 </div>
             </form>
@@ -1048,7 +1048,7 @@
                         <div class="controls" style="margin-left: 160px">
                             <select id="stackdio_security_group" 
                                     data-selected-text-format="count"
-                                    data-bind="options: stores.SecurityGroups, 
+                                    data-bind="options: stores.AccountSecurityGroups, 
                                                optionsValue: 'id', 
                                                optionsText: 'name'",
                                     data-container="body"

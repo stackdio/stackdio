@@ -91,21 +91,24 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     stores.AWSSecurityGroups.removeAll();
                     stores.DefaultSecurityGroups.removeAll();
 
+                    // All AWS groups are returned in the 'provider_groups' key on the response
                     for (i in aws) {
                         group = new models.AWSSecurityGroup().create(aws[i]);
                         stores.AWSSecurityGroups.push(group);
                     }
 
+                    // All stackd.io groups are returned in the 'results' key on the response
                     for (i in items) {
                         group = new models.SecurityGroup().create(items[i]);
 
                         if (items[i].is_default) {
                             stores.DefaultSecurityGroups.push(group);
-                        } else {
-                            stores.SecurityGroups.push(group);
                         }
+                        stores.AccountSecurityGroups.push(group);
                     }
 
+                    // Extract the name of each group into a new array that is used as the 
+                    // store for the typeahead field on the default group form
                     var flattened = stores.AWSSecurityGroups().map(function (g) {
                         return g.name;
                     });
@@ -117,7 +120,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     });
 
                     // Resolve the promise and pass back the loaded items
-                    console.log('account groups', stores.SecurityGroups());
+                    console.log('account groups', stores.AccountSecurityGroups());
                     console.log('default groups', stores.DefaultSecurityGroups());
                     deferred.resolve();
                 }
@@ -144,25 +147,27 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     var item = response;
                     var newGroup = new models.SecurityGroup().create(item);
 
-                    console.log('saved group as default');
                     stores.DefaultSecurityGroups.push(newGroup);
-                    console.log('default groups', stores.DefaultSecurityGroups());
-                    deferred.resolve(group);
+                    deferred.resolve(newGroup);
                 },
                 error: function (request, status, error) {
-                    var newGroup = new models.SecurityGroup().create(group);
-
                     if (error === 'CONFLICT') {
-                        console.log('group already exists, so setting to default');
-                        group.is_default = true;
+                        var newGroup = _.findWhere(stores.AccountSecurityGroups(), { name: group.name });
 
-                        console.log(securityGroup);
+                        if (typeof newGroup !== "undefined") {
+                            console.log('group already exists, so setting to default');
+                            newGroup.is_default = true;
 
-                        self.updateDefault(securityGroup)
-                            .then(function () {
-                                deferred.resolve();
-                            });
+                            console.log(newGroup);
 
+                            self.updateDefault(newGroup)
+                                .then(function () {
+                                    deferred.resolve();
+                                });
+                            
+                        } else {
+                            deferred.resolve();
+                        }
                     } else {
                         deferred.reject(new Error(error));
                     }
@@ -193,6 +198,8 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                         stores.DefaultSecurityGroups.remove(function (g) {
                             return g.id === group.id;
                         });
+                    } else {
+                        stores.DefaultSecurityGroups.push(group);
                     }
 
                     deferred.resolve(group);

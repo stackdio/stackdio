@@ -15,17 +15,20 @@ define(["knockout",
             self.addSecurityGroup = function (name, evt) {
                 var record = {};
                 record.name = name;
-                record.provider_id = self.selectedAccount.id;
+                record.cloud_provider = self.selectedAccount.id;
                 record.is_default = false;
+                record.description = "";
 
-                API.SecurityGroups.save(record)
-                    .then(function () {
+                API.SecurityGroups.saveDefault(record)
+                    .then(function (newGroup) {
+                        var group = models.SecurityGroup().create(newGroup);
                         formutils.clearForm('securitygroup-form');
-                        stores.SecurityGroups.push(record);
-                    })
-                    .catch(function (error) {
-                        $("#alert-error").show();
-                    })
+                        stores.AccountSecurityGroups.push(group);
+                    });
+                    // .catch(function (error) {
+                    //     console.log(error);
+                    //     $("#alert-error").show();
+                    // })
             };
 
             self.capture = function (model, evt) {
@@ -89,6 +92,10 @@ define(["knockout",
             };
 
             self.setForAccount = function (account) {
+                if (!account.hasOwnProperty('security_group') || !account.hasOwnProperty('yaml')) {
+                    var accountsLength = stores.Accounts().length;
+                    var account = stores.Accounts()[accountsLength - 1];
+                }
                 self.selectedAccount = account;
 
                 API.SecurityGroups.loadByAccount(account)
