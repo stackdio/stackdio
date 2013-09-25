@@ -169,6 +169,9 @@ class AWSCloudProvider(BaseCloudProvider):
     SHORT_NAME = 'ec2'
     LONG_NAME  = 'Amazon Web Services' 
 
+    # The account/owner id
+    ACCOUNT_ID = 'account_id'
+
     # The AWS access key id
     ACCESS_KEY = 'access_key_id'
 
@@ -179,7 +182,7 @@ class AWSCloudProvider(BaseCloudProvider):
     KEYPAIR = 'keypair'
 
     # The AWS security groups
-    SECURITY_GROUPS = 'security_groups'
+    #SECURITY_GROUPS = 'security_groups'
 
     # The default availablity zone to use
     DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
@@ -206,10 +209,11 @@ class AWSCloudProvider(BaseCloudProvider):
     @classmethod
     def get_required_fields(self):
         return [
+            self.ACCOUNT_ID, 
             self.ACCESS_KEY, 
             self.SECRET_KEY, 
             self.KEYPAIR,
-            self.SECURITY_GROUPS
+            #self.SECURITY_GROUPS
         ]
 
     @classmethod
@@ -246,16 +250,11 @@ class AWSCloudProvider(BaseCloudProvider):
         # change the file permissions of the RSA key
         os.chmod(private_key_path, stat.S_IRUSR)
 
-        security_groups = filter(
-            None,
-            [g.strip() for g in data[self.SECURITY_GROUPS].split(',')]
-        )
         config_data = {
             'provider': self.SHORT_NAME,
             'id': data[self.ACCESS_KEY],
             'key': data[self.SECRET_KEY], 
             'keyname': data[self.KEYPAIR],
-            'securitygroup': security_groups,
             'private_key': private_key_path,
             'append_domain': data[self.ROUTE53_DOMAIN],
 
@@ -337,21 +336,6 @@ class AWSCloudProvider(BaseCloudProvider):
             result = False
             errors.append(e.error_message)
 
-        # check security groups
-        security_groups = filter(None, data[self.SECURITY_GROUPS].split(','))
-        security_groups_missing = []
-        for group_name in [g.strip() for g in security_groups]:
-            logger.debug('Checking security group {0}'.format(group_name))
-            try:
-                security_groups = ec2.get_all_security_groups(group_name)
-            except boto.exception.EC2ResponseError, e:
-                security_groups_missing.append(group_name)
-
-        if security_groups_missing:
-            result = False
-            errors.append('The following security groups do not exist in this '
-                          'account: {0}'.format(', '.join(security_groups_missing)))
- 
         return result, errors
 
     def connect_route53(self):
@@ -372,6 +356,12 @@ class AWSCloudProvider(BaseCloudProvider):
             credentials = self.get_credentials()
             self._ec2_connection = boto.connect_ec2(*credentials)
         return self._ec2_connection
+
+    def is_cidr_rule(self, rule):
+        '''
+        Determines if the rule string conforms to the CIDR pattern.
+        '''
+        return CIDR_PATTERN.match(rule)
 
     def create_security_group(self, security_group_name, description):
         '''
@@ -429,6 +419,11 @@ class AWSCloudProvider(BaseCloudProvider):
             ec2.authorize_security_group(**kwargs)
         except boto.exception.EC2ResponseError, e:
             if e.status == 400:
+                if e.error_message.startswith('Unable to find group'):
+                    account_id = kwargs['src_security_group_owner_id']
+                    err_msg = e.error_message + ' on account \'{0}\''.format(
+                        account_id)
+                    raise BadRequest(err_msg)
                 raise BadRequest(e.error_message)
             raise InternalServerError(e.error_message)
 

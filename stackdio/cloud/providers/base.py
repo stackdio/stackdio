@@ -112,7 +112,7 @@ class BaseCloudProvider(object):
         errors = []
         for key in self.get_required_fields():
             if not data.get(key):
-                errors.append(self.REQUIRED_MESSAGE)
+                errors.append('{0} is a required field.'.format(key))
 
         return len(errors) == 0, errors
 

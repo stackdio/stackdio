@@ -76,6 +76,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'description', 
             'provider_type',
             'provider_type_name',
+            'account_id',
             'default_availability_zone',
             'yaml',
             'security_groups',
@@ -95,7 +96,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             zone = CloudZone.objects.get(pk=request.DATA['default_availability_zone'])
             request.DATA['default_availability_zone_name'] = zone.slug
         except CloudZone.DoesNotExist:
-            errors = ['foobar']
+            errors = ['Could not look up availability zone. Did you give a valid id?']
             raise serializers.ValidationError({'errors': errors})
 
         provider = provider_class()

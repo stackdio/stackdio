@@ -22,11 +22,6 @@ from core import (
 
 from core.exceptions import BadRequest, ResourceConflict
 
-from .utils import (
-    write_cloud_providers_file,
-    write_cloud_profiles_file,
-)
-
 from .models import (
     CloudProvider,
     CloudProviderType,
@@ -65,16 +60,14 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
     serializer_class = CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
-    def post_save(self, obj, created=False):
+    def post_save(self, provider_obj, created=False):
         
         data = self.request.DATA
         files = self.request.FILES
-        logger.debug(data)
-        logger.debug(obj)
 
         # Lookup provider type
         try:
-            driver = obj.get_driver()
+            driver = provider_obj.get_driver()
 
             # Levarage the driver to generate its required data that
             # will be serialized down to yaml and stored in both the database
@@ -83,13 +76,13 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
             
             # Generate the yaml and store in the database
             yaml_data = {}
-            yaml_data[obj.slug] = provider_data
-            obj.yaml = yaml.safe_dump(yaml_data,
+            yaml_data[provider_obj.slug] = provider_data
+            provider_obj.yaml = yaml.safe_dump(yaml_data,
                                       default_flow_style=False)
-            obj.save()
+            provider_obj.save()
 
-            # Recreate the salt cloud providers file
-            write_cloud_providers_file()
+            # Update the salt cloud providers file
+            provider_obj.update_config()
 
         except CloudProviderType.DoesNotExist, e:
             err_msg = 'Provider types does not exist.'
@@ -110,12 +103,7 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         driver = self.get_object().get_driver()
         driver.destroy()
 
-        ret = super(CloudProviderDetailAPIView, self).destroy(*args, **kwargs)
-
-        # Recreate the salt cloud providers file to clean up this provider
-        write_cloud_providers_file()
-        write_cloud_profiles_file()
-        return ret
+        return super(CloudProviderDetailAPIView, self).destroy(*args, **kwargs)
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
@@ -133,23 +121,14 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
     serializer_class = CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
-    def post_save(self, obj, created=False):
-        write_cloud_profiles_file()
+    def post_save(self, profile_obj, created=False):
+        profile_obj.update_config()
 
 
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = CloudProfile
     serializer_class = CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
-
-    def destroy(self, *args, **kwargs):
-        # TODO: need to prevent the delete if infrastructure is still up
-        # that depends on this profile
-        ret = super(CloudProfileDetailAPIView, self).destroy(*args, **kwargs)
-
-        # Recreate the salt cloud providers file
-        write_cloud_profiles_file()
-        return ret
 
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
@@ -263,7 +242,6 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
         except (KeyError, PermissionDenied):
             raise
         except Exception, e:
-            logger.exception('WTF')
             # doesn't exist on the provider either, we'll create it now
             provider_group = None
 
@@ -285,6 +263,13 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
             is_default=is_default
         )
 
+        # if an admin and the security group is_default, we need to make sure
+        # the cloud provider configuration is properly maintained
+        if owner.is_superuser and is_default:
+            logger.debug('Writing cloud providers file because new security '
+                         'group was added with is_default flag set to True')
+            provider.update_config()
+
         serializer = SecurityGroupSerializer(group_obj, context={
             'request': request
         })
@@ -293,7 +278,8 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
 class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     '''
-    Lists and creates new security groups.
+    Shows the detail for a security group and allows for the is_default
+    flag to be modified (for admins only.)
 
     ### GET
 
@@ -345,10 +331,15 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         if not isinstance(is_default, bool):
             raise BadRequest('is_default field must be a boolean.')
 
-        # update the field value
+        # update the field value if needed
         obj = self.get_object()
-        obj.is_default = is_default
-        obj.save()
+        if obj.is_default != is_default:
+            obj.is_default = is_default
+            obj.save()
+            
+            # update providers configuration file
+            logger.debug('Security group is_default modified; updating cloud provider configuration.')
+            obj.cloud_provider.update_config()
 
         serializer = self.get_serializer(obj)
         return Response(serializer.data)
@@ -358,10 +349,22 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         # Delete from AWS. This will throw the appropriate error
         # if the group is being used.
-        driver = sg.cloud_provider.get_driver()
+        provider = sg.cloud_provider
+        driver = provider.get_driver()
         driver.delete_security_group(sg.name)
 
-        return super(SecurityGroupDetailAPIView, self).destroy(request, *args, **kwargs)
+        # store the is_default and delete the security group
+        is_default = sg.is_default
+        result = super(SecurityGroupDetailAPIView, self).destroy(request, *args, **kwargs)
+
+        # update providers configuration file if the security
+        # group's is_default was True
+        if is_default:
+            logger.debug('Security group deleted and is_default set to True; updating cloud provider configuration.')
+            provider.update_config()
+
+        # return the original destroy response
+        return result
 
 
 class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
@@ -421,7 +424,38 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
         
     def update(self, request, *args, **kwargs):
         sg = self.get_object()
-        driver = sg.cloud_provider.get_driver()
+        provider = sg.cloud_provider
+        driver = provider.get_driver()
+
+        # validate input
+        errors = []
+        required_fields = [
+            'action',
+            'protocol',
+            'from_port',
+            'to_port',
+            'rule']
+        for field in required_fields:
+            v = request.DATA.get(field)
+            if not v:
+                errors.append('{0} is a required field.'.format(field))
+
+        if errors:
+            raise BadRequest(errors)
+
+        # Check the rule to determine the "type" of the rule. This
+        # can be a CIDR or group rule. CIDR will look like an IP
+        # address and anything else will be considered a group
+        # rule, however, a group can contain the account id of
+        # the group we're dealing with. If the group rule does
+        # not contain a colon then we'll add the provider's 
+        # account id
+        rule = request.DATA.get('rule')
+        if not driver.is_cidr_rule(rule) and ':' not in rule:
+            rule = provider.account_id + ':' + rule
+            request.DATA['rule'] = rule
+            logger.debug('Prefixing group rule with account id. '
+                         'New rule: {0}'.format(rule))
 
         if request.DATA.get('action') == 'authorize':
             driver.authorize_security_group(sg.name, request.DATA)

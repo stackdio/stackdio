@@ -35,13 +35,15 @@ SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')
 # This is the salt-cloud configuration file.
 SALT_CLOUD_CONFIG = getenv('SALT_CLOUD_CONFIG')
 
-# This is the cloud.profiles file for configuring the cloud profiles
-# that are available.
-SALT_CLOUDVM_CONFIG = getenv('SALT_CLOUDVM_CONFIG')
+# This is typically in the cloud.profiles.d directory located in 
+# salt's configuration root directory. Each *.conf file is an
+# individual profile configuration
+SALT_CLOUD_PROFILES_DIR = getenv('SALT_CLOUD_PROFILES_DIR')
 
-# The cloud.providers file that defines all the availabel cloud 
-# providers
-SALT_CLOUD_PROVIDERS_CONFIG = getenv('SALT_CLOUD_PROVIDERS_CONFIG')
+# This is typically in the cloud.providers.d directory located in 
+# salt's configuration root directory. Each *.conf file is an
+# individual cloud provider configuration
+SALT_CLOUD_PROVIDERS_DIR = getenv('SALT_CLOUD_PROVIDERS_DIR')
 
 ##
 # stackd.io settings
