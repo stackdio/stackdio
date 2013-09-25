@@ -24,11 +24,11 @@ define(["knockout",
                         var group = models.SecurityGroup().create(newGroup);
                         formutils.clearForm('securitygroup-form');
                         stores.AccountSecurityGroups.push(group);
-                    });
-                    // .catch(function (error) {
-                    //     console.log(error);
-                    //     $("#alert-error").show();
-                    // })
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                        $("#alert-error").show();
+                    })
             };
 
             self.capture = function (model, evt) {
@@ -136,13 +136,20 @@ define(["knockout",
 
             self.addRule = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
+                var rule;
+
+                if (record.rule_ip_address.value !== '') {
+                    rule = record.rule_ip_address.value;
+                } else if (record.rule_group.value !== '') {
+                    rule = record.rule_group.value;
+                }
 
                 API.SecurityGroups.updateRule(self.selectedSecurityGroup, {
                     action: 'authorize',
                     protocol: record.rule_protocol.value,
                     from_port: record.rule_from_port.value,
                     to_port: record.rule_to_port.value,
-                    rule: record.rule_ip_address.value
+                    rule: rule
                 })
                     .then(function () {
                         self.showSuccess();

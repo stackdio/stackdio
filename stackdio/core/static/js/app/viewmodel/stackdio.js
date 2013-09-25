@@ -98,7 +98,8 @@ define([
                 // Force user to create a account if none exist
                 if (section !== "Accounts" && stores.Accounts().length === 0) {
                     self.currentSection("Accounts")
-                    self.showMessage("#alert-no-accounts", "", true);
+                    $("#alert-no-accounts").show();
+                    setTimeout(function () { $("#alert-no-accounts").hide(); }, 3000);
                     return;
                 }
 
@@ -137,7 +138,7 @@ define([
                 // Everything you want to do AFTER all data has loaded
                 .then(function () {
                     // Convert select elements to the nice Bootstrappy style
-                    $('select[id!="aws_security_group"][id!="stackdio_security_group"]').selectpicker();
+                    $('select[id!="aws_security_group"][id!="stackdio_security_group"][id!="host_security_groups"]').selectpicker();
 
                     // Remove the hide class from the main sections
                     $("div[class='hide'][data-bind]").removeClass('hide');

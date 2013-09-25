@@ -249,13 +249,26 @@ define(["knockout",
             };
 
             self.showHostForm = function (profile) {
+                var allGroups = stores.SecurityGroups();
+
                 self.selectedProfile = profile;
+                stores.AccountSecurityGroups.removeAll();
+
+                _.each(allGroups, function (g) {
+                    if (g.provider_id === self.selectedAccount.id) {
+                        console.log('match', g);
+                        stores.AccountSecurityGroups.push(g);
+                    }
+                });
+                console.log(stores.AccountSecurityGroups());
 
                 // Choose the default instance size assigned to the chosen profile
                 $('#host_instance_size').selectpicker('val', profile.default_instance_size);
 
                 // Choose the default zone assigned to the chosen account
                 $('#availability_zone').selectpicker('val', self.selectedAccount.default_availability_zone);
+
+                $('#host_security_groups').selectpicker();
 
                 $( "#host-form-container" ).dialog("open");
             };
