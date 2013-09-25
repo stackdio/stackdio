@@ -118,14 +118,13 @@ class StackManager(models.Manager):
 
         # security groups
         for host in data['hosts']:
-            host_sg_ids = set(host['host_security_groups'])
+            host_sg_ids = set([int(i) for i in host['host_security_groups']])
             known_sg_ids = set([sg.id for sg in SecurityGroup.objects.filter(owner=user, pk__in=host_sg_ids)])
             missing_sg_ids = list(host_sg_ids.difference(known_sg_ids))
 
             if missing_sg_ids:
                 raise Exception('The following host security group IDs do not '
                                 'exist: {0}'.format(missing_sg_ids))
-
 
         cloud_provider = CloudProvider.objects.get(id=data['cloud_provider'])
         stack_obj = self.model(title=data['title'],
