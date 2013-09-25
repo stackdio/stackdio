@@ -275,33 +275,33 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def validate_provider_data(self, data, files):
 
-        result, errors = super(AWSCloudProvider, self) \
+        errors = super(AWSCloudProvider, self) \
             .validate_provider_data(data, files)
 
         # check for required files
         if not files or self.PRIVATE_KEY_FILE not in files:
-            result = False
-            errors[self.PRIVATE_KEY_FILE].append(self.REQUIRED_MESSAGE)
+            errors.append('{0} is a required field.'.format(self.PRIVATE_KEY_FILE))
 
-        if not result:
-            return result, errors
+        if errors:
+            return errors
 
         # check authentication credentials
         try:
             ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])
             ec2.get_all_zones()
         except boto.exception.EC2ResponseError, e:
-            result = False
-            errors.append(e.error_message)
+            errors.append('Unable to authenticate to AWS with the provided '
+                          'access and secret keys. Double-check you are using '
+                          'the correct credentials and they have the '
+                          'appropriate IAM access.')
             
-        if not result:
-            return result, errors
+        if errors:
+            return errors
 
         # check keypair
         try:
             ec2.get_all_key_pairs(data[self.KEYPAIR])
         except boto.exception.EC2ResponseError, e:
-            result = False
             errors.append('The keypair \'{0}\' does not exist in this account.'
                           ''.format(data[self.KEYPAIR]))
 
@@ -309,7 +309,6 @@ class AWSCloudProvider(BaseCloudProvider):
         try:
             ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
         except boto.exception.EC2ResponseError, e:
-            result = False
             errors.append('The availability zone \'{0}\' does not exist in '
                           'this account.'.format(data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
 
@@ -333,10 +332,9 @@ class AWSCloudProvider(BaseCloudProvider):
                           'this account.'.format(domain)
                     errors.append(err)
         except boto.exception.DNSServerError, e:
-            result = False
             errors.append(e.error_message)
 
-        return result, errors
+        return errors
 
     def connect_route53(self):
 

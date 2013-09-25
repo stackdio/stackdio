@@ -114,7 +114,7 @@ class BaseCloudProvider(object):
             if not data.get(key):
                 errors.append('{0} is a required field.'.format(key))
 
-        return len(errors) == 0, errors
+        return errors
 
     @classmethod
     def register_dns(self, hosts):

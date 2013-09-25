@@ -100,10 +100,10 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             raise serializers.ValidationError({'errors': errors})
 
         provider = provider_class()
-        result, errors = provider.validate_provider_data(request.DATA, 
+        errors = provider.validate_provider_data(request.DATA, 
                                                          request.FILES)
         
-        if not result:
+        if errors:
             logger.error('Cloud provider validation errors: '
                          '{0}'.format(errors))
             raise serializers.ValidationError({'errors': errors})
