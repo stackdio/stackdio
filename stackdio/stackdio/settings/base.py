@@ -2,6 +2,7 @@
 
 import os
 from os.path import dirname, normpath, join
+from sys import maxint
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -266,7 +267,7 @@ LOGGING = {
 # Django REST Framework configuration
 ##
 REST_FRAMEWORK = {
-    'PAGINATE_BY': None,
+    'PAGINATE_BY': maxint,
     'PAGINATE_BY_PARAM': 'page_size',
 
     'FILTER_BACKEND': 'rest_framework.filters.DjangoFilterBackend',
