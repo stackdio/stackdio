@@ -288,7 +288,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     `active_hosts` fields will be populated like with the full
     list.
 
-    # PUT
+    ### PUT
 
     Updates an existing security group's details. Currently, only
     the is_default field may be modified and only by admins.
