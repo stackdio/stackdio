@@ -407,7 +407,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 cloud_provider.yaml)[cloud_provider.slug]
 
             # pull various stuff we need for a host
-            roles = [r.slug for r in host.roles.all()]
+            roles = [r.sls_path for r in host.roles.all()]
             instance_size = host.instance_size.title
             security_groups = set([
                 sg.name for sg in host.security_groups.all()
@@ -507,7 +507,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # build up the top file using compound matching based
         # on the stack id and roles
         for role in roles:
-            matcher = stack_match + ' and G@roles:{0}'.format(role.slug)
+            matcher = stack_match + ' and G@roles:{0}'.format(role.sls_path)
             top_file_data[matcher] = [
                 {'match': 'compound'},
                 role.sls_path

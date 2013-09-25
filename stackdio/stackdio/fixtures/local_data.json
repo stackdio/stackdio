@@ -142,5 +142,17 @@
             "sls_path": "cdh4.hbase.regionserver",
             "slug": "hbase-regionserver"
         }
+    },
+    {
+        "pk": 7,
+        "model": "stacks.saltrole",
+        "fields": {
+            "description": "This role will provision a machine as an Apache2 web server.",
+            "title": "Apache2 Web Server",
+            "created": "2013-05-17T19:41:00Z",
+            "modified": "2013-05-17T19:41:00Z",
+            "sls_path": "apache2",
+            "slug": "apache2-web-server"
+        }
     }
 ]

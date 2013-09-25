@@ -8,6 +8,8 @@
 
 include:
   - cdh4.repo
+  - cdh4.hadoop.conf
+  - cdh4.landing_page
 
 ##
 # Installs the namenode package and starts the service.
@@ -50,7 +52,7 @@ hadoop-0.20-mapreduce-jobtracker:
     - running
     - require: 
       - pkg: hadoop-0.20-mapreduce-jobtracker
-      - cmd: mapred_local_dirs
+      - cmd: namenode_mapred_local_dirs
       - cmd: mapred_system_dirs
       - cmd: hdfs_mapreduce_var_dir
       - file: /etc/hadoop/conf/core-site.xml
@@ -62,58 +64,6 @@ hadoop-0.20-mapreduce-jobtracker:
       - file: /etc/hadoop/conf/hdfs-site.xml
       - file: /etc/hadoop/conf/mapred-site.xml
       - file: /etc/hadoop/conf/hadoop-env.sh
-
-# Set up hadoop environment. This file is loaded automatically
-# by most of the hadoop services when needed
-/etc/hadoop/conf/hadoop-env.sh:
-  file:
-    - managed
-    - source: salt://cdh4/etc/hadoop/conf/hadoop-env.sh
-    - user: root 
-    - group: root
-    - mode: 644
-    - template: jinja
-    - require:
-      - pkg: hadoop-hdfs-namenode
-      - pkg: hadoop-0.20-mapreduce-jobtracker
-
-# Render the configuration files and put them
-# in the right locations
-/etc/hadoop/conf/mapred-site.xml:
-  file:
-    - managed
-    - source: salt://cdh4/etc/hadoop/conf/mapred-site.xml
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - require:
-      - pkg: hadoop-hdfs-namenode
-      - pkg: hadoop-0.20-mapreduce-jobtracker
-
-/etc/hadoop/conf/core-site.xml:
-  file:
-    - managed
-    - source: salt://cdh4/etc/hadoop/conf/core-site.xml
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - require:
-      - pkg: hadoop-hdfs-namenode
-      - pkg: hadoop-0.20-mapreduce-jobtracker
-
-/etc/hadoop/conf/hdfs-site.xml:
-  file:
-    - managed
-    - source: salt://cdh4/etc/hadoop/conf/hdfs-site.xml
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - require:
-      - pkg: hadoop-hdfs-namenode
-      - pkg: hadoop-0.20-mapreduce-jobtracker
 
 # Make sure the namenode metadata directory exists
 # and is owned by the hdfs user
@@ -164,7 +114,7 @@ hdfs_mapreduce_var_dir:
       - service: hadoop-hdfs-namenode
 
 # MR local directory
-mapred_local_dirs:
+namenode_mapred_local_dirs:
   cmd:
     - run
     - name: 'mkdir -p {{ mapred_local_dir }} && chown -R mapred:hadoop {{ mapred_local_dir }}'
