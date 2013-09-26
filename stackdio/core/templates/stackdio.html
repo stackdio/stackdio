@@ -887,6 +887,9 @@
                         <th>Title</th>
                         <th>Description</th>
                         <th>Account</th>
+                        {% if user.is_superuser %}
+                        <th>Owner</th>
+                        {% endif %}
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
@@ -896,6 +899,9 @@
                         <td data-bind="text: name"></td>
                         <td data-bind="text: description"></td>
                         <td data-bind="text: account.title"></td>
+                        {% if user.is_superuser %}
+                        <td data-bind="text: owner"></td>
+                        {% endif %}
                         <td>
                             <div class="btn-group" data-bind="visible: $root.isSuperUser">
                                 <a class="btn btn-info btn-small dropdown-toggle" data-toggle="dropdown" href="#">
