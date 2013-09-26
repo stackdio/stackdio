@@ -19,21 +19,41 @@ define(["knockout",
                 record.is_default = false;
                 record.description = "";
 
-                API.SecurityGroups.saveDefault(record)
+                API.SecurityGroups.save(record)
                     .then(function (newGroup) {
-                        var group = models.SecurityGroup().create(newGroup);
-                        formutils.clearForm('securitygroup-form');
+                        /*
+                            Add the group to both SecurityGroups (all groups for this user)
+                            and AccountSecurityGroups (all groups for the chosen account)
+                        */
+                        var group = new models.SecurityGroup().create(newGroup);
+                        group.account = _.find(stores.Accounts(), function (a) {
+                            return a.id === group.provider_id;
+                        })
+
+                        stores.SecurityGroups.push(group);
                         stores.AccountSecurityGroups.push(group);
+
+                        // Clear the form and close it
+                        formutils.clearForm('securitygroup-form');
+                        self.closeSecurityGroupForm();
+                        
                     })
                     .catch(function (error) {
-                        console.log(error);
-                        $("#alert-error").show();
+                        console.error(error.toString());
                     })
             };
 
             self.capture = function (model, evt) {
                 if (evt.charCode === 13) {
                     self.addDefaultSecurityGroup(document.getElementById('new_securitygroup_name').value);
+                    return false;
+                }
+                return true;
+            };
+
+            self.captureNewGroup = function (model, evt) {
+                if (evt.charCode === 13) {
+                    self.addSecurityGroup(document.getElementById('securitygroup_name').value);
                     return false;
                 }
                 return true;
@@ -46,7 +66,7 @@ define(["knockout",
                 record.is_default = true;
                 record.description = "";
 
-                API.SecurityGroups.saveDefault(record)
+                API.SecurityGroups.save(record)
                     .then(function () {
                         formutils.clearForm('default-securitygroup-form');
                         self.listDefaultGroups(self.selectedAccount);

@@ -927,7 +927,8 @@
                     <div class="control-group">
                         <label class="control-label" style="width: 40px;" for="securitygroup_name">Title</label>
                         <div class="controls" style="margin-left: 60px">
-                            <input id="securitygroup_name" type="text" class="input-block-level">
+                            <input id="securitygroup_name" type="text" class="input-block-level"
+                                   data-bind="event: { keypress: securityGroup.captureNewGroup }">
                         </div>
                     </div>
                 </div>

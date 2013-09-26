@@ -128,7 +128,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
 
             return deferred.promise
         },
-        saveDefault : function (group) {
+        save : function (group) {
             var self = this;
             var deferred = Q.defer();
             var securityGroup = JSON.stringify(group);
