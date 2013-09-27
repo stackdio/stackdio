@@ -1,11 +1,12 @@
 define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, models) {
     return {
-        get : function (group) {
+        load : function (pageURL) {
             var self = this;
             var deferred = Q.defer();
+            var url = pageURL || '/api/security_groups/';
 
             $.ajax({
-                url: '/api/security_groups/',
+                url: url,
                 type: 'GET',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
@@ -13,59 +14,30 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                 },
                 success: function (response) {
                     var i, item, items = response.results;
+                    var count = response.count, next = response.next, previous = response.previous;
                     var group;
-
-                    deferred.resolve();
 
                     // Clear the store and the grid
                     stores.SecurityGroups.removeAll();
 
-
                     for (i in items) {
                         group = new models.SecurityGroup().create(items[i]);
-                        stores.SecurityGroups.push(group);
-                    }
 
-                    // Resolve the promise and pass back the loaded items
-                    console.log('groups', stores.SecurityGroups());
-                    deferred.resolve(stores.SecurityGroups());
-                }
-            });
+                        // The owner property is only provided if the user is a superuser.
+                        if (!stackdio.settings.superuser) group.owner = '';
 
-            return deferred.promise
-        },
-        load : function () {
-            var self = this;
-            var deferred = Q.defer();
-
-            $.ajax({
-                url: '/api/security_groups/',
-                type: 'GET',
-                headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-                    var group;
-
-                    deferred.resolve();
-
-                    // Clear the store and the grid
-                    stores.SecurityGroups.removeAll();
-
-
-                    for (i in items) {
-                        group = new models.SecurityGroup().create(items[i]);
+                        // Attach the corresponding Account to the group
                         group.account = _.find(stores.Accounts(), function (a) {
                             return a.id === group.provider_id;
-                        })
+                        });
+
+                        // Add to store
                         stores.SecurityGroups.push(group);
                     }
 
                     // Resolve the promise and pass back the loaded items
-                    console.log('groups', stores.SecurityGroups());
-                    deferred.resolve(stores.SecurityGroups());
+                    console.info('groups', stores.SecurityGroups());
+                    deferred.resolve({count: count, next: next, previous: previous});
                 }
             });
 

@@ -17,6 +17,7 @@ define(["jquery"], function ($) {
         return cookieValue;
     };
 
+    stackdio.settings.pageSize = 15;
     stackdio.settings.csrftoken = getCookie('csrftoken');
     stackdio.settings.superuser = (window.stackdio_user.su === "True");
 

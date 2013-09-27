@@ -131,7 +131,7 @@ define([
                 .then(API.Zones.load)
                 .then(self.account.loadAccounts)
                 .then(self.profile.loadProfiles)
-                .then(API.SecurityGroups.load)
+                .then(self.securityGroup.loadSecurityGroups)
                 .then(API.Snapshots.load)
                 .then(API.Stacks.load)
 
@@ -144,14 +144,13 @@ define([
                     $("div[class='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection("Stacks");
+                    self.gotoSection("Security");
 
                     // self.showMessage("#alert-default-security-groups");
                 })
-
                 .catch(function (error) {
                     // Handle any error from all above steps
-                    console.log(error);
+                    console.error(error.name, error.message);
                 });
         };
 

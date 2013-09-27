@@ -603,7 +603,7 @@
                         <td>
                             <button type="button" 
                                     class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.account.userCanModify,click: $root.account.removeSnapshot"></button>
+                                    data-bind="visible: $root.isSuperUser, click: $root.account.removeSnapshot"></button>
                         </td>
                     </tr>     
                 </tbody>
@@ -880,6 +880,22 @@
                 </ul>
             </div>
 
+            <div class="pull-left">
+
+                <div class="pagination" data-bind="visible: $root.securityGroup.showPagination">
+                    <ul>
+                        <li data-bind="css: { disabled: $root.securityGroup.previousLink() === null }">
+                            <a href="#" 
+                                data-bind="click: function () { $root.securityGroup.paginate($root.securityGroup.previousLink()); } ">Previous</a>
+                        </li>
+                        <li data-bind="css: { disabled: $root.securityGroup.nextLink() === null }">
+                            <a href="#" data-bind="click: function () { $root.securityGroup.paginate($root.securityGroup.nextLink()); }">Next</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+
             <table id="security_group_list" class="table table-striped data-grid">
                 <thead>
                     <tr>
@@ -887,9 +903,7 @@
                         <th>Title</th>
                         <th>Description</th>
                         <th>Account</th>
-                        {% if user.is_superuser %}
-                        <th>Owner</th>
-                        {% endif %}
+                        <th data-bind="visible: stackdio.settings.superuser === true">Owner</th>
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
@@ -899,11 +913,9 @@
                         <td data-bind="text: name"></td>
                         <td data-bind="text: description"></td>
                         <td data-bind="text: account.title"></td>
-                        {% if user.is_superuser %}
-                        <td data-bind="text: owner"></td>
-                        {% endif %}
+                        <td data-bind="text: owner, visible: stackdio.settings.superuser === true"></td>
                         <td>
-                            <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                            <div class="btn-group">
                                 <a class="btn btn-info btn-small dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>

@@ -12,6 +12,11 @@ define(["knockout",
             self.selectedAccount = null;
             self.selectedSecurityGroup = null;
 
+            // Navigation properties
+            self.showPagination = ko.observable(false);
+            self.nextLink = ko.observable(null);
+            self.previousLink = ko.observable(null);
+
             self.addSecurityGroup = function (name, evt) {
                 var record = {};
                 record.name = name;
@@ -185,8 +190,31 @@ define(["knockout",
                 $("#securitygroup-rules-form-container").dialog("close");
             };
 
+            self.paginate = function (url) {
+                API.SecurityGroups.load(url)
+                    .then(function (properties) {
+                        console.log(properties);
+                        
+                        if (properties.count > stackdio.settings.pageSize) {
+                            self.showPagination(true);
+                            self.nextLink(properties.next);
+                            self.previousLink(properties.previous);
+                        }
+
+                    });
+            };
+
             self.loadSecurityGroups = function () {
-                return API.SecurityGroups.load();
+                return API.SecurityGroups.load()
+                    .then(function (properties) {
+
+                        if (properties.count > stackdio.settings.pageSize) {
+                            self.showPagination(true);
+                            self.nextLink(properties.next);
+                            self.previousLink(properties.previous);
+                        }
+
+                    });
             };
 
             self.showSecurityGroupForm = function (account) {
