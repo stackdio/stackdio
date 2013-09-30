@@ -119,6 +119,10 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     var item = response;
                     var newGroup = new models.SecurityGroup().create(item);
 
+                    // The owner property is only provided if the user is a superuser.
+                    if (!stackdio.settings.superuser) newGroup.owner = '';
+
+
                     stores.DefaultSecurityGroups.push(newGroup);
                     deferred.resolve(newGroup);
                 },
@@ -130,7 +134,6 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                             console.log('group already exists, so setting to default');
                             newGroup.is_default = true;
 
-                            console.log(newGroup);
 
                             self.updateDefault(newGroup)
                                 .then(function () {

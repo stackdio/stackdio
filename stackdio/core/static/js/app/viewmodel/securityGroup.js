@@ -178,7 +178,11 @@ define(["knockout",
                 })
                     .then(function () {
                         self.showSuccess();
-                        formutils.clearForm('group-rule-form');
+                        $('#rule_from_port').val('');
+                        $('#rule_to_port').val('');
+                        $('#rule_ip_address').val('');
+                        $('#rule_group').val('');
+                        
                         $("#new-rule-dialog").dialog("close");
                     })
                     .catch(function (error) {
@@ -194,7 +198,7 @@ define(["knockout",
                 API.SecurityGroups.load(url)
                     .then(function (properties) {
                         console.log(properties);
-                        
+
                         if (properties.count > stackdio.settings.pageSize) {
                             self.showPagination(true);
                             self.nextLink(properties.next);
