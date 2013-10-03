@@ -24,7 +24,8 @@ from cloud.models import (
     CloudProvider,
     CloudProfile,
     CloudZone,
-    CloudInstanceSize
+    CloudInstanceSize,
+    SecurityGroup
 )
 
 logger = logging.getLogger(__name__)
@@ -84,7 +85,8 @@ class StackManager(models.Manager):
                                             # would become 'foo-1'
                     "cloud_profile": 1,     # what cloud_profile object to use
                     "salt_roles": [1,2,3],  # what salt_roles to use
-                    "host_security_groups": "foo,bar,baz",
+                    "host_security_groups": [1,2,3...], # security group IDs
+                                                        # owned by the user
                     "spot_config": {        # If you need spot instances
                         "spot_price": "0.1"
                     },
@@ -110,12 +112,27 @@ class StackManager(models.Manager):
         }
         '''
 
+        ##
+        # validate incoming data
+        ##
+
+        # security groups
+        for host in data['hosts']:
+            host_sg_ids = set([int(i) for i in host['host_security_groups']])
+            known_sg_ids = set([sg.id for sg in SecurityGroup.objects.filter(owner=user, pk__in=host_sg_ids)])
+            missing_sg_ids = list(host_sg_ids.difference(known_sg_ids))
+
+            if missing_sg_ids:
+                raise Exception('The following host security group IDs do not '
+                                'exist: {0}'.format(missing_sg_ids))
+
         cloud_provider = CloudProvider.objects.get(id=data['cloud_provider'])
         stack_obj = self.model(title=data['title'],
                                description=data.get('description'),
                                user=user,
                                cloud_provider=cloud_provider)
         stack_obj.save()
+
 
         if data['hosts']:
             hosts_json = simplejson.dumps(data['hosts'], indent=4)
@@ -236,7 +253,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # load the stack's hosts file
         with open(self.hosts_file.path, 'r') as f:
             hosts = simplejson.loads(f.read())
-            logger.debug('Hosts: {0}'.format(hosts))
+
+        # load the provider yaml
+        provider_yaml = yaml.safe_load(self.cloud_provider.yaml).values()[0]
 
         new_hosts = []
         for host in hosts:
@@ -245,6 +264,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             cloud_profile_id = host['cloud_profile']
             host_size_id = host.get('host_size')
             availability_zone_id = host.get('availability_zone')
+            security_group_ids = host.get('host_security_groups', [])
 
             # cloud profiles are restricted to only those in this stack's
             # cloud provider
@@ -276,14 +296,21 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             spot_config = host.get('spot_config', {})
             sir_price = spot_config.get('spot_price')
 
-            # Get the security group objects
-            security_group_objs = [
-                SecurityGroup.objects.get_or_create(group_name=g)[0] for
-                g in filter(
-                    None,
-                    set(h.strip() for
-                        h in host['host_security_groups'].split(','))
-                )]
+            # Security groups are a combination of the default groups
+            # set on the provider and those in the host definition
+            
+            # pull the default security groups from the provider
+            provider_groups = list(self.cloud_provider.security_groups.filter(
+                is_default=True
+            ))
+
+            # groups set by the user on the host
+            host_groups = list(SecurityGroup.objects.filter(
+                owner=self.user,
+                pk__in=security_group_ids
+            ))
+
+            security_group_objs = set(provider_groups+host_groups)
 
             # lookup other objects
             role_objs = SaltRole.objects.filter(id__in=salt_roles)
@@ -380,16 +407,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 cloud_provider.yaml)[cloud_provider.slug]
 
             # pull various stuff we need for a host
-            roles = [r.role_name for r in host.roles.all()]
+            roles = [r.sls_path for r in host.roles.all()]
             instance_size = host.instance_size.title
             security_groups = set([
-                sg.group_name for
-                sg in host.security_groups.all()
+                sg.name for sg in host.security_groups.all()
             ])
             volumes = host.volumes.all()
-
-            # add in cloud provider security groups
-            security_groups.update(cloud_provider_yaml['securitygroup'])
 
             fqdn = '{0}.{1}'.format(host.hostname, 
                                     cloud_provider_yaml['append_domain'])
@@ -467,14 +490,28 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 f.write(map_file_yaml)
 
     def _generate_top_file(self):
-        top_file_data = {
-            '*': [
-                'core.*',
-            ]     
-        }
+        top_file_data = {}
 
+        # Core SLS
+        stack_match = 'G@stack_id:{0}'.format(self.id)
+        top_file_data[stack_match] = [
+            {'match': 'compound'},
+            'core.*',
+        ]
+
+        # find the distinct set of roles for this stack
+        roles = set()
         for host in self.hosts.all():
-            top_file_data[host.hostname] = [r.role_name for r in host.roles.all()]
+            roles.update(list(host.roles.all()))
+
+        # build up the top file using compound matching based
+        # on the stack id and roles
+        for role in roles:
+            matcher = stack_match + ' and G@roles:{0}'.format(role.sls_path)
+            top_file_data[matcher] = [
+                {'match': 'compound'},
+                role.sls_path
+            ]
 
         top_file_data = {
             'base': top_file_data
@@ -489,9 +526,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
     def _generate_pillar_file(self):
         pillar_file_yaml = yaml.safe_dump({
-            'custom_var_1': 'one',
-            'custom_var_2': 'two',
-            'custom_var_3': 'three',
+            'stackdio_username': self.user.username,
+            'stackdio_publickey': self.user.settings.public_key,
         }, default_flow_style=False)
 
         if not self.pillar_file:
@@ -583,7 +619,7 @@ class StackHistory(TimeStampedModel):
 
 
 class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):
-    role_name = models.CharField(max_length=64)
+    sls_path = models.CharField(max_length=64)
 
     def __unicode__(self):
         return self.title
@@ -610,7 +646,7 @@ class Host(TimeStampedModel, StatusDetailModel):
     roles = models.ManyToManyField('stacks.SaltRole',
                                    related_name='hosts')
     hostname = models.CharField(max_length=64)
-    security_groups = models.ManyToManyField('stacks.SecurityGroup',
+    security_groups = models.ManyToManyField('cloud.SecurityGroup',
                                              related_name='hosts')
     
     # The machine state as provided by the cloud provider
@@ -651,6 +687,3 @@ class Host(TimeStampedModel, StatusDetailModel):
     def get_provider_type(self):
         return self.cloud_profile.cloud_provider.provider_type
 
-
-class SecurityGroup(TimeStampedModel):
-    group_name = models.CharField(max_length=64)

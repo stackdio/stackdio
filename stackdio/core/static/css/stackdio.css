@@ -75,8 +75,11 @@ form {
     box-shadow: 0 1px 2px rgba(0,0,0,.05);
 }
 
-.stackd-form, .modal-body {
-    max-height: 700px !important;
+.large-modal-body {
+    position: relative;
+    max-height: 600px;
+    padding: 15px;
+    overflow-y: auto;
 }
 
 .small-modal-body {
@@ -84,11 +87,6 @@ form {
     max-height: 445px;
     padding: 15px;
     overflow-y: auto;
-}
-
-.form-newstack {
-    width: 800px;
-    height: 600px;
 }
 
 .form-small {

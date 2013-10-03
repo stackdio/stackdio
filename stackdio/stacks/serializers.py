@@ -79,5 +79,5 @@ class SaltRoleSerializer(serializers.HyperlinkedModelSerializer):
             'url', 
             'created', 
             'title', 
-            'role_name', 
+            'sls_path', 
         )

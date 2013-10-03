@@ -13,6 +13,10 @@ from .api import (
     CloudZoneDetailAPIView,
     SnapshotListAPIView,
     SnapshotDetailAPIView,
+    SecurityGroupListAPIView,
+    SecurityGroupDetailAPIView,
+    SecurityGroupRulesAPIView,
+    CloudProviderSecurityGroupListAPIView,
 )
 
 
@@ -33,6 +37,10 @@ urlpatterns = patterns('cloud.api',
     url(r'^providers/(?P<pk>[0-9]+)/$', 
         CloudProviderDetailAPIView.as_view(), 
         name='cloudprovider-detail'),
+
+    url(r'^providers/(?P<pk>[0-9]+)/security_groups/$', 
+        CloudProviderSecurityGroupListAPIView.as_view(), 
+        name='cloudprovider-securitygroup-list'),
 
     url(r'^instance_sizes/$',
         CloudInstanceSizeListAPIView.as_view(), 
@@ -66,6 +74,17 @@ urlpatterns = patterns('cloud.api',
         CloudZoneDetailAPIView.as_view(), 
         name='cloudzone-detail'),
 
+    url(r'^security_groups/$',
+        SecurityGroupListAPIView.as_view(), 
+        name='securitygroup-list'),
+
+    url(r'^security_groups/(?P<pk>[0-9]+)/$', 
+        SecurityGroupDetailAPIView.as_view(), 
+        name='securitygroup-detail'),
+
+    url(r'^security_groups/(?P<pk>[0-9]+)/rules/$', 
+        SecurityGroupRulesAPIView.as_view(), 
+        name='securitygroup-rules'),
 
 )
 

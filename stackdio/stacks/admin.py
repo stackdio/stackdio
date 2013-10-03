@@ -5,7 +5,6 @@ from .models import (
     StackHistory, 
     SaltRole, 
     Host,
-    SecurityGroup,
 )
 
 
@@ -35,7 +34,7 @@ class SaltRoleAdmin(admin.ModelAdmin):
     list_display = [
         'title',
         'slug',
-        'role_name',
+        'sls_path',
     ]
 admin.site.register(SaltRole, SaltRoleAdmin)
 
@@ -51,9 +50,3 @@ class HostAdmin(admin.ModelAdmin):
     ]
 admin.site.register(Host, HostAdmin)
 
-
-class SecurityGroupAdmin(admin.ModelAdmin):
-    list_display = [
-        'group_name',
-    ]
-admin.site.register(SecurityGroup, SecurityGroupAdmin)

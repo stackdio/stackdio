@@ -30,7 +30,7 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
                     console.log('accounts', stores.Accounts());
 
                     // Resolve the promise
-                    deferred.resolve(response.getResponseHeader('Allow'));
+                    deferred.resolve();
                 }
             });
 
@@ -40,11 +40,16 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
             var deferred = Q.defer();
             var files, formData = new FormData(), xhr = new XMLHttpRequest();
 
+            // var item = stores.Accounts()[0];
+            // deferred.resolve(item);
+            // return deferred.promise;
+
+
             // Append private key file to the FormData() object
             formData.append('private_key_file', record.private_key_file.files[0]);
 
             // Add the provider type that the user chose from the account split button
-            formData.append('provider_type', record.providerType.id);
+            formData.append('provider_type', record.providerType);
 
             // Append all other required fields to the form data
             for (r in record) {

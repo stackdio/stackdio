@@ -109,13 +109,12 @@ class BaseCloudProvider(object):
         values aren't empty. Override for any additional validation
         required.
         '''
-        errors = collections.defaultdict(list)
-
+        errors = []
         for key in self.get_required_fields():
             if not data.get(key):
-                errors[key].append(self.REQUIRED_MESSAGE)
+                errors.append('{0} is a required field.'.format(key))
 
-        return len(errors) == 0, errors
+        return errors
 
     @classmethod
     def register_dns(self, hosts):

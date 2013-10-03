@@ -14,12 +14,17 @@ def api_root(request, format=None):
 
     '''
     api = { 
+        'core': {
+            'settings': reverse('usersettings-detail', request=request, format=format),
+            'change_password': reverse('change_password', request=request, format=format),
+        },
         'cloud': {
             'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),
             'zones': reverse('cloudzone-list', request=request, format=format),
             'profiles': reverse('cloudprofile-list', request=request, format=format),
             'providers': reverse('cloudprovider-list', request=request, format=format),
             'provider_types': reverse('cloudprovidertype-list', request=request, format=format),
+            'security_groups': reverse('securitygroup-list', request=request, format=format),
         },
         'stacks': {
             'hosts': reverse('host-list', request=request, format=format),

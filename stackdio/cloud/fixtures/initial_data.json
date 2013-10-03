@@ -17,6 +17,16 @@
         "pk": 1,
         "model": "cloud.cloudzone",
         "fields": {
+            "title": "us-east-1a",
+            "description": "",
+            "provider_type": 1,
+            "slug": "us-east-1a"
+        }
+    },
+    {
+        "pk": 2,
+        "model": "cloud.cloudzone",
+        "fields": {
             "title": "us-east-1b",
             "description": "",
             "provider_type": 1,
@@ -24,7 +34,7 @@
         }
     },
     {
-        "pk": 2,
+        "pk": 3,
         "model": "cloud.cloudzone",
         "fields": {
             "title": "us-east-1c",
@@ -34,7 +44,7 @@
         }
     },
     {
-        "pk": 3,
+        "pk": 4,
         "model": "cloud.cloudzone",
         "fields": {
             "title": "us-east-1d",

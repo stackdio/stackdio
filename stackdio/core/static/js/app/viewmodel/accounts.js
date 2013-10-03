@@ -10,18 +10,28 @@ define(["knockout",
         var vm = function () {
             var self = this;
 
-            self.selectedAccount = null;
+            self.selectedAccount = ko.observable();
             self.selectedProviderType = null;
             self.userCanModify = ko.observable(true);
 
             self.addAccount = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
-                record.providerType = self.selectedProviderType;
+                record.providerType = self.selectedProviderType.id;
 
                 API.Accounts.save(record)
-                    .then(function () {
+                    .then(function (account) {
+                        // Close the form and clear it out
                         $("#accounts-form-container").dialog("close");
-                        self.showSuccess();
+                        formutils.clearForm('account-form');
+
+                        // Query user if default security groups should be chosen for account
+                        self.showMessage("#alert-default-security-groups", "", false);
+
+                        // Set the saved account as the "selected" account for display in the default security group dialog
+                        self.selectedAccount = account;
+                        $('#default_groups_account_title').val(account.title);
+
+                        // self.showSuccess();
                     })
                     .catch(function (error) {
                         $("#alert-error").show();
@@ -38,16 +48,6 @@ define(["knockout",
 
             self.loadAccounts = function () {
                 return API.Accounts.load();
-
-                // var deferred = Q.defer();
-
-                // API.Accounts.load()
-                //     .then(function (allowHeader) {
-                //         // self.userCanModify(!!~allowHeader.split(',').indexOf('DELETE'));
-                //         deferred.resolve();
-                //     });
-
-                // return deferred.promise;
             };
 
             self.showAccountForm = function (type) {
@@ -57,7 +57,7 @@ define(["knockout",
 
             self.closeAccountForm = function (type) {
                 self.selectedProviderType = type;
-                $( "#accounts-form-container" ).dialog("close");
+                $("#accounts-form-container").dialog("close");
             }
 
             /*

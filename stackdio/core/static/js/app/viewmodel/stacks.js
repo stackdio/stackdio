@@ -9,7 +9,7 @@ define(["knockout",
         var vm = function () {
             var self = this;
 
-            self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch'];
+            self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch', 'Delete'];
             self.stackHostActions = ['Stop', 'Terminate', 'Start'];
             self.selectedProfile = null;
             self.selectedAccount = null;
@@ -49,20 +49,38 @@ define(["knockout",
                     action: action.toLowerCase()
                 });
 
-                $.ajax({
-                    url: '/api/stacks/' + stack.id + '/',
-                    type: 'PUT',
-                    data: data,
-                    headers: {
-                        "X-CSRFToken": stackdio.settings.csrftoken,
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    success: function (response) {
-                        console.log(response);
-                        API.Stacks.load();
-                    }
-                });
+                if (action !== 'Delete') {
+                    $.ajax({
+                        url: '/api/stacks/' + stack.id + '/',
+                        type: 'PUT',
+                        data: data,
+                        headers: {
+                            "X-CSRFToken": stackdio.settings.csrftoken,
+                            "Accept": "application/json",
+                            "Content-Type": "application/json"
+                        },
+                        success: function (response) {
+                            API.Stacks.load();
+                        }
+                    });
+                } else {
+                    $.ajax({
+                        url: '/api/stacks/' + stack.id + '/',
+                        type: 'DELETE',
+                        headers: {
+                            "X-CSRFToken": stackdio.settings.csrftoken,
+                            "Accept": "application/json",
+                            "Content-Type": "application/json"
+                        },
+                        success: function (response) {
+                            stores.Stacks.remove(function (s) {
+                                return s.id === stack.id;
+                            });
+                        }
+                    });
+                    
+                }
+
             };
 
 
@@ -105,11 +123,12 @@ define(["knockout",
                         // Clear the stack form
                         $('#stack_title').val('');
                         $('#stack_purpose').val('');
+                        stores.NewHosts.removeAll();
 
                         // Hide the stack form
                         $( "#stack-form-container" ).dialog("close");
 
-                        $("#alert-success").show();
+                        self.showSuccess();
                     });
             }
 
@@ -163,7 +182,7 @@ define(["knockout",
                     cloud_profile: self.selectedProfile.id,
                     roles: record.host_roles,
                     availability_zone: record.availability_zone.value,
-                    host_security_groups: record.host_security_groups.value
+                    host_security_groups: record.host_security_groups.map(function (g) { return g.value; })
                 });
 
                 host.salt_roles = _.map(host.roles, function (r) { return r.value; });
@@ -176,6 +195,11 @@ define(["knockout",
                 // Add some HTML to display for the chosen roles
                 host.flat_roles = _.map(host.roles, function (r) { 
                     return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
+                }).join('');
+
+                // Add some HTML to display for the chosen security groups
+                host.flat_security_groups = _.map(record.host_security_groups, function (g) { 
+                    return '<div style="line-height:15px !important;">' + g.text + '</div>'; 
                 }).join('');
 
                 // Add spot instance config
@@ -225,13 +249,26 @@ define(["knockout",
             };
 
             self.showHostForm = function (profile) {
+                var allGroups = stores.SecurityGroups();
+
                 self.selectedProfile = profile;
+                stores.AccountSecurityGroups.removeAll();
+
+                _.each(allGroups, function (g) {
+                    if (g.provider_id === self.selectedAccount.id) {
+                        console.log('match', g);
+                        stores.AccountSecurityGroups.push(g);
+                    }
+                });
+                console.log(stores.AccountSecurityGroups());
 
                 // Choose the default instance size assigned to the chosen profile
                 $('#host_instance_size').selectpicker('val', profile.default_instance_size);
 
                 // Choose the default zone assigned to the chosen account
                 $('#availability_zone').selectpicker('val', self.selectedAccount.default_availability_zone);
+
+                $('#host_security_groups').selectpicker();
 
                 $( "#host-form-container" ).dialog("open");
             };

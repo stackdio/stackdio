@@ -14,35 +14,35 @@
 
 <body>
     <div class="navbar navbar-inverse navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container-fluid">
-          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="brand" href="#">stackd.io [ <small class="text-warning">if you got a problem, yo, I'll solve it</small class="muted"> ]</a>
-          <div class="nav-collapse collapse">
-            <ul class="nav">
-              <li class="active"><a href="#">home</a></li>
-              <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
-              <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
-            </ul>
-              <div class="btn-group pull-right">
-                <button class="btn btn-inverse btn-small">
-                  <span class="icon-white icon-user"></span>
-                  {{ user.get_full_name }}
+        <div class="navbar-inner">
+            <div class="container-fluid">
+                <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
                 </button>
-                <button class="btn btn-inverse btn-small dropdown-toggle" data-toggle="dropdown">
-                  <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" role="menu">
-                  <li><a href="{% url 'logout' %}">Logout</a></li>
-                </ul>
-              </div>
-          </div>
+                <a class="brand" href="#">stackd.io [ <small class="text-warning">if you got a problem, yo, I'll solve it</small class="muted"> ]</a>
+                <div class="nav-collapse collapse">
+                    <ul class="nav">
+                        <li class="active"><a href="#">home</a></li>
+                        <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
+                        <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
+                    </ul>
+
+                    <div class="btn-group pull-right">
+                        <a class="btn btn-inverse btn-small" data-toggle="dropdown" href="#">
+                            <span class="icon-white iconic-user"></span> {{ user.get_full_name }} <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="#" data-bind="click: showUserProfile">Profile</a></li>
+                            <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
+                            <li class="divider"></li>
+                            <li><a href="{% url 'logout' %}">Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
 
     <!-- 
@@ -68,10 +68,17 @@
         ======================================================================
      -->
     <div class="view">
+        <div id="alert-default-security-groups" class="alert hide alert-success">            
+            <div><strong>Account created!</strong></div>
+            <div style="padding:10px 0;">Do you want to define any default security groups that will be assigned to all hosts created under this account?</div>
+            <button class="btn btn-inverted" data-bind="click: function () { $('#alert-default-security-groups').hide(); }">Non</button>
+            <button class="btn btn-primary" data-bind="click: $root.securityGroup.setForAccount">Oui</button>
+        </div>
+
         <div id="alert-error" class="alert hide alert-error">
             <button type="button" class="close" data-bind="click: closeError">&times;</button>
-            <strong>Error!</strong> Please try that again.
-            (<span id="alert-error-details"></span>)
+            <h4>Error!</h4>
+            <div id="alert-error-details"></div>
         </div>
 
         <div id="alert-success" class="alert hide alert-success">
@@ -90,11 +97,93 @@
         </div>
     </div>
 
-        <!-- 
-            ======================================================================
-            S T A C K   L I S T
-            ======================================================================
-         -->
+
+    <!-- 
+        ======================================================================
+        U S E R   P A S S W O R D
+        ======================================================================
+     -->
+    <div id="user-password" title="Change Password" data-bind="" class="hide">
+        <form id="user-password-form" class="form-horizontal">
+        <div class="modal-body">
+            <div class="control-group">
+                <label class="control-label" style="width: 150px;" for="current_password">Current password</label>
+                <div class="controls" style="margin-left: 160px">
+                    <input id="current_password" type="password" class="input-block-level">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 150px;" for="new_password">New password</label>
+                <div class="controls" style="margin-left: 160px">
+                    <input id="new_password" type="password" class="input-block-level">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 150px;" for="new_password_confirm">Confirm password</label>
+                <div class="controls" style="margin-left: 160px">
+                    <input id="new_password_confirm" type="password" class="input-block-level">
+                </div>
+            </div>
+
+            <div id="password-error" class="alert hide alert-error">
+                <button type="button" class="close" data-bind="click: closeError">&times;</button>
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: $root.savePassword">Save</button>
+            <button class="btn" data-bind="click: $root.closePasswordForm">Cancel</button>
+        </div>
+        </form>
+    </div>
+
+
+    <!-- 
+        ======================================================================
+        U S E R   P R O F I L E
+        ======================================================================
+     -->
+    <div id="user-profile" title="Your Profile" data-bind="" class="hide">
+        <form id="user-profile-form" class="form-horizontal">
+        <div class="modal-body">
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="first_name">First name</label>
+                <div class="controls" style="margin-left: 110px">
+                    <input id="first_name" type="text" class="input-block-level" disabled placeholder="Aoibheann" value="{{ user.first_name }}">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="last_name">Last name</label>
+                <div class="controls" style="margin-left: 110px">
+                    <input id="last_name" type="text" class="input-block-level" disabled placeholder="O'Shaughnessy" value="{{ user.last_name }}">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label class="control-label" style="width: 100px;" for="public_key">Public key</label>
+                <div class="controls" style="margin-left: 110px">
+                    <textarea id="public_key" class="input-block-level" rows="6"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: $root.saveProfile">Save</button>
+            <button class="btn" data-bind="click: $root.closeProfileForm">Cancel</button>
+        </div>
+        </form>
+    </div>
+
+
+    <!-- 
+        ======================================================================
+        S T A C K   L I S T
+        ======================================================================
+     -->
     <div id="stacks-binding-target" data-bind='visible: $root.currentSection() === "Stacks"' class="hide">
         <div class="view">
 
@@ -126,8 +215,8 @@
                         <td data-bind="text: $data.description"></td>
                         <td><a href='#' data-bind="bootstrapPopover : {content : $root.stack.popoverBuilder($data) }, text: 'View (' + $data.history.length + ') messages'"></a></td>
                         <td>
-                            <div class="btn-group ">
-                                <a class="btn-small btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                            <div class="btn-group">
+                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu" data-bind="foreach: $root.stack.stackActions">
@@ -187,7 +276,7 @@
                                 <td data-bind="text: host_count"></td>
                                 <td data-bind="text: size.title"></td>
                                 <td data-bind="text: host_pattern"></td>
-                                <td data-bind="text: host_security_groups"></td>
+                                <td data-bind="html: flat_security_groups"></td>
                                 <td><button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.stack.removeHost"></button></td>
                             </tr>     
                         </tbody>
@@ -347,7 +436,15 @@
                     <div class="control-group">
                         <label class="control-label" for="host_security_groups">Security groups</label>
                         <div class="controls">
-                            <input type="text" id="host_security_groups" class="input-xlarge" placeholder="Comma separated list">
+                            <select id="host_security_groups" 
+                                    multiple
+                                    data-selected-text-format="count"
+                                    data-bind="options: stores.AccountSecurityGroups, 
+                                               optionsValue: 'id', 
+                                               optionsText: 'name'",
+                                    data-container="body"
+                                    data-header="Choose security groups"
+                                    class="input-xlarge"></select> 
                         </div>
                     </div>
 
@@ -449,7 +546,7 @@
                 <div class="control-group">
                     <label class="control-label" for="volume_mount_point">Mount point</label>
                     <div class="controls">
-                        <input type="text" id="volume_mount_point" class="input-mini" placeholder="/mnt/x">
+                        <input type="text" id="volume_mount_point" class="input-block-level" placeholder="/mnt/x">
                     </div>
                 </div>
             </div>
@@ -506,7 +603,7 @@
                         <td>
                             <button type="button" 
                                     class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.account.userCanModify,click: $root.account.removeSnapshot"></button>
+                                    data-bind="visible: $root.isSuperUser, click: $root.account.removeSnapshot"></button>
                         </td>
                     </tr>     
                 </tbody>
@@ -586,10 +683,19 @@
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td>
-                            <button type="button" 
-                                    class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.isSuperUser,
-                                               click: $root.account.deleteAccount"></button>
+                            <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="#" data-bind="text:'Delete', click: $root.account.deleteAccount"></a>
+                                    </li>
+                                    <li>
+                                        <a href="#" data-bind="text:'Edit Security Groups', click: $root.securityGroup.setForAccount"></a>
+                                    </li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>     
                 </tbody>
@@ -600,10 +706,10 @@
             ======================================================================
             A C C O U N T   F O R M
             ======================================================================
-         -->
+        -->
         <div id="accounts-form-container" title="New Provider Account Details" class="stackd-form form-small">
             <form id="account-form">
-                <div class="modal-body">
+                <div class="modal-body large-modal-body">
                     <div class="span2">Title</div>
                     <div class="span4 no-margin">
                         <input id="title" type="text" class="input-block-level" placeholder="">
@@ -612,6 +718,11 @@
                     <div class="span2">Description</div>
                     <div class="span4 no-margin">
                         <input id="description" type="text" class="input-block-level" placeholder="">
+                    </div>
+
+                    <div class="span2">Account ID</div>
+                    <div class="span4 no-margin">
+                        <input id="account_id" type="text" class="input-block-level" placeholder="Log into your account to obtain the id">
                     </div>
 
                     <div class="span2">AWS Access Key</div>
@@ -627,11 +738,6 @@
                     <div class="span2">AWS Keypair Name</div>
                     <div class="span4 no-margin">
                         <input id="keypair" type="text" class="input-block-level" placeholder="">
-                    </div>
-
-                    <div class="span2">Security Groups</div>
-                    <div class="span4 no-margin">
-                        <input id="security_groups" type="text" class="input-block-level" placeholder="comma separated list">
                     </div>
 
                     <div class="span2">Default Zone</div>
@@ -666,7 +772,7 @@
         ======================================================================
         P R O F I L E   L I S T
         ======================================================================
-     -->
+    -->
     <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Profiles"'>
         <div class="view">
             <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
@@ -713,9 +819,9 @@
             ======================================================================
             P R O F I L E   F O R M
             ======================================================================
-         -->
+        -->
         <div id="profile-form-container" title="New Profile Details" class="stackd-form form-small">
-            <form id="snapshot-form">
+            <form id="profile-form">
             <div class="modal-body">
                 <div class="span2">Title</div>
                 <div class="span4 no-margin">
@@ -755,9 +861,287 @@
         </div>
     </div>
 
+    <!-- 
+        ======================================================================
+        S E C U R I T Y   G R O U P   L I S T
+        ======================================================================
+    -->
+    <div id="security-group-container" class="hide" data-bind='visible: currentSection() === "Security"'>
+        <div class="view">
+            <div class="btn-group pull-right">
+                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                    New Security Group
+                    <span class="caret"></span>
+                </a>
+                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
+                    <li>
+                        <a href="#" data-bind="text: title, click: $root.securityGroup.showSecurityGroupForm"></a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="pull-left">
+
+                <div class="pagination" data-bind="visible: $root.securityGroup.showPagination">
+                    <ul>
+                        <li data-bind="css: { disabled: $root.securityGroup.previousLink() === null }">
+                            <a href="#" 
+                                data-bind="click: function () { $root.securityGroup.paginate($root.securityGroup.previousLink()); } ">Previous</a>
+                        </li>
+                        <li data-bind="css: { disabled: $root.securityGroup.nextLink() === null }">
+                            <a href="#" data-bind="click: function () { $root.securityGroup.paginate($root.securityGroup.nextLink()); }">Next</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+
+            <table id="security_group_list" class="table table-striped data-grid">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Account</th>
+                        <th data-bind="visible: stackdio.settings.superuser === true">Owner</th>
+                        <th style="width:5%"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.SecurityGroups">
+                    <tr>
+                        <td data-bind="text: id"></td>
+                        <td data-bind="text: name"></td>
+                        <td data-bind="text: description"></td>
+                        <td data-bind="text: account.title"></td>
+                        <td data-bind="text: owner, visible: stackdio.settings.superuser === true"></td>
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-info btn-small dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="#" data-bind="text:'Delete', click: $root.securityGroup.deleteSecurityGroup"></a>
+                                    </li>
+                                    <li>
+                                        <a href="#" data-bind="text:'Define Rules', click: $root.securityGroup.editGroupRules"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 
+            ======================================================================
+            S E C U R I T Y   G R O U P   F O R M
+            ======================================================================
+        -->
+        <div id="securitygroup-form-container" title="New Security Group" class="stackd-form form-small">
+            <form id="securitygroup-form" class="form-horizontal">
+                <div class="modal-body">
+                    <div class="control-group">
+                        <label class="control-label" style="width: 40px;" for="securitygroup_name">Title</label>
+                        <div class="controls" style="margin-left: 60px">
+                            <input id="securitygroup_name" type="text" class="input-block-level"
+                                   data-bind="event: { keypress: securityGroup.captureNewGroup }">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
+                    <button class="btn btn-primary" data-bind="click: function (data, event) { 
+                                        securityGroup.addSecurityGroup($('#securitygroup_name').val(), event); 
+                                    }">Save</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 
+            ======================================================================
+            S E C U R I T Y   G R O U P   R U L E S   L I S T   D I A L O G
+            ======================================================================
+        -->
+        <div id="securitygroup-rules-form-container" title="Security Group Rules" class="stackd-form">
+            <div class="modal-body">
+                <table id="security_group_rules_list" class="table table-striped data-grid">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Protocol</th>
+                            <th style="width:5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: stores.SecurityGroupRules">
+                        <tr>
+                            <td data-bind="text: (rule.split(':').length === 1) ? rule : rule.split(':')[1]"></td>
+                            <td data-bind="text: from_port"></td>
+                            <td data-bind="text: to_port"></td>
+                            <td data-bind="text: protocol"></td>
+                            <td>
+                                <button type="button" 
+                                        class="btn-small btn-danger iconic-trash-stroke"
+                                        data-bind="click: $root.securityGroup.deleteGroupRule"
+                                ></button>
+                            </td>
+                        </tr>     
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" data-bind="click: $root.securityGroup.closeRulesForm">Close</button>
+                <button class="btn btn-success iconic-plus" data-bind="click: function () { 
+                                    $('#new-rule-dialog').dialog('open');
+                                }"> Add</button>
+            </div>
+        </div>
+
+        <!-- 
+            ======================================================================
+            N E W   S E C U R I T Y   G R O U P   R U L E   D I A L O G
+            ======================================================================
+        -->
+        <div id="new-rule-dialog" title="New Access Rule" class="stackd-form">
+            <form id="group-rule-form" class="form-horizontal">
+                <div class="modal-body">
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_protocol">Protocol</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <select id="rule_protocol" 
+                                    data-bind="options: ['tcp','udp','icmp']",
+                                    data-container="body"
+                                    class="input-xlarge"></select> 
+                        </div>
+                    </div>
+
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_from_port">From port</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="rule_from_port" type="text" class="input-xlarge" placeholder="22">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_to_port">To port</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="rule_to_port" type="text" class="input-xlarge" placeholder="22">
+                        </div>
+                    </div>
+
+                    <hr/>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_ip_address">IP address</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="rule_ip_address" type="text" class="input-xlarge" placeholder="0.0.0.0/32">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="none"></label>
+                        <div class="controls" style="margin-left: 160px">
+                            or
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="rule_group">Group</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="rule_group" type="text" class="input-xlarge" placeholder="another group name">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn" data-bind="click: function () { $('#new-rule-dialog').dialog('close') }">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: securityGroup.addRule"> Save</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 
+            ======================================================================
+            D E F A U L T   S E C U R I T Y   G R O U P   F O R M
+            ======================================================================
+        -->
+        <div id="default-securitygroup-form-container" title="Default Security Groups" class="stackd-form form-small">
+            <form id="default-securitygroup-form" class="form-horizontal">
+                <div class="modal-body large-modal-body">
+
+                    <div class="control-group">
+                        <div class="lead">Option 1. Use an existing group</div>
+                        If you previously imported AWS groups, or created your own through stackd.io, you can select one of 
+                        those groups that are listed here.
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="stackdio_security_group">Your stackd.io groups</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <select id="stackdio_security_group" 
+                                    data-selected-text-format="count"
+                                    data-bind="options: stores.AccountSecurityGroups, 
+                                               optionsValue: 'id', 
+                                               optionsText: 'name'",
+                                    data-container="body"
+                                    class="input-xlarge"></select> 
+                            <button class="btn btn-success iconic-plus" 
+                                    data-bind="click: function (data, event) { 
+                                        securityGroup.addDefaultSecurityGroup($('#stackdio_security_group option:selected').text(), event); 
+                                    }"> Add</button>
+
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="lead">Option 2. Create new group</div>
+                        If you would like to create a new security group that does not already exist in stackd.io, 
+                        simply type in the name for the group here and it will created. If there are existing AWS
+                        groups that match what you are entering, you will see suggestions.
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label" style="width: 140px;" for="new_securitygroup_name">Create new group</label>
+                        <div class="controls" style="margin-left: 160px">
+                            <input id="new_securitygroup_name" 
+                                   type="text"
+                                   class="input-xlarge"
+                                   data-bind="event: { keypress: securityGroup.capture }"> 
+                            <button class="btn btn-success iconic-plus" 
+                                    data-bind="click: function (data, event) { 
+                                        securityGroup.addDefaultSecurityGroup(document.getElementById('new_securitygroup_name').value, event); 
+                                    }"> Add</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="lead">Assigned Default Groups</div>
+                        <div>To remove any default security groups assigned to this account, click on the 'x' in the label below.</div>
+                        <div style="margin: 10px 0 0 0;" id="default_group_list"></div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn" data-bind="click: $('#default-securitygroup-form-container').dialog('close')">Cancel</button>
+                    <button class="btn btn-primary iconic-check" data-bind="click: $('#default-securitygroup-form-container').dialog('close')"> Done</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script data-main="{% static 'js/app' %}" src="{% static 'js/require.js' %}"></script>
     <script>
-    window.dsu = "{{ user.is_superuser }}";
+    window.stackdio_user = {};
+    window.stackdio_user.su = "{{ user.is_superuser }}";
     </script>
 
 

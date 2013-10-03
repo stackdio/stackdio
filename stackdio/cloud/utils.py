@@ -15,8 +15,6 @@ import models
 
 logger = logging.getLogger(__name__)
 
-STACKDIO_CONFIG = settings.STACKDIO_CONFIG
-
 def get_provider_type_and_class(provider_type_id):
 
     try:
@@ -64,39 +62,6 @@ def get_cloud_providers():
         raise
 
     return providers
-
-def write_cloud_providers_file():
-
-    with open(settings.SALT_CLOUD_PROVIDERS_CONFIG, 'w') as f:
-        # get all the providers yaml information
-        for provider in models.CloudProvider.objects.all():
-            f.write(provider.yaml)
-
-def write_cloud_profiles_file():
-
-    profile_yaml = {}
-
-    # Get all the profiles and add the relevant data to the dict
-    # that we'll use to generate the yaml data from
-    for profile in models.CloudProfile.objects.all():
-
-        profile_yaml[profile.slug] = {
-            'provider': profile.cloud_provider.slug,
-            'image': profile.image_id,
-            'size': profile.default_instance_size.title,
-            'ssh_username': profile.ssh_user,
-            'script': 'bootstrap-salt',
-            'script_args': STACKDIO_CONFIG['SALT_CLOUD_BOOTSTRAP_ARGS'],
-            'sync_after_install': 'all',
-            # PI-44: Need to add an empty minion config until salt-cloud/701
-            # is fixed.
-            'minion': {},
-        }
-
-    with open(settings.SALT_CLOUDVM_CONFIG, 'w') as f:
-        f.write(yaml.safe_dump(profile_yaml,
-                               default_flow_style=False))
-
 
 def findRoles(filename, pattern):
     with open(filename) as file:

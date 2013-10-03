@@ -5,6 +5,8 @@
 # CDH4 repository to install their packages.
 include:
   - cdh4.repo
+  - cdh4.hadoop.conf
+  - cdh4.landing_page
 
 ##
 # Installs the datanode service
@@ -46,7 +48,7 @@ hadoop-0.20-mapreduce-tasktracker:
     - running
     - require: 
       - pkg: hadoop-0.20-mapreduce-tasktracker
-      - cmd: mapred_local_dirs
+      - cmd: datanode_mapred_local_dirs
       - file: /etc/hadoop/conf/core-site.xml
       - file: /etc/hadoop/conf/hdfs-site.xml
       - file: /etc/hadoop/conf/mapred-site.xml
@@ -57,60 +59,8 @@ hadoop-0.20-mapreduce-tasktracker:
       - file: /etc/hadoop/conf/mapred-site.xml
       - file: /etc/hadoop/conf/hadoop-env.sh
 
-# Set up hadoop environment. This file is loaded automatically
-# by most of the hadoop services when needed
-/etc/hadoop/conf/hadoop-env.sh:
-  file:
-    - managed
-    - source: salt://cdh4/etc/hadoop/conf/hadoop-env.sh
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - require:
-      - pkg: hadoop-hdfs-datanode
-      - pkg: hadoop-0.20-mapreduce-tasktracker
-
-# Render the configuration files and put them
-# in the right locations
-/etc/hadoop/conf/mapred-site.xml:
-  file:
-    - managed
-    - source: salt://cdh4/etc/hadoop/conf/mapred-site.xml
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - require:
-      - pkg: hadoop-hdfs-datanode
-      - pkg: hadoop-0.20-mapreduce-tasktracker
-
-/etc/hadoop/conf/core-site.xml:
-  file:
-    - managed
-    - source: salt://cdh4/etc/hadoop/conf/core-site.xml
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - require:
-      - pkg: hadoop-hdfs-datanode
-      - pkg: hadoop-0.20-mapreduce-tasktracker
-
-/etc/hadoop/conf/hdfs-site.xml:
-  file:
-    - managed
-    - source: salt://cdh4/etc/hadoop/conf/hdfs-site.xml
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - require:
-      - pkg: hadoop-hdfs-datanode
-      - pkg: hadoop-0.20-mapreduce-tasktracker
-
 # make the local storage directories
-mapred_local_dirs:
+datanode_mapred_local_dirs:
   cmd:
     - run
     - name: 'mkdir -p {{ mapred_local_dir }} && chmod -R 755 {{ mapred_local_dir }} && chown -R mapred:mapred {{ mapred_local_dir }}'

@@ -1,5 +1,6 @@
 cdh4:
   version: 4.2.1
+  landing_page: true
   io:
     sort_factor: 25
     sort_mb: 250

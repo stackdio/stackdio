@@ -55,6 +55,14 @@ class StackListAPIView(generics.ListCreateAPIView):
         as well as generating the salt-cloud map that will be used to launch
         machines
         '''
+
+        # make sure the user has a public key
+        if not request.user.settings.public_key:
+            raise BadRequest('You have not added a public key to your user '
+                             'profile and will not be able to SSH in to any '
+                             'machines. Please set update your user profile '
+                             'before continuing.')
+
         # set some defaults
         launch_stack = request.DATA.get('auto_launch', True)
         provision_stack = request.DATA.get('auto_provision', True)
@@ -66,7 +74,10 @@ class StackListAPIView(generics.ListCreateAPIView):
                                    'title.')
 
         # create the stack object and foreign key objects
-        stack = Stack.objects.create_stack(request.user, request.DATA)
+        try:
+            stack = Stack.objects.create_stack(request.user, request.DATA)
+        except Exception, e:
+            raise BadRequest(str(e))
 
         if launch_stack:
             # Queue up stack creation and provisioning using Celery
@@ -202,7 +213,6 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                  'in the running state first. At least one '
                                  'host is reporting an '
                                  'invalid state: %s' % host.state)
-            
 
         # Kick off the celery task for the given action
         stack.set_status(Stack.EXECUTING_ACTION, 

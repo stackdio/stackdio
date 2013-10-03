@@ -3,6 +3,7 @@ Amazon Web Services provider for stackd.io
 """
 
 import os
+import re
 import stat
 import logging
 from uuid import uuid4
@@ -19,6 +20,15 @@ from cloud.providers.base import (
     TimeoutException,
     MaxFailuresException,
 )
+
+from core.exceptions import BadRequest, InternalServerError
+
+
+GROUP_PATTERN = re.compile('\d+:[a-zA-Z0-9-_]')
+CIDR_PATTERN = re.compile('[0-9]+(?:\.[0-9]+){3}\/\d{1,2}')
+
+# Boto Errors
+BOTO_DUPLICATE_ERROR_CODE = 'InvalidPermission.Duplicate'
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +169,9 @@ class AWSCloudProvider(BaseCloudProvider):
     SHORT_NAME = 'ec2'
     LONG_NAME  = 'Amazon Web Services' 
 
+    # The account/owner id
+    ACCOUNT_ID = 'account_id'
+
     # The AWS access key id
     ACCESS_KEY = 'access_key_id'
 
@@ -169,10 +182,11 @@ class AWSCloudProvider(BaseCloudProvider):
     KEYPAIR = 'keypair'
 
     # The AWS security groups
-    SECURITY_GROUPS = 'security_groups'
+    #SECURITY_GROUPS = 'security_groups'
 
     # The default availablity zone to use
     DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
+    DEFAULT_AVAILABILITY_ZONE_NAME = 'default_availability_zone_name'
 
     # The path to the private key for SSH
     PRIVATE_KEY_FILE = 'private_key_file'
@@ -195,10 +209,11 @@ class AWSCloudProvider(BaseCloudProvider):
     @classmethod
     def get_required_fields(self):
         return [
+            self.ACCOUNT_ID, 
             self.ACCESS_KEY, 
             self.SECRET_KEY, 
             self.KEYPAIR,
-            self.SECURITY_GROUPS
+            #self.SECURITY_GROUPS
         ]
 
     @classmethod
@@ -235,17 +250,15 @@ class AWSCloudProvider(BaseCloudProvider):
         # change the file permissions of the RSA key
         os.chmod(private_key_path, stat.S_IRUSR)
 
-        security_groups = filter(None, data[self.SECURITY_GROUPS].split(','))
         config_data = {
             'provider': self.SHORT_NAME,
             'id': data[self.ACCESS_KEY],
             'key': data[self.SECRET_KEY], 
             'keyname': data[self.KEYPAIR],
-            'securitygroup': security_groups,
             'private_key': private_key_path,
             'append_domain': data[self.ROUTE53_DOMAIN],
 
-            'ssh_interface': 'public_ips',
+            'ssh_interface': 'private_ips',
             'rename_on_destroy': True,
             'delvol_on_destroy': True,
         }
@@ -262,26 +275,66 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def validate_provider_data(self, data, files):
 
-        result, errors = super(AWSCloudProvider, self) \
+        errors = super(AWSCloudProvider, self) \
             .validate_provider_data(data, files)
-
-        # check security groups
-        if result:
-            ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])
-
-            try:
-                security_groups = filter(None, data[self.SECURITY_GROUPS].split(','))
-                security_groups = ec2.get_all_security_groups(security_groups)
-            except boto.exception.EC2ResponseError, e:
-                result = False
-                errors['AWS'].append(e.error_message)
 
         # check for required files
         if not files or self.PRIVATE_KEY_FILE not in files:
-            result = False
-            errors[self.PRIVATE_KEY_FILE].append(self.REQUIRED_MESSAGE)
-        
-        return result, errors
+            errors.append('{0} is a required field.'.format(self.PRIVATE_KEY_FILE))
+
+        if errors:
+            return errors
+
+        # check authentication credentials
+        try:
+            ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])
+            ec2.get_all_zones()
+        except boto.exception.EC2ResponseError, e:
+            errors.append('Unable to authenticate to AWS with the provided '
+                          'access and secret keys. Double-check you are using '
+                          'the correct credentials and they have the '
+                          'appropriate IAM access.')
+            
+        if errors:
+            return errors
+
+        # check keypair
+        try:
+            ec2.get_all_key_pairs(data[self.KEYPAIR])
+        except boto.exception.EC2ResponseError, e:
+            errors.append('The keypair \'{0}\' does not exist in this account.'
+                          ''.format(data[self.KEYPAIR]))
+
+        # check availability zone
+        try:
+            ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
+        except boto.exception.EC2ResponseError, e:
+            errors.append('The availability zone \'{0}\' does not exist in '
+                          'this account.'.format(data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
+
+        # check route 53 domain
+        try:
+            if self.ROUTE53_DOMAIN in data:
+                # connect to route53 and check that the domain is available
+                r53 = boto.connect_route53(data[self.ACCESS_KEY], data[self.SECRET_KEY])
+                found_domain = False
+                domain = data[self.ROUTE53_DOMAIN]
+
+                hosted_zones = r53.get_all_hosted_zones()
+                hosted_zones = hosted_zones['ListHostedZonesResponse']['HostedZones']
+                for hosted_zone in hosted_zones:
+                    if hosted_zone['Name'].startswith(domain):
+                        found_domain = True
+                        break
+
+                if not found_domain:
+                    err = 'The Route53 domain \'{0}\' does not exist in ' \
+                          'this account.'.format(domain)
+                    errors.append(err)
+        except boto.exception.DNSServerError, e:
+            errors.append(e.error_message)
+
+        return errors
 
     def connect_route53(self):
 
@@ -301,6 +354,149 @@ class AWSCloudProvider(BaseCloudProvider):
             credentials = self.get_credentials()
             self._ec2_connection = boto.connect_ec2(*credentials)
         return self._ec2_connection
+
+    def is_cidr_rule(self, rule):
+        '''
+        Determines if the rule string conforms to the CIDR pattern.
+        '''
+        return CIDR_PATTERN.match(rule)
+
+    def create_security_group(self, security_group_name, description):
+        '''
+        Returns the identifier of the group.
+        '''
+        if not description:
+            description = 'Default description provided by stackd.io'
+
+        # create the group
+        ec2 = self.connect_ec2()
+        group = ec2.create_security_group(security_group_name, description)
+        return group.id
+
+    def _security_group_rule_to_kwargs(self, rule):
+        kwargs = {
+            'ip_protocol': rule['protocol'],
+            'from_port': rule['from_port'],
+            'to_port': rule['to_port'],
+        }
+        if GROUP_PATTERN.match(rule['rule']):
+            src_owner_id, src_group_name = rule['rule'].split(':')
+            kwargs['src_security_group_owner_id'] = src_owner_id
+            kwargs['src_security_group_name'] = src_group_name
+        elif CIDR_PATTERN.match(rule['rule']):
+            kwargs['cidr_ip'] = rule['rule']
+        else:
+            raise Exception('Security group rule \'{0}\' has an invalid '
+                            'format.'.format(rule['rule']))
+        return kwargs
+
+    def delete_security_group(self, group_name):
+        ec2 = self.connect_ec2()
+        try:
+            ec2.delete_security_group(group_name)
+        except boto.exception.EC2ResponseError, e:
+            if e.status == 400:
+                raise BadRequest(e.error_message)
+            raise InternalServerError(e.error_message)
+
+    def authorize_security_group(self, group_name, rule):
+        '''
+        @group_name: string, the group name to add the rule to
+        @rule: dict {
+            'protocol': tcp | udp | icmp
+            'from_port': [1-65535]
+            'to_port': [1-65535]
+            'rule': string (ex. 19.38.48.12/32, 0.0.0.0/0, 4328737383:stackdio-group)
+        }
+        '''
+        ec2 = self.connect_ec2()
+        kwargs = self._security_group_rule_to_kwargs(rule)
+        kwargs['group_name'] = group_name
+
+        try:
+            ec2.authorize_security_group(**kwargs)
+        except boto.exception.EC2ResponseError, e:
+            if e.status == 400:
+                if e.error_message.startswith('Unable to find group'):
+                    account_id = kwargs['src_security_group_owner_id']
+                    err_msg = e.error_message + ' on account \'{0}\''.format(
+                        account_id)
+                    raise BadRequest(err_msg)
+                raise BadRequest(e.error_message)
+            raise InternalServerError(e.error_message)
+
+    def revoke_security_group(self, group_name, rule):
+        '''
+        See `authorize_security_group`
+        '''
+        ec2 = self.connect_ec2()
+        kwargs = self._security_group_rule_to_kwargs(rule)
+        kwargs['group_name'] = group_name
+        ec2.revoke_security_group(**kwargs)
+
+    def revoke_all_security_groups(self, group_name):
+        '''
+        Revokes ALL rules on the security group.
+        '''
+        ec2 = self.connect_ec2()
+
+        groups = self.get_security_groups(group_name)
+        for group_name, group in groups.iteritems():
+            for rule in group['rules']:
+                self.revoke_security_group(group_name, rule)
+
+    def get_security_groups(self, group_names=[]):
+        if not isinstance(group_names, list):
+            group_names = [group_names]
+
+        ec2 = self.connect_ec2()
+        groups = ec2.get_all_security_groups(group_names)
+
+        result = {}
+        for group in groups:
+            rules = []
+            for rule in group.rules:
+                for grant in rule.grants:
+                    rule_string = grant.cidr_ip or ':'.join([grant.owner_id, grant.name])
+                    rules.append({
+                        'protocol': rule.ip_protocol,
+                        'from_port': rule.from_port,
+                        'to_port': rule.to_port,
+                        'rule': rule_string,
+                    })
+
+            result[group.name] = {
+                'id': group.id,
+                'name': group.name,
+                'description': group.description,
+                'rules': rules,
+            }
+
+        return result
+
+    def has_image(self, image_id):
+        '''
+        Checks to see if the given ami is available in the account
+        '''
+        ec2 = self.connect_ec2()
+        try:
+            ec2.get_all_images(image_id)
+            return True, ''
+        except boto.exception.EC2ResponseError, e:
+            return False, 'The image id \'{0}\' does not exist in this ' \
+                          'account.'.format(image_id)
+
+    def has_snapshot(self, snapshot_id):
+        '''
+        Checks to see if the given snapshot is available in the account
+        '''
+        ec2 = self.connect_ec2()
+        try:
+            ec2.get_all_snapshots(snapshot_id)
+            return True, ''
+        except boto.exception.EC2ResponseError, e:
+            return False, 'The snapshot id \'{0}\' does not exist in this ' \
+                          'account.'.format(snapshot_id)
 
     def register_dns(self, hosts):
         '''
@@ -583,3 +779,4 @@ class AWSCloudProvider(BaseCloudProvider):
     ##
     # END ACTION IMPLEMENTATIONS
     ##
+

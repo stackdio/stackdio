@@ -19,12 +19,8 @@ define(["knockout",
                 API.Profiles.save(profile)
                     .then(function () {
                         $("#profile-form-container").dialog("close");
+                        formutils.clearForm('profile-form');
                         self.showSuccess();
-
-                        if (stores.Accounts().length > 0) {
-                            $("#alert-no-accounts").show();
-                            self.gotoSection("Accounts");
-                        }
                     });
             };
 

@@ -2,6 +2,7 @@
 
 import os
 from os.path import dirname, normpath, join
+from sys import maxint
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -35,13 +36,15 @@ SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')
 # This is the salt-cloud configuration file.
 SALT_CLOUD_CONFIG = getenv('SALT_CLOUD_CONFIG')
 
-# This is the cloud.profiles file for configuring the cloud profiles
-# that are available.
-SALT_CLOUDVM_CONFIG = getenv('SALT_CLOUDVM_CONFIG')
+# This is typically in the cloud.profiles.d directory located in 
+# salt's configuration root directory. Each *.conf file is an
+# individual profile configuration
+SALT_CLOUD_PROFILES_DIR = getenv('SALT_CLOUD_PROFILES_DIR')
 
-# The cloud.providers file that defines all the availabel cloud 
-# providers
-SALT_CLOUD_PROVIDERS_CONFIG = getenv('SALT_CLOUD_PROVIDERS_CONFIG')
+# This is typically in the cloud.providers.d directory located in 
+# salt's configuration root directory. Each *.conf file is an
+# individual cloud provider configuration
+SALT_CLOUD_PROVIDERS_DIR = getenv('SALT_CLOUD_PROVIDERS_DIR')
 
 ##
 # stackd.io settings
@@ -129,6 +132,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'rest_framework',
     'rest_framework.authtoken',
+    #'rest_framework_swagger',
     'django_nose',
     'south',
     'djcelery',
@@ -263,7 +267,7 @@ LOGGING = {
 # Django REST Framework configuration
 ##
 REST_FRAMEWORK = {
-    'PAGINATE_BY': 25,
+    'PAGINATE_BY': 15,
     'PAGINATE_BY_PARAM': 'page_size',
 
     'FILTER_BACKEND': 'rest_framework.filters.DjangoFilterBackend',
@@ -278,6 +282,16 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 
+}
+
+##
+# Swagger configuration
+##
+SWAGGER_SETTINGS = {
+    'exclude_namespaces': ['django'],
+    'api_version': '1.0 alpha',
+    'is_authenticated': True,
+    'is_superuser': False
 }
 
 ##
