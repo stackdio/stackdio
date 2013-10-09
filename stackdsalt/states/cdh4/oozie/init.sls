@@ -20,6 +20,7 @@ oozie:
     - require:
       - cmd: extjs
       - cmd: ooziedb
+      - file: /var/log/oozie
 
 extjs:
   file:
@@ -47,3 +48,12 @@ ooziedb:
     - unless: 'test -d {{ oozie_data_dir }}/oozie-db'
     - require:
       - pkg.installed: oozie
+
+/var/log/oozie:
+  file:
+    - directory
+    - user: oozie
+    - group: oozie
+    - recurse:
+      - user
+      - group
