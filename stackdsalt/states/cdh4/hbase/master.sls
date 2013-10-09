@@ -6,7 +6,6 @@ include:
   - cdh4.hadoop.client
   - cdh4.hbase.regionserver_hostnames
   - cdh4.zookeeper
-  - cdh4.hbase.conf
   - cdh4.landing_page
 
 hbase-init:
@@ -34,3 +33,14 @@ hbase-master:
       - file: /etc/hbase/conf/hbase-site.xml
     - watch:
       - file: /etc/hbase/conf/hbase-site.xml
+
+/etc/hbase/conf/hbase-site.xml:
+  file:
+    - managed
+    - source: salt://cdh4/etc/hbase/conf/hbase-site.xml
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - require:
+      - pkg: hbase-master
