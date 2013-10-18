@@ -12,7 +12,7 @@ from django.utils.translation import ungettext
 
 from volumes.models import Volume
 
-from .models import (
+from stacks.models import (
     Stack,
     Level,
 )

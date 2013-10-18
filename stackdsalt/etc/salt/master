@@ -5,6 +5,7 @@ verify_env: True
 file_roots:
   base:
     - /mnt/stackdio_root/stackdsalt/states
+    - /mnt/stackdio_root/stackdsalt/user_states
 
 pillar_roots:
   base:

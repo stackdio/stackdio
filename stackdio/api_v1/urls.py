@@ -33,6 +33,8 @@ def api_root(request, format=None):
             'stacks': reverse('stack-list', request=request, format=format),
             'volumes': reverse('volume-list', request=request, format=format),
         },
+        'blueprints': reverse('blueprint-list', request=request, format=format),
+        'formulas': reverse('formula-list', request=request, format=format),
     }
 
     if request.user.is_superuser:
@@ -53,4 +55,6 @@ urlpatterns = patterns('',
     url(r'^', include('cloud.urls')),
     url(r'^', include('stacks.urls')),
     url(r'^', include('volumes.urls')),
+    url(r'^', include('blueprints.urls')),
+    url(r'^', include('formulas.urls')),
 )

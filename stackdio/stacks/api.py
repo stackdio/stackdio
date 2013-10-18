@@ -49,9 +49,9 @@ class StackListAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         return self.request.user.stacks.all()
 
-    def post(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         '''
-        Overriding post to create roles and metadata objects for this Stack
+        Overriding create method to build roles and metadata objects for this Stack
         as well as generating the salt-cloud map that will be used to launch
         machines
         '''
