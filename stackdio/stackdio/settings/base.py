@@ -30,6 +30,9 @@ SALT_ROOT = getenv('SALT_ROOT')
 # Where salt states live (e.g., /srv/salt)
 SALT_STATE_ROOT = getenv('SALT_STATE_ROOT')
 
+# Where user-imported salt states live (e.g., /srv/salt)
+SALT_USER_STATE_ROOT = getenv('SALT_USER_STATE_ROOT')
+
 # This is the salt-master configuration
 SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')
 
@@ -140,6 +143,8 @@ INSTALLED_APPS = (
     'cloud',
     'stacks',
     'volumes',
+    'blueprints',
+    'formulas',
 )
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
@@ -243,7 +248,7 @@ LOGGING = {
         'django.db.backends': {
             'handlers': ['null'],
             'propagate': False,
-	    'level': 'DEBUG',
+	        'level': 'DEBUG',
         },
         'core': {
             'handlers': ['console'],
@@ -256,6 +261,11 @@ LOGGING = {
             'propagate': False,
         },
         'stacks': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'blueprints': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,

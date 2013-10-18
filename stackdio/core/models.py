@@ -1,6 +1,9 @@
-from django.db import models
-from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db import models
+from django.dispatch import receiver
+
+import model_utils.models
 
 import logging
 logger = logging.getLogger(__name__)
@@ -21,6 +24,7 @@ class UserSettings(models.Model):
     def __unicode__(self):
         return self.user.username
 
+@receiver(models.signals.post_save, sender=get_user_model())
 def user_post_save(sender, instance, **kwargs):
     '''
     Catch the post_save signal for all User objects and create a
@@ -30,4 +34,3 @@ def user_post_save(sender, instance, **kwargs):
         logger.debug('Creating UserSettings object for {0!r}'.format(instance))
         UserSettings.objects.create(user=instance)
 
-models.signals.post_save.connect(user_post_save, sender=get_user_model())

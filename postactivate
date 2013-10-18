@@ -8,6 +8,7 @@ export MYSQL_PASS='password'
 
 export SALT_ROOT=/mnt/stackdio_root/stackdsalt
 export SALT_STATE_ROOT=$SALT_ROOT/states
+export SALT_USER_STATE_ROOT=$SALT_ROOT/user_states
 export SALT_MASTER_CONFIG=$SALT_ROOT/etc/salt/master
 export SALT_CLOUD_CONFIG=$SALT_ROOT/etc/salt/cloud
 export SALT_CLOUD_PROVIDERS_DIR=$SALT_ROOT/etc/salt/cloud.providers.d

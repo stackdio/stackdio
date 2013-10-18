@@ -5,18 +5,17 @@ import collections
 import socket
 from decimal import Decimal
 
-import envoy
-import simplejson
-
 from django.conf import settings
 from django.db import models, transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 
+import envoy
+import simplejson
 import yaml
-import model_utils.models
 
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
+import model_utils.models 
 from model_utils import Choices
 
 from core.fields import DeletingFileField
