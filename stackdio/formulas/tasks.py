@@ -162,5 +162,6 @@ def import_formula(formula_id):
 
         return True
     except Exception, e:
+        logger.exception(e)
         raise FormulaTaskException(formula, 'An unhandled exception occurred.')
 

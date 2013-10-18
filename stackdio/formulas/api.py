@@ -65,6 +65,25 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                  pk=self.kwargs.get('pk'),
                                  owner=self.request.user)
 
+    def update(self, request, *args, **kwargs):
+        '''
+        Override PUT requests to only allow the public field to be changed.
+        '''
+        public = request.DATA.get('public', None)
+        if public is None or len(request.DATA) > 1:
+            raise BadRequest("Only 'public' field of a formula may be modified.")
+
+        if not isinstance(public, bool):
+            raise BadRequest("'public' field must be a boolean value.")
+
+
+        # Update formula's public field
+        formula = self.get_object()
+        formula.public = public
+        formula.save()
+
+        return Response(self.get_serializer(formula).data)
+
 
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
