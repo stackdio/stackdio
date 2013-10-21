@@ -75,7 +75,7 @@ class StackListAPIView(generics.ListCreateAPIView):
             raise BadRequest('Blueprint is a required field.')
 
         try:
-            blueprint_obj = Blueprint.objects.get(pk=blueprint_id,
+            blueprint = Blueprint.objects.get(pk=blueprint_id,
                                               owner=request.user)
         except Blueprint.DoesNotExist:
             raise BadRequest('Blueprint with id {0} does not '
@@ -87,10 +87,10 @@ class StackListAPIView(generics.ListCreateAPIView):
             raise ResourceConflict('A Stack already exists with the given '
                                    'title.')
 
-        # create the stack object and foreign key objects
+        # create the stack and related objects
         try:
             logger.debug(request.DATA)
-            stack = Stack.objects.create_stack(request.user, blueprint_obj, **request.DATA)
+            stack = Stack.objects.create_stack(request.user, blueprint, **request.DATA)
         except Exception, e:
             logger.exception(e)
             raise BadRequest(str(e))
@@ -136,7 +136,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return get_object_or_404(Stack, id=self.kwargs.get('pk'),
                                  owner=self.request.user)
 
-    def delete_XXX(self, request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         '''
         Overriding the delete method to make sure the stack
         is taken offline before being deleted

@@ -620,7 +620,7 @@ class AWSCloudProvider(BaseCloudProvider):
             logger.info('tagging {0!r}'.format(resource_ids))
             ec2.create_tags(resource_ids, {
                 'stack_id': str(stack.id),
-                'owner': stack.user.username,
+                'owner': stack.owner.username,
             })
 
     def get_ec2_instances(self, hosts):

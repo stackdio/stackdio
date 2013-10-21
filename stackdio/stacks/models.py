@@ -115,6 +115,15 @@ class StackManager(models.Manager):
                                           availability_zone=hostdef.zone,
                                           hostname=hostname)
 
+                # Add in the cloud provider default security groups as 
+                # defined by an admin.
+                provider_groups = set(list(host.cloud_profile.cloud_provider.security_groups.filter(
+                    is_default=True
+                )))
+
+                # set security groups
+                host.security_groups.add(*provider_groups)
+
                 # add formula components
                 host.formula_components.add(*components)
 
@@ -211,9 +220,23 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def set_status(self, event, status, level=Level.INFO):
         self.history.create(event=event, status=status, level=level)
 
-    # XXX
-    #def get_driver(self):
-    #    return self.cloud_provider.get_driver()
+    def get_driver_hosts_map(self):
+        '''
+        Stacks are comprised of multiple hosts. Each host may be
+        located in different cloud providers. This method returns
+        a map of the underlying driver implementation and the hosts
+        that running in the provider.
+        '''
+        providers = set()
+        hosts = self.hosts.all()
+        for host in hosts:
+            providers.add(host.get_provider())
+
+        result = {}
+        for provider in providers:
+            hosts = self.hosts.filter(cloud_profile__cloud_provider=provider)
+            result[provider.get_driver()] = hosts
+        return result
 
     def get_hosts(self, host_ids=None):
         '''
@@ -684,3 +707,5 @@ class Host(TimeStampedModel, StatusDetailModel):
     def get_provider_type(self):
         return self.cloud_profile.cloud_provider.provider_type
 
+    def get_driver(self):
+        return self.cloud_profile.get_driver()

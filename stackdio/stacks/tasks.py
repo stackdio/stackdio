@@ -44,18 +44,18 @@ def handle_error(stack_id, task_id):
 
 @celery.task(name='stacks.launch_hosts')
 def launch_hosts(stack_id):
+    '''
+    Use salt cloud to launch machines using the given stack's map_file
+    that was generated when the stack was created. Salt cloud will
+    handle launching machines, provisioning them as salt minions,
+    connecting to the master, etc. Downstream stack.tasks will
+    handle the rest...
+    '''
     try:
         stack = Stack.objects.get(id=stack_id)
         hosts = stack.get_hosts()
 
-        # generate the hosts for the stack
-        if not hosts:
-            stack.create_hosts()
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
-
-        # Use SaltCloud to launch machines using the given stack's
-        # map_file that should already be generated
-
         stack.set_status(
             launch_hosts.name,
             'Hosts are being launched. This could take a while.')
@@ -162,7 +162,6 @@ def update_metadata(stack_id, host_ids=None):
         # metadata and store what we want to keep track of.
 
         stack = Stack.objects.get(id=stack_id)
-        driver = stack.get_driver()
         logger.info('Updating metadata for stack: {0!r}'.format(stack))
 
         # Update status
@@ -182,11 +181,12 @@ def update_metadata(stack_id, host_ids=None):
         for host in stack.hosts.all():
             host_data = query_results[host.hostname]
 
-            if 'state' in host_data \
-                and host_data['state'] == driver.STATE_TERMINATED:
-
-                hosts_to_remove.append(host)
-                continue
+            #XXX - can't remember what this was for...there's an edge case
+            # i'm sure, so leaving this in until I remember
+            #if 'state' in host_data \
+            #    and host_data['state'] == driver.STATE_TERMINATED:
+            #    hosts_to_remove.append(host)
+            #    continue
 
             # FIXME: This is cloud provider specific. Should farm it out to
             # the right implementation
@@ -286,10 +286,17 @@ def tag_infrastructure(stack_id, host_ids=None):
         # Update status
         stack.set_status(tag_infrastructure.name, 
                          'Tagging stack infrastructure.')
+        
+        # for each set of hosts on a provider, use the driver implementation
+        # to tag the various infrastructure
+        driver_hosts = stack.get_driver_hosts_map()
+        
+        for driver, hosts in driver_hosts.iteritems():
+            volumes = stack.volumes.filter(host__in=hosts)
+            driver.tag_resources(stack, hosts, volumes)
 
-        driver = stack.get_driver()
-        volumes = Volume.objects.filter(host__in=hosts)
-        driver.tag_resources(stack, hosts, volumes)
+        stack.set_status(tag_infrastructure.name, 
+                         'Finished tagging stack infrastructure.')
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -317,8 +324,12 @@ def register_dns(stack_id, host_ids=None):
 
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
-        driver = stack.get_driver()
-        driver.register_dns(stack.get_hosts())
+        driver_hosts = stack.get_driver_hosts_map()
+        for driver, hosts in driver_hosts.iteritems():
+            driver.register_dns(hosts)
+
+        stack.set_status(register_dns.name, 
+                         'Finished registering hosts with DNS provider.')
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -478,6 +489,9 @@ def sync_all(stack_id):
                                         err_msg)
                                      )
 
+        stack.set_status(sync_all.name,
+                         'Finished synchronizing salt systems on all hosts.')
+
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
@@ -585,6 +599,9 @@ def provision_hosts(stack_id, host_ids=None):
                                 ', '.join(errors.keys()))
                     stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
                     raise StackTaskException(err_msg)
+
+        stack.set_status(provision_hosts.name,
+                         'Finished provisioning all hosts.')
         
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -632,14 +649,21 @@ def register_volume_delete(stack_id, host_ids=None):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
+        stack.set_status(finish_stack.name,
+                         'Registering volumes for deletion.')
+
         hosts = stack.get_hosts(host_ids) 
         if not hosts:
             return
 
         # use the stack driver to register all volumes on the hosts to
         # automatically delete after the host is terminated
-        driver = stack.get_driver()
-        driver.register_volumes_for_delete(hosts)
+        driver_hosts = stack.get_driver_hosts_map()
+        for driver, hosts in driver_hosts.iteritems():
+            driver.register_volumes_for_delete(hosts)
+
+        stack.set_status(finish_stack.name,
+                         'Finished registering volumes for deletion.')
 
     except Stack.DoesNotExist, e:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -660,6 +684,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
+        stack.set_status(finish_stack.name,
+                         'Destroying stack infrastructure.')
         hosts = stack.get_hosts(host_ids)
 
         # Build up the salt-cloud command
@@ -671,10 +697,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
             '--out=yaml',           # output in JSON
         ]
 
-        # if host ids is given, we're going to terminate only those hosts
+        # if host ids are given, we're going to terminate only those hosts
         if host_ids:
-            stack.set_status(Stack.DESTROYING, 
-                             'Destroying hosts {0!r}.'.format(hosts))
             logger.info('Destroying hosts {0!r} on stack {1!r}'.format(
                 hosts, 
                 stack
@@ -686,7 +710,6 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
         # or we'll destroy the entire stack by giving the map file with all
         # hosts defined
         else:
-            stack.set_status(Stack.DESTROYING, 'Destroying all hosts.')
             logger.info('Destroying complete stack: {0!r}'.format(stack))
 
             # Check for map file, and if it doesn't exist just remove
@@ -721,7 +744,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
 
         # delete hosts
         hosts.delete()
-        stack.set_status(Stack.OK, 'Hosts successfully deleted.')
+        stack.set_status(finish_stack.name,
+                         'Finished destroying stack infrastructure.')
 
         # optionally delete the stack as well
         if delete_stack:
@@ -754,8 +778,9 @@ def unregister_dns(stack_id, host_ids=None):
 
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
-        driver = stack.get_driver()
-        driver.unregister_dns(stack.get_hosts())
+        driver_hosts = stack.get_driver_hosts_map()
+        for driver, hosts in driver_hosts.iteritems():
+            driver.unregister_dns(hosts)
 
         stack.set_status(Stack.CONFIGURING,
                          'Finished unregistering hosts with DNS provider.')

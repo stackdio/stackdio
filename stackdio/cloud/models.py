@@ -168,6 +168,8 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
                 # update the yaml to include updated security group information
                 f.write(profile_yaml)
 
+    def get_driver(self):
+        return self.cloud_provider.get_driver()
 
 class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 
@@ -268,6 +270,6 @@ class SecurityGroup(TimeStampedModel, models.Model):
         Pulls the security groups using the cloud provider
         '''
         logger.debug('SecurityGroup::rules called...')
-        driver = self.cloud_provider.get_driver()
+        driver = self.get_driver()
         return driver.get_security_groups([self.name])[self.name]['rules']
 
