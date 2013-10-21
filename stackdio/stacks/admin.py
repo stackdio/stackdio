@@ -12,8 +12,9 @@ class StackAdmin(admin.ModelAdmin):
     list_display = [
         'title',
         'slug',
-        'user',
-        'cloud_provider',
+        'owner',
+        'blueprint',
+        #'cloud_provider',
         'created',
         'modified',
     ]

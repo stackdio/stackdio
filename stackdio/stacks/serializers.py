@@ -45,7 +45,7 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
 
 
 class StackSerializer(serializers.HyperlinkedModelSerializer):
-    user = serializers.Field()
+    owner = serializers.Field()
     hosts = serializers.HyperlinkedIdentityField(view_name='stack-hosts')
     host_count = serializers.Field(source='hosts.count')
     volumes = serializers.HyperlinkedIdentityField(view_name='stack-volumes')
@@ -57,8 +57,9 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id',
             'url',
-            'user',
-            'cloud_provider',
+            'owner',
+            'blueprint',
+            #'cloud_provider',
             'hosts',
             'host_count',
             'volumes',

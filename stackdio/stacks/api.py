@@ -34,6 +34,7 @@ from .serializers import (
 
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
+from blueprints.models import Blueprint
 
 logger = logging.getLogger(__name__)
 
@@ -56,27 +57,42 @@ class StackListAPIView(generics.ListCreateAPIView):
         machines
         '''
 
-        # make sure the user has a public key
+        # set some defaults
+        launch_stack = request.DATA.get('auto_launch', True)
+        provision_stack = request.DATA.get('auto_provision', True)
+
+        # make sure the user has a public key or they won't be able to SSH
+        # later
         if not request.user.settings.public_key:
             raise BadRequest('You have not added a public key to your user '
                              'profile and will not be able to SSH in to any '
                              'machines. Please set update your user profile '
                              'before continuing.')
 
-        # set some defaults
-        launch_stack = request.DATA.get('auto_launch', True)
-        provision_stack = request.DATA.get('auto_provision', True)
+        # check for blueprint
+        blueprint_id = request.DATA.pop('blueprint', '')
+        if not blueprint_id:
+            raise BadRequest('Blueprint is a required field.')
+
+        try:
+            blueprint_obj = Blueprint.objects.get(pk=blueprint_id,
+                                              owner=request.user)
+        except Blueprint.DoesNotExist:
+            raise BadRequest('Blueprint with id {0} does not '
+                             'exist.'.format(blueprint_id))
 
         # check for duplicates
         title = request.DATA.get('title')
-        if Stack.objects.filter(user=self.request.user, title=title).count():
+        if Stack.objects.filter(owner=self.request.user, title=title).count():
             raise ResourceConflict('A Stack already exists with the given '
                                    'title.')
 
         # create the stack object and foreign key objects
         try:
-            stack = Stack.objects.create_stack(request.user, request.DATA)
+            logger.debug(request.DATA)
+            stack = Stack.objects.create_stack(request.user, blueprint_obj, **request.DATA)
         except Exception, e:
+            logger.exception(e)
             raise BadRequest(str(e))
 
         if launch_stack:
@@ -118,9 +134,9 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         return get_object_or_404(Stack, id=self.kwargs.get('pk'),
-                                 user=self.request.user)
+                                 owner=self.request.user)
 
-    def delete(self, request, *args, **kwargs):
+    def delete_XXX(self, request, *args, **kwargs):
         '''
         Overriding the delete method to make sure the stack
         is taken offline before being deleted
@@ -282,7 +298,7 @@ class HostListAPIView(generics.ListAPIView):
     serializer_class = HostSerializer
 
     def get_queryset(self):
-        return Host.objects.filter(stack__user=self.request.user)
+        return Host.objects.filter(stack__owner=self.request.user)
 
 
 class StackHostsAPIView(HostListAPIView):
@@ -290,7 +306,7 @@ class StackHostsAPIView(HostListAPIView):
 
     def get_queryset(self):
         return Host.objects.filter(stack__pk=self.kwargs.get('pk'),
-                                   stack__user=self.request.user)
+                                   stack__owner=self.request.user)
 
     def put(self, request, *args, **kwargs):
         '''

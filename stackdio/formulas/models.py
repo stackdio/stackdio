@@ -139,6 +139,9 @@ class FormulaComponent(TitleSlugDescriptionModel):
     # please see the URL above on the documentation for Formulas
     sls_path = models.CharField(max_length=255)
 
+    def __unicode__(self):
+        return u'{0} : {1}'.format(self.title, self.sls_path)
+
 
 ##
 # Signal events and handlers 

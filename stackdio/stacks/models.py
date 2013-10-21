@@ -1,7 +1,6 @@
 import os
 import re
 import logging
-import collections
 import socket
 from decimal import Decimal
 
@@ -33,16 +32,16 @@ logger = logging.getLogger(__name__)
 HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
 
 def get_hosts_file_path(obj, filename):
-    return "stacks/{0}/{1}.hosts".format(obj.user.username, obj.slug)
+    return "stacks/{0}/{1}.hosts".format(obj.owner.username, obj.slug)
 
 def get_map_file_path(obj, filename):
-    return "stacks/{0}/{1}.map".format(obj.user.username, obj.slug)
+    return "stacks/{0}/{1}.map".format(obj.owner.username, obj.slug)
 
 def get_top_file_path(obj, filename):
     return "stack_{0}_top.sls".format(obj.id)
 
 def get_pillar_file_path(obj, filename):
-    return "stacks/{0}/{1}.pillar".format(obj.user.username, obj.slug)
+    return "stacks/{0}/{1}.pillar".format(obj.owner.username, obj.slug)
 
 
 class Level(object):
@@ -67,84 +66,70 @@ class StatusDetailModel(model_utils.models.StatusModel):
 class StackManager(models.Manager):
 
     @transaction.commit_on_success
-    def create_stack(self, user, data):
+    def create_stack(self, owner, blueprint, **data):
         '''
-        data is a JSON object that looks something like:
-
-        {
-            "title": "Abe's CDH4 Cluster",
-            "description": "Abe's personal cluster for testing CDH4 and stuff...",
-            "cloud_provider": 1,
-            "hosts": [
-                {
-                    "host_count": 1,
-                    "host_size": 1,         # what instance_size object to use
-                    "host_pattern": "foo",  # the naming pattern for the host's
-                                            # hostname, in this case the hostname
-                                            # would become 'foo-1'
-                    "cloud_profile": 1,     # what cloud_profile object to use
-                    "salt_roles": [1,2,3],  # what salt_roles to use
-                    "host_security_groups": [1,2,3...], # security group IDs
-                                                        # owned by the user
-                    "spot_config": {        # If you need spot instances
-                        "spot_price": "0.1"
-                    },
-                    "volumes": [            # list of volumes to attach to the
-                                            # launched hosts, creation of 
-                                            # volumes occurs automatically the
-                                            # first time we see the stack
-                                            # and volumes
-                        {
-                            "snapshot": 1,
-                            "device": "/dev/sdj",
-                            "mount_point": "/mnt/ebs"
-                        }
-                        ...
-                    ]
-                },
-                {
-                    ...
-                    more hosts
-                    ...
-                }
-            ]
-        }
         '''
 
-        ##
-        # validate incoming data
-        ##
+        title = data.get('title', '')
+        description = data.get('description', '')
 
+        if not title:
+            raise ValueError("Stack 'title' is a required field.")
+
+        # XXX - security groups should get automatically created based on
+        # the individual host access rules from the blueprint
         # security groups
-        for host in data['hosts']:
-            host_sg_ids = set([int(i) for i in host['host_security_groups']])
-            known_sg_ids = set([sg.id for sg in SecurityGroup.objects.filter(owner=user, pk__in=host_sg_ids)])
-            missing_sg_ids = list(host_sg_ids.difference(known_sg_ids))
+        #for host in blueprint.hosts.all():
+            #host_sg_ids = set([int(i) for i in host['host_security_groups']])
+            #known_sg_ids = set([sg.id for sg in SecurityGroup.objects.filter(owner=owner, pk__in=host_sg_ids)])
+            #missing_sg_ids = list(host_sg_ids.difference(known_sg_ids))
 
-            if missing_sg_ids:
-                raise Exception('The following host security group IDs do not '
-                                'exist: {0}'.format(missing_sg_ids))
+            #if missing_sg_ids:
+            #    raise Exception('The following host security group IDs do not '
+            #                    'exist: {0}'.format(missing_sg_ids))
 
-        cloud_provider = CloudProvider.objects.get(id=data['cloud_provider'])
-        stack_obj = self.model(title=data['title'],
-                               description=data.get('description'),
-                               user=user,
-                               cloud_provider=cloud_provider)
-        stack_obj.save()
+        #cloud_provider = CloudProvider.objects.get(id=data['cloud_provider'])
 
+        stack = self.model(owner=owner,
+                           blueprint=blueprint,
+                           title=title,
+                           description=description)
+                           #cloud_provider=cloud_provider)
+        stack.save()
 
-        if data['hosts']:
-            hosts_json = simplejson.dumps(data['hosts'], indent=4)
-            # Save the hosts file with the JSON so that we can relaunch the
-            # stack later after its hosts have been terminated
-            if not stack_obj.hosts_file:
-                stack_obj.hosts_file.save(stack_obj.slug+'.hosts', 
-                                          ContentFile(hosts_json))
-            else:
-                with open(stack_obj.hosts_file.path, 'w') as f:
-                    f.write(hosts_json)
+        # create host records on the stack based on the host definitions in
+        # the blueprint
+        for hostdef in blueprint.host_definitions.all():
 
-        return stack_obj
+            # TODO: security groups
+            # TODO: default security groups from provider/profile as set by admin
+
+            components = hostdef.formula_components.all()
+
+            for i in xrange(1, hostdef.count+1):
+                hostname = '{0}-{1}-{2}'.format(hostdef.prefix,
+                                                owner.username,
+                                                i)
+                host = stack.hosts.create(cloud_profile=hostdef.cloud_profile,
+                                          instance_size=hostdef.size,
+                                          availability_zone=hostdef.zone,
+                                          hostname=hostname)
+
+                # add formula components
+                host.formula_components.add(*components)
+
+                # TODO: Volumes
+                # TODO: Spot instances
+
+        # Generate configuration files for salt and salt-cloud
+        # NOTE: The order is important here. pillar must be available before
+        # the map file is rendered or else we'll miss important grains that
+        # need to be set at launch time
+        stack._generate_pillar_file()
+        stack._generate_top_file()
+        stack._generate_map_file()
+                
+        return stack
 
 
 class Stack(TimeStampedModel, TitleSlugDescriptionModel):
@@ -166,23 +151,28 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     RUNNING = 'running'
 
     class Meta:
-        unique_together = ('user', 'title')
+        unique_together = ('owner', 'title')
 
     # The "owner" of the stack and all of its infrastructure
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
 
+    # What blueprint did this stack derive from?
+    blueprint = models.ForeignKey('blueprints.Blueprint', related_name='stacks')
+
+    #XXX
     # The cloud provider this stack will use -- it may use any cloud profile
     # defined for that provider.
-    cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='stacks')
+    #cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='stacks')
 
+    #XXX
     # Where on disk a JSON representation of the hosts file is stored
-    hosts_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_hosts_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+    #hosts_file = DeletingFileField(
+    #    max_length=255,
+    #    upload_to=get_hosts_file_path,
+    #    null=True,
+    #    blank=True,
+    #    default=None,
+    #    storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
     # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(
@@ -221,8 +211,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def set_status(self, event, status, level=Level.INFO):
         self.history.create(event=event, status=status, level=level)
 
-    def get_driver(self):
-        return self.cloud_provider.get_driver()
+    # XXX
+    #def get_driver(self):
+    #    return self.cloud_provider.get_driver()
 
     def get_hosts(self, host_ids=None):
         '''
@@ -232,7 +223,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             return self.hosts.all()
         return self.hosts.filter(id__in=host_ids)
     
-    def create_hosts(self):
+    #XXX
+    def create_hosts_XXX(self):
         '''
         See StackManager.create_stack for host data format requirements and
         how the Stack.hosts_file is populated. 
@@ -305,7 +297,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
             # groups set by the user on the host
             host_groups = list(SecurityGroup.objects.filter(
-                owner=self.user,
+                owner=self.owner,
                 pk__in=security_group_ids
             ))
 
@@ -333,7 +325,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     instance_size=host_size_obj,
                     availability_zone=availability_zone_obj,
                     hostname='{0}-{1}-{2}'.format(host_pattern, 
-                                               self.user.username, 
+                                               self.owner.username, 
                                                i),
                 )
 
@@ -394,7 +386,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # the master will always be this box?
         master = socket.getfqdn()
 
-        profiles = collections.defaultdict(list)
+        profiles = {}
 
         hosts = self.hosts.all()
         cluster_size = len(hosts)
@@ -406,7 +398,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 cloud_provider.yaml)[cloud_provider.slug]
 
             # pull various stuff we need for a host
-            roles = [r.sls_path for r in host.roles.all()]
+            roles = [c.sls_path for c in host.formula_components.all()]
             instance_size = host.instance_size.title
             security_groups = set([
                 sg.name for sg in host.security_groups.all()
@@ -477,9 +469,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     'spot_price': str(host.sir_price) # convert to string
                 }
 
-            profiles[host.cloud_profile.slug].append(host_metadata)
+            profiles.setdefault(host.cloud_profile.slug, []).append(host_metadata)
 
-        map_file_yaml = yaml.safe_dump(dict(profiles),
+        map_file_yaml = yaml.safe_dump(profiles,
                                        default_flow_style=False)
 
         if not self.map_file:
@@ -498,18 +490,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             'core.*',
         ]
 
-        # find the distinct set of roles for this stack
-        roles = set()
+        # find the distinct set of formula components for this stack
+        components = set()
         for host in self.hosts.all():
-            roles.update(list(host.roles.all()))
+            components.update(list(host.formula_components.all()))
 
         # build up the top file using compound matching based
-        # on the stack id and roles
-        for role in roles:
-            matcher = stack_match + ' and G@roles:{0}'.format(role.sls_path)
+        # on the stack id and components
+        for component in components:
+            matcher = stack_match + ' and G@roles:{0}'.format(component.sls_path)
             top_file_data[matcher] = [
                 {'match': 'compound'},
-                role.sls_path
+                component.sls_path
             ]
 
         top_file_data = {
@@ -525,8 +517,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
     def _generate_pillar_file(self):
         pillar_file_yaml = yaml.safe_dump({
-            'stackdio_username': self.user.username,
-            'stackdio_publickey': self.user.settings.public_key,
+            'stackdio_username': self.owner.username,
+            'stackdio_publickey': self.owner.settings.public_key,
         }, default_flow_style=False)
 
         if not self.pillar_file:
@@ -636,15 +628,21 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     stack = models.ForeignKey('Stack',
                               related_name='hosts')
+
     cloud_profile = models.ForeignKey('cloud.CloudProfile',
                                       related_name='hosts')
+
     instance_size = models.ForeignKey('cloud.CloudInstanceSize',
                                       related_name='hosts')
+
     availability_zone = models.ForeignKey('cloud.CloudZone',
                                       related_name='hosts')
-    roles = models.ManyToManyField('stacks.SaltRole',
-                                   related_name='hosts')
+
+    formula_components = models.ManyToManyField('formulas.FormulaComponent',
+                                                related_name='hosts')
+
     hostname = models.CharField(max_length=64)
+
     security_groups = models.ManyToManyField('cloud.SecurityGroup',
                                              related_name='hosts')
     
