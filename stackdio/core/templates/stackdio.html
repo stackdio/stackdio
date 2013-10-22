@@ -215,7 +215,14 @@
                         <td data-bind="text: $data.id"></td>
                         <td><a href="#" data-bind="text: $data.title, click: $root.stack.showStackDetails"></a></td>
                         <td data-bind="text: $data.description"></td>
-                        <td><a href='#' data-bind="bootstrapPopover : {content : $root.stack.popoverBuilder($data) }, text: 'View (' + $data.history.length + ') messages'"></a></td>
+                        <td>
+                            <a href='#' 
+                               data-bind="bootstrapPopover: {
+                                            content: $root.stack.popoverBuilder($data),
+                                            title: 'Stack History'
+                                          },
+                                          text: 'View (' + $data.history.length + ') messages'"></a>
+                        </td>
                         <td>
                             <div class="btn-group">
                                 <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
@@ -766,6 +773,98 @@
                     <button class="btn" data-bind="click: $root.account.closeAccountForm">Close</button>
                     <button class="btn btn-primary" data-bind="click: $root.account.addAccount">Save</button>
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 
+        ======================================================================
+        F O R M U L A   L I S T
+        ======================================================================
+    -->
+    <div id="formula-binding-target" class="hide" data-bind='visible: currentSection() === "Formula"'>
+        <div class="view">
+            <div class="btn-group pull-right">
+                <button class="btn btn-primary" data-bind="click: $root.formula.showFormulaForm">Import Formula</button>
+            </div>
+
+            <table id="profiles" class="table table-striped data-grid">
+                <thead>
+                    <tr>
+                        <th style="width:20%">Title</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th style="width:5%"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.Formulae">
+                    <tr>
+                        <td>
+                            <a href='#' 
+                               data-bind="bootstrapPopover: {
+                                            content: $root.formula.popoverBuilder($data),
+                                            title: 'Formula Components'
+                                          },
+                                          text: title"></a>
+                        </td>
+                        <td data-bind="text: description"></td>
+                        <td data-bind="text: status_detail"></td>
+                        <td>
+                            <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="#" data-bind="text:'Share', click: $root.formula.share"></a>
+                                    </li>
+                                    <li>
+                                        <a href="#" data-bind="text:'Delete', click: $root.formula.delete"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 
+            ======================================================================
+            F O R M U L A   D E T A I L
+            ======================================================================
+        -->
+        <div id="formula-form-container" title="Formula" class="stackd-form form-small">
+            <form id="formula-form">
+            <div class="modal-body">
+                <div class="span2"></div>
+                <div class="span4 no-margin">
+                    <input id="formula_url" type="text" class="input-block-level" placeholder="Enter repository URL...">
+                </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-danger" data-bind="click: $root.formula.closeFormulaForm">Cancel</button>
+                <button class="btn btn-primary" data-bind="click: $root.formula.importFormula">Import</button>
+            </div>
+            </form>
+        </div>
+        <!-- 
+            ======================================================================
+            F O R M U L A   F O R M
+            ======================================================================
+        -->
+        <div id="formula-form-container" title="Import Formula" class="stackd-form form-small">
+            <form id="formula-form">
+            <div class="modal-body">
+                <div class="span2"></div>
+                <div class="span4 no-margin">
+                    <input id="formula_url" type="text" class="input-block-level" placeholder="Enter repository URL...">
+                </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-danger" data-bind="click: $root.formula.closeFormulaForm">Cancel</button>
+                <button class="btn btn-primary" data-bind="click: $root.formula.importFormula">Import</button>
+            </div>
             </form>
         </div>
     </div>

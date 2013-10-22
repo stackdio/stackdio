@@ -49,6 +49,9 @@ define(function () {
     var Role = function () {};
     Role.prototype = new Model();
 
+    var Formula = function () {};
+    Formula.prototype = new Model();
+
     return {
         SecurityGroupRule: SecurityGroupRule,
         AWSSecurityGroup: AWSSecurityGroup,
@@ -63,6 +66,7 @@ define(function () {
         Snapshot: Snapshot,
         NewHost: NewHost,
         NewHostVolume: NewHostVolume,
+        Formula: Formula,
         Role: Role
     }
 });

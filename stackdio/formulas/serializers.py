@@ -30,6 +30,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Formula 
         fields = (
+            'id',
             'url',
             'title',
             'description',

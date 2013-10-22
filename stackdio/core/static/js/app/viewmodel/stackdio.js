@@ -15,9 +15,10 @@ define([
         "app/viewmodel/volumes",
         "app/viewmodel/snapshots",
         "app/viewmodel/securityGroup",
+        "app/viewmodel/formulae",
         "app/viewmodel/stacks"
     ],
-    function (Q, moment, jui, ko, typeahead, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, stackVM) {
+    function (Q, moment, jui, ko, typeahead, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, formulaVM, stackVM) {
 
         function stackdioModel() {
             var self = this;
@@ -28,7 +29,7 @@ define([
             self.moment = moment;
             self.isSuperUser = ko.observable(stackdio.settings.superuser);
 
-            self.sections = ['Stacks', 'Security', 'Accounts', 'Profiles', 'Snapshots'];
+            self.sections = ['Stacks', 'Formula', 'Blueprints', 'Security', 'Accounts', 'Profiles', 'Snapshots'];
             self.currentSection = ko.observable();
 
             self.securityGroup = new securityGroupVM();
@@ -37,6 +38,7 @@ define([
             self.volume = new volumeVM();
             self.snapshot = new snapshotVM();
             self.stack = new stackVM();
+            self.formula = new formulaVM();
 
             /*
              *  ==================================================================================
@@ -126,6 +128,7 @@ define([
                 });
             API.InstanceSizes.load();
             API.Roles.load();
+            API.Formulae.load();
 
             API.ProviderTypes.load()
                 .then(API.Zones.load)
@@ -144,7 +147,7 @@ define([
                     $("div[class='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection("Stacks");
+                    self.gotoSection("Formula");
 
                     // self.showMessage("#alert-default-security-groups");
                 })
@@ -184,7 +187,7 @@ define([
                 options.trigger = "click";
                 options.placement = "bottom";
                 options.html = true;
-                options.title = "Stack History";
+                // options.title = "Stack History";
                 $(element).popover(options);
             }
         };

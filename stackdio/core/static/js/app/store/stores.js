@@ -16,6 +16,7 @@ define(["knockout"], function (ko) {
         Snapshots : ko.observableArray([]),
         HostMetadata : ko.observableArray([]),
         Stacks : ko.observableArray([]),
+        Formulae : ko.observableArray([]),
         StackHosts : ko.observableArray([])
     }
 });
