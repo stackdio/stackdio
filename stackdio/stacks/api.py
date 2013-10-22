@@ -66,10 +66,10 @@ class StackListAPIView(generics.ListCreateAPIView):
         if not request.user.settings.public_key:
             raise BadRequest('You have not added a public key to your user '
                              'profile and will not be able to SSH in to any '
-                             'machines. Please set update your user profile '
+                             'machines. Please update your user profile '
                              'before continuing.')
 
-        # check for blueprint
+        # check for required blueprint
         blueprint_id = request.DATA.pop('blueprint', '')
         if not blueprint_id:
             raise BadRequest('Blueprint is a required field.')
