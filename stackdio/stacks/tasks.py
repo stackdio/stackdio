@@ -16,6 +16,7 @@ from stacks.models import (
     Stack,
     Level,
 )
+from cloud.models import SecurityGroup
 
 logger = get_task_logger(__name__)
 
@@ -680,12 +681,14 @@ def register_volume_delete(stack_id, host_ids=None):
 def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
     '''
     Destroy the given stack id or a subset of the stack if host_ids
-    is set.
+    is set. After all hosts have been destroyed we must also clean
+    up any managed security groups on the stack.
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
         stack.set_status(finish_stack.name,
-                         'Destroying stack infrastructure.')
+                         'Destroying stack infrastructure. This could '
+                         'take a while.')
         hosts = stack.get_hosts(host_ids)
 
         # Build up the salt-cloud command
@@ -704,7 +707,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
                 stack
             ))
 
-            # add the machines to destory on to the cmd_args list
+            # add the machines to destroy on to the cmd_args list
             cmd_args.extend([h.hostname for h in hosts])
 
         # or we'll destroy the entire stack by giving the map file with all
@@ -741,6 +744,21 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
                                         stack_id, 
                                         err_msg)
                                      )
+        
+        # wait for all hosts to finish terminating so we can
+        # destroy security groups
+        driver_hosts = stack.get_driver_hosts_map()
+        for driver, hosts in driver_hosts.iteritems():
+            security_groups = SecurityGroup.objects.filter(hosts__in=hosts,
+                                                           owner=stack.owner)
+            if security_groups.count():
+                ok, result = driver.wait_for_state(hosts, driver.STATE_TERMINATED)
+                if not ok:
+                    stack.set_status(Stack.ERROR, result)
+                    raise StackTaskException(err_msg)
+
+                for security_group in security_groups:
+                    driver.delete_security_group(security_group.name)
 
         # delete hosts
         hosts.delete()

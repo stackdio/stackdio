@@ -153,7 +153,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         return self.host_definitions.count()
 
 
-class BlueprintHostDefinition(TimeStampedModel):
+class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
 
     class Meta:
         verbose_name_plural = 'host definitions'
@@ -221,7 +221,7 @@ class BlueprintProperty(TimeStampedModel):
         )
 
 
-class BlueprintAccessRule(TimeStampedModel):
+class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
     '''
     Access rules are a white list of rules for a host that defines
     what protocols and ports are available for the corresponding
@@ -258,3 +258,4 @@ class BlueprintAccessRule(TimeStampedModel):
             self.to_port,
             self.rule
         )
+

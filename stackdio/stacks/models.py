@@ -76,20 +76,6 @@ class StackManager(models.Manager):
         if not title:
             raise ValueError("Stack 'title' is a required field.")
 
-        # XXX - security groups should get automatically created based on
-        # the individual host access rules from the blueprint
-        # security groups
-        #for host in blueprint.hosts.all():
-            #host_sg_ids = set([int(i) for i in host['host_security_groups']])
-            #known_sg_ids = set([sg.id for sg in SecurityGroup.objects.filter(owner=owner, pk__in=host_sg_ids)])
-            #missing_sg_ids = list(host_sg_ids.difference(known_sg_ids))
-
-            #if missing_sg_ids:
-            #    raise Exception('The following host security group IDs do not '
-            #                    'exist: {0}'.format(missing_sg_ids))
-
-        #cloud_provider = CloudProvider.objects.get(id=data['cloud_provider'])
-
         stack = self.model(owner=owner,
                            blueprint=blueprint,
                            title=title,
@@ -101,11 +87,38 @@ class StackManager(models.Manager):
         # the blueprint
         for hostdef in blueprint.host_definitions.all():
 
-            # TODO: security groups
-            # TODO: default security groups from provider/profile as set by admin
-
+            # all components defined in the host definition
             components = hostdef.formula_components.all()
 
+            # cloud provider and driver for the host definition
+            cloud_provider = hostdef.cloud_profile.cloud_provider
+            driver = cloud_provider.get_driver()
+
+            # create the managed security group for each host definition
+            # and assign the rules to the group
+            sg_name='{0}-stackdio-id-{1}'.format(hostdef.prefix, stack.pk)
+            sg_description='stackd.io managed security group'
+            sg_id = driver.create_security_group(sg_name, sg_description)
+
+            for access_rule in hostdef.access_rules.all():
+                driver.authorize_security_group(sg_name, {
+                    'protocol': access_rule.protocol,
+                    'from_port': access_rule.from_port,
+                    'to_port': access_rule.to_port,
+                    'rule': access_rule.rule,
+                })
+
+            # create a security group object that we can use for tracking
+            security_group = SecurityGroup.objects.create(
+                owner=owner,
+                cloud_provider=cloud_provider,
+                name=sg_name,
+                description=sg_description,
+                group_id=sg_id
+            )
+
+            # iterate over the host definition count and create individual
+            # host records on the stack
             for i in xrange(1, hostdef.count+1):
                 hostname = '{0}-{1}-{2}'.format(hostdef.prefix,
                                                 owner.username,
@@ -123,6 +136,7 @@ class StackManager(models.Manager):
 
                 # set security groups
                 host.security_groups.add(*provider_groups)
+                host.security_groups.add(security_group)
 
                 # add formula components
                 host.formula_components.add(*components)

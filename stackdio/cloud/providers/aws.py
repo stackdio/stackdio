@@ -687,6 +687,22 @@ class AWSCloudProvider(BaseCloudProvider):
             sleep(interval)
             timeout -= interval
 
+    def wait_for_state(self, hosts, state):
+        try:
+            instances = self._wait(
+                self._wait_for_state,
+                fun_args=(hosts, state)
+            )
+            return (True, instances)
+        except MaxFailuresException, e:
+            err_msg = 'Max number of failures reached while waiting ' \
+                      'for state: {0}'.format(state)
+        except TimeoutException, e:
+            err_msg = 'Timeout reached while waiting for state: ' \
+                      '{0}'.format(state)
+
+        return (False, err_msg)
+        
     def _wait_for_state(self, hosts, state):
         '''
         Checks if all hosts are in the given state. Returns a 2-element tuple
@@ -727,10 +743,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # Wait for success_state
         try:
-            instances = self._wait(
-                self._wait_for_state,
-                fun_args=(hosts, success_state)
-            )
+            self.wait_for_state(hosts, success_state)
             return True
         except MaxFailuresException, e:
             logger.error('Max number of failures reached while waiting '
