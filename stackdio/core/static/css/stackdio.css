@@ -34,6 +34,10 @@ form {
     color: #555555;
 }
 
+.public-formula {
+    background-color: #eee; 
+}
+
 .popover-content {
     padding: 9px 14px;
     max-height: 450px;

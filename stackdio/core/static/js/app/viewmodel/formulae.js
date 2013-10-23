@@ -30,8 +30,8 @@ define(["knockout",
                     })
             };
 
-            self.share = function () {
-                // return API.Formula.load();
+            self.share = function (formula) {
+                return API.Formulae.update(formula);
             };
 
             self.popoverBuilder = function (formula) { 
@@ -48,7 +48,6 @@ define(["knockout",
                     content.push('</div>');
 
                     return content.join('');
-
                 }).join('');
             };
 

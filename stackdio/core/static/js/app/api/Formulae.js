@@ -79,6 +79,27 @@ define(["lib/q", "app/store/stores", "app/model/models"], function (Q, stores, m
             });
 
             return deferred.promise;
+        },
+        update: function (formula) {
+            var deferred = Q.defer();
+            var self = this;
+
+            $.ajax({
+                url: '/api/formulas/' + formula.id,
+                type: 'PUT',
+                data: JSON.stringify({public: !formula.public}),
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (data, status, response) {
+                    self.load();
+                    deferred.resolve();
+                }
+            });
+
+            return deferred.promise;
         }
     }
 });
