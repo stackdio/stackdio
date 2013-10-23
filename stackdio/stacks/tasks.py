@@ -759,6 +759,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
 
                 for security_group in security_groups:
                     driver.delete_security_group(security_group.name)
+                    security_group.delete()
 
         # delete hosts
         hosts.delete()
