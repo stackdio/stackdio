@@ -16,6 +16,14 @@ from .utils import get_cloud_provider_choices
 
 logger = logging.getLogger(__name__)
 
+FILESYSTEM_CHOICES = (
+    ('ext2', 'ext2'),
+    ('ext3', 'ext3'),
+    ('ext4', 'ext4'),
+    ('fuse', 'fuse'),
+    ('xfs', 'xfs'),
+)
+
 def get_config_file_path(obj, filename):
     return obj.slug+'.conf'
 
@@ -187,6 +195,9 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
     # volume size, but mainly a useful hint to the user
     size_in_gb = models.IntegerField()
 
+    # the type of file system the volume uses
+    filesystem_type = models.CharField(max_length=16,
+                                       choices=FILESYSTEM_CHOICES)
 
 class CloudZone(TitleSlugDescriptionModel):
 
@@ -270,6 +281,6 @@ class SecurityGroup(TimeStampedModel, models.Model):
         Pulls the security groups using the cloud provider
         '''
         logger.debug('SecurityGroup::rules called...')
-        driver = self.get_driver()
+        driver = self.cloud_provider.get_driver()
         return driver.get_security_groups([self.name])[self.name]['rules']
 

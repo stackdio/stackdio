@@ -23,7 +23,7 @@ class VolumeListAPIView(generics.ListAPIView):
     serializer_class = VolumeSerializer
 
     def get_queryset(self):
-        return Volume.objects.filter(stack__user=self.request.user)
+        return Volume.objects.filter(stack__owner=self.request.user)
 
 
 class VolumeDetailAPIView(generics.RetrieveAPIView):
@@ -33,5 +33,5 @@ class VolumeDetailAPIView(generics.RetrieveAPIView):
     def get_object(self):
         return get_object_or_404(Volume,
                                  pk=self.kwargs.get('pk'),
-                                 stack__user=self.request.user)
+                                 stack__owner=self.request.user)
 

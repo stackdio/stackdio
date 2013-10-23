@@ -10,7 +10,9 @@ from core.exceptions import BadRequest
 
 from .serializers import BlueprintSerializer
 from .models import Blueprint
+
 from formulas.models import FormulaComponent
+from cloud.models import Snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +106,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                             'Formula component with id {0} does not exist.'.format(component_id)
                         )
 
+                # Validating access rules
                 if 'access_rules' in host and isinstance(host['access_rules'], list):
                     rules_ok = True
                     for rule in host['access_rules']:
@@ -130,7 +133,31 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                         if not rules_ok:
                             break
 
-                if not host_ok or not rules_ok:
+                # Validating volumes
+                if 'volumes' in host and isinstance(host['volumes'], list):
+                    volumes_ok = True
+                    for volume in host['volumes']:
+                        if 'device' not in volume:
+                            errors.setdefault('volumes', []).append(
+                                'volumes must have a device field.'                
+                            )
+                            volumes_ok = False
+                        if 'mount_point' not in volume:
+                            errors.setdefault('volumes', []).append(
+                                'volumes must have a mount_point field.'                
+                            )
+                            volumes_ok = False
+                        if 'snapshot' not in volume:
+                            errors.setdefault('volumes', []).append(
+                                'volumes must have a snapshot field.'                
+                            )
+                            volumes_ok = False
+                        else:
+                            volume['snapshot'] = Snapshot.objects.get(pk=volume['snapshot'])
+                        if not volumes_ok:
+                            break
+
+                if not host_ok or not rules_ok or not volumes_ok:
                     break
 
         if errors:

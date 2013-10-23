@@ -25,6 +25,9 @@ class Migration(SchemaMigration):
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
+            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
             ('blueprint', self.gf('django.db.models.fields.related.ForeignKey')(related_name='host_definitions', to=orm['blueprints.Blueprint'])),
             ('cloud_profile', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudProfile'])),
             ('count', self.gf('django.db.models.fields.IntegerField')()),
@@ -61,6 +64,9 @@ class Migration(SchemaMigration):
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
             ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
+            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
             ('host', self.gf('django.db.models.fields.related.ForeignKey')(related_name='access_rules', to=orm['blueprints.BlueprintHostDefinition'])),
             ('protocol', self.gf('django.db.models.fields.CharField')(max_length=4)),
             ('from_port', self.gf('django.db.models.fields.IntegerField')()),
@@ -68,6 +74,21 @@ class Migration(SchemaMigration):
             ('rule', self.gf('django.db.models.fields.CharField')(max_length=255)),
         ))
         db.send_create_signal(u'blueprints', ['BlueprintAccessRule'])
+
+        # Adding model 'BlueprintVolume'
+        db.create_table(u'blueprints_blueprintvolume', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
+            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('host', self.gf('django.db.models.fields.related.ForeignKey')(related_name='volumes', to=orm['blueprints.BlueprintHostDefinition'])),
+            ('device', self.gf('django.db.models.fields.CharField')(max_length=32)),
+            ('mount_point', self.gf('django.db.models.fields.CharField')(max_length=64)),
+            ('snapshot', self.gf('django.db.models.fields.related.ForeignKey')(related_name='host_definitions', to=orm['cloud.Snapshot'])),
+        ))
+        db.send_create_signal(u'blueprints', ['BlueprintVolume'])
 
 
     def backwards(self, orm):
@@ -88,6 +109,9 @@ class Migration(SchemaMigration):
 
         # Deleting model 'BlueprintAccessRule'
         db.delete_table(u'blueprints_blueprintaccessrule')
+
+        # Deleting model 'BlueprintVolume'
+        db.delete_table(u'blueprints_blueprintvolume')
 
 
     models = {
@@ -133,12 +157,15 @@ class Migration(SchemaMigration):
         u'blueprints.blueprintaccessrule': {
             'Meta': {'object_name': 'BlueprintAccessRule'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'from_port': ('django.db.models.fields.IntegerField', [], {}),
             'host': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'access_rules'", 'to': u"orm['blueprints.BlueprintHostDefinition']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'protocol': ('django.db.models.fields.CharField', [], {'max_length': '4'}),
             'rule': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'to_port': ('django.db.models.fields.IntegerField', [], {})
         },
         u'blueprints.blueprinthostdefinition': {
@@ -147,11 +174,14 @@ class Migration(SchemaMigration):
             'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProfile']"}),
             'count': ('django.db.models.fields.IntegerField', [], {}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'formula_components': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['formulas.FormulaComponent']", 'symmetrical': 'False'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'prefix': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'zone': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudZone']"})
         },
         u'blueprints.blueprintproperty': {
@@ -162,6 +192,19 @@ class Migration(SchemaMigration):
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'value': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        u'blueprints.blueprintvolume': {
+            'Meta': {'object_name': 'BlueprintVolume'},
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'device': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'host': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'volumes'", 'to': u"orm['blueprints.BlueprintHostDefinition']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'mount_point': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'snapshot': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'host_definitions'", 'to': u"orm['cloud.Snapshot']"}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'cloud.cloudinstancesize': {
             'Meta': {'ordering': "['title']", 'object_name': 'CloudInstanceSize'},
@@ -211,6 +254,19 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'provider_type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProviderType']"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        u'cloud.snapshot': {
+            'Meta': {'unique_together': "(('snapshot_id', 'cloud_provider'),)", 'object_name': 'Snapshot'},
+            'cloud_provider': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'snapshots'", 'to': u"orm['cloud.CloudProvider']"}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'filesystem_type': ('django.db.models.fields.CharField', [], {'max_length': '16'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'size_in_gb': ('django.db.models.fields.IntegerField', [], {}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'snapshot_id': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'contenttypes.contenttype': {

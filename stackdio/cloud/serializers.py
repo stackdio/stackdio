@@ -185,6 +185,7 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
             'cloud_provider',
             'snapshot_id',
             'size_in_gb',
+            'filesystem_type',
         )
 
     def validate(self, attrs):

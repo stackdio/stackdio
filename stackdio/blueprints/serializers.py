@@ -5,12 +5,7 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from .models import (
-    Blueprint,
-    BlueprintProperty,
-    BlueprintAccessRule,
-    BlueprintHostDefinition,
-)
+from . import models
 
 from formulas.serializers import FormulaComponentSerializer
 
@@ -20,7 +15,7 @@ logger = logging.getLogger(__name__)
 class BlueprintPropertySerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = BlueprintProperty
+        model = models.BlueprintProperty
         fields = (
             'name',
             'value',
@@ -30,7 +25,7 @@ class BlueprintPropertySerializer(serializers.ModelSerializer):
 class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = BlueprintAccessRule
+        model = models.BlueprintAccessRule
         fields = (
             'protocol',
             'from_port',
@@ -39,13 +34,25 @@ class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
         )
 
 
+class BlueprintVolumeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.BlueprintVolume
+        fields = (
+            'device',
+            'mount_point',
+            'snapshot',
+        )
+
+
 class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
     formula_components = FormulaComponentSerializer(many=True)
     access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
+    volumes = BlueprintVolumeSerializer(many=True)
 
     class Meta:
-        model = BlueprintHostDefinition
+        model = models.BlueprintHostDefinition
         fields = (
             'cloud_profile',
             'count',
@@ -54,6 +61,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
             'zone',
             'formula_components',
             'access_rules',
+            'volumes',
         )
 
 
@@ -63,7 +71,7 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
     host_definitions = BlueprintHostDefinitionSerializer(many=True, required=False)
 
     class Meta:
-        model = Blueprint
+        model = models.Blueprint
         fields = (
             'title',
             'description',

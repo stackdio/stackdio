@@ -59,6 +59,7 @@ class SnapshotAdmin(admin.ModelAdmin):
         'cloud_provider',
         'snapshot_id',
         'size_in_gb',
+        'filesystem_type',
     ]
 admin.site.register(Snapshot, SnapshotAdmin)
 

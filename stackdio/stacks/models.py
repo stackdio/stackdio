@@ -25,6 +25,7 @@ from cloud.models import (
     CloudInstanceSize,
     SecurityGroup
 )
+from volumes.models import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +142,19 @@ class StackManager(models.Manager):
                 # add formula components
                 host.formula_components.add(*components)
 
-                # TODO: Volumes
+                for volumedef in hostdef.volumes.all():
+                    logger.debug(volumedef)
+                    logger.debug(stack)
+                    logger.debug(host)
+                    Volume.objects.create(
+                        stack=stack,
+                        host=host, 
+                        snapshot=volumedef.snapshot,
+                        hostname=hostname,
+                        device=volumedef.device,
+                        mount_point=volumedef.mount_point
+                    )
+
                 # TODO: Spot instances
 
         # Generate configuration files for salt and salt-cloud
@@ -457,6 +470,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 v = {
                     'device': vol.device,
                     'mount_point': vol.mount_point,
+                    'filesystem_type': vol.snapshot.filesystem_type,
                 }
                 if vol.volume_id:
                     v['volume_id'] = vol.volume_id

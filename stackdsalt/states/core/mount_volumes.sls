@@ -15,7 +15,7 @@
     - mounted 
     - order: 1
     - device: {{ device_name }}
-    - fstype: ''
+    - fstype: {{ vol['filesystem_type'] }}
     - mkmnt: True
     - persist: False
 {% endif %}

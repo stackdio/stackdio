@@ -13,6 +13,7 @@ from cloud.models import (
     CloudProfile,
     CloudInstanceSize,
     CloudZone,
+    Snapshot
 )
 from formulas.models import FormulaComponent
 
@@ -20,6 +21,14 @@ PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
     ('udp', 'UDP'),
     ('icmp', 'ICMP'),
+]
+
+DEVICE_ID_CHOICES = [
+    ('/dev/xvdj', '/dev/xvdj'),
+    ('/dev/xvdk', '/dev/xvdk'),
+    ('/dev/xvdl', '/dev/xvdl'),
+    ('/dev/xvdm', '/dev/xvdm'),
+    ('/dev/xvdn', '/dev/xvdn'),
 ]
 
 logger = logging.getLogger(__name__)
@@ -47,11 +56,12 @@ class BlueprintManager(models.Manager):
             "hosts": [
                 {
                     "count": 1,
-                    "size": 1,         # what instance_size object to use
-                    "pattern": "foo",  # the naming pattern for the host's
-                                            # hostname, in this case the hostname
-                                            # would become 'foo-1'
-                    "cloud_profile": 1,     # what cloud_profile object to use
+                    "size": 1,          # what instance_size id to use
+                    "prefix": "foo",    # the naming pattern for the host's
+                                        # hostname, in this case the hostname
+                                        # would become 'foo-1'
+                    "zone": 1,          # availability zone id
+                    "cloud_profile": 1, # what cloud_profile id to use
                     "access_rules": [
                         {
                             "protocol": "tcp | udp | icmp",
@@ -69,6 +79,18 @@ class BlueprintManager(models.Manager):
                         ...
                         more rules
                         ...
+                        },
+                    ],
+                    "volumes": [
+                        {
+                            "device": "/dev/xvdj",
+                            "mount_point": "/mnt/ebs1",
+                            "snapshot": 1
+                        },
+                        {
+                            "device": "/dev/xvdk",
+                            "mount_point": "/mnt/ebs2",
+                            "snapshot": 1
                         }
                     ],
                     "formula_components": [1,2,3...]  # formula components to attach to this host
@@ -114,12 +136,22 @@ class BlueprintManager(models.Manager):
                     formula__owner=owner)
                 host_obj.formula_components.add(component_obj)
 
+            # build out the access rules
             for access_rule in host.get('access_rules', []):
                 host_obj.access_rules.create(
                     protocol=access_rule['protocol'],
                     from_port=access_rule['from_port'],
                     to_port=access_rule['to_port'],
                     rule=access_rule['rule']
+                )
+
+            # build out the volumes
+            for volume in host.get('volumes', []):
+                logger.debug(volume)
+                host_obj.volumes.create(
+                    device=volume['device'],
+                    mount_point=volume['mount_point'],
+                    snapshot=volume['snapshot']
                 )
 
         return blueprint
@@ -258,4 +290,29 @@ class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
             self.to_port,
             self.rule
         )
+
+
+class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
+    '''
+    '''
+
+    class Meta:
+        verbose_name_plural = 'volumes'
+
+    # The host definition this access rule applies to
+    host = models.ForeignKey('blueprints.BlueprintHostDefinition',
+                             related_name='volumes')
+
+    # The device that the volume should be attached to when a stack is created
+    device = models.CharField(max_length=32, choices=DEVICE_ID_CHOICES)
+
+    # Where the volume will be mounted after created and attached
+    mount_point = models.CharField(max_length=64)
+
+    # The snapshot ID to create the volume from
+    snapshot = models.ForeignKey('cloud.Snapshot',
+                                 related_name='host_definitions')
+
+    def __unicode__(self):
+        return u'BlueprintVolume: {0}'.format(self.pk)
 
