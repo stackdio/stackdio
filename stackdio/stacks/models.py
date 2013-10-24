@@ -81,8 +81,16 @@ class StackManager(models.Manager):
                            blueprint=blueprint,
                            title=title,
                            description=description)
-                           #cloud_provider=cloud_provider)
         stack.save()
+
+        # manage the properties
+        properties = {}
+        for blueprint_prop in blueprint.properties.all():
+            properties[blueprint_prop.name] = blueprint_prop.value
+        for prop in data.get('properties', []):
+            properties[prop['name']] = prop['value']
+        for name, value in properties.iteritems():
+            stack.properties.create(name=name, value=value)
 
         # create host records on the stack based on the host definitions in
         # the blueprint
@@ -567,10 +575,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 f.write(top_file_yaml)
 
     def _generate_pillar_file(self):
-        pillar_file_yaml = yaml.safe_dump({
+        pillar_props = {
             'stackdio_username': self.owner.username,
             'stackdio_publickey': self.owner.settings.public_key,
-        }, default_flow_style=False)
+        }
+        for prop in self.properties.all():
+            pillar_props[prop.name] = prop.value
+
+        pillar_file_yaml = yaml.safe_dump(pillar_props,
+                                          default_flow_style=False)
 
         if not self.pillar_file:
             self.pillar_file.save('{0}.pillar'.format(self.slug), 
@@ -737,3 +750,33 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     def get_driver(self):
         return self.cloud_profile.get_driver()
+
+
+class StackProperty(TimeStampedModel):
+    '''
+    Stack properties, similar to blueprint properties, contain the key/value
+    pairs of properties to be written as pillar data. We're storing a set of
+    the properties on stacks so that users may add, remove, or otherwise
+    override the properties defined on a blueprint before the stack is created.
+    '''
+
+    class Meta:
+        unique_together = ('stack', 'name')
+        verbose_name_plural = 'properties'
+
+    # The stack object this property applies to
+    stack = models.ForeignKey('stacks.Stack',
+                              related_name='properties')
+
+    # The name of the property
+    name = models.CharField(max_length=255)
+
+    # The value of the property
+    value = models.CharField(max_length=255)
+
+    def __unicode__(self):
+        return u'{0}:{1}'.format(
+            self.name,
+            self.value
+        )
+

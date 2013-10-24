@@ -136,7 +136,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return get_object_or_404(Stack, id=self.kwargs.get('pk'),
                                  owner=self.request.user)
 
-    def delete(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):
         '''
         Overriding the delete method to make sure the stack
         is taken offline before being deleted
@@ -370,7 +370,7 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
     model = Host
     serializer_class = HostSerializer
 
-    def delete(self, request, *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):
         '''
         Override the delete method to first terminate the host
         before destroying the object.

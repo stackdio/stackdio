@@ -2,20 +2,26 @@ import logging
 
 from rest_framework import serializers
 
-from .models import (
-    Stack, 
-    StackHistory,
-    Host, 
-    SaltRole,
-)
+from . import models
 
 logger = logging.getLogger(__name__)
+
+
+class StackPropertySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.StackProperty
+        fields = (
+            'name',
+            'value',
+        )
+
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
     availability_zone = serializers.PrimaryKeyRelatedField()
 
     class Meta:
-        model = Host
+        model = models.Host
         fields = (
             'id',
             'url',
@@ -35,7 +41,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
 class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
-        model = StackHistory
+        model = models.StackHistory
         fields = (
             'event',
             'status',
@@ -51,30 +57,30 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     volumes = serializers.HyperlinkedIdentityField(view_name='stack-volumes')
     volume_count = serializers.Field(source='volumes.count')
     history = StackHistorySerializer(many=True)
+    properties = StackPropertySerializer(many=True)
 
     class Meta:
-        model = Stack
+        model = models.Stack
         fields = (
+            'title', 
+            'description',
             'id',
             'url',
             'owner',
             'blueprint',
-            #'cloud_provider',
             'hosts',
             'host_count',
             'volumes',
             'volume_count',
             'created', 
-            'title', 
-            'slug',
-            'description',
+            'properties',
             'history',
         )
 
 
 class SaltRoleSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = SaltRole
+        model = models.SaltRole
         fields = (
             'id', 
             'url', 

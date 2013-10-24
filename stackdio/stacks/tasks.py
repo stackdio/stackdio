@@ -751,12 +751,14 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
         for driver, hosts in driver_hosts.iteritems():
             security_groups = SecurityGroup.objects.filter(hosts__in=hosts,
                                                            owner=stack.owner)
-            if security_groups.count():
-                ok, result = driver.wait_for_state(hosts, driver.STATE_TERMINATED)
+            known_hosts = hosts.exclude(instance_id='')
+            if known_hosts:
+                ok, result = driver.wait_for_state(known_hosts, driver.STATE_TERMINATED)
                 if not ok:
                     stack.set_status(Stack.ERROR, result)
-                    raise StackTaskException(err_msg)
+                    raise StackTaskException(result)
 
+            if security_groups.count():
                 for security_group in security_groups:
                     driver.delete_security_group(security_group.name)
                     security_group.delete()

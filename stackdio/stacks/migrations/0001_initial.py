@@ -89,8 +89,25 @@ class Migration(SchemaMigration):
         ))
         db.create_unique(u'stacks_host_security_groups', ['host_id', 'securitygroup_id'])
 
+        # Adding model 'StackProperty'
+        db.create_table(u'stacks_stackproperty', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='properties', to=orm['stacks.Stack'])),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('value', self.gf('django.db.models.fields.CharField')(max_length=255)),
+        ))
+        db.send_create_signal(u'stacks', ['StackProperty'])
+
+        # Adding unique constraint on 'StackProperty', fields ['stack', 'name']
+        db.create_unique(u'stacks_stackproperty', ['stack_id', 'name'])
+
 
     def backwards(self, orm):
+        # Removing unique constraint on 'StackProperty', fields ['stack', 'name']
+        db.delete_unique(u'stacks_stackproperty', ['stack_id', 'name'])
+
         # Removing unique constraint on 'Stack', fields ['owner', 'title']
         db.delete_unique(u'stacks_stack', ['owner_id', 'title'])
 
@@ -111,6 +128,9 @@ class Migration(SchemaMigration):
 
         # Removing M2M table for field security_groups on 'Host'
         db.delete_table('stacks_host_security_groups')
+
+        # Deleting model 'StackProperty'
+        db.delete_table(u'stacks_stackproperty')
 
 
     models = {
@@ -302,6 +322,15 @@ class Migration(SchemaMigration):
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'history'", 'to': u"orm['stacks.Stack']"}),
             'status': ('django.db.models.fields.TextField', [], {'blank': 'True'})
+        },
+        u'stacks.stackproperty': {
+            'Meta': {'unique_together': "(('stack', 'name'),)", 'object_name': 'StackProperty'},
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'properties'", 'to': u"orm['stacks.Stack']"}),
+            'value': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         }
     }
 

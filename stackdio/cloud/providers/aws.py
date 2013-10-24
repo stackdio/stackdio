@@ -688,6 +688,9 @@ class AWSCloudProvider(BaseCloudProvider):
             timeout -= interval
 
     def wait_for_state(self, hosts, state):
+        if not hosts:
+            return (True, 'No hosts defined.')
+
         try:
             instances = self._wait(
                 self._wait_for_state,
