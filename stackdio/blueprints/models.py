@@ -122,6 +122,8 @@ class BlueprintManager(models.Manager):
             size_obj = CloudInstanceSize.objects.get(pk=host['size'])
             zone_obj = CloudZone.objects.get(pk=host['zone'])
             host_obj = blueprint.host_definitions.create(
+                title=host['title'],
+                description=host.get('description', ''),
                 count=host['count'],
                 prefix=host['prefix'],
                 cloud_profile=profile_obj,

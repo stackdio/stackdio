@@ -59,6 +59,15 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         elif hosts:
             host_ok = True
             for host in hosts:
+                formula_components = host.get('formula_components', [])
+                access_rules = host.get('access_rules', [])
+                volumes = host.get('volumes', [])
+
+                if 'title' not in host:
+                    errors.setdefault('hosts', []).append(
+                        'Hosts must have a title field.'
+                    )
+                    host_ok = False
                 if 'count' not in host:
                     errors.setdefault('hosts', []).append(
                         'Hosts must have a count field.'
@@ -84,20 +93,15 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                         'Hosts must have a cloud_profile field.'
                     )
                     host_ok = False
-                if 'formula_components' not in host:
+                if not formula_components or not isinstance(formula_components, list):
                     errors.setdefault('hosts', []).append(
-                        'Hosts must have a formula_components field.'
-                    )
-                    host_ok = False
-                elif not host['formula_components'] or \
-                     not isinstance(host['formula_components'], list):
-                    errors.setdefault('hosts', []).append(
-                        'Host formula_components field must be a list of existing formula component ids that are owned by you.'
+                        'Host formula_components field must be a list of '
+                        'existing formula component ids that are owned by you.'
                     )
                     host_ok = False
 
                 # check ownership of formula components
-                for component_id in host['formula_components']:
+                for component_id in formula_components:
                     try:
                         FormulaComponent.objects.get(pk=component_id,
                                                      formula__owner=request.user)
@@ -107,55 +111,53 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                         )
 
                 # Validating access rules
-                if 'access_rules' in host and isinstance(host['access_rules'], list):
-                    rules_ok = True
-                    for rule in host['access_rules']:
-                        if 'protocol' not in rule:
-                            errors.setdefault('access_rules', []).append(
-                                'access_rules must have a protocol field.'                
-                            )
-                            rules_ok = False
-                        if 'from_port' not in rule:
-                            errors.setdefault('access_rules', []).append(
-                                'access_rules must have a from_port field.'                
-                            )
-                            rules_ok = False
-                        if 'to_port' not in rule:
-                            errors.setdefault('access_rules', []).append(
-                                'access_rules must have a to_port field.'                
-                            )
-                            rules_ok = False
-                        if 'rule' not in rule:
-                            errors.setdefault('access_rules', []).append(
-                                'access_rules must have a rule field.'                
-                            )
-                            rules_ok = False
-                        if not rules_ok:
-                            break
+                rules_ok = True
+                for rule in access_rules:
+                    if 'protocol' not in rule:
+                        errors.setdefault('access_rules', []).append(
+                            'access_rules must have a protocol field.'
+                        )
+                        rules_ok = False
+                    if 'from_port' not in rule:
+                        errors.setdefault('access_rules', []).append(
+                            'access_rules must have a from_port field.'
+                        )
+                        rules_ok = False
+                    if 'to_port' not in rule:
+                        errors.setdefault('access_rules', []).append(
+                            'access_rules must have a to_port field.'
+                        )
+                        rules_ok = False
+                    if 'rule' not in rule:
+                        errors.setdefault('access_rules', []).append(
+                            'access_rules must have a rule field.'
+                        )
+                        rules_ok = False
+                    if not rules_ok:
+                        break
 
                 # Validating volumes
-                if 'volumes' in host and isinstance(host['volumes'], list):
-                    volumes_ok = True
-                    for volume in host['volumes']:
-                        if 'device' not in volume:
-                            errors.setdefault('volumes', []).append(
-                                'volumes must have a device field.'                
-                            )
-                            volumes_ok = False
-                        if 'mount_point' not in volume:
-                            errors.setdefault('volumes', []).append(
-                                'volumes must have a mount_point field.'                
-                            )
-                            volumes_ok = False
-                        if 'snapshot' not in volume:
-                            errors.setdefault('volumes', []).append(
-                                'volumes must have a snapshot field.'                
-                            )
-                            volumes_ok = False
-                        else:
-                            volume['snapshot'] = Snapshot.objects.get(pk=volume['snapshot'])
-                        if not volumes_ok:
-                            break
+                volumes_ok = True
+                for volume in volumes:
+                    if 'device' not in volume:
+                        errors.setdefault('volumes', []).append(
+                            'volumes must have a device field.'
+                        )
+                        volumes_ok = False
+                    if 'mount_point' not in volume:
+                        errors.setdefault('volumes', []).append(
+                            'volumes must have a mount_point field.'
+                        )
+                        volumes_ok = False
+                    if 'snapshot' not in volume:
+                        errors.setdefault('volumes', []).append(
+                            'volumes must have a snapshot field.'
+                        )
+                        volumes_ok = False
+                    else:
+                        volume['snapshot'] = Snapshot.objects.get(pk=volume['snapshot'])
+                    if not volumes_ok:
+                        break
 
                 if not host_ok or not rules_ok or not volumes_ok:
                     break
