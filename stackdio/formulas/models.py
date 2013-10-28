@@ -112,14 +112,14 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     # uri to the repository for this formula
     uri = models.CharField(max_length=255)
 
-    # root path of where this formula exists in SALT_USER_STATE_ROOT
+    # root path of where this formula exists in SALT_USER_ENVS_ROOT
     root_path = models.CharField(max_length=64)
 
     def __unicode__(self):
         return '{0} ({1})'.format(self.title, self.owner.username)
 
     def get_repo_dir(self):
-        return join(settings.SALT_USER_STATE_ROOT,
+        return join(settings.SALT_USER_ENVS_ROOT,
                             self.owner.username,
                             self.get_repo_name())
 

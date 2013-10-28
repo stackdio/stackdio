@@ -93,10 +93,10 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                         'Hosts must have a cloud_profile field.'
                     )
                     host_ok = False
-                if not formula_components or not isinstance(formula_components, list):
+                if not isinstance(formula_components, list):
                     errors.setdefault('hosts', []).append(
                         'Host formula_components field must be a list of '
-                        'existing formula component ids that are owned by you.'
+                        'formula component ids that are owned by you.'
                     )
                     host_ok = False
 

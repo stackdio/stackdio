@@ -30,8 +30,9 @@ SALT_ROOT = getenv('SALT_ROOT')
 # Where salt states live (e.g., /srv/salt)
 SALT_STATE_ROOT = getenv('SALT_STATE_ROOT')
 
-# Where user-imported salt states live (e.g., /srv/salt)
-SALT_USER_STATE_ROOT = getenv('SALT_USER_STATE_ROOT')
+# Where user environments are located. This is where imported salt
+# formulas will be cloned.
+SALT_USER_ENVS_ROOT = getenv('SALT_USER_ENVS_ROOT')
 
 # This is the salt-master configuration
 SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')

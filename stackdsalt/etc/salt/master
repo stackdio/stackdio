@@ -2,10 +2,19 @@ user: stackdio
 root_dir: /mnt/stackdio_root/stackdsalt
 verify_env: True
 
+fileserver_backend:
+  - stackdio
+  - roots
+
 file_roots:
   base:
     - /mnt/stackdio_root/stackdsalt/states
-    - /mnt/stackdio_root/stackdsalt/user_states
+
+stackdio:
+  user_envs: /mnt/stackdio_root/stackdsalt/user_envs
+
+file_ignore_glob:
+  - '.git/*'
 
 pillar_roots:
   base:
