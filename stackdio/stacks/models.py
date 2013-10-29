@@ -544,10 +544,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         # Core SLS
         stack_match = 'G@stack_id:{0}'.format(self.id)
-        top_file_data[stack_match] = [
-            {'match': 'compound'},
-            'core.*',
-        ]
+        top_file_data['base'] = {
+            stack_match: [
+                {'match': 'compound'},
+                'core.*',
+            ]
+        }
 
         # find the distinct set of formula components for this stack
         components = set()
@@ -557,17 +559,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # build up the top file using compound matching based
         # on the stack id and components
         for component in components:
+            env = component.formula.owner.username
             matcher = stack_match + ' and G@roles:{0}'.format(component.sls_path)
-            top_file_data[matcher] = [
+            top_file_data.setdefault(env, {})[matcher] = [
                 {'match': 'compound'},
                 component.sls_path
             ]
 
-        top_file_data = {
-            'base': top_file_data
-        }
         top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
-
         if not self.top_file:
             self.top_file.save('stack_{0}_top.sls'.format(self.id), ContentFile(top_file_yaml))
         else:
