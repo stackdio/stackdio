@@ -53,14 +53,12 @@ def envs():
         if not os.path.isdir(user_dir):
             continue
         ret.append(user)
-    log.warn('Environments = {0}'.format(ret))
     return ret
 
 def find_file(path, env='base', **kwargs):
     '''
     Search the environment for the relative path
     '''
-    log.warn('find_file {0}, {1}'.format(path, env))
     fnd = {'path': '',
            'rel': ''}
     if os.path.isabs(path):
@@ -137,8 +135,6 @@ def file_list(load):
                         )
                 if not salt.fileserver.is_file_ignored(__opts__, rel_fn):
                     ret.append(rel_fn)
-    log.warn('file_list: env={0}'.format(load['env']))
-    log.warn(ret)
     return ret
 
 def update():
