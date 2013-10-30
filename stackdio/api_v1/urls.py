@@ -28,7 +28,6 @@ def api_root(request, format=None):
         },
         'stacks': {
             'hosts': reverse('host-list', request=request, format=format),
-            'roles': reverse('saltrole-list', request=request, format=format),
             'snapshots': reverse('snapshot-list', request=request, format=format),
             'stacks': reverse('stack-list', request=request, format=format),
             'volumes': reverse('volume-list', request=request, format=format),
