@@ -39,18 +39,6 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'stacks', ['StackHistory'])
 
-        # Adding model 'SaltRole'
-        db.create_table(u'stacks_saltrole', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('slug', self.gf('django_extensions.db.fields.AutoSlugField')(allow_duplicates=False, max_length=50, separator=u'-', blank=True, populate_from='title', overwrite=False)),
-            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('sls_path', self.gf('django.db.models.fields.CharField')(max_length=64)),
-        ))
-        db.send_create_signal(u'stacks', ['SaltRole'])
-
         # Adding model 'Host'
         db.create_table(u'stacks_host', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -116,9 +104,6 @@ class Migration(SchemaMigration):
 
         # Deleting model 'StackHistory'
         db.delete_table(u'stacks_stackhistory')
-
-        # Deleting model 'SaltRole'
-        db.delete_table(u'stacks_saltrole')
 
         # Deleting model 'Host'
         db.delete_table(u'stacks_host')
@@ -288,16 +273,6 @@ class Migration(SchemaMigration):
             'status': ('model_utils.fields.StatusField', [], {'default': "'ok'", 'max_length': '100', 'no_check_for_status': 'True'}),
             'status_changed': ('model_utils.fields.MonitorField', [], {'default': 'datetime.datetime.now', 'monitor': "'status'"}),
             'status_detail': ('django.db.models.fields.TextField', [], {'blank': 'True'})
-        },
-        u'stacks.saltrole': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'SaltRole'},
-            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'sls_path': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'stacks.stack': {
             'Meta': {'unique_together': "(('owner', 'title'),)", 'object_name': 'Stack'},

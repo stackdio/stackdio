@@ -8,7 +8,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework import (
     generics,
     parsers,
-    serializers,
 )
 from rest_framework.response import Response
 
@@ -17,24 +16,11 @@ from core.exceptions import (
     BadRequest,
 )
 
-from . import tasks
-from .models import (
-    Stack,
-    StackHistory,
-    Host,
-    SaltRole,
-)
-
-from .serializers import (
-    StackSerializer, 
-    StackHistorySerializer, 
-    HostSerializer, 
-    SaltRoleSerializer,
-)
-
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
 from blueprints.models import Blueprint
+
+from . import tasks, models, serializers
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +29,8 @@ class StackListAPIView(generics.ListCreateAPIView):
     '''
     TODO: Add docstring
     '''
-    model = Stack
-    serializer_class = StackSerializer
+    model = models.Stack
+    serializer_class = serializers.StackSerializer
     parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
@@ -83,14 +69,14 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # check for duplicates
         title = request.DATA.get('title')
-        if Stack.objects.filter(owner=self.request.user, title=title).count():
+        if models.Stack.objects.filter(owner=self.request.user, title=title).count():
             raise ResourceConflict('A Stack already exists with the given '
                                    'title.')
 
         # create the stack and related objects
         try:
             logger.debug(request.DATA)
-            stack = Stack.objects.create_stack(request.user, blueprint, **request.DATA)
+            stack = models.Stack.objects.create_stack(request.user, blueprint, **request.DATA)
         except Exception, e:
             logger.exception(e)
             raise BadRequest(str(e))
@@ -121,19 +107,19 @@ class StackListAPIView(generics.ListCreateAPIView):
             task_chain(link_error=tasks.handle_error.s(stack.id))
 
         # return serialized stack object
-        serializer = StackSerializer(stack, context={
+        serializer = serializers.StackSerializer(stack, context={
             'request': request,
         })
         return Response(serializer.data)
 
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = Stack
-    serializer_class = StackSerializer
+    model = models.Stack
+    serializer_class = serializers.StackSerializer
     parser_classes = (parsers.JSONParser,)
 
     def get_object(self):
-        return get_object_or_404(Stack, id=self.kwargs.get('pk'),
+        return get_object_or_404(models.Stack, id=self.kwargs.get('pk'),
                                  owner=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
@@ -145,7 +131,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         stack = self.get_object()
         msg = 'Stack will be removed upon successful termination ' \
               'of all machines'
-        stack.set_status(Stack.DESTROYING, msg)
+        stack.set_status(models.Stack.DESTROYING, msg)
 
         # Queue up stack destroy tasks
         task_chain = (
@@ -231,7 +217,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                  'invalid state: %s' % host.state)
 
         # Kick off the celery task for the given action
-        stack.set_status(Stack.EXECUTING_ACTION, 
+        stack.set_status(models.Stack.EXECUTING_ACTION, 
                          'Stack is executing action \'{0}\''.format(action))
 
         # Keep track of the tasks we need to run for this execution
@@ -289,23 +275,23 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class StackHistoryList(generics.ListAPIView):
-    model = StackHistory
-    serializer_class = StackHistorySerializer
+    model = models.StackHistory
+    serializer_class = serializers.StackHistorySerializer
 
 
 class HostListAPIView(generics.ListAPIView):
-    model = Host
-    serializer_class = HostSerializer
+    model = models.Host
+    serializer_class = serializers.HostSerializer
 
     def get_queryset(self):
-        return Host.objects.filter(stack__owner=self.request.user)
+        return models.Host.objects.filter(stack__owner=self.request.user)
 
 
 class StackHostsAPIView(HostListAPIView):
     parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
-        return Host.objects.filter(stack__pk=self.kwargs.get('pk'),
+        return models.Host.objects.filter(stack__pk=self.kwargs.get('pk'),
                                    stack__owner=self.request.user)
 
     def put(self, request, *args, **kwargs):
@@ -367,8 +353,8 @@ class StackVolumesAPIView(VolumeListAPIView):
 
 
 class HostDetailAPIView(generics.RetrieveDestroyAPIView):
-    model = Host
-    serializer_class = HostSerializer
+    model = models.Host
+    serializer_class = serializers.HostSerializer
 
     def destroy(self, request, *args, **kwargs):
         '''
@@ -379,7 +365,7 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         host = self.get_object()
         volume_ids = [v.id for v in host.volumes.all()]
 
-        host.set_status(Host.DELETING, 'Deleting host.')
+        host.set_status(models.Host.DELETING, 'Deleting host.')
 
         # unregister DNS and destroy the host
         task_chain = (
@@ -394,14 +380,4 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         # Return the host while its deleting
         serializer = self.get_serializer(host)
         return Response(serializer.data)
-
-
-class SaltRoleListAPIView(generics.ListAPIView):
-    model = SaltRole
-    serializer_class = SaltRoleSerializer
-
-
-class SaltRoleDetailAPIView(generics.RetrieveAPIView):
-    model = SaltRole
-    serializer_class = SaltRoleSerializer
 

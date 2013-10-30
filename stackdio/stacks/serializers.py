@@ -77,14 +77,3 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'history',
         )
 
-
-class SaltRoleSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = models.SaltRole
-        fields = (
-            'id', 
-            'url', 
-            'created', 
-            'title', 
-            'sls_path', 
-        )

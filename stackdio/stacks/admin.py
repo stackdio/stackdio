@@ -1,11 +1,6 @@
 from django.contrib import admin
 
-from .models import (
-    Stack, 
-    StackHistory, 
-    SaltRole, 
-    Host,
-)
+from . import models
 
 
 class StackAdmin(admin.ModelAdmin):
@@ -18,7 +13,7 @@ class StackAdmin(admin.ModelAdmin):
         'created',
         'modified',
     ]
-admin.site.register(Stack, StackAdmin)
+admin.site.register(models.Stack, StackAdmin)
 
 
 class StackHistoryAdmin(admin.ModelAdmin):
@@ -28,16 +23,7 @@ class StackHistoryAdmin(admin.ModelAdmin):
         'level',
         'created',
     ]
-admin.site.register(StackHistory, StackHistoryAdmin)
-
-
-class SaltRoleAdmin(admin.ModelAdmin):
-    list_display = [
-        'title',
-        'slug',
-        'sls_path',
-    ]
-admin.site.register(SaltRole, SaltRoleAdmin)
+admin.site.register(models.StackHistory, StackHistoryAdmin)
 
 
 class HostAdmin(admin.ModelAdmin):
@@ -49,5 +35,5 @@ class HostAdmin(admin.ModelAdmin):
         'provider_dns',
         'fqdn',
     ]
-admin.site.register(Host, HostAdmin)
+admin.site.register(models.Host, HostAdmin)
 

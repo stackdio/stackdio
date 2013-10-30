@@ -672,13 +672,6 @@ class StackHistory(TimeStampedModel):
                              ))
 
 
-class SaltRole(TimeStampedModel, TitleSlugDescriptionModel):
-    sls_path = models.CharField(max_length=64)
-
-    def __unicode__(self):
-        return self.title
-
-
 class Host(TimeStampedModel, StatusDetailModel):
     OK = 'ok'
     DELETING = 'deleting'
