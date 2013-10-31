@@ -504,27 +504,43 @@ def sync_all(stack_id):
         logger.exception(err_msg)
         raise
 
-@celery.task(name='stacks.provision_hosts')
-def provision_hosts(stack_id, host_ids=None):
+@celery.task(name='stacks.highstate')
+def highstate(stack_id, host_ids=None):
+    '''
+    Executes the state.top function using the custom top file generated via
+    the stacks.models._generate_top_file. This will only target the 'base'
+    environment and core.* states for the stack. These core states are 
+    purposely separate from others to provision hosts with things that
+    stackdio needs.
+    
+    TODO: We aren't orchestrating the core states in any way (like the
+    stacks.orchestrate task.) They are all executed in the order defined
+    by the SLS. I don't see this as a problem right now, but something we
+    might have to tackle in the future if someone were to need that.
+    '''
     try:
         stack = Stack.objects.get(id=stack_id)
-        logger.info('Provisioning hosts for stack: {0!r}'.format(stack))
+        logger.info('Running highstate for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(provision_hosts.name,
-                         'Provisioning all hosts.')
+        stack.set_status(highstate.name,
+                         'Executing core provisioning. This may take a while.')
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
         log_file = os.path.join(log_dir, 
-                                '{0}-{1}.provision.log'.format(stack.slug, now))
+                                '{0}-{1}.highstate.log'.format(stack.slug, now))
 
         # TODO: do we want to handle a subset of the hosts in a stack (e.g.,
         # when adding additional hosts?) for the moment it seems just fine
         # to run the highstate on all hosts even if some have already been
         # provisioned.
+
+        ##
+        # Execute state.top with custom top file
+        ##
 
         # build up the command for salt
         cmd_args = [
@@ -536,20 +552,20 @@ def provision_hosts(stack_id, host_ids=None):
             stack.top_file.name,
         ]
 
-        # Run the appropriate top file
+        # Execute
         cmd = ' '.join(cmd_args)
-
         logger.debug('Executing command: {0}'.format(cmd))
+
         try:
             result = envoy.run(str(cmd))
         except AttributeError, e:
             err_msg = 'Error running command: \'{0}\''.format(cmd)
             logger.exception(err_msg)
-            stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
+            stack.set_status(highstate.name, err_msg, Level.ERROR)
             raise StackTaskException(err_msg)
 
         if result is None:
-            msg = 'Provisioning command returned None. Status, stdout ' \
+            msg = 'Core provisioning command returned None. Status, stdout ' \
                   'and stderr unknown.'
             logger.warn(msg)
             stack.set_status(msg)
@@ -561,12 +577,11 @@ def provision_hosts(stack_id, host_ids=None):
 
             if result.status_code > 0:
                 err_msg = result.std_err if result.std_err else result.std_out
-                stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
-                raise StackTaskException('Error provisioning stack {0}: '
-                                         '{1!r}'.format(
-                                            stack_id, 
-                                            err_msg)
-                                         )
+                stack.set_status(highstate.name, err_msg, Level.ERROR)
+                raise StackTaskException('Error executing core provisioning: '
+                                         '{0!r}'.format(
+                                            err_msg
+                                        ))
 
             with open(log_file, 'a') as f:
                 f.write('\n')
@@ -574,7 +589,7 @@ def provision_hosts(stack_id, host_ids=None):
 
             # symlink the logfile
             log_symlink = os.path.join(root_dir, 
-                                       '{0}.provision.latest'.format(stack.slug))
+                                       '{0}.highstate.latest'.format(stack.slug))
             symlink(log_file, log_symlink)
         
             # load JSON so we can attempt to catch provisioning errors
@@ -595,14 +610,14 @@ def provision_hosts(stack_id, host_ids=None):
                         pass
 
                 if errors:
-                    err_msg = 'Provisioning errors on hosts: {0}. Please see the ' \
-                              'provisioning log for more details.'.format(
+                    err_msg = 'Core provisioning errors on hosts: {0}. Please see the ' \
+                              'log file for more details.'.format(
                                 ', '.join(errors.keys()))
-                    stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
+                    stack.set_status(highstate.name, err_msg, Level.ERROR)
                     raise StackTaskException(err_msg)
 
-        stack.set_status(provision_hosts.name,
-                         'Finished provisioning all hosts.')
+        stack.set_status(highstate.name,
+                         'Finished core provisioning all hosts.')
         
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -611,7 +626,124 @@ def provision_hosts(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(provision_hosts.name, err_msg, Level.ERROR)
+        stack.set_status(highstate.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
+
+@celery.task(name='stacks.orchestrate')
+def orchestrate(stack_id, host_ids=None):
+    '''
+    Executes the runners.state.over function with the custom overstate
+    file  generated via the stacks.models._generate_overstate_file. This
+    will only target the user's environment and provision the hosts with 
+    the formulas defined in the blueprint and in the order specified.
+
+    TODO: We aren't allowing users to provision from formulas owned by
+    others at the moment, but if we do want to support that without 
+    forcing them to clone those formulas into their own account, we
+    will need to support executing multiple overstate files in different
+    environments.
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Executing orchestration for stack: {0!r}'.format(stack))
+
+        # Update status
+        stack.set_status(orchestrate.name,
+                         'Executing orchestration. This may take a while.')
+
+        # Set up logging for this task
+        root_dir = stack.get_root_directory()
+        log_dir = stack.get_log_directory()
+        now = datetime.now().strftime('%Y%m%d-%H%M%S')
+        log_file = os.path.join(log_dir, 
+                                '{0}-{1}.orchestration.log'.format(stack.slug, now))
+
+        ##
+        # Execute runners.state.over with custom top file
+        ##
+
+        # build up the command for salt
+        cmd_args = [
+            'salt-run',
+            '-ldebug',              # debug mode
+            'state.over',           # the overstate command
+            stack.owner.username,   # username is the environment to execute in
+            stack.overstate_file.path
+        ]
+
+        # Execute
+        cmd = ' '.join(cmd_args)
+        logger.debug('Executing command: {0}'.format(cmd))
+
+        try:
+            result = envoy.run(str(cmd))
+        except AttributeError, e:
+            err_msg = 'Error running command: \'{0}\''.format(cmd)
+            logger.exception(err_msg)
+            stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+            raise StackTaskException(err_msg)
+
+        if result is None:
+            msg = 'Orchestration command returned None. Status, stdout ' \
+                  'and stderr unknown.'
+            logger.warn(msg)
+            stack.set_status(msg)
+        else:
+            logger.debug('Command results:')
+            logger.debug('status_code = {0}'.format(result.status_code))
+            logger.debug('std_out = {0}'.format(result.std_out))
+            logger.debug('std_err = {0}'.format(result.std_err))
+
+            if result.status_code > 0:
+                err_msg = result.std_err if result.std_err else result.std_out
+                stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+                raise StackTaskException('Error executing orchestration: '
+                                         '{1!r}'.format(
+                                            err_msg
+                                         ))
+
+            with open(log_file, 'a') as f:
+                f.write('\n')
+                f.write(result.std_out)
+
+            # symlink the logfile
+            log_symlink = os.path.join(root_dir, 
+                                       '{0}.orchestration.latest'.format(stack.slug))
+            symlink(log_file, log_symlink)
+        
+            # TODO: add error handling for overstate output
+            '''
+            if output is not None:
+                errors = {}
+                for host, host_result in output.iteritems():
+                    if type(host_result) is list:
+                        errors[host] = host_result
+
+                    elif type(host_result) is dict:
+                        # TODO: go deeper into the host_result dictionaries
+                        # looking for bad salt state executions
+                        pass
+
+                if errors:
+                    err_msg = 'Orchestration errors on hosts: {0}. Please see the ' \
+                              'log for more details.'.format(
+                                ', '.join(errors.keys()))
+                    stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+                    raise StackTaskException(err_msg)
+            '''
+
+        stack.set_status(orchestrate.name,
+                         'Finished executing orchestration all hosts.')
+        
+    except Stack.DoesNotExist:
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
+        raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
+    except Exception, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(orchestrate.name, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -757,6 +889,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
                 if not ok:
                     stack.set_status(Stack.ERROR, result)
                     raise StackTaskException(result)
+                known_hosts.update(instance_id='')
 
             if security_groups.count():
                 for security_group in security_groups:

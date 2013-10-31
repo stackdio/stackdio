@@ -41,6 +41,9 @@ def get_map_file_path(obj, filename):
 def get_top_file_path(obj, filename):
     return "stack_{0}_top.sls".format(obj.id)
 
+def get_overstate_file_path(obj, filename):
+    return "stack_{0}_overstate.sls".format(obj.id)
+
 def get_pillar_file_path(obj, filename):
     return "stacks/{0}/{1}.pillar".format(obj.owner.username, obj.slug)
 
@@ -171,6 +174,7 @@ class StackManager(models.Manager):
         # need to be set at launch time
         stack._generate_pillar_file()
         stack._generate_top_file()
+        stack._generate_overstate_file()
         stack._generate_map_file()
                 
         return stack
@@ -203,21 +207,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint', related_name='stacks')
 
-    #XXX
-    # The cloud provider this stack will use -- it may use any cloud profile
-    # defined for that provider.
-    #cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='stacks')
-
-    #XXX
-    # Where on disk a JSON representation of the hosts file is stored
-    #hosts_file = DeletingFileField(
-    #    max_length=255,
-    #    upload_to=get_hosts_file_path,
-    #    null=True,
-    #    blank=True,
-    #    default=None,
-    #    storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
-
     # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(
         max_length=255,
@@ -231,6 +220,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     top_file = DeletingFileField(
         max_length=255,
         upload_to=get_top_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.SALT_STATE_ROOT))
+
+    # Where on disk is the custom overstate file stored
+    overstate_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_overstate_file_path,
         null=True,
         blank=True,
         default=None,
@@ -250,7 +248,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     objects = StackManager()
 
     def __unicode__(self):
-        return u'{0} (id={1})'.format(self.title, self.id)
+        return u'{0} (id={1})'.format(self.title, self.pk)
 
     def set_status(self, event, status, level=Level.INFO):
         self.history.create(event=event, status=status, level=level)
@@ -456,7 +454,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 cloud_provider.yaml)[cloud_provider.slug]
 
             # pull various stuff we need for a host
-            roles = [c.sls_path for c in host.formula_components.all()]
+            roles = [c.component.sls_path for c in host.formula_components.all()]
             instance_size = host.instance_size.title
             security_groups = set([
                 sg.name for sg in host.security_groups.all()
@@ -467,6 +465,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                                     cloud_provider_yaml['append_domain'])
 
             availability_zone = host.availability_zone.title
+
+            # order_groups define which hosts fall into which groups
+            # used by the overstate system for orchestrating the provisioning
+            # of the hosts
+            order_groups = [c.order for c in host.formula_components.all()]
 
             # The volumes will be defined on the map as well as in the grains.
             # Those in the map are used by salt-cloud to create and attach
@@ -504,7 +507,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                         # are in the cluster)
                         'grains': {
                             'roles': roles,
-                            'stack_id': int(self.id),
+                            'order_groups': order_groups,
+                            'stack_id': int(self.pk),
                             'fqdn': fqdn,
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
@@ -540,38 +544,58 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 f.write(map_file_yaml)
 
     def _generate_top_file(self):
-        top_file_data = {}
-
-        # Core SLS
-        stack_match = 'G@stack_id:{0}'.format(self.id)
-        top_file_data['base'] = {
-            stack_match: [
-                {'match': 'compound'},
-                'core.*',
-            ]
+        top_file_data = {
+            'base': {
+                'G@stack_id:{0}'.format(self.pk): [
+                    {'match': 'compound'},
+                    'core.*',
+                ]
+            }
         }
-
-        # find the distinct set of formula components for this stack
-        components = set()
-        for host in self.hosts.all():
-            components.update(list(host.formula_components.all()))
-
-        # build up the top file using compound matching based
-        # on the stack id and components
-        for component in components:
-            env = component.formula.owner.username
-            matcher = stack_match + ' and G@roles:{0}'.format(component.sls_path)
-            top_file_data.setdefault(env, {})[matcher] = [
-                {'match': 'compound'},
-                component.sls_path
-            ]
 
         top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
         if not self.top_file:
-            self.top_file.save('stack_{0}_top.sls'.format(self.id), ContentFile(top_file_yaml))
+            self.top_file.save('stack_{0}_top.sls'.format(self.pk), ContentFile(top_file_yaml))
         else:
             with open(self.top_file.path, 'w') as f:
                 f.write(top_file_yaml)
+
+    def _generate_overstate_file(self): 
+        from blueprints.models import BlueprintHostFormulaComponent
+        # find the distinct set of formula components for this stack
+        components = set()
+        hosts = self.hosts.all()
+        for host in hosts:
+            components.update(list(host.formula_components.all()))
+        logger.debug('COMPONENTS: {0}'.format(components))
+
+        i = 0
+        overstate = {}
+        while True:
+            components = BlueprintHostFormulaComponent.objects.filter(
+                order=i,
+                hosts__in=hosts
+            )
+            if not components.count():
+                break
+            group = 'group_{0}'.format(i)
+            overstate[group] = {
+                'match': 'G@stack_id:{0} and G@order_groups:{1}'.format(self.pk, i),
+                'sls': [c.component.sls_path for c in components],
+            }
+
+            if i > 0:
+                overstate[group]['require'] = ['group_{0}'.format(i-1)]
+            i += 1
+
+        yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
+        if not self.overstate_file:
+            self.overstate_file.save(
+                'stack_{0}_overstate.sls'.format(self.pk),
+                ContentFile(yaml_data))
+        else:
+            with open(self.overstate_file.path, 'w') as f:
+                f.write(yaml_data)
 
     def _generate_pillar_file(self):
         pillar_props = {
@@ -694,7 +718,7 @@ class Host(TimeStampedModel, StatusDetailModel):
     availability_zone = models.ForeignKey('cloud.CloudZone',
                                       related_name='hosts')
 
-    formula_components = models.ManyToManyField('formulas.FormulaComponent',
+    formula_components = models.ManyToManyField('blueprints.BlueprintHostFormulaComponent',
                                                 related_name='hosts')
 
     hostname = models.CharField(max_length=64)

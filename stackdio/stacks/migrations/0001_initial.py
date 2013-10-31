@@ -20,6 +20,7 @@ class Migration(SchemaMigration):
             ('blueprint', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stacks', to=orm['blueprints.Blueprint'])),
             ('map_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
             ('top_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
+            ('overstate_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
             ('pillar_file', self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True)),
         ))
         db.send_create_signal(u'stacks', ['Stack'])
@@ -65,9 +66,9 @@ class Migration(SchemaMigration):
         db.create_table(u'stacks_host_formula_components', (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
             ('host', models.ForeignKey(orm[u'stacks.host'], null=False)),
-            ('formulacomponent', models.ForeignKey(orm[u'formulas.formulacomponent'], null=False))
+            ('blueprinthostformulacomponent', models.ForeignKey(orm[u'blueprints.blueprinthostformulacomponent'], null=False))
         ))
-        db.create_unique(u'stacks_host_formula_components', ['host_id', 'formulacomponent_id'])
+        db.create_unique(u'stacks_host_formula_components', ['host_id', 'blueprinthostformulacomponent_id'])
 
         # Adding M2M table for field security_groups on 'Host'
         db.create_table(u'stacks_host_security_groups', (
@@ -157,6 +158,30 @@ class Migration(SchemaMigration):
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'blueprints'", 'to': u"orm['auth.User']"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'})
+        },
+        u'blueprints.blueprinthostdefinition': {
+            'Meta': {'object_name': 'BlueprintHostDefinition'},
+            'blueprint': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'host_definitions'", 'to': u"orm['blueprints.Blueprint']"}),
+            'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProfile']"}),
+            'count': ('django.db.models.fields.IntegerField', [], {}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'prefix': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),
+            'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'zone': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudZone']"})
+        },
+        u'blueprints.blueprinthostformulacomponent': {
+            'Meta': {'ordering': "['order']", 'object_name': 'BlueprintHostFormulaComponent'},
+            'component': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['formulas.FormulaComponent']", 'unique': 'True'}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'host': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'formula_components'", 'to': u"orm['blueprints.BlueprintHostDefinition']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'order': ('django.db.models.fields.IntegerField', [], {'default': '0'})
         },
         u'cloud.cloudinstancesize': {
             'Meta': {'ordering': "['title']", 'object_name': 'CloudInstanceSize'},
@@ -257,7 +282,7 @@ class Migration(SchemaMigration):
             'availability_zone': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['cloud.CloudZone']"}),
             'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['cloud.CloudProfile']"}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'formula_components': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'hosts'", 'symmetrical': 'False', 'to': u"orm['formulas.FormulaComponent']"}),
+            'formula_components': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'hosts'", 'symmetrical': 'False', 'to': u"orm['blueprints.BlueprintHostFormulaComponent']"}),
             'fqdn': ('django.db.models.fields.CharField', [], {'max_length': '255', 'blank': 'True'}),
             'hostname': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -282,6 +307,7 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'map_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'overstate_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['auth.User']"}),
             'pillar_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),

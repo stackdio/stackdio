@@ -11,5 +11,6 @@ stackdsalt/etc/salt/pki
 stackdsalt/etc/salt/cloud.profiles.d/*.conf
 stackdsalt/etc/salt/cloud.providers.d/*.conf
 stackdsalt/states/stack_*_top.sls
+stackdsalt/states/stack_*_overstate.sls
 stackdsalt/user_envs/*
 stackdsalt/var

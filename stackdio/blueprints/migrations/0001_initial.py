@@ -37,13 +37,16 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'blueprints', ['BlueprintHostDefinition'])
 
-        # Adding M2M table for field formula_components on 'BlueprintHostDefinition'
-        db.create_table(u'blueprints_blueprinthostdefinition_formula_components', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('blueprinthostdefinition', models.ForeignKey(orm[u'blueprints.blueprinthostdefinition'], null=False)),
-            ('formulacomponent', models.ForeignKey(orm[u'formulas.formulacomponent'], null=False))
+        # Adding model 'BlueprintHostFormulaComponent'
+        db.create_table(u'blueprints_blueprinthostformulacomponent', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('component', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['formulas.FormulaComponent'], unique=True)),
+            ('host', self.gf('django.db.models.fields.related.ForeignKey')(related_name='formula_components', to=orm['blueprints.BlueprintHostDefinition'])),
+            ('order', self.gf('django.db.models.fields.IntegerField')(default=0)),
         ))
-        db.create_unique(u'blueprints_blueprinthostdefinition_formula_components', ['blueprinthostdefinition_id', 'formulacomponent_id'])
+        db.send_create_signal(u'blueprints', ['BlueprintHostFormulaComponent'])
 
         # Adding model 'BlueprintProperty'
         db.create_table(u'blueprints_blueprintproperty', (
@@ -101,8 +104,8 @@ class Migration(SchemaMigration):
         # Deleting model 'BlueprintHostDefinition'
         db.delete_table(u'blueprints_blueprinthostdefinition')
 
-        # Removing M2M table for field formula_components on 'BlueprintHostDefinition'
-        db.delete_table('blueprints_blueprinthostdefinition_formula_components')
+        # Deleting model 'BlueprintHostFormulaComponent'
+        db.delete_table(u'blueprints_blueprinthostformulacomponent')
 
         # Deleting model 'BlueprintProperty'
         db.delete_table(u'blueprints_blueprintproperty')
@@ -175,7 +178,6 @@ class Migration(SchemaMigration):
             'count': ('django.db.models.fields.IntegerField', [], {}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'formula_components': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['formulas.FormulaComponent']", 'symmetrical': 'False'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'prefix': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
@@ -183,6 +185,15 @@ class Migration(SchemaMigration):
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'zone': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudZone']"})
+        },
+        u'blueprints.blueprinthostformulacomponent': {
+            'Meta': {'ordering': "['order']", 'object_name': 'BlueprintHostFormulaComponent'},
+            'component': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['formulas.FormulaComponent']", 'unique': 'True'}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'host': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'formula_components'", 'to': u"orm['blueprints.BlueprintHostDefinition']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'order': ('django.db.models.fields.IntegerField', [], {'default': '0'})
         },
         u'blueprints.blueprintproperty': {
             'Meta': {'unique_together': "(('blueprint', 'name'),)", 'object_name': 'BlueprintProperty'},

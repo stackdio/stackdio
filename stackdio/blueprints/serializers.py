@@ -7,8 +7,6 @@ from rest_framework import serializers
 
 from . import models
 
-from formulas.serializers import FormulaComponentSerializer
-
 logger = logging.getLogger(__name__)
 
 
@@ -45,9 +43,26 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
         )
 
 
+class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+    title = serializers.Field(source='component.title')
+    description = serializers.Field(source='component.description')
+    formula = serializers.Field(source='component.formula')
+    sls_path = serializers.Field(source='component.sls_path')
+
+    class Meta:
+        model = models.BlueprintHostFormulaComponent
+        fields = (
+            'title',
+            'description',
+            'formula',
+            'sls_path',
+            'order',
+        )
+
+
 class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
-    formula_components = FormulaComponentSerializer(many=True)
+    formula_components = BlueprintHostFormulaComponentSerializer(many=True)
     access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
     volumes = BlueprintVolumeSerializer(many=True)
 

@@ -95,7 +95,8 @@ class StackListAPIView(generics.ListCreateAPIView):
             # provisioning is optional (mainly useful for getting machines
             # up so you can play with salt states)
             if provision_stack:
-                task_list.append(tasks.provision_hosts.si(stack.id))
+                task_list.append(tasks.highstate.si(stack.id))
+                task_list.append(tasks.orchestrate.si(stack.id))
 
             # always finish
             task_list.append(tasks.finish_stack.si(stack.id))
@@ -257,7 +258,8 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             # need to happen after a host is restarted?
             task_list.append(tasks.ping.si(stack.id))
             task_list.append(tasks.sync_all.si(stack.id))
-            task_list.append(tasks.provision_hosts.si(stack.id))
+            task_list.append(tasks.highstate.si(stack.id))
+            task_list.append(tasks.orchestrate.si(stack.id))
 
         task_list.append(tasks.finish_stack.si(stack.id))
 
@@ -312,7 +314,8 @@ class StackHostsAPIView(HostListAPIView):
             tasks.register_dns.si(stack.id, host_ids=host_ids) | 
             tasks.ping.si(stack.id) |
             tasks.sync_all.si(stack.id) |
-            tasks.provision_hosts.si(stack.id, host_ids=host_ids) |
+            tasks.highstate.si(stack.id, host_ids=host_ids) |
+            tasks.orchestrate.si(stack.id, host_ids=host_ids) |
             tasks.finish_stack.si(stack.id)
         )
         

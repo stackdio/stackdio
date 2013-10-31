@@ -131,12 +131,17 @@ class BlueprintManager(models.Manager):
                 zone=zone_obj,
             )
 
-            # formula components
-            for component_id in host['formula_components']:
+            # create extended formula components for the blueprint
+            for component in host['formula_components']:
+                component_id = component['id']
+                component_order = int(component.get('order', 0))
                 component_obj = FormulaComponent.objects.get(
                     pk=component_id,
                     formula__owner=owner)
-                host_obj.formula_components.add(component_obj)
+                host_obj.formula_components.create(
+                    component=component_obj,
+                    order=component_order
+                )
 
             # build out the access rules
             for access_rule in host.get('access_rules', []):
@@ -213,9 +218,6 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     # The default availability zone for the host
     zone = models.ForeignKey('cloud.CloudZone')
 
-    # What Salt formula components need to be installed by default 
-    formula_components = models.ManyToManyField('formulas.FormulaComponent')
-
     @property
     def formula_components_count(self):
         return self.formula_components.count()
@@ -224,6 +226,35 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
         return u'{0} ({1})'.format(
             self.prefix,
             self.blueprint
+        )
+
+
+class BlueprintHostFormulaComponent(TimeStampedModel):
+    '''
+    An extension of an existing FormulaComponent to add additional metadata
+    for those components based on this blueprint. In particular, this is how
+    we track the order in which the formula should be provisioned in a
+    blueprint.
+    '''
+
+    class Meta:
+        verbose_name_plural = 'formula components'
+        ordering = ['order']
+
+    # The formula component we're extending
+    component = models.OneToOneField('formulas.FormulaComponent')
+
+    # The host definition this extended formula component applies to
+    host = models.ForeignKey('blueprints.BlueprintHostDefinition',
+                             related_name='formula_components')
+
+    # The order in which the component should be provisioned
+    order = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return u'{0}:{1}'.format(
+            self.component,
+            self.host
         )
 
 

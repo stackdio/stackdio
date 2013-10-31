@@ -101,7 +101,31 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     host_ok = False
 
                 # check ownership of formula components
-                for component_id in formula_components:
+                for component in formula_components:
+                    if not isinstance(component, dict):
+                        errors.setdefault('formula_components', []).append(
+                            'Formula components must be objects with an id and optional order field.'
+                        )
+                        break
+
+                    component_id = component.get('id')
+                    if not component_id:
+                        errors.setdefault('formula_components', []).append(
+                            'Formula components must have an id field.'
+                        )
+                        break
+
+                    try:
+                        component_order = int(component.get('order', 0))
+                        if component_order < 0:
+                            errors.setdefault('formula_components', []).append(
+                                'Formula components order field must be non-negative.'
+                            )
+                    except ValueError:
+                        errors.setdefault('formula_components', []).append(
+                            'Formula components order field must be a non-negative integer.'
+                        )
+                        
                     try:
                         FormulaComponent.objects.get(pk=component_id,
                                                      formula__owner=request.user)
