@@ -109,7 +109,10 @@ class StackManager(models.Manager):
 
             # create the managed security group for each host definition
             # and assign the rules to the group
-            sg_name='{0}-stackdio-id-{1}'.format(hostdef.prefix, stack.pk)
+            sg_name='{0}-{1}-stackdio-id-{2}'.format(
+                hostdef.prefix,
+                owner.username,
+                stack.pk)
             sg_description='stackd.io managed security group'
             sg_id = driver.create_security_group(sg_name, sg_description)
 
@@ -599,14 +602,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 f.write(yaml_data)
 
     def _generate_pillar_file(self):
-        pillar_props = {
-            'stackdio_username': self.owner.username,
-            'stackdio_publickey': self.owner.settings.public_key,
-        }
+        from blueprints.models import BlueprintHostFormulaComponent
 
         # Thanks Alex Martelli
         # http://goo.gl/nENTTt
         def update(d, u):
+            '''
+            Recursive update of one dictionary with another. The built-in
+            python dict::update will erase exisitng values.
+            '''
             for k, v in u.iteritems():
                 if isinstance(v, collections.Mapping):
                     r = update(d.get(k, {}), v)
@@ -614,6 +618,43 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 else:
                     d[k] = u[k]
             return d
+
+        pillar_props = {
+            'stackdio_username': self.owner.username,
+            'stackdio_publickey': self.owner.settings.public_key,
+        }
+
+        # If the any of the formula s we're using have default pillar
+        # data defined in its corresponding SPECFILE, we need to pull 
+        # that into our stack pillar file.
+
+        # First get the unique set of formulas
+        hosts = self.hosts.all()
+        formulas = set([c.component.formula for c in BlueprintHostFormulaComponent.objects.filter(
+            hosts__in=hosts
+        )])
+        
+        # for each unique formula, pull the SPECFILE and add any 
+        # default pillar data
+        for formula in formulas:
+            specfile = os.path.join(formula.get_repo_dir(), 'SPECFILE')
+
+            if not os.path.isfile(specfile):
+                logger.warn('SPECFILE does not exist. Formula {0}'.format(formula))
+                continue
+
+            # load the SPECFILE and parse the yaml
+            with open(specfile) as f:
+                formula_pillar = yaml.safe_load(f)
+
+            # Skip if SPECFILE does not have pillar data
+            if 'pillar_defaults' not in formula_pillar:
+                logger.warn('SPECFILE does not have pillar data. '
+                            'Formula: {0}'.format(formula))
+                continue
+
+            # update stack pillar with defaults pillar
+            update(pillar_props, formula_pillar['pillar_defaults'])
 
         # Add in properties that were supplied via the blueprint
         # Properties can specify a hierarchy by using colons

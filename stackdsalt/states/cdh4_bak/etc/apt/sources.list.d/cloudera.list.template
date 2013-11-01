@@ -1,1 +1,0 @@
-deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/{{ grains['lsb_distrib_codename'] }}/amd64/cdh {{ grains['lsb_distrib_codename'] }}-cdh{{ pillar.cdh4.version }} contrib
