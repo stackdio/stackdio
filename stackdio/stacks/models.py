@@ -1,3 +1,4 @@
+import collections
 import os
 import re
 import logging
@@ -469,7 +470,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # order_groups define which hosts fall into which groups
             # used by the overstate system for orchestrating the provisioning
             # of the hosts
-            order_groups = [c.order for c in host.formula_components.all()]
+            order_groups = list(set([c.order for c in host.formula_components.all()]))
 
             # The volumes will be defined on the map as well as in the grains.
             # Those in the map are used by salt-cloud to create and attach
@@ -581,7 +582,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             group = 'group_{0}'.format(i)
             overstate[group] = {
                 'match': 'G@stack_id:{0} and G@order_groups:{1}'.format(self.pk, i),
-                'sls': [c.component.sls_path for c in components],
+                'sls': list(set([c.component.sls_path for c in components])),
             }
 
             if i > 0:
@@ -602,8 +603,24 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             'stackdio_username': self.owner.username,
             'stackdio_publickey': self.owner.settings.public_key,
         }
+
+        # Thanks Alex Martelli
+        # http://goo.gl/nENTTt
+        def update(d, u):
+            for k, v in u.iteritems():
+                if isinstance(v, collections.Mapping):
+                    r = update(d.get(k, {}), v)
+                    d[k] = r
+                else:
+                    d[k] = u[k]
+            return d
+
+        # Add in properties that were supplied via the blueprint
+        # Properties can specify a hierarchy by using colons
+        # which we will split on to build up a dictionary
+        # foo:bar:baz = { foo: { bar: { baz: value }}}
         for prop in self.properties.all():
-            pillar_props[prop.name] = prop.value
+            update(pillar_props, prop.to_pillar_dict())
 
         pillar_file_yaml = yaml.safe_dump(pillar_props,
                                           default_flow_style=False)
@@ -795,4 +812,38 @@ class StackProperty(TimeStampedModel):
             self.name,
             self.value
         )
+
+    def to_pillar_dict(self):
+        '''
+        Converts the property name/value pair to hierarchical property using
+        dictionaries if the property name has colons in it. For example:
+        self.name = "foo:bar:baz:prop_name" self.value = "value" would become:
+
+        {
+            "foo": {
+                "bar": {
+                    "baz": {
+                        "prop_name": "value"
+                    }
+                }
+            }
+        }
+
+        which could then be used to update a pillar dictionary.
+        '''
+        ret, child = {}, None
+        prop_list = self.name.split(':')
+
+        if len(prop_list) == 1:
+            return {prop_list[0]: self.value}
+
+        for i, k in enumerate(prop_list):
+            if i == 0:
+                ret[k] = child = {}
+                continue
+            if i == len(prop_list)-1:
+                child[k] = self.value
+                break
+            child[k] = child = {}
+        return ret
 

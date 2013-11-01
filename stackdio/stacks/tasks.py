@@ -17,6 +17,7 @@ from stacks.models import (
     Level,
 )
 from cloud.models import SecurityGroup
+from core.exceptions import BadRequest
 
 logger = get_task_logger(__name__)
 
@@ -893,7 +894,13 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
 
             if security_groups.count():
                 for security_group in security_groups:
-                    driver.delete_security_group(security_group.name)
+                    try:
+                        driver.delete_security_group(security_group.name)
+                    except BadRequest, e:
+                        if 'does not exist' in e.message:
+                            logger.warn(e.message)
+                        else:
+                            raise
                     security_group.delete()
 
         # delete hosts
