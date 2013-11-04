@@ -183,6 +183,28 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     if not volumes_ok:
                         break
 
+                # Validating spot instances
+                spot_ok = True
+                spot_config = host.get('spot_config', None)
+                if spot_config is not None and not isinstance(spot_config, dict):
+                    errors.setdefault('spot_config', []).append(
+                        'spot_config must be a JSON object and contain a '
+                        'spot_price field.'
+                    )
+                elif spot_config is not None:
+                    if 'spot_price' not in spot_config:
+                        errors.setdefault('spot_config', []).append(
+                            'spot_price must be set in spot_config.'
+                        )
+                    elif not isinstance(spot_config['spot_price'], float):
+                        errors.setdefault('spot_config', []).append(
+                            'spot_price must be a decimal value.' 
+                        )
+                    elif spot_config['spot_price'] < 0:
+                        errors.setdefault('spot_config', []).append(
+                            'spot_price must be a non-negative value.' 
+                        )
+                        
                 if not host_ok or not rules_ok or not volumes_ok:
                     break
 

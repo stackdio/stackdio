@@ -1,5 +1,6 @@
 import json
 import logging
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
@@ -62,7 +63,7 @@ class BlueprintManager(models.Manager):
                                         # would become 'foo-1'
                     "zone": 1,          # availability zone id
                     "cloud_profile": 1, # what cloud_profile id to use
-                    "access_rules": [
+                    "access_rules": [                                   # access rule configuration (optional)
                         {
                             "protocol": "tcp | udp | icmp",
                             "from_port": "1-65535 | -1 for icmp",
@@ -81,7 +82,7 @@ class BlueprintManager(models.Manager):
                         ...
                         },
                     ],
-                    "volumes": [
+                    "volumes": [                        # volume configuration (optional)
                         {
                             "device": "/dev/xvdj",
                             "mount_point": "/mnt/ebs1",
@@ -93,7 +94,10 @@ class BlueprintManager(models.Manager):
                             "snapshot": 1
                         }
                     ],
-                    "formula_components": [1,2,3...]  # formula components to attach to this host
+                    "formula_components": [1,2,3...],   # formula components to attach to this host
+                    "spot_config": {                    # spot instance configuration (optional)
+                        "spot_price": 0.20
+                    }
                 },
                 {
                     ...
@@ -121,6 +125,9 @@ class BlueprintManager(models.Manager):
             profile_obj = CloudProfile.objects.get(pk=host['cloud_profile'])
             size_obj = CloudInstanceSize.objects.get(pk=host['size'])
             zone_obj = CloudZone.objects.get(pk=host['zone'])
+            spot_price = host.get('spot_config', {}).get('spot_price', None)
+            if spot_price is not None:
+                spot_price = Decimal(str(spot_price))
             host_obj = blueprint.host_definitions.create(
                 title=host['title'],
                 description=host.get('description', ''),
@@ -129,6 +136,7 @@ class BlueprintManager(models.Manager):
                 cloud_profile=profile_obj,
                 size=size_obj,
                 zone=zone_obj,
+                spot_price=spot_price,
             )
 
             # create extended formula components for the blueprint
@@ -217,6 +225,12 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
 
     # The default availability zone for the host
     zone = models.ForeignKey('cloud.CloudZone')
+
+    # The spot instance price for this host. If null, spot
+    # instances will not be used for this host.
+    spot_price = models.DecimalField(max_digits=5,
+                                     decimal_places=2,
+                                     null=True)
 
     @property
     def formula_components_count(self):

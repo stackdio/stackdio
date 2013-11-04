@@ -79,6 +79,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
             'formula_components',
             'access_rules',
             'volumes',
+            'spot_price',
         )
 
 

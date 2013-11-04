@@ -142,7 +142,8 @@ class StackManager(models.Manager):
                 host = stack.hosts.create(cloud_profile=hostdef.cloud_profile,
                                           instance_size=hostdef.size,
                                           availability_zone=hostdef.zone,
-                                          hostname=hostname)
+                                          hostname=hostname,
+                                          sir_price=hostdef.spot_price)
 
                 # Add in the cloud provider default security groups as 
                 # defined by an admin.
@@ -169,8 +170,6 @@ class StackManager(models.Manager):
                         device=volumedef.device,
                         mount_point=volumedef.mount_point
                     )
-
-                # TODO: Spot instances
 
         # Generate configuration files for salt and salt-cloud
         # NOTE: The order is important here. pillar must be available before
