@@ -34,6 +34,7 @@ class Migration(SchemaMigration):
             ('prefix', self.gf('django.db.models.fields.CharField')(max_length=64)),
             ('size', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudInstanceSize'])),
             ('zone', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cloud.CloudZone'])),
+            ('spot_price', self.gf('django.db.models.fields.DecimalField')(null=True, max_digits=5, decimal_places=2)),
         ))
         db.send_create_signal(u'blueprints', ['BlueprintHostDefinition'])
 
@@ -183,6 +184,7 @@ class Migration(SchemaMigration):
             'prefix': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
+            'spot_price': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'zone': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudZone']"})
         },
