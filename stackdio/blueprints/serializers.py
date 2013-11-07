@@ -94,6 +94,7 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'description',
             'url',
+            'public',
             'properties',
             'host_definitions',
         )

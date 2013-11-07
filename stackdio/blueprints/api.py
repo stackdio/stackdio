@@ -1,6 +1,8 @@
 import logging
 
 from django.db import transaction
+from django.db.models import Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
@@ -33,6 +35,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         errors = {}
         title = request.DATA.get('title', '')
         description = request.DATA.get('description', '')
+        public = request.DATA.get('public', False)
         properties = request.DATA.get('properties', [])
         hosts = request.DATA.get('hosts', [])
 
@@ -42,6 +45,9 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         if not description:
             errors.setdefault('description', []).append('This field is required.')
 
+        if not isinstance(public, bool):
+            errors.setdefault('public', []).append('This field must be a boolean.')
+            
         if not properties or not isinstance(properties, list):
             errors.setdefault('properties', []).append(
                 'This field is required and must be a list of properties.'
@@ -215,6 +221,17 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         return Response(self.get_serializer(blueprint).data)
 
 
+class BlueprintPublicAPIView(generics.ListAPIView):
+
+    model = Blueprint
+    serializer_class = BlueprintSerializer
+
+    def get_queryset(self):
+        return Blueprint.objects \
+            .filter(public=True) \
+            .exclude(owner=self.request.user)
+
+
 class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     model = Blueprint
@@ -222,15 +239,21 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     parser_classes = (JSONParser,)
 
     def get_object(self):
+        # Return the blueprint if it's owned by the request user or
+        # if it's public...else we'll raise a 404
         return get_object_or_404(Blueprint,
-                                 pk=self.kwargs.get('pk'),
-                                 owner=self.request.user)
+                                 Q(owner=self.request.user) | Q(public=True),
+                                 pk=self.kwargs.get('pk'))
 
     def update(self, request, *args, **kwargs):
         blueprint = self.get_object()
-        properties = request.DATA.get('properties', None)
+
+        # Only the owner of the blueprint can submit PUT/PATCH requests
+        if blueprint.owner != request.user:
+            raise BadRequest('Only the owner of a blueprint may modify it.')
 
         # rebuild properties list
+        properties = request.DATA.get('properties', None)
         if isinstance(properties, list):
             with transaction.commit_on_success():
                 blueprint.properties.all().delete()
@@ -241,3 +264,12 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         # method into thinking no properties have changed
         request.DATA['properties'] = []
         return super(BlueprintDetailAPIView, self).update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        '''
+        Override the delete method to check for ownership.
+        '''
+        blueprint = self.get_object()
+        if blueprint.owner != request.user:
+            raise BadRequest('Only the owner of a blueprint may delete it.')
+        super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)

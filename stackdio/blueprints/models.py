@@ -44,6 +44,7 @@ class BlueprintManager(models.Manager):
         {
             "title": "Test Blueprint",
             "description": "Testing and stuff...",
+            "public": true | false,
             "properties": [
                 {
                     "name": "property1",
@@ -113,6 +114,7 @@ class BlueprintManager(models.Manager):
         ##
         blueprint = self.model(title=data['title'],
                                description=data['description'],
+                               public=data['public'],
                                owner=owner)
         blueprint.save()
 
@@ -184,6 +186,9 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
 
     # owner of the blueprint
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blueprints')
+
+    # publicly available to other users?
+    public = models.BooleanField(default=False)
 
     # Use our custom manager object
     objects = BlueprintManager()
