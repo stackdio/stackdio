@@ -5,15 +5,23 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from .models import Formula, FormulaComponent
+from . import models
 
 logger = logging.getLogger(__name__)
+
+
+class FormulaPropertiesSerializer(serializers.Serializer):
+    properties = serializers.Field('properties')
+
+    class Meta:
+        model = models.Formula
+        fields = ('properties',)
 
 
 class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
-        model = FormulaComponent
+        model = models.FormulaComponent
         fields = (
             'id',
             'title',
@@ -26,9 +34,10 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
 class FormulaSerializer(serializers.HyperlinkedModelSerializer):
 
     components = FormulaComponentSerializer(many=True)
+    properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
 
     class Meta:
-        model = Formula 
+        model = models.Formula 
         fields = (
             'id',
             'url',
@@ -37,6 +46,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'public',
             'uri',
             'root_path',
+            'properties',
             'components',
             'created',
             'modified',

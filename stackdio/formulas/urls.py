@@ -12,6 +12,11 @@ urlpatterns = patterns('formulas.api',
         api.FormulaDetailAPIView.as_view(), 
         name='formula-detail'),
 
+    # Pull the default pillar/properties defined in the SPECFILE
+    url(r'^formulas/(?P<pk>[0-9]+)/properties/$', 
+        api.FormulaPropertiesAPIView.as_view(), 
+        name='formula-properties'),
+
     url(r'^formula_components/(?P<pk>[0-9]+)/$', 
         api.FormulaComponentDetailAPIView.as_view(), 
         name='formulacomponent-detail'),

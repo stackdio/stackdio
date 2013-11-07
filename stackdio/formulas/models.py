@@ -3,6 +3,8 @@ import json
 from os.path import join, isdir, split, splitext
 from shutil import rmtree
 
+import yaml
+
 from django.conf import settings
 from django.db import models
 from django.db import transaction
@@ -125,6 +127,12 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     def get_repo_name(self):
         return splitext(split(self.uri)[-1])[0]
+
+    @property
+    def properties(self):
+        with open(join(self.get_repo_dir(), 'SPECFILE')) as f:
+            yaml_data = yaml.safe_load(f)
+            return yaml_data.get('pillar_defaults', {})
 
 
 class FormulaComponent(TitleSlugDescriptionModel):

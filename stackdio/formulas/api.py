@@ -11,16 +11,16 @@ from rest_framework.parsers import JSONParser
 from core.exceptions import BadRequest, ResourceConflict
 
 from . import tasks
-from .serializers import FormulaSerializer, FormulaComponentSerializer
-from .models import Formula, FormulaComponent
+from . import serializers
+from . import models
 
 logger = logging.getLogger(__name__)
 
 
 class FormulaListAPIView(generics.ListCreateAPIView):
 
-    model = Formula
-    serializer_class = FormulaSerializer
+    model = models.Formula
+    serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
 
     def get_queryset(self):
@@ -38,16 +38,16 @@ class FormulaListAPIView(generics.ListCreateAPIView):
 
         # check for duplicate uri
         try:
-            formula = Formula.objects.get(uri=uri, owner=request.user)
+            formula = self.model.objects.get(uri=uri, owner=request.user)
             raise ResourceConflict('A formula already exists with this '
                                    'uri: {0}'.format(uri))
-        except Formula.DoesNotExist:
+        except self.model.DoesNotExist:
             pass
 
-        formula = Formula.objects.create(owner=request.user,
+        formula = self.model.objects.create(owner=request.user,
                                          public=public,
                                          uri=uri,
-                                         status=Formula.IMPORTING,
+                                         status=self.model.IMPORTING,
                                          status_detail='Importing formula...this could take a while.')
 
         # Import using asynchronous task
@@ -57,8 +57,8 @@ class FormulaListAPIView(generics.ListCreateAPIView):
 
 
 class FormulaPublicAPIView(generics.ListAPIView):
-    model = Formula
-    serializer_class = FormulaSerializer
+    model = models.Formula
+    serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
 
     def get_queryset(self):
@@ -69,8 +69,8 @@ class FormulaPublicAPIView(generics.ListAPIView):
 
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
-    model = Formula
-    serializer_class = FormulaSerializer
+    model = models.Formula
+    serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
 
     def get_object(self):
@@ -116,14 +116,29 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         super(FormulaDetailAPIView, self).delete(request, *args, **kwargs)
 
 
+class FormulaPropertiesAPIView(generics.RetrieveAPIView):
+
+    model = models.Formula
+    serializer_class = serializers.FormulaPropertiesSerializer
+
+    def get_object(self):
+        '''
+        Return the formula if it's owned by the request user or
+        if it's public...else we'll raise a 404
+        '''
+        return get_object_or_404(self.model,
+                                 Q(owner=self.request.user) | Q(public=True),
+                                 pk=self.kwargs.get('pk'))
+
+
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
-    model = FormulaComponent
-    serializer_class = FormulaComponentSerializer
+    model = models.FormulaComponent
+    serializer_class = serializers.FormulaComponentSerializer
     parser_classes = (JSONParser,)
 
     def get_object(self):
-        return get_object_or_404(FormulaComponent,
+        return get_object_or_404(self.model,
                                  pk=self.kwargs.get('pk'),
                                  formula__owner=self.request.user)
 
