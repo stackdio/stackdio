@@ -227,7 +227,7 @@ class BlueprintPublicAPIView(generics.ListAPIView):
     serializer_class = BlueprintSerializer
 
     def get_queryset(self):
-        return Blueprint.objects \
+        return self.model.objects \
             .filter(public=True) \
             .exclude(owner=self.request.user)
 
@@ -241,7 +241,7 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         # Return the blueprint if it's owned by the request user or
         # if it's public...else we'll raise a 404
-        return get_object_or_404(Blueprint,
+        return get_object_or_404(self.model,
                                  Q(owner=self.request.user) | Q(public=True),
                                  pk=self.kwargs.get('pk'))
 
@@ -273,3 +273,4 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         if blueprint.owner != request.user:
             raise BadRequest('Only the owner of a blueprint may delete it.')
         super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)
+
