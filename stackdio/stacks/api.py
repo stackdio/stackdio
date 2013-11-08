@@ -103,7 +103,6 @@ class StackListAPIView(generics.ListCreateAPIView):
         try:
             logger.debug(request.DATA)
             stack = models.Stack.objects.create_stack(request.user, blueprint, **request.DATA)
-            raise Exception('foooooo')
         except Exception, e:
             logger.exception(e)
             raise BadRequest(str(e))
