@@ -1,7 +1,7 @@
-{% if 'stackdio_username' in pillar and pillar.get('stackdio_publickey') %}
+{% set username=salt['pillar.get']('__stackdio__:username') %}
+{% set publickey=salt['pillar.get']('__stackdio__:publickey') %}
 
-{% set username=pillar['stackdio_username'] %}
-{% set publickey=pillar['stackdio_publickey'] %}
+{% if username and publickey %}
 
 # Create the group
 stackdio_group:

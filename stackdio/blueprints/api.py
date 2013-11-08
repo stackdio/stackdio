@@ -36,7 +36,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         title = request.DATA.get('title', '')
         description = request.DATA.get('description', '')
         public = request.DATA.get('public', False)
-        properties = request.DATA.get('properties', [])
+        properties = request.DATA.get('properties', {})
         hosts = request.DATA.get('hosts', [])
 
         if not title:
@@ -48,30 +48,41 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         if not isinstance(public, bool):
             errors.setdefault('public', []).append('This field must be a boolean.')
             
-        if not properties or not isinstance(properties, list):
+        if not isinstance(properties, dict):
             errors.setdefault('properties', []).append(
-                'This field is required and must be a list of properties.'
+                'This field must be a JSON object.'
             )
         else:
-            for prop in properties:
-                if 'name' not in prop or 'value' not in prop:
-                    errors.setdefault('properties', []).append(
-                        'Properties must have both a name and value field.'
-                    )
-                    break
+            # user properties are not allowed to provide a __stackdio__ key
+            if '__stackdio__' in properties:
+                errors.setdefault('properties', []).append(
+                    'The __stackdio__ key is reserved for system use.'
+                )
 
         if not isinstance(hosts, list) or not hosts:
             errors.setdefault('hosts', []).append('This field is required.')
         elif hosts:
             host_ok = True
             for host in hosts:
+                if not isinstance(host, dict):
+                    errors.setdefault('hosts', []).append(
+                        'Hosts must be a JSON object.'
+                    )
+                    host_ok = False
+                    break
+
                 formula_components = host.get('formula_components', [])
                 access_rules = host.get('access_rules', [])
                 volumes = host.get('volumes', [])
 
-                if 'title' not in host:
+                if 'title' not in host or not host['title']:
                     errors.setdefault('hosts', []).append(
                         'Hosts must have a title field.'
+                    )
+                    host_ok = False
+                if 'description' not in host or not host['description']:
+                    errors.setdefault('hosts', []).append(
+                        'Hosts must have a description field.'
                     )
                     host_ok = False
                 if 'count' not in host:
@@ -272,5 +283,5 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         blueprint = self.get_object()
         if blueprint.owner != request.user:
             raise BadRequest('Only the owner of a blueprint may delete it.')
-        super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)
+        return super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)
 

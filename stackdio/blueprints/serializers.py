@@ -10,16 +10,6 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
-class BlueprintPropertySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = models.BlueprintProperty
-        fields = (
-            'name',
-            'value',
-        )
-
-
 class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -85,7 +75,6 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
     
-    properties = BlueprintPropertySerializer(many=True, required=False)
     host_definitions = BlueprintHostDefinitionSerializer(many=True, required=False)
 
     class Meta:
@@ -95,22 +84,6 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'url',
             'public',
-            'properties',
             'host_definitions',
         )
 
-    def validate(self, attrs):
-        # if the user failed to supply a properties list, then
-        # we'll default to the empty list
-        if attrs.get('properties', None) is None:
-            attrs['properties'] = []
-
-        # property names must be unique
-        properties = attrs['properties']
-        if properties:
-            names = set([p.name for p in properties])
-            if len(names) != len(properties):
-                raise serializers.ValidationError({
-                    'properties': ['Property names must be unique.']
-                })
-        return super(BlueprintSerializer, self).validate(attrs)

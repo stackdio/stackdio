@@ -1,4 +1,5 @@
 import collections
+import json
 import os
 import re
 import logging
@@ -11,7 +12,6 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 
 import envoy
-import simplejson
 import yaml
 
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
@@ -30,11 +30,22 @@ from volumes.models import Volume
 
 logger = logging.getLogger(__name__)
 
-
 HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
 
-def get_hosts_file_path(obj, filename):
-    return "stacks/{0}/{1}.hosts".format(obj.owner.username, obj.slug)
+# Thanks Alex Martelli
+# http://goo.gl/nENTTt
+def recursive_update(d, u):
+    '''
+    Recursive update of one dictionary with another. The built-in
+    python dict::update will erase exisitng values.
+    '''
+    for k, v in u.iteritems():
+        if isinstance(v, collections.Mapping):
+            r = recursive_update(d.get(k, {}), v)
+            d[k] = r
+        else:
+            d[k] = u[k]
+    return d
 
 def get_map_file_path(obj, filename):
     return "stacks/{0}/{1}.map".format(obj.owner.username, obj.slug)
@@ -47,6 +58,9 @@ def get_overstate_file_path(obj, filename):
 
 def get_pillar_file_path(obj, filename):
     return "stacks/{0}/{1}.pillar".format(obj.owner.username, obj.slug)
+
+def get_props_file_path(obj, filename):
+    return "stacks/{0}/{1}.props".format(obj.owner.username, obj.slug)
 
 
 class Level(object):
@@ -88,13 +102,14 @@ class StackManager(models.Manager):
         stack.save()
 
         # manage the properties
-        properties = {}
-        for blueprint_prop in blueprint.properties.all():
-            properties[blueprint_prop.name] = blueprint_prop.value
-        for prop in data.get('properties', []):
-            properties[prop['name']] = prop['value']
-        for name, value in properties.iteritems():
-            stack.properties.create(name=name, value=value)
+        properties = blueprint.properties
+        recursive_update(properties, data.get('properties', {}))
+        props_json = json.dumps(properties, indent=4)
+        if not stack.props_file:
+            stack.props_file.save(stack.slug+'.props', ContentFile(props_json))
+        else:
+            with open(stack.props_file.path, 'w') as f:
+                f.write(props_json)
 
         # create host records on the stack based on the host definitions in
         # the blueprint
@@ -247,6 +262,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         default=None,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
+    # storage for properties file
+    props_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_props_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
     # Use our custom manager object
     objects = StackManager()
 
@@ -281,162 +305,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         if not host_ids:
             return self.hosts.all()
         return self.hosts.filter(id__in=host_ids)
-    
-    #XXX
-    def create_hosts_XXX(self):
-        '''
-        See StackManager.create_stack for host data format requirements and
-        how the Stack.hosts_file is populated. 
-        
-        Calling create_hosts after hosts are already attached to the Stack
-        object will log a warning and return. 
-        '''
-        # TODO: We probably need to think about adding and deleting
-        # individual hosts.
 
-        # if the stack already has hosts, do nothing
-        if self.get_hosts().count() > 0:
-            logger.warn('Stack already has host objects attached. '
-                        'Skipping create_hosts')
-            return
-
-        # load the stack's hosts file
-        with open(self.hosts_file.path, 'r') as f:
-            hosts = simplejson.loads(f.read())
-
-        # load the provider yaml
-        provider_yaml = yaml.safe_load(self.cloud_provider.yaml).values()[0]
-
-        new_hosts = []
-        for host in hosts:
-            host_count = int(host['host_count'])
-            host_pattern = host['host_pattern']
-            cloud_profile_id = host['cloud_profile']
-            host_size_id = host.get('host_size')
-            availability_zone_id = host.get('availability_zone')
-            security_group_ids = host.get('host_security_groups', [])
-
-            # cloud profiles are restricted to only those in this stack's
-            # cloud provider
-            cloud_profile_obj = CloudProfile.objects.get(
-                id=cloud_profile_id,
-                cloud_provider=self.cloud_provider
-            )
-
-            # default to the cloud profile instance size
-            # if the user is not overriding it
-            if host_size_id is None:
-                host_size_id = cloud_profile_obj.default_instance_size.id
-            host_size_obj = CloudInstanceSize.objects.get(id=host_size_id)
-
-            # default to the cloud profile availability zone if
-            # the user is not supplying it
-            if availability_zone_id is None:
-                availability_zone_id = cloud_profile_obj \
-                    .cloud_provider \
-                    .default_availability_zone \
-                    .id
-            availability_zone_obj = CloudZone.objects.get(id=availability_zone_id)
-
-            salt_roles = host['salt_roles']
-            # optional
-            volumes = host.get('volumes', [])
-
-            # PI-48: Spot instance support
-            spot_config = host.get('spot_config', {})
-            sir_price = spot_config.get('spot_price')
-
-            # Security groups are a combination of the default groups
-            # set on the provider and those in the host definition
-            
-            # pull the default security groups from the provider
-            provider_groups = list(self.cloud_provider.security_groups.filter(
-                is_default=True
-            ))
-
-            # groups set by the user on the host
-            host_groups = list(SecurityGroup.objects.filter(
-                owner=self.owner,
-                pk__in=security_group_ids
-            ))
-
-            security_group_objs = set(provider_groups+host_groups)
-
-            # lookup other objects
-            role_objs = SaltRole.objects.filter(id__in=salt_roles)
-
-            # if user is adding hosts, they may be adding hosts that will
-            # use the same host pattern as an existing hostname. in that case
-            # we need to find which starting index of the hostname pattern to
-            # use
-            existing_hosts = self.hosts.filter(
-                hostname__contains=host_pattern
-            )
-            matches = [int(HOST_INDEX_PATTERN.match(h.hostname).groups()[0]) 
-                for h in existing_hosts]
-            start_index = max(matches) if matches else 0
-
-            # create hosts
-            for i in xrange(start_index+1, start_index+host_count+1):
-                host_obj = self.hosts.create(
-                    stack=self,
-                    cloud_profile=cloud_profile_obj,
-                    instance_size=host_size_obj,
-                    availability_zone=availability_zone_obj,
-                    hostname='{0}-{1}-{2}'.format(host_pattern, 
-                                               self.owner.username, 
-                                               i),
-                )
-
-                if sir_price is not None:
-                    host_obj.sir_price = Decimal(sir_price)
-                    host_obj.save()
-
-                # set security groups
-                host_obj.security_groups.add(*security_group_objs)
-
-                # set roles
-                host_obj.roles.add(*role_objs)
-
-                cloud_provider = host_obj.cloud_profile.cloud_provider
-
-                # add volumes - first, we need to check the stack to see
-                # if existing volumes are available
-                existing_volumes = self.volumes.filter(hostname=host_obj.hostname)
-
-                # in this case, the volumes have already been created,
-                # so we need to match up the volumes with the host
-                # objects based on the hostname
-                if existing_volumes:
-                    existing_volumes.update(host=host_obj)
-
-                # this case means we're dealing with a stack that hasn't
-                # had volumes before, so we create them in the database.
-                # The volume_id for the new volumes will be assigned
-                # after hosts have been launched and the volumes created
-                # and attached to the hosts
-                else:
-                    for volume in volumes:
-                        self.volumes.create(
-                            hostname=host_obj.hostname,
-                            host=host_obj,
-                            snapshot=cloud_provider.snapshots.get(id=volume['snapshot']),
-                            device=volume['device'],
-                            mount_point=volume['mount_point'])
-
-                # keep track of the hosts we're creating so we can return them
-                new_hosts.append(host_obj)
-
-        # generate salt and salt-cloud files
-        # NOTE: The order is important here. pillar must be available before
-        # the map file is rendered or else we'll miss important grains that
-        # need to be set
-        self._generate_pillar_file()
-        self._generate_top_file()
-        self._generate_map_file()
-
-        # return the newly added host objects
-        return new_hosts
+    @property
+    def properties(self):
+        if not self.props_file:
+            return {}
+        with open(self.props_file.path) as f:
+            return json.loads(f.read())
 
     def _generate_map_file(self):
         # TODO: Figure out a way to make this provider agnostic
@@ -603,24 +478,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def _generate_pillar_file(self):
         from blueprints.models import BlueprintHostFormulaComponent
 
-        # Thanks Alex Martelli
-        # http://goo.gl/nENTTt
-        def update(d, u):
-            '''
-            Recursive update of one dictionary with another. The built-in
-            python dict::update will erase exisitng values.
-            '''
-            for k, v in u.iteritems():
-                if isinstance(v, collections.Mapping):
-                    r = update(d.get(k, {}), v)
-                    d[k] = r
-                else:
-                    d[k] = u[k]
-            return d
-
         pillar_props = {
-            'stackdio_username': self.owner.username,
-            'stackdio_publickey': self.owner.settings.public_key,
+            '__stackdio__': {
+                'username': self.owner.username,
+                'publickey': self.owner.settings.public_key,
+            }
         }
 
         # If the any of the formula s we're using have default pillar
@@ -633,34 +495,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             hosts__in=hosts
         )])
         
-        # for each unique formula, pull the SPECFILE and add any 
-        # default pillar data
+        # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
-            specfile = os.path.join(formula.get_repo_dir(), 'SPECFILE')
+            recursive_update(pillar_props, formula.properties)
 
-            if not os.path.isfile(specfile):
-                logger.warn('SPECFILE does not exist. Formula {0}'.format(formula))
-                continue
-
-            # load the SPECFILE and parse the yaml
-            with open(specfile) as f:
-                formula_pillar = yaml.safe_load(f)
-
-            # Skip if SPECFILE does not have pillar data
-            if 'pillar_defaults' not in formula_pillar:
-                logger.warn('SPECFILE does not have pillar data. '
-                            'Formula: {0}'.format(formula))
-                continue
-
-            # update stack pillar with defaults pillar
-            update(pillar_props, formula_pillar['pillar_defaults'])
-
-        # Add in properties that were supplied via the blueprint
-        # Properties can specify a hierarchy by using colons
-        # which we will split on to build up a dictionary
-        # foo:bar:baz = { foo: { bar: { baz: value }}}
-        for prop in self.properties.all():
-            update(pillar_props, prop.to_pillar_dict())
+        # Add in properties that were supplied via the blueprint and during
+        # stack creation
+        recursive_update(pillar_props, self.properties)
 
         pillar_file_yaml = yaml.safe_dump(pillar_props,
                                           default_flow_style=False)
@@ -823,67 +664,4 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     def get_driver(self):
         return self.cloud_profile.get_driver()
-
-
-class StackProperty(TimeStampedModel):
-    '''
-    Stack properties, similar to blueprint properties, contain the key/value
-    pairs of properties to be written as pillar data. We're storing a set of
-    the properties on stacks so that users may add, remove, or otherwise
-    override the properties defined on a blueprint before the stack is created.
-    '''
-
-    class Meta:
-        unique_together = ('stack', 'name')
-        verbose_name_plural = 'properties'
-
-    # The stack object this property applies to
-    stack = models.ForeignKey('stacks.Stack',
-                              related_name='properties')
-
-    # The name of the property
-    name = models.CharField(max_length=255)
-
-    # The value of the property
-    value = models.CharField(max_length=255)
-
-    def __unicode__(self):
-        return u'{0}:{1}'.format(
-            self.name,
-            self.value
-        )
-
-    def to_pillar_dict(self):
-        '''
-        Converts the property name/value pair to hierarchical property using
-        dictionaries if the property name has colons in it. For example:
-        self.name = "foo:bar:baz:prop_name" self.value = "value" would become:
-
-        {
-            "foo": {
-                "bar": {
-                    "baz": {
-                        "prop_name": "value"
-                    }
-                }
-            }
-        }
-
-        which could then be used to update a pillar dictionary.
-        '''
-        ret, child = {}, None
-        prop_list = self.name.split(':')
-
-        if len(prop_list) == 1:
-            return {prop_list[0]: self.value}
-
-        for i, k in enumerate(prop_list):
-            if i == 0:
-                ret[k] = child = {}
-                continue
-            if i == len(prop_list)-1:
-                child[k] = self.value
-                break
-            child[k] = child = {}
-        return ret
 

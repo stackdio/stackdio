@@ -1,11 +1,6 @@
 from django.contrib import admin
 
-from .models import (
-    Blueprint, 
-    BlueprintProperty, 
-    BlueprintHostDefinition, 
-    BlueprintAccessRule, 
-)
+from . import models
 
 
 class BlueprintAdmin(admin.ModelAdmin):
@@ -13,23 +8,11 @@ class BlueprintAdmin(admin.ModelAdmin):
         'title',
         'slug',
         'owner',
-        'property_count',
         'host_definition_count',
         'created',
         'modified',
     ]
-admin.site.register(Blueprint, BlueprintAdmin)
-
-
-class BlueprintPropertyAdmin(admin.ModelAdmin):
-    list_display = [
-        'name',
-        'value',
-        'blueprint',
-        'created',
-        'modified',
-    ]
-admin.site.register(BlueprintProperty, BlueprintPropertyAdmin)
+admin.site.register(models.Blueprint, BlueprintAdmin)
 
 
 class BlueprintHostDefinitionAdmin(admin.ModelAdmin):
@@ -42,7 +25,7 @@ class BlueprintHostDefinitionAdmin(admin.ModelAdmin):
         'zone',
         'formula_components_count',
     ]
-admin.site.register(BlueprintHostDefinition, BlueprintHostDefinitionAdmin)
+admin.site.register(models.BlueprintHostDefinition, BlueprintHostDefinitionAdmin)
 
 
 class BlueprintAccessRuleAdmin(admin.ModelAdmin):
@@ -53,5 +36,5 @@ class BlueprintAccessRuleAdmin(admin.ModelAdmin):
         'to_port',
         'rule',
     ]
-admin.site.register(BlueprintAccessRule, BlueprintAccessRuleAdmin)
+admin.site.register(models.BlueprintAccessRule, BlueprintAccessRuleAdmin)
 

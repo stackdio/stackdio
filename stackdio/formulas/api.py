@@ -113,7 +113,7 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         formula = self.get_object()
         if formula.owner != request.user:
             raise BadRequest('Only the owner of a formula may delete it.')
-        super(FormulaDetailAPIView, self).delete(request, *args, **kwargs)
+        return super(FormulaDetailAPIView, self).delete(request, *args, **kwargs)
 
 
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):

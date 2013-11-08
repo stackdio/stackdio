@@ -42,11 +42,6 @@ class StackListAPIView(generics.ListCreateAPIView):
         as well as generating the salt-cloud map that will be used to launch
         machines
         '''
-
-        # set some defaults
-        launch_stack = request.DATA.get('auto_launch', True)
-        provision_stack = request.DATA.get('auto_provision', True)
-
         # make sure the user has a public key or they won't be able to SSH
         # later
         if not request.user.settings.public_key:
@@ -55,31 +50,67 @@ class StackListAPIView(generics.ListCreateAPIView):
                              'machines. Please update your user profile '
                              'before continuing.')
 
-        # check for required blueprint
+        # Validate data
+        errors = {}
         blueprint_id = request.DATA.pop('blueprint', '')
-        if not blueprint_id:
-            raise BadRequest('Blueprint is a required field.')
+        title = request.DATA.get('title', '')
+        description = request.DATA.get('description', '')
+        properties = request.DATA.get('properties', {})
 
-        try:
-            blueprint = Blueprint.objects.get(pk=blueprint_id,
-                                              owner=request.user)
-        except Blueprint.DoesNotExist:
-            raise BadRequest('Blueprint with id {0} does not '
-                             'exist.'.format(blueprint_id))
+        # check for required blueprint
+        if not blueprint_id:
+            errors.setdefault('blueprint', []).append('This field is required.')
+        else:
+            try:
+                blueprint = Blueprint.objects.get(pk=blueprint_id,
+                                                  owner=request.user)
+            except Blueprint.DoesNotExist:
+                errors.setdefault('blueprint', []).append(
+                    'Blueprint with id {0} does not exist.'.format(blueprint_id)
+                )
+            except ValueError:
+                errors.setdefault('blueprint', []).append(
+                    'This field must be an integer ID of an existing blueprint.'
+                )
+
+        if not title:
+            errors.setdefault('title', []).append('This field is required.')
+
+        if not description:
+            errors.setdefault('description', []).append('This field is required.')
 
         # check for duplicates
-        title = request.DATA.get('title')
         if models.Stack.objects.filter(owner=self.request.user, title=title).count():
-            raise ResourceConflict('A Stack already exists with the given '
-                                   'title.')
+            errors.setdefault('title', []).append(
+                'A Stack with this title already exists in your account.'
+            )
+
+        if not isinstance(properties, dict):
+            errors.setdefault('properties', []).append(
+                'This field must be a JSON object.'
+            )
+        else:
+            # user properties are not allowed to provide a __stackdio__ key
+            if '__stackdio__' in properties:
+                errors.setdefault('properties', []).append(
+                    'The __stackdio__ key is reserved for system use.'
+                )
+
+        if errors:
+            raise BadRequest(errors)
 
         # create the stack and related objects
         try:
             logger.debug(request.DATA)
             stack = models.Stack.objects.create_stack(request.user, blueprint, **request.DATA)
+            raise Exception('foooooo')
         except Exception, e:
             logger.exception(e)
             raise BadRequest(str(e))
+
+        # set some defaults
+        launch_stack = request.DATA.get('auto_launch', True)
+        provision_stack = request.DATA.get('auto_provision', True)
 
         if launch_stack:
             # Queue up stack creation and provisioning using Celery

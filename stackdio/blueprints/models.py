@@ -34,6 +34,9 @@ DEVICE_ID_CHOICES = [
 
 logger = logging.getLogger(__name__)
 
+def get_props_file_path(obj, filename):
+    return "blueprints/{0}/{1}.props".format(obj.owner.username, obj.slug)
+
 
 class BlueprintManager(models.Manager):
     @transaction.commit_on_success
@@ -45,16 +48,14 @@ class BlueprintManager(models.Manager):
             "title": "Test Blueprint",
             "description": "Testing and stuff...",
             "public": true | false,
-            "properties": [
-                {
-                    "name": "property1",
-                    "value": "value1"
-                },
-                {
-                    "name": "property2",
-                    "value": "value2"
+            "properties": {
+                "prop1": "value1",
+                "foo": {
+                    "bar": {
+                        "prop2": "value2"
+                    }
                 }
-            ],
+            },
             "hosts": [
                 {
                     "count": 1,
@@ -118,9 +119,12 @@ class BlueprintManager(models.Manager):
                                owner=owner)
         blueprint.save()
 
-        # create properties
-        for prop in data.get('properties', []):
-            blueprint.properties.create(name=prop['name'], value=prop['value'])
+        props_json = json.dumps(data.get('properties', {}), indent=4)
+        if not blueprint.props_file:
+            blueprint.props_file.save(blueprint.slug+'.props', ContentFile(props_json))
+        else:
+            with open(blueprint.props_file.path, 'w') as f:
+                f.write(props_json)
 
         # create corresonding hosts and related models
         for host in data['hosts']:
@@ -190,6 +194,15 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     # publicly available to other users?
     public = models.BooleanField(default=False)
 
+    # storage for properties file
+    props_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_props_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
     # Use our custom manager object
     objects = BlueprintManager()
 
@@ -197,12 +210,15 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
    		return u'{0} (id={1})'.format(self.title, self.id)
 
     @property
-    def property_count(self):
-        return self.properties.count()
-
-    @property
     def host_definition_count(self):
         return self.host_definitions.count()
+
+    @property
+    def properties(self):
+        if not self.props_file:
+            return {}
+        with open(self.props_file.path) as f:
+            return json.loads(f.read())
 
 
 class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
@@ -274,34 +290,6 @@ class BlueprintHostFormulaComponent(TimeStampedModel):
         return u'{0}:{1}'.format(
             self.component,
             self.host
-        )
-
-
-class BlueprintProperty(TimeStampedModel):
-    '''
-    Properties are a way for users to override pillar variables
-    without modifying the pillar files directly or updating
-    the SLS to hardcode parameters.
-    '''
-
-    class Meta:
-        unique_together = ('blueprint', 'name')
-        verbose_name_plural = 'properties'
-
-    # The blueprint object this property applies to
-    blueprint = models.ForeignKey('blueprints.Blueprint',
-                                  related_name='properties')
-
-    # The name of the property
-    name = models.CharField(max_length=255)
-
-    # The value of the property
-    value = models.CharField(max_length=255)
-
-    def __unicode__(self):
-        return u'{0}:{1}'.format(
-            self.name,
-            self.value
         )
 
 
