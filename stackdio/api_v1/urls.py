@@ -34,6 +34,7 @@ def api_root(request, format=None):
         },
         'blueprints': reverse('blueprint-list', request=request, format=format),
         'formulas': reverse('formula-list', request=request, format=format),
+        'serach': reverse('search', request=request, format=format),
     }
 
     if request.user.is_superuser:
@@ -56,4 +57,5 @@ urlpatterns = patterns('',
     url(r'^', include('volumes.urls')),
     url(r'^', include('blueprints.urls')),
     url(r'^', include('formulas.urls')),
+    url(r'^', include('search.urls')),
 )
