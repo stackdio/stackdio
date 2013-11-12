@@ -283,7 +283,8 @@ LOGGING = {
 # Django REST Framework configuration
 ##
 REST_FRAMEWORK = {
-
+    'PAGINATE_BY': 15,
+    'PAGINATE_BY_PARAM': 'page_size',
     'FILTER_BACKEND': 'rest_framework.filters.DjangoFilterBackend',
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
