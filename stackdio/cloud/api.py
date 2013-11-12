@@ -200,6 +200,12 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
             return self.request.user.security_groups.all().with_rules()
 
     def create(self, request, *args, **kwargs):
+        # Only admins may create security groups directly. Regular users
+        # are restricted to using automatically managed security groups
+        # on stacks
+        if not request.user.is_superuser:
+            raise PermissionDenied()
+
         name = request.DATA.get('name')
         description = request.DATA.get('description')
         provider_id = request.DATA.get('cloud_provider')
@@ -345,6 +351,12 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
+        # Only admins may delete security groups directly. Regular users
+        # are restricted to using automatically managed security groups
+        # on stacks
+        if not request.user.is_superuser:
+            raise PermissionDenied()
+
         sg = self.get_object()
 
         # Delete from AWS. This will throw the appropriate error
