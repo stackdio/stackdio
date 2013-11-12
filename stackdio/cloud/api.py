@@ -523,6 +523,6 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
         # Grab the groups from the provider and inject them into the response
         driver = self.get_provider().get_driver()
         provider_groups = driver.get_security_groups()
-        response.data['provider_groups'] = provider_groups
+        response.data.provider_groups = provider_groups
         return response
 

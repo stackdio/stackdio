@@ -7,45 +7,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link href="{% static 'css/theme/jquery-ui-1.10.3.custom.min.css' %}" rel="stylesheet">
-    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
-    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <link href="{% static 'stackdio/components/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'stackdio/components/bootstrap-select/bootstrap-select.min.css' %}" rel="stylesheet">
     <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">
 </head>
 
 <body>
-    <div class="navbar navbar-inverse navbar-fixed-top">
-        <div class="navbar-inner">
-            <div class="container-fluid">
-                <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="brand" style="padding: 5px 15px 5px 15px;" href="#">
-                    <img src="{% static 'img/logo.png' %}" style="height: 33px"> stackd.io
-                </a>
-                <div class="nav-collapse collapse">
-                    <ul class="nav">
-                        <li class="active"><a href="#">home</a></li>
-                        <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
-                        <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
-                    </ul>
 
-                    <div class="btn-group pull-right">
-                        <a class="btn btn-inverse btn-small" data-toggle="dropdown" href="#">
-                            <span class="icon-white iconic-user"></span> {{ user.get_full_name }} <span class="caret"></span>
-                        </a>
-                        <ul class="dropdown-menu" role="menu">
-                            <li><a href="#" data-bind="click: showUserProfile">Profile</a></li>
-                            <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
-                            <li class="divider"></li>
-                            <li><a href="{% url 'logout' %}">Logout</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" style="padding: 5px 15px 5px 15px;" href="#">
+                <img src="{% static 'img/logo.png' %}" style="height: 33px"> stackd.io
+            </a>
         </div>
-    </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">home</a></li>
+                <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
+                <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
+            </ul>
+        </div>
+    </nav>
 
     <!-- 
         ======================================================================
@@ -717,54 +708,74 @@
             ======================================================================
         -->
         <div id="accounts-form-container" title="New Provider Account Details" class="stackd-form form-small">
-            <form id="account-form">
+            <form id="account-form" role="form" class="form-horizontal">
                 <div class="modal-body large-modal-body">
-                    <div class="span2">Title</div>
-                    <div class="span4 no-margin">
-                        <input id="title" type="text" class="input-block-level" placeholder="">
+
+
+                    <div class="form-group">
+                        <label for="account_title" class="col-sm-4 control-label">Title</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="account_title" placeholder="">
+                        </div>
                     </div>
 
-                    <div class="span2">Description</div>
-                    <div class="span4 no-margin">
-                        <input id="description" type="text" class="input-block-level" placeholder="">
+                    <div class="form-group">
+                        <label for="account_description" class="col-sm-4 control-label">Description</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="account_description" placeholder="">
+                        </div>
                     </div>
 
-                    <div class="span2">Account ID</div>
-                    <div class="span4 no-margin">
-                        <input id="account_id" type="text" class="input-block-level" placeholder="Log into your account to obtain the id">
+                    <div class="form-group">
+                        <label for="account_id" class="col-sm-4 control-label">Account ID</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="account_id" placeholder="Log into your account to obtain the id">
+                        </div>
                     </div>
 
-                    <div class="span2">AWS Access Key</div>
-                    <div class="span4 no-margin">
-                        <input id="access_key_id" type="text" class="input-block-level" placeholder="">
+                    <div class="form-group">
+                        <label for="access_key_id" class="col-sm-4 control-label">AWS Access Key</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="access_key_id" placeholder="">
+                        </div>
                     </div>
 
-                    <div class="span2">AWS Secret Key</div>
-                    <div class="span4 no-margin">
-                        <input id="secret_access_key" type="text" class="input-block-level" placeholder="">
+                    <div class="form-group">
+                        <label for="secret_access_key" class="col-sm-4 control-label">AWS Secret Key</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="secret_access_key" placeholder="">
+                        </div>
                     </div>
 
-                    <div class="span2">AWS Keypair Name</div>
-                    <div class="span4 no-margin">
-                        <input id="keypair" type="text" class="input-block-level" placeholder="">
+                    <div class="form-group">
+                        <label for="keypair" class="col-sm-4 control-label">AWS Keypair Name</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="keypair" placeholder="">
+                        </div>
                     </div>
 
-                    <div class="span2">Default Zone</div>
-                    <div class="span4 no-margin">
-                        <select id="default_availability_zone" 
-                            data-bind="options: stores.Zones, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose default zone...'" 
-                            data-container="body"
-                            class="stretch-full"></select>
+                    <div class="form-group">
+                        <label for="default_availability_zone" class="col-sm-4 control-label">Default Zone</label>
+                        <div class="col-sm-8">
+                            <select id="default_availability_zone" 
+                                data-bind="options: stores.Zones, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose default zone...'" 
+                                data-container="body"
+                                class="stretch-full"></select>
+                        </div>
                     </div>
 
-                    <div class="span2">Route 53 Domain</div>
-                    <div class="span4 no-margin">
-                        <input id="route53_domain" type="text" class="input-block-level" placeholder="e.g. dev.synthesyscloud.com">
+                    <div class="form-group">
+                        <label for="route53_domain" class="col-sm-4 control-label">Route 53 Domain</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="route53_domain" placeholder="e.g. dev.synthesyscloud.com">
+                        </div>
                     </div>
 
-                    <div class="span2">Private Key File</div>
-                    <div class="span4 no-margin">
-                        <input id="private_key_file" type="file" class="input-block-level" placeholder="">
+                    <div class="form-group">
+                        <label for="private_key_file" class="col-sm-4 control-label">Private Key File</label>
+                        <div class="col-sm-8">
+                            <input id="private_key_file" type="file" class="input-block-level" placeholder="">
+                        </div>
                     </div>
 
                 </div>
@@ -1084,55 +1095,59 @@
             ======================================================================
         -->
         <div id="default-securitygroup-form-container" title="Default Security Groups" class="stackd-form form-small">
-            <form id="default-securitygroup-form" class="form-horizontal">
+            <form id="default-securitygroup-form" class="form-horizontal" role="form">
                 <div class="modal-body large-modal-body">
 
-                    <div class="control-group">
+                    <div class="form-group">
                         <div class="lead">Option 1. Use an existing group</div>
                         If you previously imported AWS groups, or created your own through stackd.io, you can select one of 
                         those groups that are listed here.
                     </div>
 
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="stackdio_security_group">Your stackd.io groups</label>
-                        <div class="controls" style="margin-left: 160px">
+                    <div class="form-group">
+                        <label for="stackdio_security_group" class="col-sm-3 control-label">Your stackd.io groups</label>
+                        <div class="col-sm-7">
                             <select id="stackdio_security_group" 
-                                    data-selected-text-format="count"
+                                    class="form-control"
                                     data-bind="options: stores.AccountSecurityGroups, 
                                                optionsValue: 'id', 
-                                               optionsText: 'name'",
-                                    data-container="body"
-                                    class="input-xlarge"></select> 
-                            <button class="btn btn-success iconic-plus" 
-                                    data-bind="click: function (data, event) { 
-                                        securityGroup.addDefaultSecurityGroup($('#stackdio_security_group option:selected').text(), event); 
-                                    }"> Add</button>
-
+                                               optionsText: 'title'",
+                                    data-size="12"
+                                    data-container="body"></select> 
+                        </div>
+                        <div class="col-sm-2">
+                            <button class="btn btn-success glyphicon glyphicon-plus" 
+                                data-bind="click: function (data, event) { 
+                                    securityGroup.addDefaultSecurityGroup($('#stackdio_security_group option:selected').text(), event); 
+                                }"> Add</button>
                         </div>
                     </div>
 
-                    <div class="control-group">
+                    <div class="form-group">
                         <div class="lead">Option 2. Create new group</div>
                         If you would like to create a new security group that does not already exist in stackd.io, 
                         simply type in the name for the group here and it will created. If there are existing AWS
                         groups that match what you are entering, you will see suggestions.
                     </div>
 
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="new_securitygroup_name">Create new group</label>
-                        <div class="controls" style="margin-left: 160px">
+                    <div class="form-group">
+                        <label for="new_securitygroup_name" class="col-sm-3 control-label">Create new group</label>
+                        <div class="col-sm-7">
                             <input id="new_securitygroup_name" 
                                    type="text"
-                                   class="input-xlarge"
+                                   class="form-control typeahead"
                                    data-bind="event: { keypress: securityGroup.capture }"> 
-                            <button class="btn btn-success iconic-plus" 
+
+                        </div>
+                        <div class="col-sm-2">
+                            <button class="btn btn-success glyphicon glyphicon-plus" 
                                     data-bind="click: function (data, event) { 
                                         securityGroup.addDefaultSecurityGroup(document.getElementById('new_securitygroup_name').value, event); 
                                     }"> Add</button>
                         </div>
                     </div>
 
-                    <div class="control-group">
+                    <div class="form-group">
                         <div class="lead">Assigned Default Groups</div>
                         <div>To remove any default security groups assigned to this account, click on the 'x' in the label below.</div>
                         <div style="margin: 10px 0 0 0;" id="default_group_list"></div>
@@ -1222,7 +1237,7 @@
         </div>
     </div>
 
-    <script data-main="{% static 'js/app' %}" src="{% static 'js/require.js' %}"></script>
+    <script data-main="{% static 'stackdio/require-config' %}" src="{% static 'stackdio/require.js' %}"></script>
     <script>
     window.stackdio_user = {};
     window.stackdio_user.su = "{{ user.is_superuser }}";
