@@ -14,3 +14,5 @@ stackdsalt/states/stack_*_top.sls
 stackdsalt/states/stack_*_overstate.sls
 stackdsalt/user_envs/*
 stackdsalt/var
+stackdio/core/static/stackdio/components
+stackdio/core/static/stackdio/node_modules
