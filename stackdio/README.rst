@@ -155,6 +155,11 @@ on installing virtualenvwrapper manually.
     cd /mnt/stackdio_root/stackdio
     pip install -r stackdio/requirements/local.txt
 
+    # INFO: If you get complaints about swig or openssl-devel does not work
+    # or some other type of issue when one of the python packages are
+    # building, you should make sure you installed the prerequisites from
+    # the section above.
+
     # NOTE: On CentOS, you'll likely get an error like "This openssl-devel 
     # package does not work your architecture" when it starts installing 
     # M2Crypto. To fix this, go into your virtual env direct (with
