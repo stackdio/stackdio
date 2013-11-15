@@ -49,6 +49,10 @@ For assistance, please see one of the following Dintinguished Gentlemen:
 
 ### virtualenv-burrito
 
+*NOTE*: As of 15Nov2013, I could not get virtualenv-burrito to install. Give it a shot
+and if it doesn't work, simply remove $HOME/.venvburrito and go to the next section
+on installing virtualenvwrapper manually.
+
 ###### Install it
 
     # Make sure you're the stackdio user
@@ -59,6 +63,24 @@ For assistance, please see one of the following Dintinguished Gentlemen:
     # Finish the install
 
     source $HOME/.venvburrito/startup.sh
+
+### virtualenvwrapper
+
+*NOTE*: If you successfully installed virtualenv-burrito above you do not need to do this step.
+
+### CentOS
+
+    sudo yum install python-virtualenvwrapper
+
+### .bash_profile
+
+    # Add the following
+    export WORKON_HOME=$HOME/.virtualenvs
+    source /usr/bin/virtualenvwrapper.sh
+
+    # Re-source your .bash_profile
+    . $HOME/.bash_profile
+
     
 ### MySQL
 
