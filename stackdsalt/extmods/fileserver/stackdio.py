@@ -55,7 +55,7 @@ def envs():
         ret.append(user)
     return ret
 
-def find_file(path, env='base', **kwargs):
+def find_file(path, saltenv='base', **kwargs):
     '''
     Search the environment for the relative path
     '''
@@ -63,10 +63,10 @@ def find_file(path, env='base', **kwargs):
            'rel': ''}
     if os.path.isabs(path):
         return fnd
-    if env not in envs():
+    if saltenv not in envs():
         return fnd
 
-    root = os.path.join(get_envs_dir(), env)
+    root = os.path.join(get_envs_dir(), saltenv)
     for formula_root in os.listdir(root):
         formula_dir = os.path.join(root, formula_root)
         if not os.path.isdir(formula_dir):
@@ -84,7 +84,7 @@ def serve_file(load, fnd):
     '''
     ret = {'data': '',
            'dest': ''}
-    if 'path' not in load or 'loc' not in load or 'env' not in load:
+    if 'path' not in load or 'loc' not in load or 'saltenv' not in load:
         return ret
     if not fnd['path']:
         return ret
@@ -102,13 +102,13 @@ def serve_file(load, fnd):
 
 def file_list(load):
     ret = []
-    if load['env'] not in envs():
+    if load['saltenv'] not in envs():
         return ret
 
-    # each env is a specific directory tied to a stackdio user. Inside each
+    # each saltenv is a specific directory tied to a stackdio user. Inside each
     # of those user directories are a number of imported/cloned formulas.
-    # We need to build and return the file list for the given env/user
-    env_dir = os.path.join(get_envs_dir(), load['env'])
+    # We need to build and return the file list for the given saltenv/user
+    env_dir = os.path.join(get_envs_dir(), load['saltenv'])
 
     if not os.path.isdir(env_dir):
         log.error('Environment directory does not exist: {0}'.format(env_dir))
@@ -138,13 +138,13 @@ def file_list(load):
     return ret
 
 def update():
-    log.warn('stackdio fileserver - udpate called')
+    log.warn('stackdio fileserver - udpate called and is not implemented!')
 
 def file_hash(load, fnd):
     '''
     Return a file hash, the hash type is set in the master config file
     '''
-    if 'path' not in load or 'env' not in load:
+    if 'path' not in load or 'saltenv' not in load:
         return ''
     path = fnd['path']
     ret = {}
@@ -161,7 +161,7 @@ def file_hash(load, fnd):
     # cache file's contents should be "hash:mtime"
     cache_path = os.path.join(__opts__['cachedir'],
                               'roots/hash',
-                              load['env'],
+                              load['saltenv'],
                               '{0}.hash.{1}'.format(fnd['rel'],
                               __opts__['hash_type']))
 
@@ -187,8 +187,8 @@ def file_hash(load, fnd):
     return ret
 
 def file_list_emptydirs(load):
-    log.warn('stackdio fileserver - file_list_emptydirs called')
+    log.warn('stackdio fileserver - file_list_emptydirs called and is not implemented!')
 
 def dir_list(load):
-    log.warn('stackdio fileserver - dir_list called')
+    log.warn('stackdio fileserver - dir_list called and is not implemented!')
 

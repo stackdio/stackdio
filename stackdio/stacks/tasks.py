@@ -8,6 +8,7 @@ import celery
 import yaml
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
+from django.conf import settings
 from django.utils.translation import ungettext
 
 from volumes.models import Volume
@@ -88,9 +89,14 @@ def launch_hosts(stack_id):
             '--log-file-level all',  # full logging
             '--out=yaml',            # return YAML formatted results
             '-m {1}',                # the map file to use for launching
+            # Until environment variables work
+            '--providers-config={2}',
+            '--profiles={3}',
         ]).format(
             log_file,
-            stack.map_file.path
+            stack.map_file.path,
+            settings.SALT_CLOUD_PROVIDERS_DIR,
+            settings.SALT_CLOUD_PROFILES_DIR
         )
 
         logger.debug('Executing command: {0}'.format(cmd))
@@ -859,8 +865,16 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
             # Add the location to the map to destroy the entire stack
             cmd_args.append('-m {0}'.format(stack.map_file.path))
 
-        # Use salt-cloud to destroy the stack or hosts
-        cmd = ' '.join(cmd_args)
+        # Until environment variables work
+        cmd_args.extend([
+            '--providers-config={0}',
+            '--profiles={1}',
+        ])
+
+        cmd = ' '.join(cmd_args).format(
+            settings.SALT_CLOUD_PROVIDERS_DIR,
+            settings.SALT_CLOUD_PROFILES_DIR
+        )
 
         logger.debug('Executing command: {0}'.format(cmd))
         result = envoy.run(str(cmd))

@@ -135,6 +135,7 @@ class StackListAPIView(generics.ListCreateAPIView):
             task_chain = reduce(or_, task_list)
 
             # execute the chain
+            stack.set_status('queued', 'Stack has been submitted to queue for launching.')
             task_chain(link_error=tasks.handle_error.s(stack.id))
 
         # return serialized stack object

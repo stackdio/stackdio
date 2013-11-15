@@ -9,7 +9,7 @@ from .base import *
 STACKDIO_CONFIG.update({
     # Don't pull the develop branch until salt-cloud/#700 is fixed. Stick
     # with the stabile build.
-    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git 8f588a088108bfa345136032d264b6bfa90f94ba',
+    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git 9ab3fe74101609c416282ebad786cc366da88d40',
 })
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False

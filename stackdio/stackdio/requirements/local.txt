@@ -1,9 +1,4 @@
 # Load the base requirements first
 -r base.txt
 
--e git://github.com/saltstack/salt.git@8f588a088108bfa345136032d264b6bfa90f94ba#egg=salt
--e git://github.com/saltstack/salt-cloud.git@9edde69a23e36487054452ced71b11ff71b052ab#egg=salt-cloud
-#
-#-e git://github.com/saltstack/salt.git@v0.17.0rc1#egg=salt
-#-e git://github.com/saltstack/salt-cloud.git@develop#egg=salt-cloud
-
+-e git://github.com/saltstack/salt.git@9ab3fe74101609c416282ebad786cc366da88d40#egg=salt

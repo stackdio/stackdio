@@ -526,8 +526,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 'salt-cloud',
                 '-m {0}',                   # map file to use
                 '-F',                       # execute a full query
-                '--out yaml'                # output in yaml format
-            ]).format(self.map_file.path)
+                '--out yaml',               # output in yaml format
+                # Until environment variables work
+                '--providers-config={1}',
+                '--profiles={2}',
+            ]).format(
+                self.map_file.path,
+                settings.SALT_CLOUD_PROVIDERS_DIR,
+                settings.SALT_CLOUD_PROFILES_DIR
+            )
 
             logger.debug('Query hosts command: {0}'.format(query_cmd))
             result = envoy.run(query_cmd)
