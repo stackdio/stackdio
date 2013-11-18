@@ -188,6 +188,9 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     TODO: @params
     '''
 
+    class Meta:
+        unique_together = ('owner', 'title')
+
     # owner of the blueprint
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blueprints')
 
@@ -277,7 +280,7 @@ class BlueprintHostFormulaComponent(TimeStampedModel):
         ordering = ['order']
 
     # The formula component we're extending
-    component = models.OneToOneField('formulas.FormulaComponent')
+    component = models.ForeignKey('formulas.FormulaComponent')
 
     # The host definition this extended formula component applies to
     host = models.ForeignKey('blueprints.BlueprintHostDefinition',

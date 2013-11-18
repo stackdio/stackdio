@@ -41,6 +41,11 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
 
         if not title:
             errors.setdefault('title', []).append('This field is required.')
+        # check for duplicates
+        elif Blueprint.objects.filter(owner=self.request.user, title=title).count():
+            errors.setdefault('title', []).append(
+                'A Blueprint with this title already exists in your account.'
+            )
 
         if not description:
             errors.setdefault('description', []).append('This field is required.')

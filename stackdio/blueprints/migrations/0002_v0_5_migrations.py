@@ -8,6 +8,9 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Removing unique constraint on 'BlueprintHostFormulaComponent', fields ['component']
+        db.delete_unique(u'blueprints_blueprinthostformulacomponent', ['component_id'])
+
         # Removing unique constraint on 'BlueprintProperty', fields ['blueprint', 'name']
         db.delete_unique(u'blueprints_blueprintproperty', ['blueprint_id', 'name'])
 
@@ -24,8 +27,17 @@ class Migration(SchemaMigration):
                       self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True),
                       keep_default=False)
 
+        # Adding unique constraint on 'Blueprint', fields ['owner', 'title']
+        db.create_unique(u'blueprints_blueprint', ['owner_id', 'title'])
+
+
+        # Changing field 'BlueprintHostFormulaComponent.component'
+        db.alter_column(u'blueprints_blueprinthostformulacomponent', 'component_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['formulas.FormulaComponent']))
 
     def backwards(self, orm):
+        # Removing unique constraint on 'Blueprint', fields ['owner', 'title']
+        db.delete_unique(u'blueprints_blueprint', ['owner_id', 'title'])
+
         # Adding model 'BlueprintProperty'
         db.create_table(u'blueprints_blueprintproperty', (
             ('blueprint', self.gf('django.db.models.fields.related.ForeignKey')(related_name='properties', to=orm['blueprints.Blueprint'])),
@@ -45,6 +57,12 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Blueprint.props_file'
         db.delete_column(u'blueprints_blueprint', 'props_file')
+
+
+        # Changing field 'BlueprintHostFormulaComponent.component'
+        db.alter_column(u'blueprints_blueprinthostformulacomponent', 'component_id', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['formulas.FormulaComponent'], unique=True))
+        # Adding unique constraint on 'BlueprintHostFormulaComponent', fields ['component']
+        db.create_unique(u'blueprints_blueprinthostformulacomponent', ['component_id'])
 
 
     models = {
@@ -78,7 +96,7 @@ class Migration(SchemaMigration):
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
         u'blueprints.blueprint': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Blueprint'},
+            'Meta': {'unique_together': "(('owner', 'title'),)", 'object_name': 'Blueprint'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -121,7 +139,7 @@ class Migration(SchemaMigration):
         },
         u'blueprints.blueprinthostformulacomponent': {
             'Meta': {'ordering': "['order']", 'object_name': 'BlueprintHostFormulaComponent'},
-            'component': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['formulas.FormulaComponent']", 'unique': 'True'}),
+            'component': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['formulas.FormulaComponent']"}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'host': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'formula_components'", 'to': u"orm['blueprints.BlueprintHostDefinition']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
