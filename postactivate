@@ -6,10 +6,10 @@ export DJANGO_SECRET_KEY='SET_THIS_TO_SOMETHING_RANDOMLY_COMPLEX'
 export MYSQL_USER='stackdio'
 export MYSQL_PASS='password'
 
-export SALT_ROOT=/mnt/stackdio_root/stackdsalt
-export SALT_STATE_ROOT=$SALT_ROOT/states
-export SALT_USER_ENVS_ROOT=$SALT_ROOT/user_envs
-export SALT_MASTER_CONFIG=$SALT_ROOT/etc/salt/master
-export SALT_CLOUD_CONFIG=$SALT_ROOT/etc/salt/cloud
-export SALT_CLOUD_PROVIDERS_DIR=$SALT_ROOT/etc/salt/cloud.providers.d
-export SALT_CLOUD_PROFILES_DIR=$SALT_ROOT/etc/salt/cloud.profiles.d
+export SALT_ROOT="/mnt/stackdio_root/stackdsalt"
+export SALT_STATE_ROOT="$SALT_ROOT/states"
+export SALT_USER_ENVS_ROOT="$SALT_ROOT/user_envs"
+export SALT_MASTER_CONFIG="$SALT_ROOT/etc/salt/master"
+export SALT_CLOUD_CONFIG="$SALT_ROOT/etc/salt/cloud"
+export SALT_CLOUD_PROVIDERS_DIR="$SALT_ROOT/etc/salt/cloud.providers.d"
+export SALT_CLOUD_PROFILES_DIR="$SALT_ROOT/etc/salt/cloud.profiles.d"
