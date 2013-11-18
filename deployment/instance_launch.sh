@@ -95,5 +95,11 @@ log_msg "Assuming things worked, you should be able to start using stackd.io:"
 echo
 echo "    http://${HOSTNAME}"
 echo
+log_msg "And in summary:"
+log_msg " Instance type   : $INSTANCE_TYPE"
+log_msg " Base AMI        : $AMI_ID"
+log_msg " Key pair name   : $KEYPAIR_NAME"
+log_msg " Key pair file   : $KEYPAIR_FILE"
+log_msg " Security group  : $SECURITY_GROUP"
 log_msg "#####################################################################"
 

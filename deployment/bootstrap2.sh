@@ -58,6 +58,7 @@ echo
 sudo hg clone https://hg.corp.digitalreasoning.com/internal/configuration-management /mnt/stackdio_root
 sudo chown -R stackdio:stackdio /mnt/stackdio_root
 cd /mnt/stackdio_root/stackdio
+hg up 0.5.x
 export PATH=$VENV_HOME/bin:$PATH
 set +e
 pip install -r stackdio/requirements/local.txt
