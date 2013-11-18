@@ -87,7 +87,10 @@ echo
 log_msg "Uploading deployment code"
 scp -i $KEYPAIR_FILE -r ${script_dir} root@${HOSTNAME}:/tmp
 
-log_msg "Logging into $HOSTNAME"
+log_msg "Logging into $HOSTNAME where you'll start by executing"
+echo
+echo "/tmp/deployment/bootstrap1.sh"
+echo
 ssh -i $KEYPAIR_FILE root@${HOSTNAME}
 
 log_msg "#####################################################################"

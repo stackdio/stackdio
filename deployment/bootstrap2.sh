@@ -89,6 +89,7 @@ echo $SUPERVISOR_ENV | sudo python -c "import sys;e=sys.stdin.read().strip();f=o
 python manage.py syncdb --noinput
 python manage.py migrate
 python manage.py loaddata local_data
+python manage.py collectstatic --noinput
 
 sudo touch /var/log/supervisord.log
 sudo chown stackdio:stackdio /var/log/supervisord.log
