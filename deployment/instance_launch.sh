@@ -97,6 +97,8 @@ echo "    http://${HOSTNAME}"
 echo
 log_msg "And in summary:"
 log_msg " Instance type   : $INSTANCE_TYPE"
+log_msg " Instance ID     : $INSTANCE_ID"
+log_msg " Hostname        : $HOSTNAME"
 log_msg " Base AMI        : $AMI_ID"
 log_msg " Key pair name   : $KEYPAIR_NAME"
 log_msg " Key pair file   : $KEYPAIR_FILE"
