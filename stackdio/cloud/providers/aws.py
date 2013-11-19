@@ -189,7 +189,7 @@ class AWSCloudProvider(BaseCloudProvider):
     DEFAULT_AVAILABILITY_ZONE_NAME = 'default_availability_zone_name'
 
     # The path to the private key for SSH
-    PRIVATE_KEY_FILE = 'private_key_file'
+    PRIVATE_KEY = 'private_key'
 
     # The route53 zone to use for managing DNS
     ROUTE53_DOMAIN = 'route53_domain'
@@ -213,6 +213,8 @@ class AWSCloudProvider(BaseCloudProvider):
             self.ACCESS_KEY, 
             self.SECRET_KEY, 
             self.KEYPAIR,
+            self.PRIVATE_KEY,
+            self.ROUTE53_DOMAIN,
             #self.SECURITY_GROUPS
         ]
 
@@ -241,11 +243,11 @@ class AWSCloudProvider(BaseCloudProvider):
         config_data = self.get_config()
         return (config_data['id'], config_data['key'])
 
-    def get_provider_data(self, data, files):
+    def get_provider_data(self, data, files=None):
         # write the private key to the proper location
         private_key_path = self.get_private_key_path()
         with open(private_key_path, 'w') as f:
-            f.write(files[self.PRIVATE_KEY_FILE].read())
+            f.write(data[self.PRIVATE_KEY])
 
         # change the file permissions of the RSA key
         os.chmod(private_key_path, stat.S_IRUSR)
@@ -273,14 +275,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return config_data
 
-    def validate_provider_data(self, data, files):
+    def validate_provider_data(self, data, files=None):
 
         errors = super(AWSCloudProvider, self) \
             .validate_provider_data(data, files)
-
-        # check for required files
-        if not files or self.PRIVATE_KEY_FILE not in files:
-            errors.append('{0} is a required field.'.format(self.PRIVATE_KEY_FILE))
 
         if errors:
             return errors
@@ -290,10 +288,9 @@ class AWSCloudProvider(BaseCloudProvider):
             ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])
             ec2.get_all_zones()
         except boto.exception.EC2ResponseError, e:
-            errors.append('Unable to authenticate to AWS with the provided '
-                          'access and secret keys. Double-check you are using '
-                          'the correct credentials and they have the '
-                          'appropriate IAM access.')
+            err_msg = 'Unable to authenticate to AWS with the provided keys.'
+            errors.setdefault(self.ACCESS_KEY, []).append(err_msg)
+            errors.setdefault(self.SECRET_KEY, []).append(err_msg)
             
         if errors:
             return errors
@@ -302,15 +299,18 @@ class AWSCloudProvider(BaseCloudProvider):
         try:
             ec2.get_all_key_pairs(data[self.KEYPAIR])
         except boto.exception.EC2ResponseError, e:
-            errors.append('The keypair \'{0}\' does not exist in this account.'
-                          ''.format(data[self.KEYPAIR]))
+            errors.setdefault(self.KEYPAIR, []).append(
+                'The keypair \'{0}\' does not exist in this account.'
+                ''.format(data[self.KEYPAIR])
+            )
 
         # check availability zone
         try:
             ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
         except boto.exception.EC2ResponseError, e:
-            errors.append('The availability zone \'{0}\' does not exist in '
-                          'this account.'.format(data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
+            errors.setdefault(self.DEFAULT_AVAILABILITY_ZONE_NAME, []).append(
+                'The availability zone \'{0}\' does not exist in '
+                'this account.'.format(data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
 
         # check route 53 domain
         try:
@@ -330,9 +330,11 @@ class AWSCloudProvider(BaseCloudProvider):
                 if not found_domain:
                     err = 'The Route53 domain \'{0}\' does not exist in ' \
                           'this account.'.format(domain)
-                    errors.append(err)
-        except boto.exception.DNSServerError, e:
-            errors.append(e.error_message)
+                    errors.setdefault(self.ROUTE53_DOMAIN, []).append(err)
+        #except boto.exception.DNSServerError, e:
+        except Exception, e:
+            logger.exception('Route53 issue?')
+            errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))
 
         return errors
 

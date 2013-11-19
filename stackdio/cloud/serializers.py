@@ -85,7 +85,6 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         superuser_fields = ('yaml',)
 
     def validate(self, attrs):
-
         # validate provider specific request data
         request = self.context['request']
 
@@ -106,7 +105,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         if errors:
             logger.error('Cloud provider validation errors: '
                          '{0}'.format(errors))
-            raise serializers.ValidationError({'errors': errors})
+            raise serializers.ValidationError(errors)
 
         return attrs
 

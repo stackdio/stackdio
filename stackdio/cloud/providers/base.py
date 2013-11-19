@@ -84,7 +84,7 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def get_provider_data(self, data, files):
+    def get_provider_data(self, data, files=None):
         '''
         Takes a dict of values provided by the user (most likely from the 
         request data) and returns a new dict of info that's specific to
@@ -102,17 +102,19 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def validate_provider_data(self, data, files):
+    def validate_provider_data(self, data, files=None):
         '''
         Checks that the keys defined in `get_required_fields` are in the
         given `data` dict. This merely checks that they are there and the
         values aren't empty. Override for any additional validation
         required.
         '''
-        errors = []
+        errors = {}
         for key in self.get_required_fields():
             if not data.get(key):
-                errors.append('{0} is a required field.'.format(key))
+                errors.setdefault(key, []).append(
+                    '{0} is a required field.'.format(key)
+                )
 
         return errors
 
