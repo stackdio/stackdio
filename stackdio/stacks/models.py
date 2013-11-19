@@ -530,10 +530,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 # Until environment variables work
                 '--providers-config={1}',
                 '--profiles={2}',
+                '--cloud-config={3}',
             ]).format(
                 self.map_file.path,
                 settings.SALT_CLOUD_PROVIDERS_DIR,
-                settings.SALT_CLOUD_PROFILES_DIR
+                settings.SALT_CLOUD_PROFILES_DIR,
+                settings.SALT_CLOUD_CONFIG,
             )
 
             logger.debug('Query hosts command: {0}'.format(query_cmd))

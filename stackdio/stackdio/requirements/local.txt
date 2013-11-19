@@ -1,6 +1,9 @@
 # Load the base requirements first
 -r base.txt
 
--e git://github.com/saltstack/salt.git@9ab3fe74101609c416282ebad786cc366da88d40#egg=salt
+# Until saltstack/salt #8614 is pulled, use the fork
+-e git://github.com/abemusic/salt.git@aab4d434a9810963f6b8e360f7396fd3b7bface5#egg=salt
+
+#-e git://github.com/saltstack/salt.git@9ab3fe74101609c416282ebad786cc366da88d40#egg=salt
 #-e git://github.com/saltstack/salt.git@v0.17.2#egg=salt
 #-e git://github.com/saltstack/salt.git@v0.17.1#egg=salt

@@ -92,11 +92,13 @@ def launch_hosts(stack_id):
             # Until environment variables work
             '--providers-config={2}',
             '--profiles={3}',
+            '--cloud-config={4}',
         ]).format(
             log_file,
             stack.map_file.path,
             settings.SALT_CLOUD_PROVIDERS_DIR,
-            settings.SALT_CLOUD_PROFILES_DIR
+            settings.SALT_CLOUD_PROFILES_DIR,
+            settings.SALT_CLOUD_CONFIG,
         )
 
         logger.debug('Executing command: {0}'.format(cmd))
@@ -869,11 +871,13 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
         cmd_args.extend([
             '--providers-config={0}',
             '--profiles={1}',
+            '--cloud-config={2}'
         ])
 
         cmd = ' '.join(cmd_args).format(
             settings.SALT_CLOUD_PROVIDERS_DIR,
-            settings.SALT_CLOUD_PROFILES_DIR
+            settings.SALT_CLOUD_PROFILES_DIR,
+            settings.SALT_CLOUD_CONFIG,
         )
 
         logger.debug('Executing command: {0}'.format(cmd))

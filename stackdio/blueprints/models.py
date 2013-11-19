@@ -115,7 +115,7 @@ class BlueprintManager(models.Manager):
         ##
         blueprint = self.model(title=data['title'],
                                description=data['description'],
-                               public=data['public'],
+                               public=data.get('public', False),
                                owner=owner)
         blueprint.save()
 
