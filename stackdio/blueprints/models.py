@@ -132,6 +132,7 @@ class BlueprintManager(models.Manager):
             size_obj = CloudInstanceSize.objects.get(pk=host['size'])
             zone_obj = CloudZone.objects.get(pk=host['zone'])
             spot_price = host.get('spot_config', {}).get('spot_price', None)
+            formula_components = host.get('formula_components', [])
             if spot_price is not None:
                 spot_price = Decimal(str(spot_price))
             host_obj = blueprint.host_definitions.create(
@@ -146,7 +147,7 @@ class BlueprintManager(models.Manager):
             )
 
             # create extended formula components for the blueprint
-            for component in host['formula_components']:
+            for component in formula_components:
                 component_id = component['id']
                 component_order = int(component.get('order', 0))
                 component_obj = FormulaComponent.objects.get(

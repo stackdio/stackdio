@@ -56,6 +56,7 @@ SALT_CLOUD_PROVIDERS_DIR = getenv('SALT_CLOUD_PROVIDERS_DIR')
 STACKDIO_CONFIG = {
     # Adds additional args to the boostrap-salt script. See:
     # http://bootstrap.saltstack.org
+    'SALT_CLOUD_BOOTSTRAP_SCRIPT': 'bootstrap-salt',
     'SALT_CLOUD_BOOTSTRAP_ARGS': '',
 }
 
