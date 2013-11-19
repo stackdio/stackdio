@@ -55,10 +55,16 @@ def envs():
         ret.append(user)
     return ret
 
-def find_file(path, saltenv='base', **kwargs):
+def find_file(path, saltenv='base', env=None, **kwargs):
     '''
     Search the environment for the relative path
     '''
+    if env is not None:
+        log.warn('Passing a salt environment should be done using \'saltenv\' '
+                 'not \'env\'. This functionality will be removed in Salt Boron.')
+        # Backwards compatibility
+        saltenv = env
+
     fnd = {'path': '',
            'rel': ''}
     if os.path.isabs(path):
@@ -82,6 +88,11 @@ def serve_file(load, fnd):
     '''
     Return a chunk from a file based on the data received
     '''
+    if 'env' in load:
+        log.warn('Passing a salt environment should be done using \'saltenv\' '
+                 'not \'env\'. This functionality will be removed in Salt Boron.')
+        load['saltenv'] = load.pop('env')
+
     ret = {'data': '',
            'dest': ''}
     if 'path' not in load or 'loc' not in load or 'saltenv' not in load:
@@ -101,6 +112,11 @@ def serve_file(load, fnd):
     return ret
 
 def file_list(load):
+    if 'env' in load:
+        log.warn('Passing a salt environment should be done using \'saltenv\' '
+                 'not \'env\'. This functionality will be removed in Salt Boron.')
+        load['saltenv'] = load.pop('env')
+
     ret = []
     if load['saltenv'] not in envs():
         return ret
@@ -144,6 +160,11 @@ def file_hash(load, fnd):
     '''
     Return a file hash, the hash type is set in the master config file
     '''
+    if 'env' in load:
+        log.warn('Passing a salt environment should be done using \'saltenv\' '
+                 'not \'env\'. This functionality will be removed in Salt Boron.')
+        load['saltenv'] = load.pop('env')
+
     if 'path' not in load or 'saltenv' not in load:
         return ''
     path = fnd['path']
