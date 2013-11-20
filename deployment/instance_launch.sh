@@ -94,14 +94,17 @@ echo
 ssh -i $KEYPAIR_FILE root@${HOSTNAME}
 
 log_msg "#####################################################################"
-log_msg "Assuming things worked, you should be able to start using stackd.io:"
+log_msg "Assuming things worked, you should be able to start using stackd.io."
 echo
-echo "    http://${HOSTNAME}"
+log_msg "Accessing your system:"
+log_msg " Hostname        : $HOSTNAME"
+log_msg " stackdio        : http://${HOSTNAME}"
+log_msg " stackdio api    : http://${HOSTNAME}/api"
+log_msg " ssh access      : ssh -i $KEYPAIR_FILE root@${HOSTNAME}"
 echo
-log_msg "And in summary:"
+log_msg "System metadata:"
 log_msg " Instance type   : $INSTANCE_TYPE"
 log_msg " Instance ID     : $INSTANCE_ID"
-log_msg " Hostname        : $HOSTNAME"
 log_msg " Base AMI        : $AMI_ID"
 log_msg " Key pair name   : $KEYPAIR_NAME"
 log_msg " Key pair file   : $KEYPAIR_FILE"

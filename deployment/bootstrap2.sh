@@ -79,7 +79,7 @@ source $VENV_HOME/bin/postactivate
 num_vars=$(cat $VENV_HOME/bin/postactivate | grep "export " | wc -l)
 cnt=1
 SUPERVISOR_ENV=$(for ff in $(cat $VENV_HOME/bin/postactivate | \
-    grep "export " | awk '{print $2}'); do \
+    grep "export " | awk '{print $2}' | sed 's/\$SALT_ROOT/\%(ENV_SALT_ROOT)s/g'); do \
     echo -n "$ff"; \
     if [ $cnt -lt $num_vars ]; then echo -n ","; fi; cnt=$((cnt+1)); done)
 
@@ -91,9 +91,20 @@ python manage.py migrate
 python manage.py loaddata local_data
 python manage.py collectstatic --noinput
 
+sudo mkdir -p /etc/salt
+sudo chown stackdio:stackdio /etc/salt
+sudo mkdir -p /var/cache/salt
+sudo chown stackdio:stackdio /var/cache/salt
+sudo mkdir -p /var/run/salt
+sudo chown stackdio:stackdio /var/run/salt
+sudo mkdir -p /var/log/salt
+sudo chown stackdio:stackdio /var/log/salt
+sudo touch /var/run/salt-master.pid
+sudo chown stackdio:stackdio /var/run/salt-master.pid
+
 sudo touch /var/log/supervisord.log
 sudo chown stackdio:stackdio /var/log/supervisord.log
-${VENV_HOME}/bin/supervisord
+SALT_ROOT=/mnt/stackdio_root/stackdsalt ${VENV_HOME}/bin/supervisord
 
 log_msg "#####################################################################"
 log_msg " Bootstrapping is complete, services should be running, you can"
