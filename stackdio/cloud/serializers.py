@@ -5,16 +5,7 @@ from rest_framework import serializers
 
 from core.mixins import SuperuserFieldsMixin
 
-from .models import (
-    CloudProvider, 
-    CloudProviderType,
-    CloudInstanceSize,
-    CloudProfile,
-    Snapshot,
-    CloudZone,
-    SecurityGroup,
-)
-
+from . import models
 from .utils import get_provider_type_and_class
 
 logger = logging.getLogger(__name__)
@@ -41,7 +32,7 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     provider_id = serializers.Field(source='cloud_provider.id')
 
     class Meta:
-        model = SecurityGroup 
+        model = models.SecurityGroup 
         fields = (
             'id',
             'url',
@@ -67,7 +58,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
     security_groups = serializers.HyperlinkedIdentityField(view_name='cloudprovider-securitygroup-list')
 
     class Meta:
-        model = CloudProvider
+        model = models.CloudProvider
         fields = (
             'id',
             'url',
@@ -92,9 +83,9 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
 
         # pull the availability zone name
         try:
-            zone = CloudZone.objects.get(pk=request.DATA['default_availability_zone'])
+            zone = models.CloudZone.objects.get(pk=request.DATA['default_availability_zone'])
             request.DATA['default_availability_zone_name'] = zone.slug
-        except CloudZone.DoesNotExist:
+        except models.CloudZone.DoesNotExist:
             errors = ['Could not look up availability zone. Did you give a valid id?']
             raise serializers.ValidationError({'errors': errors})
 
@@ -113,7 +104,7 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
     title = serializers.Field(source='get_type_name_display')
 
     class Meta:
-        model = CloudProviderType
+        model = models.CloudProviderType
         fields = (
             'id',
             'url',
@@ -125,7 +116,7 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
     provider_type = serializers.Field(source='provider_type')
 
     class Meta:
-        model = CloudInstanceSize
+        model = models.CloudInstanceSize
         fields = (
             'id',
             'url',
@@ -142,7 +133,7 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
     cloud_provider = serializers.PrimaryKeyRelatedField()
     default_instance_size = serializers.PrimaryKeyRelatedField()
     class Meta:
-        model = CloudProfile
+        model = models.CloudProfile
         fields = (
             'id',
             'url',
@@ -162,7 +153,7 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
 
         # validate that the AMI exists by looking it up in the cloud provider
         provider_id = request.DATA.get('cloud_provider')
-        driver = CloudProvider.objects.get(pk=provider_id).get_driver()
+        driver = models.CloudProvider.objects.get(pk=provider_id).get_driver()
         
         result, error = driver.has_image(request.DATA['image_id'])
         if not result:
@@ -174,7 +165,7 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
     cloud_provider = serializers.PrimaryKeyRelatedField()
     default_instance_size = serializers.PrimaryKeyRelatedField()
     class Meta:
-        model = Snapshot
+        model = models.Snapshot
         fields = (
             'id',
             'url',
@@ -193,7 +184,7 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
         # validate that the snapshot exists by looking it up in the cloud
         # provider
         provider_id = request.DATA.get('cloud_provider')
-        driver = CloudProvider.objects.get(pk=provider_id).get_driver()
+        driver = models.CloudProvider.objects.get(pk=provider_id).get_driver()
         
         result, error = driver.has_snapshot(request.DATA['snapshot_id'])
         if not result:
@@ -205,7 +196,7 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
     provider_type = serializers.PrimaryKeyRelatedField()
 
     class Meta:
-        model = CloudZone
+        model = models.CloudZone
         fields = (
             'id',
             'title',

@@ -151,9 +151,11 @@ class StackManager(models.Manager):
             # iterate over the host definition count and create individual
             # host records on the stack
             for i in xrange(1, hostdef.count+1):
-                hostname = '{0}-{1}-{2}'.format(hostdef.prefix,
-                                                owner.username,
-                                                i)
+                hostname = '{prefix}-{username}-{index}'.format(
+                    prefix=hostdef.prefix,
+                    username=owner.username,
+                    index=i
+                )
                 host = stack.hosts.create(cloud_profile=hostdef.cloud_profile,
                                           instance_size=hostdef.size,
                                           availability_zone=hostdef.zone,
