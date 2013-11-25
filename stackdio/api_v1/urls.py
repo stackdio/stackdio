@@ -34,7 +34,7 @@ def api_root(request, format=None):
         },
         'blueprints': reverse('blueprint-list', request=request, format=format),
         'formulas': reverse('formula-list', request=request, format=format),
-        'serach': reverse('search', request=request, format=format),
+        'search': reverse('search', request=request, format=format),
     }
 
     if request.user.is_superuser:
