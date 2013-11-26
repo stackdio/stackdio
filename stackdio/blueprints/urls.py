@@ -12,6 +12,10 @@ urlpatterns = patterns('blueprints.api',
         api.BlueprintDetailAPIView.as_view(), 
         name='blueprint-detail'),
 
+    url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
+        api.BlueprintPropertiesAPIView.as_view(),
+        name='blueprint-properties'),
+
     # List of publicly available blueprints
     url(r'^blueprints/public/$',
         api.BlueprintPublicAPIView.as_view(), 

@@ -10,6 +10,14 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
+class BlueprintPropertiesSerializer(serializers.Serializer):
+    properties = serializers.Field('properties')
+
+    class Meta:
+        model = models.Blueprint
+        fields = ('properties',)
+
+
 class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -75,15 +83,18 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
     
+    properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
     host_definitions = BlueprintHostDefinitionSerializer(many=True, required=False)
 
     class Meta:
         model = models.Blueprint
         fields = (
+            'id',
             'title',
             'description',
-            'url',
             'public',
+            'url',
+            'properties',
             'host_definitions',
         )
 

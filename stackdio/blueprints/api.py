@@ -10,8 +10,8 @@ from rest_framework.parsers import JSONParser
 
 from core.exceptions import BadRequest
 
-from .serializers import BlueprintSerializer
-from .models import Blueprint
+from . import serializers
+from . import models
 
 from formulas.models import FormulaComponent
 from cloud.models import Snapshot
@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 
 class BlueprintListAPIView(generics.ListCreateAPIView):
 
-    model = Blueprint
-    serializer_class = BlueprintSerializer
+    model = models.Blueprint
+    serializer_class = serializers.BlueprintSerializer
     parser_classes = (JSONParser,)
 
     def get_queryset(self):
@@ -42,7 +42,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         if not title:
             errors.setdefault('title', []).append('This field is required.')
         # check for duplicates
-        elif Blueprint.objects.filter(owner=self.request.user, title=title).count():
+        elif models.Blueprint.objects.filter(owner=self.request.user, title=title).count():
             errors.setdefault('title', []).append(
                 'A Blueprint with this title already exists in your account.'
             )
@@ -233,14 +233,14 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         if errors:
             raise BadRequest(errors)
 
-        blueprint = Blueprint.objects.create(request.user, request.DATA)
+        blueprint = models.Blueprint.objects.create(request.user, request.DATA)
         return Response(self.get_serializer(blueprint).data)
 
 
 class BlueprintPublicAPIView(generics.ListAPIView):
 
-    model = Blueprint
-    serializer_class = BlueprintSerializer
+    model = models.Blueprint
+    serializer_class = serializers.BlueprintSerializer
 
     def get_queryset(self):
         return self.model.objects \
@@ -250,8 +250,8 @@ class BlueprintPublicAPIView(generics.ListAPIView):
 
 class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
-    model = Blueprint
-    serializer_class = BlueprintSerializer
+    model = models.Blueprint
+    serializer_class = serializers.BlueprintSerializer
     parser_classes = (JSONParser,)
 
     def get_object(self):
@@ -289,4 +289,19 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         if blueprint.owner != request.user:
             raise BadRequest('Only the owner of a blueprint may delete it.')
         return super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)
+
+
+class BlueprintPropertiesAPIView(generics.RetrieveAPIView):
+
+    model = models.Blueprint
+    serializer_class = serializers.BlueprintPropertiesSerializer
+
+    def get_object(self):
+        '''
+        Return the blueprint if it's owned by the request user or
+        if it's public...else we'll raise a 404
+        '''
+        return get_object_or_404(self.model,
+                                 Q(owner=self.request.user) | Q(public=True),
+                                 pk=self.kwargs.get('pk'))
 
