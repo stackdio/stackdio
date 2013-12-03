@@ -60,9 +60,9 @@ class BlueprintManager(models.Manager):
                 {
                     "count": 1,
                     "size": 1,          # what instance_size id to use
-                    "prefix": "foo",    # the naming pattern for the host's
-                                        # hostname, in this case the hostname
-                                        # would become 'foo-1'
+                    "hostname_template": "foo-{user}-{index}",    # the naming pattern for the host's
+                                        # hostname, template variables are
+                                        # supported
                     "zone": 1,          # availability zone id
                     "cloud_profile": 1, # what cloud_profile id to use
                     "access_rules": [                                   # access rule configuration (optional)
@@ -139,7 +139,7 @@ class BlueprintManager(models.Manager):
                 title=host['title'],
                 description=host.get('description', ''),
                 count=host['count'],
-                prefix=host['prefix'],
+                hostname_template=host['hostname_template'],
                 cloud_profile=profile_obj,
                 size=size_obj,
                 zone=zone_obj,
@@ -241,9 +241,10 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     # The default number of instances to launch for this host definition
     count = models.IntegerField()
 
-    # The default prefix this host definition should use. These will
-    # be used when registering with DNS when a Stack is launched
-    prefix = models.CharField(max_length=64)
+    # The hostname template that will be used to generate the actual
+    # hostname at launch time. Several template variables will be provided
+    # when the template is rendered down to its final form
+    hostname_template = models.CharField(max_length=64)
 
     # The default instance size for the host
     size = models.ForeignKey('cloud.CloudInstanceSize')
@@ -262,10 +263,7 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
         return self.formula_components.count()
 
     def __unicode__(self):
-        return u'{0} ({1})'.format(
-            self.prefix,
-            self.blueprint
-        )
+        return self.title
 
 
 class BlueprintHostFormulaComponent(TimeStampedModel):

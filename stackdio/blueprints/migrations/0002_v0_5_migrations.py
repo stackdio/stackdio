@@ -30,6 +30,14 @@ class Migration(SchemaMigration):
         # Adding unique constraint on 'Blueprint', fields ['owner', 'title']
         db.create_unique(u'blueprints_blueprint', ['owner_id', 'title'])
 
+        # Deleting field 'BlueprintHostDefinition.prefix'
+        db.delete_column(u'blueprints_blueprinthostdefinition', 'prefix')
+
+        # Adding field 'BlueprintHostDefinition.hostname_template'
+        db.add_column(u'blueprints_blueprinthostdefinition', 'hostname_template',
+                      self.gf('django.db.models.fields.CharField')(default='{namespace}-foo-{index}', max_length=64),
+                      keep_default=False)
+
 
         # Changing field 'BlueprintHostFormulaComponent.component'
         db.alter_column(u'blueprints_blueprinthostformulacomponent', 'component_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['formulas.FormulaComponent']))
@@ -57,6 +65,14 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Blueprint.props_file'
         db.delete_column(u'blueprints_blueprint', 'props_file')
+
+        # Adding field 'BlueprintHostDefinition.prefix'
+        db.add_column(u'blueprints_blueprinthostdefinition', 'prefix',
+                      self.gf('django.db.models.fields.CharField')(default='', max_length=64),
+                      keep_default=False)
+
+        # Deleting field 'BlueprintHostDefinition.hostname_template'
+        db.delete_column(u'blueprints_blueprinthostdefinition', 'hostname_template')
 
 
         # Changing field 'BlueprintHostFormulaComponent.component'
@@ -128,9 +144,9 @@ class Migration(SchemaMigration):
             'count': ('django.db.models.fields.IntegerField', [], {}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'hostname_template': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'prefix': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'spot_price': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2'}),

@@ -17,7 +17,7 @@ admin.site.register(models.Blueprint, BlueprintAdmin)
 
 class BlueprintHostDefinitionAdmin(admin.ModelAdmin):
     list_display = [
-        'prefix',
+        'hostname_template',
         'blueprint',
         'cloud_profile',
         'count',

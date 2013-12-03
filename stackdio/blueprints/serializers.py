@@ -70,7 +70,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'cloud_profile',
             'count',
-            'prefix',
+            'hostname_template',
             'size',
             'zone',
             'formula_components',

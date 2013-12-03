@@ -101,6 +101,11 @@ class StackManager(models.Manager):
                            description=description)
         stack.save()
 
+        # add the namespace
+        namespace = data.get('namespace', 'stack{0}'.format(stack.pk))
+        stack.namespace = namespace
+        stack.save()
+
         # manage the properties
         properties = blueprint.properties
         recursive_update(properties, data.get('properties', {}))
@@ -124,9 +129,9 @@ class StackManager(models.Manager):
 
             # create the managed security group for each host definition
             # and assign the rules to the group
-            sg_name='{0}-{1}-stackdio-id-{2}'.format(
-                hostdef.prefix,
+            sg_name='managed-{0}-hostdef-{1}-stack-{2}'.format(
                 owner.username,
+                hostdef.pk,
                 stack.pk)
             sg_description='stackd.io managed security group'
             sg_id = driver.create_security_group(sg_name, sg_description)
@@ -150,9 +155,9 @@ class StackManager(models.Manager):
 
             # iterate over the host definition count and create individual
             # host records on the stack
-            for i in xrange(1, hostdef.count+1):
-                hostname = '{prefix}-{username}-{index}'.format(
-                    prefix=hostdef.prefix,
+            for i in xrange(hostdef.count):
+                hostname = hostdef.hostname_template.format(
+                    namespace=stack.namespace,
                     username=owner.username,
                     index=i
                 )
@@ -226,6 +231,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint', related_name='stacks')
+
+    # An arbitrary namespace for this stack. Mainly useful for Blueprint
+    # hostname templates
+    namespace = models.CharField(max_length=64, blank=True)
 
     # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(

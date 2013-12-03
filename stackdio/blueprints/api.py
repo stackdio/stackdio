@@ -1,4 +1,5 @@
 import logging
+import string
 
 from django.db import transaction
 from django.db.models import Q
@@ -17,6 +18,14 @@ from formulas.models import FormulaComponent
 from cloud.models import Snapshot
 
 logger = logging.getLogger(__name__)
+
+
+# TODO: need to move these somewhere else
+VAR_NAMESPACE = 'namespace'
+VAR_USERNAME  = 'username'
+VAR_INDEX     = 'index'
+VALID_TEMPLATE_VARS = (VAR_NAMESPACE, VAR_USERNAME, VAR_INDEX)
+VALID_PROTOCOLS = ('tcp', 'udp', 'icmp')
 
 
 class BlueprintListAPIView(generics.ListCreateAPIView):
@@ -40,7 +49,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         hosts = request.DATA.get('hosts', [])
 
         if not title:
-            errors.setdefault('title', []).append('This field is required.')
+            errors.setdefault('title', []).append('This is a required field.')
         # check for duplicates
         elif models.Blueprint.objects.filter(owner=self.request.user, title=title).count():
             errors.setdefault('title', []).append(
@@ -48,7 +57,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
             )
 
         if not description:
-            errors.setdefault('description', []).append('This field is required.')
+            errors.setdefault('description', []).append('This is a required field.')
 
         if not isinstance(public, bool):
             errors.setdefault('public', []).append('This field must be a boolean.')
@@ -65,171 +74,181 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                 )
 
         if not isinstance(hosts, list) or not hosts:
-            errors.setdefault('hosts', []).append('This field is required.')
+            errors.setdefault('hosts', []).append('This is a required field.')
         elif hosts:
-            host_ok = True
-            for host in hosts:
+            for host_index, host in enumerate(hosts):
+                host_string = 'hosts[{0}]'.format(host_index)
                 if not isinstance(host, dict):
-                    errors.setdefault('hosts', []).append(
-                        'Hosts must be a JSON object.'
+                    errors.setdefault(host_string, []).append(
+                        'Host definition must be a JSON object.'
                     )
-                    host_ok = False
-                    break
+                    continue
 
                 formula_components = host.get('formula_components', [])
                 access_rules = host.get('access_rules', [])
                 volumes = host.get('volumes', [])
 
                 if 'title' not in host or not host['title']:
-                    errors.setdefault('hosts', []).append(
-                        'Hosts must have a title field.'
+                    errors.setdefault(host_string+'.title', []).append(
+                        'This is a required field.'
                     )
-                    host_ok = False
                 if 'description' not in host or not host['description']:
-                    errors.setdefault('hosts', []).append(
-                        'Hosts must have a description field.'
+                    errors.setdefault(host_string+'.description', []).append(
+                        'This is a required field.'
                     )
-                    host_ok = False
                 if 'count' not in host:
-                    errors.setdefault('hosts', []).append(
-                        'Hosts must have a count field.'
+                    errors.setdefault(host_string+'.count', []).append(
+                        'This is a required field.'
                     )
-                    host_ok = False
                 if 'size' not in host:
-                    errors.setdefault('hosts', []).append(
-                        'Hosts must have a size field.'
+                    errors.setdefault(host_string+'.size', []).append(
+                        'This is a required field.'
                     )
-                    host_ok = False
-                if 'prefix' not in host:
-                    errors.setdefault('hosts', []).append(
-                        'Hosts must have a prefix field.'
+                if 'hostname_template' not in host:
+                    errors.setdefault(host_string+'.hostname_template', []).append(
+                        'This is a required field.'
                     )
-                    host_ok = False
-                if 'zone' not in host:
-                    errors.setdefault('hosts', []).append(
-                        'Hosts must have a zone field.'
-                    )
-                    host_ok = False
-                if 'cloud_profile' not in host:
-                    errors.setdefault('hosts', []).append(
-                        'Hosts must have a cloud_profile field.'
-                    )
-                    host_ok = False
-                if not isinstance(formula_components, list):
-                    errors.setdefault('hosts', []).append(
-                        'Host formula_components field must be a list of '
-                        'formula component ids that are owned by you.'
-                    )
-                    host_ok = False
+                else:
+                    # check for valid hostname_template variables
+                    f = string.Formatter()
+                    vars = [x[1] for x in f.parse(host['hostname_template']) if x[1]]
+                    invalid_vars = [x for x in vars if x not in VALID_TEMPLATE_VARS]
 
-                # check ownership of formula components
-                for component in formula_components:
-                    if not isinstance(component, dict):
-                        errors.setdefault('formula_components', []).append(
-                            'Formula components must be objects with an id and optional order field.'
-                        )
-                        break
-
-                    component_id = component.get('id')
-                    if not component_id:
-                        errors.setdefault('formula_components', []).append(
-                            'Formula components must have an id field.'
-                        )
-                        break
-
-                    try:
-                        component_order = int(component.get('order', 0))
-                        if component_order < 0:
-                            errors.setdefault('formula_components', []).append(
-                                'Formula components order field must be non-negative.'
+                    if invalid_vars:
+                        errors.setdefault(host_string+'.hostname_template', []).append(
+                            'Invalid variables found: {0}'.format(
+                                ', '.join(invalid_vars)
                             )
-                    except ValueError:
-                        errors.setdefault('formula_components', []).append(
-                            'Formula components order field must be a non-negative integer.'
                         )
-                        
-                    try:
-                        FormulaComponent.objects.get(pk=component_id,
-                                                     formula__owner=request.user)
-                    except FormulaComponent.DoesNotExist:
-                        errors.setdefault('formula_components', []).append(
-                            'Formula component with id {0} does not exist.'.format(component_id)
+
+                    # VAR_INDEX must be present if host count is greater than one
+                    if 'count' in host and \
+                        host['count'] > 1 and \
+                        VAR_INDEX not in vars:
+
+                        errors.setdefault(host_string+'.hostname_template', []).append(
+                            'Variable {0} must be specified for hosts with '
+                            'a count greater than one.'.format(VAR_INDEX)
                         )
+
+                if 'zone' not in host:
+                    errors.setdefault(host_string+'.zone', []).append(
+                        'This is a required field.'
+                    )
+                if 'cloud_profile' not in host:
+                    errors.setdefault(host_string+'.cloud_profile', []).append(
+                        'This is a required field.'
+                    )
+                if not isinstance(formula_components, list):
+                    errors.setdefault(host_string+'.formula_components', []).append(
+                        'Must be a list of objects with an id and optional order field.'
+                    )
+                else:
+                    # check ownership of formula components
+                    for component in formula_components:
+                        if not isinstance(component, dict):
+                            errors.setdefault(host_string+'.formula_components', []).append(
+                                'Must be objects with an id and optional order field.'
+                            )
+                            continue
+
+                        component_id = component.get('id')
+                        if not component_id:
+                            errors.setdefault(host_string+'.formula_components', []).append(
+                                'Each object in the list must contain an id field.'
+                            )
+                            continue
+
+                        try:
+                            component_order = int(component.get('order', 0))
+                            if component_order < 0:
+                                errors.setdefault(host_string+'.formula_components', []).append(
+                                    'Order field must contain a non-negative value.'
+                                )
+                        except ValueError:
+                            errors.setdefault(host_string+'.formula_components', []).append(
+                                'Order field must be a non-negative integer.'
+                            )
+                            
+                        try:
+                            FormulaComponent.objects.get(pk=component_id,
+                                                         formula__owner=request.user)
+                        except FormulaComponent.DoesNotExist:
+                            errors.setdefault(host_string+'.formula_components', []).append(
+                                'Formula component with id {0} does not exist.'.format(component_id)
+                            )
 
                 # Validating access rules
-                rules_ok = True
-                for rule in access_rules:
+                if not isinstance(access_rules, list):
+                    errors.setdefault(host_string+'.access_rules', []).append(
+                        'Must be a list of access rule objects with protocol, '
+                        'from_port, to_port, and rule fields'
+                    )
+                for rule_index, rule in enumerate(access_rules):
+                    rule_string = host_string + '.access_rules[{0}]'.format(rule_index)
                     if 'protocol' not in rule:
-                        errors.setdefault('access_rules', []).append(
-                            'access_rules must have a protocol field.'
+                        errors.setdefault(rule_string, []).append(
+                            'protocol is a required field.'
                         )
-                        rules_ok = False
+                    elif rule['protocol'] not in VALID_PROTOCOLS:
+                        errors.setdefault(rule_string, []).append(
+                            'protocol {0} is unrecognized. Must be one '
+                            'of {1}.'.format(
+                                rule['protocol'],
+                                ', '.join(VALID_PROTOCOLS)
+                            )
+                        )
                     if 'from_port' not in rule:
-                        errors.setdefault('access_rules', []).append(
-                            'access_rules must have a from_port field.'
+                        errors.setdefault(rule_string, []).append(
+                            'from_port is a required field.'
                         )
-                        rules_ok = False
                     if 'to_port' not in rule:
-                        errors.setdefault('access_rules', []).append(
-                            'access_rules must have a to_port field.'
+                        errors.setdefault(rule_string, []).append(
+                            'to_port is a required field.'
                         )
-                        rules_ok = False
                     if 'rule' not in rule:
-                        errors.setdefault('access_rules', []).append(
-                            'access_rules must have a rule field.'
+                        errors.setdefault(rule_string, []).append(
+                            'rule is a required field.'
                         )
-                        rules_ok = False
-                    if not rules_ok:
-                        break
 
                 # Validating volumes
-                volumes_ok = True
-                for volume in volumes:
+                for volume_index, volume in enumerate(volumes):
+                    volume_string = host_string + '.volumes[{0}]'.format(volume_index)
                     if 'device' not in volume:
-                        errors.setdefault('volumes', []).append(
-                            'volumes must have a device field.'
+                        errors.setdefault(volume_string, []).append(
+                            'device is a required field.'
                         )
-                        volumes_ok = False
                     if 'mount_point' not in volume:
-                        errors.setdefault('volumes', []).append(
-                            'volumes must have a mount_point field.'
+                        errors.setdefault(volume_string, []).append(
+                            'mount_point is a required field.'
                         )
-                        volumes_ok = False
                     if 'snapshot' not in volume:
-                        errors.setdefault('volumes', []).append(
-                            'volumes must have a snapshot field.'
+                        errors.setdefault(volume_string, []).append(
+                            'snapshot is a required field.'
                         )
-                        volumes_ok = False
                     else:
                         volume['snapshot'] = Snapshot.objects.get(pk=volume['snapshot'])
-                    if not volumes_ok:
-                        break
 
                 # Validating spot instances
-                spot_ok = True
                 spot_config = host.get('spot_config', None)
                 if spot_config is not None and not isinstance(spot_config, dict):
-                    errors.setdefault('spot_config', []).append(
-                        'spot_config must be a JSON object and contain a '
-                        'spot_price field.'
+                    errors.setdefault(host_string+'.spot_config', []).append(
+                        'Must be a JSON object containing a spot_price field.'
                     )
                 elif spot_config is not None:
                     if 'spot_price' not in spot_config:
-                        errors.setdefault('spot_config', []).append(
-                            'spot_price must be set in spot_config.'
+                        errors.setdefault(host_string+'.spot_config', []).append(
+                            'spot_price is a required field.'
                         )
                     elif not isinstance(spot_config['spot_price'], float):
-                        errors.setdefault('spot_config', []).append(
+                        errors.setdefault(host_string+'.spot_config', []).append(
                             'spot_price must be a decimal value.' 
                         )
                     elif spot_config['spot_price'] < 0:
-                        errors.setdefault('spot_config', []).append(
+                        errors.setdefault(host_string+'.spot_config', []).append(
                             'spot_price must be a non-negative value.' 
                         )
                         
-                if not host_ok or not rules_ok or not volumes_ok:
-                    break
-
         if errors:
             raise BadRequest(errors)
 
