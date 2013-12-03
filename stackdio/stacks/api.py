@@ -19,6 +19,7 @@ from core.exceptions import (
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
 from blueprints.models import Blueprint
+from cloud.providers.base import BaseCloudProvider
 
 from . import tasks, models, serializers
 
@@ -179,74 +180,111 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(stack)
         return Response(serializer.data)
 
-    def put(self, request, *args, **kwargs):
-        '''
-        PUT request on a stack allows RPC-like actions to be called to
-        interact with the stack. Request data is JSON, and must provide
-        an `action` parameter. Actions may require additional arguments 
-        which may be provided via the `args` parameter. 
+
+class StackPropertiesAPIView(generics.RetrieveUpdateAPIView):
+
+    model = models.Stack
+    serializer_class = serializers.StackPropertiesSerializer
+    parser_classes = (parsers.JSONParser,)
+
+    def get_object(self):
+        return get_object_or_404(models.Stack, id=self.kwargs.get('pk'),
+                                 owner=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        stack = self.get_object()
+
+        if not isinstance(request.DATA, dict):
+            raise BadRequest('Data must be JSON object of properties.')
+
+        if not request.DATA:
+            raise BadRequest('No properties were given.')
         
-        Valid actions: stop, start, restart, terminate
+        # update the stack properties
+        stack.properties = request.DATA
+        return Response(stack.properties)
+
+
+class StackActionAPIView(generics.SingleObjectAPIView):
+
+    serializer_class = serializers.StackSerializer
+
+    def get_object(self):
+        return get_object_or_404(models.Stack, id=self.kwargs.get('pk'),
+                                 owner=self.request.user)
+
+    def post(self, request, *args, **kwargs):
+        '''
+        POST request allows RPC-like actions to be called to interact
+        with the stack. Request contains JSON with an `action` parameter
+        and optional `args` depending on the action being executed.
+
+        Valid actions: stop, start, restart, terminate, provision
         '''
 
         stack = self.get_object()
-        hosts = stack.get_hosts()
-        host_count = hosts.count()
+        driver_hosts_map = stack.get_driver_hosts_map()
+        total_host_count = len(stack.get_hosts())
         action = request.DATA.get('action', None)
         args = request.DATA.get('args', [])
 
         if not action:
             raise BadRequest('action is a required parameter.')
 
-        driver = stack.get_driver()
-        available_actions = driver.get_available_actions()
-
-        if action not in available_actions:
-            raise BadRequest('action is not alowed. Only the following '
-                             'actions are allowed: {0}'.format(', '.join(available_actions)))
-
+        
+        # check the individual provider for available actions
+        for driver, hosts in driver_hosts_map.iteritems():
+            available_actions = driver.get_available_actions()
+            if action not in available_actions:
+                raise BadRequest('At least one of the hosts in this stack does '
+                                 'not support the requested action.')
 
         # In case of a launch action, the stack must not have any available 
         # hosts (ie, the stack must have already been terminated.)
-        if action == driver.ACTION_LAUNCH and host_count > 0:
+        if action == BaseCloudProvider.ACTION_LAUNCH and total_host_count > 0:
             raise BadRequest('Launching a stack is only available when '
                              'the stack is in a terminated state. This '
-                             'stack has %d hosts available.' % host_count)
+                             'stack has %d hosts available.' % total_host_count)
 
         # All other actions require hosts to be available
-        elif action != driver.ACTION_LAUNCH and host_count == 0:
+        elif action != BaseCloudProvider.ACTION_LAUNCH and total_host_count == 0:
             raise BadRequest('The submitted action requires the stack to have '
                              'available hosts. Perhaps you meant to run the '
                              'launch action instead.')
 
-        # check the action against current states (e.g., starting can't happen
-        # unless the hosts are in the stopped state.)
-        # XXX: Assuming that host metadata is accurate here
-        for host in hosts:
-            if action == driver.ACTION_START and \
-               host.state != driver.STATE_STOPPED:
-                raise BadRequest('Start action requires all hosts to be in '
-                                 'the stopped state first. At least one host '
-                                 'is reporting an invalid '
-                                 'state: %s' % host.state)
-            if action == driver.ACTION_STOP and \
-               host.state != driver.STATE_RUNNING:
-                raise BadRequest('Stop action requires all hosts to be in '
-                                 'the running state first. At least one host '
-                                 'is reporting an invalid '
-                                 'state: %s' % host.state)
-            if action == driver.ACTION_TERMINATE and \
-               host.state not in (driver.STATE_RUNNING, driver.STATE_STOPPED):
-                raise BadRequest('Terminate action requires all hosts to be '
-                                 'in the either the running or stopped state '
-                                 'first. At least one host is reporting an '
-                                 'invalid state: %s' % host.state)
-            if action == driver.ACTION_PROVISION and \
-               host.state not in (driver.STATE_RUNNING,):
-                raise BadRequest('Provision action requires all hosts to be '
-                                 'in the running state first. At least one '
-                                 'host is reporting an '
-                                 'invalid state: %s' % host.state)
+        # Hosts may be spread accross different providers, so we need to 
+        # handle them differently based on the provider and its implementation
+        driver_hosts_map = stack.get_driver_hosts_map()
+        for driver, hosts in driver_hosts_map.iteritems():
+
+            # check the action against current states (e.g., starting can't happen
+            # unless the hosts are in the stopped state.)
+            # XXX: Assuming that host metadata is accurate here
+            for host in hosts:
+                if action == driver.ACTION_START and \
+                   host.state != driver.STATE_STOPPED:
+                    raise BadRequest('Start action requires all hosts to be in '
+                                     'the stopped state first. At least one host '
+                                     'is reporting an invalid '
+                                     'state: %s' % host.state)
+                if action == driver.ACTION_STOP and \
+                   host.state != driver.STATE_RUNNING:
+                    raise BadRequest('Stop action requires all hosts to be in '
+                                     'the running state first. At least one host '
+                                     'is reporting an invalid '
+                                     'state: %s' % host.state)
+                if action == driver.ACTION_TERMINATE and \
+                   host.state not in (driver.STATE_RUNNING, driver.STATE_STOPPED):
+                    raise BadRequest('Terminate action requires all hosts to be '
+                                     'in the either the running or stopped state '
+                                     'first. At least one host is reporting an '
+                                     'invalid state: %s' % host.state)
+                if action == driver.ACTION_PROVISION and \
+                   host.state not in (driver.STATE_RUNNING,):
+                    raise BadRequest('Provision action requires all hosts to be '
+                                     'in the running state first. At least one '
+                                     'host is reporting an '
+                                     'invalid state: %s' % host.state)
 
         # Kick off the celery task for the given action
         stack.set_status(models.Stack.EXECUTING_ACTION, 
@@ -256,20 +294,24 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         task_list = []
 
         # FIXME: not generic
-        if action in (driver.ACTION_STOP, driver.ACTION_TERMINATE):
+        if action in (BaseCloudProvider.ACTION_STOP, BaseCloudProvider.ACTION_TERMINATE):
             # Unregister DNS when executing the above actions
             task_list.append(tasks.unregister_dns.si(stack.id))
 
         # Launch is slightly different than other actions
-        if action == driver.ACTION_LAUNCH:
+        if action == BaseCloudProvider.ACTION_LAUNCH:
             task_list.append(tasks.launch_hosts.si(stack.id))
 
         # Terminate should leverage salt-cloud or salt gets confused about
         # the state of things
-        elif action == driver.ACTION_TERMINATE:
+        elif action == BaseCloudProvider.ACTION_TERMINATE:
             task_list.append(tasks.destroy_hosts.si(stack.id, delete_stack=False))
 
-        # Execute other actions
+        elif action == BaseCloudProvider.ACTION_PROVISION:
+            # action that gets handled later
+            pass
+
+        # Execute other actions that may be available on the driver
         else:
             task_list.append(tasks.execute_action.si(stack.id, action, *args))
 
@@ -277,16 +319,16 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         task_list.append(tasks.update_metadata.si(stack.id))
 
         # Launching requires us to tag the newly available infrastructure
-        if action in (driver.ACTION_LAUNCH,):
+        if action in (BaseCloudProvider.ACTION_LAUNCH,):
             tasks.tag_infrastructure.si(stack.id)
 
-        # These actions require new DNS and provisioning
-        if action in (driver.ACTION_START, driver.ACTION_LAUNCH):
-            # Register DNS when executing the above actions
+        # Starting and launching requires DNS updates
+        if action in (BaseCloudProvider.ACTION_START, BaseCloudProvider.ACTION_LAUNCH):
             task_list.append(tasks.register_dns.si(stack.id))
-            # Also reprovision just in case?
-            # TODO: do we need this and are there cases where special things
-            # need to happen after a host is restarted?
+
+        # starting, launching, or reprovisioning requires us to execute the provisioning
+        # tasks
+        if action in (BaseCloudProvider.ACTION_START, BaseCloudProvider.ACTION_LAUNCH, BaseCloudProvider.ACTION_PROVISION):
             task_list.append(tasks.ping.si(stack.id))
             task_list.append(tasks.sync_all.si(stack.id))
             task_list.append(tasks.highstate.si(stack.id))

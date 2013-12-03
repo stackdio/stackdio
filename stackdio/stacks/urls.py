@@ -27,5 +27,13 @@ urlpatterns = patterns('stacks.api',
     url(r'^stacks/(?P<pk>[0-9]+)/volumes/$', 
         api.StackVolumesAPIView.as_view(), 
         name='stack-volumes'),
+
+    url(r'^stacks/(?P<pk>[0-9]+)/properties/$',
+        api.StackPropertiesAPIView.as_view(),
+        name='stack-properties'),
+
+    url(r'^stacks/(?P<pk>[0-9]+)/action/$',
+        api.StackActionAPIView.as_view(), 
+        name='stack-action'),
 )
 

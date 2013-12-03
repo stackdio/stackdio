@@ -992,10 +992,10 @@ def execute_action(stack_id, action, *args, **kwargs):
 
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
-        driver = stack.get_driver()
-        hosts = stack.get_hosts()
-        fun = getattr(driver, '_action_{0}'.format(action))
-        fun(stack=stack, *args, **kwargs)
+        driver_hosts_map = stack.get_driver_hosts_map()
+        for driver, hosts in driver_hosts_map.iteritems():
+            fun = getattr(driver, '_action_{0}'.format(action))
+            fun(stack=stack, *args, **kwargs)
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)

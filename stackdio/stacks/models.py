@@ -315,6 +315,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         with open(self.props_file.path) as f:
             return json.loads(f.read())
 
+    @properties.setter
+    def properties(self, props):
+        properties = self.properties
+        recursive_update(properties, props)
+        props_json = json.dumps(properties, indent=4)
+        if not self.props_file:
+            self.props_file.save(self.slug+'.props', ContentFile(props_json))
+        else:
+            with open(self.props_file.path, 'w') as f:
+                f.write(props_json)
+
     def _generate_map_file(self):
         # TODO: Figure out a way to make this provider agnostic
 
@@ -487,7 +498,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             }
         }
 
-        # If the any of the formula s we're using have default pillar
+        # If any of the formulas we're using have default pillar
         # data defined in its corresponding SPECFILE, we need to pull 
         # that into our stack pillar file.
 

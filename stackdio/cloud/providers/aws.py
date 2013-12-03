@@ -194,14 +194,6 @@ class AWSCloudProvider(BaseCloudProvider):
     # The route53 zone to use for managing DNS
     ROUTE53_DOMAIN = 'route53_domain'
 
-    # Actions that may be executed. Implement these 
-    # actions below
-    ACTION_STOP = 'stop'
-    ACTION_START = 'start'
-    ACTION_TERMINATE = 'terminate'
-    ACTION_LAUNCH = 'launch'
-    ACTION_PROVISION = 'provision'
-
     STATE_STOPPED = 'stopped'
     STATE_RUNNING = 'running'
     STATE_TERMINATED = 'terminated'

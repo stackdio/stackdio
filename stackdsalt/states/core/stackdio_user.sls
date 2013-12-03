@@ -34,6 +34,9 @@ stackdio_sudoers:
   file.managed:
     - name: /etc/sudoers.d/{{ username }}
     - contents: "{{ username }}  ALL=(ALL)  NOPASSWD:ALL"
+    - mode: 400
+    - user: root
+    - group: root
     - require:
       - ssh_auth: stackdio_authorized_keys
 

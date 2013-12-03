@@ -7,6 +7,13 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
+class StackPropertiesSerializer(serializers.Serializer):
+    def to_native(self, obj):
+        if obj is not None:
+            return obj.properties
+        return {}
+
+
 class HostSerializer(serializers.HyperlinkedModelSerializer):
     availability_zone = serializers.PrimaryKeyRelatedField()
 
@@ -47,6 +54,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     volumes = serializers.HyperlinkedIdentityField(view_name='stack-volumes')
     volume_count = serializers.Field(source='volumes.count')
     history = StackHistorySerializer(many=True)
+    properties = serializers.HyperlinkedIdentityField(view_name='stack-properties')
 
     class Meta:
         model = models.Stack
@@ -61,6 +69,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'host_count',
             'volumes',
             'volume_count',
+            'properties',
             'created', 
             'history',
         )

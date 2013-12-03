@@ -11,11 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class BlueprintPropertiesSerializer(serializers.Serializer):
-    properties = serializers.Field('properties')
-
-    class Meta:
-        model = models.Blueprint
-        fields = ('properties',)
+    def to_native(self, obj):
+        if obj is not None:
+            return obj.properties
+        return {}
 
 
 class BlueprintAccessRuleSerializer(serializers.ModelSerializer):

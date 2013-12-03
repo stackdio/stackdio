@@ -24,6 +24,14 @@ class BaseCloudProvider(object):
     # Web Services' or 'Rackspace')
     LONG_NAME = None
 
+    # Actions that may be executed. Implement these 
+    # actions below
+    ACTION_STOP = 'stop'
+    ACTION_START = 'start'
+    ACTION_TERMINATE = 'terminate'
+    ACTION_LAUNCH = 'launch'
+    ACTION_PROVISION = 'provision'
+
     def __init__(self, obj=None, *args, **kwargs):
 
         # The `obj` attribute is the Django ORM object for this cloud 
