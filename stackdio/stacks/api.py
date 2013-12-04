@@ -77,11 +77,11 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # Generate the title and/or description if not provided by user 
         if not title and not description:
-            extra_description = '(Title and description'
+            extra_description = ' (Title and description'
         elif not title:
-            extra_description = '(Title'
+            extra_description = ' (Title'
         elif not description:
-            extra_description = '(Description'
+            extra_description = ' (Description'
         else:
             extra_description = ''
         if extra_description:
@@ -95,7 +95,7 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         if not description:
             description = blueprint.description
-        request.DATA['description'] = description + ' {0}'.format(extra_description)
+        request.DATA['description'] = description + '{0}'.format(extra_description)
 
         # check for duplicates
         if models.Stack.objects.filter(owner=self.request.user, title=title).count():
