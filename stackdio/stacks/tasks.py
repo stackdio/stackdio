@@ -911,20 +911,23 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
                 if not ok:
                     stack.set_status(Stack.ERROR, result)
                     raise StackTaskException(result)
-                known_hosts.update(instance_id='')
+                known_hosts.update(instance_id='', state='terminated')
 
-        for security_group in security_groups:
-            try:
-                driver.delete_security_group(security_group.name)
-            except BadRequest, e:
-                if 'does not exist' in e.message:
-                    logger.warn(e.message)
-                else:
-                    raise
-            security_group.delete()
+        if delete_stack:
+            for security_group in security_groups:
+                try:
+                    driver.delete_security_group(security_group.name)
+                except BadRequest, e:
+                    if 'does not exist' in e.message:
+                        logger.warn(e.message)
+                    else:
+                        raise
+                security_group.delete()
 
         # delete hosts
-        hosts.delete()
+        if delete_stack:
+            hosts.delete()
+
         stack.set_status(finish_stack.name,
                          'Finished destroying stack infrastructure.')
 

@@ -244,7 +244,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
 
         stack = self.get_object()
         driver_hosts_map = stack.get_driver_hosts_map()
-        total_host_count = len(stack.get_hosts())
+        total_host_count = len(stack.get_hosts().exclude(instance_id=''))
         action = request.DATA.get('action', None)
         args = request.DATA.get('args', [])
 
@@ -336,7 +336,8 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             task_list.append(tasks.execute_action.si(stack.id, action, *args))
 
         # Update the metadata after the action has been executed
-        task_list.append(tasks.update_metadata.si(stack.id))
+        if action != BaseCloudProvider.ACTION_TERMINATE:
+            task_list.append(tasks.update_metadata.si(stack.id))
 
         # Launching requires us to tag the newly available infrastructure
         if action in (BaseCloudProvider.ACTION_LAUNCH,):
