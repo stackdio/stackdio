@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from datetime import datetime
 from operator import or_
 
 import celery
@@ -74,11 +75,27 @@ class StackListAPIView(generics.ListCreateAPIView):
                     'This field must be an integer ID of an existing blueprint.'
                 )
 
+        # Generate the title and/or description if not provided by user 
+        if not title and not description:
+            extra_description = '(Title and description'
+        elif not title:
+            extra_description = '(Title'
+        elif not description:
+            extra_description = '(Description'
+        else:
+            extra_description = ''
+        if extra_description:
+            extra_description += ' auto generated from Blueprint {0})'.format(blueprint.pk)
+
         if not title:
-            errors.setdefault('title', []).append('This field is required.')
+            request.DATA['title'] = '{0} ({1})'.format(
+                blueprint.title,
+                datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+            )
 
         if not description:
-            errors.setdefault('description', []).append('This field is required.')
+            description = blueprint.description
+        request.DATA['description'] = description + ' {0}'.format(extra_description)
 
         # check for duplicates
         if models.Stack.objects.filter(owner=self.request.user, title=title).count():
