@@ -75,6 +75,9 @@ class StackListAPIView(generics.ListCreateAPIView):
                     'This field must be an integer ID of an existing blueprint.'
                 )
 
+        if errors:
+            raise BadRequest(errors)
+
         # Generate the title and/or description if not provided by user 
         if not title and not description:
             extra_description = ' (Title and description'
@@ -357,7 +360,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         task_chain = reduce(or_, task_list)
 
         # Update all host states
-        hosts.update(state='actioning')
+        stack.get_hosts().update(state='actioning')
 
         # execute the chain
         task_chain()
