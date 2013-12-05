@@ -10,14 +10,17 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup": "npm run-script build",
+    "build": "npm run-script clean && npm install && grunt install && npm run-script build-deps",
+    "build-deps": "cd bower_components/knockoutjs && npm install && cd ../q && npm install",
+    "clean": "rm -rf bower_components && rm -rf node_modules"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/stackdio/stackdio"
   },
   "author": "Steve Brownlee",
-  "license": "BSD-2-Clause",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/stackdio/stackdio/issues"
   },

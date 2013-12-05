@@ -9,8 +9,10 @@
     "moment": "~2.4.0",
     "q": "~0.9.7",
     "underscore-amd": "~1.5.2",
-    "knockoutjs": "~3.0.0",
-    "jquery-ui-amd": "~0.0.3"
+    "knockoutjs": "~3.0.0"
+  },
+  "resolutions": {
+    "jquery": "~2.0.3"
   },
   "ignore": [
     "**/.*",
@@ -25,5 +27,8 @@
   ],
   "license": "MIT",
   "homepage": "http://www.stackd.io",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "jquery-ui-amd": "~0.0.3"
+  }
 }

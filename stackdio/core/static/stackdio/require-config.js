@@ -2,15 +2,15 @@ var stackdio = {};
 
 requirejs.config({
    paths: {
-        'jquery': 'components/jquery/jquery.min',
-        'jui': 'components/jquery-ui-amd/jquery-ui-1.10.0/jqueryui',
-        'bootstrap': 'components/bootstrap/dist/js/bootstrap.min',
-        'bootstrap-select': 'components/bootstrap-select/bootstrap-select.min',
-        'bootstrap-typeahead': 'components/typeahead.js/dist/typeahead.min',
-        'knockout': 'components/knockoutjs/build/output/knockout-latest',
-        'q': 'components/q/q.min',
-        'underscore': 'components/underscore-amd/underscore-min',
-        'moment': 'components/moment/min/moment.min'
+        'jquery': 'bower_components/jquery/jquery.min',
+        'jui': 'bower_components/jquery-ui-amd/jquery-ui-1.10.0/jqueryui',
+        'bootstrap': 'bower_components/bootstrap/dist/js/bootstrap.min',
+        'bootstrap-select': 'bower_components/bootstrap-select/bootstrap-select.min',
+        'bootstrap-typeahead': 'bower_components/typeahead.js/dist/typeahead.min',
+        'knockout': 'bower_components/knockoutjs/build/output/knockout-latest',
+        'q': 'bower_components/q/q.min',
+        'underscore': 'bower_components/underscore-amd/underscore-min',
+        'moment': 'bower_components/moment/min/moment.min'
     },
 
     shim: {
