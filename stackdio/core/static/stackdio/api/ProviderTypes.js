@@ -10,8 +10,8 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
-                success: function (response) {
-                    var i, item, items = response;
+                success: function (data) {
+                    var i, item, items = data.results;
                     var type;
 
                     // Clear the store and the grid

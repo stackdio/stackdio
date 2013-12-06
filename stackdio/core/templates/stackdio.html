@@ -1,4 +1,3 @@
-{% load staticfiles %}
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -6,10 +5,10 @@
     <title>stackd.io</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link href="{% static 'css/theme/jquery-ui-1.10.3.custom.min.css' %}" rel="stylesheet">
-    <link href="{% static 'stackdio/components/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
-    <link href="{% static 'stackdio/components/bootstrap-select/bootstrap-select.min.css' %}" rel="stylesheet">
-    <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">
+    <link href="/static/css/theme/jquery-ui-1.10.3.custom.min.css" rel="stylesheet">
+    <link href="/static/stackdio/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/stackdio/bower_components/bootstrap-select/bootstrap-select.min.css" rel="stylesheet">
+    <link href="/static/css/stackdio.css" rel="stylesheet">
 </head>
 
 <body>
@@ -24,7 +23,7 @@
                 <span class="icon-bar"></span>
             </button>
             <a class="navbar-brand" style="padding: 5px 15px 5px 15px;" href="#">
-                <img src="{% static 'img/logo.png' %}" style="height: 33px"> stackd.io
+                <img src="/static/img/logo.png" style="height: 33px"> stackd.io
             </a>
         </div>
 
@@ -1237,7 +1236,7 @@
         </div>
     </div>
 
-    <script data-main="{% static 'stackdio/require-config' %}" src="{% static 'stackdio/require.js' %}"></script>
+    <script data-main="/static/stackdio/require-config" src="/static/stackdio/require.js"></script>
     <script>
     window.stackdio_user = {};
     window.stackdio_user.su = "{{ user.is_superuser }}";
@@ -1245,7 +1244,7 @@
 
 
 <!--
-    <script src="{% static 'js/require.js' %}"></script>
+    <script src="/static/js/require.js"></script>
         <script>
             /*
              * 
@@ -1262,7 +1261,7 @@
                 paths: {
                     //Comment out this line to go back to loading
                     //the non-optimized main.js source file.
-                    "app": "{% static 'stackdio-built' %}"
+                    "app": "/static/stackdio-built"
                 }
             });
             require(["app"]);

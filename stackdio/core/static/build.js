@@ -1,6 +1,6 @@
 ({
     baseUrl: "./js",
-   paths: {
+    paths: {
         'jquery': 'lib/jquery',
         'bootstrap': 'lib/bootstrap.min',
         'bootstrap-select': 'lib/bootstrap-select.min',

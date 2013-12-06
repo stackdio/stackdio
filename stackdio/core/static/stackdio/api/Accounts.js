@@ -14,7 +14,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (data, status, response) {
-                    var i, item, items = data;
+                    var i, item, items = data.results;
                     var account;
 
                     // Clear the store and the grid
