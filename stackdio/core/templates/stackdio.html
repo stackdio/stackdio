@@ -333,22 +333,6 @@
                                                    optionsText: $data,
                                                    click: function (data, event) { $root.stack.doStackHostAction(data, event, $parent) }"
                                 ></select>
-    <!-- 
-                                <div class="btn-group">
-                                    <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
-                                        Action <span class="caret"></span>
-                                    </a>
-                                    <ul class="dropdown-menu" data-bind="foreach: $root.stack.stackHostActions">
-                                        <li>
-                                            <a href="#" 
-                                               data-bind="text:$data, 
-                                                          click: function (data, event) { 
-                                                             $root.stack.doStackHostAction(data, event, $parent) 
-                                                           }"></a>
-                                        </li>
-                                    </ul>
-                                </div>
-     -->
                             </td>
                         </tr>     
                     </tbody>
@@ -709,8 +693,6 @@
         <div id="accounts-form-container" title="New Provider Account Details" class="stackd-form form-small">
             <form id="account-form" role="form" class="form-horizontal">
                 <div class="modal-body large-modal-body">
-
-
                     <div class="form-group">
                         <label for="account_title" class="col-sm-4 control-label">Title</label>
                         <div class="col-sm-8">
@@ -757,7 +739,10 @@
                         <label for="default_availability_zone" class="col-sm-4 control-label">Default Zone</label>
                         <div class="col-sm-8">
                             <select id="default_availability_zone" 
-                                data-bind="options: stores.Zones, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose default zone...'" 
+                                data-bind="options: stores.Zones, 
+                                           optionsText: 'title', 
+                                           optionsValue: 'id', 
+                                           optionsCaption: 'Choose default zone...'" 
                                 data-container="body"
                                 class="stretch-full"></select>
                         </div>
@@ -773,7 +758,7 @@
                     <div class="form-group">
                         <label for="private_key_file" class="col-sm-4 control-label">Private Key File</label>
                         <div class="col-sm-8">
-                            <input id="private_key_file" type="file" class="input-block-level" placeholder="">
+                            <textarea class="form-control" id="private_key_file" rows="6" placeholder="Enter in the private key that will be used to set up instances for this account"></textarea>
                         </div>
                     </div>
 
@@ -824,11 +809,16 @@
                         <td data-bind="text: description"></td>
                         <td data-bind="text: typeof image_id === 'object' ? 'n/a' : image_id"></td>
                         <td>
-                            <button type="button" 
-                                    class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.isSuperUser,
-                                               click: $root.profile.deleteProfile"
-                            ></button>
+                            <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="#" data-bind="text:'Delete', click: $root.profile.deleteProfile"></a>
+                                    </li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>     
                 </tbody>
@@ -841,42 +831,60 @@
             ======================================================================
         -->
         <div id="profile-form-container" title="New Profile Details" class="stackd-form form-small">
-            <form id="profile-form">
-            <div class="modal-body">
-                <div class="span2">Title</div>
-                <div class="span4 no-margin">
-                    <input id="profile_title" type="text" class="input-block-level" placeholder="">
+            <form id="profile-form" role="form" class="form-horizontal">
+                <div class="modal-body large-modal-body">
+
+                    <div class="form-group">
+                        <label for="profile_title" class="col-sm-4 control-label">Title</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="profile_title" placeholder="">
+                        </div>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="profile_description" class="col-sm-4 control-label">Description</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="profile_description" placeholder="">
+                        </div>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="image_id" class="col-sm-4 control-label">AMI</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="image_id" placeholder="">
+                        </div>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="ssh_user" class="col-sm-4 control-label">SSH User</label>
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" id="ssh_user" placeholder="">
+                        </div>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="default_instance_size" class="col-sm-4 control-label">Default Instance Size</label>
+                        <div class="col-sm-8">
+                            <select id="default_instance_size" 
+                                data-bind="options: stores.InstanceSizes, 
+                                           optionsText: 'title', 
+                                           optionsValue: 'id', 
+                                           optionsCaption: 'Choose...'" 
+                                data-size="8"
+                                data-container="body"
+                                class="stretch-full"></select>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="span2">Description</div>
-                <div class="span4 no-margin">
-                    <input id="profile_description" type="text" class="input-block-level" placeholder="">
+                <div class="modal-footer">
+                    <button class="btn" data-bind="click: $root.profile.closeProfileForm">Close</button>
+                    <button class="btn btn-primary" data-bind="click: $root.profile.addProfile">Save</button>
                 </div>
-
-                <div class="span2">AMI</div>
-                <div class="span4 no-margin">
-                    <input id="image_id" type="text" class="input-block-level" placeholder="">
-                </div>
-
-                <div class="span2">Default Instance Size</div>
-                <div class="span4 no-margin">
-                    <select id="default_instance_size" 
-                        data-bind="options: stores.InstanceSizes, optionsText: 'title', optionsValue: 'id', optionsCaption: 'Choose...'" 
-                        data-size="8"
-                        data-container="body"
-                        class="stretch-full"></select>
-                </div>
-
-                <div class="span2">SSH User</div>
-                <div class="span4 no-margin">
-                    <input id="ssh_user" type="text" class="input-block-level" placeholder="">
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn" data-bind="click: $root.profile.closeProfileForm">Close</button>
-                <button class="btn btn-primary" data-bind="click: $root.profile.addProfile">Save</button>
-            </div>
             </form>
         </div>
     </div>

@@ -44,10 +44,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             // deferred.resolve(item);
             // return deferred.promise;
 
-
-            // Append private key file to the FormData() object
-            formData.append('private_key_file', record.private_key_file.files[0]);
-
             // Add the provider type that the user chose from the account split button
             formData.append('provider_type', record.providerType);
 
@@ -57,6 +53,9 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                 formData.append(r, rec.value);
             }
 
+            // Append private key file to the FormData() object
+            formData.append('private_key', record.private_key_file.value);
+
             // Open the connection to the provider URI and set authorization header
             xhr.open('POST', '/api/providers/');
             xhr.setRequestHeader('X-CSRFToken', stackdio.settings.csrftoken);
@@ -65,8 +64,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             // Define any actions to take once the upload is complete
             xhr.onloadend = function (evt) {
                 var item;
-
-                console.log(evt);
 
                 // Check if the upload succeeded
                 if (evt.target.status === 200 || evt.target.status === 201 || evt.target.status === 302) {

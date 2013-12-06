@@ -99,17 +99,15 @@ define([
 
                 // Force user to create a account if none exist
                 if (section !== "Accounts" && stores.Accounts().length === 0) {
-                    self.currentSection("Accounts")
+                    section = "Accounts";
                     $("#alert-no-accounts").show();
                     setTimeout(function () { $("#alert-no-accounts").hide(); }, 3000);
-                    return;
                 }
 
                 // Force user to create a profile if none exist
                 if (section !== "Profiles" && section !== "Accounts" && stores.Profiles().length === 0) {
-                    self.currentSection("Profiles")
+                    section = "Profiles"
                     self.showMessage("#alert-no-profiles", "", true);
-                    return;
                 }
 
                 location.hash = section;
@@ -146,9 +144,7 @@ define([
                     $("div[class='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection("Accounts");
-
-                    // self.showMessage("#alert-default-security-groups");
+                    self.gotoSection("Stacks");
                 })
                 .catch(function (error) {
                     // Handle any error from all above steps

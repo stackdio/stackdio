@@ -12,7 +12,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response;
+                    var i, item, items = response.results;
                     var size;
 
                     // Clear the store and the grid
