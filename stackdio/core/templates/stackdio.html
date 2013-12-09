@@ -1230,16 +1230,16 @@
         -->
         <div id="formula-form-container" title="Import Formula" class="stackd-form form-small">
             <form id="formula-form">
-            <div class="modal-body">
-                <div class="span2"></div>
-                <div class="span4 no-margin">
-                    <input id="formula_url" type="text" class="input-block-level" placeholder="Enter repository URL...">
-                </div>
+                <div class="modal-body large-modal-body">
 
-            <div class="modal-footer">
-                <button class="btn btn-danger" data-bind="click: $root.formula.closeFormulaForm">Cancel</button>
-                <button class="btn btn-primary" data-bind="click: $root.formula.importFormula">Import</button>
-            </div>
+                    <div class="form-group">
+                            <input type="text" class="form-control" id="formula_url" placeholder="Enter repository URL...">
+                    </div>
+
+                <div class="modal-footer" style="margin-top: 40px;">
+                    <button class="btn btn-danger" data-bind="click: $root.formula.closeFormulaForm">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: $root.formula.importFormula">Import</button>
+                </div>
             </form>
         </div>
     </div>

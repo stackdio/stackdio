@@ -36,10 +36,7 @@ define(["knockout",
                 return API.Profiles.load();
             };
 
-
-
             self.showProfileForm = function (account) {
-                console.log(account);
                 self.selectedAccount = account;
                 $( "#profile-form-container" ).dialog("open");
             };
