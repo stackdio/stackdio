@@ -179,7 +179,7 @@
     <div id="stacks-binding-target" data-bind='visible: $root.currentSection() === "Stacks"' class="hide">
         <div class="view">
 
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right bottom-separation">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Stack <span class="caret"></span>
                 </a>
@@ -552,7 +552,7 @@
      -->
     <div id="snapshots-binding-target" class="hide" data-bind='visible: $root.currentSection() === "Snapshots"'>
         <div class="view">
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right bottom-separation">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Snapshot <span class="caret"></span>
                 </a>
@@ -639,7 +639,7 @@
      -->
     <div id="accounts-binding-target" class="hide" data-bind='visible: $root.currentSection() == "Accounts"'>
         <div class="view">
-            <div class="btn-group pull-right" data-bind="visible: isSuperUser">
+            <div class="btn-group pull-right bottom-separation" data-bind="visible: isSuperUser">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Account
                     <span class="caret"></span>
@@ -651,7 +651,7 @@
                 </ul>
             </div>
 
-            <table id="accounts" class="table table-striped data-grid">
+            <table id="accounts" class="table table-bordered">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -780,7 +780,7 @@
     -->
     <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Profiles"'>
         <div class="view">
-            <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
+            <div class="btn-group pull-right bottom-separation" data-bind="visible: $root.isSuperUser">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Profile
                     <span class="caret"></span>
@@ -841,14 +841,12 @@
                         </div>
                     </div>
 
-
                     <div class="form-group">
                         <label for="profile_description" class="col-sm-4 control-label">Description</label>
                         <div class="col-sm-8">
                             <input type="text" class="form-control" id="profile_description" placeholder="">
                         </div>
                     </div>
-
 
                     <div class="form-group">
                         <label for="image_id" class="col-sm-4 control-label">AMI</label>
@@ -857,14 +855,12 @@
                         </div>
                     </div>
 
-
                     <div class="form-group">
                         <label for="ssh_user" class="col-sm-4 control-label">SSH User</label>
                         <div class="col-sm-8">
                             <input type="text" class="form-control" id="ssh_user" placeholder="">
                         </div>
                     </div>
-
 
                     <div class="form-group">
                         <label for="default_instance_size" class="col-sm-4 control-label">Default Instance Size</label>
@@ -896,7 +892,7 @@
     -->
     <div id="security-group-container" class="hide" data-bind='visible: currentSection() === "Security"'>
         <div class="view">
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right bottom-separation">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Security Group
                     <span class="caret"></span>
@@ -968,15 +964,17 @@
             ======================================================================
         -->
         <div id="securitygroup-form-container" title="New Security Group" class="stackd-form form-small">
-            <form id="securitygroup-form" class="form-horizontal">
+            <form id="securitygroup-form" role="form" class="form-horizontal">
                 <div class="modal-body">
-                    <div class="control-group">
-                        <label class="control-label" style="width: 40px;" for="securitygroup_name">Title</label>
-                        <div class="controls" style="margin-left: 60px">
-                            <input id="securitygroup_name" type="text" class="input-block-level"
+
+                    <div class="form-group">
+                        <label for="securitygroup_name" class="col-sm-3 control-label">Title</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="securitygroup_name" placeholder=""
                                    data-bind="event: { keypress: securityGroup.captureNewGroup }">
                         </div>
                     </div>
+
                 </div>
 
                 <div class="modal-footer">
@@ -1178,11 +1176,11 @@
     -->
     <div id="formula-binding-target" class="hide" data-bind='visible: currentSection() === "Formula"'>
         <div class="view">
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right bottom-separation">
                 <button class="btn btn-primary" data-bind="click: $root.formula.showFormulaForm">Import Formula</button>
             </div>
 
-            <table id="formulae" class="table table-striped data-grid">
+            <table id="formulae" class="table table-bordered ">
                 <thead>
                     <tr>
                         <th style="width:20%">Title</th>
