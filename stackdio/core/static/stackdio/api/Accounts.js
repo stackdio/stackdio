@@ -22,6 +22,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
 
                     for (i in items) {
                         account = new models.Account().create(items[i]);
+                        account.profileCount = 0;
 
                         // Inject the record into the store
                         stores.Accounts.push(account);

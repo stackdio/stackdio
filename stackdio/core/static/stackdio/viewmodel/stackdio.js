@@ -29,7 +29,7 @@ define([
             self.moment = moment;
             self.isSuperUser = ko.observable(stackdio.settings.superuser);
 
-            self.sections = ['Stacks', 'Formula', 'Blueprints', 'Security', 'Accounts', 'Profiles', 'Snapshots'];
+            self.sections = ['Stacks', 'Blueprints', 'Formula', 'Security', 'Snapshots'];
             self.currentSection = ko.observable();
 
             self.securityGroup = new securityGroupVM();
@@ -141,7 +141,7 @@ define([
                     $('select[id!="aws_security_group"][id!="host_security_groups"][id!="stackdio_security_group"]').selectpicker();
 
                     // Remove the hide class from the main sections
-                    $("div[class='hide'][data-bind]").removeClass('hide');
+                    $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
                     self.gotoSection("Stacks");
@@ -159,7 +159,7 @@ define([
          */
         $("#user-profile").dialog({
             autoOpen: false,
-            width: 500,
+            width: 700,
             modal: true
         });
 

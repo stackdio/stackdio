@@ -10,9 +10,21 @@ define(["knockout",
         var vm = function () {
             var self = this;
 
-            self.selectedAccount = ko.observable();
+            self.selectedAccount = ko.observable(null);
             self.selectedProviderType = null;
             self.userCanModify = ko.observable(true);
+
+            self.accountProfileLink = function (accountId) {
+                var profileCount = _.filter(stores.Profiles(), function (profile) {
+                    return profile.account.id === accountId;
+                }).length;
+
+                if (profileCount === 0) {
+                    return 'Add a profile';
+                } else {
+                    return 'View ' + _.filter(stores.Profiles(), function (profile) {return profile.account.id === accountId; }).length + ' profiles';
+                }
+            };
 
             self.addAccount = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
@@ -31,7 +43,7 @@ define(["knockout",
                         self.showMessage("#alert-default-security-groups", "", false);
 
                         // Set the saved account as the "selected" account for display in the default security group dialog
-                        self.selectedAccount = account;
+                        self.selectedAccount(account);
                         $('#default_groups_account_title').val(account.title);
 
                         // self.showSuccess();

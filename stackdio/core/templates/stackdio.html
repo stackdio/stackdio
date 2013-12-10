@@ -13,8 +13,12 @@
 
 <body>
 
+    <!-- 
+        ======================================================================
+         N A V I G A T I O N
+        ======================================================================
+     -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-        <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
                 <span class="sr-only">Toggle navigation</span>
@@ -27,12 +31,34 @@
             </a>
         </div>
 
-        <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             <ul class="nav navbar-nav">
                 <li class="active"><a href="#">home</a></li>
                 <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
                 <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-inverse navbar-btn dropdown-toggle" data-toggle="dropdown">
+                            <span class="glyphicon glyphicon-user"></span>
+                            Your Account
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="#" data-bind="click: showUserProfile">User Profile</a></li>
+                            <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#" data-bind="click: gotoSection('Accounts')">Your Cloud Accounts</a></li>
+                            <li class="divider"></li>
+                            <li><a href="/logout">Logout</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <li>
+                    <p class="navbar-text"> </p>
+                </li>
             </ul>
         </div>
     </nav>
@@ -44,8 +70,8 @@
      -->
     <div id="sidebar">
         <ul class="nav nav-list" data-bind="foreach: sections">
-            <li id="dashboard-href" class="navlink" data-bind="css: { active: $data == $root.currentSection() }, click: $root.gotoSection">
-              <a href="#">
+            <li id="dashboard-href" class="navlink" data-bind="click: $root.gotoSection">
+              <a href="#" data-bind="css: { active: $data == $root.currentSection() }">
                 <i class="icon-dashboard"></i>
                 <span data-bind="text: $data"></span>
               </a>
@@ -95,40 +121,40 @@
         U S E R   P A S S W O R D
         ======================================================================
      -->
-    <div id="user-password" title="Change Password" data-bind="" class="hide">
-        <form id="user-password-form" class="form-horizontal">
-        <div class="modal-body">
-            <div class="control-group">
-                <label class="control-label" style="width: 150px;" for="current_password">Current password</label>
-                <div class="controls" style="margin-left: 160px">
-                    <input id="current_password" type="password" class="input-block-level">
+    <div id="user-password" title="Change Password" class="hide" data-bind="">
+        <form id="user-password-form" role="form" class="form-horizontal">
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label for="current_password" class="col-sm-4 control-label">Current password</label>
+                    <div class="col-sm-8">
+                        <input type="password" class="form-control" id="current_password">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password" class="col-sm-4 control-label">New password</label>
+                    <div class="col-sm-8">
+                        <input type="password" class="form-control" id="new_password">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password_confirm" class="col-sm-4 control-label">Confirm</label>
+                    <div class="col-sm-8">
+                        <input type="password" class="form-control" id="new_password_confirm">
+                    </div>
+                </div>
+
+                <div id="password-error" class="alert hide alert-error">
+                    <button type="button" class="close" data-bind="click: closeError">&times;</button>
                 </div>
             </div>
 
-            <div class="control-group">
-                <label class="control-label" style="width: 150px;" for="new_password">New password</label>
-                <div class="controls" style="margin-left: 160px">
-                    <input id="new_password" type="password" class="input-block-level">
-                </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-bind="click: $root.savePassword">Save</button>
+                <button class="btn" data-bind="click: $root.closePasswordForm">Cancel</button>
             </div>
-
-            <div class="control-group">
-                <label class="control-label" style="width: 150px;" for="new_password_confirm">Confirm password</label>
-                <div class="controls" style="margin-left: 160px">
-                    <input id="new_password_confirm" type="password" class="input-block-level">
-                </div>
-            </div>
-
-            <div id="password-error" class="alert hide alert-error">
-                <button type="button" class="close" data-bind="click: closeError">&times;</button>
-            </div>
-
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: $root.savePassword">Save</button>
-            <button class="btn" data-bind="click: $root.closePasswordForm">Cancel</button>
-        </div>
         </form>
     </div>
 
@@ -138,35 +164,37 @@
         U S E R   P R O F I L E
         ======================================================================
      -->
-    <div id="user-profile" title="Your Profile" data-bind="" class="hide">
-        <form id="user-profile-form" class="form-horizontal">
-        <div class="modal-body">
-            <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="first_name">First name</label>
-                <div class="controls" style="margin-left: 110px">
-                    <input id="first_name" type="text" class="input-block-level" disabled placeholder="Aoibheann" value="{{ user.first_name }}">
+    <div id="user-profile" title="Your Profile" class="hide" data-bind="">
+        <form id="user-profile-form" role="form" class="form-horizontal">
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label for="first_name" class="col-sm-3 control-label">First name</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control disabled" id="first_name" value="{{ user.first_name }}" disabled>
+                    </div>
                 </div>
+
+                <div class="form-group">
+                    <label for="last_name" class="col-sm-3 control-label">Last name</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="last_name" value="{{ user.last_name }}" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="public_key" class="col-sm-3 control-label">Public key</label>
+                    <div class="col-sm-9">
+                        <textarea id="public_key" class="form-control" rows="8"></textarea>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="last_name">Last name</label>
-                <div class="controls" style="margin-left: 110px">
-                    <input id="last_name" type="text" class="input-block-level" disabled placeholder="O'Shaughnessy" value="{{ user.last_name }}">
-                </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-bind="click: $root.saveProfile">Save</button>
+                <button class="btn" data-bind="click: $root.closeProfileForm">Cancel</button>
             </div>
-
-            <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="public_key">Public key</label>
-                <div class="controls" style="margin-left: 110px">
-                    <textarea id="public_key" class="input-block-level" rows="6"></textarea>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: $root.saveProfile">Save</button>
-            <button class="btn" data-bind="click: $root.closeProfileForm">Cancel</button>
-        </div>
         </form>
     </div>
 
@@ -537,7 +565,6 @@
             </div>
             </form>
         </div>
-
     </div>
 
 
@@ -634,23 +661,30 @@
      -->
     <div id="accounts-binding-target" class="hide" data-bind='visible: $root.currentSection() == "Accounts"'>
         <div class="view">
-            <div class="btn-group pull-right bottom-separation" data-bind="visible: isSuperUser">
-                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                    New Account
-                    <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu" data-bind="foreach: stores.ProviderTypes">
-                    <li>
-                        <a href="#" data-bind="text: title, click: $root.account.showAccountForm"></a>
-                    </li>
-                </ul>
+            <div class="row bottom-separation">
+                <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Accounts</div>
+                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="btn-group pull-right bottom-separation" data-bind="visible: isSuperUser">
+                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                            New Account
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" data-bind="foreach: stores.ProviderTypes">
+                            <li>
+                                <a href="#" data-bind="text: title, click: $root.account.showAccountForm"></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
+
 
             <table id="accounts" class="table table-bordered">
                 <thead>
                     <tr>
                         <th>Title</th>
                         <th>Description</th>
+                        <th>Profiles</th>
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
@@ -659,8 +693,12 @@
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td>
+                            <a data-bind="click: $root.profile.listProfiles, 
+                                          text: $root.account.accountProfileLink(id)"></a>
+                        </td>
+                        <td>
                             <div class="btn-group" data-bind="visible: $root.isSuperUser">
-                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu">
@@ -771,18 +809,15 @@
         P R O F I L E   L I S T
         ======================================================================
     -->
-    <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Profiles"'>
+    <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Accounts" && stores.AccountProfiles().length > 0'>
         <div class="view">
-            <div class="btn-group pull-right bottom-separation" data-bind="visible: $root.isSuperUser">
-                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                    New Profile
-                    <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
-                    <li>
-                        <a href="#" data-bind="text: title, click: $root.profile.showProfileForm"></a>
-                    </li>
-                </ul>
+            <div class="row bottom-separation">
+                <div class="col-xs-4 col-sm-4 col-md-4 medium-heading">Account Profiles</div>
+                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
+                        <button class="btn btn-primary" data-bind="click: $root.profile.showProfileForm">New Profile</button>
+                    </div>
+                </div>
             </div>
 
             <table id="profiles" class="table table-bordered">
@@ -794,14 +829,14 @@
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: stores.Profiles">
+                <tbody data-bind="foreach: stores.AccountProfiles">
                     <tr>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td data-bind="text: typeof image_id === 'object' ? 'n/a' : image_id"></td>
                         <td>
                             <div class="btn-group" data-bind="visible: $root.isSuperUser">
-                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu">
@@ -824,7 +859,6 @@
         <div id="profile-form-container" title="New Profile Details" class="stackd-form form-small">
             <form id="profile-form" role="form" class="form-horizontal">
                 <div class="modal-body large-modal-body">
-
                     <div class="form-group">
                         <label for="profile_title" class="col-sm-4 control-label">Title</label>
                         <div class="col-sm-8">

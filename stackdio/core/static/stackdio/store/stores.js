@@ -8,6 +8,7 @@ define(["knockout"], function (ko) {
         Zones : ko.observableArray([]),
         ProviderTypes : ko.observableArray([]),
         Accounts : ko.observableArray([]),
+        AccountProfiles : ko.observableArray([]),
         Profiles : ko.observableArray([]),
         NewHosts : ko.observableArray([]),
         HostVolumes : ko.observableArray([]),
