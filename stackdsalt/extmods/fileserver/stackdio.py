@@ -318,16 +318,20 @@ def dir_list(load):
         load['saltenv'] = load.pop('env')
 
     ret = []
-    if load['saltenv'] not in __opts__['stackdio']:
+    if load['saltenv'] not in envs():
         return ret
-    for path in __opts__['stackdio'][load['saltenv']]:
-        try:
-            prefix = load['prefix'].strip('/')
-        except KeyError:
-            prefix = ''
-        for root, dirs, files in os.walk(os.path.join(path, prefix),
+
+    env_root = os.path.join(get_envs_dir(), load['saltenv'])
+    for formula_root in os.listdir(env_root):
+        formula_dir = os.path.join(env_root, formula_root)
+        if not os.path.isdir(formula_dir):
+            continue
+        for root, dirs, files in os.walk(formula_dir,
                                          followlinks=__opts__['fileserver_followsymlinks']):
-            ret.append(os.path.relpath(root, path))
+            rel_fn = os.path.relpath(root, formula_dir)
+            if not salt.fileserver.is_file_ignored(__opts__, rel_fn):
+                ret.append(rel_fn)
+
     return ret
 
 def symlink_list(load):
@@ -344,21 +348,23 @@ def symlink_list(load):
         load['saltenv'] = load.pop('env')
 
     ret = {}
-    if load['saltenv'] not in __opts__['stackdio']:
+    if load['saltenv'] not in envs():
         return ret
-    for path in __opts__['stackdio'][load['saltenv']]:
-        try:
-            prefix = load['prefix'].strip('/')
-        except KeyError:
-            prefix = ''
+
+    env_root = os.path.join(get_envs_dir(), load['saltenv'])
+    for formula_root in os.listdir(env_root):
+        formula_dir = os.path.join(env_root, formula_root)
+        if not os.path.isdir(formula_dir):
+            continue
+
         # Adopting rsync functionality here and stopping at any encounter of a symlink
-        for root, dirs, files in os.walk(os.path.join(path, prefix), followlinks=False):
+        for root, dirs, files in os.walk(formula_dir, followlinks=False):
             for fname in files:
                 if not os.path.islink(os.path.join(root, fname)):
                     continue
                 rel_fn = os.path.relpath(
                             os.path.join(root, fname),
-                            path
+                            formula_dir
                         )
                 if not salt.fileserver.is_file_ignored(__opts__, rel_fn):
                     ret[rel_fn] = os.readlink(os.path.join(root, fname))
