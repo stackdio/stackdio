@@ -9,6 +9,8 @@ example.
 import salt.utils
 import os.path
 
+__virtualname__ = 'file'
+
 def __virtual__():
     '''
     Only work on POSIX-like systems

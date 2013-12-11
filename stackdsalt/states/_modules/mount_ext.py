@@ -6,6 +6,8 @@ when operating with ebs volumes.
 import salt.utils
 import os.path
 
+__virtualname__ = 'mount'
+
 def __virtual__():
     '''
     Only work on POSIX-like systems
