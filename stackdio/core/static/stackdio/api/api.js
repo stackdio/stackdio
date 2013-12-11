@@ -9,9 +9,10 @@ define([
         "api/Snapshots", 
         "api/StackHosts", 
         "api/Formulae", 
-        "api/Stacks"
+        "api/Stacks",
+        "api/Blueprints"
         ], 
-    function (SecurityGroups, Users, Zones, InstanceSizes, Profiles, Accounts, ProviderTypes, Snapshots, StackHosts, Formulae, Stacks) {
+    function (SecurityGroups, Users, Zones, InstanceSizes, Profiles, Accounts, ProviderTypes, Snapshots, StackHosts, Formulae, Stacks, Blueprints) {
 
     return {
         SecurityGroups: SecurityGroups,
@@ -24,6 +25,7 @@ define([
         Snapshots:     Snapshots,
         StackHosts:    StackHosts,
         Formulae:      Formulae,
-        Stacks:        Stacks
+        Stacks:        Stacks,
+        Blueprints:    Blueprints
     }
 });

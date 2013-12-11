@@ -41,10 +41,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             var deferred = Q.defer();
             var files, formData = new FormData(), xhr = new XMLHttpRequest();
 
-            // var item = stores.Accounts()[0];
-            // deferred.resolve(item);
-            // return deferred.promise;
-
             // Add the provider type that the user chose from the account split button
             formData.append('provider_type', record.providerType);
 

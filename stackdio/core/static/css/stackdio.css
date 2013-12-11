@@ -27,8 +27,16 @@ form {
     font-size: 1.75em;
 }
 
+.small-heading {
+    font-size: 1.5em;
+}
+
 .bottom-separation {
     margin-bottom: 10px;
+}
+
+.top-separation {
+    margin-top: 30px;
 }
 
 .view {
@@ -88,7 +96,6 @@ form {
     ===================================================================================
 */
 .stackd-form {
-    max-width: 850px;
     padding: 19px 20px 20px;
     background-color: #fff;
     border: 1px solid #e5e5e5;
