@@ -58,11 +58,16 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, item = response;
+                    var i, profile = response;
 
-                    if (item.hasOwnProperty('id')) {
-                        stores.Profiles.push(item);
-                        deferred.resolve(item);
+                    if (profile.hasOwnProperty('id')) {
+                        // Inject the name of the provider account used to create the profile
+                        profile.account = _.find(stores.Accounts(), function (account) {
+                            return account.id === profile.cloud_provider;
+                        });
+
+                        stores.Profiles.push(profile);
+                        deferred.resolve(profile);
                     }
                 }
             });

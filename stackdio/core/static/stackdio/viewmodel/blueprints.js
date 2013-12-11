@@ -9,24 +9,10 @@ define(["knockout",
 
         var vm = function () {
             var self = this;
+            self.selectedProfile = null;
+            self.selectedAccount = null;
 
-            self.selectedAccount = ko.observable(null);
-            self.selectedProviderType = null;
-            self.userCanModify = ko.observable(true);
-
-            self.accountProfileLink = function (accountId) {
-                var profileCount = _.filter(stores.Profiles(), function (profile) {
-                    return profile.account.id === accountId;
-                }).length;
-
-                if (profileCount === 0) {
-                    return 'Add a profile';
-                } else {
-                    return 'View ' + _.filter(stores.Profiles(), function (profile) {return profile.account.id === accountId; }).length + ' profiles';
-                }
-            };
-
-            self.addAccount = function (model, evt) {
+            self.addBlueprint = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
 
                 record.title = record.account_title;
@@ -53,7 +39,7 @@ define(["knockout",
                     })
             };
 
-            self.deleteAccount = function (account) {
+            self.deleteBlueprint = function (account) {
                 API.Accounts.delete(account)
                     .then(self.showSuccess)
                     .catch(function (error) {
@@ -61,29 +47,55 @@ define(["knockout",
                     });
             };
 
-            self.loadAccounts = function () {
+            self.loadBlueprint = function () {
                 return API.Accounts.load();
             };
 
-            self.showAccountForm = function (type) {
-                self.selectedProviderType = type;
-                $( "#accounts-form-container" ).dialog("open");
+            self.showBlueprintForm = function () {
+                $("#blueprint-form-container").dialog("open");
             }
 
-            self.closeAccountForm = function (type) {
-                self.selectedProviderType = type;
-                $("#accounts-form-container").dialog("close");
+            self.closeBlueprintForm = function (type) {
+                formutils.clearForm('blueprint-form');
+                $("#blueprint-form-container").dialog("close");
             }
+
+            self.showHostForm = function (profile) {
+                self.selectedProfile = profile;
+                self.selectedAccount = profile.account;
+
+                // Choose the default instance size assigned to the chosen profile
+                $('#host_instance_size').selectpicker('val', profile.default_instance_size);
+
+                // Choose the default zone assigned to the chosen account
+                $('#availability_zone').selectpicker('val', self.selectedAccount.default_availability_zone);
+
+                $( "#host-form-container" ).dialog("open");
+            };
+
+            self.closeHostForm = function () {
+                formutils.clearForm('blueprint-host-form');
+                $( "#host-form-container" ).dialog("close");
+            };
 
             /*
              *  ==================================================================================
              *  D I A L O G   E L E M E N T S
              *  ==================================================================================
              */
-            $("#accounts-form-container").dialog({
+            $("#blueprint-form-container").dialog({
                 autoOpen: false,
-                width: 650,
+                width: window.innerWidth - 225,
+                height: 500,
+                position: [200,50],
                 modal: false
+            });
+
+            $("#host-form-container").dialog({
+                position: [(window.innerWidth / 2) - 275,50],
+                autoOpen: false,
+                width: 600,
+                modal: true
             });
         };
 

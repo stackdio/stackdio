@@ -6,8 +6,37 @@ img.logo {
     float:left;
 }
 
+a {
+    cursor: pointer;
+}
+
 form {
     margin: 0 !important;
+}
+
+.section-header {
+    /*border-bottom: 1px solid black;*/
+    margin-bottom: 25px;
+}
+
+.large-heading {
+    font-size: 2.5em;
+}
+
+.medium-heading {
+    font-size: 1.75em;
+}
+
+.small-heading {
+    font-size: 1.5em;
+}
+
+.bottom-separation {
+    margin-bottom: 10px;
+}
+
+.top-separation {
+    margin-top: 30px;
 }
 
 .view {
@@ -67,7 +96,6 @@ form {
     ===================================================================================
 */
 .stackd-form {
-    max-width: 850px;
     padding: 19px 20px 20px;
     background-color: #fff;
     border: 1px solid #e5e5e5;
@@ -198,15 +226,21 @@ position: relative;
 }
 
 .nav-list>li>a {
-display: block;
-height: 38px;
-line-height: 36px;
-padding: 0 16px 0 7px;
-background-color: #f9f9f9;
-color: #585858;
-text-shadow: none!important;
-font-size: 13px;
-text-decoration: none;
+    display: block;
+    height: 38px;
+    line-height: 36px;
+    padding: 0 16px 0 7px;
+    background-color: #f9f9f9;
+    color: #585858;
+    text-shadow: none!important;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.nav-list>li>a.active {
+    background-color: cadetblue;
+    color: mintcream;
+    font-weight: normal;
 }
 
 .nav-list>li>a, .nav-list .nav-header {

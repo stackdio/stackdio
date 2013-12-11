@@ -10,17 +10,20 @@ define(["knockout",
         var vm = function () {
             var self = this;
 
+            self.selectedAccount = ko.observable(null);
             self.userCanModify = ko.observable(true);
 
             self.addProfile = function (model, evt) {
                 var profile = formutils.collectFormFields(evt.target.form);
-                profile.account = self.selectedAccount;
+                profile.account = self.selectedAccount();
 
                 API.Profiles.save(profile)
-                    .then(function () {
-                        $("#profile-form-container").dialog("close");
+                    .then(function (newProfile) {
+                        console.log(newProfile);
+                        stores.AccountProfiles.push(newProfile);
                         formutils.clearForm('profile-form');
                         self.showSuccess();
+                        self.closeProfileForm();
                     });
             };
 
@@ -32,20 +35,32 @@ define(["knockout",
                     });
             };
 
+            self.listProfiles = function (account) {
+                stores.AccountProfiles.removeAll();
+
+                _.each(stores.Profiles(), function (profile) {
+                    if (profile.account.id === account.id) {
+                        stores.AccountProfiles.push(profile);
+                    }
+                });
+
+                if (stores.AccountProfiles().length === 0) {
+                    self.showProfileForm(account);
+                }
+            };
+
+
             self.loadProfiles = function () {
                 return API.Profiles.load();
             };
 
-
-
             self.showProfileForm = function (account) {
-                console.log(account);
-                self.selectedAccount = account;
+                self.selectedAccount(account);
                 $( "#profile-form-container" ).dialog("open");
             };
 
             self.closeProfileForm = function () {
-                $("#profile-form-container").dialog("close");
+                $('#profile-form-container').dialog('close');
             };
 
 
