@@ -7,7 +7,7 @@ from .base import *
 # stackd.io overrides
 ## 
 STACKDIO_CONFIG.update({
-    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git 3cd5efe521e7f5f935957b5056791860910cce89',
+    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git f5810fdc79a6a51c06f20c631ee2ffe4ae7bd2ef',
 })
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
