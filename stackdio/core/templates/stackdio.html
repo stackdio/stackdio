@@ -13,8 +13,12 @@
 
 <body>
 
+    <!-- 
+        ======================================================================
+         N A V I G A T I O N
+        ======================================================================
+     -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-        <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
                 <span class="sr-only">Toggle navigation</span>
@@ -27,12 +31,34 @@
             </a>
         </div>
 
-        <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             <ul class="nav navbar-nav">
                 <li class="active"><a href="#">home</a></li>
                 <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
                 <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-inverse navbar-btn dropdown-toggle" data-toggle="dropdown">
+                            <span class="glyphicon glyphicon-user"></span>
+                            Your Account
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="#" data-bind="click: showUserProfile">User Profile</a></li>
+                            <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#" data-bind="click: gotoSection('Accounts')">Your Cloud Accounts</a></li>
+                            <li class="divider"></li>
+                            <li><a href="/logout">Logout</a></li>
+                        </ul>
+                    </div>
+                </li>
+                <li>
+                    <p class="navbar-text"> </p>
+                </li>
             </ul>
         </div>
     </nav>
@@ -44,8 +70,8 @@
      -->
     <div id="sidebar">
         <ul class="nav nav-list" data-bind="foreach: sections">
-            <li id="dashboard-href" class="navlink" data-bind="css: { active: $data == $root.currentSection() }, click: $root.gotoSection">
-              <a href="#">
+            <li id="dashboard-href" class="navlink" data-bind="click: $root.gotoSection">
+              <a href="#" data-bind="css: { active: $data == $root.currentSection() }">
                 <i class="icon-dashboard"></i>
                 <span data-bind="text: $data"></span>
               </a>
@@ -95,40 +121,40 @@
         U S E R   P A S S W O R D
         ======================================================================
      -->
-    <div id="user-password" title="Change Password" data-bind="" class="hide">
-        <form id="user-password-form" class="form-horizontal">
-        <div class="modal-body">
-            <div class="control-group">
-                <label class="control-label" style="width: 150px;" for="current_password">Current password</label>
-                <div class="controls" style="margin-left: 160px">
-                    <input id="current_password" type="password" class="input-block-level">
+    <div id="user-password" title="Change Password" class="hide" data-bind="">
+        <form id="user-password-form" role="form" class="form-horizontal">
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label for="current_password" class="col-sm-4 control-label">Current password</label>
+                    <div class="col-sm-8">
+                        <input type="password" class="form-control" id="current_password">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password" class="col-sm-4 control-label">New password</label>
+                    <div class="col-sm-8">
+                        <input type="password" class="form-control" id="new_password">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="new_password_confirm" class="col-sm-4 control-label">Confirm</label>
+                    <div class="col-sm-8">
+                        <input type="password" class="form-control" id="new_password_confirm">
+                    </div>
+                </div>
+
+                <div id="password-error" class="alert hide alert-error">
+                    <button type="button" class="close" data-bind="click: closeError">&times;</button>
                 </div>
             </div>
 
-            <div class="control-group">
-                <label class="control-label" style="width: 150px;" for="new_password">New password</label>
-                <div class="controls" style="margin-left: 160px">
-                    <input id="new_password" type="password" class="input-block-level">
-                </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-bind="click: $root.savePassword">Save</button>
+                <button class="btn" data-bind="click: $root.closePasswordForm">Cancel</button>
             </div>
-
-            <div class="control-group">
-                <label class="control-label" style="width: 150px;" for="new_password_confirm">Confirm password</label>
-                <div class="controls" style="margin-left: 160px">
-                    <input id="new_password_confirm" type="password" class="input-block-level">
-                </div>
-            </div>
-
-            <div id="password-error" class="alert hide alert-error">
-                <button type="button" class="close" data-bind="click: closeError">&times;</button>
-            </div>
-
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: $root.savePassword">Save</button>
-            <button class="btn" data-bind="click: $root.closePasswordForm">Cancel</button>
-        </div>
         </form>
     </div>
 
@@ -138,34 +164,289 @@
         U S E R   P R O F I L E
         ======================================================================
      -->
-    <div id="user-profile" title="Your Profile" data-bind="" class="hide">
-        <form id="user-profile-form" class="form-horizontal">
-        <div class="modal-body">
-            <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="first_name">First name</label>
-                <div class="controls" style="margin-left: 110px">
-                    <input id="first_name" type="text" class="input-block-level" disabled placeholder="Aoibheann" value="{{ user.first_name }}">
+    <div id="user-profile" title="Your Profile" class="hide" data-bind="">
+        <form id="user-profile-form" role="form" class="form-horizontal">
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label for="first_name" class="col-sm-3 control-label">First name</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control disabled" id="first_name" value="{{ user.first_name }}" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="last_name" class="col-sm-3 control-label">Last name</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="last_name" value="{{ user.last_name }}" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="public_key" class="col-sm-3 control-label">Public key</label>
+                    <div class="col-sm-9">
+                        <textarea id="public_key" class="form-control" rows="8"></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-bind="click: $root.saveProfile">Save</button>
+                <button class="btn" data-bind="click: $root.closeProfileForm">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+
+    <!-- 
+        ======================================================================
+        B L U E P R I N T   L I S T
+        ======================================================================
+     -->
+    <div id="blueprints-binding-target" data-bind='visible: $root.currentSection() === "Blueprints"' class="hide">
+        <div class="view">
+
+            <div class="row bottom-separation">
+                <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Blueprints</div>
+                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="btn-group pull-right">
+                        <button class="btn btn-primary" data-bind="click: $root.blueprint.showBlueprintForm">New Blueprint</button>
+                    </div>
                 </div>
             </div>
 
-            <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="last_name">Last name</label>
-                <div class="controls" style="margin-left: 110px">
-                    <input id="last_name" type="text" class="input-block-level" disabled placeholder="O'Shaughnessy" value="{{ user.last_name }}">
+            <table id="stacks" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th style="width:20%">Title</th>
+                        <th style="width:50%">Description</th>
+                        <th style="width:50px"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.Blueprints">
+                    <tr>
+                        <td><a href="#" data-bind="text: title"></a></td>
+                        <td data-bind="text: description"></td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 
+        ======================================================================
+        B L U E P R I N T   F O R M
+        ======================================================================
+     -->
+    <div id="blueprint-form-container" title="Blueprint Details"  data-bind="" class="stackd-form form-small hide">
+        <form id="blueprint-form" role="form" class="form-inline">
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-5">
+                        <label class="sr-only" for="blueprint_title">Title</label>
+                        <input type="text" class="form-control" id="blueprint_title" placeholder="Blueprint title">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="sr-only" for="blueprint_purpose">Description</label>
+                        <input type="text" class="form-control" id="blueprint_purpose" placeholder="Purpose of blueprint">
+                    </div>
+                </div>
+
+                <div class="row top-separation">
+                    <div class="col-xs-4 col-sm-4 col-md-4 small-heading">Blueprint Hosts</div>
+                    <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                        <div class="btn-group pull-right">
+                            <a class="btn btn-primary dropdown-toggle" style="color: #fff" data-toggle="dropdown" href="#">
+                                Add Host <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu" data-bind="foreach: stores.Profiles">
+                                <li>
+                                    <a href="#" data-bind="text: title, click: $root.blueprint.showHostForm"></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <table id="blueprint_hosts" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Roles</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Security Groups</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: stores.NewHosts">
+                        <tr>
+                            <td data-bind="html: flat_roles"></td>
+                            <td data-bind="text: host_count"></td>
+                            <td data-bind="text: size.title"></td>
+                            <td data-bind="text: host_pattern"></td>
+                            <td data-bind="html: flat_security_groups"></td>
+                            <td><button type="button" class="btn-small btn-danger glyphicon glyphicon-trash" data-bind="click: $root.blueprint.removeHost"></button></td>
+                        </tr>     
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-info" data-bind="click: $root.blueprint.saveBlueprint">Save Stack</button>
+                <button class="btn" data-bind="click: $root.blueprint.closeBlueprintForm">Close</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 
+        ======================================================================
+        N E W   H O S T   F O R M
+        ======================================================================
+     -->
+    <div id="host-form-container" title="Host Details" data-bind="" class="hide">
+        <form id="blueprint-host-form" role="form" class="form-horizontal">
+            <div class="modal-body large-modal-body">
+
+                <div class="form-group">
+                    <label for="host_count" class="col-sm-4 control-label">Count</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="host_count" placeholder="">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="host_instance_size" class="col-sm-4 control-label">Instance size</label>
+                    <div class="col-sm-8">
+                        <select id="host_instance_size" 
+                                data-bind="options: stores.InstanceSizes, 
+                                           optionsValue: 'id',
+                                           optionsText: 'title',
+                                           optionsCaption: 'Choose size...'"
+                                data-size="12"
+                                data-container="body"
+                                class="form-control"></select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="availability_zone" class="col-sm-4 control-label">Availability zone</label>
+                    <div class="col-sm-8">
+                        <select id="availability_zone" 
+                                data-bind="options: stores.Zones, 
+                                           optionsValue: 'id',
+                                           optionsText: 'title',
+                                           optionsCaption: 'Choose a zone...'"
+                                data-container="body"
+                                class="form-control"></select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="host_hostname" class="col-sm-4 control-label">Host pattern</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="host_hostname" placeholder="e.g. dn-{username}-{index}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="host_volumes" class="col-sm-4 control-label">Volumes</label>
+                    <div class="col-sm-8">
+                        <table id="host_volumes" class="table table-bordered table-condensed" data-bind="visible: stores.HostVolumes.length > 0">
+                            <thead>
+                                <tr>
+                                    <th>Snapshot</th>
+                                    <th>Mount point</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="foreach: stores.HostVolumes">
+                                <tr>
+                                    <td data-bind="text: snapshot.title"></td>
+                                    <td data-bind="text: mount_point"></td>
+                                    <td><button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.volume.removeHostVolume"></button></td>
+                                </tr>     
+                            </tbody>
+                        </table>
+                        <button class="btn btn-info btn-xs" data-bind="click: $root.volume.showVolumeForm">Add Volume</button>
+                    </div>
+                </div>
+
+                <div class="form-group" data-bind="visible: stores.HostVolumes.length > 0">
+                    <label for="spot_instance" class="col-sm-4 control-label"></label>
+                    <div class="col-sm-8">
+                        <input type="checkbox" id="spot_instance"> Request spot instances
+                    </div>
+                </div>
+
+                <div class="form-group" data-bind="visible: stack.isSpotInstance">
+                    <label for="spot_instance_price" class="col-sm-4 control-label"></label>
+                    <div class="col-sm-8">
+                        <input type="text" id="spot_instance_price" class="form-control" placeholder="Bid price for instances">
+                    </div>
+                </div>
+            </div>  
+    
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-bind="click: $root.blueprint.addHost">Save Host</button>
+                <button class="btn" data-bind="click: $root.blueprint.closeHostForm">Close</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 
+        ======================================================================
+        N E W   V O L U M E   F O R M
+        ======================================================================
+     -->
+    <div id="volume-form-container" title="Volume Details" data-bind="" class="hide">
+        <form id="host-volume-form" role="form" class="form-horizontal">
+            <div class="modal-body large-modal-body">
+
+                <div class="form-group">
+                    <label for="volume_snapshot" class="col-sm-4 control-label">Snapshot</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="volume_snapshot" placeholder="">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="volume_device" class="col-sm-4 control-label">Device</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="volume_device" placeholder="">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="volume_mount_point" class="col-sm-4 control-label">Mount point</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="volume_mount_point" placeholder="">
+                    </div>
+                </div>
+
+
+                <label class="control-label" for="volume_snapshot">Snapshot</label>
+                <div class="controls">
+                    <select id="volume_snapshot" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
                 </div>
             </div>
 
+
             <div class="control-group">
-                <label class="control-label" style="width: 100px;" for="public_key">Public key</label>
-                <div class="controls" style="margin-left: 110px">
-                    <textarea id="public_key" class="input-block-level" rows="6"></textarea>
+                <label class="control-label" for="volume_device">Device</label>
+                <div class="controls">
+                    <input id="volume_device" type="text" class="input-block-level" placeholder="Device name">
+                </div>
+            </div>
+
+
+            <div class="control-group">
+                <label class="control-label" for="volume_mount_point">Mount point</label>
+                <div class="controls">
+                    <input type="text" id="volume_mount_point" class="input-block-level" placeholder="/mnt/x">
                 </div>
             </div>
         </div>
 
         <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: $root.saveProfile">Save</button>
-            <button class="btn" data-bind="click: $root.closeProfileForm">Cancel</button>
+            <button class="btn btn-primary" data-bind="click: $root.volume.addHostVolume">Save Volume</button>
+            <button class="btn" data-bind="click: $root.volume.closeVolumeForm">Close</button>
         </div>
         </form>
     </div>
@@ -179,7 +460,7 @@
     <div id="stacks-binding-target" data-bind='visible: $root.currentSection() === "Stacks"' class="hide">
         <div class="view">
 
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right bottom-separation">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Stack <span class="caret"></span>
                 </a>
@@ -190,10 +471,9 @@
                 </ul>
             </div>
 
-            <table id="stacks" class="table table-striped data-grid">
+            <table id="stacks" class="table table-bordered">
                 <thead>
                     <tr>
-                        <th style="width:20px">#</th>
                         <th style="width:20%">Title</th>
                         <th style="width:50%">Description</th>
                         <th style="width:20%">Status History</th>
@@ -202,7 +482,6 @@
                 </thead>
                 <tbody data-bind="foreach: stores.Stacks">
                     <tr>
-                        <td data-bind="text: $data.id"></td>
                         <td><a href="#" data-bind="text: $data.title, click: $root.stack.showStackDetails"></a></td>
                         <td data-bind="text: $data.description"></td>
                         <td>
@@ -228,67 +507,6 @@
                     </tr>     
                 </tbody>
             </table>
-        </div>
-
-
-        <!-- 
-            ======================================================================
-            N E W   S T A C K   F O R M
-            ======================================================================
-         -->
-        <div id="stack-form-container" title="Stack Details">
-            <div class="modal-body" style="min-height: 330px;">
-                <div class="controls controls-row">
-                    <input class="span5" id="stack_title" type="text" placeholder="Stack title">
-                    <input class="span5" id="stack_purpose" type="text" placeholder="Purpose of stack">
-                </div>
-
-                <div>
-                    <legend class="lead">Stack Hosts
-                        <div class="btn-group pull-right">
-                            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                                Add Host <span class="caret"></span>
-                            </a>
-                            <ul class="dropdown-menu" data-bind="foreach: stores.Profiles">
-                                <li>
-                                    <a href="#" data-bind="text: title, click: $root.stack.showHostForm"></a>
-                                </li>
-                            </ul>
-                        </div>
-                    </legend>
-                    <table id="stack_hosts" class="data-grid stretch-full">
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th>Roles</th>
-                                <th>Count</th>
-                                <th>Size</th>
-                                <th>Host Pattern</th>
-                                <th>Security Groups</th>
-                                <th style="width:50px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody data-bind="foreach: stores.NewHosts">
-                            <tr>
-                                <td data-bind="text: id"></td>
-                                <td data-bind="html: flat_roles"></td>
-                                <td data-bind="text: host_count"></td>
-                                <td data-bind="text: size.title"></td>
-                                <td data-bind="text: host_pattern"></td>
-                                <td data-bind="html: flat_security_groups"></td>
-                                <td><button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.stack.removeHost"></button></td>
-                            </tr>     
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-primary" data-bind="click: $root.stack.launchStack">Launch Stack</button>
-                <button class="btn btn-info" data-bind="click: $root.stack.saveStack">Save Stack</button>
-                <button class="btn" data-bind="click: $root.stack.closeStackForm">Close</button>
-            </div>
         </div>
 
 
@@ -371,176 +589,6 @@
                 <button class="btn btn-primary" data-bind="click: $root.stack.closeHostMetadata">Close</button>
             </div>
         </div>
-
-            
-
-        <!-- 
-            ======================================================================
-            N E W   H O S T   F O R M
-            ======================================================================
-         -->
-        <div id="host-form-container" title="Host Details">
-           <form id="host-form" class="form-horizontal">
-                <div class="modal-body">
-                    <div class="control-group">
-                        <label class="control-label" for="host_count">Count</label>
-                        <div class="controls">
-                            <input type="text" id="host_count" class="input-mini" placeholder="">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_instance_size">Instance size</label>
-                        <div class="controls">
-                            <select id="host_instance_size" 
-                                    data-bind="options: stores.InstanceSizes, 
-                                               optionsValue: 'id',
-                                               optionsText: 'title',
-                                               optionsCaption: 'Choose size...'"
-                                    data-size="12"
-                                    data-container="body"
-                                    class="input-xlarge "></select>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="availability_zone">Availability zone</label>
-                        <div class="controls">
-                            <select id="availability_zone" 
-                                    data-bind="options: stores.Zones, 
-                                               optionsValue: 'id',
-                                               optionsText: 'title',
-                                               optionsCaption: 'Choose a zone...'"
-                                    data-container="body"
-                                    class="input-xlarge "></select>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_security_groups">Security groups</label>
-                        <div class="controls">
-                            <select id="host_security_groups" 
-                                    multiple
-                                    data-selected-text-format="count"
-                                    data-bind="options: stores.AccountSecurityGroups, 
-                                               optionsValue: 'id', 
-                                               optionsText: 'name'",
-                                    data-container="body"
-                                    data-header="Choose security groups"
-                                    class="input-xlarge"></select> 
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_hostname">Host pattern</label>
-                        <div class="controls">
-                            <input type="text" id="host_hostname" class="input-xlarge" placeholder="{name}.yourdomain.com">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_roles">SLS</label>
-                        <div class="controls">
-                            <select id="host_roles" 
-                                    multiple
-                                    data-selected-text-format="count"
-                                    data-bind="options: stores.Roles, 
-                                               optionsValue: 'id', 
-                                               optionsText: 'title'",
-                                    data-container="body"
-                                    data-header="Choose states to install"
-                                    class="input-xlarge"></select>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" for="host_volumes">
-                            Volumes
-                        </label>
-                        <div class="controls">
-                            <table id="host_volumes" class="data-grid">
-                                <thead>
-                                    <tr>
-                                        <th>Snapshot</th>
-                                        <th>Mount point</th>
-                                        <th style="width:50px;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody data-bind="foreach: stores.HostVolumes">
-                                    <tr>
-                                        <td data-bind="text: snapshot.title"></td>
-                                        <td data-bind="text: mount_point"></td>
-                                        <td><button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.volume.removeHostVolume"></button></td>
-                                    </tr>     
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="control-group">
-                            <label class="control-label" for="spot_instance"></label>
-                            <div class="controls">
-                                <input type="checkbox" id="spot_instance"> Request spot instances
-                            </div>
-                        </div>
-
-                        <div class="control-group" data-bind="visible: stack.isSpotInstance">
-                            <label class="control-label" for="spot_instance_price"></label>
-                            <div class="controls">
-                                <input type="text" id="spot_instance_price" class="input-medium" placeholder="Bid price for instances">
-                            </div>
-                        </div>
-                    </div>
-                </div>  
-        
-                <div class="modal-footer">
-                    <button class="btn btn-info" data-bind="click: $root.volume.showVolumeForm">Add Volume</button>
-                    <button class="btn btn-primary" data-bind="click: $root.stack.addHost">Save Host</button>
-                    <button class="btn" data-bind="click: $root.stack.closeHostForm">Close</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- 
-            ======================================================================
-            N E W   V O L U M E   F O R M
-            ======================================================================
-         -->
-        <div id="volume-form-container" title="Volume Details">
-            <form id="host-volume-form" class="form-horizontal">
-            <div class="modal-body">
-                <div class="control-group">
-                    <label class="control-label" for="volume_snapshot">Snapshot</label>
-                    <div class="controls">
-                        <select id="volume_snapshot" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
-                    </div>
-                </div>
-
-
-                <div class="control-group">
-                    <label class="control-label" for="volume_device">Device</label>
-                    <div class="controls">
-                        <input id="volume_device" type="text" class="input-block-level" placeholder="Device name">
-                    </div>
-                </div>
-
-
-                <div class="control-group">
-                    <label class="control-label" for="volume_mount_point">Mount point</label>
-                    <div class="controls">
-                        <input type="text" id="volume_mount_point" class="input-block-level" placeholder="/mnt/x">
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-primary" data-bind="click: $root.volume.addHostVolume">Save Volume</button>
-                <button class="btn" data-bind="click: $root.volume.closeVolumeForm">Close</button>
-            </div>
-            </form>
-        </div>
-
     </div>
 
 
@@ -552,7 +600,7 @@
      -->
     <div id="snapshots-binding-target" class="hide" data-bind='visible: $root.currentSection() === "Snapshots"'>
         <div class="view">
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right bottom-separation">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Snapshot <span class="caret"></span>
                 </a>
@@ -563,10 +611,9 @@
                 </ul>
             </div>
 
-            <table id="snapshots" class="table table-striped data-grid">
+            <table id="snapshots" class="table table-bordered">
                 <thead>
                     <tr>
-                        <th style="width:20px">#</th>
                         <th style="width:20%">Title</th>
                         <th style="width:25%">Description</th>
                         <th style="width:10%">ID</th>
@@ -577,7 +624,6 @@
                 </thead>
                 <tbody data-bind="foreach: stores.Snapshots">
                     <tr>
-                        <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td data-bind="text: snapshot_id"></td>
@@ -639,35 +685,43 @@
      -->
     <div id="accounts-binding-target" class="hide" data-bind='visible: $root.currentSection() == "Accounts"'>
         <div class="view">
-            <div class="btn-group pull-right" data-bind="visible: isSuperUser">
-                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                    New Account
-                    <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu" data-bind="foreach: stores.ProviderTypes">
-                    <li>
-                        <a href="#" data-bind="text: title, click: $root.account.showAccountForm"></a>
-                    </li>
-                </ul>
+            <div class="row bottom-separation">
+                <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Accounts</div>
+                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="btn-group pull-right bottom-separation" data-bind="visible: isSuperUser">
+                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                            New Account
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" data-bind="foreach: stores.ProviderTypes">
+                            <li>
+                                <a href="#" data-bind="text: title, click: $root.account.showAccountForm"></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
 
-            <table id="accounts" class="table table-striped data-grid">
+            <table id="accounts" class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>#</th>
                         <th>Title</th>
                         <th>Description</th>
+                        <th>Profiles</th>
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
                 <tbody data-bind="foreach: stores.Accounts">
                     <tr>
-                        <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td>
+                            <a data-bind="click: $root.profile.listProfiles, 
+                                          text: $root.account.accountProfileLink(id)"></a>
+                        </td>
+                        <td>
                             <div class="btn-group" data-bind="visible: $root.isSuperUser">
-                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu">
@@ -778,39 +832,34 @@
         P R O F I L E   L I S T
         ======================================================================
     -->
-    <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Profiles"'>
+    <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Accounts" && stores.AccountProfiles().length > 0'>
         <div class="view">
-            <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
-                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                    New Profile
-                    <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
-                    <li>
-                        <a href="#" data-bind="text: title, click: $root.profile.showProfileForm"></a>
-                    </li>
-                </ul>
+            <div class="row bottom-separation">
+                <div class="col-xs-4 col-sm-4 col-md-4 medium-heading">Account Profiles</div>
+                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
+                        <button class="btn btn-primary" data-bind="click: $root.profile.showProfileForm">New Profile</button>
+                    </div>
+                </div>
             </div>
 
-            <table id="profiles" class="table table-striped data-grid">
+            <table id="profiles" class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>#</th>
                         <th>Title</th>
                         <th>Description</th>
                         <th>ID</th>
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
-                <tbody data-bind="foreach: stores.Profiles">
+                <tbody data-bind="foreach: stores.AccountProfiles">
                     <tr>
-                        <td data-bind="text: id"></td>
                         <td data-bind="text: title"></td>
                         <td data-bind="text: description"></td>
                         <td data-bind="text: typeof image_id === 'object' ? 'n/a' : image_id"></td>
                         <td>
                             <div class="btn-group" data-bind="visible: $root.isSuperUser">
-                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu">
@@ -833,14 +882,12 @@
         <div id="profile-form-container" title="New Profile Details" class="stackd-form form-small">
             <form id="profile-form" role="form" class="form-horizontal">
                 <div class="modal-body large-modal-body">
-
                     <div class="form-group">
                         <label for="profile_title" class="col-sm-4 control-label">Title</label>
                         <div class="col-sm-8">
                             <input type="text" class="form-control" id="profile_title" placeholder="">
                         </div>
                     </div>
-
 
                     <div class="form-group">
                         <label for="profile_description" class="col-sm-4 control-label">Description</label>
@@ -849,7 +896,6 @@
                         </div>
                     </div>
 
-
                     <div class="form-group">
                         <label for="image_id" class="col-sm-4 control-label">AMI</label>
                         <div class="col-sm-8">
@@ -857,14 +903,12 @@
                         </div>
                     </div>
 
-
                     <div class="form-group">
                         <label for="ssh_user" class="col-sm-4 control-label">SSH User</label>
                         <div class="col-sm-8">
                             <input type="text" class="form-control" id="ssh_user" placeholder="">
                         </div>
                     </div>
-
 
                     <div class="form-group">
                         <label for="default_instance_size" class="col-sm-4 control-label">Default Instance Size</label>
@@ -896,7 +940,7 @@
     -->
     <div id="security-group-container" class="hide" data-bind='visible: currentSection() === "Security"'>
         <div class="view">
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right bottom-separation">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                     New Security Group
                     <span class="caret"></span>
@@ -924,10 +968,9 @@
             </div>
 
 
-            <table id="security_group_list" class="table table-striped data-grid">
+            <table id="security_group_list" class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>#</th>
                         <th>Title</th>
                         <th>Description</th>
                         <th>Account</th>
@@ -937,7 +980,6 @@
                 </thead>
                 <tbody data-bind="foreach: stores.SecurityGroups">
                     <tr>
-                        <td data-bind="text: id"></td>
                         <td data-bind="text: name"></td>
                         <td data-bind="text: description"></td>
                         <td data-bind="text: account.title"></td>
@@ -968,15 +1010,17 @@
             ======================================================================
         -->
         <div id="securitygroup-form-container" title="New Security Group" class="stackd-form form-small">
-            <form id="securitygroup-form" class="form-horizontal">
+            <form id="securitygroup-form" role="form" class="form-horizontal">
                 <div class="modal-body">
-                    <div class="control-group">
-                        <label class="control-label" style="width: 40px;" for="securitygroup_name">Title</label>
-                        <div class="controls" style="margin-left: 60px">
-                            <input id="securitygroup_name" type="text" class="input-block-level"
+
+                    <div class="form-group">
+                        <label for="securitygroup_name" class="col-sm-3 control-label">Title</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" id="securitygroup_name" placeholder=""
                                    data-bind="event: { keypress: securityGroup.captureNewGroup }">
                         </div>
                     </div>
+
                 </div>
 
                 <div class="modal-footer">
@@ -1178,11 +1222,11 @@
     -->
     <div id="formula-binding-target" class="hide" data-bind='visible: currentSection() === "Formula"'>
         <div class="view">
-            <div class="btn-group pull-right">
+            <div class="btn-group pull-right bottom-separation">
                 <button class="btn btn-primary" data-bind="click: $root.formula.showFormulaForm">Import Formula</button>
             </div>
 
-            <table id="formulae" class="table table-striped data-grid">
+            <table id="formulae" class="table table-bordered ">
                 <thead>
                     <tr>
                         <th style="width:20%">Title</th>
@@ -1230,16 +1274,16 @@
         -->
         <div id="formula-form-container" title="Import Formula" class="stackd-form form-small">
             <form id="formula-form">
-            <div class="modal-body">
-                <div class="span2"></div>
-                <div class="span4 no-margin">
-                    <input id="formula_url" type="text" class="input-block-level" placeholder="Enter repository URL...">
-                </div>
+                <div class="modal-body large-modal-body">
 
-            <div class="modal-footer">
-                <button class="btn btn-danger" data-bind="click: $root.formula.closeFormulaForm">Cancel</button>
-                <button class="btn btn-primary" data-bind="click: $root.formula.importFormula">Import</button>
-            </div>
+                    <div class="form-group">
+                            <input type="text" class="form-control" id="formula_url" placeholder="Enter repository URL...">
+                    </div>
+
+                <div class="modal-footer" style="margin-top: 40px;">
+                    <button class="btn btn-danger" data-bind="click: $root.formula.closeFormulaForm">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: $root.formula.importFormula">Import</button>
+                </div>
             </form>
         </div>
     </div>

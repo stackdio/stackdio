@@ -22,6 +22,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
 
                     for (i in items) {
                         account = new models.Account().create(items[i]);
+                        account.profileCount = 0;
 
                         // Inject the record into the store
                         stores.Accounts.push(account);
@@ -39,10 +40,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
         save: function (record) {
             var deferred = Q.defer();
             var files, formData = new FormData(), xhr = new XMLHttpRequest();
-
-            // var item = stores.Accounts()[0];
-            // deferred.resolve(item);
-            // return deferred.promise;
 
             // Add the provider type that the user chose from the account split button
             formData.append('provider_type', record.providerType);

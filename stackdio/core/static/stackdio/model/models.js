@@ -31,6 +31,9 @@ define(function () {
     var Profile = function () {};
     Profile.prototype = new Model();
 
+    var Blueprint = function () {};
+    Blueprint.prototype = new Model();
+
     var InstanceSize = function () {};
     InstanceSize.prototype = new Model();
 
@@ -67,6 +70,7 @@ define(function () {
         NewHost: NewHost,
         NewHostVolume: NewHostVolume,
         Formula: Formula,
+        Blueprint: Blueprint,
         Role: Role
     }
 });

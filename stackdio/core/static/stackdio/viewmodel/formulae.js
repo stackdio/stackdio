@@ -79,7 +79,7 @@ define(["knockout",
             $("#formula-form-container").dialog({
                 autoOpen: false,
                 position: [window.innerWidth/2 - 250, 200],
-                width: 500,
+                width: 700,
                 modal: false
             });
         };

@@ -27,9 +27,44 @@ Once you have Node installed, you need to grab the [Grunt](http://gruntjs.com/ge
     npm install -g grunt-cli bower
 
 ### Installing stackd.io dependencies
-In your CLI, get to the directory where you cloned the project and look in the `core/static/stackdio` directory.  To install all packages, you just need to run the setup screipt.
+In your CLI, get to the directory where you cloned the project and look in the `core/static/stackdio` directory. To install all packages, you just need to run the setup screipt.
 
     npm run-script setup
+    
+## Low memory process
+If you are running on a low memory machine, or most of the memory is already being used while you're trying to install, you may receive the following message while installing.
+
+    Error: spawn ENOMEM
+    
+This is caused because `npm` and `bower` both spawn new processes to run the install scripts, so if you are geting the error, you can try to manually run the steps that the setup script runs to conserve memory.
+
+### Installing stackd.io npm modules
+In your CLI, get to the `core/static/stackdio` directory and install all npm modules.
+
+    npm install
+    
+### Installing all Bower components
+Next, you can run a Grunt task, from the same directory, to get all the Bower components installed.
+
+    grunt install
+    
+### Configure Knockout and Q
+All other Bower modules include a minified version out of the box, so we need to minify Knockout and Q by first going to each module and installing all the Node modules required.
+
+First we run the build for Knockout which will produce the minified version.
+
+    cd components/knockout
+    npm install
+    
+Change to the Q directory and run the build command which will create the minified version.
+    
+    cd ../q
+    npm install
+    
+Then go back to the root stackdio application directory.
+    
+    cd ../..
+
         
 # Running stackd.io
 

@@ -16,9 +16,10 @@ define([
         "viewmodel/snapshots",
         "viewmodel/securityGroup",
         "viewmodel/formulae",
-        "viewmodel/stacks"
+        "viewmodel/stacks",
+        "viewmodel/blueprints"
     ],
-    function (Q, moment, jui, ko, typeahead, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, formulaVM, stackVM) {
+    function (Q, moment, jui, ko, typeahead, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, formulaVM, stackVM, blueprintVM) {
 
         function stackdioModel() {
             var self = this;
@@ -29,7 +30,7 @@ define([
             self.moment = moment;
             self.isSuperUser = ko.observable(stackdio.settings.superuser);
 
-            self.sections = ['Stacks', 'Formula', 'Blueprints', 'Security', 'Accounts', 'Profiles', 'Snapshots'];
+            self.sections = ['Blueprints', 'Stacks', 'Formula', 'Security', 'Snapshots'];
             self.currentSection = ko.observable();
 
             self.securityGroup = new securityGroupVM();
@@ -39,6 +40,7 @@ define([
             self.snapshot = new snapshotVM();
             self.stack = new stackVM();
             self.formula = new formulaVM();
+            self.blueprint = new blueprintVM();
 
             /*
              *  ==================================================================================
@@ -133,6 +135,7 @@ define([
                 .then(self.profile.loadProfiles)
                 .then(self.securityGroup.loadSecurityGroups)
                 .then(API.Snapshots.load)
+                .then(API.Blueprints.load)
                 .then(API.Stacks.load)
 
                 // Everything you want to do AFTER all data has loaded
@@ -141,10 +144,10 @@ define([
                     $('select[id!="aws_security_group"][id!="host_security_groups"][id!="stackdio_security_group"]').selectpicker();
 
                     // Remove the hide class from the main sections
-                    $("div[class='hide'][data-bind]").removeClass('hide');
+                    $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection("Stacks");
+                    self.gotoSection("Blueprints");
                 })
                 .catch(function (error) {
                     // Handle any error from all above steps
@@ -159,7 +162,7 @@ define([
          */
         $("#user-profile").dialog({
             autoOpen: false,
-            width: 500,
+            width: 700,
             modal: true
         });
 
