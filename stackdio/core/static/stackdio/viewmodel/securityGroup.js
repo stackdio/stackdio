@@ -270,6 +270,5 @@ define(["knockout",
         };
 
         vm.prototype = new abstractVM();
-
         return vm;
 });

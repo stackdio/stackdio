@@ -1,11 +1,14 @@
-define(["knockout",
-        "util/form",
-        "model/models",
-        "store/stores",
-        "api/api"], 
-    function (ko, formutils, models, stores, API) {
+define([
+    "knockout",
+    "util/form",
+    "model/models",
+    "store/stores",
+    "api/api",
+    "viewmodel/abstract"
+], 
+function (ko, formutils, models, stores, API, abstractVM) {
 
-    return function volumeViewModel () {
+    var vm = function () {
         var self = this;
 
         self.stores = stores;
@@ -48,6 +51,8 @@ define(["knockout",
             width: 500,
             modal: true
         });
+    }
 
-   }
+    vm.prototype = new abstractVM();
+    return vm;
 });

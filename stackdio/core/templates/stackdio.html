@@ -18,7 +18,7 @@
          N A V I G A T I O N
         ======================================================================
      -->
-    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <nav class="navbar navbar-fixed-top navbar-default" role="navigation">
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
                 <span class="sr-only">Toggle navigation</span>
@@ -31,11 +31,13 @@
             </a>
         </div>
 
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-            <ul class="nav navbar-nav">
-                <li class="active"><a href="#">home</a></li>
-                <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
-                <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
+        <div class="collapse navbar-collapse">
+            <ul class="nav navbar-nav" data-bind="foreach: sections">
+                <li data-bind="click: $root.gotoSection">
+                  <a href="#" data-bind="css: { active: $data == $root.currentSection() }">
+                    <span data-bind="text: $data"></span>
+                  </a>
+                </li>
             </ul>
 
             <ul class="nav navbar-nav navbar-right">
@@ -63,11 +65,17 @@
         </div>
     </nav>
 
+    <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+        <ul class="nav navbar-nav">
+            <li><a href="http://github.com/stackdio/stackdio" target="_blank">source</a></li>
+            <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
+        </ul>
+    </nav>
+
     <!-- 
         ======================================================================
         S I D E B A R
         ======================================================================
-     -->
     <div id="sidebar">
         <ul class="nav nav-list" data-bind="foreach: sections">
             <li id="dashboard-href" class="navlink" data-bind="click: $root.gotoSection">
@@ -78,6 +86,7 @@
             </li>
         </ul>
     </div>
+     -->
 
 
     <!-- 
@@ -392,62 +401,130 @@
 
     <!-- 
         ======================================================================
-        N E W   V O L U M E   F O R M
+        N E W   V O L U M E   D I A L O G
         ======================================================================
      -->
-    <div id="volume-form-container" title="Volume Details" data-bind="" class="hide">
+    <div id="host-volume-form-container" title="Volume Details" data-bind="" class="hide">
         <form id="host-volume-form" role="form" class="form-horizontal">
             <div class="modal-body large-modal-body">
 
                 <div class="form-group">
                     <label for="volume_snapshot" class="col-sm-4 control-label">Snapshot</label>
                     <div class="col-sm-8">
-                        <input type="text" class="form-control" id="volume_snapshot" placeholder="">
+                        <select id="volume_snapshot" class="form-control" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="volume_device" class="col-sm-4 control-label">Device</label>
                     <div class="col-sm-8">
-                        <input type="text" class="form-control" id="volume_device" placeholder="">
+                        <input type="text" class="form-control" id="volume_device" placeholder="Device name">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="volume_mount_point" class="col-sm-4 control-label">Mount point</label>
                     <div class="col-sm-8">
-                        <input type="text" class="form-control" id="volume_mount_point" placeholder="">
+                        <input type="text" class="form-control" id="volume_mount_point" placeholder="/mnt/x">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-bind="click: $root.volume.addHostVolume">Save Volume</button>
+                <button class="btn" data-bind="click: $root.volume.closeVolumeForm">Close</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 
+        ======================================================================
+        H O S T   A C C E S S   R U L E   D I A L O G
+        ======================================================================
+    -->
+    <div id="host-access-rule-container" title="New Access Rule" class="stackd-form hide" data-bind="">
+        <form id="access-rule-form" role="form" class="form-horizontal">
+            <div class="modal-body">
+
+                <div class="form-group">
+                    <label for="rule_protocol" class="col-sm-4 control-label">Protocol</label>
+                    <div class="col-sm-8">
+                        <select id="rule_protocol" 
+                                data-bind="options: ['tcp','udp','icmp']",
+                                data-container="body"
+                                class="form-control"
+                                class="input-xlarge"></select> 
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label for="rule_from_port" class="col-sm-4 control-label">From port</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="rule_from_port" placeholder="22">
+                    </div>
+                </div>
 
-                <label class="control-label" for="volume_snapshot">Snapshot</label>
-                <div class="controls">
-                    <select id="volume_snapshot" data-bind="options: stores.Snapshots, optionsValue: 'id', optionsText: 'title'"></select>
+                <div class="form-group">
+                    <label for="rule_to_port" class="col-sm-4 control-label">To port</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="rule_to_port" placeholder="22">
+                    </div>
+                </div>
+
+                <hr/>
+
+                <div class="form-group">
+                    <label for="rule_ip_address" class="col-sm-4 control-label">IP address</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="rule_ip_address" placeholder="0.0.0.0/32">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="none" class="col-sm-4 control-label"></label>
+                    <div class="col-sm-8">
+                        or
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="rule_group" class="col-sm-4 control-label">Group</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="rule_group" placeholder="another group name">
+                    </div>
                 </div>
             </div>
 
+            <div class="modal-footer">
+                <button class="btn" data-bind="click: function () { $('#new-rule-dialog').dialog('close') }">Cancel</button>
+                <button class="btn btn-primary" data-bind="click: securityGroup.addRule"> Save</button>
+            </div>
+        </form>
+    </div>
 
-            <div class="control-group">
-                <label class="control-label" for="volume_device">Device</label>
-                <div class="controls">
-                    <input id="volume_device" type="text" class="input-block-level" placeholder="Device name">
+    <!-- 
+        ======================================================================
+        S E C U R I T Y   G R O U P   F O R M
+        ======================================================================
+    -->
+    <div id="securitygroup-form-container" title="New Security Group" data-bind="" class="stackd-form form-small hide">
+        <form id="securitygroup-form" role="form" class="form-horizontal">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="securitygroup_name" class="col-sm-3 control-label">Title</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="securitygroup_name" placeholder=""
+                               data-bind="event: { keypress: securityGroup.captureNewGroup }">
+                    </div>
                 </div>
             </div>
 
-
-            <div class="control-group">
-                <label class="control-label" for="volume_mount_point">Mount point</label>
-                <div class="controls">
-                    <input type="text" id="volume_mount_point" class="input-block-level" placeholder="/mnt/x">
-                </div>
+            <div class="modal-footer">
+                <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
+                <button class="btn btn-primary" data-bind="click: function (data, event) { 
+                                    securityGroup.addSecurityGroup($('#securitygroup_name').val(), event); 
+                                }">Save</button>
             </div>
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-primary" data-bind="click: $root.volume.addHostVolume">Save Volume</button>
-            <button class="btn" data-bind="click: $root.volume.closeVolumeForm">Close</button>
-        </div>
         </form>
     </div>
 
@@ -1004,33 +1081,7 @@
             </table>
         </div>
 
-        <!-- 
-            ======================================================================
-            S E C U R I T Y   G R O U P   F O R M
-            ======================================================================
-        -->
-        <div id="securitygroup-form-container" title="New Security Group" class="stackd-form form-small">
-            <form id="securitygroup-form" role="form" class="form-horizontal">
-                <div class="modal-body">
 
-                    <div class="form-group">
-                        <label for="securitygroup_name" class="col-sm-3 control-label">Title</label>
-                        <div class="col-sm-9">
-                            <input type="text" class="form-control" id="securitygroup_name" placeholder=""
-                                   data-bind="event: { keypress: securityGroup.captureNewGroup }">
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
-                    <button class="btn btn-primary" data-bind="click: function (data, event) { 
-                                        securityGroup.addSecurityGroup($('#securitygroup_name').val(), event); 
-                                    }">Save</button>
-                </div>
-            </form>
-        </div>
 
         <!-- 
             ======================================================================
@@ -1074,71 +1125,7 @@
             </div>
         </div>
 
-        <!-- 
-            ======================================================================
-            N E W   S E C U R I T Y   G R O U P   R U L E   D I A L O G
-            ======================================================================
-        -->
-        <div id="new-rule-dialog" title="New Access Rule" class="stackd-form">
-            <form id="group-rule-form" class="form-horizontal">
-                <div class="modal-body">
 
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="rule_protocol">Protocol</label>
-                        <div class="controls" style="margin-left: 160px">
-                            <select id="rule_protocol" 
-                                    data-bind="options: ['tcp','udp','icmp']",
-                                    data-container="body"
-                                    class="input-xlarge"></select> 
-                        </div>
-                    </div>
-
-
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="rule_from_port">From port</label>
-                        <div class="controls" style="margin-left: 160px">
-                            <input id="rule_from_port" type="text" class="input-xlarge" placeholder="22">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="rule_to_port">To port</label>
-                        <div class="controls" style="margin-left: 160px">
-                            <input id="rule_to_port" type="text" class="input-xlarge" placeholder="22">
-                        </div>
-                    </div>
-
-                    <hr/>
-
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="rule_ip_address">IP address</label>
-                        <div class="controls" style="margin-left: 160px">
-                            <input id="rule_ip_address" type="text" class="input-xlarge" placeholder="0.0.0.0/32">
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="none"></label>
-                        <div class="controls" style="margin-left: 160px">
-                            or
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label class="control-label" style="width: 140px;" for="rule_group">Group</label>
-                        <div class="controls" style="margin-left: 160px">
-                            <input id="rule_group" type="text" class="input-xlarge" placeholder="another group name">
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="modal-footer">
-                    <button class="btn" data-bind="click: function () { $('#new-rule-dialog').dialog('close') }">Cancel</button>
-                    <button class="btn btn-primary" data-bind="click: securityGroup.addRule"> Save</button>
-                </div>
-            </form>
-        </div>
 
         <!-- 
             ======================================================================

@@ -97,6 +97,13 @@ define(["knockout",
                 width: 600,
                 modal: true
             });
+
+
+            $("#host-access-rule-container").dialog({
+                autoOpen: false,
+                width: 500,
+                modal: true
+            });
         };
 
         vm.prototype = new abstractVM();
