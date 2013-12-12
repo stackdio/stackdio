@@ -30,7 +30,36 @@ define([
             self.moment = moment;
             self.isSuperUser = ko.observable(stackdio.settings.superuser);
 
-            self.sections = ['Blueprints', 'Stacks', 'Formula', 'Security', 'Snapshots'];
+            self.sections = [{
+                id:'Blueprints',
+                icon: 'glyphicon glyphicon-tower',
+                visible: true
+            },
+            {
+                id:'Stacks',
+                icon: 'glyphicon glyphicon-th-list',
+                visible: true
+            },
+            {
+                id:'Accounts',
+                icon: 'glyphicon glyphicon-tower',
+                visible: false
+            },
+            {
+                id:'Profiles',
+                icon: 'glyphicon glyphicon-tower',
+                visible: false
+            },
+            {
+                id:'Formula',
+                icon: 'glyphicon glyphicon-tint',
+                visible: true
+            },
+            {
+                id:'Snapshots',
+                icon: 'glyphicon glyphicon-camera',
+                visible: true
+            }];
             self.currentSection = ko.observable();
 
             self.securityGroup = new securityGroupVM();
@@ -98,21 +127,21 @@ define([
              *  ==================================================================================
              */
             self.gotoSection = function (section) {
-
-                // Force user to create a account if none exist
-                if (section !== "Accounts" && stores.Accounts().length === 0) {
-                    section = "Accounts";
+                console.log('section',section);
+                // Force user to create an account if none exist
+                if (section.id !== "Accounts" && stores.Accounts().length === 0) {
+                    section = _.findWhere(self.sections, {id:'Accounts'});
                     $("#alert-no-accounts").show();
                     setTimeout(function () { $("#alert-no-accounts").hide(); }, 3000);
                 }
 
                 // Force user to create a profile if none exist
-                if (section !== "Profiles" && section !== "Accounts" && stores.Profiles().length === 0) {
-                    section = "Profiles"
+                if (section.id !== "Profiles" && section.id !== "Accounts" && stores.Profiles().length === 0) {
+                    section = _.findWhere(self.sections, {id:'Profiles'});
                     self.showMessage("#alert-no-profiles", "", true);
                 }
 
-                location.hash = section;
+                location.hash = section.id;
                 self.currentSection(section);
             };
 
@@ -147,7 +176,7 @@ define([
                     $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection("Blueprints");
+                    self.gotoSection(_.findWhere(self.sections, { id: 'Blueprints' }));
                 })
                 .catch(function (error) {
                     // Handle any error from all above steps

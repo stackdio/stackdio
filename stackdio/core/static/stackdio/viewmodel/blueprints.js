@@ -87,12 +87,12 @@ define(["knockout",
                 autoOpen: false,
                 width: window.innerWidth - 225,
                 height: 500,
-                position: [200,50],
+                position: ['center', 60],
                 modal: false
             });
 
             $("#host-form-container").dialog({
-                position: [(window.innerWidth / 2) - 275,50],
+                position: [(window.innerWidth / 2) - 275, 60],
                 autoOpen: false,
                 width: 600,
                 modal: true

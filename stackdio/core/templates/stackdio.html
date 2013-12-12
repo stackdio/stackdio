@@ -26,16 +26,14 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" style="padding: 5px 15px 5px 15px;" href="#">
-                <img src="/static/img/logo.png" style="height: 33px"> stackd.io
-            </a>
+            <p class="navbar-text">stackd.io</p>
         </div>
 
         <div class="collapse navbar-collapse">
             <ul class="nav navbar-nav" data-bind="foreach: sections">
                 <li data-bind="click: $root.gotoSection">
-                  <a href="#" data-bind="css: { active: $data == $root.currentSection() }">
-                    <span data-bind="text: $data"></span>
+                  <a href="#" data-bind="attr: { class: icon }, visible: visible, css: { active: $data === $root.currentSection() }">
+                    <span data-bind="text: id"></span>
                   </a>
                 </li>
             </ul>
@@ -52,7 +50,7 @@
                             <li><a href="#" data-bind="click: showUserProfile">User Profile</a></li>
                             <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
                             <li class="divider"></li>
-                            <li><a href="#" data-bind="click: gotoSection('Accounts')">Your Cloud Accounts</a></li>
+                            <li><a href="#" data-bind="click: gotoSection(_.findWhere(sections, {id:'Accounts'}))">Your Cloud Accounts</a></li>
                             <li class="divider"></li>
                             <li><a href="/logout">Logout</a></li>
                         </ul>
@@ -213,7 +211,7 @@
         B L U E P R I N T   L I S T
         ======================================================================
      -->
-    <div id="blueprints-binding-target" data-bind='visible: $root.currentSection() === "Blueprints"' class="hide">
+    <div id="blueprints-binding-target" data-bind='visible: $root.currentSection().id === "Blueprints"' class="hide">
         <div class="view">
 
             <div class="row bottom-separation">
@@ -534,7 +532,7 @@
         S T A C K   L I S T
         ======================================================================
      -->
-    <div id="stacks-binding-target" data-bind='visible: $root.currentSection() === "Stacks"' class="hide">
+    <div id="stacks-binding-target" data-bind='visible: $root.currentSection().id === "Stacks"' class="hide">
         <div class="view">
 
             <div class="btn-group pull-right bottom-separation">
@@ -675,7 +673,7 @@
         S N A P S H O T   L I S T
         ======================================================================
      -->
-    <div id="snapshots-binding-target" class="hide" data-bind='visible: $root.currentSection() === "Snapshots"'>
+    <div id="snapshots-binding-target" class="hide" data-bind='visible: $root.currentSection().id === "Snapshots"'>
         <div class="view">
             <div class="btn-group pull-right bottom-separation">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
@@ -760,7 +758,7 @@
         A C C O U N T   L I S T
         ======================================================================
      -->
-    <div id="accounts-binding-target" class="hide" data-bind='visible: $root.currentSection() == "Accounts"'>
+    <div id="accounts-binding-target" class="hide" data-bind='visible: $root.currentSection().id == "Accounts"'>
         <div class="view">
             <div class="row bottom-separation">
                 <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Accounts</div>
@@ -909,7 +907,7 @@
         P R O F I L E   L I S T
         ======================================================================
     -->
-    <div id="profile-binding-target" class="hide" data-bind='visible: currentSection() === "Accounts" && stores.AccountProfiles().length > 0'>
+    <div id="profile-binding-target" class="hide" data-bind='visible: currentSection().id === "Accounts" && stores.AccountProfiles().length > 0'>
         <div class="view">
             <div class="row bottom-separation">
                 <div class="col-xs-4 col-sm-4 col-md-4 medium-heading">Account Profiles</div>
@@ -1015,7 +1013,7 @@
         S E C U R I T Y   G R O U P   L I S T
         ======================================================================
     -->
-    <div id="security-group-container" class="hide" data-bind='visible: currentSection() === "Security"'>
+    <div id="security-group-container" class="hide" data-bind='visible: currentSection().id === "Security"'>
         <div class="view">
             <div class="btn-group pull-right bottom-separation">
                 <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
@@ -1207,7 +1205,7 @@
         F O R M U L A   L I S T
         ======================================================================
     -->
-    <div id="formula-binding-target" class="hide" data-bind='visible: currentSection() === "Formula"'>
+    <div id="formula-binding-target" class="hide" data-bind='visible: currentSection().id === "Formula"'>
         <div class="view">
             <div class="btn-group pull-right bottom-separation">
                 <button class="btn btn-primary" data-bind="click: $root.formula.showFormulaForm">Import Formula</button>
