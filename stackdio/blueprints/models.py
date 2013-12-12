@@ -256,6 +256,7 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     # instances will not be used for this host.
     spot_price = models.DecimalField(max_digits=5,
                                      decimal_places=2,
+                                     blank=True,
                                      null=True)
 
     @property

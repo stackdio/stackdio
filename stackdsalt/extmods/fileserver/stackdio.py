@@ -25,13 +25,24 @@ def __virtual__():
         return False
 
     if not os.path.isdir(envs_dir):
-        log.error('stackdio::user_envs location is not a directory.')
+        log.error('stackdio::user_envs location is not a directory: {0}'.format(envs_dir))
         return False
 
     return 'stackdio'
 
 def get_envs_dir():
-    return __opts__.get('stackdio', {}).get('user_envs', None)
+    d = __opts__.get('stackdio', {}).get('user_envs', None)
+    if isinstance(d, list):
+        if len(d) > 1:
+            raise RuntimeError('stackdio fileserver user_envs is a list of '
+                               'length greater than 1 and is expected to '
+                               'either be a string or a list of length one')
+        d = d[0]
+    elif not isinstance(d, basestring):
+        raise RuntimeError('stackdio fileserver user_envs expected to be '
+                           'a string, but found {0} instead.'.format(
+                           type(d)))
+    return d
 
 def envs():
     ret = []
@@ -184,9 +195,17 @@ def update():
                 old_mtime_map[file_path] = mtime
 
     # generate the new map
-    path_map = __opts__['stackdio']
-    path_map['user_envs'] = [str(path_map['user_envs'])]
-    new_mtime_map = salt.fileserver.generate_mtime_map(path_map)
+    try:
+        path_map = __opts__['stackdio']
+        path_map['user_envs'] = [str(path_map['user_envs'])]
+        new_mtime_map = salt.fileserver.generate_mtime_map(path_map)
+    except MemoryError, e:
+        import sys
+        log.error('MemoryError!!')
+        log.error('path_map length: {0}'.format(len(path_map)))
+        log.error('sizeof path_map: {0}'.format(sys.getsizeof(path_map)))
+        log.error(str(e))
+        raise
 
     # compare the maps, set changed to the return value
     data['changed'] = salt.fileserver.diff_mtime_map(old_mtime_map, new_mtime_map)
