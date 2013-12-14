@@ -49,6 +49,9 @@ define(function () {
     var NewHostVolume = function () {};
     NewHostVolume.prototype = new Model();
 
+    var NewHostAccessRules = function () {};
+    NewHostAccessRules.prototype = new Model();
+
     var Role = function () {};
     Role.prototype = new Model();
 
@@ -71,6 +74,7 @@ define(function () {
         NewHostVolume: NewHostVolume,
         Formula: Formula,
         Blueprint: Blueprint,
+        NewHostAccessRules: NewHostAccessRules,
         Role: Role
     }
 });

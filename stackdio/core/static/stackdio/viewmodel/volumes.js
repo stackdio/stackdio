@@ -23,6 +23,8 @@ define(["knockout",
             });
 
             stores.HostVolumes.push(volume);
+
+            self.closeVolumeForm();
         };
 
         self.removeHostVolume = function (volume) {
@@ -30,12 +32,24 @@ define(["knockout",
         };
 
         self.showVolumeForm = function () {
-            $( "#volume-form-container" ).dialog("open");
+            $( "#host-volume-form-container" ).dialog("open");
         };
 
         self.closeVolumeForm = function () {
-            $( "#volume-form-container" ).dialog("close");
+            formutils.clearForm('host-volume-form');
+            $( "#host-volume-form-container" ).dialog("close");
         };
+
+        self.showVolumeList = function () {
+            $( "#host-volume-form-list-container" ).dialog("open");
+        };
+
+        self.closeVolumeList = function () {
+            $( "#host-volume-form-list-container" ).dialog("close");
+        };
+
+
+
 
         /*
          *  ==================================================================================
@@ -43,6 +57,13 @@ define(["knockout",
          *  ==================================================================================
          */
         $("#host-volume-form-container").dialog({
+            position: [(window.innerWidth / 2) - 250,50],
+            autoOpen: false,
+            width: 500,
+            modal: true
+        });
+
+        $("#host-volume-form-list-container").dialog({
             position: [(window.innerWidth / 2) - 250,50],
             autoOpen: false,
             width: 500,

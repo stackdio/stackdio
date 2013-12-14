@@ -1,9 +1,13 @@
-img.logo {
-    height: auto;
-    max-width: 100%;
-    vertical-align: middle;
-    border: 0;
-    float:left;
+body {
+    font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 14px;
+    line-height: 1.428571429;
+    font-weight: 400;
+    color: #333;
+}
+
+.ui-widget {
+    font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
 
 a {
@@ -14,8 +18,34 @@ form {
     margin: 0 !important;
 }
 
+.bold { 
+    font-weight: 600;
+}
+
+.light {
+    font-weight: 300;
+}
+
+.large-text {
+    font-size: 1.25em;
+}
+
+.product {
+    font-size: 1.25em !important;
+    margin-right: 30px;
+    margin-left: -15px;
+    /*line-height: 32px;*/
+}
+
+img.logo {
+    height: auto;
+    max-width: 100%;
+    vertical-align: middle;
+    border: 0;
+    float:left;
+}
+
 .section-header {
-    /*border-bottom: 1px solid black;*/
     margin-bottom: 25px;
 }
 
@@ -35,12 +65,16 @@ form {
     margin-bottom: 10px;
 }
 
+.small-top-separation {
+    margin-top: 15px;
+}
+
 .top-separation {
     margin-top: 30px;
 }
 
 .view {
-     margin: 100px 100px 0 100px;
+     margin: 70px 100px 0 100px;
 }
 
 .no-margin {
@@ -160,6 +194,56 @@ form {
     B O O T S T R A P   O V E R R I D E S
     ===================================================================================
 */
+body.bootstrap-admin-with-small-navbar {
+    padding-top: 0;
+}
+
+.navbar {
+    background-image: -webkit-gradient(linear,left 0,left 100%,from(#fff),to(#f8f8f8));
+    background-image: -webkit-linear-gradient(top,#fff,0%,#f8f8f8,100%);
+    background-image: -moz-linear-gradient(top,#fff 0,#f8f8f8 100%);
+    background-image: linear-gradient(to bottom,#fff 0,#f8f8f8 100%);
+    background-repeat: repeat-x;
+    border-radius: 4px;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff',endColorstr='#fff8f8f8',GradientType=0);
+    -webkit-box-shadow: inset 0 1px 0 rgba(255,255,255,0.15),0 1px 5px rgba(0,0,0,0.075);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15),0 1px 5px rgba(0,0,0,0.075);
+}
+
+
+.bootstrap-admin-navbar-sm {
+    background-image: none;
+    border: 0;
+    box-shadow: initial;
+    margin-bottom: 0;
+    min-height: initial;
+    z-index: 1030;
+}
+
+.bootstrap-admin-navbar-sm .navbar-collapse .navbar-nav:first-child {
+    margin-left: -15px;
+}
+
+.bootstrap-admin-navbar-sm .navbar-collapse .navbar-nav li a {
+    font-size: 13px;
+    padding: 3px 15px 3px 15px;
+}
+
+.bootstrap-admin-navbar-sm .navbar-collapse .navbar-nav li a span {
+    font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+.dropdown-menu {
+    top: 0%;
+}
+
+.toolbar-dropdown-menu {
+    top: 100% !important;
+}
+
+.glyphicon:before {
+    margin-right: -5px;
+}
 
 .navbar-nav>li>a.active {
     background-color: steelblue;
@@ -171,6 +255,22 @@ form {
 .navbar-default .navbar-nav > li > a:focus {
   color: #333333;
   background-color: wheat;
+}
+
+.form-link-valign {
+    padding-top: 6px;
+}
+
+
+.linkify {
+    color: #428bca !important;
+    text-decoration: underline;
+}
+
+.form-group a {
+    color: #428bca;
+    text-decoration: underline;
+    margin-top: 3px;
 }
 
 

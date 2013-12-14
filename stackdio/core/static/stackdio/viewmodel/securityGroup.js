@@ -162,6 +162,12 @@ define(["knockout",
                 $("#securitygroup-rules-form-container").dialog("open");
             };
 
+            self.deleteHostAccessRule = function (rule) {
+                stores.HostAccessRules.remove(function (r) {
+                    return r.protocol === rule.protocol && r.from_port === rule.from_port && r.to_port === rule.to_port && r.rule === rule.rule;
+                });
+            };
+
             self.addRule = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
                 var rule;
@@ -172,29 +178,15 @@ define(["knockout",
                     rule = record.rule_group.value;
                 }
 
-                API.SecurityGroups.updateRule(self.selectedSecurityGroup, {
-                    action: 'authorize',
+                var accessRule = {
                     protocol: record.rule_protocol.value,
                     from_port: record.rule_from_port.value,
                     to_port: record.rule_to_port.value,
                     rule: rule
-                })
-                    .then(function () {
-                        self.showSuccess();
-                        $('#rule_from_port').val('');
-                        $('#rule_to_port').val('');
-                        $('#rule_ip_address').val('');
-                        $('#rule_group').val('');
-                        
-                        $("#new-rule-dialog").dialog("close");
-                    })
-                    .catch(function (error) {
-                        self.showError(error.toString(), 5000);
-                    });
-            };
+                }
+                stores.HostAccessRules.push(new models.NewHostAccessRules().create(accessRule));
 
-            self.closeRulesForm = function () {
-                $("#securitygroup-rules-form-container").dialog("close");
+                self.closeAccessRuleForm();
             };
 
             self.paginate = function (url) {
@@ -211,32 +203,24 @@ define(["knockout",
                     });
             };
 
-            self.loadSecurityGroups = function () {
-                return API.SecurityGroups.load()
-                    .then(function (properties) {
-
-                        if (properties.count > stackdio.settings.pageSize) {
-                            self.showPagination(true);
-                            self.nextLink(properties.next);
-                            self.previousLink(properties.previous);
-                        }
-
-                    });
+            self.openAccessRuleForm = function () {
+                $("#host-access-rule-container").dialog("open");
             };
 
-            self.showSecurityGroupForm = function (account) {
-                self.selectedAccount = account;
-                $("#securitygroup-form-container").dialog("open");
+            self.closeAccessRuleForm = function () {
+                formutils.clearForm('host-access-rule-form');
+                $("#host-access-rule-container").dialog("close");
             };
 
-            self.showDefaultGroupForm = function () {
-                $("#default-securitygroup-form-container").dialog("open");
-                $("#alert-default-security-groups").hide();
+            self.openRulesList = function () {
+                $("#host-access-rule-list-container").dialog("open");
             };
 
-            self.closeSecurityGroupForm = function (type) {
-                $("#securitygroup-form-container").dialog("close");
+            self.closeRulesList = function () {
+                $("#host-access-rule-list-container").dialog("close");
             };
+
+
 
             /*
              *  ==================================================================================
@@ -261,9 +245,15 @@ define(["knockout",
                 modal: true
             });
 
-            $("#new-rule-dialog").dialog({
+            $("#host-access-rule-container").dialog({
                 autoOpen: false,
                 width: 500,
+                modal: true
+            });
+
+            $("#host-access-rule-list-container").dialog({
+                autoOpen: false,
+                width: 600,
                 modal: true
             });
 

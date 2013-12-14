@@ -51,7 +51,7 @@ define([
                 visible: false
             },
             {
-                id:'Formula',
+                id:'Formulas',
                 icon: 'glyphicon glyphicon-tint',
                 visible: true
             },
@@ -127,7 +127,6 @@ define([
              *  ==================================================================================
              */
             self.gotoSection = function (section) {
-                console.log('section',section);
                 // Force user to create an account if none exist
                 if (section.id !== "Accounts" && stores.Accounts().length === 0) {
                     section = _.findWhere(self.sections, {id:'Accounts'});
@@ -170,7 +169,7 @@ define([
                 // Everything you want to do AFTER all data has loaded
                 .then(function () {
                     // Convert select elements to the nice Bootstrappy style
-                    $('select[id!="aws_security_group"][id!="host_security_groups"][id!="stackdio_security_group"]').selectpicker();
+                    $('.selectpicker').selectpicker();
 
                     // Remove the hide class from the main sections
                     $("div[class*='hide'][data-bind]").removeClass('hide');

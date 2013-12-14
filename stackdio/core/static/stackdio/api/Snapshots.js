@@ -49,6 +49,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     description: record.snapshot_description.value,
                     cloud_provider: record.account.id,
                     size_in_gb: record.snapshot_size.value,
+                    filesystem_type: record.filesystem_type.value,
                     snapshot_id: record.snapshot_id.value
                 },
                 headers: {

@@ -5,61 +5,59 @@
     <title>stackd.io</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
+
     <link href="/static/css/theme/jquery-ui-1.10.3.custom.min.css" rel="stylesheet">
     <link href="/static/stackdio/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/stackdio/bower_components/bootstrap-select/bootstrap-select.min.css" rel="stylesheet">
     <link href="/static/css/stackdio.css" rel="stylesheet">
 </head>
 
-<body>
+<body class="bootstrap-admin-with-small-navbar">
 
     <!-- 
         ======================================================================
          N A V I G A T I O N
         ======================================================================
      -->
-    <nav class="navbar navbar-fixed-top navbar-default" role="navigation">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <p class="navbar-text">stackd.io</p>
-        </div>
+    <nav class="navbar navbar-default navbar-fixed-top bootstrap-admin-navbar-sm" role="navigation">
+        <div class="container">
+            <div class="row">
+                <div class="collapse navbar-collapse">
 
-        <div class="collapse navbar-collapse">
-            <ul class="nav navbar-nav" data-bind="foreach: sections">
-                <li data-bind="click: $root.gotoSection">
-                  <a href="#" data-bind="attr: { class: icon }, visible: visible, css: { active: $data === $root.currentSection() }">
-                    <span data-bind="text: id"></span>
-                  </a>
-                </li>
-            </ul>
+                    <ul class="nav navbar-nav">
+                        <li>
+                            <div class="light product" href="#">stackd.io</div>
+                        </li>
+                    </ul>
 
-            <ul class="nav navbar-nav navbar-right">
-                <li>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-inverse navbar-btn dropdown-toggle" data-toggle="dropdown">
-                            <span class="glyphicon glyphicon-user"></span>
-                            Your Account
-                            <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu" role="menu">
-                            <li><a href="#" data-bind="click: showUserProfile">User Profile</a></li>
-                            <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
-                            <li class="divider"></li>
-                            <li><a href="#" data-bind="click: gotoSection(_.findWhere(sections, {id:'Accounts'}))">Your Cloud Accounts</a></li>
-                            <li class="divider"></li>
-                            <li><a href="/logout">Logout</a></li>
-                        </ul>
-                    </div>
-                </li>
-                <li>
-                    <p class="navbar-text"> </p>
-                </li>
-            </ul>
+                    <ul class="nav navbar-nav" data-bind="foreach: sections">
+                        <li data-bind="click: $root.gotoSection">
+                          <a href="#" data-bind="attr: { class: icon }, visible: visible, css: { active: $data === $root.currentSection() }">
+                            <span data-bind="text: id"></span>
+                          </a>
+                        </li>
+                    </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                <span class="glyphicon glyphicon-user"></span>
+                                Your Account
+                                <b class="caret"></b>
+                            </a>
+                            <ul class="dropdown-menu toolbar-dropdown-menu" role="menu">
+                                <li><a href="#" data-bind="click: showUserProfile">User Profile</a></li>
+                                <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
+                                <li class="divider"></li>
+                                <li><a href="#" data-bind="click: gotoSection(_.findWhere(sections, {id:'Accounts'}))">Your Cloud Accounts</a></li>
+                                <li class="divider"></li>
+                                <li><a href="/logout">Logout</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -69,23 +67,6 @@
             <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
         </ul>
     </nav>
-
-    <!-- 
-        ======================================================================
-        S I D E B A R
-        ======================================================================
-    <div id="sidebar">
-        <ul class="nav nav-list" data-bind="foreach: sections">
-            <li id="dashboard-href" class="navlink" data-bind="click: $root.gotoSection">
-              <a href="#" data-bind="css: { active: $data == $root.currentSection() }">
-                <i class="icon-dashboard"></i>
-                <span data-bind="text: $data"></span>
-              </a>
-            </li>
-        </ul>
-    </div>
-     -->
-
 
     <!-- 
         ======================================================================
@@ -121,7 +102,6 @@
             <strong>Warning!</strong> You do not have any accounts created yet. Please create one now.
         </div>
     </div>
-
 
     <!-- 
         ======================================================================
@@ -165,7 +145,6 @@
         </form>
     </div>
 
-
     <!-- 
         ======================================================================
         U S E R   P R O F I L E
@@ -205,7 +184,6 @@
         </form>
     </div>
 
-
     <!-- 
         ======================================================================
         B L U E P R I N T   L I S T
@@ -217,7 +195,7 @@
             <div class="row bottom-separation">
                 <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Blueprints</div>
                 <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
-                    <div class="btn-group pull-right">
+                    <div class="btn-group pull-right small-top-separation">
                         <button class="btn btn-primary" data-bind="click: $root.blueprint.showBlueprintForm">New Blueprint</button>
                     </div>
                 </div>
@@ -312,6 +290,23 @@
             <div class="modal-body large-modal-body">
 
                 <div class="form-group">
+                    <label for="formula_components" class="col-sm-4 control-label">Install Component(s)</label>
+                    <div class="col-sm-8">
+                        <select id="formula_components" 
+                                data-bind="foreach: { data: stores.Formulae, as: 'formula' }, 
+                                           optionsCaption: 'Choose what to install...'"
+                                data-size="12"
+                                data-container="body"
+                                multiple
+                                class="form-control selectpicker">
+                            <optgroup data-bind="attr: {label: title}, foreach: components">
+                                <option data-bind="text: title, value: id"></option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="host_count" class="col-sm-4 control-label">Count</label>
                     <div class="col-sm-8">
                         <input type="text" class="form-control" id="host_count" placeholder="">
@@ -328,7 +323,7 @@
                                            optionsCaption: 'Choose size...'"
                                 data-size="12"
                                 data-container="body"
-                                class="form-control"></select>
+                                class="form-control selectpicker"></select>
                     </div>
                 </div>
 
@@ -341,7 +336,7 @@
                                            optionsText: 'title',
                                            optionsCaption: 'Choose a zone...'"
                                 data-container="body"
-                                class="form-control"></select>
+                                class="form-control selectpicker"></select>
                     </div>
                 </div>
 
@@ -353,25 +348,24 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="host_access_rules" class="col-sm-4 control-label">Access rules</label>
+                    <div class="col-sm-8 form-link-valign">
+                        <a style="margin-right: 30px;"
+                           data-bind="visible: stores.HostAccessRules().length > 0, 
+                                      text: stores.HostAccessRules().length + ' rules',
+                                      click: $root.securityGroup.openRulesList"></a>
+                        <a data-bind="click: $root.securityGroup.openAccessRuleForm">Add</a>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label for="host_volumes" class="col-sm-4 control-label">Volumes</label>
-                    <div class="col-sm-8">
-                        <table id="host_volumes" class="table table-bordered table-condensed" data-bind="visible: stores.HostVolumes.length > 0">
-                            <thead>
-                                <tr>
-                                    <th>Snapshot</th>
-                                    <th>Mount point</th>
-                                    <th style="width:50px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody data-bind="foreach: stores.HostVolumes">
-                                <tr>
-                                    <td data-bind="text: snapshot.title"></td>
-                                    <td data-bind="text: mount_point"></td>
-                                    <td><button type="button" class="btn-small btn-danger iconic-trash-stroke" data-bind="click: $root.volume.removeHostVolume"></button></td>
-                                </tr>     
-                            </tbody>
-                        </table>
-                        <button class="btn btn-info btn-xs" data-bind="click: $root.volume.showVolumeForm">Add Volume</button>
+                    <div class="col-sm-8 form-link-valign">
+                        <a style="margin-right: 30px;"
+                           data-bind="visible: stores.HostVolumes().length > 0, 
+                                      text: stores.HostVolumes().length + ' volumes',
+                                      click: $root.volume.showVolumeList"></a>
+                        <a data-bind="click: $root.volume.showVolumeForm">Add</a>
                     </div>
                 </div>
 
@@ -395,6 +389,75 @@
                 <button class="btn" data-bind="click: $root.blueprint.closeHostForm">Close</button>
             </div>
         </form>
+    </div>
+
+    <!-- 
+        ======================================================================
+        N E W   A C C E S S   R U L E   L I S T   D I A L O G
+        ======================================================================
+     -->
+    <div id="host-access-rule-list-container" title="Volume List" data-bind="" class="hide">
+        <div class="modal-body large-modal-body">
+            <table class="table table-bordered table-condensed">
+                <thead>
+                    <tr>
+                        <th>Protocol</th>
+                        <th>From Port</th>
+                        <th>To Port</th>
+                        <th>Rule</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.HostAccessRules">
+                    <tr>
+                        <td data-bind="text: protocol"></td>
+                        <td data-bind="text: from_port"></td>
+                        <td data-bind="text: to_port"></td>
+                        <td data-bind="text: rule"></td>
+                        <td>
+                            <a class="linkify" data-bind="click: $root.securityGroup.deleteHostAccessRule"> Delete </a>
+                        </td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn" data-bind="click: $root.securityGroup.closeRulesList">Close</button>
+        </div>
+    </div>
+
+    <!-- 
+        ======================================================================
+        N E W   V O L U M E   L I S T   D I A L O G
+        ======================================================================
+     -->
+    <div id="host-volume-form-list-container" title="Volume List" data-bind="" class="hide">
+        <div class="modal-body large-modal-body">
+            <table id="host_volumes" class="table table-bordered table-condensed" 
+                   data-bind="visible: stores.HostVolumes().length > 0">
+                <thead>
+                    <tr>
+                        <th>Snapshot</th>
+                        <th>Mount point</th>
+                        <th style="width:50px;"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.HostVolumes">
+                    <tr>
+                        <td data-bind="text: snapshot.title"></td>
+                        <td data-bind="text: mount_point"></td>
+                        <td>
+                            <a class="linkify" data-bind="click: $root.volume.removeHostVolume"> Delete </a>
+                        </td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn" data-bind="click: $root.volume.closeVolumeList">Close</button>
+        </div>
     </div>
 
     <!-- 
@@ -441,17 +504,15 @@
         ======================================================================
     -->
     <div id="host-access-rule-container" title="New Access Rule" class="stackd-form hide" data-bind="">
-        <form id="access-rule-form" role="form" class="form-horizontal">
+        <form id="host-access-rule-form" role="form" class="form-horizontal">
             <div class="modal-body">
-
                 <div class="form-group">
                     <label for="rule_protocol" class="col-sm-4 control-label">Protocol</label>
                     <div class="col-sm-8">
                         <select id="rule_protocol" 
                                 data-bind="options: ['tcp','udp','icmp']",
                                 data-container="body"
-                                class="form-control"
-                                class="input-xlarge"></select> 
+                                class="form-control selectpicker"></select> 
                     </div>
                 </div>
 
@@ -500,31 +561,6 @@
         </form>
     </div>
 
-    <!-- 
-        ======================================================================
-        S E C U R I T Y   G R O U P   F O R M
-        ======================================================================
-    -->
-    <div id="securitygroup-form-container" title="New Security Group" data-bind="" class="stackd-form form-small hide">
-        <form id="securitygroup-form" role="form" class="form-horizontal">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="securitygroup_name" class="col-sm-3 control-label">Title</label>
-                    <div class="col-sm-9">
-                        <input type="text" class="form-control" id="securitygroup_name" placeholder=""
-                               data-bind="event: { keypress: securityGroup.captureNewGroup }">
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn" data-bind="click: $root.securityGroup.closeSecurityGroupForm">Close</button>
-                <button class="btn btn-primary" data-bind="click: function (data, event) { 
-                                    securityGroup.addSecurityGroup($('#securitygroup_name').val(), event); 
-                                }">Save</button>
-            </div>
-        </form>
-    </div>
 
 
     <!-- 
@@ -535,15 +571,13 @@
     <div id="stacks-binding-target" data-bind='visible: $root.currentSection().id === "Stacks"' class="hide">
         <div class="view">
 
-            <div class="btn-group pull-right bottom-separation">
-                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                    New Stack <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
-                    <li>
-                        <a href="#" data-bind="text: title, click: $root.stack.showStackForm"></a>
-                    </li>
-                </ul>
+            <div class="row bottom-separation">
+                <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Stacks</div>
+                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="small-top-separation btn-group pull-right">
+                        <button class="btn btn-primary" data-bind="click: $root.blueprint.showBlueprintForm">Launch New Stack</button>
+                    </div>
+                </div>
             </div>
 
             <table id="stacks" class="table table-bordered">
@@ -667,6 +701,84 @@
     </div>
 
 
+    <!-- 
+        ======================================================================
+        F O R M U L A   L I S T
+        ======================================================================
+    -->
+    <div id="formula-binding-target" class="hide" data-bind='visible: currentSection().id === "Formulas"'>
+        <div class="view">
+            <div class="row bottom-separation">
+                <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Formulas</div>
+                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="btn-group pull-right small-top-separation">
+                        <button class="btn btn-primary" data-bind="click: $root.formula.showFormulaForm">Import Formula</button>
+                    </div>
+                </div>
+            </div>
+
+            <table id="formulae" class="table table-bordered ">
+                <thead>
+                    <tr>
+                        <th style="width:20%">Title</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th style="width:5%"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.Formulae">
+                    <tr data-bind="attr: { class: (public) ? 'success' : '' }">
+                        <td>
+                            <a href='#' 
+                               data-bind="bootstrapPopover: {
+                                            content: $root.formula.popoverBuilder($data),
+                                            title: 'Formula Components'
+                                          },
+                                          text: title"></a>
+                        </td>
+                        <td data-bind="text: description"></td>
+                        <td data-bind="text: status_detail"></td>
+                        <td>
+                            <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="#" data-bind="text: (!public) ? 'Make Public' : 'Make Private', click: $root.formula.share"></a>
+                                    </li>
+                                    <li>
+                                        <a href="#" data-bind="text:'Delete', click: $root.formula.delete"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 
+        ======================================================================
+        F O R M U L A   F O R M
+        ======================================================================
+    -->
+    <div id="formula-form-container" title="Import Formula" class="stackd-form form-small hide" data-bind="">
+        <form id="formula-form">
+            <div class="modal-body large-modal-body">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="formula_url" placeholder="Enter repository URL...">
+                </div>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 40px;">
+                <button class="btn btn-danger" data-bind="click: $root.formula.closeFormulaForm">Cancel</button>
+                <button class="btn btn-primary" data-bind="click: $root.formula.importFormula">Import</button>
+            </div>
+        </form>
+    </div>
+
 
     <!-- 
         ======================================================================
@@ -675,15 +787,20 @@
      -->
     <div id="snapshots-binding-target" class="hide" data-bind='visible: $root.currentSection().id === "Snapshots"'>
         <div class="view">
-            <div class="btn-group pull-right bottom-separation">
-                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                    New Snapshot <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
-                    <li>
-                        <a href="#" data-bind="text: title, click: $root.snapshot.showSnapshotForm"></a>
-                    </li>
-                </ul>
+            <div class="row bottom-separation">
+                <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Snapshots</div>
+                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="btn-group pull-right small-top-separation">
+                        <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                            New Snapshot <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
+                            <li>
+                                <a href="#" data-bind="text: title, click: $root.snapshot.showSnapshotForm"></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
 
             <table id="snapshots" class="table table-bordered">
@@ -705,41 +822,71 @@
                         <td data-bind="text: size_in_gb"></td>
                         <td data-bind="text: account.title"></td>
                         <td>
-                            <button type="button" 
-                                    class="btn-small btn-danger iconic-trash-stroke"
-                                    data-bind="visible: $root.isSuperUser, click: $root.account.removeSnapshot"></button>
+                            <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                                <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a href="#" data-bind="text:'Delete', click: $root.snapshot.removeSnapshot"></a>
+                                    </li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>     
                 </tbody>
             </table>
         </div>
+    </div>
 
-        <!-- 
-            ======================================================================
-            S N A P S H O T   F O R M
-            ======================================================================
-         -->
-        <div id="snapshot-form-container" title="Snapshot Details" class="stackd-form form-small">
-            <form id="snapshot-form">
-            <div class="modal-body">
-                <div class="span2">Title</div>
-                <div class="span4 no-margin">
-                    <input id="snapshot_title" type="text" class="input-block-level" placeholder="">
+    <!-- 
+        ======================================================================
+        S N A P S H O T   F O R M
+        ======================================================================
+     -->
+    <div id="snapshot-form-container" title="Snapshot Details" data-bind="" class="stackd-form form-small hide">
+        <form id="snapshot-form" role="form" class="form-horizontal">
+            <div class="modal-body large-modal-body">
+                <div class="form-group">
+                    <label for="snapshot_title" class="col-sm-4 control-label">Title</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="snapshot_title" placeholder="">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="snapshot_description" class="col-sm-4 control-label">Description</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="snapshot_description" placeholder="">
+                    </div>
                 </div>
 
-                <div class="span2">Description</div>
-                <div class="span4 no-margin">
-                    <input id="snapshot_description" type="text" class="input-block-level" placeholder="">
+                <div class="form-group">
+                    <label for="snapshot_id" class="col-sm-4 control-label">Snapshot ID</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="snapshot_id" placeholder="EC2 snapshot ID">
+                    </div>
                 </div>
 
-                <div class="span2">Snapshot ID</div>
-                <div class="span4 no-margin">
-                    <input id="snapshot_id" type="text" class="input-block-level" placeholder="EC2 snapshot ID">
+                <div class="form-group">
+                    <label for="filesystem_type" class="col-sm-4 control-label">Operating System</label>
+                    <div class="col-sm-8">
+                        <select id="filesystem_type" 
+                                data-bind="options: $root.snapshot.osChoices, 
+                                           optionsValue: 'id',
+                                           optionsText: 'title',
+                                           optionsCaption: 'Choose OS...'"
+                                data-size="12"
+                                data-container="body"
+                                class="form-control"></select>
+                    </div>
                 </div>
 
-                <div class="span2">Size</div>
-                <div class="span4 no-margin">
-                    <input id="snapshot_size" type="text" class="input-block-level" placeholder="in GB">
+                <div class="form-group">
+                    <label for="snapshot_size" class="col-sm-4 control-label">Size</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="snapshot_size" placeholder="">
+                    </div>
                 </div>
             </div>
 
@@ -747,11 +894,8 @@
                 <button class="btn" data-bind="click: $root.snapshot.closeSnapshotForm">Close</button>
                 <button class="btn btn-primary" data-bind="click: $root.snapshot.addSnapshot">Save</button>
             </div>
-            </form>
-        </div>
+        </form>
     </div>
-
-
 
     <!-- 
         ======================================================================
@@ -813,92 +957,92 @@
                 </tbody>
             </table>
         </div>
+    </div>
 
-        <!-- 
-            ======================================================================
-            A C C O U N T   F O R M
-            ======================================================================
-        -->
-        <div id="accounts-form-container" title="New Provider Account Details" class="stackd-form form-small">
-            <form id="account-form" role="form" class="form-horizontal">
-                <div class="modal-body large-modal-body">
-                    <div class="form-group">
-                        <label for="account_title" class="col-sm-4 control-label">Title</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="account_title" placeholder="">
-                        </div>
+    <!-- 
+        ======================================================================
+        A C C O U N T   F O R M
+        ======================================================================
+    -->
+    <div id="accounts-form-container" title="New Provider Account Details" class="stackd-form form-small hide" data-bind="">
+        <form id="account-form" role="form" class="form-horizontal">
+            <div class="modal-body large-modal-body">
+                <div class="form-group">
+                    <label for="account_title" class="col-sm-4 control-label">Title</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="account_title" placeholder="">
                     </div>
-
-                    <div class="form-group">
-                        <label for="account_description" class="col-sm-4 control-label">Description</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="account_description" placeholder="">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="account_id" class="col-sm-4 control-label">Account ID</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="account_id" placeholder="Log into your account to obtain the id">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="access_key_id" class="col-sm-4 control-label">AWS Access Key</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="access_key_id" placeholder="">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="secret_access_key" class="col-sm-4 control-label">AWS Secret Key</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="secret_access_key" placeholder="">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="keypair" class="col-sm-4 control-label">AWS Keypair Name</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="keypair" placeholder="">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="default_availability_zone" class="col-sm-4 control-label">Default Zone</label>
-                        <div class="col-sm-8">
-                            <select id="default_availability_zone" 
-                                data-bind="options: stores.Zones, 
-                                           optionsText: 'title', 
-                                           optionsValue: 'id', 
-                                           optionsCaption: 'Choose default zone...'" 
-                                data-container="body"
-                                class="stretch-full"></select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="route53_domain" class="col-sm-4 control-label">Route 53 Domain</label>
-                        <div class="col-sm-8">
-                            <input type="text" class="form-control" id="route53_domain" placeholder="e.g. dev.synthesyscloud.com">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="private_key_file" class="col-sm-4 control-label">Private Key File</label>
-                        <div class="col-sm-8">
-                            <textarea class="form-control" id="private_key_file" rows="6" placeholder="Enter in the private key that will be used to set up instances for this account"></textarea>
-                        </div>
-                    </div>
-
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn" data-bind="click: $root.account.closeAccountForm">Close</button>
-                    <button class="btn btn-primary" data-bind="click: $root.account.addAccount">Save</button>
+                <div class="form-group">
+                    <label for="account_description" class="col-sm-4 control-label">Description</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="account_description" placeholder="">
+                    </div>
                 </div>
-            </form>
-        </div>
+
+                <div class="form-group">
+                    <label for="account_id" class="col-sm-4 control-label">Account ID</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="account_id" placeholder="Log into your account to obtain the id">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="access_key_id" class="col-sm-4 control-label">AWS Access Key</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="access_key_id" placeholder="">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="secret_access_key" class="col-sm-4 control-label">AWS Secret Key</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="secret_access_key" placeholder="">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="keypair" class="col-sm-4 control-label">AWS Keypair Name</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="keypair" placeholder="">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="default_availability_zone" class="col-sm-4 control-label">Default Zone</label>
+                    <div class="col-sm-8">
+                        <select id="default_availability_zone" 
+                            data-bind="options: stores.Zones, 
+                                       optionsText: 'title', 
+                                       optionsValue: 'id', 
+                                       optionsCaption: 'Choose default zone...'" 
+                            data-container="body"
+                            class="form-control selectpicker"></select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="route53_domain" class="col-sm-4 control-label">Route 53 Domain</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="route53_domain" placeholder="e.g. dev.synthesyscloud.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="private_key_file" class="col-sm-4 control-label">Private Key File</label>
+                    <div class="col-sm-8">
+                        <textarea class="form-control" id="private_key_file" rows="6" placeholder="Enter in the private key that will be used to set up instances for this account"></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" data-bind="click: $root.account.closeAccountForm">Close</button>
+                <button class="btn btn-primary" data-bind="click: $root.account.addAccount">Save</button>
+            </div>
+        </form>
     </div>
 
 
@@ -995,7 +1139,7 @@
                                            optionsCaption: 'Choose...'" 
                                 data-size="8"
                                 data-container="body"
-                                class="stretch-full"></select>
+                                class="form-control"></select>
                         </div>
                     </div>
                 </div>
@@ -1078,8 +1222,6 @@
                 </tbody>
             </table>
         </div>
-
-
 
         <!-- 
             ======================================================================
@@ -1200,78 +1342,6 @@
     </div>
 
 
-    <!-- 
-        ======================================================================
-        F O R M U L A   L I S T
-        ======================================================================
-    -->
-    <div id="formula-binding-target" class="hide" data-bind='visible: currentSection().id === "Formula"'>
-        <div class="view">
-            <div class="btn-group pull-right bottom-separation">
-                <button class="btn btn-primary" data-bind="click: $root.formula.showFormulaForm">Import Formula</button>
-            </div>
-
-            <table id="formulae" class="table table-bordered ">
-                <thead>
-                    <tr>
-                        <th style="width:20%">Title</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th style="width:5%"></th>
-                    </tr>
-                </thead>
-                <tbody data-bind="foreach: stores.Formulae">
-                    <tr data-bind="attr: { class: (public) ? 'success' : '' }">
-                        <td>
-                            <a href='#' 
-                               data-bind="bootstrapPopover: {
-                                            content: $root.formula.popoverBuilder($data),
-                                            title: 'Formula Components'
-                                          },
-                                          text: title"></a>
-                        </td>
-                        <td data-bind="text: description"></td>
-                        <td data-bind="text: status_detail"></td>
-                        <td>
-                            <div class="btn-group" data-bind="visible: $root.isSuperUser">
-                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
-                                    Action <span class="caret"></span>
-                                </a>
-                                <ul class="dropdown-menu">
-                                    <li>
-                                        <a href="#" data-bind="text: (!public) ? 'Make Public' : 'Make Private', click: $root.formula.share"></a>
-                                    </li>
-                                    <li>
-                                        <a href="#" data-bind="text:'Delete', click: $root.formula.delete"></a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>     
-                </tbody>
-            </table>
-        </div>
-
-        <!-- 
-            ======================================================================
-            F O R M U L A   F O R M
-            ======================================================================
-        -->
-        <div id="formula-form-container" title="Import Formula" class="stackd-form form-small">
-            <form id="formula-form">
-                <div class="modal-body large-modal-body">
-
-                    <div class="form-group">
-                            <input type="text" class="form-control" id="formula_url" placeholder="Enter repository URL...">
-                    </div>
-
-                <div class="modal-footer" style="margin-top: 40px;">
-                    <button class="btn btn-danger" data-bind="click: $root.formula.closeFormulaForm">Cancel</button>
-                    <button class="btn btn-primary" data-bind="click: $root.formula.importFormula">Import</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <script data-main="/static/stackdio/require-config" src="/static/stackdio/require.js"></script>
     <script>

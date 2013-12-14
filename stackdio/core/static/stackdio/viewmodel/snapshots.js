@@ -10,6 +10,28 @@ define(["knockout",
             var self = this;
 
             self.userCanModify = ko.observable();
+            self.osChoices = [
+                {
+                    id: 'ext2',
+                    title: 'ext2'
+                },
+                {
+                    id: 'ext3',
+                    title: 'ext3'
+                },
+                {
+                    id: 'ext4',
+                    title: 'ext4'
+                },
+                {
+                    id: 'fuse',
+                    title: 'fuse'
+                },
+                {
+                    id: 'xfs',
+                    title: 'xfs'
+                }
+            ];
 
             // Query OPTIONS on /providers and if DELETE is not in allowed verb list, user is not admin
             API.Snapshots.options()
@@ -20,6 +42,9 @@ define(["knockout",
             self.addSnapshot = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
                 record.account = self.selectedAccount;
+
+                console.log('record',record);
+
                 API.Snapshots.save(record)
                     .then(function () {
                         $("#snapshot-form-container").dialog("close");
@@ -54,7 +79,7 @@ define(["knockout",
              */
             $("#snapshot-form-container").dialog({
                 autoOpen: false,
-                width: 650,
+                width: 550,
                 modal: false
             });
         };
