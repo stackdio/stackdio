@@ -11,36 +11,94 @@ define(["knockout",
             var self = this;
             self.selectedProfile = null;
             self.selectedAccount = null;
+            self.selectedBlueprintHosts = ko.observable();
 
-            self.addBlueprint = function (model, evt) {
+
+            // 
+            //      N E W   H O S T S
+            // 
+            self.addHost = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
+                var v, vol;
 
-                record.title = record.account_title;
-                record.description = record.account_description;
-                record.providerType = self.selectedProviderType.id;
+                // Create a new host definition
+                var host = new models.NewHost().create({ 
+                    id: '',
+                    title: 'title',
+                    description: 'description',
+                    count: record.host_count.value,
+                    size: record.host_instance_size.value,
+                    hostname_template: record.host_hostname.value,
+                    zone: record.availability_zone.value,
+                    cloud_profile: self.selectedProfile.id,
+                    access_rules: stores.HostAccessRules(),
+                    volumes: stores.HostVolumes(),
+                    formula_components: record.formula_components.map(function (g) { return { id: g.value, order: 0 }; })
+                });
 
-                API.Accounts.save(record)
-                    .then(function (account) {
+                host.instance_size = _.find(stores.InstanceSizes(), function (i) {
+                    return i.id === parseInt(record.host_instance_size.value, 10);
+                });
+
+                // Add some HTML to display for the chosen roles
+                host.flat_components = _.map(record.formula_components, function (fc) { 
+                    return '<div style="line-height:15px !important;">' + fc.text + '</div>'; 
+                }).join('');
+
+                // Add some HTML to display for the chosen security groups
+                host.flat_access_rules = stores.HostAccessRules().length + ' access rules';
+
+                // Add spot instance config
+                if (record.spot_instance_price.value !== '') {
+                    host.spot_config = {};
+                    host.spot_config.spot_price = record.spot_instance_price.value;
+                }
+
+                console.log('new host', host);
+                stores.NewHosts.push(host);
+
+                // Clear volume and access rules stores
+                stores.HostAccessRules.removeAll();
+                stores.HostVolumes.removeAll();
+
+                self.closeHostForm();
+
+                // Clear out the spot instance bid price field
+                document.getElementById('spot_instance_price').value = "";
+            };
+
+            self.removeHost = function (host) {
+                stores.NewHosts.remove(host);
+            };
+
+            self.saveBlueprint = function (model, evt) {
+                // var blueprint = formutils.collectFormFields(evt.target.form);
+                var hosts = stores.NewHosts();
+
+                var blueprint = {
+                    title: document.getElementById('blueprint_title').value,
+                    description: document.getElementById('blueprint_purpose').value,
+                    public: false,      // TODO
+                    properties: {},     // TODO
+                    hosts: hosts
+                };
+
+                console.log(blueprint);
+                // return;
+
+                API.Blueprints.save(blueprint)
+                    .then(function (blueprint) {
                         // Close the form and clear it out
-                        $("#accounts-form-container").dialog("close");
-                        formutils.clearForm('account-form');
-
-                        // Query user if default security groups should be chosen for account
-                        self.showMessage("#alert-default-security-groups", "", false);
-
-                        // Set the saved account as the "selected" account for display in the default security group dialog
-                        self.selectedAccount(account);
-                        $('#default_groups_account_title').val(account.title);
-
-                        // self.showSuccess();
+                        self.closeBlueprintForm();
+                        self.showMessage('#alert-success', 'Blueprint successfully saved.');
                     })
                     .catch(function (error) {
                         $("#alert-error").show();
                     })
             };
 
-            self.deleteBlueprint = function (account) {
-                API.Accounts.delete(account)
+            self.deleteBlueprint = function (blueprint) {
+                API.Blueprints.delete(blueprint)
                     .then(self.showSuccess)
                     .catch(function (error) {
                         self.showError(error);
@@ -51,11 +109,31 @@ define(["knockout",
                 return API.Accounts.load();
             };
 
+            self.showBlueprintHostList = function (blueprint) {
+                blueprint.host_definitions.forEach(function (host) {
+                    host.instance_size = _.find(stores.InstanceSizes(), function (size) {
+                        return host.size === size.url;
+                    });
+
+                    host.rules = host.access_rules.forEach(function (rule) {
+                        return rule.rule;
+                    });
+                });
+                self.selectedBlueprintHosts(blueprint.host_definitions);
+
+                $("#blueprint-host-list-container").dialog("open");
+            }
+
+            self.closeBlueprintHostList = function () {
+                $("#blueprint-host-list-container").dialog("close");
+            }
+
+
             self.showBlueprintForm = function () {
                 $("#blueprint-form-container").dialog("open");
             }
 
-            self.closeBlueprintForm = function (type) {
+            self.closeBlueprintForm = function () {
                 formutils.clearForm('blueprint-form');
                 $("#blueprint-form-container").dialog("close");
             }
@@ -91,13 +169,20 @@ define(["knockout",
                 modal: false
             });
 
+            $("#blueprint-host-list-container").dialog({
+                position: 'center',
+                autoOpen: false,
+                width: 800,
+                modal: true
+            });
+
+
             $("#host-form-container").dialog({
                 position: [(window.innerWidth / 2) - 275, 60],
                 autoOpen: false,
                 width: 600,
                 modal: true
             });
-
 
             $("#host-access-rule-container").dialog({
                 autoOpen: false,

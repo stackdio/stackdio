@@ -20,7 +20,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                         var blueprint = new models.Blueprint().create(blueprints[b]);
 
                         // Inject the record into the store
-                        stores.Blueprints.push(stack);
+                        stores.Blueprints.push(blueprint);
                     }
 
                     console.log('blueprints', stores.Blueprints());
@@ -55,8 +55,27 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
 
             return deferred.promise;
         },
-        delete: function (record) {
+        delete: function (blueprint) {
+            var deferred = Q.defer();
 
+            $.ajax({
+                url: '/api/blueprints/' + blueprint.id,
+                type: 'DELETE',
+                dataType: 'json',
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    stores.Blueprints.remove(function (b) {
+                        return b.id === blueprint.id;
+                    });
+                    deferred.resolve();
+                }
+            });
+
+            return deferred.promise;
         }
     }
 });

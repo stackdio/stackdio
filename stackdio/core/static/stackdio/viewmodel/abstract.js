@@ -13,6 +13,10 @@ define(function () {
             setTimeout('$("#alert-success").hide()', 3000);
         };
 
+        self.closeSuccess = function () {
+            $("#alert-success").hide();
+        };
+        
         self.showError = function (message, delay) {
             var timeout = (typeof delay === 'undefined') ? 3000 : delay;
 
@@ -22,8 +26,9 @@ define(function () {
             setTimeout(function () { $("#alert-error").hide(); $("#alert-error-details").empty(); }, timeout);
         };
 
-        self.closeSuccess = function () {
-            $("#alert-success").hide();
+        self.closeError = function () {
+            $("#alert-error").hide();
+            $("#alert-error-details").empty();
         };
         
         self.showMessage = function (id, content, autohide, delay) {
@@ -33,10 +38,6 @@ define(function () {
             if (autohide) setTimeout(function () { $(id).hide(); $(id).empty(); }, timeout);
         };
 
-        self.closeError = function () {
-            $("#alert-error").hide();
-            $("#alert-error-details").empty();
-        };
         
    }
 });

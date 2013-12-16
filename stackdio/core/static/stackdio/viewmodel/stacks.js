@@ -92,58 +92,9 @@ define(["knockout",
 
             };
 
-
-            self.doStackHostAction = function (action, evt, host) {
-                var data = JSON.stringify({
-                    action: action.toLowerCase()
-                });
-
-                // $.ajax({
-                //     url: '/api/stacks/' + stack.id + '/',
-                //     type: 'PUT',
-                //     data: data,
-                //     headers: {
-                //         "X-CSRFToken": stackdio.settings.csrftoken,
-                //         "Accept": "application/json",
-                //         "Content-Type": "application/json"
-                //     },
-                //     success: function (response) {
-                //         console.log(response);
-                //         API.Stacks.load();
-                //     }
-                // });
-            };
-
-            self.saveStack = function (autoLaunch) {
-                var h, host, hosts = stores.NewHosts();
-
-                var stack = {
-                    cloud_provider: self.selectedAccount.id,
-                    auto_launch: autoLaunch === true,
-                    title: document.getElementById('stack_title').value,
-                    description: document.getElementById('stack_purpose').value,
-                    hosts: hosts
-                };
-
-                API.Stacks.save(stack)
-                    .then(function () {
-                        stores.NewHosts.removeAll();
-
-                        // Clear the stack form
-                        $('#stack_title').val('');
-                        $('#stack_purpose').val('');
-                        stores.NewHosts.removeAll();
-
-                        // Hide the stack form
-                        $( "#stack-form-container" ).dialog("close");
-
-                        self.showSuccess();
-                    });
+            self.launchStack = function (blueprint) {
+                
             }
-
-            self.launchStack = function (model, evt) {
-                self.saveStack(true);
-            };
 
             self.showStackDetails = function (stack) {
                 API.StackHosts.load(stack)
@@ -173,73 +124,6 @@ define(["knockout",
                 $( "#host-metadata-container" ).dialog("close");
             };
 
-
-
-            // 
-            //      N E W   H O S T S
-            // 
-            self.addHost = function (model, evt) {
-                var record = formutils.collectFormFields(evt.target.form);
-                var v, vol;
-
-                // Create a new host definition
-                var host = new models.NewHost().create({ 
-                    id: '',
-                    host_count: record.host_count.value,
-                    host_pattern: record.host_hostname.value,
-                    host_size: record.host_instance_size.value,
-                    cloud_profile: self.selectedProfile.id,
-                    roles: record.host_roles,
-                    availability_zone: record.availability_zone.value,
-                    host_security_groups: record.host_security_groups.map(function (g) { return g.value; })
-                });
-
-                host.salt_roles = _.map(host.roles, function (r) { return r.value; });
-
-                // Add the chosen instance size to the host definition
-                host.size = _.find(stores.InstanceSizes(), function (i) {
-                    return i.id === parseInt(record.host_instance_size.value, 10);
-                });
-
-                // Add some HTML to display for the chosen roles
-                host.flat_roles = _.map(host.roles, function (r) { 
-                    return '<div style="line-height:15px !important;">' + r.text + '</div>'; 
-                }).join('');
-
-                // Add some HTML to display for the chosen security groups
-                host.flat_security_groups = _.map(record.host_security_groups, function (g) { 
-                    return '<div style="line-height:15px !important;">' + g.text + '</div>'; 
-                }).join('');
-
-                // Add spot instance config
-                if (record.spot_instance_price.value !== '') {
-                    host.spot_config = {};
-                    host.spot_config.spot_price = record.spot_instance_price.value;
-                }
-
-                // Add volumes to the host
-                host.volumes = [];
-                for (v in stores.HostVolumes()) {
-                    vol = stores.HostVolumes()[v];
-                    host.volumes.push({
-                        snapshot: vol.snapshot.id,
-                        device: vol.device,
-                        mount_point: vol.mount_point
-                    });
-                }
-
-                console.log('new host', host);
-                stores.NewHosts.push(host);
-
-                // Clear out the spot instance bid price field
-                document.getElementById('spot_instance_price').value = "";
-            };
-
-            self.removeHost = function (host) {
-                stores.NewHosts.remove(host);
-            };
-
-
             self.showStackHosts = function () {
                 $( "#stack-details-container" ).dialog("open");
             };
@@ -248,44 +132,6 @@ define(["knockout",
                 $( "#stack-details-container" ).dialog("close");
             };
 
-            self.showStackForm = function (account) {
-                self.selectedAccount = account;
-                $( "#stack-form-container" ).dialog("open");
-            };
-
-            self.closeStackForm = function () {
-                $( "#stack-form-container" ).dialog("close");
-            };
-
-            self.showHostForm = function (profile) {
-                var allGroups = stores.SecurityGroups();
-
-                self.selectedProfile = profile;
-                stores.AccountSecurityGroups.removeAll();
-
-                _.each(allGroups, function (g) {
-                    if (g.provider_id === self.selectedAccount.id) {
-                        console.log('match', g);
-                        stores.AccountSecurityGroups.push(g);
-                    }
-                });
-                console.log(stores.AccountSecurityGroups());
-
-                // Choose the default instance size assigned to the chosen profile
-                $('#host_instance_size').selectpicker('val', profile.default_instance_size);
-
-                // Choose the default zone assigned to the chosen account
-                $('#availability_zone').selectpicker('val', self.selectedAccount.default_availability_zone);
-
-                $('#host_security_groups').selectpicker();
-
-                $( "#host-form-container" ).dialog("open");
-            };
-
-            self.closeHostForm = function () {
-                formutils.clearForm('host-form');
-                $( "#host-form-container" ).dialog("close");
-            };
 
             /*
              *  ==================================================================================
@@ -303,21 +149,6 @@ define(["knockout",
                 width: 500,
                 height: 600,
                 modal: true
-            });
-
-            $("#host-form-container").dialog({
-                position: [(window.innerWidth / 2) - 275,50],
-                autoOpen: false,
-                width: 600,
-                modal: true
-            });
-
-            $("#stack-form-container").dialog({
-                autoOpen: false,
-                width: window.innerWidth - 225,
-                height: 500,
-                position: [200,50],
-                modal: false
             });
         };
 

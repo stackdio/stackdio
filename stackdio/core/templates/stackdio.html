@@ -46,7 +46,7 @@
                                 Your Account
                                 <b class="caret"></b>
                             </a>
-                            <ul class="dropdown-menu toolbar-dropdown-menu" role="menu">
+                            <ul class="dropdown-menu original-dropdown-menu" role="menu">
                                 <li><a href="#" data-bind="click: showUserProfile">User Profile</a></li>
                                 <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
                                 <li class="divider"></li>
@@ -201,21 +201,80 @@
                 </div>
             </div>
 
+            <div class="row bottom-separation">
+                <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                    Blueprints allow you to quickly define anyting from a single machine, to an entire 200 node Hadoop cluster. You can specify host name templates, provisioning orchestration, and custom properties for any Stacks launched from your Blueprint. 
+                </div>
+            </div>
+
             <table id="stacks" class="table table-bordered">
                 <thead>
                     <tr>
                         <th style="width:20%">Title</th>
-                        <th style="width:50%">Description</th>
-                        <th style="width:50px"></th>
+                        <th style="width:40%">Description</th>
+                        <th style="width:30%">Hosts</th>
+                        <th style="width:10%"></th>
                     </tr>
                 </thead>
                 <tbody data-bind="foreach: stores.Blueprints">
                     <tr>
-                        <td><a href="#" data-bind="text: title"></a></td>
+                        <td>
+                            <a href="#" data-bind="text: title"></a>
+                        </td>
                         <td data-bind="text: description"></td>
+                        <td>
+                            <a href="#" 
+                               data-bind="text: host_definitions.length + ' hosts',
+                                          click: $root.blueprint.showBlueprintHostList"></a>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Action <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu original-dropdown-menu">
+                                    <li>
+                                        <a href="#" data-bind="text: 'Delete', click: $root.blueprint.deleteBlueprint"></a>
+                                    </li>
+                                    <li>
+                                        <a href="#" data-bind="text: 'Launch Stack', click: $root.stack.launchStack"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
                     </tr>     
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- 
+        ======================================================================
+        B L U E P R I N T   H O S T   L I S T
+        ======================================================================
+     -->
+    <div id="blueprint-host-list-container" title="Blueprint Hosts"  data-bind="" class="stackd-form form-small hide">
+        <div class="modal-body">
+            <table id="blueprint_host_list" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: $root.blueprint.selectedBlueprintHosts">
+                    <tr>
+                        <td data-bind="text: count"></td>
+                        <td data-bind="text: hostname_template"></td>
+                        <td data-bind="text: instance_size.title"></td>
+                        <td data-bind="text: hostname_template"></td>
+                        <td data-bind="text: rules"></td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn" data-bind="click: $root.blueprint.closeBlueprintHostList">Close</button>
         </div>
     </div>
 
@@ -257,25 +316,27 @@
                 <table id="blueprint_hosts" class="table table-bordered">
                     <thead>
                         <tr>
-                            <th>Roles</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Security Groups</th><th></th>
+                            <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th></th>
                         </tr>
                     </thead>
                     <tbody data-bind="foreach: stores.NewHosts">
                         <tr>
-                            <td data-bind="html: flat_roles"></td>
-                            <td data-bind="text: host_count"></td>
-                            <td data-bind="text: size.title"></td>
-                            <td data-bind="text: host_pattern"></td>
-                            <td data-bind="html: flat_security_groups"></td>
-                            <td><button type="button" class="btn-small btn-danger glyphicon glyphicon-trash" data-bind="click: $root.blueprint.removeHost"></button></td>
+                            <td data-bind="html: flat_components"></td>
+                            <td data-bind="text: count"></td>
+                            <td data-bind="text: instance_size.title"></td>
+                            <td data-bind="text: hostname_template"></td>
+                            <td data-bind="html: flat_access_rules"></td>
+                            <td>
+                                <a class="linkify" data-bind="click: $root.blueprint.removeHost"> Delete </a>
+                            </td>
                         </tr>     
                     </tbody>
                 </table>
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-info" data-bind="click: $root.blueprint.saveBlueprint">Save Stack</button>
                 <button class="btn" data-bind="click: $root.blueprint.closeBlueprintForm">Close</button>
+                <button class="btn btn-info" data-bind="click: $root.blueprint.saveBlueprint">Save</button>
             </div>
         </form>
     </div>
@@ -385,8 +446,8 @@
             </div>  
     
             <div class="modal-footer">
-                <button class="btn btn-primary" data-bind="click: $root.blueprint.addHost">Save Host</button>
                 <button class="btn" data-bind="click: $root.blueprint.closeHostForm">Close</button>
+                <button class="btn btn-primary" data-bind="click: $root.blueprint.addHost">Save</button>
             </div>
         </form>
     </div>
@@ -396,7 +457,7 @@
         N E W   A C C E S S   R U L E   L I S T   D I A L O G
         ======================================================================
      -->
-    <div id="host-access-rule-list-container" title="Volume List" data-bind="" class="hide">
+    <div id="host-access-rule-list-container" title="Access Rules List" data-bind="" class="hide">
         <div class="modal-body large-modal-body">
             <table class="table table-bordered table-condensed">
                 <thead>
@@ -492,8 +553,8 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-primary" data-bind="click: $root.volume.addHostVolume">Save Volume</button>
                 <button class="btn" data-bind="click: $root.volume.closeVolumeForm">Close</button>
+                <button class="btn btn-primary" data-bind="click: $root.volume.addHostVolume">Save</button>
             </div>
         </form>
     </div>
@@ -561,8 +622,6 @@
         </form>
     </div>
 
-
-
     <!-- 
         ======================================================================
         S T A C K   L I S T
@@ -606,7 +665,7 @@
                                 <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu" data-bind="foreach: $root.stack.stackActions">
+                                <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: $root.stack.stackActions">
                                     <li>
                                         <a href="#" data-bind="text:$data, click: function (data, event) { $root.stack.doStackAction(data, event, $parent) }"></a>
                                     </li>
@@ -743,7 +802,7 @@
                                 <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu original-dropdown-menu">
                                     <li>
                                         <a href="#" data-bind="text: (!public) ? 'Make Public' : 'Make Private', click: $root.formula.share"></a>
                                     </li>
@@ -794,7 +853,7 @@
                         <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                             New Snapshot <span class="caret"></span>
                         </a>
-                        <ul class="dropdown-menu" data-bind="foreach: stores.Accounts">
+                        <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: stores.Accounts">
                             <li>
                                 <a href="#" data-bind="text: title, click: $root.snapshot.showSnapshotForm"></a>
                             </li>
@@ -826,7 +885,7 @@
                                 <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu original-dropdown-menu">
                                     <li>
                                         <a href="#" data-bind="text:'Delete', click: $root.snapshot.removeSnapshot"></a>
                                     </li>
@@ -912,7 +971,7 @@
                             New Account
                             <span class="caret"></span>
                         </a>
-                        <ul class="dropdown-menu" data-bind="foreach: stores.ProviderTypes">
+                        <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: stores.ProviderTypes">
                             <li>
                                 <a href="#" data-bind="text: title, click: $root.account.showAccountForm"></a>
                             </li>
@@ -943,7 +1002,7 @@
                                 <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu original-dropdown-menu">
                                     <li>
                                         <a href="#" data-bind="text:'Delete', click: $root.account.deleteAccount"></a>
                                     </li>
@@ -1081,7 +1140,7 @@
                                 <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu original-dropdown-menu">
                                     <li>
                                         <a href="#" data-bind="text:'Delete', click: $root.profile.deleteProfile"></a>
                                     </li>
@@ -1208,7 +1267,7 @@
                                 <a class="btn btn-info btn-small dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu original-dropdown-menu">
                                     <li>
                                         <a href="#" data-bind="text:'Delete', click: $root.securityGroup.deleteSecurityGroup"></a>
                                     </li>
