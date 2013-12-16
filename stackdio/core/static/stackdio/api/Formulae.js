@@ -80,6 +80,25 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
 
             return deferred.promise;
         },
+        getProperties: function (formula) {
+            var deferred = Q.defer();
+            var self = this;
+
+            $.ajax({
+                url: formula.properties,
+                type: 'GET',
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (data, status, response) {
+                    deferred.resolve(data);
+                }
+            });
+
+            return deferred.promise;
+        },
         update: function (formula) {
             var deferred = Q.defer();
             var self = this;

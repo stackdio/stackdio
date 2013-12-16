@@ -12,6 +12,7 @@ define(["knockout",
             self.selectedProfile = null;
             self.selectedAccount = null;
             self.selectedBlueprintHosts = ko.observable();
+            self.blueprintProperties = ko.observable();
 
 
             // 
@@ -33,9 +34,30 @@ define(["knockout",
                     cloud_profile: self.selectedProfile.id,
                     access_rules: stores.HostAccessRules(),
                     volumes: stores.HostVolumes(),
-                    formula_components: record.formula_components.map(function (g) { return { id: g.value, order: 0 }; })
+                    formula_components: record.formula_components.map(function (g) { return { id: g.value.split('|')[1], order: 0 }; })
                 });
 
+                console.log('record',record);
+                console.log('stores.Formulae()',stores.Formulae());
+
+                // Get the properties for each formula component the user chose
+                record.formula_components.forEach(function (component) {
+                    var formulaId = parseInt(component.value.split('|')[0], 10);
+
+                    var formula = _.find(stores.Formulae(), function (formula) {
+                        return formula.id === formulaId;
+                    });
+                    console.log('formula',formula);
+
+                    API.Formulae.getProperties(formula)
+                        .then(function (properties) {
+                            console.log('properties',properties);
+                        })
+                });
+
+                // self.blueprintProperties
+
+                // Add the instance size object to the host so the title can be displayed in UI
                 host.instance_size = _.find(stores.InstanceSizes(), function (i) {
                     return i.id === parseInt(record.host_instance_size.value, 10);
                 });
@@ -54,7 +76,6 @@ define(["knockout",
                     host.spot_config.spot_price = record.spot_instance_price.value;
                 }
 
-                console.log('new host', host);
                 stores.NewHosts.push(host);
 
                 // Clear volume and access rules stores
@@ -78,7 +99,7 @@ define(["knockout",
                 var blueprint = {
                     title: document.getElementById('blueprint_title').value,
                     description: document.getElementById('blueprint_purpose').value,
-                    public: false,      // TODO
+                    public: document.getElementById('public_blueprint').checked,
                     properties: {},     // TODO
                     hosts: hosts
                 };

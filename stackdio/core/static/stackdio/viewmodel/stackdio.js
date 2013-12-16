@@ -30,7 +30,13 @@ define([
             self.moment = moment;
             self.isSuperUser = ko.observable(stackdio.settings.superuser);
 
-            self.sections = [{
+            self.sections = [
+            {
+                id:'Welcome',
+                icon: null,
+                visible: false
+            },
+            {
                 id:'Blueprints',
                 icon: 'glyphicon glyphicon-tower',
                 visible: true
@@ -42,12 +48,12 @@ define([
             },
             {
                 id:'Accounts',
-                icon: 'glyphicon glyphicon-tower',
+                icon: null,
                 visible: false
             },
             {
                 id:'Profiles',
-                icon: 'glyphicon glyphicon-tower',
+                icon: null,
                 visible: false
             },
             {
@@ -70,6 +76,16 @@ define([
             self.stack = new stackVM();
             self.formula = new formulaVM();
             self.blueprint = new blueprintVM();
+
+            /*
+             *  ==================================================================================
+             *  W E L C O M E   S C R E E N
+             *  ==================================================================================
+             */
+            self.showWelcomeScreen = function () {
+                self.gotoSection('Welcome');
+            };
+
 
             /*
              *  ==================================================================================
@@ -127,6 +143,11 @@ define([
              *  ==================================================================================
              */
             self.gotoSection = function (section) {
+                
+                if (typeof section === 'string') {
+                    section = _.findWhere(self.sections, {id:section});
+                }
+
                 // Force user to create an account if none exist
                 if (section.id !== "Accounts" && stores.Accounts().length === 0) {
                     section = _.findWhere(self.sections, {id:'Accounts'});
@@ -139,6 +160,8 @@ define([
                     section = _.findWhere(self.sections, {id:'Profiles'});
                     self.showMessage("#alert-no-profiles", "", true);
                 }
+
+                console.log(section);
 
                 location.hash = section.id;
                 self.currentSection(section);
@@ -171,11 +194,27 @@ define([
                     // Convert select elements to the nice Bootstrappy style
                     $('.selectpicker').selectpicker();
 
+                    var flattened = stores.Blueprints().map(function (b) {return b.title; });
+
+                    console.log(flattened);
+
+                    $('#blueprint_search').typeahead({
+                        name: 'blueprints',
+                        local: flattened,
+                        limit: 10
+                    });
+
+                    $( "#blueprint_search" ).keypress(function (evt) {
+                        if (evt.keyCode === 13) {
+                            console.log('Launching Stack');
+                        }
+                    });
+
                     // Remove the hide class from the main sections
                     $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection(_.findWhere(self.sections, { id: 'Blueprints' }));
+                    self.gotoSection('Blueprints');
                 })
                 .catch(function (error) {
                     // Handle any error from all above steps
@@ -199,6 +238,7 @@ define([
             width: 500,
             modal: true
         });
+
 
         /*
          *  ==================================================================================

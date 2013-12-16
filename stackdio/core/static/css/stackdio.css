@@ -33,7 +33,7 @@ form {
 .product {
     font-size: 1.25em !important;
     margin-right: 30px;
-    margin-left: -15px;
+    margin-left: 30px;
     /*line-height: 32px;*/
 }
 
@@ -47,6 +47,11 @@ img.logo {
 
 .section-header {
     margin-bottom: 25px;
+}
+
+.welcome-heading {
+    font-size: 3.25em;
+    letter-spacing: -0.03em;
 }
 
 .large-heading {
@@ -63,6 +68,10 @@ img.logo {
 
 .bottom-separation {
     margin-bottom: 10px;
+}
+
+.bottom-separation-large {
+    margin-bottom: 50px;
 }
 
 .small-top-separation {
@@ -96,6 +105,7 @@ img.logo {
 .section-synopsis {
     color: #999;
     font-size: 0.9em;
+    font-weight: 300;
 }
 
 .grey {
@@ -215,6 +225,9 @@ body.bootstrap-admin-with-small-navbar {
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.15),0 1px 5px rgba(0,0,0,0.075);
 }
 
+.navbar-nav.navbar-right:last-child {
+    margin-right: 30px;
+}
 
 .bootstrap-admin-navbar-sm {
     background-image: none;
@@ -277,6 +290,79 @@ body.bootstrap-admin-with-small-navbar {
     text-decoration: underline;
     margin-top: 3px;
 }
+
+
+
+
+
+
+/*
+    ===================================================================================
+    B O O T S T R A P   T Y P E A H E A D   O V E R R I D E S
+    ===================================================================================
+*/
+.typeahead,
+.tt-query,
+.tt-hint {
+  width: 600px;
+  height: 30px;
+  padding: 8px 12px;
+  line-height: 30px;
+  outline: none;
+}
+
+.typeahead {
+  background-color: #fff;
+}
+
+.tt-query {
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+     -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+
+.tt-hint {
+  color: #999
+}
+
+.tt-dropdown-menu {
+  width: 422px;
+  margin-top: 12px;
+  padding: 8px 0;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  -webkit-border-radius: 8px;
+     -moz-border-radius: 8px;
+          border-radius: 8px;
+  -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+     -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+          box-shadow: 0 5px 10px rgba(0,0,0,.2);
+}
+
+.tt-suggestion {
+  padding: 3px 20px;
+  font-size: 1.1em;
+  line-height: 24px;
+}
+
+.tt-suggestion.tt-is-under-cursor {
+  color: #fff;
+  background-color: #0097cf;
+
+}
+
+.tt-suggestion p {
+  margin: 0;
+}
+
+
+
+
+
+
+
+
 
 
 
