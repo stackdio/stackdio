@@ -639,6 +639,12 @@
                 </div>
             </div>
 
+            <div class="row bottom-separation">
+                <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                    A Stack is a launched set of instances that you define in a Blueprint. Once a Stack has been launched, you can view it on this page and review the metadata for each Host, modify properties and reprovision, or stop/terminate/start the Stack. For more information on how to manage a Stack, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
+                </div>
+            </div>
+
             <table id="stacks" class="table table-bordered">
                 <thead>
                     <tr>
@@ -776,6 +782,12 @@
                 </div>
             </div>
 
+            <div class="row bottom-separation">
+                <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                    Formulas are imported from external repositories where you can build up an entire ecosystem of components to be installed on a Stack. For details on how to define your own formula to import into stackd.io, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
+                </div>
+            </div>
+
             <table id="formulae" class="table table-bordered ">
                 <thead>
                     <tr>
@@ -859,6 +871,12 @@
                             </li>
                         </ul>
                     </div>
+                </div>
+            </div>
+
+            <div class="row bottom-separation">
+                <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                    Snapshots are EBS volumes, saved with a particular configuration and data, that you can use as a baseline for new volumes (attached drives) that can be assigned to Hosts when you launch a new Stack.
                 </div>
             </div>
 
@@ -977,6 +995,12 @@
                             </li>
                         </ul>
                     </div>
+                </div>
+            </div>
+
+            <div class="row bottom-separation">
+                <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                    The Accounts page is where you can define all of the different accounts that you have established for each of the supported cloud providers. Please have the private key, and account id, issued by your provider before setting one up. For more information on Accounts, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
                 </div>
             </div>
 
@@ -1118,6 +1142,12 @@
                     <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
                         <button class="btn btn-primary" data-bind="click: $root.profile.showProfileForm">New Profile</button>
                     </div>
+                </div>
+            </div>
+
+            <div class="row bottom-separation">
+                <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                    Profiles are specific types of instances that you want to use for each Account. You can specify the instance type, the default log in, the the size of instance to use. For more information on Profiles, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
                 </div>
             </div>
 
