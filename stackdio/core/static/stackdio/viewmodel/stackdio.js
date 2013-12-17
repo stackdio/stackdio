@@ -212,7 +212,7 @@ define([
                     $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection('Welcome');
+                    self.gotoSection('Blueprints');
                 })
                 .catch(function (error) {
                     // Handle any error from all above steps

@@ -14,20 +14,26 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (data, status, response) {
-                    var i, item, items = data.results;
-                    var formula;
+                    var formulae = data.results;
 
-                    // Clear the store and the grid
+                    // Clear the stores
                     stores.Formulae.removeAll();
+                    stores.FormulaComponents.removeAll();
 
-                    for (i in items) {
-                        formula = new models.Formula().create(items[i]);
+                    for (var i in formulae) {
+                        var formula = new models.Formula().create(formulae[i]);
 
                         // Inject the record into the store
                         stores.Formulae.push(formula);
+
+                        for (var j in formula.components) {
+                            var component = new models.FormulaComponent().create(formula.components[j]);
+                            stores.FormulaComponents.push(component);
+                        }
                     }
 
                     console.log('formulae', stores.Formulae());
+                    console.log('components', stores.FormulaComponents());
 
                     // Resolve the promise
                     deferred.resolve();

@@ -58,6 +58,9 @@ define(function () {
     var Formula = function () {};
     Formula.prototype = new Model();
 
+    var FormulaComponent = function () {};
+    FormulaComponent.prototype = new Model();
+
     return {
         SecurityGroupRule: SecurityGroupRule,
         AWSSecurityGroup: AWSSecurityGroup,
@@ -73,6 +76,7 @@ define(function () {
         NewHost: NewHost,
         NewHostVolume: NewHostVolume,
         Formula: Formula,
+        FormulaComponent: FormulaComponent,
         Blueprint: Blueprint,
         NewHostAccessRules: NewHostAccessRules,
         Role: Role

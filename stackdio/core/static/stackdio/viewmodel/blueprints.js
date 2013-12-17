@@ -15,6 +15,13 @@ define(["knockout",
             self.blueprintProperties = ko.observable({});
 
 
+            self.saveOrchestration = function (model, evt) {
+                var record = formutils.collectFormFields(evt.target.form);
+
+                console.log('record',record);
+                
+            };
+
             // 
             //      N E W   H O S T S
             // 
@@ -25,6 +32,8 @@ define(["knockout",
                 // Create a new host definition
                 var host = new models.NewHost().create({ 
                     id: '',
+                    formulas: [],
+                    formulaComponents: [],
                     title: 'title',
                     description: 'description',
                     count: record.host_count.value,
@@ -41,6 +50,7 @@ define(["knockout",
                 // Get the properties for each formula component the user chose
                 record.formula_components.forEach(function (component) {
                     var formulaId = parseInt(component.value.split('|')[0], 10);
+                    var componentId = parseInt(component.value.split('|')[1], 10);
                     var propBuilder = self.blueprintProperties();
 
                     // Find the formula matching the id chosen in the component field
@@ -48,14 +58,20 @@ define(["knockout",
                         return formula.id === formulaId;
                     });
 
+                    // Find the formula matching the id chosen in the component field
+                    var component = _.find(stores.FormulaComponents(), function (comp) {
+                        return comp.id === componentId;
+                    });
+
+                    stores.BlueprintComponents.push(component);
+                    host.formulas.push(formula);
+
                     // Request the forumula properties
                     API.Formulae.getProperties(formula)
                         .then(function (properties) {
 
                             // Loop through the received properties and assign them to self.blueprintProperties
                             for (var key in properties) {
-                                console.log('key',key);
-                                console.log('value',properties[key]);
                                 propBuilder[key] = properties[key];
                             }
 
@@ -82,6 +98,9 @@ define(["knockout",
                     host.spot_config = {};
                     host.spot_config.spot_price = record.spot_instance_price.value;
                 }
+
+                console.log('new host', host);
+                console.log('chosen components', stores.BlueprintComponents());
 
                 stores.NewHosts.push(host);
 
@@ -119,6 +138,8 @@ define(["knockout",
                         // Close the form and clear it out
                         self.closeBlueprintForm();
                         self.showMessage('#alert-success', 'Blueprint successfully saved.');
+
+                        stores.BlueprintComponents.removeAll();
                     })
                     .catch(function (error) {
                         $("#alert-error").show();
@@ -156,7 +177,6 @@ define(["knockout",
                 $("#blueprint-host-list-container").dialog("close");
             }
 
-
             self.showBlueprintForm = function () {
                 $("#blueprint-form-container").dialog("open");
             }
@@ -164,6 +184,15 @@ define(["knockout",
             self.closeBlueprintForm = function () {
                 formutils.clearForm('blueprint-form');
                 $("#blueprint-form-container").dialog("close");
+            }
+
+            self.showOrchestration = function () {
+                $("#component-orchestration-container").dialog("open");
+            }
+
+            self.closeOrchestration = function () {
+                // formutils.clearForm('blueprint-form');
+                $("#component-orchestration-container").dialog("close");
             }
 
             self.showHostForm = function (profile) {
@@ -214,7 +243,13 @@ define(["knockout",
 
             $("#host-access-rule-container").dialog({
                 autoOpen: false,
-                width: 500,
+                width: 600,
+                modal: true
+            });
+
+            $("#component-orchestration-container").dialog({
+                autoOpen: false,
+                width: 600,
                 modal: true
             });
         };

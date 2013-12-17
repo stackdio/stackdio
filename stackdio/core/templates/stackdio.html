@@ -449,6 +449,12 @@
                     </div>
                 </div>
 
+                <div class="row top-separation bottom-separation">
+                    <div class="col-md-12">
+                        <a class="linkify" href="#" data-bind="click: $root.blueprint.showOrchestration">Define component orchestration</a>
+                    </div>
+                </div>
+
             </div>
 
             <div class="modal-footer">
@@ -605,6 +611,40 @@
         </div>
     </div>
 
+    <!-- 
+        ======================================================================
+        C O M P O N E N T   O R C H E S T R A T I O N   D I A L O G
+        ======================================================================
+     -->
+    <div id="component-orchestration-container" title="Component Provisioning Order" data-bind="" class="hide">
+        <form id="orchestration-form" role="form" class="form-horizontal">
+            <div class="modal-body large-modal-body">
+                <table id="component_list" class="table table-bordered table-condensed">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Path</th>
+                            <th style="width:50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: stores.BlueprintComponents">
+                        <tr>
+                            <td data-bind="text: title"></td>
+                            <td data-bind="text: sls_path"></td>
+                            <td>
+                                <input type="text" class="form-control" data-bind="attr: { id: 'component_order_' + id }">
+                            </td>
+                        </tr>     
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" data-bind="click: $root.blueprint.closeOrchestration">Close</button>
+                <button class="btn btn-primary" data-bind="click: $root.blueprint.saveOrchestration">Save</button>
+            </div>
+        </form>
+    </div>
     <!-- 
         ======================================================================
         N E W   V O L U M E   L I S T   D I A L O G

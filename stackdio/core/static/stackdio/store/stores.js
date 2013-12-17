@@ -16,7 +16,10 @@ define(["knockout"], function (ko) {
         Roles : ko.observableArray([]),
         Snapshots : ko.observableArray([]),
         Formulae : ko.observableArray([]),
+        FormulaComponents : ko.observableArray([]),
+
         Blueprints : ko.observableArray([]),
+        BlueprintComponents : ko.observableArray([]),
 
         Stacks : ko.observableArray([]),
         StackHosts : ko.observableArray([]),
