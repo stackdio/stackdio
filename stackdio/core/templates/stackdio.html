@@ -283,8 +283,8 @@
         <div class="view">
 
             <div class="row bottom-separation">
-                <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Blueprints</div>
-                <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                <div class="col-md-4 large-heading">Blueprints</div>
+                <div class="col-md-4 col-md-offset-4">
                     <div class="btn-group pull-right small-top-separation">
                         <button class="btn btn-primary" data-bind="click: $root.blueprint.showBlueprintForm">New Blueprint</button>
                     </div>
@@ -292,7 +292,7 @@
             </div>
 
             <div class="row bottom-separation">
-                <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                <div class="col-md-12 section-synopsis">
                     Blueprints allow you to quickly define anyting from a single machine, to an entire 200 node Hadoop cluster. You can specify host name templates, provisioning orchestration, and custom properties for any Stacks launched from your Blueprint. 
                 </div>
             </div>
@@ -373,7 +373,7 @@
         B L U E P R I N T   F O R M
         ======================================================================
      -->
-    <div id="blueprint-form-container" title="Blueprint Details"  data-bind="" class="stackd-form form-small hide">
+    <div id="blueprint-form-container" title="Blueprint Details"  data-bind="" class="stackd-form hide">
         <form id="blueprint-form" role="form" class="form-inline">
             <div class="modal-body">
                 <div class="row bottom-separation">
@@ -398,8 +398,8 @@
                 </div>
 
                 <div class="row top-separation bottom-separation">
-                    <div class="col-xs-4 col-sm-4 col-md-4 small-heading">Blueprint Hosts</div>
-                    <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                    <div class="col-md-4 small-heading">Blueprint Hosts</div>
+                    <div class="col-md-4 col-md-offset-4">
                         <div class="btn-group pull-right">
                             <a class="btn btn-primary dropdown-toggle" style="color: #fff" data-toggle="dropdown" href="#">
                                 Add Host <span class="caret"></span>
@@ -413,25 +413,42 @@
                     </div>
                 </div>
 
-                <table id="blueprint_hosts" class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th></th>
-                        </tr>
-                    </thead>
-                    <tbody data-bind="foreach: stores.NewHosts">
-                        <tr>
-                            <td data-bind="html: flat_components"></td>
-                            <td data-bind="text: count"></td>
-                            <td data-bind="text: instance_size.title"></td>
-                            <td data-bind="text: hostname_template"></td>
-                            <td data-bind="html: flat_access_rules"></td>
-                            <td>
-                                <a class="linkify" data-bind="click: $root.blueprint.removeHost"> Delete </a>
-                            </td>
-                        </tr>     
-                    </tbody>
-                </table>
+                <div class="row">
+                    <div class="col-md-12">
+                        <table id="blueprint_hosts" class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th></th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="foreach: stores.NewHosts">
+                                <tr>
+                                    <td data-bind="html: flat_components"></td>
+                                    <td data-bind="text: count"></td>
+                                    <td data-bind="text: instance_size.title"></td>
+                                    <td data-bind="text: hostname_template"></td>
+                                    <td data-bind="html: flat_access_rules"></td>
+                                    <td>
+                                        <a class="linkify" data-bind="click: $root.blueprint.removeHost"> Delete </a>
+                                    </td>
+                                </tr>     
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row top-separation bottom-separation">
+                    <div class="col-md-12 small-heading">Blueprint Properties</div>
+                    <div class="col-md-12">
+                        <textarea  
+                               class="form-control" 
+                               rows="10" 
+                               id="blueprint_properties" 
+                               data-bind="text: JSON.stringify($root.blueprint.blueprintProperties(), undefined, 3)"
+                               placeholder="If you select a formula that has default properties, they will be shown here"></textarea>
+                    </div>
+                </div>
+
             </div>
 
             <div class="modal-footer">
@@ -892,8 +909,8 @@
                 <thead>
                     <tr>
                         <th style="width:20%">Title</th>
-                        <th>Description</th>
-                        <th>Status</th>
+                        <th style="width:40%">Description</th>
+                        <th style="width:35%">Status</th>
                         <th style="width:5%"></th>
                     </tr>
                 </thead>
@@ -911,7 +928,7 @@
                         <td data-bind="text: status_detail"></td>
                         <td>
                             <div class="btn-group" data-bind="visible: $root.isSuperUser">
-                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                <a class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown" href="#">
                                     Action <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu original-dropdown-menu">
@@ -1215,7 +1232,10 @@
                 <div class="form-group">
                     <label for="private_key_file" class="col-sm-4 control-label">Private Key File</label>
                     <div class="col-sm-8">
-                        <textarea class="form-control" id="private_key_file" rows="6" placeholder="Enter in the private key that will be used to set up instances for this account"></textarea>
+                        <textarea class="form-control" 
+                                  id="private_key_file" 
+                                  rows="6" 
+                                  placeholder="Enter in the private key that will be used to set up instances for this account"></textarea>
                     </div>
                 </div>
 

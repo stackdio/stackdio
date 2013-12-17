@@ -12,7 +12,7 @@ define(["knockout",
             self.selectedProfile = null;
             self.selectedAccount = null;
             self.selectedBlueprintHosts = ko.observable();
-            self.blueprintProperties = ko.observable();
+            self.blueprintProperties = ko.observable({});
 
 
             // 
@@ -37,24 +37,30 @@ define(["knockout",
                     formula_components: record.formula_components.map(function (g) { return { id: g.value.split('|')[1], order: 0 }; })
                 });
 
-                console.log('record',record);
-                console.log('stores.Formulae()',stores.Formulae());
 
                 // Get the properties for each formula component the user chose
                 record.formula_components.forEach(function (component) {
                     var formulaId = parseInt(component.value.split('|')[0], 10);
+                    var propBuilder = self.blueprintProperties();
 
+                    // Find the formula matching the id chosen in the component field
                     var formula = _.find(stores.Formulae(), function (formula) {
                         return formula.id === formulaId;
                     });
-                    console.log('formula',formula);
 
+                    // Request the forumula properties
                     API.Formulae.getProperties(formula)
                         .then(function (properties) {
-                            console.log('properties',properties);
-                            
-                            // self.blueprintProperties
-                        })
+
+                            // Loop through the received properties and assign them to self.blueprintProperties
+                            for (var key in properties) {
+                                console.log('key',key);
+                                console.log('value',properties[key]);
+                                propBuilder[key] = properties[key];
+                            }
+
+                            self.blueprintProperties(propBuilder);
+                        });
                 });
 
 
@@ -101,7 +107,7 @@ define(["knockout",
                     title: document.getElementById('blueprint_title').value,
                     description: document.getElementById('blueprint_purpose').value,
                     public: document.getElementById('public_blueprint').checked,
-                    properties: {},     // TODO
+                    properties: JSON.parse(document.getElementById('blueprint_properties').value),
                     hosts: hosts
                 };
 
@@ -186,7 +192,7 @@ define(["knockout",
             $("#blueprint-form-container").dialog({
                 autoOpen: false,
                 width: window.innerWidth - 225,
-                height: 500,
+                height: 800,
                 position: ['center', 60],
                 modal: false
             });
@@ -214,6 +220,5 @@ define(["knockout",
         };
 
         vm.prototype = new abstractVM();
-
         return vm;
 });

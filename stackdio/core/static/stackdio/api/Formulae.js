@@ -93,7 +93,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (data, status, response) {
-                    deferred.resolve(data);
+                    deferred.resolve(data.properties);
                 }
             });
 
