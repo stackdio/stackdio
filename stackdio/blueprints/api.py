@@ -153,9 +153,13 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                             continue
 
                         component_id = component.get('id')
-                        if not component_id:
+                        component_title = component.get('title', '')
+                        if not component_id and not component_title:
                             errors.setdefault(host_string+'.formula_components', []).append(
-                                'Each object in the list must contain an id field.'
+                                'Each object in the list must contain an id or '
+                                'title field. An order field may optionally be '
+                                'specified to enforce an ordering of the '
+                                'component provisioning.'
                             )
                             continue
 
@@ -171,8 +175,25 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                             )
                             
                         try:
-                            FormulaComponent.objects.get(pk=component_id,
-                                                         formula__owner=request.user)
+                            d = {'formula__owner': request.user}
+                            if component_id:
+                                d['pk'] = component_id
+                                component_err = 'an id of {0}'.format(component_id)
+                            elif component_title:
+                                d['title__icontains'] = component_title
+                                component_err = '{0} in the title'.format(
+                                    component_title
+                                )
+                            component_objs = FormulaComponent.objects.filter(**d)
+                            if component_objs.count() == 0:
+                                errors.setdefault(host_string+'.formula_components', []).append(
+                                    'Component with {0} does not exist.'.format(component_err)
+                                )
+                            elif component_objs.count() > 1:
+                                errors.setdefault(host_string+'.formula_components', []).append(
+                                    'Multiple components found with {0}.'.format(component_err)
+                                )
+
                         except FormulaComponent.DoesNotExist:
                             errors.setdefault(host_string+'.formula_components', []).append(
                                 'Formula component with id {0} does not exist.'.format(component_id)

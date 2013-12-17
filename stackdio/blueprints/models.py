@@ -96,7 +96,11 @@ class BlueprintManager(models.Manager):
                             "snapshot": 1
                         }
                     ],
-                    "formula_components": [1,2,3...],   # formula components to attach to this host
+                    "formula_components": [             # formula components to attach to this host
+                        {"id": 1},                      # based on component id
+                        {"title": "foo"},               # based on component title__icontains
+                        {"id": 1, "order": 0}           # specific ordering of component provisioning
+                    ],
                     "spot_config": {                    # spot instance configuration (optional)
                         "spot_price": 0.20
                     }
@@ -148,11 +152,16 @@ class BlueprintManager(models.Manager):
 
             # create extended formula components for the blueprint
             for component in formula_components:
-                component_id = component['id']
+                component_id = component.get('id')
+                component_title = component.get('title')
                 component_order = int(component.get('order', 0))
-                component_obj = FormulaComponent.objects.get(
-                    pk=component_id,
-                    formula__owner=owner)
+
+                d = {'formula__owner': owner}
+                if component_id:
+                    d['pk'] = component_id
+                elif component_title:
+                    d['title__icontains'] = component_title
+                component_obj = FormulaComponent.objects.get(**d)
                 host_obj.formula_components.create(
                     component=component_obj,
                     order=component_order

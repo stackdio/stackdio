@@ -104,6 +104,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     IMPORTING   = 'importing'
     STATUS      = Choices(ERROR, COMPLETE, IMPORTING)
 
+    class Meta:
+        ordering = ['pk']
+
     # owner of the formula
     owner = models.ForeignKey(settings.AUTH_USER_MODEL,
                               related_name='formulas')
