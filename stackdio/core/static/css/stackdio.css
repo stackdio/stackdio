@@ -83,7 +83,7 @@ img.logo {
 }
 
 .view {
-     margin: 70px 100px 0 100px;
+     margin: 70px 50px 0 50px;
 }
 
 .no-margin {
@@ -304,7 +304,7 @@ body.bootstrap-admin-with-small-navbar {
 .typeahead,
 .tt-query,
 .tt-hint {
-  width: 600px;
+  width: 100%;
   height: 30px;
   padding: 8px 12px;
   line-height: 30px;
@@ -349,14 +349,15 @@ body.bootstrap-admin-with-small-navbar {
 .tt-suggestion.tt-is-under-cursor {
   color: #fff;
   background-color: #0097cf;
-
 }
 
 .tt-suggestion p {
   margin: 0;
 }
 
-
+.twitter-typeahead {
+    display: inherit !important;
+}
 
 
 

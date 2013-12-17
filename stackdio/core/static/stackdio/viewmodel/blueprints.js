@@ -52,10 +52,11 @@ define(["knockout",
                     API.Formulae.getProperties(formula)
                         .then(function (properties) {
                             console.log('properties',properties);
+                            
+                            // self.blueprintProperties
                         })
                 });
 
-                // self.blueprintProperties
 
                 // Add the instance size object to the host so the title can be displayed in UI
                 host.instance_size = _.find(stores.InstanceSizes(), function (i) {

@@ -196,8 +196,6 @@ define([
 
                     var flattened = stores.Blueprints().map(function (b) {return b.title; });
 
-                    console.log(flattened);
-
                     $('#blueprint_search').typeahead({
                         name: 'blueprints',
                         local: flattened,
@@ -214,7 +212,7 @@ define([
                     $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection('Blueprints');
+                    self.gotoSection('Welcome');
                 })
                 .catch(function (error) {
                     // Handle any error from all above steps

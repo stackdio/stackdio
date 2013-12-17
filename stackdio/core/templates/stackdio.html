@@ -194,65 +194,83 @@
         <div class="view">
 
             <div class="row bottom-separation-large">
-                <div class="col-xs-12 col-sm-12 col-md-12 welcome-heading">Welcome to stackd.io</div>
+                <div class="col-md-12 welcome-heading">Welcome to stackd.io</div>
             </div>
 
-            <div class="row bottom-separation">
-                <div class="col-xs-12 col-sm-12 col-md-12 medium-heading light">Launch a Stack</div>
-            </div>
+            <div class="row ">
+                <div class="col-md-5">
+                    <div class="row">
+                        <div class="col-md-12 medium-heading light">Launch a Stack</div>
+                        <div class="col-md-12 section-synopsis light">
+                            You can quickly launch a Stack by searching for Blueprints here. You can optionally provide a title, description, and namespace for the Stack.
+                        </div>
+                        <div class="col-md-12 bottom-separation-large">
+                            <input type="text" class="form-control" id="blueprint_search" placeholder="Find the Blueprint you want to use...">
+                        </div>
+                    </div>
 
-            <div class="row bottom-separation">
-                <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis light">
-                    You can quickly launch a Stack by searching for Blueprints here. You can optionally provide a title, description, and namespace for the Stack.
+                    <div class="row">
+                        <div class="col-md-12 medium-heading light">Locate any resource</div>
+                        <div class="col-md-12 section-synopsis light">
+                            You can search your stackd.io database for Blueprints, Formulas, or Stacks.
+                        </div>
+                        <div class="col-md-12 bottom-separation-large">
+                            <input type="text" class="form-control" id="resource_search" placeholder="Start searching...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-md-offset-1">
+                    <div class="row">
+                        <div class="col-md-12 medium-heading light">Your Running Stacks</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <table id="stacks" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th style="width:20%">Title</th>
+                                        <th style="width:40%">Description</th>
+                                        <th style="width:30%">Hosts</th>
+                                        <th style="width:10%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody data-bind="foreach: stores.Stacks">
+                                    <tr>
+                                        <td data-bind="text: title"></td>
+                                        <td data-bind="text: description"></td>
+                                        <td>
+                                            <a href="#" 
+                                               data-bind="text: host_definitions.length + ' hosts',
+                                                          click: $root.blueprint.showBlueprintHostList"></a>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown" href="#">
+                                                    Action <span class="caret"></span>
+                                                </a>
+                                                <ul class="dropdown-menu original-dropdown-menu">
+                                                    <li>
+                                                        <a href="#" data-bind="text: 'Delete', click: $root.blueprint.deleteBlueprint"></a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#" data-bind="text: 'Launch Stack', click: $root.stack.launchStack"></a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>     
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="row bottom-separation-large">
-                <div class="col-xs-12 col-sm-12 col-md-12">
-                    <input type="text" class="form-control" id="blueprint_search" placeholder="Start typing in the name of a Blueprint you want to use...">
-                </div>
-            </div>
 
-            <div class="row bottom-separation">
-                <div class="col-xs-12 col-sm-12 col-md-12 medium-heading light">Your Running Stacks</div>
-            </div>
 
-            <table id="stacks" class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th style="width:20%">Title</th>
-                        <th style="width:40%">Description</th>
-                        <th style="width:30%">Hosts</th>
-                        <th style="width:10%"></th>
-                    </tr>
-                </thead>
-                <tbody data-bind="foreach: stores.Stacks">
-                    <tr>
-                        <td data-bind="text: title"></td>
-                        <td data-bind="text: description"></td>
-                        <td>
-                            <a href="#" 
-                               data-bind="text: host_definitions.length + ' hosts',
-                                          click: $root.blueprint.showBlueprintHostList"></a>
-                        </td>
-                        <td>
-                            <div class="btn-group">
-                                <a class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown" href="#">
-                                    Action <span class="caret"></span>
-                                </a>
-                                <ul class="dropdown-menu original-dropdown-menu">
-                                    <li>
-                                        <a href="#" data-bind="text: 'Delete', click: $root.blueprint.deleteBlueprint"></a>
-                                    </li>
-                                    <li>
-                                        <a href="#" data-bind="text: 'Launch Stack', click: $root.stack.launchStack"></a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>     
-                </tbody>
-            </table>
+
         </div>
     </div>
 
