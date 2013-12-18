@@ -15,11 +15,37 @@ define(["knockout",
             self.blueprintProperties = ko.observable({});
 
 
+
+            // 
+            //      O R C H E S T R A T I O N
+            // 
             self.saveOrchestration = function (model, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
+                var orderedComponents = [];
 
                 console.log('record',record);
-                
+
+                for (var c in record) {
+                    var component = {}
+                    component.formObject = record[c];
+                    component.id = parseInt(c.split('_')[2], 10);
+                    component.order = parseInt(component.formObject.value, 10);
+
+                    orderedComponents.push(component);
+                    // component.sourceObject = _.findWhere(stores.BlueprintComponents(), { id: component.id });
+                }
+
+                stores.NewHosts().forEach(function (host) {
+                    host.formula_components.forEach(function (formulaComponent) {
+                        orderedComponents.forEach(function (orderedComponent) {
+                            if (orderedComponent.id === parseInt(formulaComponent.id, 10)) {
+                                formulaComponent.order = orderedComponent.order;
+                            }
+                        });
+                    })
+                });
+
+                self.closeOrchestration();
             };
 
             // 
@@ -41,7 +67,7 @@ define(["knockout",
                     hostname_template: record.host_hostname.value,
                     zone: record.availability_zone.value,
                     cloud_profile: self.selectedProfile.id,
-                    access_rules: stores.HostAccessRules(),
+                    access_rules: _.map(stores.HostAccessRules(), function (rule) { return rule; }),
                     volumes: stores.HostVolumes(),
                     formula_components: record.formula_components.map(function (g) { return { id: g.value.split('|')[1], order: 0 }; })
                 });
@@ -63,7 +89,9 @@ define(["knockout",
                         return comp.id === componentId;
                     });
 
-                    stores.BlueprintComponents.push(component);
+                    if (typeof _.findWhere(stores.BlueprintComponents(), { id: component.id }) === "undefined") {
+                        stores.BlueprintComponents.push(component);
+                    }
                     host.formulas.push(formula);
 
                     // Request the forumula properties
@@ -119,7 +147,6 @@ define(["knockout",
             };
 
             self.saveBlueprint = function (model, evt) {
-                // var blueprint = formutils.collectFormFields(evt.target.form);
                 var hosts = stores.NewHosts();
 
                 var blueprint = {
@@ -135,10 +162,14 @@ define(["knockout",
 
                 API.Blueprints.save(blueprint)
                     .then(function (blueprint) {
-                        // Close the form and clear it out
+                        // Close the window and clear out any forms
                         self.closeBlueprintForm();
+                        formutils.clearForm('orchestration-form');
+
+                        // Alert the user about success
                         self.showMessage('#alert-success', 'Blueprint successfully saved.');
 
+                        // Empty out the store that tracks components for current Blueprint
                         stores.BlueprintComponents.removeAll();
                     })
                     .catch(function (error) {
@@ -191,7 +222,6 @@ define(["knockout",
             }
 
             self.closeOrchestration = function () {
-                // formutils.clearForm('blueprint-form');
                 $("#component-orchestration-container").dialog("close");
             }
 
