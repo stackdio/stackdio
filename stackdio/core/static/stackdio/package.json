@@ -12,7 +12,7 @@
   "scripts": {
     "setup": "npm run-script build",
     "build": "npm run-script clean && npm install && grunt install && npm run-script build-deps",
-    "build-deps": "cd bower_components/knockoutjs && npm install && cd ../q && npm install",
+    "build-deps": "cd bower_components/q && npm install",
     "clean": "rm -rf bower_components && rm -rf node_modules"
   },
   "repository": {

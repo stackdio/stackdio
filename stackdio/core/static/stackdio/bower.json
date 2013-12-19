@@ -9,7 +9,7 @@
     "moment": "~2.4.0",
     "q": "~0.9.7",
     "underscore-amd": "~1.5.2",
-    "knockoutjs": "~3.0.0"
+    "knockout.js": "~3.0.0"
   },
   "resolutions": {
     "jquery": "~2.0.3"
