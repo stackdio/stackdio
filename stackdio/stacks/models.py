@@ -366,11 +366,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
             availability_zone = host.availability_zone.title
 
-            # order_groups define which hosts fall into which groups
-            # used by the overstate system for orchestrating the provisioning
-            # of the hosts
-            order_groups = list(set([c.order for c in host.formula_components.all()]))
-
             # The volumes will be defined on the map as well as in the grains.
             # Those in the map are used by salt-cloud to create and attach
             # the volumes (using the snapshot), whereas those on the grains
@@ -407,7 +402,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                         # are in the cluster)
                         'grains': {
                             'roles': roles,
-                            'order_groups': order_groups,
                             'stack_id': int(self.pk),
                             'fqdn': fqdn,
                             'cluster_size': cluster_size,
@@ -462,32 +456,56 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
     def _generate_overstate_file(self): 
         from blueprints.models import BlueprintHostFormulaComponent
-        # find the distinct set of formula components for this stack
-        components = set()
         hosts = self.hosts.all()
+
+        # Get the unique set of components for this stack
+        components = set()
         for host in hosts:
-            components.update(list(host.formula_components.all()))
-        logger.debug('COMPONENTS: {0}'.format(components))
+            components.update(list(host.formula_components.all().order_by('order')))
 
-        i = 0
-        overstate = {}
-        while True:
-            components = BlueprintHostFormulaComponent.objects.filter(
-                order=i,
-                hosts__in=hosts
-            )
-            if not components.count():
-                break
-            group = 'group_{0}'.format(i)
-            overstate[group] = {
-                'match': 'G@stack_id:{0} and G@order_groups:{1}'.format(self.pk, i),
-                'sls': list(set([c.component.sls_path for c in components])),
+        # build a data structure more suitable for helping us build
+        # the overstate dict
+        groups = {}
+        for c in components:
+            '''
+            {
+                order_0: {
+                    host_0: [sls, sls, ...],
+                    host_1: [sls, sls, ...],
+                    ...
+                },
+                order_1: {
+                    ...
+                }
+                ...
             }
+            '''
+            groups.setdefault(
+                c.order, {}
+            ).setdefault(
+                '{0}-{1}'.format(c.order, c.host.slug), []
+            ).append(
+                c.component.sls_path
+            )
 
-            if i > 0:
-                overstate[group]['require'] = ['group_{0}'.format(i-1)]
-            i += 1
+        # now we know what order each defined blueprint host is in and
+        # the corresponding components to be installed. We will match
+        # hosts based on the stack_id and all roles/SLS. Each group of
+        # hosts beyond the first will have a requirement on the group
+        # before it
+        overstate = {}
+        for i in sorted(groups.keys()):
+            for host, sls in groups[i].iteritems():
+                matches = ' and '.join(['G@roles:{0}'.format(r) for r in sls])
+                overstate[host] = {
+                    'match': 'G@stack_id:{0} and {1}'.format(self.pk, matches),
+                    'sls': sls
+                }
 
+                if i > 0:
+                    overstate[host]['require'] = groups[i-1].keys()
+
+        # Dump the overstate dict into yaml for salt
         yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
         if not self.overstate_file:
             self.overstate_file.save(

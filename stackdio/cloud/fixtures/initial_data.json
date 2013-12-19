@@ -228,5 +228,16 @@
             "slug": "cluster-gpu-quadruple-extra-large-instance",
             "title": "Cluster GPU Quadruple Extra Large Instance"
         }
+    },
+    {
+        "pk": 17,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "m1.xlarge",
+            "description": "Extra Large Instance",
+            "provider_type": 1,
+            "slug": "extra-large-instance",
+            "title": "Extra Large Instance"
+        }
     }
 ]

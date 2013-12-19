@@ -541,6 +541,13 @@ def highstate(stack_id, host_ids=None):
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
         log_file = os.path.join(log_dir, 
                                 '{0}-{1}.highstate.log'.format(stack.slug, now))
+        log_symlink = os.path.join(root_dir, 
+                                   '{0}.highstate.latest'.format(stack.slug))
+
+        # "touch" the log file and symlink it to the latest
+        with open(log_file, 'w') as f:
+            pass
+        symlink(log_file, log_symlink)
 
         # TODO: do we want to handle a subset of the hosts in a stack (e.g.,
         # when adding additional hosts?) for the moment it seems just fine
@@ -592,15 +599,6 @@ def highstate(stack_id, host_ids=None):
                                             err_msg
                                         ))
 
-            with open(log_file, 'a') as f:
-                f.write('\n')
-                f.write(result.std_out)
-
-            # symlink the logfile
-            log_symlink = os.path.join(root_dir, 
-                                       '{0}.highstate.latest'.format(stack.slug))
-            symlink(log_file, log_symlink)
-        
             # load JSON so we can attempt to catch provisioning errors
             output = yaml.safe_load(result.std_out)
 
@@ -667,22 +665,32 @@ def orchestrate(stack_id, host_ids=None):
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
         log_file = os.path.join(log_dir, 
                                 '{0}-{1}.orchestration.log'.format(stack.slug, now))
+        log_symlink = os.path.join(root_dir, 
+                                   '{0}.orchestration.latest'.format(stack.slug))
+
+        # "touch" the log file and symlink it to the latest
+        with open(log_file, 'w') as f:
+            pass
+        symlink(log_file, log_symlink)
 
         ##
         # Execute runners.state.over with custom top file
         ##
 
         # build up the command for salt
-        cmd_args = [
+        cmd = ' '.join([
             'salt-run',
-            '-ldebug',              # debug mode
+            '-lquiet',              # quiet stdout
+            '--log-file {0}',       # where to log
+            '--log-file-level all', # full logging
             'state.over',           # the overstate command
             stack.owner.username,   # username is the environment to execute in
             stack.overstate_file.path
-        ]
+        ]).format(
+            log_file
+        )
 
         # Execute
-        cmd = ' '.join(cmd_args)
         logger.debug('Executing command: {0}'.format(cmd))
 
         try:
@@ -711,16 +719,7 @@ def orchestrate(stack_id, host_ids=None):
                                          '{1!r}'.format(
                                             err_msg
                                          ))
-
-            with open(log_file, 'a') as f:
-                f.write('\n')
-                f.write(result.std_out)
-
-            # symlink the logfile
-            log_symlink = os.path.join(root_dir, 
-                                       '{0}.orchestration.latest'.format(stack.slug))
-            symlink(log_file, log_symlink)
-        
+ 
             # TODO: add error handling for overstate output
             '''
             if output is not None:
