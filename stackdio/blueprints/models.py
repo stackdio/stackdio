@@ -154,11 +154,14 @@ class BlueprintManager(models.Manager):
             for component in formula_components:
                 component_id = component.get('id')
                 component_title = component.get('title')
+                component_sls_path = component.get('sls_path')
                 component_order = int(component.get('order', 0))
 
                 d = {'formula__owner': owner}
                 if component_id:
                     d['pk'] = component_id
+                elif component_sls_path:
+                    d['sls_path__iexact'] = component_sls_path
                 elif component_title:
                     d['title__icontains'] = component_title
                 component_obj = FormulaComponent.objects.get(**d)
