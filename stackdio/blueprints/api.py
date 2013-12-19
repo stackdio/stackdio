@@ -100,9 +100,17 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     errors.setdefault(host_string+'.count', []).append(
                         'This is a required field.'
                     )
+                elif not isinstance(host['count'], int):
+                    errors.setdefault(host_string+'.count', []).append(
+                        'Must be a non-negative integer.'
+                    )
                 if 'size' not in host:
                     errors.setdefault(host_string+'.size', []).append(
                         'This is a required field.'
+                    )
+                elif not isinstance(host['size'], int):
+                    errors.setdefault(host_string+'.size', []).append(
+                        'Must be a non-negative integer.'
                     )
                 if 'hostname_template' not in host:
                     errors.setdefault(host_string+'.hostname_template', []).append(
