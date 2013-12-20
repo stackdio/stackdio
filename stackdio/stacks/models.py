@@ -129,9 +129,9 @@ class StackManager(models.Manager):
 
             # create the managed security group for each host definition
             # and assign the rules to the group
-            sg_name='managed-{0}-hostdef-{1}-stack-{2}'.format(
+            sg_name='managed-{0}-{1}-stack-{2}'.format(
                 owner.username,
-                hostdef.pk,
+                hostdef.slug,
                 stack.pk)
             sg_description='stackd.io managed security group'
             sg_id = driver.create_security_group(sg_name, sg_description)

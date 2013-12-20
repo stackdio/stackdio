@@ -13,6 +13,7 @@ from core.exceptions import BadRequest
 
 from . import serializers
 from . import models
+from . import filters
 
 from formulas.models import FormulaComponent
 from cloud.models import Snapshot
@@ -33,6 +34,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
     model = models.Blueprint
     serializer_class = serializers.BlueprintSerializer
     parser_classes = (JSONParser,)
+    filter_class = filters.BlueprintFilter
 
     def get_queryset(self):
         return self.request.user.blueprints.all()
@@ -112,6 +114,14 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     errors.setdefault(host_string+'.size', []).append(
                         'Must be a non-negative integer.'
                     )
+                # check the size instance
+                else:
+                    try:
+                        models.CloudInstanceSize.objects.get(pk=host['size'])
+                    except models.CloudInstanceSize.DoesNotExist:
+                        errors.setdefault(host_string+'.size', []).append(
+                            'Instance size with id {0} does not exist.'.format(host['size'])
+                        )
                 if 'hostname_template' not in host:
                     errors.setdefault(host_string+'.hostname_template', []).append(
                         'This is a required field.'
@@ -143,10 +153,34 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     errors.setdefault(host_string+'.zone', []).append(
                         'This is a required field.'
                     )
+                elif not isinstance(host['zone'], int):
+                    errors.setdefault(host_string+'.zone', []).append(
+                        'Must be a non-negative integer.'
+                    )
+                # check the zone instance
+                else:
+                    try:
+                        models.CloudZone.objects.get(pk=host['zone'])
+                    except models.CloudZone.DoesNotExist:
+                        errors.setdefault(host_string+'.zone', []).append(
+                            'Zone with id {0} does not exist.'.format(host['size'])
+                        )
                 if 'cloud_profile' not in host:
                     errors.setdefault(host_string+'.cloud_profile', []).append(
                         'This is a required field.'
                     )
+                elif not isinstance(host['cloud_profile'], int):
+                    errors.setdefault(host_string+'.cloud_profile', []).append(
+                        'Must be a non-negative integer.'
+                    )
+                # check the cloud profile instance
+                else:
+                    try:
+                        models.CloudProfile.objects.get(pk=host['cloud_profile'])
+                    except models.CloudProfile.DoesNotExist:
+                        errors.setdefault(host_string+'.cloud_profile', []).append(
+                            'Profile with id {0} does not exist.'.format(host['size'])
+                        )
                 if not isinstance(formula_components, list):
                     errors.setdefault(host_string+'.formula_components', []).append(
                         'Must be a list of objects with an id and optional order field.'

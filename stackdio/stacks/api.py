@@ -22,7 +22,7 @@ from volumes.models import Volume
 from blueprints.models import Blueprint
 from cloud.providers.base import BaseCloudProvider
 
-from . import tasks, models, serializers
+from . import tasks, models, serializers, filters
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ class StackListAPIView(generics.ListCreateAPIView):
     model = models.Stack
     serializer_class = serializers.StackSerializer
     parser_classes = (parsers.JSONParser,)
+    filter_class = filters.StackFilter
 
     def get_queryset(self):
         return self.request.user.stacks.all()

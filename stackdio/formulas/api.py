@@ -13,15 +13,16 @@ from core.exceptions import BadRequest, ResourceConflict
 from . import tasks
 from . import serializers
 from . import models
+from . import filters
 
 logger = logging.getLogger(__name__)
 
 
 class FormulaListAPIView(generics.ListCreateAPIView):
-
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
+    filter_class = filters.FormulaFilter
 
     def get_queryset(self):
         return self.request.user.formulas.all()
@@ -31,29 +32,43 @@ class FormulaListAPIView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         uri = request.DATA.get('uri', '')
+        formulas = request.DATA.get('formulas', [])
         public = request.DATA.get('public', False)
 
-        if not uri:
-            raise BadRequest('uri field is required')
+        if not uri and not formulas:
+            raise BadRequest('A uri field or a list of URIs in the formulas field is required.')
+        if uri and formulas:
+            raise BadRequest('uri and formulas fields can not be used together.')
+        if uri and not formulas:
+            formulas = [uri]
 
-        # check for duplicate uri
-        try:
-            formula = self.model.objects.get(uri=uri, owner=request.user)
-            raise ResourceConflict('A formula already exists with this '
-                                   'uri: {0}'.format(uri))
-        except self.model.DoesNotExist:
-            pass
+        # check for duplicate uris
+        errors = []
+        for uri in formulas:
+            try:
+                formula = self.model.objects.get(uri=uri, owner=request.user)
+                errors.append('Duplicate formula detected: {0}'.format(uri))
+            except self.model.DoesNotExist:
+                pass
 
-        formula = self.model.objects.create(owner=request.user,
-                                         public=public,
-                                         uri=uri,
-                                         status=self.model.IMPORTING,
-                                         status_detail='Importing formula...this could take a while.')
+        if errors:
+            raise BadRequest(errors)
 
-        # Import using asynchronous task
-        tasks.import_formula.si(formula.id)()
+        # create the object in the database and kick off a task
+        formula_objs = []
+        for uri in formulas:
+            formula_obj = self.model.objects.create(
+                owner=request.user,
+                public=public,
+                uri=uri,
+                status=self.model.IMPORTING,
+                status_detail='Importing formula...this could take a while.')
 
-        return Response(self.get_serializer(formula).data)
+            # Import using asynchronous task
+            tasks.import_formula.si(formula_obj.id)()
+            formula_objs.append(formula_obj)
+
+        return Response(self.get_serializer(formula_objs, many=True).data)
 
 
 class FormulaPublicAPIView(generics.ListAPIView):

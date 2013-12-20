@@ -143,6 +143,9 @@ class FormulaComponent(TitleSlugDescriptionModel):
     Mapping of individual components of a formula
     '''
 
+    class Meta:
+        ordering = ['pk']
+
     formula = models.ForeignKey('formulas.Formula',
                                 related_name='components')
 
