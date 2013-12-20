@@ -50,6 +50,7 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
 class StackSerializer(serializers.HyperlinkedModelSerializer):
     owner = serializers.Field()
     hosts = serializers.HyperlinkedIdentityField(view_name='stack-hosts')
+    fqdns = serializers.HyperlinkedIdentityField(view_name='stack-fqdns')
     host_count = serializers.Field(source='hosts.count')
     volumes = serializers.HyperlinkedIdentityField(view_name='stack-volumes')
     volume_count = serializers.Field(source='volumes.count')
@@ -65,6 +66,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'url',
             'owner',
             'blueprint',
+            'fqdns',
             'hosts',
             'host_count',
             'volumes',

@@ -11,6 +11,7 @@ from rest_framework import (
     parsers,
 )
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from core.exceptions import (
     ResourceConflict,
@@ -478,4 +479,18 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         # Return the host while its deleting
         serializer = self.get_serializer(host)
         return Response(serializer.data)
+
+
+class StackFQDNListAPIView(APIView):
+    model = models.Stack
+
+    def get_object(self):
+        return get_object_or_404(models.Stack,
+                                 id=self.kwargs.get('pk'),
+                                 owner=self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        stack = self.get_object()
+        fqdns = [h.fqdn for h in stack.hosts.all()]
+        return Response(fqdns)
 

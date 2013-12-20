@@ -24,6 +24,10 @@ urlpatterns = patterns('stacks.api',
         api.StackHostsAPIView.as_view(), 
         name='stack-hosts'),
 
+    url(r'^stacks/(?P<pk>[0-9]+)/fqdns/$', 
+        api.StackFQDNListAPIView.as_view(), 
+        name='stack-fqdns'),
+
     url(r'^stacks/(?P<pk>[0-9]+)/volumes/$', 
         api.StackVolumesAPIView.as_view(), 
         name='stack-volumes'),
