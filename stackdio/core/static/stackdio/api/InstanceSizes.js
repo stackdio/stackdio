@@ -5,7 +5,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/instance_sizes/',
+                url: '/api/instance_sizes/?page_size=30',
                 type: 'GET',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
