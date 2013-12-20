@@ -62,10 +62,10 @@ define(["knockout",
                     formulaComponents: [],
                     title: 'title',
                     description: 'description',
-                    count: record.host_count.value,
-                    size: record.host_instance_size.value,
+                    count: parseInt(record.host_count.value, 10),
+                    size: parseInt(record.host_instance_size.value, 10),
                     hostname_template: record.host_hostname.value,
-                    zone: record.availability_zone.value,
+                    zone: parseInt(record.availability_zone.value, 10),
                     cloud_profile: self.selectedProfile.id,
                     access_rules: _.map(stores.HostAccessRules(), function (rule) { return rule; }),
                     volumes: stores.HostVolumes(),
@@ -124,7 +124,7 @@ define(["knockout",
                 // Add spot instance config
                 if (record.spot_instance_price.value !== '') {
                     host.spot_config = {};
-                    host.spot_config.spot_price = record.spot_instance_price.value;
+                    host.spot_config.spot_price = parseFloat(record.spot_instance_price.value);
                 }
 
                 console.log('new host', host);
@@ -147,15 +147,34 @@ define(["knockout",
             };
 
             self.saveBlueprint = function (model, evt) {
-                var hosts = stores.NewHosts();
+                var hosts = stores.NewHosts(), strippedHosts = [];
+
+                for (var host in hosts) {
+                    var h = hosts[host];
+
+                    strippedHosts.push({
+                        access_rules: h.access_rules,
+                        cloud_profile: h.cloud_profile,
+                        count: h.count,
+                        description: h.description,
+                        title: h.title,
+                        formula_components: h.formula_components,
+                        hostname_template: h.hostname_template,
+                        size: h.size,
+                        spot_config: h.spot_config,
+                        volumes: h.volumes,
+                        zone: h.zone,
+                    });
+                }
 
                 var blueprint = {
                     title: document.getElementById('blueprint_title').value,
                     description: document.getElementById('blueprint_purpose').value,
                     public: document.getElementById('public_blueprint').checked,
                     properties: JSON.parse(document.getElementById('blueprint_properties').value),
-                    hosts: hosts
+                    hosts: strippedHosts
                 };
+
 
                 console.log(blueprint);
                 // return;
