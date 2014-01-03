@@ -202,9 +202,8 @@ def update():
     except MemoryError, e:
         import sys
         log.error('MemoryError!!')
-        log.error('path_map length: {0}'.format(len(path_map)))
-        log.error('sizeof path_map: {0}'.format(sys.getsizeof(path_map)))
-        log.error(str(e))
+        log.error('path_map: {0}'.format(path_map))
+        log.error('path_map[user_envs]: {0}'.format(path_map['user_envs']))
         raise
 
     # compare the maps, set changed to the return value

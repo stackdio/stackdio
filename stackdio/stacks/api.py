@@ -142,13 +142,14 @@ class StackListAPIView(generics.ListCreateAPIView):
                 tasks.tag_infrastructure.si(stack.id),
                 tasks.register_dns.si(stack.id),
                 tasks.ping.si(stack.id),
-                tasks.sync_all.si(stack.id)
+                tasks.sync_all.si(stack.id),
+                # highstate of core SLS is not optional
+                tasks.highstate.si(stack.id),
             ]
 
             # provisioning is optional (mainly useful for getting machines
             # up so you can play with salt states)
             if provision_stack:
-                task_list.append(tasks.highstate.si(stack.id))
                 task_list.append(tasks.orchestrate.si(stack.id))
 
             # always finish

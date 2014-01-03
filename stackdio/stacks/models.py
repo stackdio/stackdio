@@ -395,6 +395,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                         'master': master,
                         'log_level': 'debug',
                         'log_level_logfile': 'debug',
+                        'mine_functions': {
+                            'grains.items': []
+                        },
 
                         # Grains are very useful when you need to set some 
                         # static information about a machine (e.g., what stack 

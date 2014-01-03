@@ -99,7 +99,7 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
 
 class CloudInstanceSize(TitleSlugDescriptionModel):
     class Meta:
-        ordering = ['title']
+        ordering = ['id']
     
     # `title` field will be the type used by salt-cloud for the `size` 
     # parameter in the providers yaml file (e.g., 'Micro Instance' or
