@@ -51,7 +51,7 @@
                                 <li><a href="#" data-bind="click: showUserProfile">User Profile</a></li>
                                 <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li>
                                 <li class="divider"></li>
-                                <li><a href="#" data-bind="click: gotoSection(_.findWhere(sections, {id:'Accounts'}))">Your Cloud Accounts</a></li>
+                                <li><a href="#" data-bind="click: function () { $root.gotoSection(_.findWhere(sections, {id:'Accounts'})) }">Your Cloud Accounts</a></li>
                                 <li class="divider"></li>
                                 <li><a href="/logout">Logout</a></li>
                             </ul>

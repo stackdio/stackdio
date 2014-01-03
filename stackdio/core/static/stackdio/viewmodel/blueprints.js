@@ -180,16 +180,21 @@ define(["knockout",
                 // return;
 
                 API.Blueprints.save(blueprint)
-                    .then(function (blueprint) {
-                        // Close the window and clear out any forms
-                        self.closeBlueprintForm();
-                        formutils.clearForm('orchestration-form');
-
-                        // Alert the user about success
-                        self.showMessage('#alert-success', 'Blueprint successfully saved.');
+                    .then(function () {
+                        // Clear the new Blueprint Host store
+                        stores.NewHosts.removeAll();
 
                         // Empty out the store that tracks components for current Blueprint
                         stores.BlueprintComponents.removeAll();
+
+                        // Alert the user about success
+                        self.showMessage('#alert-success', 'Blueprint successfully saved.');
+                        
+                        // Close the window and clear out any forms
+                        self.closeBlueprintForm();
+
+                        // Clear the orchestration form
+                        formutils.clearForm('orchestration-form');
                     })
                     .catch(function (error) {
                         $("#alert-error").show();

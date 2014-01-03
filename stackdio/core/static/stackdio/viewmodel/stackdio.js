@@ -66,7 +66,9 @@ define([
                 icon: 'glyphicon glyphicon-camera',
                 visible: true
             }];
-            self.currentSection = ko.observable();
+
+            // For tracking which section the user is currently viewing. Default to the welcome screen.
+            self.currentSection = ko.observable(self.sections[0]);
 
             self.securityGroup = new securityGroupVM();
             self.profile = new profileVM();
@@ -180,28 +182,26 @@ define([
             API.InstanceSizes.load();
             API.Formulae.load();
 
-            API.ProviderTypes.load()
-                .then(API.Zones.load)
-                .then(self.account.loadAccounts)
-                .then(self.profile.loadProfiles)
-                .then(self.securityGroup.loadSecurityGroups)
-                .then(API.Snapshots.load)
-                .then(API.Blueprints.load)
-                .then(API.Stacks.load)
+            // Define all data loading functions
+            var dataLoaders = [API.Zones.load, self.account.loadAccounts, self.profile.loadProfiles, 
+                               self.securityGroup.loadSecurityGroups, API.Snapshots.load, API.Blueprints.load, API.Stacks.load ];
 
-                // Everything you want to do AFTER all data has loaded
-                .then(function () {
+            // Execute each data loader
+            var dataLoaded = dataLoaders.reduce( function (loadData, next) {
+                return loadData.then(next);
+            }, Q([])).then(function () {
                     // Convert select elements to the nice Bootstrappy style
                     $('.selectpicker').selectpicker();
 
+                    // Specify a flattened array of Blueprint name as the store for the typeahead on the welcome page
                     var flattened = stores.Blueprints().map(function (b) {return b.title; });
-
                     $('#blueprint_search').typeahead({
                         name: 'blueprints',
                         local: flattened,
                         limit: 10
                     });
 
+                    // When user presses enter in the Launch Blueprint typeahead, start the process of launching a Stack
                     $( "#blueprint_search" ).keypress(function (evt) {
                         if (evt.keyCode === 13) {
                             console.log('Launching Stack');
@@ -213,11 +213,11 @@ define([
 
                     // Take the user to the stacks section
                     self.gotoSection('Blueprints');
-                })
-                .catch(function (error) {
-                    // Handle any error from all above steps
-                    console.error(error.name, error.message);
-                });
+            })
+            .catch(function (error) {
+                // Handle any error from all above steps
+                console.error(error.name, error.message);
+            });
         };
 
         /*
