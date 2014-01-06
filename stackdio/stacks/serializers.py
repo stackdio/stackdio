@@ -3,6 +3,7 @@ import logging
 from rest_framework import serializers
 
 from . import models
+from blueprints.serializers import BlueprintHostFormulaComponentSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,7 @@ class StackPropertiesSerializer(serializers.Serializer):
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
     availability_zone = serializers.PrimaryKeyRelatedField()
+    formula_components = BlueprintHostFormulaComponentSerializer(many=True)
 
     class Meta:
         model = models.Host
@@ -31,7 +33,8 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'availability_zone',
             'created',
             'sir_id',
-            'sir_price'
+            'sir_price',
+            'formula_components',
         )
 
 

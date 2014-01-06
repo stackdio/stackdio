@@ -425,10 +425,12 @@ class StackHostsAPIView(HostListAPIView):
     def get(self, request, *args, **kwargs):
         '''
         Override get method to add additional host-specific info
-        to the result that is looked up via salt.
+        to the result that is looked up via salt when user requests it
         '''
+        provider_metadata = request.QUERY_PARAMS.get('provider_metadata') == 'true'
         result = super(StackHostsAPIView, self).get(request, *args, **kwargs)
-        if not result.data['results']:
+
+        if not provider_metadata or not result.data['results']:
             return result
 
         stack = request.user.stacks.get(id=kwargs.get('pk'))
@@ -441,7 +443,7 @@ class StackHostsAPIView(HostListAPIView):
         # implementation to format into a generic result for the user
         for host in result.data['results']:
             hostname = host['hostname']
-            host['ec2_metadata'] = query_results[hostname]
+            host['provider_metadata'] = query_results[hostname]
 
         return result
 
