@@ -1,3 +1,0 @@
-base:
-  '*':
-    - java.jdk6

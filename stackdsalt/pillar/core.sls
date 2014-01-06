@@ -1,2 +1,0 @@
-include:
-  - java.jdk6
