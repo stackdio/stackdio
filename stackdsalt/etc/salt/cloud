@@ -1,2 +1,6 @@
 verify_env: True
-create_vm_pool_size: 10
+cloud_pool_size: 10
+wait_for_spot_instance_interval: 1
+wait_for_spot_instance_multiplier: 2
+wait_for_ip_interval: 1
+wait_for_ip_interval_multiplier: 2
