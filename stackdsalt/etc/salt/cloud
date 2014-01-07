@@ -1,2 +1,6 @@
 verify_env: True
-pool_size: 10
+pool_size: 25
+wait_for_spot_interval: 1
+wait_for_spot_interval_multiplier: 2
+wait_for_ip_interval: 1
+wait_for_ip_interval_multiplier: 2
