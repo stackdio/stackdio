@@ -133,11 +133,12 @@ class StackListAPIView(generics.ListCreateAPIView):
         # set some defaults
         launch_stack = request.DATA.get('auto_launch', True)
         provision_stack = request.DATA.get('auto_provision', True)
+        parallel = request.DATA.get('parallel', True)
 
         if launch_stack:
             # Queue up stack creation and provisioning using Celery
             task_list = [
-                tasks.launch_hosts.si(stack.id),
+                tasks.launch_hosts.si(stack.id, parallel=parallel),
                 tasks.update_metadata.si(stack.id),
                 tasks.tag_infrastructure.si(stack.id),
                 tasks.register_dns.si(stack.id),
@@ -188,12 +189,13 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         msg = 'Stack will be removed upon successful termination ' \
               'of all machines'
         stack.set_status(models.Stack.DESTROYING, msg)
+        parallel = request.DATA.get('parallel', True)
 
         # Queue up stack destroy tasks
         task_chain = (
             tasks.register_volume_delete.si(stack.id) |
             tasks.unregister_dns.si(stack.id) | 
-            tasks.destroy_hosts.si(stack.id)
+            tasks.destroy_hosts.si(stack.id, parallel=parallel)
         )
         
         # execute the chain

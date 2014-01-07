@@ -46,7 +46,7 @@ def handle_error(stack_id, task_id):
         .format(task_id, exc, result.traceback))
 
 @celery.task(name='stacks.launch_hosts')
-def launch_hosts(stack_id):
+def launch_hosts(stack_id, parallel=True):
     '''
     Use salt cloud to launch machines using the given stack's map_file
     that was generated when the stack was created. Salt cloud will
@@ -80,10 +80,9 @@ def launch_hosts(stack_id):
         symlink(log_file, log_symlink)
 
         # Launch stack
-        cmd = ' '.join([
+        cmd_args = [
             'salt-cloud',
             '-y',                    # assume yes
-            '-P',                    # parallelize VM launching
             '-lquiet',               # no logging on console
             '--log-file {0}',        # where to log
             '--log-file-level all',  # full logging
@@ -93,7 +92,16 @@ def launch_hosts(stack_id):
             '--providers-config={2}',
             '--profiles={3}',
             '--cloud-config={4}',
-        ]).format(
+        ]
+
+        # parallize the salt-cloud launch
+        if parallel:
+            cmd_args.append('-P')
+            logger.info('Launching hosts in PARALLEL mode!')
+        else:
+            logger.info('Launching hosts in SERIAL mode!')
+
+        cmd = ' '.join(cmd_args).format(
             log_file,
             stack.map_file.path,
             settings.SALT_CLOUD_PROVIDERS_DIR,
@@ -818,7 +826,7 @@ def register_volume_delete(stack_id, host_ids=None):
         raise
 
 @celery.task(name='stacks.destroy_hosts')
-def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
+def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
     '''
     Destroy the given stack id or a subset of the stack if host_ids
     is set. After all hosts have been destroyed we must also clean
@@ -835,10 +843,12 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True):
         cmd_args = [
             'salt-cloud',
             '-y',                   # assume yes
-            '-P',                   # destroy in parallel
             '-d',                   # destroy argument
             '--out=yaml',           # output in JSON
         ]
+
+        if parallel:
+            cmd_args.append('-P')
 
         # if host ids are given, we're going to terminate only those hosts
         if host_ids:
