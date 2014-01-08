@@ -133,11 +133,12 @@ class StackListAPIView(generics.ListCreateAPIView):
         # set some defaults
         launch_stack = request.DATA.get('auto_launch', True)
         provision_stack = request.DATA.get('auto_provision', True)
+        parallel = request.DATA.get('parallel', True)
 
         if launch_stack:
             # Queue up stack creation and provisioning using Celery
             task_list = [
-                tasks.launch_hosts.si(stack.id),
+                tasks.launch_hosts.si(stack.id, parallel=parallel),
                 tasks.update_metadata.si(stack.id),
                 tasks.tag_infrastructure.si(stack.id),
                 tasks.register_dns.si(stack.id),
@@ -188,12 +189,13 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         msg = 'Stack will be removed upon successful termination ' \
               'of all machines'
         stack.set_status(models.Stack.DESTROYING, msg)
+        parallel = request.DATA.get('parallel', True)
 
         # Queue up stack destroy tasks
         task_chain = (
             tasks.register_volume_delete.si(stack.id) |
             tasks.unregister_dns.si(stack.id) | 
-            tasks.destroy_hosts.si(stack.id)
+            tasks.destroy_hosts.si(stack.id, parallel=parallel)
         )
         
         # execute the chain
@@ -425,10 +427,12 @@ class StackHostsAPIView(HostListAPIView):
     def get(self, request, *args, **kwargs):
         '''
         Override get method to add additional host-specific info
-        to the result that is looked up via salt.
+        to the result that is looked up via salt when user requests it
         '''
+        provider_metadata = request.QUERY_PARAMS.get('provider_metadata') == 'true'
         result = super(StackHostsAPIView, self).get(request, *args, **kwargs)
-        if not result.data['results']:
+
+        if not provider_metadata or not result.data['results']:
             return result
 
         stack = request.user.stacks.get(id=kwargs.get('pk'))
@@ -441,7 +445,7 @@ class StackHostsAPIView(HostListAPIView):
         # implementation to format into a generic result for the user
         for host in result.data['results']:
             hostname = host['hostname']
-            host['ec2_metadata'] = query_results[hostname]
+            host['provider_metadata'] = query_results[hostname]
 
         return result
 
