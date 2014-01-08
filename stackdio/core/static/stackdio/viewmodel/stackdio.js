@@ -163,8 +163,6 @@ define([
                     self.showMessage("#alert-no-profiles", "", true);
                 }
 
-                console.log(section);
-
                 location.hash = section.id;
                 self.currentSection(section);
             };
@@ -204,7 +202,8 @@ define([
                     // When user presses enter in the Launch Blueprint typeahead, start the process of launching a Stack
                     $( "#blueprint_search" ).keypress(function (evt) {
                         if (evt.keyCode === 13) {
-                            console.log('Launching Stack');
+                            var foundBlueprint = _.findWhere(stores.Blueprints(), { title: $('#blueprint_search').val() });
+                            self.stack.launchStack(foundBlueprint);
                         }
                     });
 
@@ -212,7 +211,7 @@ define([
                     $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection('Blueprints');
+                    self.gotoSection('Welcome');
             })
             .catch(function (error) {
                 // Handle any error from all above steps

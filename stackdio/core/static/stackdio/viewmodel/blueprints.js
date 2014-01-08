@@ -209,8 +209,8 @@ define(["knockout",
                     });
             };
 
-            self.loadBlueprint = function () {
-                return API.Accounts.load();
+            self.loadBlueprint = function (blueprint) {
+                return API.Blueprints.load(blueprint);
             };
 
             self.showBlueprintHostList = function (blueprint) {
@@ -283,7 +283,7 @@ define(["knockout",
             $("#blueprint-host-list-container").dialog({
                 position: 'center',
                 autoOpen: false,
-                width: 800,
+                width: window.innerWidth - 200,
                 modal: true
             });
 

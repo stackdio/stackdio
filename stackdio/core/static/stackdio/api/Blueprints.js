@@ -1,6 +1,24 @@
 define(["q", "store/stores", "model/models"], function (Q, stores, models) {
     return {
-        load : function () {
+        getProperties: function (id) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: '/api/blueprints/' + id + '/properties/',
+                type: 'GET',
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (properties) {
+                    // Resolve the promise and pass back the loaded properties
+                    deferred.resolve(properties);
+                }
+            });
+
+            return deferred.promise;
+        },
+        load: function () {
             var deferred = Q.defer();
 
             $.ajax({

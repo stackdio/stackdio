@@ -13,6 +13,9 @@ define(["knockout",
             self.stackHostActions = ['Stop', 'Terminate', 'Start'];
             self.selectedProfile = null;
             self.selectedAccount = null;
+            self.selectedBlueprint = null;
+            self.blueprintProperties = ko.observable();
+            self.baseBlueprint = ko.observable();
 
             // Only show spot instance price box if the spot instance checkbox is checked
             self.isSpotInstance = ko.observable(false);
@@ -93,8 +96,45 @@ define(["knockout",
             };
 
             self.launchStack = function (blueprint) {
-                
-            }
+                self.selectedBlueprint = blueprint;
+
+                API.Blueprints.getProperties(blueprint.id)
+                    .then(function (properties) {
+                        self.blueprintProperties(properties);
+                        self.blueprintHosts(blueprint.host_definitions);
+                    });
+
+                self.showStackForm();
+            };
+
+            self.provisionStack = function (a, evt) {
+                var record = formutils.collectFormFields(evt.target.form);
+
+                console.log(self.selectedBlueprint);
+
+                var stack = {
+                    title: record.stack_title.value,
+                    description: record.stack_description.value,
+                    properties: JSON.parse(record.stack_properties_preview.value),
+                    blueprint: self.selectedBlueprint.id
+                };
+
+                console.log(stack);
+
+                API.Stacks.save(stack)
+                    .then(function () {
+                        self.closeStackForm();
+                    });
+
+            };
+
+            self.showStackForm = function () {
+                $("#stack-launch-container").dialog("open");
+            };
+
+            self.closeStackForm = function () {
+                $("#stack-launch-container").dialog("close");
+            };
 
             self.showStackDetails = function (stack) {
                 API.StackHosts.load(stack)
@@ -105,31 +145,38 @@ define(["knockout",
                 return;
             };
 
-
             // 
             //      S T A C K   H O S T S
             // 
-            self.showHostMetadata = function (host) {
-                stores.HostMetadata.removeAll();
-                _.each(host.ec2_metadata, function (v, k, l) {
-                    if (typeof v !== "object") {
-                        stores.HostMetadata.push({ key: k, value: v });
-                    }
-                });
+            self.showStackHostMetaData = function (stack) {
+                console.log(stack);
+                API.Stacks.getHosts(stack)
+                    .then(function (data) {
 
-                $("#host-metadata-container").dialog("open");
+                    });
+
+
+                // stores.HostMetadata.removeAll();
+                // _.each(host.ec2_metadata, function (v, k, l) {
+                //     if (typeof v !== "object") {
+                //         stores.HostMetadata.push({ key: k, value: v });
+                //     }
+                // });
+
+                // $("#host-metadata-container").dialog("open");
             };
 
             self.closeHostMetadata = function () {
-                $( "#host-metadata-container" ).dialog("close");
+                $("#host-metadata-container").dialog("close");
             };
 
+
             self.showStackHosts = function () {
-                $( "#stack-details-container" ).dialog("open");
+                $("#stack-details-container").dialog("open");
             };
 
             self.closeStackHosts = function () {
-                $( "#stack-details-container" ).dialog("close");
+                $("#stack-details-container").dialog("close");
             };
 
 
@@ -139,6 +186,12 @@ define(["knockout",
              *  ==================================================================================
              */
             $("#stack-details-container").dialog({
+                autoOpen: false,
+                width: 650,
+                modal: false
+            });
+
+            $("#stack-launch-container").dialog({
                 autoOpen: false,
                 width: 650,
                 modal: false

@@ -37,8 +37,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
         save: function (stack) {
             var deferred = Q.defer();
 
-            console.log('saving stack', stack);
-
             stack = JSON.stringify(stack);
 
             $.ajax({
@@ -51,9 +49,31 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
-                success: function (response) {
-                    stores.Stacks.push(response);
+                success: function (stack) {
+                    stores.Stacks.push(stack);
                     deferred.resolve();
+                }
+            });
+
+            return deferred.promise;
+        },
+        getHosts: function (stack) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: '/api/stacks/' + stack.id + '/hosts/',
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    var hosts = response.results;
+                    
+                    // stores.Stacks.push(stack);
+                    // deferred.resolve();
                 }
             });
 

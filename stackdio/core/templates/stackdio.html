@@ -190,7 +190,7 @@
         W E L C O M E   S C R E E N
         ======================================================================
      -->
-    <div id="blueprints-binding-target" data-bind='visible: $root.currentSection().id === "Welcome"' class="hide">
+    <div id="welcome-binding-target" data-bind='visible: $root.currentSection().id === "Welcome"' class="hide">
         <div class="view">
 
             <div class="row bottom-separation-large">
@@ -242,20 +242,17 @@
                                         <td data-bind="text: description"></td>
                                         <td>
                                             <a href="#" 
-                                               data-bind="text: hosts.length + ' hosts',
-                                                          click: $root.blueprint.showBlueprintHostList"></a>
+                                               data-bind="text: host_count + ' hosts',
+                                                          click: $root.stack.showStackDetails"></a>
                                         </td>
                                         <td>
                                             <div class="btn-group">
                                                 <a class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown" href="#">
                                                     Action <span class="caret"></span>
                                                 </a>
-                                                <ul class="dropdown-menu original-dropdown-menu">
+                                                <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: $root.stack.stackActions">
                                                     <li>
-                                                        <a href="#" data-bind="text: 'Delete', click: $root.blueprint.deleteBlueprint"></a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#" data-bind="text: 'Launch Stack', click: $root.stack.launchStack"></a>
+                                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.stack.doStackAction(data, event, $parent) }"></a>
                                                     </li>
                                                 </ul>
                                             </div>
@@ -344,7 +341,7 @@
             <table id="blueprint_host_list" class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th></th>
+                        <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th>
                     </tr>
                 </thead>
                 <tbody data-bind="foreach: $root.blueprint.selectedBlueprintHosts">
@@ -353,7 +350,10 @@
                         <td data-bind="text: hostname_template"></td>
                         <td data-bind="text: instance_size.title"></td>
                         <td data-bind="text: hostname_template"></td>
-                        <td data-bind="text: rules"></td>
+                        <td data-bind="template: { foreach: access_rules }">
+                            Ports <span data-bind="text: $data.from_port + ' - ' + $data.to_port"></span>
+                            (Rule <span data-bind="text: $data.rule"></span>)
+                        </td>
                     </tr>     
                 </tbody>
             </table>
@@ -606,6 +606,60 @@
             <button class="btn" data-bind="click: $root.securityGroup.closeRulesList">Close</button>
         </div>
     </div>
+    <!-- 
+        ======================================================================
+        L A U N C H   S T A C K   D I A L O G
+        ======================================================================
+     -->
+    <div id="stack-launch-container" title="New Stack" data-bind="" class="hide">
+        <form id="stack-launch-form" role="form" class="form-horizontal">
+            <div class="modal-body large-modal-body">
+                <div class="row bottom-separation">
+                    <div class="col-md-5">
+                        <label class="sr-only" for="stack_title">Title</label>
+                        <input type="text" class="form-control" id="stack_title" placeholder="Stack title">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="sr-only" for="stack_description">Description</label>
+                        <input type="text" class="form-control" id="stack_description" placeholder="Purpose of Stack">
+                    </div>
+                </div>
+
+                <div class="small-heading">Stack Hosts</div>
+                <table id="stack_host_list_preview" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Title</th><th>Description</th><th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: $root.stack.baseBlueprint">
+                        <tr>
+                            <td data-bind="text: title"></td>
+                            <td data-bind="text: description"></td>
+                            <td data-bind="text: count"></td>
+                        </tr>     
+                    </tbody>
+                </table>
+
+                <div class="row top-separation bottom-separation">
+                    <div class="col-md-12 small-heading">Stack Properties</div>
+                    <div class="col-md-12">
+                        <textarea  
+                               class="form-control" 
+                               rows="6" 
+                               id="stack_properties_preview" 
+                               data-bind="text: JSON.stringify($root.stack.blueprintProperties(), undefined, 3)"
+                               placeholder="The formulas for the selected Blueprint do not contain properties"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-danger" data-bind="click: $root.stack.closeStackForm">Close</button>
+                <button class="btn btn-success" data-bind="click: $root.stack.provisionStack">Begin Provisioning</button>
+            </div>
+        </form>
+    </div>
 
     <!-- 
         ======================================================================
@@ -787,7 +841,7 @@
                 <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Stacks</div>
                 <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
                     <div class="small-top-separation btn-group pull-right">
-                        <button class="btn btn-primary" data-bind="click: $root.blueprint.showBlueprintForm">Launch New Stack</button>
+                        <button class="btn btn-primary" data-bind="click: $root.stack.showStackForm">Launch New Stack</button>
                     </div>
                 </div>
             </div>
@@ -835,7 +889,6 @@
                 </tbody>
             </table>
         </div>
-
 
         <!-- 
             ======================================================================
