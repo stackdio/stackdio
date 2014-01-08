@@ -56,8 +56,9 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response;
+                    var i, item, items = response.results;
                     var aws = response.provider_groups;
+                    var currentGroup;
 
                     // Clear the store and the grid
                     stores.AWSSecurityGroups.removeAll();
@@ -71,10 +72,11 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
 
                     // All stackd.io groups are returned in the 'results' key on the response
                     for (i in items) {
-                        group = new models.SecurityGroup().create(items[i]);
-                        group.title = i;
+                        currentGroup = items[i];
+                        group = new models.SecurityGroup().create(currentGroup);
+                        group.title = currentGroup.name;
 
-                        if (items[i].is_default) {
+                        if (currentGroup.is_default) {
                             stores.DefaultSecurityGroups.push(group);
                         }
                         stores.AccountSecurityGroups.push(group);

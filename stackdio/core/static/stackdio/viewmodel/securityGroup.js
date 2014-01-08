@@ -130,7 +130,11 @@ define(["knockout",
                         self.listDefaultGroups(account);
                     });
                 self.showDefaultGroupForm();
+            };
 
+            self.showDefaultGroupForm = function () {
+                $("#default-securitygroup-form-container").dialog("open");
+                $("#alert-default-security-groups").hide();
             };
 
             self.deleteSecurityGroup = function (group) {
