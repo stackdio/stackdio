@@ -179,6 +179,7 @@ define([
                 });
             API.InstanceSizes.load();
             API.Formulae.load();
+            API.Zones.load();
 
             // Define all data loading functions
             var dataLoaders = [API.ProviderTypes.load, self.account.loadAccounts, self.profile.loadProfiles, 
