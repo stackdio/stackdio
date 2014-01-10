@@ -14,6 +14,11 @@ define(["knockout",
             self.selectedBlueprintHosts = ko.observable();
             self.blueprintProperties = ko.observable({});
 
+            // Only show spot instance price box if the spot instance checkbox is checked
+            self.hostIsSpotInstance = ko.observable(false);
+            $('#spot_instance').click(function () {
+                self.hostIsSpotInstance(this.checked);
+            });
 
 
             // 
@@ -127,10 +132,15 @@ define(["knockout",
                     host.spot_config.spot_price = parseFloat(record.spot_instance_price.value);
                 }
 
-                console.log('new host', host);
-                console.log('chosen components', stores.BlueprintComponents());
-
+                // Clear hosts from the store
                 stores.NewHosts.push(host);
+
+                // Clear out the forumla select control
+                $('#formula_components').selectpicker('deselectAll');
+
+                // Set spot instance boolean to false in order to hide the input field for next time
+                self.hostIsSpotInstance(false);
+
 
                 // Clear volume and access rules stores
                 stores.HostAccessRules.removeAll();
@@ -175,30 +185,29 @@ define(["knockout",
                     hosts: strippedHosts
                 };
 
-
-                console.log(blueprint);
-                // return;
-
                 API.Blueprints.save(blueprint)
                     .then(function () {
-                        // Clear the new Blueprint Host store
-                        stores.NewHosts.removeAll();
-
-                        // Empty out the store that tracks components for current Blueprint
-                        stores.BlueprintComponents.removeAll();
+                        self.resetBlueprintForm();
+                        self.closeBlueprintForm();
 
                         // Alert the user about success
                         self.showMessage('#alert-success', 'Blueprint successfully saved.');
-                        
-                        // Close the window and clear out any forms
-                        self.closeBlueprintForm();
-
-                        // Clear the orchestration form
-                        formutils.clearForm('orchestration-form');
                     })
                     .catch(function (error) {
                         $("#alert-error").show();
                     })
+            };
+
+            self.resetBlueprintForm = function () {
+                // Clear the new Blueprint Host store
+                stores.NewHosts.removeAll();
+
+                // Empty out the store that tracks components for current Blueprint
+                stores.BlueprintComponents.removeAll();
+
+                // Clear the orchestration form
+                formutils.clearForm('orchestration-form');
+                formutils.clearForm('blueprint-form');
             };
 
             self.deleteBlueprint = function (blueprint) {
@@ -237,7 +246,7 @@ define(["knockout",
             }
 
             self.closeBlueprintForm = function () {
-                formutils.clearForm('blueprint-form');
+                self.resetBlueprintForm();
                 $("#blueprint-form-container").dialog("close");
             }
 

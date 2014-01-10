@@ -181,7 +181,7 @@ define([
             API.Formulae.load();
 
             // Define all data loading functions
-            var dataLoaders = [API.Zones.load, self.account.loadAccounts, self.profile.loadProfiles, 
+            var dataLoaders = [API.ProviderTypes.load, self.account.loadAccounts, self.profile.loadProfiles, 
                                self.securityGroup.loadSecurityGroups, API.Snapshots.load, API.Blueprints.load, API.Stacks.load ];
 
             // Execute each data loader
@@ -211,7 +211,7 @@ define([
                     $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection('Welcome');
+                    self.gotoSection('Stacks');
             })
             .catch(function (error) {
                 // Handle any error from all above steps

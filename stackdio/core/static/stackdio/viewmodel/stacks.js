@@ -13,15 +13,8 @@ define(["knockout",
             self.stackHostActions = ['Stop', 'Terminate', 'Start'];
             self.selectedProfile = null;
             self.selectedAccount = null;
-            self.selectedBlueprint = null;
+            self.selectedBlueprint = ko.observable({title:''});
             self.blueprintProperties = ko.observable();
-            self.baseBlueprint = ko.observable();
-
-            // Only show spot instance price box if the spot instance checkbox is checked
-            self.isSpotInstance = ko.observable(false);
-            $('#spot_instance').click(function () {
-                self.isSpotInstance(this.checked);
-            });
 
             // This builds the HTML for the stack history popover element
             self.popoverBuilder = function (stack) { 
@@ -96,7 +89,7 @@ define(["knockout",
             };
 
             self.launchStack = function (blueprint) {
-                self.selectedBlueprint = blueprint;
+                self.selectedBlueprint(blueprint);
 
                 API.Blueprints.getProperties(blueprint.id)
                     .then(function (properties) {
@@ -110,16 +103,14 @@ define(["knockout",
             self.provisionStack = function (a, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
 
-                console.log(self.selectedBlueprint);
 
                 var stack = {
                     title: record.stack_title.value,
                     description: record.stack_description.value,
+                    namespace: record.stack_namespace.value,
                     properties: JSON.parse(record.stack_properties_preview.value),
-                    blueprint: self.selectedBlueprint.id
+                    blueprint: self.selectedBlueprint().id
                 };
-
-                console.log(stack);
 
                 API.Stacks.save(stack)
                     .then(function () {
@@ -128,7 +119,8 @@ define(["knockout",
 
             };
 
-            self.showStackForm = function () {
+            self.showStackForm = function (blueprint) {
+                self.selectedBlueprint(blueprint);
                 $("#stack-launch-container").dialog("open");
             };
 

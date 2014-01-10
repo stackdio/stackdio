@@ -556,7 +556,7 @@
                     </div>
                 </div>
 
-                <div class="form-group" data-bind="visible: stack.isSpotInstance">
+                <div class="form-group" data-bind="visible: blueprint.hostIsSpotInstance">
                     <label for="spot_instance_price" class="col-sm-4 control-label"></label>
                     <div class="col-sm-8">
                         <input type="text" id="spot_instance_price" class="form-control" placeholder="Bid price for instances">
@@ -615,31 +615,28 @@
         <form id="stack-launch-form" role="form" class="form-horizontal">
             <div class="modal-body large-modal-body">
                 <div class="row bottom-separation">
-                    <div class="col-md-5">
+                    <div class="col-md-12">
+                        <h5 data-bind="text: 'Base Blueprint: ' + $root.stack.selectedBlueprint().title"></h5>
+                    </div>
+                </div>
+
+                <div class="row bottom-separation">
+                    <div class="col-md-6">
                         <label class="sr-only" for="stack_title">Title</label>
                         <input type="text" class="form-control" id="stack_title" placeholder="Stack title">
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-6">
                         <label class="sr-only" for="stack_description">Description</label>
                         <input type="text" class="form-control" id="stack_description" placeholder="Purpose of Stack">
                     </div>
                 </div>
 
-                <div class="small-heading">Stack Hosts</div>
-                <table id="stack_host_list_preview" class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Title</th><th>Description</th><th>Count</th>
-                        </tr>
-                    </thead>
-                    <tbody data-bind="foreach: $root.stack.baseBlueprint">
-                        <tr>
-                            <td data-bind="text: title"></td>
-                            <td data-bind="text: description"></td>
-                            <td data-bind="text: count"></td>
-                        </tr>     
-                    </tbody>
-                </table>
+                <div class="row bottom-separation">
+                    <div class="col-md-12">
+                        <label class="sr-only" for="stack_namespace">Title</label>
+                        <input type="text" class="form-control" id="stack_namespace" placeholder="Optionally provide a namespace for this stack">
+                    </div>
+                </div>
 
                 <div class="row top-separation bottom-separation">
                     <div class="col-md-12 small-heading">Stack Properties</div>
@@ -841,7 +838,20 @@
                 <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Stacks</div>
                 <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
                     <div class="small-top-separation btn-group pull-right">
-                        <button class="btn btn-primary" data-bind="click: $root.stack.showStackForm">Launch New Stack</button>
+                        <!-- <button class="btn btn-primary" data-bind="click: $root.stack.showStackForm">Launch New Stack</button> -->
+
+                        <div class="btn-group pull-right bottom-separation" data-bind="visible: isSuperUser">
+                            <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                                New Stack from Blueprint
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: stores.Blueprints">
+                                <li>
+                                    <a href="#" data-bind="text: title, click: $root.stack.showStackForm"></a>
+                                </li>
+                            </ul>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -1004,7 +1014,7 @@
                     </tr>
                 </thead>
                 <tbody data-bind="foreach: stores.Formulae">
-                    <tr data-bind="attr: { class: (public) ? 'success' : '' }">
+                    <tr data-bind="attr: { class: ($data.public) ? 'success' : '' }">
                         <td>
                             <a href='#' 
                                data-bind="bootstrapPopover: {
