@@ -13,6 +13,7 @@ define(["knockout",
             self.selectedAccount = null;
             self.selectedBlueprintHosts = ko.observable();
             self.blueprintProperties = ko.observable({});
+            self.blueprintPropertiesStringified = ko.observable('');
 
             // Only show spot instance price box if the spot instance checkbox is checked
             self.hostIsSpotInstance = ko.observable(false);
@@ -102,13 +103,13 @@ define(["knockout",
                     // Request the forumula properties
                     API.Formulae.getProperties(formula)
                         .then(function (properties) {
-
                             // Loop through the received properties and assign them to self.blueprintProperties
                             for (var key in properties) {
                                 propBuilder[key] = properties[key];
                             }
 
                             self.blueprintProperties(propBuilder);
+                            self.blueprintPropertiesStringified(JSON.stringify(propBuilder, undefined, 3));
                         });
                 });
 
@@ -209,7 +210,14 @@ define(["knockout",
 
                 // Clear the orchestration form
                 formutils.clearForm('orchestration-form');
-                formutils.clearForm('blueprint-form');
+
+                // Manually clear the blueprint form so I don't lose Knockout bindings
+                $('#blueprint_title').val('');
+                $('#blueprint_purpose').val('');
+
+                // Clear the blueprint properties
+                self.blueprintProperties({});
+                self.blueprintPropertiesStringified('');
             };
 
             self.deleteBlueprint = function (blueprint) {
