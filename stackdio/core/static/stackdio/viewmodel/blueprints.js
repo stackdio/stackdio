@@ -177,11 +177,13 @@ define(["knockout",
                     });
                 }
 
+                var properties = JSON.parse(document.getElementById('blueprint_properties').value) || '';
+
                 var blueprint = {
                     title: document.getElementById('blueprint_title').value,
                     description: document.getElementById('blueprint_purpose').value,
                     public: document.getElementById('public_blueprint').checked,
-                    properties: JSON.parse(document.getElementById('blueprint_properties').value),
+                    properties: properties,
                     hosts: strippedHosts
                 };
 
