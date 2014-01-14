@@ -203,9 +203,9 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                         component_id = component.get('id')
                         component_title = component.get('title', '')
                         component_sls_path = component.get('sls_path', '')
-                        if not all(component_id,
+                        if not any([component_id,
                                    component_title,
-                                   component_sls_path):
+                                   component_sls_path]):
                             errors.setdefault(
                                 host_string + '.formula_components', []) \
                                 .append('Each object in the list must contain '
@@ -392,11 +392,19 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         '''
-        Override the delete method to check for ownership.
+        Override the delete method to check for ownership and prevent
+        blueprints from being removed if other resources are using
+        them.
         '''
         blueprint = self.get_object()
+
+        # Check ownership
         if blueprint.owner != request.user:
             raise BadRequest('Only the owner of a blueprint may delete it.')
+
+        # Check usage
+
+
         return super(BlueprintDetailAPIView, self).delete(request,
                                                           *args,
                                                           **kwargs)
