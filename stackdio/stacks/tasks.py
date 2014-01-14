@@ -85,7 +85,7 @@ def launch_hosts(stack_id, parallel=True):
             '-y',                    # assume yes
             '-lquiet',               # no logging on console
             '--log-file {0}',        # where to log
-            '--log-file-level all',  # full logging
+            '--log-file-level debug',  # full logging
             '--out=yaml',            # return YAML formatted results
             '-m {1}',                # the map file to use for launching
             # Until environment variables work
@@ -110,31 +110,60 @@ def launch_hosts(stack_id, parallel=True):
         )
 
         logger.debug('Executing command: {0}'.format(cmd))
-        result = envoy.run(str(cmd))
+        launch_result = envoy.run(str(cmd))
         logger.debug('Command results:')
-        logger.debug('status_code = {0}'.format(result.status_code))
-        logger.debug('std_out = {0}'.format(result.std_out))
-        logger.debug('std_err = {0}'.format(result.std_err))
+        logger.debug('status_code = {0}'.format(launch_result.status_code))
+        logger.debug('std_out = {0}'.format(launch_result.std_out))
+        logger.debug('std_err = {0}'.format(launch_result.std_err))
 
+        # Start verifying hosts were launched and all are available
         try:
+            launch_yaml = yaml.safe_load(launch_result.std_out)
+
+            # are all launched hosts accounted for?
+            expected_hosts = set([h.hostname for h in hosts])
+            launched_hosts = set(launch_yaml.keys())
+            unlaunched_hosts = expected_hosts.difference(launched_hosts)
+
+            if unlaunched_hosts:
+                err_msg = 'Unlaunched hosts: {0}'.format(', '.join(unlaunched_hosts))
+                stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+                raise StackTaskException(err_msg)
+
+            # grab all the hosts that salt knows about
+            verify_result = envoy.run('salt-run manage.present')
+            all_hosts = set(yaml.safe_load(verify_result.std_out))
+            unavailable_hosts = launched_hosts.difference(all_hosts)
+
+            if unavailable_hosts:
+                err_msg = 'Unavailable hosts: {0}'.format(
+                    ', '.join(unavailable_hosts)
+                )
+                stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+                raise StackTaskException(err_msg)
+
             # Look for errors if we got valid JSON
-            result_yaml = yaml.safe_load(result.std_out)
             errors = set()
-            for h, v in result_yaml.iteritems():
+            for h, v in launch_yaml.iteritems():
                 logger.debug('Checking host {0} for errors.'.format(h))
 
                 # Error format #1
                 if 'Errors' in v and 'Error' in v['Errors']:
-                    errors.add(v['Errors']['Error']['Message'])
+                    err_msg = v['Errors']['Error']['Message']
+                    logger.debug('Error on host {0}: {1}'.format(h, err_msg))
+                    errors.add(err_msg)
 
                 # Error format #2
                 elif 'Error' in v:
-                    errors.add(v['Error'])
+                    err_msg = v['Error']
+                    logger.debug('Error on host {0}: {1}'.format(h, err_msg))
+                    errors.add(err_msg)
 
                 # Not exactly error format #3
-                elif 'Message' in v and v['Message'] == ERROR_ALREADY_RUNNING:
-                    errors.add('A host with the name {0} already exists for '
-                               'this cloud provider.'.format(h))
+                #elif 'Message' in v and v['Message'] == ERROR_ALREADY_RUNNING:
+                #    err_msg = 'A host with this name already exists.'
+                #    logger.debug('Error on host {0}: {1}'.format(h, err_msg))
+                #    errors.add(err_msg)
 
             if errors:
                 logger.debug('Errors found!: {0!r}'.format(errors))
@@ -146,19 +175,20 @@ def launch_hosts(stack_id, parallel=True):
             logger.debug('Unable to parse YAML from envoy results.')
             pass
 
-        if result.status_code > 0:
-            if ERROR_ALL_NODES_EXIST not in result.std_err and \
-               ERROR_ALL_NODES_EXIST not in result.std_out and \
-               ERROR_ALL_NODES_RUNNING not in result.std_err and \
-               ERROR_ALL_NODES_RUNNING not in result.std_out:
-                err_msg = result.std_err if result.std_err else result.std_out
+        if launch_result.status_code > 0:
+            if ERROR_ALL_NODES_EXIST not in launch_result.std_err and \
+               ERROR_ALL_NODES_EXIST not in launch_result.std_out and \
+               ERROR_ALL_NODES_RUNNING not in launch_result.std_err and \
+               ERROR_ALL_NODES_RUNNING not in launch_result.std_out:
+                err_msg = launch_result.std_err if launch_result.std_err else launch_result.std_out
                 stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error launching stack {0} with '
                                          'salt-cloud: {1!r}'.format(
                                             stack_id, 
                                             err_msg))
-        else:
-            stack.set_status(launch_hosts.name, 'Finished launching hosts.')
+
+        # Seems good...let's set the status and allow other tasks to go through
+        stack.set_status(launch_hosts.name, 'Finished launching hosts.')
 
     except Stack.DoesNotExist, e:
         err_msg = 'Unknown stack id {0}'.format(stack_id)
@@ -208,6 +238,11 @@ def update_metadata(stack_id, host_ids=None):
 
             # FIXME: This is cloud provider specific. Should farm it out to
             # the right implementation
+
+            # host could be "absent" from salt
+            if host_data == 'Absent':
+                hosts_to_remove.append(host)
+                continue
 
             # The instance id of the host
             host.instance_id = host_data['instanceId']
@@ -567,20 +602,22 @@ def highstate(stack_id, host_ids=None):
         ##
 
         # build up the command for salt
-        cmd_args = [
+        cmd = ' '.join([
             'salt',
             '--out=yaml',           # yaml formatted output
-            '-G stack_id:{0}'.format(stack_id), # target the nodes in this
-                                                # stack only
+            '-G stack_id:{0}',      # target the nodes in this stack only
+            '--log-file {1}',       # where to log
+            '--log-file-level debug', # full logging
             'state.top',            # run this stack's top file
-            stack.top_file.name,
-        ]
-
-        # Execute
-        cmd = ' '.join(cmd_args)
-        logger.debug('Executing command: {0}'.format(cmd))
+            stack.top_file.name
+        ]).format(
+            stack_id,
+            log_file
+        )
 
         try:
+            # Execute
+            logger.debug('Executing command: {0}'.format(cmd))
             result = envoy.run(str(cmd))
         except AttributeError, e:
             err_msg = 'Error running command: \'{0}\''.format(cmd)
@@ -593,19 +630,17 @@ def highstate(stack_id, host_ids=None):
                   'and stderr unknown.'
             logger.warn(msg)
             stack.set_status(msg)
+        elif result.status_code > 0:
+            err_msg = result.std_err if result.std_err else result.std_out
+            stack.set_status(highstate.name, err_msg, Level.ERROR)
+            raise StackTaskException('Error executing core provisioning: '
+                                     '{0!r}'.format(
+                                        err_msg
+                                    ))
         else:
-            logger.debug('Command results:')
-            logger.debug('status_code = {0}'.format(result.status_code))
-            logger.debug('std_out = {0}'.format(result.std_out))
-            logger.debug('std_err = {0}'.format(result.std_err))
-
-            if result.status_code > 0:
-                err_msg = result.std_err if result.std_err else result.std_out
-                stack.set_status(highstate.name, err_msg, Level.ERROR)
-                raise StackTaskException('Error executing core provisioning: '
-                                         '{0!r}'.format(
-                                            err_msg
-                                        ))
+            # dump the output to the log file
+            with open(log_file, 'a') as f:
+                f.write(result.std_out)
 
             # load JSON so we can attempt to catch provisioning errors
             output = yaml.safe_load(result.std_out)
@@ -690,7 +725,7 @@ def orchestrate(stack_id, host_ids=None):
             'salt-run',
             '-lquiet',              # quiet stdout
             '--log-file {0}',       # where to log
-            '--log-file-level all', # full logging
+            '--log-file-level debug', # full logging
             'state.over',           # the overstate command
             stack.owner.username,   # username is the environment to execute in
             stack.overstate_file.path
@@ -714,40 +749,18 @@ def orchestrate(stack_id, host_ids=None):
                   'and stderr unknown.'
             logger.warn(msg)
             stack.set_status(msg)
-        else:
-            logger.debug('Command results:')
-            logger.debug('status_code = {0}'.format(result.status_code))
-            logger.debug('std_out = {0}'.format(result.std_out))
-            logger.debug('std_err = {0}'.format(result.std_err))
-
-            if result.status_code > 0:
+        elif result.status_code > 0:
                 err_msg = result.std_err if result.std_err else result.std_out
                 stack.set_status(orchestrate.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error executing orchestration: '
                                          '{1!r}'.format(
                                             err_msg
                                          ))
+        else:
+            with open(log_file, 'a') as f:
+                f.write(result.std_out)
  
             # TODO: add error handling for overstate output
-            '''
-            if output is not None:
-                errors = {}
-                for host, host_result in output.iteritems():
-                    if type(host_result) is list:
-                        errors[host] = host_result
-
-                    elif type(host_result) is dict:
-                        # TODO: go deeper into the host_result dictionaries
-                        # looking for bad salt state executions
-                        pass
-
-                if errors:
-                    err_msg = 'Orchestration errors on hosts: {0}. Please see the ' \
-                              'log for more details.'.format(
-                                ', '.join(errors.keys()))
-                    stack.set_status(orchestrate.name, err_msg, Level.ERROR)
-                    raise StackTaskException(err_msg)
-            '''
 
         stack.set_status(orchestrate.name,
                          'Finished executing orchestration all hosts.')
