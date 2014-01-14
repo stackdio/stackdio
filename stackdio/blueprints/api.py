@@ -3,7 +3,6 @@ import string
 
 from django.db import transaction
 from django.db.models import Q
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
@@ -23,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 # TODO: need to move these somewhere else
 VAR_NAMESPACE = 'namespace'
-VAR_USERNAME  = 'username'
-VAR_INDEX     = 'index'
+VAR_USERNAME = 'username'
+VAR_INDEX = 'index'
 VALID_TEMPLATE_VARS = (VAR_NAMESPACE, VAR_USERNAME, VAR_INDEX)
 VALID_PROTOCOLS = ('tcp', 'udp', 'icmp')
 
@@ -53,17 +52,20 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         if not title:
             errors.setdefault('title', []).append('This is a required field.')
         # check for duplicates
-        elif models.Blueprint.objects.filter(owner=self.request.user, title=title).count():
+        elif models.Blueprint.objects.filter(owner=self.request.user,
+                                             title=title).count():
             errors.setdefault('title', []).append(
                 'A Blueprint with this title already exists in your account.'
             )
 
         if not description:
-            errors.setdefault('description', []).append('This is a required field.')
+            errors.setdefault('description', []).append(
+                'This is a required field.')
 
         if not isinstance(public, bool):
-            errors.setdefault('public', []).append('This field must be a boolean.')
-            
+            errors.setdefault('public', []).append(
+                'This field must be a boolean.')
+
         if not isinstance(properties, dict):
             errors.setdefault('properties', []).append(
                 'This field must be a JSON object.'
@@ -91,27 +93,27 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                 volumes = host.get('volumes', [])
 
                 if 'title' not in host or not host['title']:
-                    errors.setdefault(host_string+'.title', []).append(
+                    errors.setdefault(host_string + '.title', []).append(
                         'This is a required field.'
                     )
                 if 'description' not in host or not host['description']:
-                    errors.setdefault(host_string+'.description', []).append(
+                    errors.setdefault(host_string + '.description', []).append(
                         'This is a required field.'
                     )
                 if 'count' not in host:
-                    errors.setdefault(host_string+'.count', []).append(
+                    errors.setdefault(host_string + '.count', []).append(
                         'This is a required field.'
                     )
                 elif not isinstance(host['count'], int):
-                    errors.setdefault(host_string+'.count', []).append(
+                    errors.setdefault(host_string + '.count', []).append(
                         'Must be a non-negative integer.'
                     )
                 if 'size' not in host:
-                    errors.setdefault(host_string+'.size', []).append(
+                    errors.setdefault(host_string + '.size', []).append(
                         'This is a required field.'
                     )
                 elif not isinstance(host['size'], int):
-                    errors.setdefault(host_string+'.size', []).append(
+                    errors.setdefault(host_string + '.size', []).append(
                         'Must be a non-negative integer.'
                     )
                 # check the size instance
@@ -119,42 +121,44 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     try:
                         models.CloudInstanceSize.objects.get(pk=host['size'])
                     except models.CloudInstanceSize.DoesNotExist:
-                        errors.setdefault(host_string+'.size', []).append(
-                            'Instance size with id {0} does not exist.'.format(host['size'])
+                        errors.setdefault(host_string + '.size', []).append(
+                            'Instance size with id {0} does not exist.'
+                            .format(host['size'])
                         )
                 if 'hostname_template' not in host:
-                    errors.setdefault(host_string+'.hostname_template', []).append(
-                        'This is a required field.'
-                    )
+                    errors.setdefault(host_string + '.hostname_template', []) \
+                        .append('This is a required field.')
                 else:
                     # check for valid hostname_template variables
                     f = string.Formatter()
-                    vars = [x[1] for x in f.parse(host['hostname_template']) if x[1]]
-                    invalid_vars = [x for x in vars if x not in VALID_TEMPLATE_VARS]
+                    vars = [x[1] for x in f.parse(
+                        host['hostname_template']
+                    ) if x[1]]
+                    invalid_vars = [x for x in vars
+                                    if x not in VALID_TEMPLATE_VARS]
 
                     if invalid_vars:
-                        errors.setdefault(host_string+'.hostname_template', []).append(
-                            'Invalid variables found: {0}'.format(
+                        errors.setdefault(host_string + '.hostname_template',
+                                          []) \
+                            .append('Invalid variables found: {0}'.format(
                                 ', '.join(invalid_vars)
-                            )
-                        )
+                            ))
 
-                    # VAR_INDEX must be present if host count is greater than one
-                    if 'count' in host and \
-                        host['count'] > 1 and \
-                        VAR_INDEX not in vars:
-
-                        errors.setdefault(host_string+'.hostname_template', []).append(
+                    # VAR_INDEX must be present if host count is greater than
+                    # one
+                    if host.get('count', 0) > 1 and VAR_INDEX not in vars:
+                        errors.setdefault(host_string + '.hostname_template',
+                                          []).append(
                             'Variable {0} must be specified for hosts with '
                             'a count greater than one.'.format(VAR_INDEX)
                         )
 
                 if 'zone' not in host:
-                    errors.setdefault(host_string+'.zone', []).append(
+                    errors.setdefault(host_string + '.zone', []).append(
                         'This is a required field.'
                     )
                 elif not isinstance(host['zone'], int):
-                    errors.setdefault(host_string+'.zone', []).append(
+                    errors.setdefault(host_string + '.zone', []).append(
                         'Must be a non-negative integer.'
                     )
                 # check the zone instance
@@ -162,66 +166,74 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     try:
                         models.CloudZone.objects.get(pk=host['zone'])
                     except models.CloudZone.DoesNotExist:
-                        errors.setdefault(host_string+'.zone', []).append(
-                            'Zone with id {0} does not exist.'.format(host['size'])
-                        )
+                        errors.setdefault(host_string + '.zone', []).append(
+                            'Zone with id {0} does not exist.'.format(
+                                host['size']))
+
                 if 'cloud_profile' not in host:
-                    errors.setdefault(host_string+'.cloud_profile', []).append(
-                        'This is a required field.'
-                    )
+                    errors.setdefault(host_string + '.cloud_profile', []) \
+                        .append('This is a required field.')
                 elif not isinstance(host['cloud_profile'], int):
-                    errors.setdefault(host_string+'.cloud_profile', []).append(
-                        'Must be a non-negative integer.'
-                    )
+                    errors.setdefault(host_string + '.cloud_profile', []) \
+                        .append('Must be a non-negative integer.')
                 # check the cloud profile instance
                 else:
                     try:
-                        models.CloudProfile.objects.get(pk=host['cloud_profile'])
+                        models.CloudProfile.objects.get(
+                            pk=host['cloud_profile'])
                     except models.CloudProfile.DoesNotExist:
-                        errors.setdefault(host_string+'.cloud_profile', []).append(
-                            'Profile with id {0} does not exist.'.format(host['size'])
-                        )
+                        errors.setdefault(host_string + '.cloud_profile', []) \
+                            .append('Profile with id {0} '
+                                    'does not exist.'.format(host['size']))
                 if not isinstance(formula_components, list):
-                    errors.setdefault(host_string+'.formula_components', []).append(
-                        'Must be a list of objects with an id and optional order field.'
-                    )
+                    errors.setdefault(host_string + '.formula_components',
+                                      []).append('Must be a list of objects '
+                                                 'with an id and optional '
+                                                 'order field.')
                 else:
                     # check ownership of formula components
                     for component in formula_components:
                         if not isinstance(component, dict):
-                            errors.setdefault(host_string+'.formula_components', []).append(
-                                'Must be objects with an id and optional order field.'
-                            )
+                            errors.setdefault(
+                                host_string + '.formula_components', []) \
+                                .append('Must be objects with an id '
+                                        'and optional order field.')
                             continue
 
                         component_id = component.get('id')
                         component_title = component.get('title', '')
                         component_sls_path = component.get('sls_path', '')
-                        if not component_id and not component_title and not component_sls_path:
-                            errors.setdefault(host_string+'.formula_components', []).append(
-                                'Each object in the list must contain an id, '
-                                'title, or sls_path field. An order field may '
-                                'optionally be specified to enforce an ordering '
-                                'of the component provisioning.'
-                            )
+                        if not all(component_id,
+                                   component_title,
+                                   component_sls_path):
+                            errors.setdefault(
+                                host_string + '.formula_components', []) \
+                                .append('Each object in the list must contain '
+                                        'an id, title, or sls_path field. An '
+                                        'order field may optionally be '
+                                        'specified to enforce an ordering '
+                                        'of the component provisioning.')
                             continue
 
                         try:
                             component_order = int(component.get('order', 0))
                             if component_order < 0:
-                                errors.setdefault(host_string+'.formula_components', []).append(
-                                    'Order field must contain a non-negative value.'
-                                )
+                                errors.setdefault(
+                                    host_string + '.formula_components', []) \
+                                    .append('Order field must contain a '
+                                            'non-negative value.')
                         except ValueError:
-                            errors.setdefault(host_string+'.formula_components', []).append(
-                                'Order field must be a non-negative integer.'
-                            )
-                            
+                            errors.setdefault(
+                                host_string + '.formula_components', []) \
+                                .append('Order field must be a non-negative '
+                                        'integer.')
+
                         try:
                             d = {'formula__owner': request.user}
                             if component_id:
                                 d['pk'] = component_id
-                                component_err = 'an id of {0}'.format(component_id)
+                                component_err = 'an id of {0}'.format(
+                                    component_id)
                             elif component_sls_path:
                                 d['sls_path__iexact'] = component_sls_path
                                 component_err = 'an sls_path of {0}'.format(
@@ -232,29 +244,34 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                                 component_err = '{0} in the title'.format(
                                     component_title
                                 )
-                            component_objs = FormulaComponent.objects.filter(**d)
+                            component_objs = FormulaComponent.objects \
+                                .filter(**d)
                             if component_objs.count() == 0:
-                                errors.setdefault(host_string+'.formula_components', []).append(
-                                    'Component with {0} does not exist.'.format(component_err)
-                                )
+                                errors.setdefault(
+                                    host_string + '.formula_components', []) \
+                                    .append('Component with {0} does not '
+                                            'exist.'.format(component_err))
                             elif component_objs.count() > 1:
-                                errors.setdefault(host_string+'.formula_components', []).append(
-                                    'Multiple components found with {0}.'.format(component_err)
-                                )
+                                errors.setdefault(
+                                    host_string + '.formula_components', []) \
+                                    .append('Multiple components found with '
+                                            '{0}.'.format(component_err))
 
                         except FormulaComponent.DoesNotExist:
-                            errors.setdefault(host_string+'.formula_components', []).append(
-                                'Formula component with id {0} does not exist.'.format(component_id)
-                            )
+                            errors.setdefault(
+                                host_string + '.formula_components', []) \
+                                .append('Formula component with id {0} does '
+                                        'not exist.'.format(component_id))
 
                 # Validating access rules
                 if not isinstance(access_rules, list):
-                    errors.setdefault(host_string+'.access_rules', []).append(
-                        'Must be a list of access rule objects with protocol, '
-                        'from_port, to_port, and rule fields'
-                    )
+                    errors.setdefault(host_string + '.access_rules', []) \
+                        .append('Must be a list of access rule objects with '
+                                'protocol, from_port, to_port, and rule '
+                                'fields')
                 for rule_index, rule in enumerate(access_rules):
-                    rule_string = host_string + '.access_rules[{0}]'.format(rule_index)
+                    rule_string = host_string + '.access_rules[{0}]' \
+                        .format(rule_index)
                     if 'protocol' not in rule:
                         errors.setdefault(rule_string, []).append(
                             'protocol is a required field.'
@@ -282,7 +299,8 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
 
                 # Validating volumes
                 for volume_index, volume in enumerate(volumes):
-                    volume_string = host_string + '.volumes[{0}]'.format(volume_index)
+                    volume_string = host_string + '.volumes[{0}]' \
+                        .format(volume_index)
                     if 'device' not in volume:
                         errors.setdefault(volume_string, []).append(
                             'device is a required field.'
@@ -296,28 +314,28 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                             'snapshot is a required field.'
                         )
                     else:
-                        volume['snapshot'] = Snapshot.objects.get(pk=volume['snapshot'])
+                        volume['snapshot'] = Snapshot.objects \
+                            .get(pk=volume['snapshot'])
 
                 # Validating spot instances
                 spot_config = host.get('spot_config', None)
-                if spot_config is not None and not isinstance(spot_config, dict):
-                    errors.setdefault(host_string+'.spot_config', []).append(
-                        'Must be a JSON object containing a spot_price field.'
-                    )
+                if spot_config is not None and \
+                        not isinstance(spot_config, dict):
+                    errors.setdefault(
+                        host_string + '.spot_config', []) \
+                        .append('Must be a JSON object containing a '
+                                'spot_price field.')
                 elif spot_config is not None:
                     if 'spot_price' not in spot_config:
-                        errors.setdefault(host_string+'.spot_config', []).append(
-                            'spot_price is a required field.'
-                        )
+                        errors.setdefault(host_string + '.spot_config', []) \
+                            .append('spot_price is a required field.')
                     elif not isinstance(spot_config['spot_price'], float):
-                        errors.setdefault(host_string+'.spot_config', []).append(
-                            'spot_price must be a decimal value.' 
-                        )
+                        errors.setdefault(host_string + '.spot_config', []) \
+                            .append('spot_price must be a decimal value.')
                     elif spot_config['spot_price'] < 0:
-                        errors.setdefault(host_string+'.spot_config', []).append(
-                            'spot_price must be a non-negative value.' 
-                        )
-                        
+                        errors.setdefault(host_string + '.spot_config', []) \
+                            .append('spot_price must be a non-negative value.')
+
         if errors:
             raise BadRequest(errors)
 
@@ -361,13 +379,16 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         if isinstance(properties, list):
             with transaction.commit_on_success():
                 blueprint.properties.all().delete()
-                for name, value in set([(p['name'], p['value']) for p in properties]):
+                for name, value in set([(p['name'], p['value'])
+                                        for p in properties]):
                     blueprint.properties.create(name=name, value=value)
 
-        # since we have already updated the properties list, trick super::update
-        # method into thinking no properties have changed
+        # since we have already updated the properties list, trick
+        # super::update method into thinking no properties have changed
         request.DATA['properties'] = []
-        return super(BlueprintDetailAPIView, self).update(request, *args, **kwargs)
+        return super(BlueprintDetailAPIView, self).update(request,
+                                                          *args,
+                                                          **kwargs)
 
     def delete(self, request, *args, **kwargs):
         '''
@@ -376,7 +397,9 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         blueprint = self.get_object()
         if blueprint.owner != request.user:
             raise BadRequest('Only the owner of a blueprint may delete it.')
-        return super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)
+        return super(BlueprintDetailAPIView, self).delete(request,
+                                                          *args,
+                                                          **kwargs)
 
 
 class BlueprintPropertiesAPIView(generics.RetrieveAPIView):
@@ -392,4 +415,3 @@ class BlueprintPropertiesAPIView(generics.RetrieveAPIView):
         return get_object_or_404(self.model,
                                  Q(owner=self.request.user) | Q(public=True),
                                  pk=self.kwargs.get('pk'))
-
