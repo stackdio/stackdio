@@ -193,6 +193,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         # Queue up stack destroy tasks
         task_chain = (
+            tasks.update_metadata.si(stack.id) |
             tasks.register_volume_delete.si(stack.id) |
             tasks.unregister_dns.si(stack.id) | 
             tasks.destroy_hosts.si(stack.id, parallel=parallel)
@@ -266,13 +267,13 @@ class StackActionAPIView(generics.SingleObjectAPIView):
 
         # In case of a launch action, the stack must not have any available 
         # hosts (ie, the stack must have already been terminated.)
-        if action == BaseCloudProvider.ACTION_LAUNCH and total_host_count > 0:
-            raise BadRequest('Launching a stack is only available when '
-                             'the stack is in a terminated state. This '
-                             'stack has %d hosts available.' % total_host_count)
+        #if action == BaseCloudProvider.ACTION_LAUNCH and total_host_count > 0:
+        #    raise BadRequest('Launching a stack is only available when '
+        #                     'the stack is in a terminated state. This '
+        #                     'stack has %d hosts available.' % total_host_count)
 
-        # All other actions require hosts to be available
-        elif action != BaseCloudProvider.ACTION_LAUNCH and total_host_count == 0:
+        # All actions other than launch require hosts to be available
+        if action != BaseCloudProvider.ACTION_LAUNCH and total_host_count == 0:
             raise BadRequest('The submitted action requires the stack to have '
                              'available hosts. Perhaps you meant to run the '
                              'launch action instead.')
