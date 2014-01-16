@@ -1,14 +1,12 @@
 import logging
 
-from django.db import transaction
 from django.db.models import Q
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 
-from core.exceptions import BadRequest, ResourceConflict
+from core.exceptions import BadRequest
 
 from . import tasks
 from . import serializers
@@ -36,9 +34,11 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         public = request.DATA.get('public', False)
 
         if not uri and not formulas:
-            raise BadRequest('A uri field or a list of URIs in the formulas field is required.')
+            raise BadRequest('A uri field or a list of URIs in the formulas '
+                             'field is required.')
         if uri and formulas:
-            raise BadRequest('uri and formulas fields can not be used together.')
+            raise BadRequest('uri and formulas fields can not be used '
+                             'together.')
         if uri and not formulas:
             formulas = [uri]
 
@@ -46,7 +46,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         errors = []
         for uri in formulas:
             try:
-                formula = self.model.objects.get(uri=uri, owner=request.user)
+                self.model.objects.get(uri=uri, owner=request.user)
                 errors.append('Duplicate formula detected: {0}'.format(uri))
             except self.model.DoesNotExist:
                 pass
@@ -109,11 +109,11 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         public = request.DATA.get('public', None)
         if public is None or len(request.DATA) > 1:
-            raise BadRequest("Only 'public' field of a formula may be modified.")
+            raise BadRequest('Only "public" field of a formula may be '
+                             'modified.')
 
         if not isinstance(public, bool):
             raise BadRequest("'public' field must be a boolean value.")
-
 
         # Update formula's public field
         formula.public = public
@@ -128,7 +128,12 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         formula = self.get_object()
         if formula.owner != request.user:
             raise BadRequest('Only the owner of a formula may delete it.')
-        return super(FormulaDetailAPIView, self).delete(request, *args, **kwargs)
+
+        # Check for resources depending on this formula
+
+        return super(FormulaDetailAPIView, self).delete(request,
+                                                        *args,
+                                                        **kwargs)
 
 
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):
@@ -156,4 +161,3 @@ class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return get_object_or_404(self.model,
                                  pk=self.kwargs.get('pk'),
                                  formula__owner=self.request.user)
-

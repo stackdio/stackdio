@@ -7,14 +7,16 @@ from django.db import models
 from django.db import transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
+from django_extensions.db.models import (
+    TimeStampedModel,
+    TitleSlugDescriptionModel,
+)
 
 from core.fields import DeletingFileField
 from cloud.models import (
     CloudProfile,
     CloudInstanceSize,
     CloudZone,
-    Snapshot
 )
 from formulas.models import FormulaComponent
 
@@ -34,6 +36,7 @@ DEVICE_ID_CHOICES = [
 
 logger = logging.getLogger(__name__)
 
+
 def get_props_file_path(obj, filename):
     return "blueprints/{0}/{1}.props".format(obj.owner.username, obj.slug)
 
@@ -42,76 +45,6 @@ class BlueprintManager(models.Manager):
     @transaction.commit_on_success
     def create(self, owner, data):
         '''
-        data is a JSON object that looks something like:
-
-        {
-            "title": "Test Blueprint",
-            "description": "Testing and stuff...",
-            "public": true | false,
-            "properties": {
-                "prop1": "value1",
-                "foo": {
-                    "bar": {
-                        "prop2": "value2"
-                    }
-                }
-            },
-            "hosts": [
-                {
-                    "count": 1,
-                    "size": 1,          # what instance_size id to use
-                    "hostname_template": "foo-{user}-{index}",    # the naming pattern for the host's
-                                        # hostname, template variables are
-                                        # supported
-                    "zone": 1,          # availability zone id
-                    "cloud_profile": 1, # what cloud_profile id to use
-                    "access_rules": [                                   # access rule configuration (optional)
-                        {
-                            "protocol": "tcp | udp | icmp",
-                            "from_port": "1-65535 | -1 for icmp",
-                            "to_port": "1-65535 | -1 for icmp",
-                            "rule": "CIDR | owner_id:group (AWS only)"
-                        },
-                        {
-                            "protocol": "tcp",
-                            "from_port": "22",
-                            "to_port": "22",
-                            "rule": "0.0.0.0/0"
-                        },
-                        {
-                        ...
-                        more rules
-                        ...
-                        },
-                    ],
-                    "volumes": [                        # volume configuration (optional)
-                        {
-                            "device": "/dev/xvdj",
-                            "mount_point": "/mnt/ebs1",
-                            "snapshot": 1
-                        },
-                        {
-                            "device": "/dev/xvdk",
-                            "mount_point": "/mnt/ebs2",
-                            "snapshot": 1
-                        }
-                    ],
-                    "formula_components": [             # formula components to attach to this host
-                        {"id": 1},                      # based on component id
-                        {"title": "foo"},               # based on component title__icontains
-                        {"id": 1, "order": 0}           # specific ordering of component provisioning
-                    ],
-                    "spot_config": {                    # spot instance configuration (optional)
-                        "spot_price": 0.20
-                    }
-                },
-                {
-                    ...
-                    more hosts
-                    ...
-                }
-            ]
-        }
         '''
 
         ##
@@ -125,7 +58,8 @@ class BlueprintManager(models.Manager):
 
         props_json = json.dumps(data.get('properties', {}), indent=4)
         if not blueprint.props_file:
-            blueprint.props_file.save(blueprint.slug+'.props', ContentFile(props_json))
+            blueprint.props_file.save(blueprint.slug + '.props',
+                                      ContentFile(props_json))
         else:
             with open(blueprint.props_file.path, 'w') as f:
                 f.write(props_json)
@@ -205,7 +139,8 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         unique_together = ('owner', 'title')
 
     # owner of the blueprint
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blueprints')
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL,
+                              related_name='blueprints')
 
     # publicly available to other users?
     public = models.BooleanField(default=False)
@@ -223,7 +158,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     objects = BlueprintManager()
 
     def __unicode__(self):
-   		return u'{0} (id={1})'.format(self.title, self.id)
+        return u'{0} (id={1})'.format(self.title, self.id)
 
     @property
     def host_definition_count(self):
@@ -370,4 +305,3 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
 
     def __unicode__(self):
         return u'BlueprintVolume: {0}'.format(self.pk)
-

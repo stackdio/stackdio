@@ -4,7 +4,6 @@ import os
 import re
 import logging
 import socket
-from decimal import Decimal
 
 from django.conf import settings
 from django.db import models, transaction
@@ -14,23 +13,21 @@ from django.core.files.storage import FileSystemStorage
 import envoy
 import yaml
 
-from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
-import model_utils.models 
+from django_extensions.db.models import (
+    TimeStampedModel,
+    TitleSlugDescriptionModel,
+)
+import model_utils.models
 from model_utils import Choices
 
 from core.fields import DeletingFileField
-from cloud.models import (
-    CloudProvider,
-    CloudProfile,
-    CloudZone,
-    CloudInstanceSize,
-    SecurityGroup
-)
+from cloud.models import SecurityGroup
 from volumes.models import Volume
 
 logger = logging.getLogger(__name__)
 
 HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
+
 
 # Thanks Alex Martelli
 # http://goo.gl/nENTTt
@@ -47,17 +44,22 @@ def recursive_update(d, u):
             d[k] = u[k]
     return d
 
+
 def get_map_file_path(obj, filename):
     return "stacks/{0}/{1}.map".format(obj.owner.username, obj.slug)
+
 
 def get_top_file_path(obj, filename):
     return "stack_{0}_top.sls".format(obj.id)
 
+
 def get_overstate_file_path(obj, filename):
     return "stack_{0}_overstate.sls".format(obj.id)
 
+
 def get_pillar_file_path(obj, filename):
     return "stacks/{0}/{1}.pillar".format(obj.owner.username, obj.slug)
+
 
 def get_props_file_path(obj, filename):
     return "stacks/{0}/{1}.props".format(obj.owner.username, obj.slug)
@@ -111,7 +113,8 @@ class StackManager(models.Manager):
         recursive_update(properties, data.get('properties', {}))
         props_json = json.dumps(properties, indent=4)
         if not stack.props_file:
-            stack.props_file.save(stack.slug+'.props', ContentFile(props_json))
+            stack.props_file.save(stack.slug + '.props',
+                                  ContentFile(props_json))
         else:
             with open(stack.props_file.path, 'w') as f:
                 f.write(props_json)
@@ -129,11 +132,11 @@ class StackManager(models.Manager):
 
             # create the managed security group for each host definition
             # and assign the rules to the group
-            sg_name='managed-{0}-{1}-stack-{2}'.format(
+            sg_name = 'managed-{0}-{1}-stack-{2}'.format(
                 owner.username,
                 hostdef.slug,
                 stack.pk)
-            sg_description='stackd.io managed security group'
+            sg_description = 'stackd.io managed security group'
             sg_id = driver.create_security_group(sg_name, sg_description)
 
             for access_rule in hostdef.access_rules.all():
@@ -167,11 +170,13 @@ class StackManager(models.Manager):
                                           hostname=hostname,
                                           sir_price=hostdef.spot_price)
 
-                # Add in the cloud provider default security groups as 
+                # Add in the cloud provider default security groups as
                 # defined by an admin.
-                provider_groups = set(list(host.cloud_profile.cloud_provider.security_groups.filter(
-                    is_default=True
-                )))
+                provider_groups = set(list(
+                    host.cloud_profile.cloud_provider.security_groups.filter(
+                        is_default=True
+                    )
+                ))
 
                 # set security groups
                 host.security_groups.add(*provider_groups)
@@ -186,7 +191,7 @@ class StackManager(models.Manager):
                     logger.debug(host)
                     Volume.objects.create(
                         stack=stack,
-                        host=host, 
+                        host=host,
                         snapshot=volumedef.snapshot,
                         hostname=hostname,
                         device=volumedef.device,
@@ -201,7 +206,7 @@ class StackManager(models.Manager):
         stack._generate_top_file()
         stack._generate_overstate_file()
         stack._generate_map_file()
-                
+
         return stack
 
 
@@ -230,7 +235,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
 
     # What blueprint did this stack derive from?
-    blueprint = models.ForeignKey('blueprints.Blueprint', related_name='stacks')
+    blueprint = models.ForeignKey('blueprints.Blueprint',
+                                  related_name='stacks')
 
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
@@ -330,7 +336,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         recursive_update(properties, props)
         props_json = json.dumps(properties, indent=4)
         if not self.props_file:
-            self.props_file.save(self.slug+'.props', ContentFile(props_json))
+            self.props_file.save(self.slug + '.props', ContentFile(props_json))
         else:
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
@@ -354,14 +360,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 cloud_provider.yaml)[cloud_provider.slug]
 
             # pull various stuff we need for a host
-            roles = [c.component.sls_path for c in host.formula_components.all()]
+            roles = [c.component.sls_path for
+                     c in host.formula_components.all()]
             instance_size = host.instance_size.title
             security_groups = set([
                 sg.name for sg in host.security_groups.all()
             ])
             volumes = host.volumes.all()
 
-            fqdn = '{0}.{1}'.format(host.hostname, 
+            fqdn = '{0}.{1}'.format(host.hostname,
                                     cloud_provider_yaml['append_domain'])
 
             availability_zone = host.availability_zone.title
@@ -399,8 +406,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                             'grains.items': []
                         },
 
-                        # Grains are very useful when you need to set some 
-                        # static information about a machine (e.g., what stack 
+                        # Grains are very useful when you need to set some
+                        # static information about a machine (e.g., what stack
                         # id its registered under or how many total machines
                         # are in the cluster)
                         'grains': {
@@ -414,7 +421,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     },
 
                     # The rest of the settings in the map are salt-cloud
-                    # specific and control the VM in various ways 
+                    # specific and control the VM in various ways
                     # depending on the cloud provider being used.
                     'size': instance_size,
                     'securitygroup': list(security_groups),
@@ -426,16 +433,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # Add in spot instance config if needed
             if host.sir_price:
                 host_metadata[host.hostname]['spot_config'] = {
-                    'spot_price': str(host.sir_price) # convert to string
+                    'spot_price': str(host.sir_price)  # convert to string
                 }
 
-            profiles.setdefault(host.cloud_profile.slug, []).append(host_metadata)
+            profiles.setdefault(host.cloud_profile.slug, []) \
+                .append(host_metadata)
 
         map_file_yaml = yaml.safe_dump(profiles,
                                        default_flow_style=False)
 
         if not self.map_file:
-            self.map_file.save(self.slug+'.map', ContentFile(map_file_yaml))
+            self.map_file.save(self.slug + '.map', ContentFile(map_file_yaml))
         else:
             with open(self.map_file.path, 'w') as f:
                 f.write(map_file_yaml)
@@ -452,19 +460,21 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
         if not self.top_file:
-            self.top_file.save('stack_{0}_top.sls'.format(self.pk), ContentFile(top_file_yaml))
+            self.top_file.save('stack_{0}_top.sls'.format(self.pk),
+                               ContentFile(top_file_yaml))
         else:
             with open(self.top_file.path, 'w') as f:
                 f.write(top_file_yaml)
 
-    def _generate_overstate_file(self): 
-        from blueprints.models import BlueprintHostFormulaComponent
+    def _generate_overstate_file(self):
         hosts = self.hosts.all()
 
         # Get the unique set of components for this stack
         components = set()
         for host in hosts:
-            components.update(list(host.formula_components.all().order_by('order')))
+            components.update(list(
+                host.formula_components.all().order_by('order')
+            ))
 
         # build a data structure more suitable for helping us build
         # the overstate dict
@@ -506,7 +516,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 }
 
                 if i > 0:
-                    overstate[host]['require'] = groups[i-1].keys()
+                    overstate[host]['require'] = groups[i - 1].keys()
 
         # Dump the overstate dict into yaml for salt
         yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
@@ -529,15 +539,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         }
 
         # If any of the formulas we're using have default pillar
-        # data defined in its corresponding SPECFILE, we need to pull 
+        # data defined in its corresponding SPECFILE, we need to pull
         # that into our stack pillar file.
 
         # First get the unique set of formulas
         hosts = self.hosts.all()
-        formulas = set([c.component.formula for c in BlueprintHostFormulaComponent.objects.filter(
-            hosts__in=hosts
-        )])
-        
+        formulas = set(
+            [c.component.formula for
+             c in BlueprintHostFormulaComponent.objects.filter(
+                 hosts__in=hosts)]
+        )
+
         # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
             recursive_update(pillar_props, formula.properties)
@@ -550,7 +562,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                                           default_flow_style=False)
 
         if not self.pillar_file:
-            self.pillar_file.save('{0}.pillar'.format(self.slug), 
+            self.pillar_file.save('{0}.pillar'.format(self.slug),
                                   ContentFile(pillar_file_yaml))
         else:
             with open(self.pillar_file.path, 'w') as f:
@@ -562,7 +574,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         '''
         try:
             logger.info('get_hosts_info: {0!r}'.format(self))
-             
+
             # salt-cloud command to pull host information with
             # a yaml output
             query_cmd = ' '.join([
@@ -587,7 +599,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # Run the envoy stdout through the yaml parser. The format
             # will always be a dictionary with one key (the provider type)
             # and a value that's a dictionary containing keys for every
-            # host in the stack. 
+            # host in the stack.
             yaml_result = yaml.safe_load(result.std_out)
 
             # yaml_result contains all host information in the stack, but
@@ -598,7 +610,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 cloud_provider = host.cloud_profile.cloud_provider
                 provider_type = cloud_provider.provider_type
 
-                # each host is buried in a cloud provider type dict that's 
+                # each host is buried in a cloud provider type dict that's
                 # inside a cloud provider name dict
                 host_result[host.hostname] = yaml_result \
                     .get(cloud_provider.slug, {}) \
@@ -608,7 +620,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             logger.debug('query_hosts transform: {0!r}'.format(host_result))
             return host_result
 
-        except Exception, e:
+        except Exception:
             logger.exception('Unhandled exception')
             raise
 
@@ -621,6 +633,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             os.makedirs(log_dir)
         return log_dir
 
+
 class StackHistory(TimeStampedModel):
 
     class Meta:
@@ -629,7 +642,7 @@ class StackHistory(TimeStampedModel):
 
     stack = models.ForeignKey('Stack', related_name='history')
 
-    # What 'event' (method name, task name, etc) that caused 
+    # What 'event' (method name, task name, etc) that caused
     # this status update
     event = models.CharField(max_length=128)
 
@@ -637,13 +650,12 @@ class StackHistory(TimeStampedModel):
     status = models.TextField(blank=True)
 
     # Optional: level (DEBUG, INFO, WARNING, ERROR, etc)
-    level = models.CharField(max_length=16,
-                             choices=(
-                                (Level.DEBUG, Level.DEBUG),
-                                (Level.INFO, Level.INFO),
-                                (Level.WARN, Level.WARN),
-                                (Level.ERROR, Level.ERROR),
-                             ))
+    level = models.CharField(max_length=16, choices=(
+        (Level.DEBUG, Level.DEBUG),
+        (Level.INFO, Level.INFO),
+        (Level.WARN, Level.WARN),
+        (Level.ERROR, Level.ERROR),
+    ))
 
 
 class Host(TimeStampedModel, StatusDetailModel):
@@ -666,16 +678,17 @@ class Host(TimeStampedModel, StatusDetailModel):
                                       related_name='hosts')
 
     availability_zone = models.ForeignKey('cloud.CloudZone',
-                                      related_name='hosts')
+                                          related_name='hosts')
 
-    formula_components = models.ManyToManyField('blueprints.BlueprintHostFormulaComponent',
-                                                related_name='hosts')
+    formula_components = models.ManyToManyField(
+        'blueprints.BlueprintHostFormulaComponent',
+        related_name='hosts')
 
     hostname = models.CharField(max_length=64)
 
     security_groups = models.ManyToManyField('cloud.SecurityGroup',
                                              related_name='hosts')
-    
+
     # The machine state as provided by the cloud provider
     state = models.CharField(max_length=32, default='unknown')
 
@@ -716,4 +729,3 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     def get_driver(self):
         return self.cloud_profile.get_driver()
-
