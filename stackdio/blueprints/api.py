@@ -4,7 +4,7 @@ import string
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 
@@ -16,6 +16,7 @@ from . import filters
 
 from formulas.models import FormulaComponent
 from cloud.models import Snapshot
+from stacks.serializers import StackSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -403,7 +404,15 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             raise BadRequest('Only the owner of a blueprint may delete it.')
 
         # Check usage
-
+        stacks = blueprint.stacks.all()
+        if stacks:
+            stacks = StackSerializer(stacks,
+                                     context=dict(request=request)).data
+            return Response({
+                'detail': 'This blueprint is in use by one or more '
+                          'stacks and cannot be removed.',
+                'stacks': stacks
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         return super(BlueprintDetailAPIView, self).delete(request,
                                                           *args,

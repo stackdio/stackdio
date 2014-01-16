@@ -2,11 +2,12 @@ import logging
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 
 from core.exceptions import BadRequest
+from blueprints.serializers import BlueprintSerializer
 
 from . import tasks
 from . import serializers
@@ -123,13 +124,28 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         '''
-        Override the delete method to check for ownership.
+        Override the delete method to check for ownership and prvent
+        delete if other resources depend on this formula or one
+        of its components.
         '''
         formula = self.get_object()
         if formula.owner != request.user:
             raise BadRequest('Only the owner of a formula may delete it.')
 
-        # Check for resources depending on this formula
+        # Check for Blueprints depending on this formula
+        blueprints = set()
+        for c in formula.components.all():
+            blueprints.update([i.host.blueprint
+                               for i in c.blueprinthostformulacomponent_set.all()])
+
+        if blueprints:
+            blueprints = BlueprintSerializer(blueprints,
+                                             context={'request': request}).data
+            return Response({
+                'detail': 'One or more blueprints are making use of this '
+                          'formula.',
+                'blueprints': blueprints,
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         return super(FormulaDetailAPIView, self).delete(request,
                                                         *args,

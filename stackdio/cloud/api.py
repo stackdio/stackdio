@@ -1,26 +1,19 @@
 import logging
 import yaml
-import os
-import fnmatch
 
-from collections import defaultdict
-
-from django.conf import settings
 from django.http import Http404
 
 from rest_framework import (
     generics,
     parsers,
     permissions,
+    status
 )
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
-from core import (
-    renderers as core_renderers,
-)
-
 from core.exceptions import BadRequest, ResourceConflict
+from blueprints.serializers import BlueprintSerializer
 
 from .models import (
     CloudProvider,
@@ -61,7 +54,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
     permission_classes = (permissions.DjangoModelPermissions,)
 
     def post_save(self, provider_obj, created=False):
-        
+
         data = self.request.DATA
         files = self.request.FILES
 
@@ -73,18 +66,18 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
             # will be serialized down to yaml and stored in both the database
             # and the salt cloud providers file
             provider_data = driver.get_provider_data(data, files)
-            
+
             # Generate the yaml and store in the database
             yaml_data = {}
             yaml_data[provider_obj.slug] = provider_data
             provider_obj.yaml = yaml.safe_dump(yaml_data,
-                                      default_flow_style=False)
+                                               default_flow_style=False)
             provider_obj.save()
 
             # Update the salt cloud providers file
             provider_obj.update_config()
 
-        except CloudProviderType.DoesNotExist, e:
+        except CloudProviderType.DoesNotExist:
             err_msg = 'Provider types does not exist.'
             logger.exception(err_msg)
             raise BadRequest(err_msg)
@@ -95,9 +88,17 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
-    def destroy(self, *args, **kwargs):
-        # TODO: need to prevent the delete if infrastructure is still up
-        # that depends on this provider
+    def destroy(self, request, *args, **kwargs):
+        # check for profiles using this provider before deleting
+        profiles = set(self.get_object().profiles.all())
+        if profiles:
+            profiles = CloudProfileSerializer(profiles,
+                                              context={'request': request}).data # NOQA
+            return Response({
+                'detail': 'One or more profiles are making use of this '
+                          'provider.',
+                'profiles': profiles,
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # ask the driver to clean up after itsef since it's no longer needed
         driver = self.get_object().get_driver()
@@ -130,6 +131,23 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
+    def destroy(self, request, *args, **kwargs):
+        # check for blueprint usage before deleting
+        blueprints = set([hd.blueprint
+                          for hd in self.get_object().host_definitions.all()])
+        if blueprints:
+            blueprints = BlueprintSerializer(blueprints,
+                                             context={'request': request}).data
+            return Response({
+                'detail': 'One or more blueprints are making use of this '
+                          'profile.',
+                'blueprints': blueprints,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return super(CloudProfileDetailAPIView, self).destroy(request,
+                                                              *args,
+                                                              **kwargs)
+
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
     model = Snapshot
@@ -161,7 +179,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
     Retrieves all security groups owned by the authenticated user.
     The associated rules for each group will also be given in the
-    `rules` attribute. The `active_hosts` field will also be 
+    `rules` attribute. The `active_hosts` field will also be
     updated to show the number of hosts known by stackd.io to be
     using the security group at this time, but please **note**
     that other machines in the cloud provider could be using
@@ -179,7 +197,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
     `cloud_provider` -- The id of the cloud provider to associate
                         this group with.
-    
+
     `is_default` -- Boolean representing if this group, for this
                     provider, is set to automatically be added
                     to all hosts launched on the provider. **NOTE**
@@ -222,16 +240,15 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
         # check if the group already exists in our DB first
         try:
-            existing_group = SecurityGroup.objects.get(
+            SecurityGroup.objects.get(
                 name=name,
                 cloud_provider=provider
             )
-            raise ResourceConflict('Security group already '
-                                                  'exists.')
+            raise ResourceConflict('Security group already exists')
         except SecurityGroup.DoesNotExist:
             # doesn't exist in our database
             pass
-             
+
         # check if the group exists on the provider
         provider_group = None
         try:
@@ -247,7 +264,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                                        'allowed to import them.')
         except (KeyError, PermissionDenied):
             raise
-        except Exception, e:
+        except Exception:
             # doesn't exist on the provider either, we'll create it now
             provider_group = None
 
@@ -290,7 +307,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     ### GET
 
     Retrieves the detail for the security group as defined by its
-    `pk` identifier in the URL. The associated `rules` and 
+    `pk` identifier in the URL. The associated `rules` and
     `active_hosts` fields will be populated like with the full
     list.
 
@@ -331,7 +348,8 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                    'security groups.')
 
         if 'is_default' not in request.DATA:
-            raise BadRequest('is_default is the only field allowed to be updated.')
+            raise BadRequest('is_default is the only field allowed to be '
+                             'updated.')
 
         is_default = request.DATA.get('is_default')
         if not isinstance(is_default, bool):
@@ -342,9 +360,10 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         if obj.is_default != is_default:
             obj.is_default = is_default
             obj.save()
-            
+
             # update providers configuration file
-            logger.debug('Security group is_default modified; updating cloud provider configuration.')
+            logger.debug('Security group is_default modified; updating cloud '
+                         'provider configuration.')
             obj.cloud_provider.update_config()
 
         serializer = self.get_serializer(obj)
@@ -367,12 +386,15 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         # store the is_default and delete the security group
         is_default = sg.is_default
-        result = super(SecurityGroupDetailAPIView, self).destroy(request, *args, **kwargs)
+        result = super(SecurityGroupDetailAPIView, self).destroy(request,
+                                                                 *args,
+                                                                 **kwargs)
 
         # update providers configuration file if the security
         # group's is_default was True
         if is_default:
-            logger.debug('Security group deleted and is_default set to True; updating cloud provider configuration.')
+            logger.debug('Security group deleted and is_default set to True; '
+                         'updating cloud provider configuration.')
             provider.update_config()
 
         # return the original destroy response
@@ -395,7 +417,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
     `to_port` -- the ending port for the rule's port range [1-65535]
 
     `rule` -- the actual rule, this should be either a CIDR (IP address
-    with associated routing prefix) **or** an existing account ID and 
+    with associated routing prefix) **or** an existing account ID and
     group name combination to authorize or revoke for the rule. See
     examples below.
 
@@ -417,7 +439,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
             'rule': '<account_number>:<group_name>'
         }
 
-        Where account_number is the account ID of the provider and 
+        Where account_number is the account ID of the provider and
         group_name is an existing group name on that provider.
 
     To revoke either of the rules above, you would just change the `action`
@@ -433,7 +455,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
         driver = sg.cloud_provider.get_driver()
         result = driver.get_security_groups(sg.name)
         return Response(result[sg.name]['rules'])
-        
+
     def update(self, request, *args, **kwargs):
         sg = self.get_object()
         provider = sg.cloud_provider
@@ -460,7 +482,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
         # address and anything else will be considered a group
         # rule, however, a group can contain the account id of
         # the group we're dealing with. If the group rule does
-        # not contain a colon then we'll add the provider's 
+        # not contain a colon then we'll add the provider's
         # account id
         rule = request.DATA.get('rule')
         if not driver.is_cidr_rule(rule) and ':' not in rule:
@@ -481,20 +503,22 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
         result = driver.get_security_groups(sg.name)
         return Response(result[sg.name]['rules'])
-    
+
 
 class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
     '''
-    Like the standard, top-level Security Group List API, this API will allow you 
-    to create and pull security groups. The only significant difference is that
-    GET requests will only return security groups associated with the provider.
-    *For regular users*, this will only show security groups owned by you and
-    associated with the provider. *For admins*, this will pull all security groups 
-    on the provider, regardless of ownership.
+    Like the standard, top-level Security Group List API, this API will allow
+    you to create and pull security groups. The only significant difference is
+    that GET requests will only return security groups associated with the
+    provider.
 
-    Additionally, admins may provide a query parameter and value 
+    *For regular users*, this will only show security groups owned by you and
+    associated with the provider. *For admins*, this will pull all security
+    groups on the provider, regardless of ownership.
+
+    Additionally, admins may provide a query parameter and value
     `filter=default` to only show the security groups that have been designated
-    as "default" groups to be attached to all hosts started using this provider.
+    as "default" groups to be attached to all hosts started using this provider
 
     See the standard, top-level Security Group API for further information.
     '''
@@ -506,7 +530,7 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
     def get_queryset(self):
         provider = self.get_provider()
 
-        # if admin, return all of the known default security groups on the 
+        # if admin, return all of the known default security groups on the
         # account
         if self.request.user.is_superuser:
             kwargs = {}
@@ -531,10 +555,9 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
         # only admins get to see all the groups on the account
         if not request.user.is_superuser:
             return response
-        
+
         # Grab the groups from the provider and inject them into the response
         driver = self.get_provider().get_driver()
         provider_groups = driver.get_security_groups()
         response.data['provider_groups'] = provider_groups
         return response
-

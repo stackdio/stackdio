@@ -183,7 +183,8 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
 
     # The cloud profile object this host should use when being
     # launched
-    cloud_profile = models.ForeignKey('cloud.CloudProfile')
+    cloud_profile = models.ForeignKey('cloud.CloudProfile',
+                                      related_name='host_definitions')
 
     # The default number of instances to launch for this host definition
     count = models.IntegerField()

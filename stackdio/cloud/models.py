@@ -1,5 +1,4 @@
 import logging
-import os
 import yaml
 
 from django.conf import settings
@@ -7,7 +6,10 @@ from django.db import models
 from django.core.files.storage import FileSystemStorage
 from django.core.files.base import ContentFile
 
-from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
+from django_extensions.db.models import (
+    TimeStampedModel,
+    TitleSlugDescriptionModel,
+)
 from queryset_transform import TransformManager, TransformQuerySet
 
 from core.fields import DeletingFileField
@@ -24,14 +26,15 @@ FILESYSTEM_CHOICES = (
     ('xfs', 'xfs'),
 )
 
+
 def get_config_file_path(obj, filename):
-    return obj.slug+'.conf'
+    return obj.slug + '.conf'
 
 
 class CloudProviderType(models.Model):
     PROVIDER_CHOICES = get_cloud_provider_choices()
-    type_name = models.CharField(max_length=32, 
-                                 choices=PROVIDER_CHOICES, 
+    type_name = models.CharField(max_length=32,
+                                 choices=PROVIDER_CHOICES,
                                  unique=True)
 
     def __unicode__(self):
@@ -82,14 +85,16 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         Writes the yaml configuration file for the given provider object.
         '''
         # update the provider object's security group information
-        security_groups = [sg.name for sg in self.security_groups.filter(is_default=True)]
+        security_groups = [sg.name for sg in self.security_groups.filter(
+            is_default=True
+        )]
         provider_yaml = yaml.safe_load(self.yaml)
         provider_yaml[self.slug]['securitygroup'] = security_groups
         self.yaml = yaml.safe_dump(provider_yaml, default_flow_style=False)
         self.save()
 
         if not self.config_file:
-            self.config_file.save(self.slug+'.conf',
+            self.config_file.save(self.slug + '.conf',
                                   ContentFile(self.yaml))
         else:
             with open(self.config_file.path, 'w') as f:
@@ -100,8 +105,8 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
 class CloudInstanceSize(TitleSlugDescriptionModel):
     class Meta:
         ordering = ['id']
-    
-    # `title` field will be the type used by salt-cloud for the `size` 
+
+    # `title` field will be the type used by salt-cloud for the `size`
     # parameter in the providers yaml file (e.g., 'Micro Instance' or
     # '512MB Standard Instance'
 
@@ -112,7 +117,7 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     instance_id = models.CharField(max_length=64)
 
     def __unicode__(self):
-        
+
         return '{0} ({1})'.format(self.title, self.instance_id)
 
 
@@ -121,8 +126,9 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
         unique_together = ('title', 'cloud_provider')
 
     # What cloud provider is this under?
-    cloud_provider = models.ForeignKey('CloudProvider')
-    
+    cloud_provider = models.ForeignKey('CloudProvider',
+                                       related_name='profiles')
+
     # The underlying image id of this profile (e.g., ami-38df83a')
     image_id = models.CharField(max_length=64)
 
@@ -130,7 +136,7 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     # by the user at creation time
     default_instance_size = models.ForeignKey('CloudInstanceSize')
 
-    # The SSH user that will have default access to the box. Salt-cloud 
+    # The SSH user that will have default access to the box. Salt-cloud
     # needs this to provision the box as a salt-minion and connect it
     # up to the salt-master automatically.
     ssh_user = models.CharField(max_length=64)
@@ -159,7 +165,7 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
             'size': self.default_instance_size.title,
             'ssh_username': self.ssh_user,
             'script': settings.STACKDIO_CONFIG['SALT_CLOUD_BOOTSTRAP_SCRIPT'],
-            'script_args': settings.STACKDIO_CONFIG['SALT_CLOUD_BOOTSTRAP_ARGS'],
+            'script_args': settings.STACKDIO_CONFIG['SALT_CLOUD_BOOTSTRAP_ARGS'],  # NOQA
             'sync_after_install': 'all',
             # PI-44: Need to add an empty minion config until salt-cloud/701
             # is fixed.
@@ -169,7 +175,7 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
                                       default_flow_style=False)
 
         if not self.config_file:
-            self.config_file.save(self.slug+'.conf',
+            self.config_file.save(self.slug + '.conf',
                                   ContentFile(profile_yaml))
         else:
             with open(self.config_file.path, 'w') as f:
@@ -179,13 +185,15 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     def get_driver(self):
         return self.cloud_provider.get_driver()
 
+
 class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 
     class Meta:
         unique_together = ('snapshot_id', 'cloud_provider')
-    
+
     # The cloud provider that has access to this snapshot
-    cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='snapshots')
+    cloud_provider = models.ForeignKey('cloud.CloudProvider',
+                                       related_name='snapshots')
 
     # The snapshot id. Must exist already, be preformatted, and available
     # to the associated cloud provider
@@ -198,6 +206,7 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
     # the type of file system the volume uses
     filesystem_type = models.CharField(max_length=16,
                                        choices=FILESYSTEM_CHOICES)
+
 
 class CloudZone(TitleSlugDescriptionModel):
 
@@ -212,7 +221,7 @@ class CloudZone(TitleSlugDescriptionModel):
 
 
 class SecurityGroupQuerySet(TransformQuerySet):
-    
+
     def with_rules(self):
         logger.debug('SecurityGroupQuerySet::with_rules called...')
         return self.transform(self._inject_rules)
@@ -234,7 +243,7 @@ class SecurityGroupQuerySet(TransformQuerySet):
             # add in the rules
             for group in groups:
                 group.rules = provider_groups[group.name]['rules']
-            
+
 
 class SecurityGroupManager(TransformManager):
 
@@ -260,10 +269,12 @@ class SecurityGroup(TimeStampedModel, models.Model):
     group_id = models.CharField(max_length=16, blank=True)
 
     # the cloud provider for this group
-    cloud_provider = models.ForeignKey('cloud.CloudProvider', related_name='security_groups')
+    cloud_provider = models.ForeignKey('cloud.CloudProvider',
+                                       related_name='security_groups')
 
     # the owner of this security group
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='security_groups')
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL,
+                              related_name='security_groups')
 
     # ADMIN-ONLY: setting this to true will cause this security group
     # to be added automatically to all machines that get started in
@@ -283,4 +294,3 @@ class SecurityGroup(TimeStampedModel, models.Model):
         logger.debug('SecurityGroup::rules called...')
         driver = self.cloud_provider.get_driver()
         return driver.get_security_groups([self.name])[self.name]['rules']
-
