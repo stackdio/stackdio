@@ -1,9 +1,7 @@
 import logging
-from collections import defaultdict
 from datetime import datetime
 from operator import or_
 
-import celery
 from django.shortcuts import get_object_or_404
 
 from rest_framework import (
@@ -13,11 +11,7 @@ from rest_framework import (
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.exceptions import (
-    ResourceConflict,
-    BadRequest,
-)
-
+from core.exceptions import BadRequest
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
 from blueprints.models import Blueprint
@@ -40,11 +34,12 @@ class StackListAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         return self.request.user.stacks.all()
 
-    def create(self, request, *args, **kwargs):
+    # TODO: Code complexity issues are ignored for now
+    def create(self, request, *args, **kwargs):  # NOQA
         '''
-        Overriding create method to build roles and metadata objects for this Stack
-        as well as generating the salt-cloud map that will be used to launch
-        machines
+        Overriding create method to build roles and metadata objects for this
+        Stack as well as generating the salt-cloud map that will be used to
+        launch machines
         '''
         # make sure the user has a public key or they won't be able to SSH
         # later
@@ -63,24 +58,24 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # check for required blueprint
         if not blueprint_id:
-            errors.setdefault('blueprint', []).append('This field is required.')
+            errors.setdefault('blueprint', []) \
+                .append('This field is required.')
         else:
             try:
                 blueprint = Blueprint.objects.get(pk=blueprint_id,
                                                   owner=request.user)
             except Blueprint.DoesNotExist:
                 errors.setdefault('blueprint', []).append(
-                    'Blueprint with id {0} does not exist.'.format(blueprint_id)
-                )
+                    'Blueprint with id {0} does not exist.'.format(
+                        blueprint_id))
             except ValueError:
                 errors.setdefault('blueprint', []).append(
-                    'This field must be an integer ID of an existing blueprint.'
-                )
+                    'This field must be an ID of an existing blueprint.')
 
         if errors:
             raise BadRequest(errors)
 
-        # Generate the title and/or description if not provided by user 
+        # Generate the title and/or description if not provided by user
         if not title and not description:
             extra_description = ' (Title and description'
         elif not title:
@@ -90,7 +85,8 @@ class StackListAPIView(generics.ListCreateAPIView):
         else:
             extra_description = ''
         if extra_description:
-            extra_description += ' auto generated from Blueprint {0})'.format(blueprint.pk)
+            extra_description += ' auto generated from Blueprint {0})' \
+                .format(blueprint.pk)
 
         if not title:
             request.DATA['title'] = '{0} ({1})'.format(
@@ -100,10 +96,12 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         if not description:
             description = blueprint.description
-        request.DATA['description'] = description + '{0}'.format(extra_description)
+        request.DATA['description'] = description + '{0}' \
+            .format(extra_description)
 
         # check for duplicates
-        if models.Stack.objects.filter(owner=self.request.user, title=title).count():
+        if models.Stack.objects.filter(owner=self.request.user,
+                                       title=title).count():
             errors.setdefault('title', []).append(
                 'A Stack with this title already exists in your account.'
             )
@@ -125,7 +123,9 @@ class StackListAPIView(generics.ListCreateAPIView):
         # create the stack and related objects
         try:
             logger.debug(request.DATA)
-            stack = models.Stack.objects.create_stack(request.user, blueprint, **request.DATA)
+            stack = models.Stack.objects.create_stack(request.user,
+                                                      blueprint,
+                                                      **request.DATA)
         except Exception, e:
             logger.exception(e)
             raise BadRequest(str(e))
@@ -160,7 +160,8 @@ class StackListAPIView(generics.ListCreateAPIView):
             task_chain = reduce(or_, task_list)
 
             # execute the chain
-            stack.set_status('queued', 'Stack has been submitted to launch queue.')
+            stack.set_status('queued',
+                             'Stack has been submitted to launch queue.')
             task_chain(link_error=tasks.handle_error.s(stack.id))
 
         # return serialized stack object
@@ -195,10 +196,10 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         task_chain = (
             tasks.update_metadata.si(stack.id) |
             tasks.register_volume_delete.si(stack.id) |
-            tasks.unregister_dns.si(stack.id) | 
+            tasks.unregister_dns.si(stack.id) |
             tasks.destroy_hosts.si(stack.id, parallel=parallel)
         )
-        
+
         # execute the chain
         task_chain()
 
@@ -225,7 +226,7 @@ class StackPropertiesAPIView(generics.RetrieveUpdateAPIView):
 
         if not request.DATA:
             raise BadRequest('No properties were given.')
-        
+
         # update the stack properties
         stack.properties = request.DATA
         return Response(stack.properties)
@@ -239,7 +240,8 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         return get_object_or_404(models.Stack, id=self.kwargs.get('pk'),
                                  owner=self.request.user)
 
-    def post(self, request, *args, **kwargs):
+    # TODO: Code complexity issues are ignored for now
+    def post(self, request, *args, **kwargs):  # NOQA
         '''
         POST request allows RPC-like actions to be called to interact
         with the stack. Request contains JSON with an `action` parameter
@@ -257,20 +259,12 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         if not action:
             raise BadRequest('action is a required parameter.')
 
-        
         # check the individual provider for available actions
         for driver, hosts in driver_hosts_map.iteritems():
             available_actions = driver.get_available_actions()
             if action not in available_actions:
-                raise BadRequest('At least one of the hosts in this stack does '
-                                 'not support the requested action.')
-
-        # In case of a launch action, the stack must not have any available 
-        # hosts (ie, the stack must have already been terminated.)
-        #if action == BaseCloudProvider.ACTION_LAUNCH and total_host_count > 0:
-        #    raise BadRequest('Launching a stack is only available when '
-        #                     'the stack is in a terminated state. This '
-        #                     'stack has %d hosts available.' % total_host_count)
+                raise BadRequest('At least one of the hosts in this stack '
+                                 'does not support the requested action.')
 
         # All actions other than launch require hosts to be available
         if action != BaseCloudProvider.ACTION_LAUNCH and total_host_count == 0:
@@ -278,49 +272,52 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                              'available hosts. Perhaps you meant to run the '
                              'launch action instead.')
 
-        # Hosts may be spread accross different providers, so we need to 
+        # Hosts may be spread accross different providers, so we need to
         # handle them differently based on the provider and its implementation
         driver_hosts_map = stack.get_driver_hosts_map()
         for driver, hosts in driver_hosts_map.iteritems():
 
-            # check the action against current states (e.g., starting can't happen
-            # unless the hosts are in the stopped state.)
+            # check the action against current states (e.g., starting can't
+            # happen unless the hosts are in the stopped state.)
             # XXX: Assuming that host metadata is accurate here
             for host in hosts:
                 if action == driver.ACTION_START and \
                    host.state != driver.STATE_STOPPED:
-                    raise BadRequest('Start action requires all hosts to be in '
-                                     'the stopped state first. At least one host '
-                                     'is reporting an invalid '
-                                     'state: %s' % host.state)
+                    raise BadRequest('Start action requires all hosts to be '
+                                     'in the stopped state first. At least '
+                                     'one host is reporting an invalid state: '
+                                     '{0}'.format(host.state))
                 if action == driver.ACTION_STOP and \
                    host.state != driver.STATE_RUNNING:
                     raise BadRequest('Stop action requires all hosts to be in '
-                                     'the running state first. At least one host '
-                                     'is reporting an invalid '
-                                     'state: %s' % host.state)
+                                     'the running state first. At least one '
+                                     'host is reporting an invalid state: '
+                                     '{0}'.format(host.state))
                 if action == driver.ACTION_TERMINATE and \
-                   host.state not in (driver.STATE_RUNNING, driver.STATE_STOPPED):
-                    raise BadRequest('Terminate action requires all hosts to be '
-                                     'in the either the running or stopped state '
-                                     'first. At least one host is reporting an '
-                                     'invalid state: %s' % host.state)
+                   host.state not in (driver.STATE_RUNNING,
+                                      driver.STATE_STOPPED):
+                    raise BadRequest('Terminate action requires all hosts to '
+                                     'be in the either the running or stopped '
+                                     'state first. At least one host is '
+                                     'reporting an invalid state: {0}'
+                                     .format(host.state))
                 if action == driver.ACTION_PROVISION and \
                    host.state not in (driver.STATE_RUNNING,):
-                    raise BadRequest('Provision action requires all hosts to be '
-                                     'in the running state first. At least one '
-                                     'host is reporting an '
-                                     'invalid state: %s' % host.state)
+                    raise BadRequest('Provision action requires all hosts to '
+                                     'be in the running state first. At least '
+                                     'one host is reporting an invalid state: '
+                                     '{0}'.format(host.state))
 
         # Kick off the celery task for the given action
-        stack.set_status(models.Stack.EXECUTING_ACTION, 
+        stack.set_status(models.Stack.EXECUTING_ACTION,
                          'Stack is executing action \'{0}\''.format(action))
 
         # Keep track of the tasks we need to run for this execution
         task_list = []
 
         # FIXME: not generic
-        if action in (BaseCloudProvider.ACTION_STOP, BaseCloudProvider.ACTION_TERMINATE):
+        if action in (BaseCloudProvider.ACTION_STOP,
+                      BaseCloudProvider.ACTION_TERMINATE):
             # Unregister DNS when executing the above actions
             task_list.append(tasks.unregister_dns.si(stack.id))
 
@@ -331,7 +328,8 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # Terminate should leverage salt-cloud or salt gets confused about
         # the state of things
         elif action == BaseCloudProvider.ACTION_TERMINATE:
-            task_list.append(tasks.destroy_hosts.si(stack.id, delete_stack=False))
+            task_list.append(tasks.destroy_hosts.si(stack.id,
+                                                    delete_stack=False))
 
         elif action == BaseCloudProvider.ACTION_PROVISION:
             # action that gets handled later
@@ -350,12 +348,15 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             tasks.tag_infrastructure.si(stack.id)
 
         # Starting and launching requires DNS updates
-        if action in (BaseCloudProvider.ACTION_START, BaseCloudProvider.ACTION_LAUNCH):
+        if action in (BaseCloudProvider.ACTION_START,
+                      BaseCloudProvider.ACTION_LAUNCH):
             task_list.append(tasks.register_dns.si(stack.id))
 
-        # starting, launching, or reprovisioning requires us to execute the provisioning
-        # tasks
-        if action in (BaseCloudProvider.ACTION_START, BaseCloudProvider.ACTION_LAUNCH, BaseCloudProvider.ACTION_PROVISION):
+        # starting, launching, or reprovisioning requires us to execute the
+        # provisioning tasks
+        if action in (BaseCloudProvider.ACTION_START,
+                      BaseCloudProvider.ACTION_LAUNCH,
+                      BaseCloudProvider.ACTION_PROVISION):
             task_list.append(tasks.ping.si(stack.id))
             task_list.append(tasks.sync_all.si(stack.id))
             task_list.append(tasks.highstate.si(stack.id))
@@ -393,32 +394,33 @@ class StackHostsAPIView(HostListAPIView):
     parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
-        return models.Host.objects.filter(stack__pk=self.kwargs.get('pk'),
-                                   stack__owner=self.request.user)
+        return models.Host.objects.filter(
+            stack__pk=self.kwargs.get('pk'),
+            stack__owner=self.request.user)
 
     def put(self, request, *args, **kwargs):
         '''
         Overriding PUT for a stack to be able to add additional
         hosts after a stack has already been created.
         '''
-        
+
         stack = self.get_object()
         new_hosts = stack.add_hosts(request.DATA['hosts'])
         host_ids = [h.id for h in new_hosts]
 
         # Queue up stack creation and provisioning using Celery
         task_chain = (
-            tasks.launch_hosts.si(stack.id, host_ids=host_ids) | 
-            tasks.update_metadata.si(stack.id, host_ids=host_ids) | 
-            tasks.tag_infrastructure.si(stack.id, host_ids=host_ids) | 
-            tasks.register_dns.si(stack.id, host_ids=host_ids) | 
+            tasks.launch_hosts.si(stack.id, host_ids=host_ids) |
+            tasks.update_metadata.si(stack.id, host_ids=host_ids) |
+            tasks.tag_infrastructure.si(stack.id, host_ids=host_ids) |
+            tasks.register_dns.si(stack.id, host_ids=host_ids) |
             tasks.ping.si(stack.id) |
             tasks.sync_all.si(stack.id) |
             tasks.highstate.si(stack.id, host_ids=host_ids) |
             tasks.orchestrate.si(stack.id, host_ids=host_ids) |
             tasks.finish_stack.si(stack.id)
         )
-        
+
         # execute the chain
         task_chain()
 
@@ -430,7 +432,9 @@ class StackHostsAPIView(HostListAPIView):
         Override get method to add additional host-specific info
         to the result that is looked up via salt when user requests it
         '''
-        provider_metadata = request.QUERY_PARAMS.get('provider_metadata') == 'true'
+        provider_metadata = request \
+            .QUERY_PARAMS \
+            .get('provider_metadata') == 'true'
         result = super(StackHostsAPIView, self).get(request, *args, **kwargs)
 
         if not provider_metadata or not result.data['results']:
@@ -468,17 +472,16 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         '''
         # get the stack id for the host
         host = self.get_object()
-        volume_ids = [v.id for v in host.volumes.all()]
-
         host.set_status(models.Host.DELETING, 'Deleting host.')
 
         # unregister DNS and destroy the host
         task_chain = (
-            tasks.register_volume_delete.si(host.stack.id, host_ids=[host.id]) |
-            tasks.unregister_dns.si(host.stack.id, host_ids=[host.id]) | 
+            tasks.register_volume_delete.si(host.stack.id,
+                                            host_ids=[host.id]) |
+            tasks.unregister_dns.si(host.stack.id, host_ids=[host.id]) |
             tasks.destroy_hosts.si(host.stack.id, host_ids=[host.id])
         )
-        
+
         # execute the chain
         task_chain()
 
@@ -499,4 +502,3 @@ class StackFQDNListAPIView(APIView):
         stack = self.get_object()
         fqdns = [h.fqdn for h in stack.hosts.all()]
         return Response(fqdns)
-
