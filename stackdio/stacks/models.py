@@ -45,24 +45,26 @@ def recursive_update(d, u):
     return d
 
 
+# Map, pillar, and properties files go into storage
 def get_map_file_path(obj, filename):
-    return "stacks/{0}/{1}.map".format(obj.owner.username, obj.slug)
-
-
-def get_top_file_path(obj, filename):
-    return "stack_{0}_top.sls".format(obj.id)
-
-
-def get_overstate_file_path(obj, filename):
-    return "stack_{0}_overstate.sls".format(obj.id)
+    return "stacks/{0}/{1}/stack.map".format(obj.owner.username, obj.slug)
 
 
 def get_pillar_file_path(obj, filename):
-    return "stacks/{0}/{1}.pillar".format(obj.owner.username, obj.slug)
+    return "stacks/{0}/{1}/stack.pillar".format(obj.owner.username, obj.slug)
 
 
 def get_props_file_path(obj, filename):
-    return "stacks/{0}/{1}.props".format(obj.owner.username, obj.slug)
+    return "stacks/{0}/{1}/stack.props".format(obj.owner.username, obj.slug)
+
+
+# Top and overstate files go into salt root
+def get_top_file_path(obj, filename):
+    return ".stackdio/stack_{0}_top.sls".format(obj.id)
+
+
+def get_overstate_file_path(obj, filename):
+    return ".stackdio/stack_{0}_overstate.sls".format(obj.id)
 
 
 class Level(object):
