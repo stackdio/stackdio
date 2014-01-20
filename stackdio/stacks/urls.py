@@ -1,35 +1,36 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import patterns, url
 
 from . import api
 
-urlpatterns = patterns('stacks.api',
+urlpatterns = patterns(
+    'stacks.api',
 
     url(r'^hosts/$',
-        api.HostListAPIView.as_view(), 
+        api.HostListAPIView.as_view(),
         name='host-list'),
 
-    url(r'^hosts/(?P<pk>[0-9]+)/$', 
-        api.HostDetailAPIView.as_view(), 
+    url(r'^hosts/(?P<pk>[0-9]+)/$',
+        api.HostDetailAPIView.as_view(),
         name='host-detail'),
 
     url(r'^stacks/$',
-        api.StackListAPIView.as_view(), 
+        api.StackListAPIView.as_view(),
         name='stack-list'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/$', 
-        api.StackDetailAPIView.as_view(), 
+    url(r'^stacks/(?P<pk>[0-9]+)/$',
+        api.StackDetailAPIView.as_view(),
         name='stack-detail'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/hosts/$', 
-        api.StackHostsAPIView.as_view(), 
+    url(r'^stacks/(?P<pk>[0-9]+)/hosts/$',
+        api.StackHostsAPIView.as_view(),
         name='stack-hosts'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/fqdns/$', 
-        api.StackFQDNListAPIView.as_view(), 
+    url(r'^stacks/(?P<pk>[0-9]+)/fqdns/$',
+        api.StackFQDNListAPIView.as_view(),
         name='stack-fqdns'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/volumes/$', 
-        api.StackVolumesAPIView.as_view(), 
+    url(r'^stacks/(?P<pk>[0-9]+)/volumes/$',
+        api.StackVolumesAPIView.as_view(),
         name='stack-volumes'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/properties/$',
@@ -37,7 +38,14 @@ urlpatterns = patterns('stacks.api',
         name='stack-properties'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/action/$',
-        api.StackActionAPIView.as_view(), 
+        api.StackActionAPIView.as_view(),
         name='stack-action'),
-)
 
+    url(r'^stacks/(?P<pk>[0-9]+)/logs/$',
+        api.StackLogsAPIView.as_view(),
+        name='stack-logs'),
+
+    url(r'^stacks/(?P<pk>[0-9]+)/logs/(?P<log>.*)/$',
+        api.StackLogsDetailAPIView.as_view(),
+        name='stack-logs-detail'),
+)

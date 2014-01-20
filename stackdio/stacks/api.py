@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 from operator import or_
+from os import listdir
+from os.path import join, isfile
 
 from django.shortcuts import get_object_or_404
 
@@ -10,8 +12,10 @@ from rest_framework import (
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.reverse import reverse
 
 from core.exceptions import BadRequest
+from core.renderers import PlainTextRenderer
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
 from blueprints.models import Blueprint
@@ -502,3 +506,69 @@ class StackFQDNListAPIView(APIView):
         stack = self.get_object()
         fqdns = [h.fqdn for h in stack.hosts.all()]
         return Response(fqdns)
+
+
+class StackLogsAPIView(APIView):
+    model = models.Stack
+
+    def get_object(self):
+        return get_object_or_404(models.Stack,
+                                 id=self.kwargs.get('pk'),
+                                 owner=self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        stack = self.get_object()
+        log_dir = stack.get_log_directory()
+        return Response({
+            'latest': {
+                'launch': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': stack.slug + '.launch.latest'},
+                    request=request),
+                'highstate': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': stack.slug + '.highstate.latest'},
+                    request=request),
+                'orchestration': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': stack.slug + '.orchestration.latest'},
+                    request=request),
+            },
+            'historical': [
+                reverse('stack-logs-detail',
+                        kwargs={
+                            'pk': stack.pk,
+                            'log': log,
+                        },
+                        request=request)
+                for log in listdir(log_dir)
+
+            ]
+        })
+
+
+class StackLogsDetailAPIView(StackLogsAPIView):
+    model = models.Stack
+    renderer_classes = (PlainTextRenderer,)
+
+    def get(self, request, *args, **kwargs):
+        stack = self.get_object()
+        log = self.kwargs.get('log', '')
+        if log.endswith('.latest'):
+            log = join(stack.get_root_directory(), self.kwargs['log'])
+        elif log.endswith('.log'):
+            log = join(stack.get_log_directory(), self.kwargs['log'])
+        else:
+            log = None
+
+        if not log or not isfile(log):
+            raise BadRequest('Log does not exist. {0}'.format(self.kwargs))
+        with open(log, 'r') as f:
+            log_data = f.read()
+        return Response(log_data)
