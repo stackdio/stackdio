@@ -140,6 +140,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         launch_stack = request.DATA.get('auto_launch', True)
         provision_stack = request.DATA.get('auto_provision', True)
         parallel = request.DATA.get('parallel', True)
+        max_retries = request.DATA.get('max_retries', 0)
 
         if launch_stack:
             # Queue up stack creation and provisioning using Celery
@@ -151,7 +152,7 @@ class StackListAPIView(generics.ListCreateAPIView):
                 tasks.ping.si(stack.id),
                 tasks.sync_all.si(stack.id),
                 # highstate of core SLS is not optional
-                tasks.highstate.si(stack.id),
+                tasks.highstate.si(stack.id, max_retries=max_retries),
             ]
 
             # provisioning is optional (mainly useful for getting machines
@@ -561,6 +562,12 @@ class StackLogsAPIView(APIView):
                     kwargs={
                         'pk': stack.pk,
                         'log': 'orchestration.log.latest'},
+                    request=request),
+                'orchestration-error': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': 'orchestration.err.latest'},
                     request=request),
             },
             'historical': [

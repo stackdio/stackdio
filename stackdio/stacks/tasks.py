@@ -37,6 +37,12 @@ def symlink(source, target):
     os.symlink(source, target)
 
 
+def state_to_dict(state_string):
+    state_labels = settings.STATE_EXECUTION_FIELDS
+    state_fields = state_string.split(settings.STATE_EXECUTION_DELIMITER)
+    return dict(zip(state_labels, state_fields))
+
+
 @celery.task(name='stacks.handle_error')
 def handle_error(stack_id, task_id):
     logger.debug('stack_id: {0}'.format(stack_id))
@@ -567,7 +573,7 @@ def sync_all(stack_id):
 
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.highstate')  # NOQA
-def highstate(stack_id, host_ids=None):
+def highstate(stack_id, host_ids=None, max_retries=0):
     '''
     Executes the state.top function using the custom top file generated via
     the stacks.models._generate_top_file. This will only target the 'base'
@@ -591,116 +597,135 @@ def highstate(stack_id, host_ids=None):
         # Set up logging for this task
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
-        now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir, '{0}.highstate.log'.format(now))
-        err_file = os.path.join(log_dir, '{0}.highstate.err'.format(now))
-        log_symlink = os.path.join(root_dir, 'highstate.log.latest')
-        err_symlink = os.path.join(root_dir, 'highstate.err.latest')
 
-        # "touch" the log file and symlink it to the latest
-        for l in (log_file, err_file):
-            with open(l, 'w') as f:
-                pass
-        symlink(log_file, log_symlink)
-        symlink(err_file, err_symlink)
+        # we'll break out of the loop based on the given number of retries
+        current_try, unrecoverable = 0, False
+        while True:
+            current_try += 1
+            logger.info('Task {0} try #{1} for stack {2!r}'.format(
+                highstate.name,
+                current_try,
+                stack))
 
-        # TODO: do we want to handle a subset of the hosts in a stack (e.g.,
-        # when adding additional hosts?) for the moment it seems just fine
-        # to run the highstate on all hosts even if some have already been
-        # provisioned.
+            now = datetime.now().strftime('%Y%m%d-%H%M%S')
+            log_file = os.path.join(log_dir, '{0}.highstate.log'.format(now))
+            err_file = os.path.join(log_dir, '{0}.highstate.err'.format(now))
+            log_symlink = os.path.join(root_dir, 'highstate.log.latest')
+            err_symlink = os.path.join(root_dir, 'highstate.err.latest')
 
-        ##
-        # Execute state.top with custom top file
-        ##
+            # "touch" the log file and symlink it to the latest
+            for l in (log_file, err_file):
+                with open(l, 'w') as f:
+                    pass
+            symlink(log_file, log_symlink)
+            symlink(err_file, err_symlink)
 
-        # build up the command for salt
-        cmd = ' '.join([
-            'salt',
-            '--out=yaml',              # yaml formatted output
-            '-G stack_id:{0}',         # target the nodes in this stack only
-            '--log-file {1}',          # where to log
-            '--log-file-level debug',  # full logging
-            'state.top',               # run this stack's top file
-            stack.top_file.name
-        ]).format(
-            stack_id,
-            log_file
-        )
+            ##
+            # Execute state.top with custom top file
+            ##
+            cmd = ' '.join([
+                'salt',
+                '--out=yaml',              # yaml formatted output
+                '-G stack_id:{0}',         # target only the vms in this stack
+                '--log-file {1}',          # where to log
+                '--log-file-level debug',  # full logging
+                'state.top',               # run this stack's top file
+                stack.top_file.name
+            ]).format(
+                stack_id,
+                log_file
+            )
 
-        try:
-            # Execute
-            logger.debug('Executing command: {0}'.format(cmd))
-            result = envoy.run(str(cmd))
-        except AttributeError, e:
-            err_msg = 'Error running command: \'{0}\''.format(cmd)
-            logger.exception(err_msg)
-            stack.set_status(highstate.name, err_msg, Level.ERROR)
-            raise StackTaskException(err_msg)
+            try:
+                # Execute
+                logger.debug('Executing command: {0}'.format(cmd))
+                result = envoy.run(str(cmd))
+            except AttributeError, e:
+                # Unrecoverable error, no retrying possible
+                err_msg = 'Error running command: \'{0}\''.format(cmd)
+                logger.exception(err_msg)
+                stack.set_status(highstate.name, err_msg, Level.ERROR)
+                raise StackTaskException(err_msg)
 
-        if result is None:
-            msg = 'Core provisioning command returned None. Status, stdout ' \
-                  'and stderr unknown.'
-            logger.warn(msg)
-            stack.set_status(msg)
-        elif result.status_code > 0:
-            err_msg = result.std_err if result.std_err else result.std_out
-            stack.set_status(highstate.name, err_msg, Level.ERROR)
-            raise StackTaskException('Error executing core provisioning: '
-                                     '{0!r}'.format(err_msg))
-        else:
-            # dump the output to the log file
-            with open(log_file, 'a') as f:
-                f.write(result.std_out)
+            if result is None:
+                if current_try <= max_retries:
+                    continue
+                msg = 'Core provisioning command returned None. Status, ' \
+                      'stdout and stderr unknown.'
+                logger.warn(msg)
+                stack.set_status(msg)
+            elif result.status_code > 0:
+                logger.debug('envoy returned non-zero status code')
+                logger.debug('envoy status_code: {0}'.format(
+                    result.status_code))
+                logger.debug('envoy std_out: {0}'.format(result.std_out))
+                logger.debug('envoy std_err: {0}'.format(result.std_err))
 
-            # load JSON so we can attempt to catch provisioning errors
-            output = yaml.safe_load(result.std_out)
+                if current_try <= max_retries:
+                    continue
+                err_msg = result.std_err if result.std_err else result.std_out
+                stack.set_status(highstate.name, err_msg, Level.ERROR)
+                raise StackTaskException('Error executing core provisioning: '
+                                         '{0!r}'.format(err_msg))
+            else:
+                # dump the output to the log file
+                with open(log_file, 'a') as f:
+                    f.write(result.std_out)
 
-            # each key in the dict is a host, and the value of the host
-            # is either a list or dict. Those that are lists we can
-            # assume to be a list of errors
-            if output is not None:
-                errors = {}
-                for host, states in output.iteritems():
-                    if type(states) is list:
-                        errors[host] = states
+                # load JSON so we can attempt to catch provisioning errors
+                output = yaml.safe_load(result.std_out)
 
-                    elif type(states) is dict:
-                        # iterate over the individual states in the host
-                        # looking for states that had a result of false
-                        for state, state_meta in states.iteritems():
-                            # State was successful, nothing to see here
-                            if state_meta['result']:
-                                continue
+                # each key in the dict is a host, and the value of the host
+                # is either a list or dict. Those that are lists we can
+                # assume to be a list of errors
+                if output is not None:
+                    errors = {}
+                    for host, states in output.iteritems():
+                        if type(states) is list:
+                            errors[host] = states
 
-                            state_labels = settings.STATE_EXECUTION_FIELDS
-                            state_fields = state.split(
-                                settings.STATE_EXECUTION_DELIMITER)
-                            state = dict(zip(state_labels, state_fields))
+                        elif type(states) is dict:
+                            # iterate over the individual states in the host
+                            # looking for states that had a result of false
+                            for state, state_meta in states.iteritems():
+                                # State was successful, nothing to see here
+                                if state_meta['result']:
+                                    continue
 
-                            error = '{state}.{func}::{declaration_id} - {0}' \
-                                .format(state_meta['comment'].strip(),
-                                        **state)
-
-                            if state_meta['comment'] == ERROR_REQUISITE:
-                                errors.setdefault(host, {}) \
-                                    .setdefault('requisite_errors', []) \
-                                    .append(error)
-                            else:
-                                errors.setdefault(host, {}) \
-                                    .setdefault('errors', []) \
-                                    .append(error)
+                                state = state_to_dict(state)
+                                if state_meta['comment'] == ERROR_REQUISITE:
+                                    continue
+                                else:
+                                    errors.setdefault(host, []) \
+                                        .append({
+                                            'error': state_meta['comment'],
+                                            'function': '{0}.{1}'.format(
+                                                state['state'],
+                                                state['func']),
+                                            'declaration_id': state['declaration_id'], # NOQA
+                                        })
 
                     if errors:
                         # write the errors to the err_file
                         with open(err_file, 'a') as f:
                             f.write(yaml.safe_dump(errors))
 
-                        err_msg = 'Core provisioning errors on hosts: {0}. ' \
-                                  'Please see the highstate error log file ' \
-                                  'for more details.'.format(
-                                      ', '.join(errors.keys()))
-                        stack.set_status(highstate.name, err_msg, Level.ERROR)
+                        # TODO: We need to check for unrecoverable errors
+                        # and break out early
+                        if current_try <= max_retries:
+                            continue
+
+                        err_msg = 'Core provisioning errors on hosts: ' \
+                            '{0}. Please see the highstate error log ' \
+                            'file for more details'.format(
+                                ', '.join(errors.keys()))
+                        stack.set_status(highstate.name,
+                                         err_msg,
+                                         Level.ERROR)
                         raise StackTaskException(err_msg)
+
+                    # Everything worked?
+                    break
 
         stack.set_status(highstate.name,
                          'Finished core provisioning all hosts.')
@@ -717,8 +742,9 @@ def highstate(stack_id, host_ids=None):
         raise
 
 
-@celery.task(name='stacks.orchestrate')
-def orchestrate(stack_id, host_ids=None):
+# TODO: Ignoring code complexity issues
+@celery.task(name='stacks.orchestrate') # NOQA
+def orchestrate(stack_id, host_ids=None, max_retries=0):
     '''
     Executes the runners.state.over function with the custom overstate
     file  generated via the stacks.models._generate_overstate_file. This
@@ -742,59 +768,151 @@ def orchestrate(stack_id, host_ids=None):
         # Set up logging for this task
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
-        now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir, '{0}.orchestration.log'.format(now))
-        log_symlink = os.path.join(root_dir, 'orchestration.log.latest')
 
-        # "touch" the log file and symlink it to the latest
-        with open(log_file, 'w') as f:
-            pass
-        symlink(log_file, log_symlink)
+        # we'll break out of the loop based on the given number of retries
+        current_try, unrecoverable = 0, False
+        while True:
+            current_try += 1
+            logger.info('Task {0} try #{1} for stack {2!r}'.format(
+                orchestrate.name,
+                current_try,
+                stack))
 
-        ##
-        # Execute runners.state.over with custom top file
-        ##
+            now = datetime.now().strftime('%Y%m%d-%H%M%S')
+            log_file = os.path.join(log_dir,
+                                    '{0}.orchestration.log'.format(now))
+            err_file = os.path.join(log_dir,
+                                    '{0}.orchestration.err'.format(now))
+            log_symlink = os.path.join(root_dir, 'orchestration.log.latest')
+            err_symlink = os.path.join(root_dir, 'orchestration.err.latest')
 
-        # build up the command for salt
-        cmd = ' '.join([
-            'salt-run',
-            '-lquiet',                  # quiet stdout
-            '--log-file {0}',           # where to log
-            '--log-file-level debug',   # full logging
-            'state.over',               # the overstate command
-            stack.owner.username,       # username is the environment to
-                                        # execute in
-            stack.overstate_file.path
-        ]).format(
-            log_file
-        )
+            for l in (log_file, err_file):
+                with open(l, 'w') as f:
+                    pass
+            symlink(log_file, log_symlink)
+            symlink(err_file, err_symlink)
 
-        # Execute
-        logger.debug('Executing command: {0}'.format(cmd))
+            ##
+            # Execute state.over runner with overstate file
+            ##
+            cmd = ' '.join([
+                'salt-run',
+                '-lquiet',                  # quiet stdout
+                '--log-file {0}',           # where to log
+                '--log-file-level debug',   # full logging
+                'stackdio.orchestrate',     # custom overstate execution
+                stack.owner.username,       # username is the environment to
+                                            # execute in
+                stack.overstate_file.path
+            ]).format(
+                log_file
+            )
 
-        try:
-            result = envoy.run(str(cmd))
-        except AttributeError, e:
-            err_msg = 'Error running command: \'{0}\''.format(cmd)
-            logger.exception(err_msg)
-            stack.set_status(orchestrate.name, err_msg, Level.ERROR)
-            raise StackTaskException(err_msg)
+            # Execute
+            logger.debug('Executing command: {0}'.format(cmd))
 
-        if result is None:
-            msg = 'Orchestration command returned None. Status, stdout ' \
-                  'and stderr unknown.'
-            logger.warn(msg)
-            stack.set_status(msg)
-        elif result.status_code > 0:
-                err_msg = result.std_err if result.std_err else result.std_out
+            try:
+                result = envoy.run(str(cmd))
+            except AttributeError, e:
+                # Unrecoverable error, no retrying possible
+                err_msg = 'Error running command: \'{0}\''.format(cmd)
+                logger.exception(err_msg)
+                stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+                raise StackTaskException(err_msg)
+
+            if result is None:
+                if current_try <= max_retries:
+                    continue
+                msg = 'Orchestration command returned None. Status, stdout ' \
+                    'and stderr unknown.'
+                logger.warn(msg)
+                stack.set_status(msg)
+            elif result.status_code > 0:
+                logger.debug('envoy returned non-zero status code')
+                logger.debug('envoy status_code: {0}'.format(
+                    result.status_code))
+                logger.debug('envoy std_out: {0}'.format(result.std_out))
+                logger.debug('envoy std_err: {0}'.format(result.std_err))
+
+                if current_try <= max_retries:
+                    continue
+
+                err_msg = result.std_err \
+                    if result.std_err else result.std_out
                 stack.set_status(orchestrate.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error executing orchestration: '
                                          '{1!r}'.format(err_msg))
-        else:
-            with open(log_file, 'a') as f:
-                f.write(result.std_out)
+            else:
+                with open(log_file, 'a') as f:
+                    f.write(result.std_out)
 
-            # TODO: add error handling for overstate output
+                # load JSON so we can attempt to catch provisioning errors
+                output = yaml.safe_load(result.std_out)
+
+                # each key in the dict is a host, and the value of the host
+                # is either a list or dict. Those that are lists we can
+                # assume to be a list of errors
+                if output is not None:
+                    errors = {}
+
+                    for host, results in output.iteritems():
+                        # check for orchestration stage errors first
+                        if host == '__stage__error__':
+                            continue
+
+                        for result in results:
+                            if isinstance(result, basestring):
+                                errors.setdefault(host, []) \
+                                    .append({
+                                        'error': result
+                                    })
+                            elif isinstance(result, dict):
+                                # iterate over the individual states in the
+                                # host looking for states that had a result
+                                # of false
+                                for state, state_meta in result.iteritems():
+                                    # State was successful, nothing to see here
+                                    if state_meta['result']:
+                                        continue
+
+                                    # massage the state string into something
+                                    # more useful
+                                    state = state_to_dict(state)
+
+                                    # skip over requisite errors
+                                    if state_meta['comment'] == ERROR_REQUISITE: # NOQA
+                                        continue
+                                    else:
+                                        errors.setdefault(host, []) \
+                                            .append({
+                                                'error': state_meta['comment'],
+                                                'function': '{0}.{1}'.format(
+                                                    state['state'],
+                                                    state['func']),
+                                                'declaration_id': state['declaration_id'], # NOQA
+                                            })
+
+                    if errors:
+                        # write the errors to the err_file
+                        with open(err_file, 'a') as f:
+                            f.write(yaml.safe_dump(errors))
+
+                        # TODO: We need to check for unrecoverable errors
+                        # and break out early
+                        if current_try <= max_retries:
+                            continue
+
+                        err_msg = 'Core provisioning errors on hosts: ' \
+                            '{0}. Please see the highstate error log ' \
+                            'file for more details'.format(
+                                ', '.join(errors.keys()))
+                        stack.set_status(highstate.name,
+                                         err_msg,
+                                         Level.ERROR)
+                        raise StackTaskException(err_msg)
+
+                    # Everything worked?
+                    break
 
         stack.set_status(orchestrate.name,
                          'Finished executing orchestration all hosts.')

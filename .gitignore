@@ -13,6 +13,7 @@ stackdsalt/etc/salt/cloud.providers.d/*.conf
 stackdsalt/etc/salt/cloud.deploy.d/*.sh
 stackdsalt/states/stack_*_top.sls
 stackdsalt/states/stack_*_overstate.sls
+stackdsalt/states/.stackdio
 stackdsalt/user_envs/*
 stackdsalt/var
 stackdio/core/static/stackdio/components
