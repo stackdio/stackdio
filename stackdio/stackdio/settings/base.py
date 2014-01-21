@@ -1,19 +1,18 @@
 # Django settings for stackdio project.
 
-import os
+from os import environ
 from os.path import dirname, normpath, join
-from sys import maxint
 
 from django.core.exceptions import ImproperlyConfigured
 
 import djcelery
-
 djcelery.setup_loader()
+
 
 def getenv(var):
     try:
-        return os.environ[var]
-    except KeyError, e:
+        return environ[var]
+    except KeyError:
         msg = 'Missing environment variable {0}.'.format(var)
         raise ImproperlyConfigured(msg)
 
@@ -40,15 +39,21 @@ SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')
 # This is the salt-cloud configuration file.
 SALT_CLOUD_CONFIG = getenv('SALT_CLOUD_CONFIG')
 
-# This is typically in the cloud.profiles.d directory located in 
+# This is typically in the cloud.profiles.d directory located in
 # salt's configuration root directory. Each *.conf file is an
 # individual profile configuration
 SALT_CLOUD_PROFILES_DIR = getenv('SALT_CLOUD_PROFILES_DIR')
 
-# This is typically in the cloud.providers.d directory located in 
+# This is typically in the cloud.providers.d directory located in
 # salt's configuration root directory. Each *.conf file is an
 # individual cloud provider configuration
 SALT_CLOUD_PROVIDERS_DIR = getenv('SALT_CLOUD_PROVIDERS_DIR')
+
+# The delimiter used in state execution results
+STATE_EXECUTION_DELIMITER = '_|-'
+
+# The fields packed into the state execution result
+STATE_EXECUTION_FIELDS = ('state', 'declaration_id', 'name', 'func')
 
 ##
 # stackd.io settings
@@ -109,10 +114,9 @@ STATICFILES_DIRS = ()
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS  #NOQA
 FIXTURE_DIRS = (
     normpath(join(SITE_ROOT, 'stackdio', 'fixtures')),
 )
@@ -151,13 +155,13 @@ INSTALLED_APPS = (
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
-## 
+##
 # Additional "global" template directories you might like to use.
 # App templates should go in that app.
-## 
+##
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
+    # Put strings here, like "/home/html/django_templates" or
+    # "C:/www/django/templates". Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     '%s/templates' % PROJECT_ROOT,
 )
@@ -250,7 +254,7 @@ LOGGING = {
         'django.db.backends': {
             'handlers': ['null'],
             'propagate': False,
-	        'level': 'DEBUG',
+            'level': 'DEBUG',
         },
         'core': {
             'handlers': ['console'],

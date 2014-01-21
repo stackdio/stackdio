@@ -4,6 +4,8 @@ from operator import or_
 from os import listdir
 from os.path import join, isfile
 
+import envoy
+import yaml
 from django.shortcuts import get_object_or_404
 
 from rest_framework import (
@@ -234,6 +236,21 @@ class StackPropertiesAPIView(generics.RetrieveUpdateAPIView):
         # update the stack properties
         stack.properties = request.DATA
         return Response(stack.properties)
+
+
+class StackHistoryAPIView(generics.ListAPIView):
+
+    model = models.StackHistory
+    serializer_class = serializers.StackHistorySerializer
+
+    def get_queryset(self):
+        stack = self.get_object()
+        return stack.history.all()
+
+    def get_object(self):
+        return get_object_or_404(models.Stack,
+                                 id=self.kwargs.get('pk'),
+                                 owner=self.request.user)
 
 
 class StackActionAPIView(generics.SingleObjectAPIView):
@@ -525,19 +542,25 @@ class StackLogsAPIView(APIView):
                     'stack-logs-detail',
                     kwargs={
                         'pk': stack.pk,
-                        'log': stack.slug + '.launch.latest'},
+                        'log': 'launch.log.latest'},
                     request=request),
                 'highstate': reverse(
                     'stack-logs-detail',
                     kwargs={
                         'pk': stack.pk,
-                        'log': stack.slug + '.highstate.latest'},
+                        'log': 'highstate.log.latest'},
+                    request=request),
+                'highstate-error': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': 'highstate.err.latest'},
                     request=request),
                 'orchestration': reverse(
                     'stack-logs-detail',
                     kwargs={
                         'pk': stack.pk,
-                        'log': stack.slug + '.orchestration.latest'},
+                        'log': 'orchestration.log.latest'},
                     request=request),
             },
             'historical': [
@@ -553,13 +576,60 @@ class StackLogsAPIView(APIView):
         })
 
 
+class StackProvisioningErrorsAPIView(APIView):
+    model = models.Stack
+
+    def get_object(self):
+        return get_object_or_404(models.Stack,
+                                 id=self.kwargs.get('pk'),
+                                 owner=self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        stack = self.get_object()
+        err_file = join(stack.get_root_directory(), 'highstate.err.latest')
+        if not isfile(err_file):
+            raise BadRequest('No error file found for this stack. Has '
+                             'provisioning occurred yet?')
+
+        with open(err_file) as f:
+            err_yaml = yaml.safe_load(f)
+        return Response(err_yaml)
+
+
+class StackOrchestrationErrorsAPIView(APIView):
+    model = models.Stack
+
+    def get_object(self):
+        return get_object_or_404(models.Stack,
+                                 id=self.kwargs.get('pk'),
+                                 owner=self.request.user)
+
+    def get(self, request, *args, **kwargs):
+        return Response({})
+
+
 class StackLogsDetailAPIView(StackLogsAPIView):
     model = models.Stack
     renderer_classes = (PlainTextRenderer,)
 
-    def get(self, request, *args, **kwargs):
+    # TODO: Code complexity ignored for now
+    def get(self, request, *args, **kwargs):  # NOQA
         stack = self.get_object()
         log = self.kwargs.get('log', '')
+
+        try:
+            tail = int(request.QUERY_PARAMS.get('tail', 0))
+        except:
+            tail = None
+
+        try:
+            head = int(request.QUERY_PARAMS.get('head', 0))
+        except:
+            head = None
+
+        if head and tail:
+            raise BadRequest('Both head and tail may not be used.')
+
         if log.endswith('.latest'):
             log = join(stack.get_root_directory(), self.kwargs['log'])
         elif log.endswith('.log'):
@@ -569,6 +639,12 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 
         if not log or not isfile(log):
             raise BadRequest('Log does not exist. {0}'.format(self.kwargs))
-        with open(log, 'r') as f:
-            log_data = f.read()
-        return Response(log_data)
+
+        if tail:
+            ret = envoy.run('tail -{0} {1}'.format(tail, log)).std_out
+        elif head:
+            ret = envoy.run('head -{0} {1}'.format(head, log)).std_out
+        else:
+            with open(log, 'r') as f:
+                ret = f.read()
+        return Response(ret)

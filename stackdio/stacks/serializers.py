@@ -24,9 +24,9 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id',
             'url',
-            'hostname', 
-            'provider_dns', 
-            'fqdn', 
+            'hostname',
+            'provider_dns',
+            'fqdn',
             'state',
             'status',
             'status_detail',
@@ -57,25 +57,27 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     host_count = serializers.Field(source='hosts.count')
     volumes = serializers.HyperlinkedIdentityField(view_name='stack-volumes')
     volume_count = serializers.Field(source='volumes.count')
-    history = StackHistorySerializer(many=True)
-    properties = serializers.HyperlinkedIdentityField(view_name='stack-properties')
+    properties = serializers.HyperlinkedIdentityField(
+        view_name='stack-properties')
+    #history = StackHistorySerializer(many=True)
+    history = serializers.HyperlinkedIdentityField(
+        view_name='stack-history')
 
     class Meta:
         model = models.Stack
         fields = (
-            'title', 
-            'description',
             'id',
+            'title',
+            'description',
             'url',
             'owner',
+            'host_count',
+            'volume_count',
+            'created',
             'blueprint',
             'fqdns',
             'hosts',
-            'host_count',
             'volumes',
-            'volume_count',
             'properties',
-            'created', 
             'history',
         )
-

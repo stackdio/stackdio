@@ -24,6 +24,7 @@ ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
 ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found ' \
                           'already running'
 ERROR_ALREADY_RUNNING = 'Already running'
+ERROR_REQUISITE = 'One or more requisite failed'
 
 
 class StackTaskException(Exception):
@@ -70,11 +71,8 @@ def launch_hosts(stack_id, parallel=True):
         log_dir = stack.get_log_directory()
 
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir,
-                                '{0}-{1}.launch.log'.format(stack.slug, now))
-        log_symlink = os.path.join(root_dir, '{0}.launch.latest'.format(
-            stack.slug)
-        )
+        log_file = os.path.join(log_dir, '{0}.launch.log'.format(now))
+        log_symlink = os.path.join(root_dir, 'launch.log.latest')
 
         # "touch" the log file and symlink it to the latest
         with open(log_file, 'w') as f:  # NOQA
@@ -594,16 +592,17 @@ def highstate(stack_id, host_ids=None):
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir,
-                                '{0}-{1}.highstate.log'.format(stack.slug,
-                                                               now))
-        log_symlink = os.path.join(root_dir,
-                                   '{0}.highstate.latest'.format(stack.slug))
+        log_file = os.path.join(log_dir, '{0}.highstate.log'.format(now))
+        err_file = os.path.join(log_dir, '{0}.highstate.err'.format(now))
+        log_symlink = os.path.join(root_dir, 'highstate.log.latest')
+        err_symlink = os.path.join(root_dir, 'highstate.err.latest')
 
         # "touch" the log file and symlink it to the latest
-        with open(log_file, 'w') as f:
-            pass
+        for l in (log_file, err_file):
+            with open(l, 'w') as f:
+                pass
         symlink(log_file, log_symlink)
+        symlink(err_file, err_symlink)
 
         # TODO: do we want to handle a subset of the hosts in a stack (e.g.,
         # when adding additional hosts?) for the moment it seems just fine
@@ -661,22 +660,47 @@ def highstate(stack_id, host_ids=None):
             # assume to be a list of errors
             if output is not None:
                 errors = {}
-                for host, host_result in output.iteritems():
-                    if type(host_result) is list:
-                        errors[host] = host_result
+                for host, states in output.iteritems():
+                    if type(states) is list:
+                        errors[host] = states
 
-                    elif type(host_result) is dict:
-                        # TODO: go deeper into the host_result dictionaries
-                        # looking for bad salt state executions
-                        pass
+                    elif type(states) is dict:
+                        # iterate over the individual states in the host
+                        # looking for states that had a result of false
+                        for state, state_meta in states.iteritems():
+                            # State was successful, nothing to see here
+                            if state_meta['result']:
+                                continue
 
-                if errors:
-                    err_msg = 'Core provisioning errors on hosts: {0}. ' \
-                              'Please see the log file for more ' \
-                              'details.'.format(
-                                  ', '.join(errors.keys()))
-                    stack.set_status(highstate.name, err_msg, Level.ERROR)
-                    raise StackTaskException(err_msg)
+                            state_labels = settings.STATE_EXECUTION_FIELDS
+                            state_fields = state.split(
+                                settings.STATE_EXECUTION_DELIMITER)
+                            state = dict(zip(state_labels, state_fields))
+
+                            error = '{state}.{func}::{declaration_id} - {0}' \
+                                .format(state_meta['comment'].strip(),
+                                        **state)
+
+                            if state_meta['comment'] == ERROR_REQUISITE:
+                                errors.setdefault(host, {}) \
+                                    .setdefault('requisite_errors', []) \
+                                    .append(error)
+                            else:
+                                errors.setdefault(host, {}) \
+                                    .setdefault('errors', []) \
+                                    .append(error)
+
+                    if errors:
+                        # write the errors to the err_file
+                        with open(err_file, 'a') as f:
+                            f.write(yaml.safe_dump(errors))
+
+                        err_msg = 'Core provisioning errors on hosts: {0}. ' \
+                                  'Please see the highstate error log file ' \
+                                  'for more details.'.format(
+                                      ', '.join(errors.keys()))
+                        stack.set_status(highstate.name, err_msg, Level.ERROR)
+                        raise StackTaskException(err_msg)
 
         stack.set_status(highstate.name,
                          'Finished core provisioning all hosts.')
@@ -719,12 +743,8 @@ def orchestrate(stack_id, host_ids=None):
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir,
-                                '{0}-{1}.orchestration.log'.format(stack.slug,
-                                                                   now))
-        log_symlink = os.path.join(root_dir,
-                                   '{0}.orchestration.latest'.format(
-                                       stack.slug))
+        log_file = os.path.join(log_dir, '{0}.orchestration.log'.format(now))
+        log_symlink = os.path.join(root_dir, 'orchestration.log.latest')
 
         # "touch" the log file and symlink it to the latest
         with open(log_file, 'w') as f:
