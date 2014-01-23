@@ -53,11 +53,11 @@ urlpatterns = patterns(
         api.StackLogsAPIView.as_view(),
         name='stack-logs'),
 
+    url(r'^stacks/(?P<pk>[0-9]+)/logs/(?P<log>.*)$',
+        api.StackLogsDetailAPIView.as_view(),
+        name='stack-logs-detail'),
+
     url(r'^stacks/(?P<pk>[0-9]+)/action/$',
         api.StackActionAPIView.as_view(),
         name='stack-action'),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/logs/(?P<log>.*)/$',
-        api.StackLogsDetailAPIView.as_view(),
-        name='stack-logs-detail'),
 )
