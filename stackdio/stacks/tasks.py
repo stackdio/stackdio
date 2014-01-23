@@ -82,7 +82,7 @@ def is_recoverable(err):
     '''
     # TODO: determine the blacklist of errors that
     # will trigger a return of False here
-    return False
+    return True
 
 
 def state_error(state_str, state_meta):
