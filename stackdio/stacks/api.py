@@ -37,6 +37,10 @@ class StackListAPIView(generics.ListCreateAPIView):
     parser_classes = (parsers.JSONParser,)
     filter_class = filters.StackFilter
 
+    ALLOWED_FIELDS = ('blueprint', 'title', 'description', 'properties',
+                      'max_retries', 'namespace', 'auto_launch',
+                      'auto_provision', 'parallel',)
+
     def get_queryset(self):
         return self.request.user.stacks.all()
 
@@ -57,10 +61,27 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # Validate data
         errors = {}
+
+        for k in request.DATA:
+            if k not in self.ALLOWED_FIELDS:
+                errors.setdefault('unknown_fields', []) \
+                    .append('{0} is an unknown field.'.format(k))
+        if errors:
+            raise BadRequest(errors)
+
+        # REQUIRED
         blueprint_id = request.DATA.pop('blueprint', '')
         title = request.DATA.get('title', '')
         description = request.DATA.get('description', '')
+
+        # OPTIONAL
         properties = request.DATA.get('properties', {})
+        max_retries = request.DATA.get('max_retries', 0)
+
+        # UNDOCUMENTED
+        launch_stack = request.DATA.get('auto_launch', True)
+        provision_stack = request.DATA.get('auto_provision', True)
+        parallel = request.DATA.get('parallel', True)
 
         # check for required blueprint
         if not blueprint_id:
@@ -135,12 +156,6 @@ class StackListAPIView(generics.ListCreateAPIView):
         except Exception, e:
             logger.exception(e)
             raise BadRequest(str(e))
-
-        # set some defaults
-        launch_stack = request.DATA.get('auto_launch', True)
-        provision_stack = request.DATA.get('auto_provision', True)
-        parallel = request.DATA.get('parallel', True)
-        max_retries = request.DATA.get('max_retries', 0)
 
         if launch_stack:
             # Queue up stack creation and provisioning using Celery
@@ -545,17 +560,17 @@ class StackLogsAPIView(APIView):
                         'pk': stack.pk,
                         'log': 'launch.log.latest'},
                     request=request),
-                'highstate': reverse(
+                'provisioning': reverse(
                     'stack-logs-detail',
                     kwargs={
                         'pk': stack.pk,
-                        'log': 'highstate.log.latest'},
+                        'log': 'provisioning.log.latest'},
                     request=request),
-                'highstate-error': reverse(
+                'provisioning-error': reverse(
                     'stack-logs-detail',
                     kwargs={
                         'pk': stack.pk,
-                        'log': 'highstate.err.latest'},
+                        'log': 'provisioning.err.latest'},
                     request=request),
                 'orchestration': reverse(
                     'stack-logs-detail',
@@ -593,7 +608,7 @@ class StackProvisioningErrorsAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
-        err_file = join(stack.get_root_directory(), 'highstate.err.latest')
+        err_file = join(stack.get_root_directory(), 'provisioning.err.latest')
         if not isfile(err_file):
             raise BadRequest('No error file found for this stack. Has '
                              'provisioning occurred yet?')
@@ -612,7 +627,15 @@ class StackOrchestrationErrorsAPIView(APIView):
                                  owner=self.request.user)
 
     def get(self, request, *args, **kwargs):
-        return Response({})
+        stack = self.get_object()
+        err_file = join(stack.get_root_directory(), 'orchestration.err.latest')
+        if not isfile(err_file):
+            raise BadRequest('No error file found for this stack. Has '
+                             'orchestration occurred yet?')
+
+        with open(err_file) as f:
+            err_yaml = yaml.safe_load(f)
+        return Response(err_yaml)
 
 
 class StackLogsDetailAPIView(StackLogsAPIView):
@@ -639,7 +662,7 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 
         if log.endswith('.latest'):
             log = join(stack.get_root_directory(), self.kwargs['log'])
-        elif log.endswith('.log'):
+        elif log.endswith('.log') or log.endswith('.err'):
             log = join(stack.get_log_directory(), self.kwargs['log'])
         else:
             log = None
