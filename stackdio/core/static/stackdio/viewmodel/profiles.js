@@ -36,6 +36,7 @@ define(["knockout",
             };
 
             self.listProfiles = function (account) {
+                self.selectedAccount(account);
                 stores.AccountProfiles.removeAll();
 
                 _.each(stores.Profiles(), function (profile) {
@@ -55,8 +56,7 @@ define(["knockout",
             };
 
             self.showProfileForm = function (account) {
-                self.selectedAccount(account);
-                $( "#profile-form-container" ).dialog("open");
+                $('#profile-form-container').dialog("open");
             };
 
             self.closeProfileForm = function () {
