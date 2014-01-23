@@ -53,7 +53,7 @@ SALT_CLOUD_PROVIDERS_DIR = getenv('SALT_CLOUD_PROVIDERS_DIR')
 STATE_EXECUTION_DELIMITER = '_|-'
 
 # The fields packed into the state execution result
-STATE_EXECUTION_FIELDS = ('state', 'declaration_id', 'name', 'func')
+STATE_EXECUTION_FIELDS = ('module', 'declaration_id', 'name', 'func')
 
 ##
 # stackd.io settings

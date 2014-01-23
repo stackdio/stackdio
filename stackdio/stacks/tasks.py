@@ -32,15 +32,81 @@ class StackTaskException(Exception):
 
 
 def symlink(source, target):
+    '''
+    Symlink the given source to the given target
+    '''
     if os.path.isfile(target):
         os.remove(target)
     os.symlink(source, target)
 
 
+def is_state_error(state_meta):
+    '''
+    Determines if the state resulted in an error.
+    '''
+    return not state_meta['result']
+
+
+def is_requisite_error(state_meta):
+    '''
+    Is the state error because of a requisite state failure?
+    '''
+    return state_meta['comment'] == ERROR_REQUISITE
+
+
 def state_to_dict(state_string):
+    '''
+    Takes the state string and transforms it into a dict of key/value
+    pairs that are a bit easier to handle.
+
+    Before: group_|-stackdio_group_|-abe_|-present
+
+    After: {
+        'module': 'group',
+        'function': 'present',
+        'name': 'abe',
+        'declaration_id': 'stackdio_group'
+    }
+    '''
     state_labels = settings.STATE_EXECUTION_FIELDS
     state_fields = state_string.split(settings.STATE_EXECUTION_DELIMITER)
     return dict(zip(state_labels, state_fields))
+
+
+def is_recoverable(err):
+    '''
+    Checks the provided error against a blacklist of errors
+    determined to be unrecoverable. This should be used to
+    prevent retrying of provisioning or orchestration because
+    the error will continue to occur.
+    '''
+    # TODO: determine the blacklist of errors that
+    # will trigger a return of False here
+    return False
+
+
+def state_error(state_str, state_meta):
+    '''
+    Takes the given state result string and the metadata
+    of the state execution result and returns a consistent
+    dict for the error along with whether or not the error
+    is recoverable.
+    '''
+    state = state_to_dict(state_str)
+    func = '{module}.{func}'.format(**state)
+    decl_id = state['declaration_id']
+    err = {
+        'error': state_meta['comment'],
+        'function': func,
+        'declaration_id': decl_id,
+    }
+    if 'stderr' in state_meta['changes']:
+        err['stderr'] = \
+            state_meta['changes']['stderr']
+    if 'stdout' in state_meta['changes']:
+        err['stdout'] = \
+            state_meta['changes']['stdout']
+    return err, is_recoverable(err)
 
 
 @celery.task(name='stacks.handle_error')
@@ -588,7 +654,7 @@ def highstate(stack_id, host_ids=None, max_retries=0):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
-        logger.info('Running highstate for stack: {0!r}'.format(stack))
+        logger.info('Running core provisioning for stack: {0!r}'.format(stack))
 
         # Update status
         stack.set_status(highstate.name,
@@ -599,7 +665,7 @@ def highstate(stack_id, host_ids=None, max_retries=0):
         log_dir = stack.get_log_directory()
 
         # we'll break out of the loop based on the given number of retries
-        current_try, unrecoverable = 0, False
+        current_try, unrecoverable_error = 0, False
         while True:
             current_try += 1
             logger.info('Task {0} try #{1} for stack {2!r}'.format(
@@ -608,10 +674,12 @@ def highstate(stack_id, host_ids=None, max_retries=0):
                 stack))
 
             now = datetime.now().strftime('%Y%m%d-%H%M%S')
-            log_file = os.path.join(log_dir, '{0}.highstate.log'.format(now))
-            err_file = os.path.join(log_dir, '{0}.highstate.err'.format(now))
-            log_symlink = os.path.join(root_dir, 'highstate.log.latest')
-            err_symlink = os.path.join(root_dir, 'highstate.err.latest')
+            log_file = os.path.join(log_dir,
+                                    '{0}.provisioning.log'.format(now))
+            err_file = os.path.join(log_dir,
+                                    '{0}.provisioning.err'.format(now))
+            log_symlink = os.path.join(root_dir, 'provisioning.log.latest')
+            err_symlink = os.path.join(root_dir, 'provisioning.err.latest')
 
             # "touch" the log file and symlink it to the latest
             for l in (log_file, err_file):
@@ -648,6 +716,8 @@ def highstate(stack_id, host_ids=None, max_retries=0):
                 raise StackTaskException(err_msg)
 
             if result is None:
+                # What does it mean for envoy to return a result of None?
+                # Is it even possible? If so, is it a recoverable error?
                 if current_try <= max_retries:
                     continue
                 msg = 'Core provisioning command returned None. Status, ' \
@@ -683,42 +753,34 @@ def highstate(stack_id, host_ids=None, max_retries=0):
                     for host, states in output.iteritems():
                         if type(states) is list:
                             errors[host] = states
+                            continue
 
-                        elif type(states) is dict:
-                            # iterate over the individual states in the host
-                            # looking for states that had a result of false
-                            for state, state_meta in states.iteritems():
-                                # State was successful, nothing to see here
-                                if state_meta['result']:
-                                    continue
+                        # iterate over the individual states in the host
+                        # looking for state failures
+                        for state_str, state_meta in states.iteritems():
+                            if not is_state_error(state_meta):
+                                continue
 
-                                state = state_to_dict(state)
-                                if state_meta['comment'] == ERROR_REQUISITE:
-                                    continue
-                                else:
-                                    errors.setdefault(host, []) \
-                                        .append({
-                                            'error': state_meta['comment'],
-                                            'function': '{0}.{1}'.format(
-                                                state['state'],
-                                                state['func']),
-                                            'declaration_id': state['declaration_id'], # NOQA
-                                        })
+                            if not is_requisite_error(state_meta):
+                                err, recoverable = state_error(state_str,
+                                                               state_meta)
+                                if not recoverable:
+                                    unrecoverable_error = True
+                                errors.setdefault(host, []).append(err)
 
                     if errors:
                         # write the errors to the err_file
                         with open(err_file, 'a') as f:
                             f.write(yaml.safe_dump(errors))
 
-                        # TODO: We need to check for unrecoverable errors
-                        # and break out early
-                        if current_try <= max_retries:
+                        if not unrecoverable_error and current_try <= max_retries: # NOQA
                             continue
 
                         err_msg = 'Core provisioning errors on hosts: ' \
-                            '{0}. Please see the highstate error log ' \
-                            'file for more details'.format(
-                                ', '.join(errors.keys()))
+                            '{0}. Please see the provisioning errors API ' \
+                            'or the log file for more details: {1}'.format(
+                                ', '.join(errors.keys()),
+                                os.path.basename(log_file))
                         stack.set_status(highstate.name,
                                          err_msg,
                                          Level.ERROR)
@@ -770,7 +832,7 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
         log_dir = stack.get_log_directory()
 
         # we'll break out of the loop based on the given number of retries
-        current_try, unrecoverable = 0, False
+        current_try, unrecoverable_error = 0, False
         while True:
             current_try += 1
             logger.info('Task {0} try #{1} for stack {2!r}'.format(
@@ -793,7 +855,7 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
             symlink(err_file, err_symlink)
 
             ##
-            # Execute state.over runner with overstate file
+            # Execute custom orchestration runner
             ##
             cmd = ' '.join([
                 'salt-run',
@@ -821,6 +883,8 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
                 raise StackTaskException(err_msg)
 
             if result is None:
+                # What does it mean for envoy to return a result of None?
+                # Is it even possible? If so, is it a recoverable error?
                 if current_try <= max_retries:
                     continue
                 msg = 'Orchestration command returned None. Status, stdout ' \
@@ -841,7 +905,7 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
                     if result.std_err else result.std_out
                 stack.set_status(orchestrate.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error executing orchestration: '
-                                         '{1!r}'.format(err_msg))
+                                         '{0!r}'.format(err_msg))
             else:
                 with open(log_file, 'a') as f:
                     f.write(result.std_out)
@@ -855,57 +919,49 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
                 if output is not None:
                     errors = {}
 
-                    for host, results in output.iteritems():
+                    for host, stage_results in output.iteritems():
                         # check for orchestration stage errors first
                         if host == '__stage__error__':
                             continue
 
-                        for result in results:
-                            if isinstance(result, basestring):
-                                errors.setdefault(host, []) \
-                                    .append({
-                                        'error': result
-                                    })
-                            elif isinstance(result, dict):
-                                # iterate over the individual states in the
-                                # host looking for states that had a result
-                                # of false
-                                for state, state_meta in result.iteritems():
-                                    # State was successful, nothing to see here
-                                    if state_meta['result']:
-                                        continue
+                        for stage_result in stage_results:
 
-                                    # massage the state string into something
-                                    # more useful
-                                    state = state_to_dict(state)
+                            if isinstance(stage_result, list):
+                                for err in stage_result:
+                                    errors.setdefault(host, []) \
+                                        .append({
+                                            'error': err
+                                        })
+                                continue
 
-                                    # skip over requisite errors
-                                    if state_meta['comment'] == ERROR_REQUISITE: # NOQA
-                                        continue
-                                    else:
-                                        errors.setdefault(host, []) \
-                                            .append({
-                                                'error': state_meta['comment'],
-                                                'function': '{0}.{1}'.format(
-                                                    state['state'],
-                                                    state['func']),
-                                                'declaration_id': state['declaration_id'], # NOQA
-                                            })
+                            # iterate over the individual states in the
+                            # host looking for states that had a result
+                            # of false
+                            for state_str, state_meta in stage_result.iteritems(): # NOQA
+                                if not is_state_error(state_meta):
+                                    continue
+
+                                if not is_requisite_error(state_meta):
+                                    err, recoverable = state_error(state_str,
+                                                                   state_meta)
+                                    if not recoverable:
+                                        unrecoverable_error = True
+                                    errors.setdefault(host, []).append(err)
 
                     if errors:
                         # write the errors to the err_file
                         with open(err_file, 'a') as f:
                             f.write(yaml.safe_dump(errors))
 
-                        # TODO: We need to check for unrecoverable errors
-                        # and break out early
-                        if current_try <= max_retries:
+                        if not unrecoverable_error and current_try <= max_retries: # NOQA
                             continue
 
-                        err_msg = 'Core provisioning errors on hosts: ' \
-                            '{0}. Please see the highstate error log ' \
-                            'file for more details'.format(
-                                ', '.join(errors.keys()))
+                        err_msg = 'Orchestration errors on hosts: ' \
+                            '{0}. Please see the orchestration errors ' \
+                            'API or the orchestration log file for more ' \
+                            'details: {1}'.format(
+                                ', '.join(errors.keys()),
+                                os.path.basename(log_file))
                         stack.set_status(highstate.name,
                                          err_msg,
                                          Level.ERROR)

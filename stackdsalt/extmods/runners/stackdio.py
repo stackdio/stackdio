@@ -24,15 +24,13 @@ def orchestrate(saltenv='base', os_fn=None):
     for stage in overstate.stages_iter():
         if not isinstance(stage, dict):
             continue
-        for key, val in stage.items():
-            if '_|-' in key:
+        for host, result in stage.items():
+            if '_|-' in host:
                 ret.setdefault('__stage__error__', []) \
-                    .append(val)
-            elif isinstance(val, list):
-                ret.setdefault(key, []) \
-                    .extend(val)
+                    .append(result)
             else:
-                ret.setdefault(key, []) \
-                    .append(val)
+                ret.setdefault(host, []) \
+                    .append(result)
+
     salt.output.display_output(ret, 'yaml', opts=__opts__) # NOQA
     return overstate.over_run

@@ -42,7 +42,8 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
     def pre_save(self, obj):
         obj.owner = self.request.user
 
-    def create(self, request, *args, **kwargs):
+    # TODO: Ignoring code complexity issues
+    def create(self, request, *args, **kwargs): # NOQA
         errors = {}
         title = request.DATA.get('title', '')
         description = request.DATA.get('description', '')
@@ -238,7 +239,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                             elif component_sls_path:
                                 d['sls_path__iexact'] = component_sls_path
                                 component_err = 'an sls_path of {0}'.format(
-                                    component_title
+                                    component_sls_path
                                 )
                             elif component_title:
                                 d['title__icontains'] = component_title
