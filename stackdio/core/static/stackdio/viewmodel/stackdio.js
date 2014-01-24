@@ -5,6 +5,7 @@ define([
         "knockout", 
         "bootstrap-typeahead", 
         "settings",
+        "util/postOffice", 
         "util/form",
         "model/models",
         "store/stores",
@@ -20,7 +21,9 @@ define([
         "viewmodel/search",
         "viewmodel/blueprints"
     ],
-    function (Q, moment, jui, ko, typeahead, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, formulaVM, stackVM, searchVM, blueprintVM) {
+    function (Q, moment, jui, ko, typeahead, settings, _O_, formutils, models, stores, API, 
+              abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, formulaVM, 
+              stackVM, searchVM, blueprintVM) {
 
         function stackdioModel() {
             var self = this;
@@ -217,29 +220,8 @@ define([
                         }
                     });
                     
-
-                    var flattened = [].concat(stores.Blueprints(), stores.Stacks(), stores.Formulae());
-                    flattened.forEach(function (a) {
-                        if (a instanceof models.Blueprint) {
-                            a.type = 'Blueprint';
-                        } else if (a instanceof models.Stack) {
-                            a.type = 'Stack';
-                        } else if (a instanceof models.Formula) {
-                            a.type = 'Formula';
-                        } else {
-                            a.type = 'Unknown';
-                        }
-                    });
-                    console.log('flattened',flattened);
-                    $('#omnibox_search').typeahead({
-                        name: 'search',
-                        valueKey: 'title',
-                        engine: _,
-                        template: '<div class="search-result-<%= type %>"><%= type %> | <%= title %></div>',
-                        local: flattened,
-                        limit: 10
-                    });
-
+                    _O_.publish('all.updated', { update: true });
+                    _O_.publish('all.updated', { update: true });
 
                     // Remove the hide class from the main sections
                     $("div[class*='hide'][data-bind]").removeClass('hide');

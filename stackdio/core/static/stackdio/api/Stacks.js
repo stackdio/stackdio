@@ -25,8 +25,9 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                 });
 
                 Q.all(historyPromises).then(function () {
-                    console.log('arguments',arguments);
-                }).then(deferred.resolve)
+                    console.log('stacks', stores.Stacks());
+                    deferred.resolve();
+                }).done();
             }
         });
 
@@ -47,7 +48,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             },
             success: function (response) {
                 var history = response.results;
-                stack.history = history;
+                stack.fullHistory = history;
                 deferred.resolve(stack);
             }
         });
@@ -70,9 +71,10 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                 "X-CSRFToken": stackdio.settings.csrftoken,
                 "Accept": "application/json"
             },
-            success: function (stack) {
-                stores.Stacks.push(stack);
-                deferred.resolve(stack);
+            success: function (newStack) {
+                newStack.fullHistory = [];
+                stores.Stacks.push(newStack);
+                deferred.resolve(newStack);
             }
         });
 

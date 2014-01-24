@@ -18,7 +18,7 @@ define(["knockout",
 
             // This builds the HTML for the stack history popover element
             self.popoverBuilder = function (stack) {
-                return stack.history.map(function (h) {
+                return stack.fullHistory.map(function (h) {
                     var content = [];
 
                     content.push("<div class=\'dotted-border xxsmall-padding\'>");

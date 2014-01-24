@@ -83,33 +83,6 @@
         </ul>
     </nav>
 
-    <script type="text/template" id="search-typeahead">
-        <% if (value === 'empty') { %>
-            <h5 style="padding-left: 30px">
-                <i class="fa fa-exclamation-triangle" style="color: #B80000"></i> 
-                No results found
-            </h5>
-        <% } else { %>
-            <div class="concept-card">
-                <div class="concept-image">
-                    <a href="<%= href %>" onClick="javascript:$.publish('hideOmniBox');">
-                        <img src="<%= conceptIcon %>" width="50" height="50" />
-                    </a>
-                </div>
-                <div class="concept-data">
-                    <div class="concept-title">
-                        <a href="<%= href %>" onClick="javascript:$.publish('hideOmniBox');"><%= text %></a>
-                    </div>
-                    <% if (aliases.length > 0) { %>
-                        <div class="concept-aliases">
-                            <strong>Aliases:</strong> <%= aliases.join(',') %>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-        <% } %>
-    </script>
-
     <!-- 
         ======================================================================
         M E S S A G E S
@@ -1691,12 +1664,11 @@
 
 
 
-    <script data-main="/static/stackdio/require-config" src="/static/stackdio/require.js"></script>
+    <script data-main="/static/stackdio/application" src="/static/stackdio/require.js"></script>
     <script>
     window.stackdio_user = {};
     window.stackdio_user.su = "{{ user.is_superuser }}";
     </script>
-
 
 <!--
     <script src="/static/js/require.js"></script>

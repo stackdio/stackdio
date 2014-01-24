@@ -55,6 +55,7 @@ img.logo {
     font-size: 3.25em;
     letter-spacing: -0.03em;
     color: #000;
+    padding: 40px 20px;
 }
 
 .welcome-heading:after {

@@ -10,6 +10,7 @@ requirejs.config({
         'knockout': 'bower_components/knockout.js/knockout',
         'q': 'bower_components/q/q.min',
         'underscore': 'bower_components/underscore-amd/underscore-min',
+        'postal': 'bower_components/postal.js/lib/postal.min',
         'moment': 'bower_components/moment/min/moment.min'
     },
 
