@@ -40,6 +40,20 @@
                         </li>
                     </ul>
 
+                    <form class="navbar-form navbar-left form-inline" role="search" data-bind="submit: $root.search.search">
+                        <div class="form-group ">
+                            <input class="form-control" 
+                                type="text"
+                                id="omnibox_search"
+                                name="omnibox_search"
+                                autofocus
+                                placeholder="Search" />
+                        </div>
+                        <button class="btn" type="submit">
+                            <span class="glyphicon glyphicon-search" style="cursor: pointer"></span>
+                        </button>
+                    </form>
+
                     <ul class="nav navbar-nav navbar-right">
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -68,6 +82,33 @@
             <li><a href="http://twitter.com/stackdio" target="_blank">@stackdio</a></li>
         </ul>
     </nav>
+
+    <script type="text/template" id="search-typeahead">
+        <% if (value === 'empty') { %>
+            <h5 style="padding-left: 30px">
+                <i class="fa fa-exclamation-triangle" style="color: #B80000"></i> 
+                No results found
+            </h5>
+        <% } else { %>
+            <div class="concept-card">
+                <div class="concept-image">
+                    <a href="<%= href %>" onClick="javascript:$.publish('hideOmniBox');">
+                        <img src="<%= conceptIcon %>" width="50" height="50" />
+                    </a>
+                </div>
+                <div class="concept-data">
+                    <div class="concept-title">
+                        <a href="<%= href %>" onClick="javascript:$.publish('hideOmniBox');"><%= text %></a>
+                    </div>
+                    <% if (aliases.length > 0) { %>
+                        <div class="concept-aliases">
+                            <strong>Aliases:</strong> <%= aliases.join(',') %>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        <% } %>
+    </script>
 
     <!-- 
         ======================================================================
@@ -194,11 +235,11 @@
         <div class="view">
 
             <div class="row bottom-separation-large">
-                <div class="col-md-12 welcome-heading">Welcome to stackd.io</div>
+                <div class="col-md-12 welcome-heading">Welcome to stackd.io </div>
             </div>
 
-            <div class="row ">
-                <div class="col-md-5">
+            <div class="row">
+                <div class="col-md-4">
                     <div class="row">
                         <div class="col-md-12 medium-heading light">Launch a Stack</div>
                         <div class="col-md-12 section-synopsis light">
@@ -208,19 +249,9 @@
                             <input type="text" class="form-control" id="blueprint_search" placeholder="Find the Blueprint you want to use...">
                         </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-md-12 medium-heading light">Locate any resource</div>
-                        <div class="col-md-12 section-synopsis light">
-                            You can search your stackd.io database for Blueprints, Formulas, or Stacks.
-                        </div>
-                        <div class="col-md-12 bottom-separation-large">
-                            <input type="text" class="form-control" id="resource_search" placeholder="Start searching...">
-                        </div>
-                    </div>
                 </div>
 
-                <div class="col-md-6 col-md-offset-1">
+                <div class="col-md-7 col-md-offset-1">
                     <div class="row">
                         <div class="col-md-12 medium-heading light">Your Running Stacks</div>
                     </div>
@@ -230,9 +261,10 @@
                             <table id="stacks" class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th style="width:20%">Title</th>
-                                        <th style="width:40%">Description</th>
-                                        <th style="width:30%">Hosts</th>
+                                        <th>Title</th>
+                                        <th>Description</th>
+                                        <th>Hosts</th>
+                                        <th>History</th>
                                         <th style="width:10%"></th>
                                     </tr>
                                 </thead>
@@ -244,6 +276,14 @@
                                             <a href="#" 
                                                data-bind="text: host_count + ' hosts',
                                                           click: $root.stack.showStackDetails"></a>
+                                        </td>
+                                        <td>
+                                            <a href='#' 
+                                               data-bind="bootstrapPopover: {
+                                                            content: $root.stack.popoverBuilder($data),
+                                                            title: 'Stack History'
+                                                          },
+                                                          text: 'View (' + $data.history.length + ') messages'"></a>
                                         </td>
                                         <td>
                                             <div class="btn-group">

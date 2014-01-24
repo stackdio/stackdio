@@ -1,86 +1,106 @@
 define(["q", "store/stores", "model/models"], function (Q, stores, models) {
-    return {
-        load : function () {
-            var deferred = Q.defer();
+    var api = {};
 
-            $.ajax({
-                url: '/api/stacks/',
-                type: 'GET',
-                headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-                    var stack;
+    api.load = function () {
+        var deferred = Q.defer();
+        var self = this;
 
-                    // Clear the store and the grid
-                    stores.Stacks.removeAll();
+        $.ajax({
+            url: '/api/stacks/',
+            type: 'GET',
+            headers: {
+                "X-CSRFToken": stackdio.settings.csrftoken,
+                "Accept": "application/json"
+            },
+            success: function (response) {
+                var stacks = response.results;
+                var historyPromises = [];
 
-                    for (i in items) {
-                        stack = new models.Stack().create(items[i]);
+                stores.Stacks.removeAll();
 
-                        // Inject the record into the store
-                        stores.Stacks.push(stack);
-                    }
+                stacks.forEach(function (stack) {
+                    historyPromises.push(api.getHistory(stack).then(function (stackWithHistory) {
+                        stores.Stacks.push(new models.Stack().create(stackWithHistory));
+                    }));
+                });
 
-                    console.log('stacks', stores.Stacks());
+                Q.all(historyPromises).then(function () {
+                    console.log('arguments',arguments);
+                }).then(deferred.resolve)
+            }
+        });
 
-                    // Resolve the promise and pass back the loaded stacks
-                    deferred.resolve(stores.Stacks());
+        return deferred.promise;
+    };
 
-                }
-            });
+    api.getHistory = function (stack) {
+        var deferred = Q.defer();
 
-            return deferred.promise;
-        },
-        save: function (stack) {
-            var deferred = Q.defer();
+        $.ajax({
+            url: stack.history,
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": stackdio.settings.csrftoken,
+                "Accept": "application/json"
+            },
+            success: function (response) {
+                var history = response.results;
+                stack.history = history;
+                deferred.resolve(stack);
+            }
+        });
 
-            stack = JSON.stringify(stack);
+        return deferred.promise;
+    };
 
-            $.ajax({
-                url: '/api/stacks/',
-                type: 'POST',
-                data: stack,
-                dataType: 'json',
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
-                },
-                success: function (stack) {
-                    stores.Stacks.push(stack);
-                    deferred.resolve();
-                }
-            });
+    api.save = function (stack) {
+        var deferred = Q.defer();
 
-            return deferred.promise;
-        },
-        getHosts: function (stack) {
-            var deferred = Q.defer();
+        stack = JSON.stringify(stack);
 
-            $.ajax({
-                url: '/api/stacks/' + stack.id + '/hosts/',
-                type: 'GET',
-                dataType: 'json',
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var hosts = response.results;
-                    
-                    // stores.Stacks.push(stack);
-                    // deferred.resolve();
-                }
-            });
+        $.ajax({
+            url: '/api/stacks/',
+            type: 'POST',
+            data: stack,
+            dataType: 'json',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": stackdio.settings.csrftoken,
+                "Accept": "application/json"
+            },
+            success: function (stack) {
+                stores.Stacks.push(stack);
+                deferred.resolve(stack);
+            }
+        });
 
-            return deferred.promise;
-        },
-        delete: function (record) {
+        return deferred.promise;
+    };
 
-        }
-    }
+    api.getHosts = function (stack) {
+        var deferred = Q.defer();
+
+        $.ajax({
+            url: '/api/stacks/' + stack.id + '/hosts/',
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": stackdio.settings.csrftoken,
+                "Accept": "application/json"
+            },
+            success: function (response) {
+                var hosts = response.results;
+                
+                // stores.Stacks.push(stack);
+                // deferred.resolve();
+            }
+        });
+
+        return deferred.promise;
+    };
+
+    return api;
 });

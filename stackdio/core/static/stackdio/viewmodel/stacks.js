@@ -17,7 +17,7 @@ define(["knockout",
             self.blueprintProperties = ko.observable();
 
             // This builds the HTML for the stack history popover element
-            self.popoverBuilder = function (stack) { 
+            self.popoverBuilder = function (stack) {
                 return stack.history.map(function (h) {
                     var content = [];
 
@@ -38,6 +38,7 @@ define(["knockout",
                     return content.join('');
 
                 }).join('');
+                // return '';
             };
 
             self.doStackAction = function (action, evt, stack) {
@@ -103,20 +104,22 @@ define(["knockout",
             self.provisionStack = function (a, evt) {
                 var record = formutils.collectFormFields(evt.target.form);
 
-
                 var stack = {
                     title: record.stack_title.value,
                     description: record.stack_description.value,
                     namespace: record.stack_namespace.value,
-                    properties: JSON.parse(record.stack_properties_preview.value),
                     blueprint: self.selectedBlueprint().id
                 };
 
+                if (record.stack_properties_preview.value !== '') {
+                    stack.properties = JSON.parse(record.stack_properties_preview.value);
+                }
+
                 API.Stacks.save(stack)
+                    .then(API.Stacks.getHistory)
                     .then(function () {
                         self.closeStackForm();
                     });
-
             };
 
             self.showStackForm = function (blueprint) {

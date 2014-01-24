@@ -17,12 +17,21 @@ define([
         "viewmodel/securityGroup",
         "viewmodel/formulae",
         "viewmodel/stacks",
+        "viewmodel/search",
         "viewmodel/blueprints"
     ],
-    function (Q, moment, jui, ko, typeahead, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, formulaVM, stackVM, blueprintVM) {
+    function (Q, moment, jui, ko, typeahead, settings, formutils, models, stores, API, abstractVM, profileVM, accountVM, volumeVM, snapshotVM, securityGroupVM, formulaVM, stackVM, searchVM, blueprintVM) {
 
         function stackdioModel() {
             var self = this;
+
+            _.compile = function(templ) {
+              var compiled = this.template(templ);
+              compiled.render = function(ctx) {
+                 return this(ctx);
+              }
+              return compiled;
+           };
 
             self.stores = stores;
             self.models = models;
@@ -78,6 +87,7 @@ define([
             self.stack = new stackVM();
             self.formula = new formulaVM();
             self.blueprint = new blueprintVM();
+            self.search = new searchVM();
 
             /*
              *  ==================================================================================
@@ -193,10 +203,9 @@ define([
                     $('.selectpicker').selectpicker();
 
                     // Specify a flattened array of Blueprint name as the store for the typeahead on the welcome page
-                    var flattened = stores.Blueprints().map(function (b) {return b.title; });
                     $('#blueprint_search').typeahead({
                         name: 'blueprints',
-                        local: flattened,
+                        local: stores.Blueprints().map(function (b) {return b.title; }),
                         limit: 10
                     });
 
@@ -207,6 +216,30 @@ define([
                             self.stack.launchStack(foundBlueprint);
                         }
                     });
+                    
+
+                    var flattened = [].concat(stores.Blueprints(), stores.Stacks(), stores.Formulae());
+                    flattened.forEach(function (a) {
+                        if (a instanceof models.Blueprint) {
+                            a.type = 'Blueprint';
+                        } else if (a instanceof models.Stack) {
+                            a.type = 'Stack';
+                        } else if (a instanceof models.Formula) {
+                            a.type = 'Formula';
+                        } else {
+                            a.type = 'Unknown';
+                        }
+                    });
+                    console.log('flattened',flattened);
+                    $('#omnibox_search').typeahead({
+                        name: 'search',
+                        valueKey: 'title',
+                        engine: _,
+                        template: '<div class="search-result-<%= type %>"><%= type %> | <%= title %></div>',
+                        local: flattened,
+                        limit: 10
+                    });
+
 
                     // Remove the hide class from the main sections
                     $("div[class*='hide'][data-bind]").removeClass('hide');
@@ -217,7 +250,7 @@ define([
             .catch(function (error) {
                 // Handle any error from all above steps
                 console.error(error.name, error.message);
-            });
+            }).done();
         };
 
         /*

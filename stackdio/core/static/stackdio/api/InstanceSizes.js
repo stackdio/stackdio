@@ -26,7 +26,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                         stores.InstanceSizes.push(size);
                     }
 
-                    console.log('instanceSizes', stores.InstanceSizes());
+                    // console.log('instanceSizes', stores.InstanceSizes());
 
                     // Resolve the promise and pass back the loaded items
                     deferred.resolve(stores.InstanceSizes());

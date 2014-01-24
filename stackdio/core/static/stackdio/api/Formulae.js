@@ -32,8 +32,8 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                         }
                     }
 
-                    console.log('formulae', stores.Formulae());
-                    console.log('components', stores.FormulaComponents());
+                    // console.log('formulae', stores.Formulae());
+                    // console.log('components', stores.FormulaComponents());
 
                     // Resolve the promise
                     deferred.resolve();
