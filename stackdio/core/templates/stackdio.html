@@ -243,7 +243,7 @@
                                 </thead>
                                 <tbody data-bind="foreach: stores.Stacks">
                                     <tr>
-                                        <td data-bind="text: title"></td>
+                                        <td><a href="#" data-bind="text: $data.title, click: $root.stack.showStackDetails"></a></td>
                                         <td data-bind="text: description"></td>
                                         <td>
                                             <a href="#" 
@@ -676,6 +676,101 @@
 
     <!-- 
         ======================================================================
+        E D I T   S T A C K   D I A L O G
+        ======================================================================
+     -->
+    <div id="stack-edit-container" title="Edit Stack" data-bind="" class="hide">
+        <form id="stack-edit-form" role="form" class="form-horizontal">
+            <div class="modal-body large-modal-body">
+                <div class="row bottom-separation">
+                    <div class="col-md-12">
+                        <h5 data-bind="text: 'Base Blueprint: ' + $root.stack.selectedBlueprint().title"></h5>
+                    </div>
+                </div>
+
+                <div class="row bottom-separation">
+                    <div class="col-md-6">
+                        <label class="sr-only" for="stack_title_edit">Title</label>
+                        <input type="text" class="form-control" id="stack_title_edit" placeholder="Stack title">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="sr-only" for="stack_description_edit">Description</label>
+                        <input type="text" class="form-control" id="stack_description_edit" placeholder="Purpose of Stack">
+                    </div>
+                </div>
+
+                <div class="row bottom-separation">
+                    <div class="col-md-12">
+                        <label class="sr-only" for="stack_namespace_edit">Title</label>
+                        <input type="text" class="form-control" id="stack_namespace_edit" placeholder="Optionally provide a namespace for this stack">
+                    </div>
+                </div>
+
+                <div class="row top-separation bottom-separation">
+                    <div class="col-md-12 small-heading">Stack Properties</div>
+                    <div class="col-md-12">
+                        <textarea  
+                               class="form-control" 
+                               rows="6" 
+                               id="stack_properties_preview_edit" 
+                               data-bind="text: JSON.stringify($root.stack.blueprintProperties(), undefined, 3)"
+                               placeholder="The formulas for the selected Blueprint do not contain properties"></textarea>
+                    </div>
+                </div>
+
+
+                <div class="row top-separation bottom-separation">
+                    <div class="col-md-12 small-heading">Stack Hosts</div>
+                    <table id="stack-hosts-details" class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width:25px">#</th>
+                                <th style="width:20%">State</th>
+                                <th style="width:40%">Host name</th>
+                                <th style="width:30%">Created</th>
+                                <th style="width:50px"></th>
+                            </tr>
+                        </thead>
+                        <tbody data-bind="foreach: stores.StackHosts">
+                            <tr>
+                                <td>
+                                    <a href='#' data-bind='click: $root.stack.showHostMetadata, text: id'></a>
+                                </td>
+                                <td data-bind="text: state"></td>
+                                <td>
+                                    <a href='#' 
+                                       target="_blank" 
+                                       data-bind="text: hostname, attr: { href: 'http://'+fqdn, title: hostname }"></a>
+                                </td>
+                                <td data-bind="text: $root.moment(created).calendar()"></td>
+                                <td>
+                                    <select id="host-action"
+                                            data-width="125px"
+                                            header="Perform action"
+                                            title="Perform action"
+                                            class="dropup" 
+                                            data-container="body"
+                                            data-bind="options: $root.stack.stackHostActions, 
+                                                       optionsValue: $data,
+                                                       optionsText: $data,
+                                                       click: function (data, event) { $root.stack.doStackHostAction(data, event, $parent) }"
+                                    ></select>
+                                </td>
+                            </tr>     
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-danger" data-bind="click: $root.stack.closeStackEditForm">Close</button>
+                <button class="btn btn-success" data-bind="click: $root.stack.updateStack">Save</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 
+        ======================================================================
         C O M P O N E N T   O R C H E S T R A T I O N   D I A L O G
         ======================================================================
      -->
@@ -916,88 +1011,88 @@
                 </tbody>
             </table>
         </div>
+    </div>
 
-        <!-- 
-            ======================================================================
-            L A U N C H E D   H O S T   L I S T
-            ======================================================================
-         -->
-        <div id="stack-details-container" title="Stack Hosts">
-             <div class="modal-body">
-                <table id="stack-details" class="data-grid">
-                    <thead>
-                        <tr>
-                            <th style="width:25px">#</th>
-                            <th style="width:20%">State</th>
-                            <th style="width:40%">Host name</th>
-                            <th style="width:30%">Created</th>
-                            <th style="width:50px"></th>
-                        </tr>
-                    </thead>
-                    <tbody data-bind="foreach: stores.StackHosts">
-                        <tr>
-                            <td>
-                                <a href='#' data-bind='click: $root.stack.showHostMetadata, text: id'></a>
-                            </td>
-                            <td data-bind="text: state"></td>
-                            <td>
-                                <a href='#' 
-                                   target="_blank" 
-                                   data-bind="text: hostname, attr: { href: 'http://'+fqdn, title: hostname }"></a>
-                            </td>
-                            <td data-bind="text: $root.moment(created).calendar()"></td>
-                            <td>
-                                <select id="host-action"
-                                        data-width="125px"
-                                        header="Perform action"
-                                        title="Perform action"
-                                        class="dropup" 
-                                        data-container="body"
-                                        data-bind="options: $root.stack.stackHostActions, 
-                                                   optionsValue: $data,
-                                                   optionsText: $data,
-                                                   click: function (data, event) { $root.stack.doStackHostAction(data, event, $parent) }"
-                                ></select>
-                            </td>
-                        </tr>     
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-primary" data-bind="click: $root.stack.closeStackHosts">Close</button>
-            </div>
+    <!-- 
+        ======================================================================
+        L A U N C H E D   H O S T   L I S T
+        ======================================================================
+     -->
+    <div id="stack-details-container" title="Stack Hosts" data-bind="" class="hide">
+        <div class="modal-body">
+            <table id="stack-details" class="data-grid">
+                <thead>
+                    <tr>
+                        <th style="width:25px">#</th>
+                        <th style="width:20%">State</th>
+                        <th style="width:40%">Host name</th>
+                        <th style="width:30%">Created</th>
+                        <th style="width:50px"></th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.StackHosts">
+                    <tr>
+                        <td>
+                            <a href='#' data-bind='click: $root.stack.showHostMetadata, text: id'></a>
+                        </td>
+                        <td data-bind="text: state"></td>
+                        <td>
+                            <a href='#' 
+                               target="_blank" 
+                               data-bind="text: hostname, attr: { href: 'http://'+fqdn, title: hostname }"></a>
+                        </td>
+                        <td data-bind="text: $root.moment(created).calendar()"></td>
+                        <td>
+                            <select id="host-action"
+                                    data-width="125px"
+                                    header="Perform action"
+                                    title="Perform action"
+                                    class="dropup" 
+                                    data-container="body"
+                                    data-bind="options: $root.stack.stackHostActions, 
+                                               optionsValue: $data,
+                                               optionsText: $data,
+                                               click: function (data, event) { $root.stack.doStackHostAction(data, event, $parent) }"
+                            ></select>
+                        </td>
+                    </tr>     
+                </tbody>
+            </table>
         </div>
 
-        <!-- 
-            ======================================================================
-            H O S T   M E T A D A T A
-            ======================================================================
-         -->
-        <div id="host-metadata-container" title="Host Metadata">
-             <div class="small-modal-body">
-                <table id="host-metadata" class="data-grid">
-                    <thead>
-                        <tr>
-                            <th style="width:50%">Metadata</th>
-                            <th style="width:50%">Value</th>
-                        </tr>
-                    </thead>
-                    <tbody data-bind="foreach: stores.HostMetadata">
-                        <tr>
-                            <td data-bind="text: key"></td>
-                            <td data-bind="text: value"></td>
-                        </tr>     
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-primary" data-bind="click: $root.stack.closeHostMetadata">Close</button>
-            </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: $root.stack.closeStackHosts">Close</button>
         </div>
     </div>
 
+    <!-- 
+        ======================================================================
+        H O S T   M E T A D A T A
+        ======================================================================
+     -->
+    <div id="host-metadata-container" title="Host Metadata" data-bind="" class="hide">
+
+        <div class="small-modal-body">
+            <table id="host-metadata" class="data-grid">
+                <thead>
+                    <tr>
+                        <th style="width:50%">Metadata</th>
+                        <th style="width:50%">Value</th>
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: stores.HostMetadata">
+                    <tr>
+                        <td data-bind="text: key"></td>
+                        <td data-bind="text: value"></td>
+                    </tr>     
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-primary" data-bind="click: $root.stack.closeHostMetadata">Close</button>
+        </div>
+    </div>
 
     <!-- 
         ======================================================================
@@ -1082,7 +1177,6 @@
             </div>
         </form>
     </div>
-
 
     <!-- 
         ======================================================================

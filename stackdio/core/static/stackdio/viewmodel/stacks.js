@@ -121,24 +121,22 @@ define(["knockout",
                     });
             };
 
-            self.showStackForm = function (blueprint) {
-                if (blueprint) {
-                    self.selectedBlueprint(blueprint);
-                }
-                $("#stack-launch-container").dialog("open");
-            };
-
-            self.closeStackForm = function () {
-                $("#stack-launch-container").dialog("close");
-            };
-
             self.showStackDetails = function (stack) {
+                API.Stacks.getProperties(stack)
+                    .then(function (properties) {
+                        $('#stack_properties_preview_edit').val(JSON.stringify(properties, undefined, 3));
+                    }).done();
+
+                $('#stack_title_edit').val(stack.title);
+                $('#stack_description_edit').val(stack.description);
+                $('#stack_namespace_edit').val(stack.id);
+
+                $("#stack-edit-container").dialog("open");
+                
                 API.StackHosts.load(stack)
                     .then(function (response) {
-                        self.showStackHosts();
-                        $('select').selectpicker();
+                        // self.showStackHosts();
                     });
-                return;
             };
 
             // 
@@ -162,10 +160,24 @@ define(["knockout",
                 // $("#host-metadata-container").dialog("open");
             };
 
+            self.showStackForm = function (blueprint) {
+                if (blueprint) {
+                    self.selectedBlueprint(blueprint);
+                }
+                $("#stack-launch-container").dialog("open");
+            };
+
+            self.closeStackForm = function () {
+                $("#stack-launch-container").dialog("close");
+            };
+
+            self.closeStackEditForm = function () {
+                $("#stack-edit-container").dialog("close");
+            };
+
             self.closeHostMetadata = function () {
                 $("#host-metadata-container").dialog("close");
             };
-
 
             self.showStackHosts = function () {
                 $("#stack-details-container").dialog("open");
@@ -188,6 +200,12 @@ define(["knockout",
             });
 
             $("#stack-launch-container").dialog({
+                autoOpen: false,
+                width: 650,
+                modal: false
+            });
+
+            $("#stack-edit-container").dialog({
                 autoOpen: false,
                 width: 650,
                 modal: false

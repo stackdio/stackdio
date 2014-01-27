@@ -105,5 +105,25 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
         return deferred.promise;
     };
 
+    api.getProperties = function (stack) {
+        var deferred = Q.defer();
+
+        $.ajax({
+            url: stack.properties,
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": stackdio.settings.csrftoken,
+                "Accept": "application/json"
+            },
+            success: function (properties) {
+                deferred.resolve(properties);
+            }
+        });
+
+        return deferred.promise;
+    };
+
     return api;
 });
