@@ -157,18 +157,16 @@ img.logo {
     margin: 30px auto;
 }
 
-.search-result-Blueprint {
+.search-result-blueprint {
     background-color: #5CCCCC;
 }
 
-.search-result-Stack {
-    background-color: #FFD073;
-    
+.search-result-stack {
+    background-color: #FFD073;    
 }
 
-.search-result-Formula {
+.search-result-formula {
     background-color: #FF7373;
-
 }
 
 

@@ -11,38 +11,36 @@ define(["knockout",
             var self = this;
 
             self.search = function (model, evt) {
-                API.Search.search($('#omnibox_search').val())
-                    .then(function (matches) {
-                        console.log(matches);
-                    });
+
             };
 
+            $('#omnibox_search').on('typeahead:selected', function (object, selectedItem) {
+                switch (selectedItem.result_type) {
+                    case 'formula':
+                        _O_.publish('navigate', 'Formulas');
+                        _O_.publish('formula.open', selectedItem);
+                        break;
+                    case 'blueprint':
+                        _O_.publish('navigate', 'Blueprints');
+                        _O_.publish('blueprint.open', selectedItem);
+                        break;
+                    case 'stack':
+                        _O_.publish('navigate', 'Stacks');
+                        _O_.publish('stack.open', selectedItem);
+                        break;
+                }
+            });
+
+
             _O_.subscribe('*.updated', function (data) {
-                var flattened = [].concat(stores.Blueprints(), stores.Stacks(), stores.Formulae());
-                flattened.forEach(function (a) {
-                    if (a instanceof models.Blueprint) {
-                        a.type = 'Blueprint';
-                        a.href = '';
-                    } else if (a instanceof models.Stack) {
-                        a.type = 'Stack';
-                        a.href = '';
-                    } else if (a instanceof models.Formula) {
-                        a.type = 'Formula';
-                        a.href = '';
-                    } else {
-                        a.type = 'Unknown';
-                        a.href = '';
-                    }
-                });
-
-                console.log('creating typeahead');
-
                 $('#omnibox_search').typeahead({
                     name: 'search',
                     valueKey: 'title',
                     engine: _,
-                    template: '<div class="search-result-<%= type %>"><%= type %> | <%= title %></div>',
-                    local: flattened,
+                    minLength: 1,
+                    template: '<div class="search-result-<%= result_type %>"><%= result_type %> | <%= title %></div>',
+                    // local: flattened,
+                    remote: '/api/search/?q=%QUERY',
                     limit: 10
                 });
             });

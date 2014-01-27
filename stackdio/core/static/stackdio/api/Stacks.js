@@ -72,9 +72,10 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                 "Accept": "application/json"
             },
             success: function (newStack) {
-                newStack.fullHistory = [];
-                stores.Stacks.push(newStack);
-                deferred.resolve(newStack);
+                api.getHistory(newStack).then(function (stackWithHistory) {
+                    stores.Stacks.push(new models.Stack().create(stackWithHistory));
+                    deferred.resolve(stackWithHistory);
+                });
             }
         });
 

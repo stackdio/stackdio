@@ -157,6 +157,11 @@ define([
              *  N A V I G A T I O N   H A N D L E R
              *  ==================================================================================
              */
+             _O_.subscribe('navigate', function (target) {
+                self.gotoSection(target);
+             })
+
+
             self.gotoSection = function (section) {
                 
                 if (typeof section === 'string') {
@@ -213,14 +218,13 @@ define([
                     });
 
                     // When user presses enter in the Launch Blueprint typeahead, start the process of launching a Stack
-                    $( "#blueprint_search" ).keypress(function (evt) {
+                    $("#blueprint_search").keypress(function (evt) {
                         if (evt.keyCode === 13) {
                             var foundBlueprint = _.findWhere(stores.Blueprints(), { title: $('#blueprint_search').val() });
                             self.stack.launchStack(foundBlueprint);
                         }
                     });
                     
-                    _O_.publish('all.updated', { update: true });
                     _O_.publish('all.updated', { update: true });
 
                     // Remove the hide class from the main sections

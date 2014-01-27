@@ -1,10 +1,11 @@
 define(["knockout",
         "util/form",
+        "util/postOffice",
         "viewmodel/abstract",
         "model/models",
         "store/stores",
         "api/api"], 
-    function (ko, formutils, abstractVM, models, stores, API) {
+    function (ko, formutils, _O_, abstractVM, models, stores, API) {
 
         var vm = function () {
             var self = this;
@@ -84,9 +85,7 @@ define(["knockout",
                             });
                         }
                     });
-                    
                 }
-
             };
 
             self.launchStack = function (blueprint) {
@@ -116,14 +115,16 @@ define(["knockout",
                 }
 
                 API.Stacks.save(stack)
-                    .then(API.Stacks.getHistory)
                     .then(function () {
                         self.closeStackForm();
+                        _O_.publish('stack.updated');
                     });
             };
 
             self.showStackForm = function (blueprint) {
-                self.selectedBlueprint(blueprint);
+                if (blueprint) {
+                    self.selectedBlueprint(blueprint);
+                }
                 $("#stack-launch-container").dialog("open");
             };
 

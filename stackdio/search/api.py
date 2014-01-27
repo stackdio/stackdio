@@ -71,8 +71,9 @@ class SearchAPIView(generics.SingleObjectAPIView):
             res.extend(serializers.StackSearchSerializer(stacks, many=True, context=context).data)
 
         # add in pagination and render the serialized and paginated data
-        paginator = Paginator(res, page_size)
-        page = paginator.page(page_index)
-        serializer = PaginationSerializer(instance=page, context=context)
-        return Response(serializer.data)
+        # paginator = Paginator(res, page_size)
+        # page = paginator.page(page_index)
+        # serializer = PaginationSerializer(instance=page, context=context)
+        # serializer = PaginationSerializer(instance=page, context=context)
+        return Response(res)
 

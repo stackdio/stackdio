@@ -256,7 +256,7 @@
                                                             content: $root.stack.popoverBuilder($data),
                                                             title: 'Stack History'
                                                           },
-                                                          text: 'View (' + $data.history.length + ') messages'"></a>
+                                                          text: 'View (' + $data.fullHistory.length + ') messages'"></a>
                                         </td>
                                         <td>
                                             <div class="btn-group">
@@ -359,8 +359,10 @@
                 </thead>
                 <tbody data-bind="foreach: $root.blueprint.selectedBlueprintHosts">
                     <tr>
+                        <td data-bind="template: { foreach: formula_components }">
+                            <span data-bind="text: $data.title"></span>
+                        </td>
                         <td data-bind="text: count"></td>
-                        <td data-bind="text: hostname_template"></td>
                         <td data-bind="text: instance_size.title"></td>
                         <td data-bind="text: hostname_template"></td>
                         <td data-bind="template: { foreach: access_rules }">
@@ -619,6 +621,7 @@
             <button class="btn" data-bind="click: $root.securityGroup.closeRulesList">Close</button>
         </div>
     </div>
+
     <!-- 
         ======================================================================
         L A U N C H   S T A C K   D I A L O G
@@ -705,6 +708,7 @@
             </div>
         </form>
     </div>
+
     <!-- 
         ======================================================================
         N E W   V O L U M E   L I S T   D I A L O G
@@ -894,7 +898,7 @@
                                             content: $root.stack.popoverBuilder($data),
                                             title: 'Stack History'
                                           },
-                                          text: 'View (' + $data.history.length + ') messages'"></a>
+                                          text: 'View (' + $data.fullHistory.length + ') messages'"></a>
                         </td>
                         <td>
                             <div class="btn-group">
