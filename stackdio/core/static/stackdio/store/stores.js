@@ -24,7 +24,7 @@ define(["knockout"], function (ko) {
         Stacks : ko.observableArray([]),
         StackHosts : ko.observableArray([]),
         
-        NewHosts : ko.observableArray([]),
+        BlueprintHosts : ko.observableArray([]),
         HostMetadata : ko.observableArray([]),
         HostVolumes : ko.observableArray([]),
         HostAccessRules : ko.observableArray([])

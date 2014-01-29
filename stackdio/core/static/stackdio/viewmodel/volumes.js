@@ -12,7 +12,7 @@ define(["knockout",
 
         self.addHostVolume = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
-            var volume = new models.NewHostVolume().create({
+            var volume = new models.BlueprintHostVolume().create({
                 snapshot: record.volume_snapshot.value,
                 device: record.volume_device.value,
                 mount_point: record.volume_mount_point.value

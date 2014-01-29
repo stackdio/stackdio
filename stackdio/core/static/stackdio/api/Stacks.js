@@ -56,6 +56,33 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
         return deferred.promise;
     };
 
+    api.update = function (stack) {
+        var deferred = Q.defer();
+
+        stack = JSON.stringify(stack);
+
+        $.ajax({
+            url: stack.url,
+            type: 'PUT',
+            data: stack,
+            dataType: 'json',
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": stackdio.settings.csrftoken,
+                "Accept": "application/json"
+            },
+            success: function (newStack) {
+                api.getHistory(newStack).then(function (stackWithHistory) {
+                    stores.Stacks.push(new models.Stack().create(stackWithHistory));
+                    deferred.resolve(stackWithHistory);
+                });
+            }
+        });
+
+        return deferred.promise;
+    };
+
+
     api.save = function (stack) {
         var deferred = Q.defer();
 

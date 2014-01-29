@@ -245,11 +245,7 @@
                                     <tr>
                                         <td><a href="#" data-bind="text: $data.title, click: $root.stack.showStackDetails"></a></td>
                                         <td data-bind="text: description"></td>
-                                        <td>
-                                            <a href="#" 
-                                               data-bind="text: host_count + ' hosts',
-                                                          click: $root.stack.showStackDetails"></a>
-                                        </td>
+                                        <td data-bind="text: host_count"></td>
                                         <td>
                                             <a href='#' 
                                                data-bind="bootstrapPopover: {
@@ -315,7 +311,7 @@
                 <tbody data-bind="foreach: stores.Blueprints">
                     <tr>
                         <td>
-                            <a href="#" data-bind="text: title"></a>
+                            <a href="#" data-bind="text: title, click: $root.blueprint.showBlueprintForm"></a>
                         </td>
                         <td data-bind="text: description"></td>
                         <td>
@@ -432,7 +428,7 @@
                                     <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th></th>
                                 </tr>
                             </thead>
-                            <tbody data-bind="foreach: stores.NewHosts">
+                            <tbody data-bind="foreach: stores.BlueprintHosts">
                                 <tr>
                                     <td data-bind="html: flat_components"></td>
                                     <td data-bind="text: count"></td>

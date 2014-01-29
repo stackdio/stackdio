@@ -1,18 +1,17 @@
 define(["q", "store/stores", "model/models"], function (Q, stores, models) {
     return {
-        getProperties: function (id) {
+        getProperties: function (blueprint) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/blueprints/' + id + '/properties/',
+                url: blueprint.properties,
                 type: 'GET',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (properties) {
-                    // Resolve the promise and pass back the loaded properties
-                    deferred.resolve(properties);
+                    deferred.resolve(properties);   // Resolve promise and pass back properties
                 }
             });
 
@@ -57,6 +56,28 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
 
             $.ajax({
                 url: '/api/blueprints/',
+                type: 'POST',
+                data: blueprint,
+                dataType: 'json',
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    stores.Blueprints.push(response);
+                    deferred.resolve();
+                }
+            });
+
+            return deferred.promise;
+        },
+        update: function (blueprint) {
+            var deferred = Q.defer();
+            var blueprint = JSON.stringify(blueprint);
+
+            $.ajax({
+                url: blueprint.url,
                 type: 'POST',
                 data: blueprint,
                 dataType: 'json',

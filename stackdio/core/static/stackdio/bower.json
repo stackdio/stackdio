@@ -10,6 +10,7 @@
     "q": "~0.9.7",
     "underscore-amd": "~1.5.2",
     "knockout.js": "~3.0.0",
+    "jquery-ui-amd": "~0.0.3",
     "postal.js": "~0.8.11"
   },
   "resolutions": {
@@ -28,8 +29,5 @@
   ],
   "license": "MIT",
   "homepage": "http://www.stackd.io",
-  "private": true,
-  "devDependencies": {
-    "jquery-ui-amd": "~0.0.3"
-  }
+  "private": true
 }

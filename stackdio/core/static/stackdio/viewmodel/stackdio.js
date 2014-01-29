@@ -215,6 +215,9 @@ define([
                         name: 'blueprints',
                         local: stores.Blueprints().map(function (b) {return b.title; }),
                         limit: 10
+                    }).on('typeahead:selected', function (object, selectedItem) {
+                        var foundBlueprint = _.findWhere(stores.Blueprints(), { title: $('#blueprint_search').val() });
+                        self.stack.launchStack(foundBlueprint);
                     });
 
                     // When user presses enter in the Launch Blueprint typeahead, start the process of launching a Stack
@@ -231,7 +234,7 @@ define([
                     $("div[class*='hide'][data-bind]").removeClass('hide');
 
                     // Take the user to the stacks section
-                    self.gotoSection('Welcome');
+                    self.gotoSection('Blueprints');
             })
             .catch(function (error) {
                 // Handle any error from all above steps

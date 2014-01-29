@@ -188,7 +188,7 @@ define(["knockout",
                     to_port: record.rule_to_port.value,
                     rule: rule
                 }
-                stores.HostAccessRules.push(new models.NewHostAccessRules().create(accessRule));
+                stores.HostAccessRules.push(new models.BlueprintHostAccessRules().create(accessRule));
 
                 self.closeAccessRuleForm();
             };

@@ -11,6 +11,7 @@ function (ko, Q, formutils, _O_, abstractVM, models, stores, API) {
         var self = this;
         self.selectedProfile = null;
         self.selectedAccount = null;
+        self.selectedBlueprint = null;
         self.selectedBlueprintHosts = ko.observable();
         self.blueprintProperties = ko.observable({});
         self.blueprintPropertiesStringified = ko.observable('');
@@ -29,8 +30,6 @@ function (ko, Q, formutils, _O_, abstractVM, models, stores, API) {
             var record = formutils.collectFormFields(evt.target.form);
             var orderedComponents = [];
 
-            console.log('record',record);
-
             for (var c in record) {
                 var component = {}
                 component.formObject = record[c];
@@ -41,7 +40,7 @@ function (ko, Q, formutils, _O_, abstractVM, models, stores, API) {
                 // component.sourceObject = _.findWhere(stores.BlueprintComponents(), { id: component.id });
             }
 
-            stores.NewHosts().forEach(function (host) {
+            stores.BlueprintHosts().forEach(function (host) {
                 host.formula_components.forEach(function (formulaComponent) {
                     orderedComponents.forEach(function (orderedComponent) {
                         if (orderedComponent.id === parseInt(formulaComponent.id, 10)) {
@@ -62,7 +61,7 @@ function (ko, Q, formutils, _O_, abstractVM, models, stores, API) {
             var v, vol;
 
             // Create a new host definition
-            var host = new models.NewHost().create({ 
+            var host = new models.BlueprintHost().create({ 
                 id: '',
                 formulas: [],
                 formulaComponents: [],
@@ -134,7 +133,7 @@ function (ko, Q, formutils, _O_, abstractVM, models, stores, API) {
             }
 
             // Clear hosts from the store
-            stores.NewHosts.push(host);
+            stores.BlueprintHosts.push(host);
 
             // Clear out the forumla select control
             $('#formula_components').selectpicker('deselectAll');
@@ -154,58 +153,104 @@ function (ko, Q, formutils, _O_, abstractVM, models, stores, API) {
         };
 
         self.removeHost = function (host) {
-            stores.NewHosts.remove(host);
+            stores.BlueprintHosts.remove(host);
+        };
+
+        self.updateBlueprint = function (model, evt) {
+            var record = formutils.collectFormFields(evt.target.form);
+            var blueprint = self.selectedBlueprint;
+            console.log(blueprint);
+            return;
+
+
+            blueprint.title = record.stack_title_edit.value;
+            blueprint.description = record.stack_description_edit.value;
+            blueprint.namespace = record.stack_namespace_edit.value;
+            
+            if (record.stack_properties_preview_edit.value !== '') {
+                blueprint.properties = JSON.parse(record.stack_properties_preview_edit.value);
+            }
+
+            console.log(blueprint);
+
+            API.Stacks.update(blueprint)
+                .then(function () {
+                    self.closeStackForm();
+                    _O_.publish('blueprint.updated');
+                });
+
         };
 
         self.saveBlueprint = function (model, evt) {
-            var hosts = stores.NewHosts(), strippedHosts = [];
+            var hosts = stores.BlueprintHosts(), strippedHosts = [], properties;
 
-            for (var host in hosts) {
-                var h = hosts[host];
+            if (self.selectedBlueprint === null) {
+                for (var host in hosts) {
+                    var h = hosts[host];
 
-                strippedHosts.push({
-                    access_rules: h.access_rules,
-                    cloud_profile: h.cloud_profile,
-                    count: h.count,
-                    description: h.description,
-                    title: h.title,
-                    formula_components: h.formula_components,
-                    hostname_template: h.hostname_template,
-                    size: h.size,
-                    spot_config: h.spot_config,
-                    volumes: h.volumes,
-                    zone: h.zone,
-                });
-            }
+                    strippedHosts.push({
+                        access_rules: h.access_rules,
+                        cloud_profile: h.cloud_profile,
+                        count: h.count,
+                        description: h.description,
+                        title: h.title,
+                        formula_components: h.formula_components,
+                        hostname_template: h.hostname_template,
+                        size: h.size,
+                        spot_config: h.spot_config,
+                        volumes: h.volumes,
+                        zone: h.zone,
+                    });
+                }
 
-            var properties = JSON.parse(document.getElementById('blueprint_properties').value) || '';
+                properties = JSON.parse(document.getElementById('blueprint_properties').value) || '';
 
-            var blueprint = {
-                title: document.getElementById('blueprint_title').value,
-                description: document.getElementById('blueprint_purpose').value,
-                public: document.getElementById('public_blueprint').checked,
-                properties: properties,
-                hosts: strippedHosts
-            };
+                var blueprint = {
+                    title: document.getElementById('blueprint_title').value,
+                    description: document.getElementById('blueprint_purpose').value,
+                    public: document.getElementById('public_blueprint').checked,
+                    properties: properties,
+                    hosts: strippedHosts
+                };
 
-            API.Blueprints.save(blueprint)
-                .then(function () {
-                    self.resetBlueprintForm();
-                    self.closeBlueprintForm();
+                API.Blueprints.save(blueprint)
+                    .then(function () {
+                        self.closeBlueprintForm();
 
-                    // Alert the user about success
-                    self.showMessage('#alert-success', 'Blueprint successfully saved.');
+                        // Alert the user about success
+                        self.showMessage('#alert-success', 'Blueprint successfully saved.');
 
-                    _O_.publish('blueprint.updated');
-                })
-                .catch(function (error) {
-                    $("#alert-error").show();
-                })
+                        _O_.publish('blueprint.updated');
+                    })
+                    .catch(function (error) {
+                        $("#alert-error").show();
+                    });
+            } else {
+                self.selectedBlueprint.title = document.getElementById('blueprint_title').value;
+                self.selectedBlueprint.description = document.getElementById('blueprint_purpose').value;
+                self.selectedBlueprint.public = document.getElementById('public_blueprint').checked;
+                self.selectedBlueprint.properties = JSON.parse(document.getElementById('blueprint_properties').value) || '';
+
+                console.log(self.selectedBlueprint);
+                return;
+
+                API.Blueprints.update(self.selectedBlueprint)
+                    .then(function () {
+                        self.selectedBlueprint = null;
+                        self.closeBlueprintForm();
+                        self.showMessage('#alert-success', 'Blueprint successfully saved.');
+                        _O_.publish('blueprint.updated');
+                    })
+                    .catch(function (error) {
+                        $("#alert-error").show();
+                    });
+                }
+
         };
 
         self.resetBlueprintForm = function () {
             // Clear the new Blueprint Host store
-            stores.NewHosts.removeAll();
+            stores.BlueprintHosts.removeAll();
 
             // Empty out the store that tracks components for current Blueprint
             stores.BlueprintComponents.removeAll();
@@ -253,13 +298,55 @@ function (ko, Q, formutils, _O_, abstractVM, models, stores, API) {
             $("#blueprint-host-list-container").dialog("close");
         }
 
-        self.showBlueprintForm = function () {
+        self.showBlueprintForm = function (blueprint) {
+            /*
+                If blueprint argument exists, and it is a blueprint, then the user 
+                clicked on an existing blueprint, so set the model level blueprint
+                to the argument, and load the properties from the API
+            */
+            if (blueprint instanceof models.Blueprint) {
+                self.selectedBlueprint = blueprint;
+
+                $('#blueprint_title').val(self.selectedBlueprint.title);
+                $('#blueprint_purpose').val(self.selectedBlueprint.description);
+                $('#public_blueprint').attr('checked', self.selectedBlueprint.public);
+
+                self.selectedBlueprint.host_definitions.forEach(function (host) {
+
+                    // Add the instance size object to the host so the title can be displayed in UI
+                    host.instance_size = _.find(stores.InstanceSizes(), function (i) {
+                        return i.url === host.size;
+                    });
+
+                    // Add some HTML to display for the chosen roles
+                    host.flat_components = _.map(host.formula_components, function (fc) { 
+                        return '<div style="line-height:15px !important;">' + fc.description + '</div>'; 
+                    }).join('');
+
+                    // Add some HTML to display for the chosen security groups
+                    host.flat_access_rules = host.access_rules.length + ' access rules';
+
+                    stores.BlueprintHosts.push(host);
+                });
+
+                API.Blueprints.getProperties(blueprint)
+                    .then(function (properties) {
+                        console.log(properties);
+                        self.blueprintPropertiesStringified(JSON.stringify(properties, undefined, 3));
+                    });
+            }
+
+
             $("#blueprint-form-container").dialog("open");
         }
 
         self.closeBlueprintForm = function () {
             self.resetBlueprintForm();
             $("#blueprint-form-container").dialog("close");
+        }
+
+        self.closeEditForm = function () {
+            $("#blueprint-edit-container").dialog("close");
         }
 
         self.showOrchestration = function () {
@@ -294,6 +381,14 @@ function (ko, Q, formutils, _O_, abstractVM, models, stores, API) {
          *  ==================================================================================
          */
         $("#blueprint-form-container").dialog({
+            autoOpen: false,
+            width: window.innerWidth - 225,
+            height: 800,
+            position: ['center', 60],
+            modal: false
+        });
+
+        $("#blueprint-edit-container").dialog({
             autoOpen: false,
             width: window.innerWidth - 225,
             height: 800,

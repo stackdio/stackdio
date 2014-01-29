@@ -40,17 +40,17 @@ define(function () {
     var Snapshot = function () {};
     Snapshot.prototype = new Model();
 
-    var NewHost = function () {};
-    NewHost.prototype = new Model();
+    var BlueprintHost = function () {};
+    BlueprintHost.prototype = new Model();
 
     var StackHost = function () {};
     StackHost.prototype = new Model();
 
-    var NewHostVolume = function () {};
-    NewHostVolume.prototype = new Model();
+    var BlueprintHostVolume = function () {};
+    BlueprintHostVolume.prototype = new Model();
 
-    var NewHostAccessRules = function () {};
-    NewHostAccessRules.prototype = new Model();
+    var BlueprintHostAccessRules = function () {};
+    BlueprintHostAccessRules.prototype = new Model();
 
     var Role = function () {};
     Role.prototype = new Model();
@@ -62,23 +62,29 @@ define(function () {
     FormulaComponent.prototype = new Model();
 
     return {
-        SecurityGroupRule: SecurityGroupRule,
-        AWSSecurityGroup: AWSSecurityGroup,
         SecurityGroup: SecurityGroup,
-        Zone: Zone,
-        Stack: Stack,
-        StackHost: StackHost,
+        AWSSecurityGroup: AWSSecurityGroup,
+        SecurityGroupRule: SecurityGroupRule,
+        
         ProviderType: ProviderType,
         Account: Account,
         Profile: Profile,
+        Zone: Zone,
         InstanceSize: InstanceSize,
+        
         Snapshot: Snapshot,
-        NewHost: NewHost,
-        NewHostVolume: NewHostVolume,
+        
+        Stack: Stack,
+        StackHost: StackHost,
+
+        Blueprint: Blueprint,
+        BlueprintHost: BlueprintHost,
+        BlueprintHostVolume: BlueprintHostVolume,
+        BlueprintHostAccessRules: BlueprintHostAccessRules,
+        
         Formula: Formula,
         FormulaComponent: FormulaComponent,
-        Blueprint: Blueprint,
-        NewHostAccessRules: NewHostAccessRules,
+        
         Role: Role
     }
 });
