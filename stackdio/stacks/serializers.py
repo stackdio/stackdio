@@ -71,6 +71,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'url',
             'owner',
+            'namespace',
             'host_count',
             'volume_count',
             'created',
