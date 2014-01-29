@@ -1,6 +1,5 @@
 import logging
-from django import forms
-from django.conf import settings
+
 from rest_framework import serializers
 
 from core.mixins import SuperuserFieldsMixin
@@ -14,7 +13,7 @@ logger = logging.getLogger(__name__)
 class SecurityGroupSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     ##
-    # Read-only fields. 
+    # Read-only fields.
     ##
     group_id = serializers.Field()
     owner = serializers.Field()
@@ -32,7 +31,7 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     provider_id = serializers.Field(source='cloud_provider.id')
 
     class Meta:
-        model = models.SecurityGroup 
+        model = models.SecurityGroup
         fields = (
             'id',
             'url',
@@ -55,16 +54,17 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
     provider_type = serializers.PrimaryKeyRelatedField()
     default_availability_zone = serializers.PrimaryKeyRelatedField()
     provider_type_name = serializers.Field(source='provider_type.type_name')
-    security_groups = serializers.HyperlinkedIdentityField(view_name='cloudprovider-securitygroup-list')
+    security_groups = serializers.HyperlinkedIdentityField(
+        view_name='cloudprovider-securitygroup-list')
 
     class Meta:
         model = models.CloudProvider
         fields = (
             'id',
             'url',
-            'title', 
-            'slug', 
-            'description', 
+            'title',
+            'slug',
+            'description',
             'provider_type',
             'provider_type_name',
             'account_id',
@@ -79,26 +79,30 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         # validate provider specific request data
         request = self.context['request']
 
-        provider_type, provider_class = get_provider_type_and_class(request.DATA.get('provider_type'))
+        provider_type, provider_class = get_provider_type_and_class(
+            request.DATA.get('provider_type'))
 
         # pull the availability zone name
         try:
-            zone = models.CloudZone.objects.get(pk=request.DATA['default_availability_zone'])
+            zone = models.CloudZone.objects.get(
+                pk=request.DATA['default_availability_zone'])
             request.DATA['default_availability_zone_name'] = zone.slug
         except models.CloudZone.DoesNotExist:
-            errors = ['Could not look up availability zone. Did you give a valid id?']
+            errors = ['Could not look up availability zone. Did you give '
+                      'a valid id?']
             raise serializers.ValidationError({'errors': errors})
 
         provider = provider_class()
-        errors = provider.validate_provider_data(request.DATA, 
-                                                         request.FILES)
-        
+        errors = provider.validate_provider_data(request.DATA,
+                                                 request.FILES)
+
         if errors:
             logger.error('Cloud provider validation errors: '
                          '{0}'.format(errors))
             raise serializers.ValidationError(errors)
 
         return attrs
+
 
 class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
     title = serializers.Field(source='get_type_name_display')
@@ -108,9 +112,10 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id',
             'url',
-            'title', 
-            'type_name', 
+            'title',
+            'type_name',
         )
+
 
 class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
     provider_type = serializers.Field(source='provider_type')
@@ -120,11 +125,11 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id',
             'url',
-            'title', 
-            'slug', 
-            'description', 
-            'provider_type', 
-            'instance_id', 
+            'title',
+            'slug',
+            'description',
+            'provider_type',
+            'instance_id',
         )
 
 
@@ -132,12 +137,13 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
                              serializers.HyperlinkedModelSerializer):
     cloud_provider = serializers.PrimaryKeyRelatedField()
     default_instance_size = serializers.PrimaryKeyRelatedField()
+
     class Meta:
         model = models.CloudProfile
         fields = (
             'id',
             'url',
-            'title', 
+            'title',
             'slug',
             'description',
             'cloud_provider',
@@ -148,28 +154,17 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
 
         superuser_fields = ('image_id',)
 
-    def validate(self, attrs):
-        request = self.context['request']
-
-        # validate that the AMI exists by looking it up in the cloud provider
-        provider_id = request.DATA.get('cloud_provider')
-        driver = models.CloudProvider.objects.get(pk=provider_id).get_driver()
-        
-        result, error = driver.has_image(request.DATA['image_id'])
-        if not result:
-            raise serializers.ValidationError({'errors': [error]})
-        return attrs
-
 
 class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
     cloud_provider = serializers.PrimaryKeyRelatedField()
     default_instance_size = serializers.PrimaryKeyRelatedField()
+
     class Meta:
         model = models.Snapshot
         fields = (
             'id',
             'url',
-            'title', 
+            'title',
             'slug',
             'description',
             'cloud_provider',
@@ -185,7 +180,7 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
         # provider
         provider_id = request.DATA.get('cloud_provider')
         driver = models.CloudProvider.objects.get(pk=provider_id).get_driver()
-        
+
         result, error = driver.has_snapshot(request.DATA['snapshot_id'])
         if not result:
             raise serializers.ValidationError({'errors': [error]})

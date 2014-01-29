@@ -148,6 +148,24 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                                               *args,
                                                               **kwargs)
 
+    def update(self, request, *args, **kwargs):
+        # validate that the AMI exists by looking it up in the cloud provider
+        if 'image_id' in request.DATA:
+            driver = self.get_object().cloud_provider.get_driver()
+            result, error = driver.has_image(request.DATA['image_id'])
+            if not result:
+                raise BadRequest(error)
+
+        # Perform the update
+        ret = super(CloudProfileDetailAPIView, self).update(request,
+                                                            *args,
+                                                            **kwargs)
+
+        # Regenerate the profile config file
+        profile = self.get_object()
+        profile.update_config()
+        return ret
+
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
     model = Snapshot
