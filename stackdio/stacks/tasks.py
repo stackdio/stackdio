@@ -205,15 +205,16 @@ def launch_hosts(stack_id, parallel=True):
 
             # grab all the hosts that salt knows about
             verify_result = envoy.run('salt-run manage.present')
-            all_hosts = set(yaml.safe_load(verify_result.std_out))
-            unavailable_hosts = launched_hosts.difference(all_hosts)
+            if verify_result.std_out:
+                all_hosts = set(yaml.safe_load(verify_result.std_out))
+                unavailable_hosts = launched_hosts.difference(all_hosts)
 
-            if unavailable_hosts:
-                err_msg = 'Unavailable hosts: {0}'.format(
-                    ', '.join(unavailable_hosts)
-                )
-                stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
-                raise StackTaskException(err_msg)
+                if unavailable_hosts:
+                    err_msg = 'Unavailable hosts: {0}'.format(
+                        ', '.join(unavailable_hosts)
+                    )
+                    stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+                    raise StackTaskException(err_msg)
 
             # Look for errors if we got valid JSON
             errors = set()
@@ -245,8 +246,11 @@ def launch_hosts(stack_id, parallel=True):
                 raise StackTaskException('Error(s) while launching stack '
                                          '{0}'.format(stack_id))
         except Exception, e:
-            logger.debug('Unable to parse YAML from envoy results.')
-            pass
+            if isinstance(e, StackTaskException):
+                raise
+            err_msg = 'Unhandled exception while launching hosts.'
+            logger.exception(err_msg)
+            raise StackTaskException(err_msg)
 
         if launch_result.status_code > 0:
             if ERROR_ALL_NODES_EXIST not in launch_result.std_err and \
@@ -279,7 +283,7 @@ def launch_hosts(stack_id, parallel=True):
 
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.update_metadata')  # NOQA
-def update_metadata(stack_id, host_ids=None):
+def update_metadata(stack_id, host_ids=None, remove_absent=True):
     try:
 
         # All hosts are running (we hope!) so now we can pull the various
@@ -317,7 +321,8 @@ def update_metadata(stack_id, host_ids=None):
 
             # host could be "absent" from salt
             if host_data == 'Absent':
-                hosts_to_remove.append(host)
+                if remove_absent:
+                    hosts_to_remove.append(host)
                 continue
 
             # The instance id of the host

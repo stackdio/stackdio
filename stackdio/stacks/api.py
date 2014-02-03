@@ -216,7 +216,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         # Queue up stack destroy tasks
         task_chain = (
-            tasks.update_metadata.si(stack.id) |
+            tasks.update_metadata.si(stack.id, remove_absent=False) |
             tasks.register_volume_delete.si(stack.id) |
             tasks.unregister_dns.si(stack.id) |
             tasks.destroy_hosts.si(stack.id, parallel=parallel)
