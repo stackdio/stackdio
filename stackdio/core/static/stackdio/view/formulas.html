@@ -1,0 +1,58 @@
+<div id="formula-binding-target" class="" data-bind="">
+    <div class="view">
+        <div class="row bottom-separation">
+            <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Formulas</div>
+            <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                <div class="btn-group pull-right small-top-separation">
+                    <button class="btn btn-primary" data-bind="click: $root.showFormulaForm">Import Formula</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                Formulas are imported from external repositories where you can build up an entire ecosystem of components to be installed on a Stack. For details on how to define your own formula to import into stackd.io, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
+            </div>
+        </div>
+
+        <table id="formulae" class="table table-bordered ">
+            <thead>
+                <tr>
+                    <th style="width:20%">Title</th>
+                    <th style="width:40%">Description</th>
+                    <th style="width:35%">Status</th>
+                    <th style="width:5%"></th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: stores.Formulae">
+                <tr data-bind="attr: { class: ($data.public) ? 'success' : '' }">
+                    <td>
+                        <a href='#' 
+                           data-bind="bootstrapPopover: {
+                                        content: $root.popoverBuilder($data),
+                                        title: 'Formula Components'
+                                      },
+                                      text: title"></a>
+                    </td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: status_detail"></td>
+                    <td>
+                        <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                            <a class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown" href="#">
+                                Action <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu original-dropdown-menu">
+                                <li>
+                                    <a href="#" data-bind="text: (!public) ? 'Make Public' : 'Make Private', click: $root.share"></a>
+                                </li>
+                                <li>
+                                    <a href="#" data-bind="text:'Delete', click: $root.delete"></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>     
+            </tbody>
+        </table>
+    </div>
+</div>

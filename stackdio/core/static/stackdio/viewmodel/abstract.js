@@ -3,11 +3,6 @@ define(function () {
     return function abstractViewModel () {
         var self = this;
 
-        /*
-         *  ==================================================================================
-         *  M E T H O D S
-         *  ==================================================================================
-         */
         self.showSuccess = function () {
             $("#alert-success").show();
             setTimeout('$("#alert-success").hide()', 3000);
@@ -38,6 +33,9 @@ define(function () {
             if (autohide) setTimeout(function () { $(id).hide(); $(id).empty(); }, timeout);
         };
 
+        self.registerView = function (a,b,c,d) {
+            console.log(arguments);
+        };
         
    }
 });

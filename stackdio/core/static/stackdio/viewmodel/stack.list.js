@@ -29,14 +29,14 @@ function (Q, ko, base, _O_, stores, API) {
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
         */
-        self.id = 'stacks.main';
+        self.id = 'stack.list';
         self.templatePath = 'stacks.html';
         self.domBindingId = '#stack-list';
         self.autoLoad = false;
         self.defaultView = false;
 
         try {
-            self.registry.register(self);
+            self.sixtysix.register(self);
         } catch (ex) {
             console.log(ex);            
         }

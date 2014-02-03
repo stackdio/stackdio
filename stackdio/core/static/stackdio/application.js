@@ -25,7 +25,13 @@ require([
     'bootstrap-select',
     'bootstrap-typeahead',
     'underscore',
-    'viewmodel/stackdio'
+    'settings',
+    'viewmodel/navigation',
+    'viewmodel/blueprint.list',
+    'viewmodel/stack.list',
+    'viewmodel/formula.list',
+    'viewmodel/welcome',
+    'util/populate'
 ], 
 function () {
 

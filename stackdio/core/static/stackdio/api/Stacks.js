@@ -5,6 +5,8 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
         var deferred = Q.defer();
         var self = this;
 
+        console.log('loading stacks');
+
         $.ajax({
             url: '/api/stacks/',
             type: 'GET',
@@ -25,7 +27,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                 });
 
                 Q.all(historyPromises).then(function () {
-                    console.log('stacks', stores.Stacks());
+                    console.debug('stacks', stores.Stacks());
                     deferred.resolve();
                 }).done();
             }

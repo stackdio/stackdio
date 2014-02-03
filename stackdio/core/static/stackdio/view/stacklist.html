@@ -1,0 +1,38 @@
+<table id="stacks" class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Hosts</th>
+            <th>History</th>
+            <th style="width:10%"></th>
+        </tr>
+    </thead>
+    <tbody data-bind="foreach: stores.Stacks">
+        <tr>
+            <td><a href="#" data-bind="text: $data.title, click: $root.showStackDetails"></a></td>
+            <td data-bind="text: description"></td>
+            <td data-bind="text: host_count"></td>
+            <td>
+                <a href='#' 
+                   data-bind="bootstrapPopover: {
+                                content: $root.popoverBuilder($data),
+                                title: 'Stack History'
+                              },
+                              text: 'View (' + $data.fullHistory.length + ') messages'"></a>
+            </td>
+            <td>
+                <div class="btn-group">
+                    <a class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown" href="#">
+                        Action <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: $root.stackActions">
+                        <li>
+                            <a href="#" data-bind="text:$data, click: function (data, event) { $root.doStackAction(data, event, $parent) }"></a>
+                        </li>
+                    </ul>
+                </div>
+            </td>
+        </tr>     
+    </tbody>
+</table>

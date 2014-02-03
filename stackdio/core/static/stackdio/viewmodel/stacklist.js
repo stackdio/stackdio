@@ -17,26 +17,21 @@ function (Q, ko, base, _O_, stores, API) {
         */
         self.stores = stores;
         self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch', 'Delete'];
-        self.stackHostActions = ['Stop', 'Terminate', 'Start'];
-        self.selectedProfile = null;
-        self.selectedAccount = null;
-        self.selectedBlueprint = ko.observable({title:''});
-        self.blueprintProperties = ko.observable();
-        self.selectedStack = ko.observable();
+
 
         /*
          *  ==================================================================================
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
         */
-        self.id = 'stacks.main';
-        self.templatePath = 'stacks.html';
-        self.domBindingId = '#stack-list';
+        self.id = 'stacklist.widget';
+        self.templatePath = 'stacklist.html';
+        self.domBindingId = '.stacklist';
         self.autoLoad = false;
         self.defaultView = false;
 
         try {
-            self.registry.register(self);
+            self.sixtysix.register(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -72,6 +67,7 @@ function (Q, ko, base, _O_, stores, API) {
             }).join('');
         };
 
+        // Performs actions on a stack
         self.doStackAction = function (action, evt, stack) {
             var data = JSON.stringify({
                 action: action.toLowerCase()
@@ -116,98 +112,6 @@ function (Q, ko, base, _O_, stores, API) {
                     }
                 });
             }
-        };
-
-        self.launchStack = function (blueprint) {
-            self.selectedBlueprint(blueprint);
-
-            API.Blueprints.getProperties(blueprint)
-                .then(function (properties) {
-                    self.blueprintProperties(properties);
-                    self.blueprintHosts(blueprint.host_definitions);
-                });
-
-            self.showStackForm();
-        };
-
-        self.updateStack = function (obj, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-            var stack = self.selectedStack();
-
-            stack.title = record.stack_title_edit.value;
-            stack.description = record.stack_description_edit.value;
-            stack.namespace = record.stack_namespace_edit.value;
-            
-            if (record.stack_properties_preview_edit.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview_edit.value);
-            }
-
-            console.log(stack);
-
-            API.Stacks.update(stack)
-                .then(function () {
-                    self.closeStackForm();
-                    _O_.publish('stack.updated');
-                });
-        };
-
-        self.provisionStack = function (a, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-
-            var stack = {
-                title: record.stack_title.value,
-                description: record.stack_description.value,
-                namespace: record.stack_namespace.value,
-                blueprint: self.selectedBlueprint().id
-            };
-
-            if (record.stack_properties_preview.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview.value);
-            }
-
-            API.Stacks.save(stack)
-                .then(function () {
-                    self.closeStackForm();
-                    _O_.publish('stack.updated');
-                });
-        };
-
-        self.showStackDetails = function (stack) {
-            self.selectedStack(stack);
-
-            API.Stacks.getProperties(stack)
-                .then(function (properties) {
-                    $('#stack_properties_preview_edit').val(JSON.stringify(properties, undefined, 3));
-                }).done();
-
-            $('#stack_title_edit').val(stack.title);
-            $('#stack_description_edit').val(stack.description);
-            $('#stack_namespace_edit').val(stack.id);
-
-            
-            API.StackHosts.load(stack)
-                .then(function (response) {
-                    $("#stack-edit-container").dialog("open");
-                });
-        };
-
-        // 
-        //      S T A C K   H O S T S
-        // 
-        self.showStackHostMetaData = function (stack) {
-            console.log(stack);
-            API.Stacks.getHosts(stack).then(function (data) {
-
-            });
-
-            // stores.HostMetadata.removeAll();
-            // _.each(host.ec2_metadata, function (v, k, l) {
-            //     if (typeof v !== "object") {
-            //         stores.HostMetadata.push({ key: k, value: v });
-            //     }
-            // });
-
-            // $("#host-metadata-container").dialog("open");
         };
 
         self.showStackDetails = function (stack) {
