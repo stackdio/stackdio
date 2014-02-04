@@ -93,7 +93,7 @@ function (Q, ko, base, _O_, stores, API) {
         };
 
         self.listProfiles = function (account) {
-            self.navigate({ view: 'profile.list', data: { account: account } });
+            self.navigate({ view: 'profile.list', data: { account: account.id } });
         };
 
         self.editSecurityGroups = function () {

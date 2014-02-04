@@ -34,6 +34,18 @@ function (Q, ko, base, _O_, stores, API) {
             console.log(ex);            
         }
 
+        _O_.subscribe('profile.list.rendered', function (data) {
+            if (data && data.hasOwnProperty('account')) {
+                _.each(stores.Profiles(), function (profile) {
+                    if (profile.account.id === data.account) {
+                        stores.AccountProfiles.push(profile);
+                    }
+                });
+            }
+        });
+
+
+
         /*
          *  ==================================================================================
          *   V I E W   M E T H O D S

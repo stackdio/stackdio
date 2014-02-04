@@ -9,6 +9,11 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
        this.name = "UnregisteredViewException";
     };
 
+    var MissingDOMElementException = function (message) {
+       this.message = message;
+       this.name = "MissingDOMElementException";
+    };
+
     var ViewLoadedException = function (message) {
        this.message = message;
        this.name = "ViewLoadedException";
@@ -22,10 +27,13 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
     var $66 = function () {
         this.registeredViews = [];
         this.currentView = location.hash.split('#')[1] || null;
+        this.currentPayload = null;
     };
 
     $66.prototype.navigate = function (options) {
-        // try {
+        var hashBuilder = [];
+
+        try {
             if (!options.hasOwnProperty('view')) {
                 throw new MissingOptionException('You must provide a view property and a data property when publishing the `navigate` event.');
             }
@@ -33,12 +41,22 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
                 console.warn('You did not provide any data in the options for your `navigate` event.');
             }
            
-            window.location.hash = options.view;  // Set the location hash to the current view id
-            this.currentView = options.view;      // Set view as the current one
-            this.render(options.view);            // Render the view
-        // } catch (ex) {
-        //     console.error(ex);                
-        // }
+            this.currentView = options.view;
+            hashBuilder[hashBuilder.length] = options.view;   // Start building the location hash
+
+            if (options.data) {
+                this.currentPayload = options.data;
+                for (var key in options.data) {    // Add each k/v pair as a URL hash parameter
+                    var param = options.data[key];
+                    hashBuilder[hashBuilder.length] = '&' + key + '=' + param;
+                }
+            }
+
+            window.location.hash = hashBuilder.join('');  // Set the location hash
+            this.render(options.view);                    // Render the view
+        } catch (ex) {
+            console.error(ex);                
+        }
     };
 
     $66.prototype.getDOMElements = function (id) {
@@ -57,6 +75,10 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
             }
         } else if (bindingType === 'id') {
             elements[elements.length] = document.getElementById(undecoratedDomBindingId);
+        }
+
+        if (elements[elements.length-1] === null) {
+            throw new MissingDOMElementException('The DOM element you specified ('+id+') for view model `'+this.currentView+'` was not found.')
         }
 
         return elements;
@@ -147,11 +169,15 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
                 el.style.display = '';
             });
 
+            // Render any children views/widgets
             if (currentViewModel.hasOwnProperty('children')) {
                 currentViewModel.children.map(function (child) {
                     self.render(child.id);
                 });
             }
+
+            _O_.publish(currentViewModel.id + '.rendered', self.currentPayload);
+
         }).fail(function (ex) {
             console.error(ex);
         }).finally(function () { });
@@ -180,12 +206,11 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
                     };
 
                     xhr.send();
-                })
+                });
             } else {
                 _O_.publish(viewmodel.id + '.loaded');
                 deferred.resolve();
             }
-
         } else { 
             deferred.reject(new UnregisteredViewException('View with id `' + id + '` has not been registered and cannot be loaded.'));
         }

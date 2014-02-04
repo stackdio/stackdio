@@ -5,8 +5,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
         var deferred = Q.defer();
         var self = this;
 
-        console.log('loading stacks');
-
         $.ajax({
             url: '/api/stacks/',
             type: 'GET',

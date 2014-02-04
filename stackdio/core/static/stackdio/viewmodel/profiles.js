@@ -50,7 +50,6 @@ define(["knockout",
                 }
             };
 
-
             self.loadProfiles = function () {
                 return API.Profiles.load();
             };
