@@ -1,0 +1,48 @@
+<div id="profile-binding-target">
+    <div class="view">
+        <div class="row bottom-separation">
+            <div class="col-xs-4 col-sm-4 col-md-4 medium-heading">Account Profiles</div>
+            <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
+                    <button class="btn btn-primary" data-bind="click: $root.showProfileForm">New Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                Profiles are specific types of instances that you want to use for each Account. You can specify the instance type, the default log in, the the size of instance to use. For more information on Profiles, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
+            </div>
+        </div>
+
+        <table id="profiles" class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>ID</th>
+                    <th style="width:5%"></th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: stores.AccountProfiles">
+                <tr>
+                    <td data-bind="text: title"></td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: typeof image_id === 'object' ? 'n/a' : image_id"></td>
+                    <td>
+                        <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                            <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
+                                Action <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu original-dropdown-menu">
+                                <li>
+                                    <a href="#" data-bind="text:'Delete', click: $root.deleteProfile"></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>     
+            </tbody>
+        </table>
+    </div>
+</div>
