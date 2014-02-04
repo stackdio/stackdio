@@ -1,13 +1,13 @@
 # Grab the base settings
-from .base import *
+from .base import *  # NOQA
 
 # Override at will!
 
 ##
 # stackd.io overrides
-## 
+##
 STACKDIO_CONFIG.update({
-    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git f5810fdc79a6a51c06f20c631ee2ffe4ae7bd2ef',
+    'SALT_CLOUD_BOOTSTRAP_ARGS': '-D git 3a894d760699ab155bc63a3e35e6730f87cc7d8c',  # NOQA
 })
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
@@ -58,5 +58,5 @@ MIDDLEWARE_CLASSES = (
 )
 
 CORS_ORIGIN_WHITELIST = (
-   'localhost:3000',
+    'localhost:3000',
 )
