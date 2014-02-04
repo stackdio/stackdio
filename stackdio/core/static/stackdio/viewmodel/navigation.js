@@ -18,7 +18,7 @@ function (Q, ko, base, _O_, $66) {
         self.autoRender = true;
 
         try {
-            self.sixtysix.register(self);
+            self.$66.register(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -44,13 +44,13 @@ function (Q, ko, base, _O_, $66) {
             },
             {
                 id:'Accounts',
-                view: 'accounts.main',
+                view: 'account.list',
                 icon: null,
                 visible: false
             },
             {
                 id:'Profiles',
-                view: 'profiles.main',
+                view: 'profile.list',
                 icon: null,
                 visible: false
             },
@@ -62,7 +62,7 @@ function (Q, ko, base, _O_, $66) {
             },
             {
                 id:'Snapshots',
-                view: 'snapshots.main',
+                view: 'snapshot.list',
                 icon: 'glyphicon glyphicon-camera',
                 visible: true
             }
@@ -73,7 +73,6 @@ function (Q, ko, base, _O_, $66) {
             if (!section.hasOwnProperty('id')) {
                 section = _.findWhere(self.sections, {view: section});
             }
-            // _O_.publish('navigate', { view: section.view });
             $66.navigate({ view: section.view });
         };
 

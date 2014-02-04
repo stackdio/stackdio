@@ -27,7 +27,7 @@ function (Q, ko, _O_, base, stacklist) {
         });
 
         try {
-            self.sixtysix.register(self);
+            self.$66.register(self);
         } catch (ex) {
             console.log(ex);            
         }

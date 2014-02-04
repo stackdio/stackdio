@@ -24,7 +24,7 @@ function (Q, ko, base, _O_, stores, API) {
         self.domBindingId = '#blueprint-list';
 
         try {
-            self.sixtysix.register(self);
+            self.$66.register(self);
         } catch (ex) {
             console.log(ex);            
         }

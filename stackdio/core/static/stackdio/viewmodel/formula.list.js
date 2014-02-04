@@ -32,7 +32,7 @@ function (Q, ko, base, _O_, stores, API) {
         self.defaultView = false;
 
         try {
-            self.sixtysix.register(self);
+            self.$66.register(self);
         } catch (ex) {
             console.log(ex);            
         }

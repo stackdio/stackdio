@@ -30,6 +30,9 @@ require([
     'viewmodel/blueprint.list',
     'viewmodel/stack.list',
     'viewmodel/formula.list',
+    'viewmodel/snapshot.list',
+    'viewmodel/account.list',
+    'viewmodel/profile.list',
     'viewmodel/welcome',
     'util/populate'
 ], 

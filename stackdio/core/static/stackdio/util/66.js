@@ -1,4 +1,4 @@
-define(['jquery', 'q', 'knockout', 'util/postOffice'], function ($, Q, ko, _O_) {
+define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
     var DuplicateViewRegistrationException = function (message) {
        this.message = message;
        this.name = "DuplicateViewRegistrationException";
@@ -19,52 +19,50 @@ define(['jquery', 'q', 'knockout', 'util/postOffice'], function ($, Q, ko, _O_) 
        this.name = "MissingOptionException";
     };
 
-    var SixtySix = function (options) {
-        var self = this;
-
-        self.options = options;
-        self.registeredViews = [];
-        self.viewParser = [];
-        self.defaultView = null;
-        self.currentView = null;
-
-        self.hashParser = location.hash.split('#')[1]
-
-        if (self.hashParser) {
-            self.viewParser = self.hashParser.split('.');
-
-            if (self.viewParser.length === 2) {
-                self.currentView = self.hashParser;
-            }
-        }
+    var $66 = function () {
+        this.registeredViews = [];
+        this.currentView = location.hash.split('#')[1] || null;
     };
 
-    SixtySix.prototype.navigate = function (options) {
-        var self = this;
-
-        try {
+    $66.prototype.navigate = function (options) {
+        // try {
             if (!options.hasOwnProperty('view')) {
                 throw new MissingOptionException('You must provide a view property and a data property when publishing the `navigate` event.');
             }
             if (!options.hasOwnProperty('data')) {
                 console.warn('You did not provide any data in the options for your `navigate` event.');
             }
-
-            // Set the location hash to the current view id
-            window.location.hash = options.view;
-
-            // Set view as the current one
-            self.currentView = options.view;
-
-            // Render the view
-            self.render(options.view);
-
-        } catch (ex) {
-            console.error(ex);                
-        }
+           
+            window.location.hash = options.view;  // Set the location hash to the current view id
+            this.currentView = options.view;      // Set view as the current one
+            this.render(options.view);            // Render the view
+        // } catch (ex) {
+        //     console.error(ex);                
+        // }
     };
 
-    SixtySix.prototype.register = function (viewmodel) {
+    $66.prototype.getDOMElements = function (id) {
+        var bindingType = (id.substr(0,1) === '.') ? 'class' : 'id';
+        var undecoratedDomBindingId = id.replace(/[\.#]/, '');
+        var elements = [];
+
+        if (bindingType === 'class') {
+            var byClass = document.getElementsByClassName(undecoratedDomBindingId);
+            if (byClass.length) {
+                for (var el in byClass) {
+                    if (typeof byClass[el] === 'object') {
+                        elements[elements.length] = byClass[el];
+                    }
+                }
+            }
+        } else if (bindingType === 'id') {
+            elements[elements.length] = document.getElementById(undecoratedDomBindingId);
+        }
+
+        return elements;
+    };
+
+    $66.prototype.register = function (viewmodel) {
         var self = this;
 
         if (!viewmodel.hasOwnProperty('__registered')) {
@@ -117,37 +115,37 @@ define(['jquery', 'q', 'knockout', 'util/postOffice'], function ($, Q, ko, _O_) 
         }
     };
 
-    SixtySix.prototype.unregister = function (id) {
-        var self = this;
-        var exists = _.findWhere(self.registeredViews, {id: id});
+    $66.prototype.unregister = function (id) {
+        var exists = _.findWhere(this.registeredViews, {id: id});
 
         if (exists) {
-            this.registeredViews = _.filter(self.registeredViews, function (vm) {
+            this.registeredViews = _.filter(this.registeredViews, function (vm) {
                 vm.id !== id;
             });
         }
     };
 
-    SixtySix.prototype.render = function (id) {
+    $66.prototype.render = function (id) {
         var self = this;
         var currentViewModel = null;
 
+        // Capture current view and hide all others (not autoRender views)
         self.registeredViews.forEach(function (view) {
-            // Find the view model currently being rendered
             if (view.id === id) {
                 currentViewModel = view;
-
-            // If not the current view, and not an autoLoad view, hide the view
             } else if (!view.autoRender && view.id !== self.currentView) {
-                $(view.domBindingId).hide();
+                self.getDOMElements(view.domBindingId).forEach(function (el) {
+                    el.style.display = 'none';
+                });
             }
         });
 
         // Ensure the view model's HTML template is loaded and has been bound
-        this.load(id).then(function () {
-
-            // After view is loaded, ensure it, and each child view, is visible
-            $(currentViewModel.domBindingId).show();
+        self.load(id).then(function () {
+            // After view is loaded, ensure it is visible
+            self.getDOMElements(currentViewModel.domBindingId).forEach(function (el) {
+                el.style.display = '';
+            });
 
             if (currentViewModel.hasOwnProperty('children')) {
                 currentViewModel.children.map(function (child) {
@@ -156,12 +154,10 @@ define(['jquery', 'q', 'knockout', 'util/postOffice'], function ($, Q, ko, _O_) 
             }
         }).fail(function (ex) {
             console.error(ex);
-        }).finally(function () {
-            // Clean up code goes here
-        });
+        }).finally(function () { });
     };
 
-    SixtySix.prototype.load = function (id) {
+    $66.prototype.load = function (id) {
         var self = this;
         var deferred = Q.defer();
         var viewmodel = _.findWhere(self.registeredViews, {id: id});
@@ -169,14 +165,22 @@ define(['jquery', 'q', 'knockout', 'util/postOffice'], function ($, Q, ko, _O_) 
         if (viewmodel) {
             if (!viewmodel.loaded) {
                 var template = '/static/stackdio/view/' + viewmodel.templatePath;
-                var bindElement = $(viewmodel.domBindingId);
 
-                bindElement.load(template, function (text, status, xhr) {
-                    ko.applyBindings(viewmodel, bindElement.get(0));
-                    viewmodel.loaded = true;
-                    _O_.publish(viewmodel.id + '.loaded');
-                    deferred.resolve();
-                });
+                self.getDOMElements(viewmodel.domBindingId).forEach(function (el) {
+                    var xhr = new XMLHttpRequest();     // Create XHR object
+                    xhr.open('GET', template, true);    // GET the HTML file for the view model
+                    xhr.onloadend = function (evt) {    // After it's loaded
+                        if (evt.target.status === 200 || evt.target.status === 302) {
+                            el.innerHTML = evt.target.responseText;     // Inject the HTML
+                            ko.applyBindings(viewmodel, el);            // Bind view model to DOM
+                            viewmodel.loaded = true;                    // Flag view model as loaded
+                            _O_.publish(viewmodel.id + '.loaded');      // Notify subscribers of load event
+                            deferred.resolve();                         // Resolve promise
+                        }
+                    };
+
+                    xhr.send();
+                })
             } else {
                 _O_.publish(viewmodel.id + '.loaded');
                 deferred.resolve();
@@ -189,5 +193,5 @@ define(['jquery', 'q', 'knockout', 'util/postOffice'], function ($, Q, ko, _O_) 
         return deferred.promise;
     };
 
-    return new SixtySix();
+    return new $66();
 });
