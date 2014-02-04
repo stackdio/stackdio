@@ -1,0 +1,6 @@
+# Load the base requirements first
+-r base.txt
+
+# TODO: Before release we need to set a dependency on a stabile release of
+# salt instead of using their develop branch
+-r local.txt
