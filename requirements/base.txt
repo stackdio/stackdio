@@ -1,4 +1,4 @@
-Django==1.5.1
+Django==1.5.5
 Jinja2==2.6
 M2Crypto==0.21.1
 Markdown==2.3.1
