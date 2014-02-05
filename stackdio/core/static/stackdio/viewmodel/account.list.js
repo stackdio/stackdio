@@ -38,6 +38,22 @@ function (Q, ko, base, _O_, stores, API) {
 
         /*
          *  ==================================================================================
+         *   E V E N T   S U B S C R I P T I O N S
+         *  ==================================================================================
+         */
+        _O_.subscribe('account.list.rendered', function (data) {
+            if (stores.Accounts().length === 0) {
+                [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
+                    return loadData.then(next);
+                }, Q([])).then(function () {
+                    
+                });
+            }
+        });
+
+
+        /*
+         *  ==================================================================================
          *   V I E W   M E T H O D S
          *  ==================================================================================
         */

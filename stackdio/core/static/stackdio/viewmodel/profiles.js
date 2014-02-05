@@ -39,7 +39,7 @@ define(["knockout",
                 self.selectedAccount(account);
                 stores.AccountProfiles.removeAll();
 
-                _.each(stores.Profiles(), function (profile) {
+                stores.Profiles().forEach(function (profile) {
                     if (profile.account.id === account.id) {
                         stores.AccountProfiles.push(profile);
                     }

@@ -6,7 +6,7 @@
                 <ul class="nav navbar-nav">
                     <li>
                         <!-- <a href="#" class="light product">stackd.io</a> -->
-                        <a href="#" class="light product" data-bind="click: function () { $root.navigate('welcome.main'); }">stackd.io</a>
+                        <a href="#" class="light product" data-bind="click: function () { $root.changeView('welcome'); }">stackd.io</a>
                     </li>
                 </ul>
 
@@ -50,12 +50,15 @@
                             <!-- <li><a href="#" data-bind="click: showPasswordForm">Change Password</a></li> -->
                             <li class="divider"></li>
                             <li>
-                                <a href="#" data-bind="click: function () { $root.navigate('account.list'); }">
-                                <!-- <a href="#" data-bind=""> -->
+                                <a href="#" data-bind="click: function () { $root.changeView('account.list'); }">
                                     Your Cloud Accounts
                                 </a>
                             </li>
-                            <!-- <li><a href="#" data-bind="click: function () { $root.gotoSection(_.findWhere(sections, {id:'Accounts'})) }">Your Cloud Accounts</a></li> -->
+                            <li>
+                                <a href="#" data-bind="click: function () { $root.changeView('profile.list'); }">
+                                    Your Cloud Profiles
+                                </a>
+                            </li>
                             <li class="divider"></li>
                             <li><a href="/logout">Logout</a></li>
                         </ul>

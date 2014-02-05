@@ -14,16 +14,16 @@ function (Q, ko, _O_, base, stacklist) {
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
         */
-        self.id = 'welcome.main';
+        self.id = 'welcome';
         self.templatePath = 'welcome.html';
         self.domBindingId = '#welcome';
         self.children = [stacklist];
         self.defaultView = true;
 
-        _O_.subscribe('welcome.main.registered', function () {
+        _O_.subscribe('welcome.registered', function () {
         });
 
-        _O_.subscribe('welcome.main.loaded', function () {
+        _O_.subscribe('welcome.loaded', function () {
         });
 
         try {

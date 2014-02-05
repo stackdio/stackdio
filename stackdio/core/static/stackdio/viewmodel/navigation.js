@@ -1,11 +1,11 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
     'util/postOffice',
-    'util/66'
+    'viewmodel/base',
+    'viewmodel/welcome'
 ],
-function (Q, ko, base, _O_, $66) {
+function (Q, ko, _O_, base, welcome) {
     var vm = function () {
         var self = this;
 
@@ -26,7 +26,7 @@ function (Q, ko, base, _O_, $66) {
         self.sections = [
             {
                 id:'Welcome',
-                view: 'welcome.main',
+                view: 'welcome',
                 icon: null,
                 visible: false
             },
@@ -69,11 +69,11 @@ function (Q, ko, base, _O_, $66) {
         ];
         self.currentSection = ko.observable(self.sections[0]);
 
-        self.navigate = function (section) {
+        self.changeView = function (section) {
             if (!section.hasOwnProperty('id')) {
                 section = _.findWhere(self.sections, {view: section});
             }
-            $66.navigate({ view: section.view });
+            self.navigate({ view: section.view });
         };
 
     };

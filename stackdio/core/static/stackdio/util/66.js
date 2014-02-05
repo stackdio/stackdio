@@ -9,6 +9,11 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
        this.name = "UnregisteredViewException";
     };
 
+    var MissingViewModelException = function (message) {
+       this.message = message;
+       this.name = "MissingViewModelException";
+    };
+
     var MissingDOMElementException = function (message) {
        this.message = message;
        this.name = "MissingDOMElementException";
@@ -24,10 +29,79 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
        this.name = "MissingOptionException";
     };
 
-    var $66 = function () {
-        this.registeredViews = [];
-        this.currentView = location.hash.split('#')[1] || null;
+
+    var $66 = function (options) {
+        var self = this;
+
+        // Handle errors when require tries to load a view model id that is invalid
+        requirejs.onError = function (err) {
+            console.error(new MissingViewModelException('Unable to locate the file `'+self.currentView+'.js`.'));
+        };
+
+        // Detect when the hash changes
+        window.addEventListener('popstate', function (event) {
+            self.parseHash();
+        });
+
+        if (options && options.hasOwnProperty('viewmodelDir')) {
+            this.viewmodelDir = options.viewmodelDir;
+        } else {
+            this.viewmodelDir = 'viewmodel';
+        }
+
         this.currentPayload = null;
+        this.registeredViews = [];
+        this.currentView = null;
+        
+        this.parseHash();
+
+        // If view specified in URL hash isn't registered, require it now (which will automatically register it)
+        var exists = this.registeredViews.map(function (view) {
+            if (view.id === self.currentView) {
+                return view;
+            }
+        });
+
+        if (!exists.length) {
+            require([this.viewmodelDir+'/'+this.currentView], function (vm) {});
+        }
+    };
+
+    $66.prototype.parseHash = function () {
+        var self = this;
+        var redirectAfterParse = false;
+
+        /*
+         *   Parse the location.hash to find the view id and any additional 
+         *   key/value pairs in the URL parameters to pass to the view model
+         */
+        var grabHash = location.hash.split('#')[1];
+
+        if (this.currentView && (this.currentView !== grabHash.split('&')[0])) {
+            redirectAfterParse = true;
+        }
+
+        if (grabHash) {
+            this.currentView = grabHash.split('&')[0];
+            var urlParamArray = grabHash.split('&');
+            urlParamArray.splice(0,1);
+
+            this.currentPayload = urlParamArray.map(function (kv) {
+                var a = {}, k = kv.split('=')[0], v = kv.split('=')[1];
+                a[k] = v;
+                return a;
+            }).reduce(function (prev,curr) {
+                for (var key in curr) {
+                    prev[key] = curr[key];
+                }
+                return prev;
+            }, {});
+        }
+
+        // redirectAfterParse should only be true on browser history change
+        if (redirectAfterParse) {
+            this.render(this.currentView);
+        }
     };
 
     $66.prototype.navigate = function (options) {
@@ -37,14 +111,11 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
             if (!options.hasOwnProperty('view')) {
                 throw new MissingOptionException('You must provide a view property and a data property when publishing the `navigate` event.');
             }
-            if (!options.hasOwnProperty('data')) {
-                console.warn('You did not provide any data in the options for your `navigate` event.');
-            }
            
             this.currentView = options.view;
             hashBuilder[hashBuilder.length] = options.view;   // Start building the location hash
 
-            if (options.data) {
+            if (options.hasOwnProperty('data') && options.data) {
                 this.currentPayload = options.data;
                 for (var key in options.data) {    // Add each k/v pair as a URL hash parameter
                     var param = options.data[key];
@@ -212,7 +283,8 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
                 deferred.resolve();
             }
         } else { 
-            deferred.reject(new UnregisteredViewException('View with id `' + id + '` has not been registered and cannot be loaded.'));
+            console.warn(new UnregisteredViewException('View with id `' + id + '` has not been registered. Attempting to register now.'));
+            require([this.viewmodelDir+'/'+id], function (vm) {});
         }
 
         return deferred.promise;

@@ -3,10 +3,11 @@ define([
     'knockout',
     'viewmodel/base',
     'util/postOffice',
+    'util/form',
     'store/stores',
     'api/api'
 ],
-function (Q, ko, base, _O_, stores, API) {
+function (Q, ko, base, _O_, formutils, stores, API) {
     var vm = function () {
         var self = this;
 
@@ -24,9 +25,9 @@ function (Q, ko, base, _O_, stores, API) {
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
         */
-        self.id = 'profile.list';
-        self.templatePath = 'profiles.html';
-        self.domBindingId = '#profile-list';
+        self.id = 'profile.detail';
+        self.templatePath = 'profile.html';
+        self.domBindingId = '#profile-detail';
 
         try {
             self.$66.register(self);
@@ -41,14 +42,12 @@ function (Q, ko, base, _O_, stores, API) {
          *  ==================================================================================
          */
         _O_.subscribe('profile.list.rendered', function (data) {
+            formutils.clearForm('profile-form');
             if (stores.Accounts().length === 0) {
                 [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
                     return loadData.then(next);
                 }, Q([])).then(function () {
-                    self.listProfiles(data);
                 });
-            } else {
-                self.listProfiles(data);
             }
         });
 
@@ -58,50 +57,24 @@ function (Q, ko, base, _O_, stores, API) {
          *   V I E W   M E T H O D S
          *  ==================================================================================
          */
-        self.newProfile = function () {
-            self.navigate({ view: 'profile.detail' });
-        };
-
-        self.addProfile = function (model, evt) {
+        self.saveProfile = function (model, evt) {
             var profile = formutils.collectFormFields(evt.target.form);
             profile.account = self.selectedAccount();
 
-            API.Profiles.save(profile)
-                .then(function (newProfile) {
-                    console.log(newProfile);
-                    stores.AccountProfiles.push(newProfile);
-                    formutils.clearForm('profile-form');
-                    self.showSuccess();
-                });
+            console.log(profile);
+
+            API.Profiles.save(profile).then(function (newProfile) {
+                console.log(newProfile);
+                stores.AccountProfiles.push(newProfile);
+                formutils.clearForm('profile-form');
+                self.showSuccess();
+            });
         };
 
         self.deleteProfile = function (profile) {
-            API.Profiles.delete(profile)
-                .then(self.showSuccess)
-                .catch(function (error) {
-                    self.showError(error);
-                });
-        };
-
-        self.viewProfile = function (profile) {
-            console.log('profile',profile);
-            self.navigate({ view: 'profile.detail', data: { profile: profile.id } });
-        };
-
-        self.listProfiles = function (data) {
-            stores.AccountProfiles.removeAll();
-
-            if (data && data.hasOwnProperty('account')) {
-                stores.Profiles().forEach(function (profile) {
-                    if (profile.account.id === parseInt(data.account, 10)) {
-                        stores.AccountProfiles.push(profile);
-                    }
-                });                
-            } else {
-                stores.Profiles().forEach(function (profile) {
-                    stores.AccountProfiles.push(profile);
-                });
-            }
+            API.Profiles.delete(profile).catch(function (error) {
+                self.showError(error);
+            });
         };
     };
 

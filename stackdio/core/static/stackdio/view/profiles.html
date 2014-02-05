@@ -1,10 +1,10 @@
 <div id="profile-binding-target">
     <div class="view">
         <div class="row bottom-separation">
-            <div class="col-xs-4 col-sm-4 col-md-4 medium-heading">Account Profiles</div>
+            <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Account Profiles</div>
             <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
                 <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
-                    <button class="btn btn-primary" data-bind="click: $root.showProfileForm">New Profile</button>
+                    <button class="btn btn-primary" data-bind="click: $root.newProfile">New Profile</button>
                 </div>
             </div>
         </div>
@@ -20,15 +20,19 @@
                 <tr>
                     <th>Title</th>
                     <th>Description</th>
-                    <th>ID</th>
+                    <th>Image ID</th>
+                    <th>Account</th>
                     <th style="width:5%"></th>
                 </tr>
             </thead>
             <tbody data-bind="foreach: stores.AccountProfiles">
                 <tr>
-                    <td data-bind="text: title"></td>
+                    <td>
+                        <a href="#" data-bind="text:title, click: $root.viewProfile"></a>
+                    </td>
                     <td data-bind="text: description"></td>
                     <td data-bind="text: typeof image_id === 'object' ? 'n/a' : image_id"></td>
+                    <td data-bind="text: account.title"></td>
                     <td>
                         <div class="btn-group" data-bind="visible: $root.isSuperUser">
                             <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
