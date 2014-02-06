@@ -39,6 +39,25 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
 
             return deferred.promise;
         },
+        update: function (profile) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: profile.url,
+                type: 'PUT',
+                data: JSON.stringify(profile),
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve();
+                }
+            });
+
+            return deferred.promise;
+        },
         save: function (record) {
             var deferred = Q.defer();
 

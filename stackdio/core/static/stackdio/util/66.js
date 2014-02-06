@@ -62,7 +62,7 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
             }
         });
 
-        if (!exists.length) {
+        if (!exists.length && this.currentView !== null) {
             require([this.viewmodelDir+'/'+this.currentView], function (vm) {});
         }
     };
