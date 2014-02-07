@@ -34,7 +34,9 @@
             </thead>
             <tbody data-bind="foreach: stores.Accounts">
                 <tr>
-                    <td data-bind="text: title"></td>
+                    <td>
+                        <a data-bind="text: title, click: $root.editAccount"></a>
+                    </td>
                     <td data-bind="text: description"></td>
                     <td>
                         <a data-bind="click: $root.listProfiles, text: $root.accountProfileLink(id)"></a>

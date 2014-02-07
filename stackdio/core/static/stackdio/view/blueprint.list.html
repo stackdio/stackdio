@@ -1,4 +1,4 @@
-<div id="blueprints-binding-target" data-bind="" class="">
+<div id="blueprints-binding-target">
     <div class="view">
 
         <div class="row bottom-separation">
@@ -28,7 +28,7 @@
             <tbody data-bind="foreach: stores.Blueprints">
                 <tr>
                     <td>
-                        <a href="#" data-bind="text: title, click: $root.showBlueprintForm"></a>
+                        <a href="#" data-bind="text: title, click: $root.editBlueprint"></a>
                     </td>
                     <td data-bind="text: description"></td>
                     <td>

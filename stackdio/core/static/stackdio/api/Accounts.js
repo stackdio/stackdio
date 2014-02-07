@@ -94,6 +94,25 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
 
             return deferred.promise;
         },
+        update: function (account) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: account.url,
+                type: 'PATCH',
+                data: JSON.stringify(account),
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve();
+                }
+            });
+
+            return deferred.promise;
+        },
         delete: function (account) {
             var deferred = Q.defer();
 

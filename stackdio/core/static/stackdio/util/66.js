@@ -1,4 +1,4 @@
-define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
+define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, postal) {
     var DuplicateViewRegistrationException = function (message) {
        this.message = message;
        this.name = "DuplicateViewRegistrationException";
@@ -29,9 +29,10 @@ define(['q', 'knockout', 'util/postOffice'], function (Q, ko, _O_) {
        this.name = "MissingOptionException";
     };
 
-
     var $66 = function (options) {
         var self = this;
+
+        this.$news = postal.channel('route-66');
 
         // Handle errors when require tries to load a view model id that is invalid
         requirejs.onError = function (err) {

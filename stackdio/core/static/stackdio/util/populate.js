@@ -17,16 +17,14 @@ function (Q, ko, _O_, models, stores, API) {
     API.Zones.load();
 
     // Define all data loading functions
-    // var dataLoaders = [API.ProviderTypes.load, API.Accounts.load, API.Profiles.load, 
-    //                    API.Snapshots.load, API.Blueprints.load, API.Stacks.load];
-    var dataLoaders = [API.ProviderTypes.load, API.Snapshots.load, API.Blueprints.load, API.Stacks.load];
+    var dataLoaders = [API.ProviderTypes.load, API.Snapshots.load, API.Stacks.load];
 
     // Execute each data loader
     var dataLoaded = dataLoaders.reduce(function (loadData, next) {
         return loadData.then(next);
     }, Q([])).then(function () {
         // Convert select elements to the nice Bootstrappy style
-        $('.selectpicker').selectpicker();
+        // $('.selectpicker').selectpicker();
 
         // Specify a flattened array of Blueprint name as the store for the typeahead on the welcome page
         $('#blueprint_search').typeahead({

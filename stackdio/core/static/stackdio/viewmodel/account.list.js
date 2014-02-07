@@ -14,7 +14,7 @@ function (Q, ko, base, _O_, stores, API) {
          *  ==================================================================================
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
-        */
+         */
         self.stores = stores;
         self.selectedAccount = ko.observable(null);
         self.selectedProviderType = null;
@@ -24,7 +24,7 @@ function (Q, ko, base, _O_, stores, API) {
          *  ==================================================================================
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
-        */
+         */
         self.id = 'account.list';
         self.templatePath = 'accounts.html';
         self.domBindingId = '#account-list';
@@ -104,12 +104,12 @@ function (Q, ko, base, _O_, stores, API) {
                 });
         };
 
-        self.loadAccounts = function () {
-            return API.Accounts.load();
-        };
-
         self.listProfiles = function (account) {
             self.navigate({ view: 'profile.list', data: { account: account.id } });
+        };
+
+        self.editAccount = function (account) {
+            self.navigate({ view: 'account.detail', data: { account: account.id } });
         };
 
         self.editSecurityGroups = function () {
