@@ -28,4 +28,4 @@ extension_modules: /mnt/stackdio_root/stackdsalt/extmods
 
 # Enable our custom external pillar
 ext_pillar:
-  - stack_pillar: ''
+  - stackdio: ''
