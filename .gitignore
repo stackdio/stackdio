@@ -18,3 +18,12 @@ stackdsalt/user_envs/*
 stackdsalt/var
 #stackdio/core/static/stackdio/bower_components
 stackdio/core/static/stackdio/node_modules
+
+# build stuff
+build/
+dist/
+stackdio.egg*/
+
+# abe's development stuff
+stackdio/reset_rabbitmq.sh
+stackdio/salt-cloud.sh

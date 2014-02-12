@@ -1,0 +1,8 @@
+# For some reason, putting M2Crypto here instead of
+# allowing Salt to install it later, fixes a build
+# issue with M2Crypto? Not sure why...
+M2Crypto
+
+# Pull in our production requirements, which will in turn
+# grab our base requirements
+-r requirements/production.txt

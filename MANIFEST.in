@@ -1,0 +1,10 @@
+include README.md
+include LICENSE
+include MANIFEST.in
+recursive-include stackdio/core/templates *
+recursive-include stackdsalt/states *
+recursive-include stackdsalt/extmods *
+recursive-include stackdsalt/pillar *
+include stackdsalt/etc/salt/cloud
+include stackdsalt/etc/salt/master
+recursive-exclude * *.py[co]
