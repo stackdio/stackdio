@@ -1,12 +1,41 @@
 # Django settings for stackdio project.
 
+import djcelery
+import dj_database_url
+import os
+import yaml
 from os import environ
-from os.path import dirname, normpath, join
-
 from django.core.exceptions import ImproperlyConfigured
 
-import djcelery
 djcelery.setup_loader()
+
+
+def load_stackdio_config():
+    config_file = os.path.expanduser('~/.stackdio/config')
+    if not os.path.isfile(config_file):
+        raise ImproperlyConfigured('Missing stackdio configuration file. To '
+                                   'create the file, you may use '
+                                   '`stackdio init`')
+    with open(config_file) as f:
+        config = yaml.safe_load(f)
+
+    if not config:
+        raise ImproperlyConfigured('stackdio configuration file appears to be '
+                                   'empty or not valid yaml.')
+
+    errors = []
+    for k in ('storage_root', 'user', 'django_secret_key',
+              'db_dsn'):
+        if k not in config:
+            errors.append('Missing parameter `{0}`'.format(k))
+
+    if errors:
+        msg = 'stackdio configuration errors:\n'
+        for err in errors:
+            msg += '  - {0}\n'.format(err)
+        raise ImproperlyConfigured(msg)
+
+    return config
 
 
 def getenv(var):
@@ -16,6 +45,8 @@ def getenv(var):
         msg = 'Missing environment variable {0}.'.format(var)
         raise ImproperlyConfigured(msg)
 
+STACKDIO_CONFIG = load_stackdio_config()
+
 ##
 # Required base-level environment variables. The salt and salt-cloud
 # environment variables usually don't need to be set for salt and
@@ -23,31 +54,32 @@ def getenv(var):
 # must have them set and available for things to function correctly.
 ##
 
-# This is the salt root
-SALT_ROOT = getenv('SALT_ROOT')
+# Root of stackdio-based salt configuration and storage
+SALT_ROOT = os.path.join(STACKDIO_CONFIG['storage_root'], 'salt')
+
+# Salt configuration directory
+SALT_CONFIG_ROOT = os.path.join(SALT_ROOT, 'config')
 
 # Where salt states live (e.g., /srv/salt)
-SALT_STATE_ROOT = getenv('SALT_STATE_ROOT')
+SALT_STATE_ROOT = os.path.join(SALT_ROOT, 'core_states')
 
 # Where user environments are located. This is where imported salt
 # formulas will be cloned.
-SALT_USER_ENVS_ROOT = getenv('SALT_USER_ENVS_ROOT')
+SALT_USER_STATES_ROOT = os.path.join(SALT_ROOT, 'user_states')
 
-# This is the salt-master configuration
-SALT_MASTER_CONFIG = getenv('SALT_MASTER_CONFIG')
-
-# This is the salt-cloud configuration file.
-SALT_CLOUD_CONFIG = getenv('SALT_CLOUD_CONFIG')
+# These are the salt-master and salt-cloud configuration files.
+SALT_MASTER_CONFIG = os.path.join(SALT_CONFIG_ROOT, 'master')
+SALT_CLOUD_CONFIG = os.path.join(SALT_CONFIG_ROOT, 'cloud')
 
 # This is typically in the cloud.profiles.d directory located in
 # salt's configuration root directory. Each *.conf file is an
 # individual profile configuration
-SALT_CLOUD_PROFILES_DIR = getenv('SALT_CLOUD_PROFILES_DIR')
+SALT_CLOUD_PROFILES_DIR = os.path.join(SALT_CONFIG_ROOT, 'cloud.profiles.d')
 
 # This is typically in the cloud.providers.d directory located in
 # salt's configuration root directory. Each *.conf file is an
 # individual cloud provider configuration
-SALT_CLOUD_PROVIDERS_DIR = getenv('SALT_CLOUD_PROVIDERS_DIR')
+SALT_CLOUD_PROVIDERS_DIR = os.path.join(SALT_CONFIG_ROOT, 'cloud.providers.d')
 
 # The delimiter used in state execution results
 STATE_EXECUTION_DELIMITER = '_|-'
@@ -56,14 +88,10 @@ STATE_EXECUTION_DELIMITER = '_|-'
 STATE_EXECUTION_FIELDS = ('module', 'declaration_id', 'name', 'func')
 
 ##
-# stackd.io settings
+# The Django local storage directory for storing its data
 ##
-STACKDIO_CONFIG = {
-    # Adds additional args to the boostrap-salt script. See:
-    # http://bootstrap.saltstack.org
-    'SALT_CLOUD_BOOTSTRAP_SCRIPT': 'bootstrap-salt',
-    'SALT_CLOUD_BOOTSTRAP_ARGS': '',
-}
+FILE_STORAGE_DIRECTORY = os.path.join(STACKDIO_CONFIG['storage_root'],
+                                      'storage')
 
 ##
 #
@@ -72,9 +100,18 @@ DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ##
+# Database configuration. We're using dj-database-url to simplify
+# the required settings and instead of pulling the DSN from an
+# environment variable, we're loading it from the stackdio config
+##
+DATABASES = {
+    'default': dj_database_url.parse(STACKDIO_CONFIG['db_dsn'])
+}
+
+##
 # Some convenience variables
 ##
-SITE_ROOT = '/'.join(dirname(__file__).split('/')[0:-2])
+SITE_ROOT = '/'.join(os.path.dirname(__file__).split('/')[0:-2])
 PROJECT_ROOT = SITE_ROOT + '/stackdio'
 
 ##
@@ -118,7 +155,7 @@ STATICFILES_FINDERS = (
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS  #NOQA
 FIXTURE_DIRS = (
-    normpath(join(SITE_ROOT, 'stackdio', 'fixtures')),
+    os.path.normpath(os.path.join(SITE_ROOT, 'stackdio', 'fixtures')),
 )
 
 MIDDLEWARE_CLASSES = (
@@ -197,7 +234,7 @@ USE_TZ = True
 
 # Make this unique, and don't share it with anybody.
 # e.g, '!&-bq%17z_osv3a)ziny$k7auc8rwv@^r*alo*e@wt#z^g(x6v'
-SECRET_KEY = getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = STACKDIO_CONFIG['django_secret_key']
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (

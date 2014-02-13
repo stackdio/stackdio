@@ -53,10 +53,10 @@ def import_formula(formula_id):
 
             raise FormulaTaskException(formula,
                 'An error occurred while importing formula.')
-        
+
         specfile_path = os.path.join(repodir, 'SPECFILE')
         if not os.path.isfile(specfile_path):
-            raise FormulaTaskException(formula, 
+            raise FormulaTaskException(formula,
                 'Formula did not have a SPECFILE. Each formula must define a '
                 'SPECFILE in the root of the repository.')
 
@@ -68,7 +68,7 @@ def import_formula(formula_id):
         formula_description = specfile.get('description', '')
         root_path = specfile.get('root_path', '')
         components = specfile.get('components', [])
-        root_dir = os.path.join(settings.SALT_USER_ENVS_ROOT,
+        root_dir = os.path.join(settings.SALT_USER_STATES_ROOT,
                                 formula.owner.username,
                                 reponame)
 
@@ -109,7 +109,7 @@ def import_formula(formula_id):
                     "SPECFILE must contain a 'title' and 'sls_path' field.")
 
             # determine if the sls_path is valid...we're looking for either
-            # a directory with an init.sls or an sls file of the same name 
+            # a directory with an init.sls or an sls file of the same name
             # as the last location of the path
             component_title = component['title']
             sls_path = component['sls_path'].replace('.', '/')
@@ -122,7 +122,7 @@ def import_formula(formula_id):
                 raise FormulaTaskException(formula, "Could not locate an SLS "
                     "file for component '{0}'. Expected to find either '{1}' "
                     "or '{2}'.".format(component_title, init_file, sls_file))
-        
+
         # all seems to be fine with the structure and mapping of the SPECFILE,
         # so now we'll build out the individual components of the formula
         # according to the SPECFILE

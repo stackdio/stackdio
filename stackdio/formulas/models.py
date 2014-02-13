@@ -63,7 +63,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                                     # using standard stal dot notation
         - name: <string>
           description: <string>
-          sls_path: <string>            
+          sls_path: <string>
         ...
         more components
         ...
@@ -79,7 +79,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                  Hadoop system.
     root_path: cdh4
     components:
-      - name: Hadoop 
+      - name: Hadoop
         description: This component installs the entire Hadoop system.
         sls_path: cdh4.hadoop
       - name: Hadoop NameNode
@@ -97,7 +97,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
       - name: HBase RegionServer
         description: The RegionServer component of the CDH4 formula.
         sls_path: cdh4.hbase.regionserver
-          
+
     '''
     ERROR       = 'error'
     COMPLETE    = 'complete'
@@ -117,14 +117,14 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     # uri to the repository for this formula
     uri = models.CharField(max_length=255)
 
-    # root path of where this formula exists in SALT_USER_ENVS_ROOT
+    # root path of where this formula exists in SALT_USER_STATES_ROOT
     root_path = models.CharField(max_length=64)
 
     def __unicode__(self):
         return '{0} ({1})'.format(self.title, self.owner.username)
 
     def get_repo_dir(self):
-        return join(settings.SALT_USER_ENVS_ROOT,
+        return join(settings.SALT_USER_STATES_ROOT,
                             self.owner.username,
                             self.get_repo_name())
 
@@ -158,14 +158,14 @@ class FormulaComponent(TitleSlugDescriptionModel):
 
 
 ##
-# Signal events and handlers 
+# Signal events and handlers
 ##
 
 @receiver(models.signals.post_delete, sender=Formula)
 def cleanup_formula(sender, instance, **kwargs):
     '''
     Utility method to clean up the cloned formula repository when
-    the formula is deleted. 
+    the formula is deleted.
     '''
     repo_dir = instance.get_repo_dir()
     logger.debug('cleanup_formula called. Path to remove: {0}'.format(repo_dir))

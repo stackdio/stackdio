@@ -1,21 +1,11 @@
 syntax: glob
 
-storage/
 dev.db
 *.pyc
 *.swp
 *.un~
 reload.sh
 stackdio/core/static/stackdio-built.js
-stackdsalt/etc/salt/pki
-stackdsalt/etc/salt/cloud.profiles.d/*.conf
-stackdsalt/etc/salt/cloud.providers.d/*.conf
-stackdsalt/etc/salt/cloud.deploy.d/*.sh
-stackdsalt/states/stack_*_top.sls
-stackdsalt/states/stack_*_overstate.sls
-stackdsalt/states/.stackdio
-stackdsalt/user_envs/*
-stackdsalt/var
 stackdio/core/static/stackdio/bower_components
 stackdio/core/static/stackdio/node_modules
 

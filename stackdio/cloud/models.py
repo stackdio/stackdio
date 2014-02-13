@@ -164,8 +164,10 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
             'image': self.image_id,
             'size': self.default_instance_size.title,
             'ssh_username': self.ssh_user,
-            'script': settings.STACKDIO_CONFIG['SALT_CLOUD_BOOTSTRAP_SCRIPT'],
-            'script_args': settings.STACKDIO_CONFIG['SALT_CLOUD_BOOTSTRAP_ARGS'],  # NOQA
+            'script': settings.STACKDIO_CONFIG.get('salt_bootstrap_script',
+                                                   'bootstrap-salt'),
+            'script_args': settings.STACKDIO_CONFIG.get('salt_bootstrap_args',
+                                                        ''),
             'sync_after_install': 'all',
             # PI-44: Need to add an empty minion config until salt-cloud/701
             # is fixed.

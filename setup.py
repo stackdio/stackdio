@@ -1,5 +1,12 @@
 import os
+import sys
 from setuptools import setup, find_packages
+
+if float("%d.%d" % sys.version_info[:2]) < 2.6:
+    print('Your Python version {0}.{1}.{2} is not supported.'.format(
+        *sys.version_info[:3]))
+    print('stackdio requires Python 2.6 or newer.')
+    sys.exit(1)
 
 # Used later in load_requirements()
 REQUIREMENTS = []
@@ -22,13 +29,13 @@ if os.path.isfile('README.md'):
     with open('README.md') as f:
         LONG_DESCRIPTION = f.read()
 
+
 def load_requirements(filepath):
     '''
     Build the list of requirements based on our requirements.txt
     that we use when installing dependencies via pip.
     '''
     cwd = os.path.dirname(filepath)
-    reqs = []
     with open(filepath) as f:
         for line in f.readlines():
             # skip empty lines and comments
