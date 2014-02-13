@@ -114,4 +114,7 @@ setup(
         'Topic :: System :: Clustering',
         'Topic :: System :: Distributed Computing',
     ],
+    entry_points={'console_scripts': [
+        'stackdio = stackdio.scripts.stackdio:main'
+    ]}
 )
