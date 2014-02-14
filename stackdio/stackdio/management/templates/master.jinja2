@@ -1,5 +1,5 @@
-user: stackdio
-root_dir: /mnt/stackdio_root/stackdsalt
+user: {{ user }}
+root_dir: {{ root_dir }}
 verify_env: True
 
 fileserver_backend:
@@ -8,24 +8,25 @@ fileserver_backend:
 
 file_roots:
   base:
-    - /mnt/stackdio_root/stackdsalt/states
+    - {{ root_dir }}/core_states
 
 stackdio:
-  user_envs: /mnt/stackdio_root/stackdsalt/user_envs
+  user_envs: {{ root_dir }}/user_states
 
 file_ignore_glob:
   - '.git/*'
 
 pillar_roots:
   base:
-    - /mnt/stackdio_root/stackdsalt/pillar
+    - {{ root_dir }}/pillar
 
 # Disable master config from showing in pillar
 pillar_opts: False
 
 # Where our external pillar and other custom modules live
-extension_modules: /mnt/stackdio_root/stackdsalt/extmods
+extension_modules: {{ root_dir }}/extmods
 
 # Enable our custom external pillar
 ext_pillar:
   - stackdio: ''
+

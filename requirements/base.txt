@@ -3,7 +3,9 @@ M2Crypto
 MySQL-python
 PyYAML
 South
+argparse
 boto
+dj_database_url
 django-celery
 django-cors-headers
 django-extensions
