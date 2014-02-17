@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import readline  # NOQA
 import argparse
 import jinja2
 import os
@@ -172,6 +173,25 @@ def _check_config_dir(path, config=None):
     return True, ''
 
 
+def _check_db_dsn(dsn, config=None):
+    from django.conf import settings
+    if not settings.configured:
+        settings.configure()
+
+    from django.db.utils import load_backend
+    from dj_database_url import parse
+
+    db = parse(dsn)
+    db['OPTIONS'] = {}
+
+    try:
+        engine = load_backend(db['ENGINE']).DatabaseWrapper(db)
+        engine.cursor()
+    except Exception, e:
+        return False, str(e)
+    return True, ''
+
+
 def init(args):  # NOQA
     options = [
         ('user',
@@ -204,7 +224,8 @@ def init(args):  # NOQA
          'The database DSN the stackdio Django application will use to\n'
          'acccess the database server. The server must be running, the\n'
          'database must already exist, and the user must have access to it.',
-         'mysql://user:pass@localhost:3306/stackdio'),
+         'mysql://user:pass@localhost:3306/stackdio',
+         _check_db_dsn),
     ]
 
     config = {}
