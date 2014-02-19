@@ -7,7 +7,7 @@ import sys
 # Override this to be a new module in stackdio/settings or you
 # may pass in this as an environment variable.
 ##
-DEFAULT_SETTINGS_MODULE = 'stackdio.settings.local'
+DEFAULT_SETTINGS_MODULE = 'stackdio.settings.development'
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", DEFAULT_SETTINGS_MODULE)

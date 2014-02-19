@@ -2,6 +2,9 @@ include README.md
 include LICENSE
 include MANIFEST.in
 recursive-include stackdio/core/templates *
+recursive-include stackdio/core/static *
 recursive-include stackdio/stackdio/management *
+recursive-include stackdio/cloud/fixtures *.json
+recursive-include stackdio/stackdio/fixtures *.json
 recursive-exclude * *.py[co]
 recursive-exclude * .*.swp

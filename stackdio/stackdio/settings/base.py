@@ -3,49 +3,11 @@
 import djcelery
 import dj_database_url
 import os
-import yaml
-from os import environ
-from django.core.exceptions import ImproperlyConfigured
+from core.config import StackdioConfig
 
 djcelery.setup_loader()
 
-
-def load_stackdio_config():
-    config_file = os.path.expanduser('~/.stackdio/config')
-    if not os.path.isfile(config_file):
-        raise ImproperlyConfigured('Missing stackdio configuration file. To '
-                                   'create the file, you may use '
-                                   '`stackdio init`')
-    with open(config_file) as f:
-        config = yaml.safe_load(f)
-
-    if not config:
-        raise ImproperlyConfigured('stackdio configuration file appears to be '
-                                   'empty or not valid yaml.')
-
-    errors = []
-    for k in ('storage_root', 'user', 'django_secret_key',
-              'db_dsn'):
-        if k not in config:
-            errors.append('Missing parameter `{0}`'.format(k))
-
-    if errors:
-        msg = 'stackdio configuration errors:\n'
-        for err in errors:
-            msg += '  - {0}\n'.format(err)
-        raise ImproperlyConfigured(msg)
-
-    return config
-
-
-def getenv(var):
-    try:
-        return environ[var]
-    except KeyError:
-        msg = 'Missing environment variable {0}.'.format(var)
-        raise ImproperlyConfigured(msg)
-
-STACKDIO_CONFIG = load_stackdio_config()
+STACKDIO_CONFIG = StackdioConfig()
 
 ##
 # Required base-level environment variables. The salt and salt-cloud

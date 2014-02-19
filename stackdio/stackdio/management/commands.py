@@ -2,8 +2,8 @@ import jinja2
 import os
 import shutil
 import sys
-import yaml
 
+from stackdio.core.config import StackdioConfig
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
 
@@ -22,18 +22,21 @@ class Colors(object):
 
 class BaseCommand(object):
 
+    def __init__(self, args):
+        self.args = args
+
     def __call__(self, *args, **kwargs):
         self.pre_run()
         self.run()
         self.post_run()
 
-    def pre_run(self, *args, **kwargs):
+    def pre_run(self):
         pass
 
-    def run(self, *args, **kwargs):
+    def run(self):
         pass
 
-    def post_run(self, *args, **kwargs):
+    def post_run(self):
         pass
 
     def out(self, msg, color=Colors.BLACK, fp=sys.stdout):
@@ -77,15 +80,16 @@ class BaseCommand(object):
             self.out('\nAborting.\n', Colors.ERROR)
             sys.exit(1)
 
-    def load_resource(self, rp):
+    def load_resource(self, rp=None, package='stackdio'):
         '''
         Takes a relative path `rp`, and attempts to pull the full resource
         path using pkg_resources.
         '''
         from pkg_resources import ResourceManager, get_provider
-        provider = get_provider('stackdio')
-        return provider.get_resource_filename(ResourceManager(),
-                                              os.path.join('stackdio', rp))
+        provider = get_provider(package)
+        if rp is None:
+            return provider.module_path
+        return provider.get_resource_filename(ResourceManager(), rp)
 
     def render_template(self, tmpl, outfile, context={}):
         tmpl = self.load_resource(tmpl)
@@ -135,8 +139,7 @@ class WizardCommand(BaseCommand):
         '''
         for question in self.QUESTIONS:
             attr, title, desc, default = question[:4]
-            if attr in self.answers:
-                default = self.answers[attr]
+            default = self.answers[attr] or default
             self.out('## {0}\n'.format(title), Colors.PROMPT)
             self.out('{0}\n'.format(desc), Colors.PROMPT)
 
@@ -198,7 +201,7 @@ class InitCommand(WizardCommand):
          'purposes, we are enabling debug output for tracking down issues\n'
          'that may crop up during the bootstrap process. Override the\n'
          'defaults here. See http://bootstrap.saltstack.org for more info',
-         '-D'),
+         '-K -D git 3a894d760699ab155bc63a3e35e6730f87cc7d8c'),
         ('db_dsn',
          'What database DSN should stackdio use to connect to the DB?',
          'The database DSN the stackdio Django application will use to\n'
@@ -208,12 +211,7 @@ class InitCommand(WizardCommand):
     ]
 
     def pre_run(self):
-        # Load pre-existing configuration from CONFIG_FILE
-        if os.path.isfile(self.CONFIG_FILE):
-            with open(self.CONFIG_FILE) as f:
-                self.answers = yaml.safe_load(f)
-                if self.answers is None:
-                    self.answers = {}
+        self.answers = StackdioConfig()
 
         # Let the user know we've changed the defaults by reusing the
         # existing config
@@ -238,45 +236,39 @@ class InitCommand(WizardCommand):
         if not os.path.isdir(self.CONFIG_DIR):
             os.makedirs(self.CONFIG_DIR, mode=0755)
 
-        self.render_template('management/templates/config.jinja2',
+        self.render_template('stackdio/management/templates/config.jinja2',
                              self.CONFIG_FILE,
                              context=self.answers)
         self.out('stackdio configuration written to {0}\n'.format(
             self.CONFIG_FILE), Colors.INFO)
 
+        # grab a fresh copy of the config file to be used later
+        self.config = StackdioConfig()
+
     def _init_salt(self):
-        salt_dir = os.path.join(self.answers['storage_root'], 'salt', 'config')
-        master_path = os.path.join(salt_dir, 'master')
-        cloud_path = os.path.join(salt_dir, 'cloud')
-
-        if not os.path.isdir(salt_dir):
-            os.makedirs(salt_dir)
+        if not os.path.isdir(self.config.salt_config_root):
+            os.makedirs(self.config.salt_config_root)
             self.out('Created salt configuration directory at '
-                     '{0}\n'.format(salt_dir), Colors.INFO)
-
-        context = self.answers.copy()
-        context.update({
-            'root_dir': salt_dir,
-        })
+                     '{0}\n'.format(self.config.salt_config_root), Colors.INFO)
 
         # Render salt-master and salt-cloud configuration files
-        self.render_template('management/templates/master.jinja2',
-                             master_path,
-                             context=context)
+        self.render_template('stackdio/management/templates/master.jinja2',
+                             self.config.salt_master_config,
+                             context=self.config)
         self.out('Salt master configuration written to {0}\n'.format(
-            master_path), Colors.INFO)
+            self.config.salt_master_config), Colors.INFO)
 
-        self.render_template('management/templates/cloud.jinja2',
-                             cloud_path,
-                             context=context)
+        self.render_template('stackdio/management/templates/cloud.jinja2',
+                             self.config.salt_cloud_config,
+                             context=self.config)
         self.out('Salt cloud configuration written to {0}\n'.format(
-            cloud_path), Colors.INFO)
+            self.config.salt_cloud_config), Colors.INFO)
 
         # Copy the salt directories needed
-        saltdirs = self.load_resource('management/saltdirs')
+        saltdirs = self.load_resource('stackdio/management/saltdirs')
         for rp in os.listdir(saltdirs):
             path = os.path.join(saltdirs, rp)
-            dst = os.path.join(salt_dir, rp)
+            dst = os.path.join(self.config.salt_root, rp)
 
             # check for existing dst and skip it
             if os.path.isdir(dst):
@@ -332,3 +324,54 @@ class InitCommand(WizardCommand):
         except Exception, e:
             return False, '{0}\n'.format(str(e))
         return True, ''
+
+
+class ConfigCommand(BaseCommand):
+
+    def run(self):
+        config = StackdioConfig()
+        import json
+        print(json.dumps(config, indent=4))
+
+
+class SaltWrapperCommand(BaseCommand):
+
+    def run(self):
+        import sys
+        import salt.scripts
+        config = StackdioConfig()
+
+        args = [arg for arg in self.args[:] if '--config-dir' not in arg]
+        args.insert(1, '--config-dir={0}'.format(config.salt_config_root))
+
+        salt_cmd = self.args[0]
+        salt_func = salt_cmd.replace('-', '_')
+
+        # special cases
+        if salt_cmd == 'salt':
+            salt_func = 'salt_main'
+
+        if not hasattr(salt.scripts, salt_func):
+            raise RuntimeError(
+                'Salt function {0} is not available.'.format(salt_func))
+        salt_func = getattr(salt.scripts, salt_func)
+
+        # argv trickery for salt commands
+        sys.argv = args
+
+        # execute the salt command
+        salt_func()
+
+
+class DjangoManageWrapperCommand(BaseCommand):
+
+    def run(self):
+        import sys
+        sys.path.insert(0, '/home/stackdio/.virtualenvs/testing/lib/python2.6/site-packages')
+        sys.path.insert(1, '/home/stackdio/.virtualenvs/testing/lib/python2.6/site-packages/stackdio-0.5a1-py2.6.egg')
+        sys.path.insert(2, '/home/stackdio/.virtualenvs/testing/lib/python2.6/site-packages/stackdio-0.5a1-py2.6.egg/stackdio')
+        sys.path.insert(3, '/home/stackdio/.virtualenvs/testing/lib/python2.6/site-packages/stackdio-0.5a1-py2.6.egg/stackdio/stackdio')
+        from django.core.management import execute_from_command_line
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.settings.development'
+        print self.args
+        execute_from_command_line(self.args)
