@@ -4,7 +4,7 @@
             <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Formulas</div>
             <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
                 <div class="btn-group pull-right small-top-separation">
-                    <button class="btn btn-primary" data-bind="click: $root.showFormulaForm">Import Formula</button>
+                    <button class="btn btn-primary" data-bind="click: $root.showImportForm">Import Formula</button>
                 </div>
             </div>
         </div>
@@ -24,7 +24,7 @@
                     <th style="width:5%"></th>
                 </tr>
             </thead>
-            <tbody data-bind="foreach: stores.Formulae">
+            <tbody data-bind="foreach: FormulaStore.collection()">
                 <tr data-bind="attr: { class: ($data.public) ? 'success' : '' }">
                     <td>
                         <a href='#' 
@@ -55,4 +55,19 @@
             </tbody>
         </table>
     </div>
+</div>
+
+<div id="formula-form-container" title="Import Formula" class="stackd-form form-small hide" data-bind="">
+    <form id="formula-form">
+        <div class="modal-body large-modal-body">
+            <div class="form-group">
+                <input type="text" class="form-control" id="formula_url" placeholder="Enter repository URL...">
+            </div>
+        </div>
+
+        <div class="modal-footer" style="margin-top: 40px;">
+            <button class="btn btn-danger" data-bind="click: $root.closeFormulaForm">Cancel</button>
+            <button class="btn btn-primary" data-bind="click: $root.importFormula">Import</button>
+        </div>
+    </form>
 </div>

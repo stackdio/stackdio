@@ -1,39 +1,23 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     return {
         load : function () {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/profiles/',
+                url: settings.api.cloud.profiles,
                 type: 'GET',
                 headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Accept': 'application/json'
                 },
-                success: function (data, status, response) {
-                    var i, item, items = data.results;
-                    var profile;
-
-                    // Clear the store and the grid
-                    stores.Profiles.removeAll();
-
-                    for (i in items) {
-                        profile = new models.Profile().create(items[i]);
-
-                        // Inject the name of the provider account used to create the profile
-                        profile.account = _.find(stores.Accounts(), function (account) {
-                            return account.id === profile.cloud_provider;
-                        });
-
-                        // Inject the record into the store
-                        stores.Profiles.push(profile);
-                    }
-
-                    console.log('profiles', stores.Profiles());
-
-                    // Resolve the promise
-                    deferred.resolve();
-
+                success: function (response) {
+                    var profiles = response.results.map(function (profile) {
+                        return new models.Profile().create(profile);
+                    });
+                    console.log('profiles',profiles);
+                    deferred.resolve(profiles);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 

@@ -1,38 +1,28 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'store/stores', 'model/models', 'settings'], function (Q, stores, models, settings) {
     return {
         load : function () {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/snapshots/',
+                url: settings.api.stacks.snapshots,
                 type: 'GET',
                 headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response.results;
-                    var snapshot;
-
-                    // Clear the store and the grid
-                    stores.Snapshots.removeAll();
-
-                    for (i in items) {
-                        snapshot = new models.Snapshot().create(items[i]);
+                    var snapshots = response.results.map(function (s) {
+                        var snapshot = new models.Snapshot().create(s);
 
                         // Inject the name of the account used to create the snapshot
-                        snapshot.account = _.find(stores.Accounts(), function (account) {
-                            return account.id === snapshot.cloud_provider;
-                        });
+                        // snapshot.account = _.find(stores.Accounts(), function (account) {
+                        //     return account.id === snapshot.cloud_provider;
+                        // });
 
-                        // Inject the record into the store
-                        stores.Snapshots.push(snapshot);
-                    }
-
-                    console.log('snapshots', stores.Snapshots());
+                        return snapshot;
+                    });
 
                     // Resolve the promise and pass back the loaded items
-                    deferred.resolve(stores.Snapshots());
+                    deferred.resolve(snapshots);
                 }
             });
 

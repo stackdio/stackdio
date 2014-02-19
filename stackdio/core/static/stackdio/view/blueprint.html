@@ -1,5 +1,10 @@
 <div id="account-detail-target">
     <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $root.navigate({view:'blueprint.list'}) }">Blueprints</a></li>
+            <li data-bind="text: blueprintTitle"></li>
+        </ol>
+
         <div class="row bottom-separation">
             <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Blueprint Detail</div>
         </div>
@@ -33,9 +38,9 @@
                         <a class="btn btn-primary dropdown-toggle" style="color: #fff" data-toggle="dropdown" href="#">
                             Add Host <span class="caret"></span>
                         </a>
-                        <ul class="dropdown-menu" data-bind="foreach: stores.Profiles">
+                        <ul class="dropdown-menu" data-bind="foreach: $root.ProfileStore.collection">
                             <li>
-                                <a href="#" data-bind="text: title, click: $root.showHostForm"></a>
+                                <a href="#" data-bind="text: title, click: $root.addHost"></a>
                             </li>
                         </ul>
                     </div>
@@ -50,7 +55,7 @@
                                 <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th></th>
                             </tr>
                         </thead>
-                        <tbody data-bind="foreach: stores.BlueprintHosts">
+                        <tbody data-bind="foreach: $root.BlueprintHostStore.collection">
                             <tr>
                                 <td data-bind="html: flat_components"></td>
                                 <td data-bind="text: count"></td>
@@ -71,9 +76,9 @@
                 <div class="col-md-12">
                     <textarea  
                            class="form-control" 
-                           rows="3" 
+                           rows="9" 
                            id="blueprint_properties" 
-                           data-bind="text: $root.blueprintPropertiesStringified()"
+                           data-bind="text: $root.blueprintPropertiesStringified"
                            placeholder="If you select a formula that has default properties, they will be shown here"></textarea>
                 </div>
             </div>
@@ -85,8 +90,9 @@
             </div>
 
             <div class="row">
-                 <div class="col-md-2 col-md-offset-10">
-                    <button class="btn btn-primary pull-right" data-bind="click: saveBlueprint">Save</button>
+                 <div class="col-md-2 col-md-offset-10  pull-right">
+                    <button class="btn" data-bind="click: cancelChanges">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: saveBlueprint">Save</button>
                 </div>
             </div>
         </form>

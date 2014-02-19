@@ -2,11 +2,11 @@ define([
     'q', 
     'knockout',
     'viewmodel/base',
-    'util/postOffice',
+    'util/form',
     'store/Formulas',
     'api/api'
 ],
-function (Q, ko, base, _O_, FormulaStore, API) {
+function (Q, ko, base, formutils, FormulaStore, API) {
     var vm = function () {
         var self = this;
 
@@ -25,26 +25,15 @@ function (Q, ko, base, _O_, FormulaStore, API) {
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
         */
-        self.id = 'formula.list';
-        self.templatePath = 'formulas.html';
-        self.domBindingId = '#formula-list';
+        self.id = 'formula.detail';
+        self.templatePath = 'formula.html';
+        self.domBindingId = '#formula-detail';
 
         try {
             self.$66.register(self);
         } catch (ex) {
             console.log(ex);            
         }
-
-        /*
-         *  ==================================================================================
-         *   E V E N T   S U B S C R I P T I O N S
-         *  ==================================================================================
-         */
-        _O_.subscribe('formula.list.rendered', function (data) {
-            FormulaStore.populate().then(function () {
-                console.log(FormulaStore.collection());
-            });
-        });
 
 
         /*
@@ -53,16 +42,16 @@ function (Q, ko, base, _O_, FormulaStore, API) {
          *  ==================================================================================
         */
 
+        self.cancelChanges = function () {
+            self.navigate({ view: 'formula.list' });
+        };
+
         self.importFormula = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
 
             API.Formulas.import(record.formula_url.value)
                 .then(function () {
-                    // Close the form and clear it out
-                    self.closeFormulaForm();
                     formutils.clearForm('formula-form');
-
-                    self.showSuccess();
                 })
                 .catch(function (error) {
                     self.showError(error, 15000);
@@ -95,17 +84,12 @@ function (Q, ko, base, _O_, FormulaStore, API) {
         };
 
         self.delete = function (formula) {
-            return API.Formulas.delete(formula);
+            return API.Formulae.delete(formula);
         };
 
         self.loadFormula = function () {
             return API.Formulae.load();
         };
-
-        self.showImportForm = function () {
-            self.navigate({ view: 'formula.detail' });
-        };
-
     };
 
     vm.prototype = new base();

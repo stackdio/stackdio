@@ -8,6 +8,8 @@ reload.sh
 stackdio/core/static/stackdio-built.js
 stackdio/core/static/stackdio/bower_components
 stackdio/core/static/stackdio/node_modules
+stackdio/salt/user_states
+stackdio/storage
 
 # build stuff
 build/

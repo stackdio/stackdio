@@ -3,10 +3,11 @@ define([
     'knockout',
     'viewmodel/base',
     'util/postOffice',
-    'store/stores',
+    'store/Blueprints',
+    'store/Stacks',
     'api/api'
 ],
-function (Q, ko, base, _O_, stores, API) {
+function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -15,7 +16,6 @@ function (Q, ko, base, _O_, stores, API) {
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
         */
-        self.stores = stores;
         self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch', 'Delete'];
         self.stackHostActions = ['Stop', 'Terminate', 'Start'];
         self.selectedProfile = null;
@@ -23,6 +23,8 @@ function (Q, ko, base, _O_, stores, API) {
         self.selectedBlueprint = ko.observable({title:''});
         self.blueprintProperties = ko.observable();
         self.selectedStack = ko.observable();
+        self.BlueprintStore = BlueprintStore;
+        self.StackStore = StackStore;
 
         /*
          *  ==================================================================================
@@ -32,8 +34,6 @@ function (Q, ko, base, _O_, stores, API) {
         self.id = 'stack.list';
         self.templatePath = 'stacks.html';
         self.domBindingId = '#stack-list';
-        self.autoLoad = false;
-        self.defaultView = false;
 
         try {
             self.$66.register(self);
@@ -41,6 +41,15 @@ function (Q, ko, base, _O_, stores, API) {
             console.log(ex);            
         }
 
+        _O_.subscribe('stack.list.rendered', function () {
+            StackStore.populate().then(function () {
+                return StackStore.populate();
+            }).then(function () {
+
+            }).catch(function (err) {
+                console.error(err);
+            });
+        });
 
         /*
          *  ==================================================================================
@@ -102,7 +111,7 @@ function (Q, ko, base, _O_, stores, API) {
              */
             } else {
                 $.ajax({
-                    url: '/api/stacks/' + stack.id + '/',
+                    url: stack.url,
                     type: 'DELETE',
                     headers: {
                         "X-CSRFToken": stackdio.settings.csrftoken,
@@ -110,9 +119,7 @@ function (Q, ko, base, _O_, stores, API) {
                         "Content-Type": "application/json"
                     },
                     success: function (response) {
-                        stores.Stacks.remove(function (s) {
-                            return s.id === stack.id;
-                        });
+                        StackStore.populate();
                     }
                 });
             }
@@ -195,7 +202,6 @@ function (Q, ko, base, _O_, stores, API) {
         //      S T A C K   H O S T S
         // 
         self.showStackHostMetaData = function (stack) {
-            console.log(stack);
             API.Stacks.getHosts(stack).then(function (data) {
 
             });
@@ -211,7 +217,7 @@ function (Q, ko, base, _O_, stores, API) {
         };
 
         self.showStackDetails = function (stack) {
-            _O_.publish('navigate', { view: 'stack.details', stack: stack });
+            self.navigate({ view: 'stack.details', stack: stack });
         };
 
     };

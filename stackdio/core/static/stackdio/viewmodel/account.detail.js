@@ -70,8 +70,8 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
                         return p;
                     }
                 }).reduce(function (p, c) {
-                    if (c.hasOwnProperty('id')) {
-                        return c;
+                    if (p.hasOwnProperty('id')) {
+                        return p;
                     }
                 });
             }

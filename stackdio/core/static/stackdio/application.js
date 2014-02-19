@@ -25,9 +25,14 @@ require([
     'bootstrap-select',
     'bootstrap-typeahead',
     'underscore',
-    'settings',
-    'util/populate',
-    'viewmodel/navigation'
+    'api/Root'
 ], 
-function () {
+function (select, typeahead, _, RootAPI, navigation) {
+    RootAPI.load().then(function (apiNamespaces) {
+        require(['viewmodel/navigation'], function (nav) {
+
+        });
+    }).catch(function (error) {
+        console.error(error.name, error.message);
+    });
 });

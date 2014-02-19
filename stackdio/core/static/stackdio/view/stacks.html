@@ -10,7 +10,7 @@
                             New Stack from Blueprint
                             <span class="caret"></span>
                         </a>
-                        <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: stores.Blueprints">
+                        <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: BlueprintStore.collection">
                             <li>
                                 <a href="#" data-bind="text: title, click: $root.showStackForm"></a>
                             </li>
@@ -35,7 +35,7 @@
                     <th style="width:50px"></th>
                 </tr>
             </thead>
-            <tbody data-bind="foreach: stores.Stacks">
+            <tbody data-bind="foreach: StackStore.collection">
                 <tr>
                     <td><a href="#" data-bind="text: $data.title, click: $root.showStackDetails"></a></td>
                     <td data-bind="text: $data.description"></td>

@@ -1,5 +1,27 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     return {
+        load : function () {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: settings.api.blueprints,
+                type: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                success: function (response) {
+                    var blueprints = response.results.map(function (blueprint) {
+                        return new models.Blueprint().create(blueprint);
+                    });
+                    deferred.resolve(blueprints);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
+                }
+            });
+
+            return deferred.promise;
+        },
         getProperties: function (blueprint) {
             var deferred = Q.defer();
 
@@ -12,39 +34,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                 },
                 success: function (properties) {
                     deferred.resolve(properties);   // Resolve promise and pass back properties
-                }
-            });
-
-            return deferred.promise;
-        },
-        load: function () {
-            var deferred = Q.defer();
-
-            $.ajax({
-                url: '/api/blueprints/',
-                type: 'GET',
-                headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var blueprints = response.results;
-
-                    // Clear the store and the grid
-                    stores.Blueprints.removeAll();
-
-                    for (var b in blueprints) {
-                        var blueprint = new models.Blueprint().create(blueprints[b]);
-
-                        // Inject the record into the store
-                        stores.Blueprints.push(blueprint);
-                    }
-
-                    console.log('blueprints', stores.Blueprints());
-
-                    // Resolve the promise and pass back the loaded blueprints
-                    deferred.resolve(stores.Blueprints());
-
                 }
             });
 
@@ -65,7 +54,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    stores.Blueprints.push(response);
                     deferred.resolve();
                 }
             });
@@ -74,12 +62,12 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
         },
         update: function (blueprint) {
             var deferred = Q.defer();
-            var blueprint = JSON.stringify(blueprint);
+            // var blueprint = JSON.stringify(blueprint);
 
             $.ajax({
                 url: blueprint.url,
-                type: 'POST',
-                data: blueprint,
+                type: 'PUT',
+                data: JSON.stringify(blueprint),
                 dataType: 'json',
                 headers: {
                     "Content-Type": "application/json",
@@ -87,7 +75,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    stores.Blueprints.push(response);
                     deferred.resolve();
                 }
             });

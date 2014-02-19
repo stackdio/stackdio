@@ -1,39 +1,26 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     return {
         load : function () {
-            var self = this;
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/instance_sizes/?page_size=30',
+                url: settings.api.cloud.instance_sizes,
                 type: 'GET',
                 headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Accept': 'application/json'
                 },
                 success: function (response) {
-                    var i, item, items = response.results;
-                    var size;
-
-                    deferred.resolve();
-
-                    // Clear the store and the grid
-                    stores.InstanceSizes.removeAll();
-
-
-                    for (i in items) {
-                        size = new models.InstanceSize().create(items[i]);
-                        stores.InstanceSizes.push(size);
-                    }
-
-                    // console.log('instanceSizes', stores.InstanceSizes());
-
-                    // Resolve the promise and pass back the loaded items
-                    deferred.resolve(stores.InstanceSizes());
+                    var sizes = response.results.map(function (size) {
+                        return new models.InstanceSize().create(size);
+                    });
+                    deferred.resolve(sizes);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
-            return deferred.promise
+            return deferred.promise;
         }
     }
 });

@@ -1,37 +1,56 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     var api = {};
 
     api.load = function () {
         var deferred = Q.defer();
-        var self = this;
 
         $.ajax({
-            url: '/api/stacks/',
+            url: settings.api.stacks.stacks,
             type: 'GET',
             headers: {
-                "X-CSRFToken": stackdio.settings.csrftoken,
-                "Accept": "application/json"
+                'Accept': 'application/json'
             },
             success: function (response) {
-                var stacks = response.results;
-                var historyPromises = [];
+                var historyPromises = [],
+                    stacks = [];
 
-                stores.Stacks.removeAll();
-
-                stacks.forEach(function (stack) {
-                    historyPromises.push(api.getHistory(stack).then(function (stackWithHistory) {
-                        stores.Stacks.push(new models.Stack().create(stackWithHistory));
-                    }));
+                response.results.forEach(function (stack) {
+                    historyPromises[historyPromises.length] = api.getHistory(stack).then(function (stackWithHistory) {
+                        stacks[stacks.length] = new models.Stack().create(stackWithHistory);
+                    });
                 });
 
                 Q.all(historyPromises).then(function () {
-                    console.debug('stacks', stores.Stacks());
-                    deferred.resolve();
+                    deferred.resolve(stacks);
                 }).done();
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
             }
         });
 
         return deferred.promise;
+        
+        // var deferred = Q.defer();
+        // var self = this;
+
+        // $.ajax({
+        //     url: '/api/stacks/',
+        //     type: 'GET',
+        //     headers: {
+        //         "X-CSRFToken": stackdio.settings.csrftoken,
+        //         "Accept": "application/json"
+        //     },
+        //     success: function (response) {
+        //         var stacks = response.results;
+        //         var historyPromises = [];
+
+        //         stores.Stacks.removeAll();
+
+        //     }
+        // });
+
+        // return deferred.promise;
     };
 
     api.getHistory = function (stack) {

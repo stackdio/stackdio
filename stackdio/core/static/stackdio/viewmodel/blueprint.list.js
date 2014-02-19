@@ -3,10 +3,13 @@ define([
     'knockout',
     'viewmodel/base',
     'util/postOffice',
-    'store/stores',
-    'api/api'
+    'api/api',
+    'store/BlueprintComponents',
+    'store/BlueprintHosts',
+    'store/Blueprints'
 ],
-function (Q, ko, base, _O_, stores, API) {
+function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, BlueprintStore) {
+    console.log(arguments);
     var vm = function () {
 
         /*
@@ -15,7 +18,7 @@ function (Q, ko, base, _O_, stores, API) {
          *  ==================================================================================
          */
         var self = this;
-        self.stores = stores;
+        self.BlueprintStore = BlueprintStore;
 
 
         /*
@@ -39,14 +42,9 @@ function (Q, ko, base, _O_, stores, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('account.list.rendered', function (data) {
-            if (stores.Accounts().length === 0) {
-                [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
-                    return loadData.then(next);
-                }, Q([])).then(function () {
-                    
-                });
-            }
+        _O_.subscribe('blueprint.list.rendered', function (data) {
+            BlueprintStore.populate().then(function () {
+            });
         });
 
 
@@ -59,6 +57,22 @@ function (Q, ko, base, _O_, stores, API) {
             self.navigate({ view: 'blueprint.detail', data: { blueprint: blueprint.id } });
         };
 
+        self.deleteBlueprint = function (blueprint) {
+            API.Blueprints.delete(blueprint)
+                .then(self.showSuccess)
+                .catch(function (error) {
+                    self.showError(error);
+                });
+        };
+
+        self.newBlueprint = function () {
+            $('#blueprint_title').val('');
+            $('#blueprint_purpose').val('');
+            BlueprintHostStore.empty();
+            BlueprintComponentStore.empty();
+
+            self.navigate({ view: 'blueprint.detail' });
+        }
 
     };
 

@@ -1,4 +1,4 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     var self = this;
 
     return {
@@ -6,32 +6,19 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/providers/',
+                url: settings.api.cloud.providers,
                 type: 'GET',
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Accept': 'application/json'
                 },
-                success: function (data, status, response) {
-                    var i, item, items = data.results;
-                    var account;
-
-                    // Clear the store and the grid
-                    stores.Accounts.removeAll();
-
-                    for (i in items) {
-                        account = new models.Account().create(items[i]);
-                        account.profileCount = 0;
-
-                        // Inject the record into the store
-                        stores.Accounts.push(account);
-                    }
-
-                    console.log('accounts', stores.Accounts());
-
-                    // Resolve the promise
-                    deferred.resolve();
+                success: function (response) {
+                    var accounts = response.results.map(function (account) {
+                        return new models.Account().create(account);
+                    });
+                    deferred.resolve(accounts);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 

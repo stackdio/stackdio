@@ -3,10 +3,10 @@ define([
     'knockout',
     'viewmodel/base',
     'util/postOffice',
-    'store/stores',
+    'store/Stacks',
     'api/api'
 ],
-function (Q, ko, base, _O_, stores, API) {
+function (Q, ko, base, _O_, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -15,7 +15,7 @@ function (Q, ko, base, _O_, stores, API) {
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
         */
-        self.stores = stores;
+        self.store = StackStore;
         self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch', 'Delete'];
 
 
@@ -35,6 +35,17 @@ function (Q, ko, base, _O_, stores, API) {
         } catch (ex) {
             console.log(ex);            
         }
+
+        _O_.subscribe('stacklist.widget.rendered', function () {
+            StackStore.populate().then(function () {
+                console.log(StackStore.collection());
+                
+                StackStore.populate().then(function () {
+                    console.log(StackStore.collection());
+
+                })
+            }).done();
+        });
 
 
         /*
@@ -77,40 +88,41 @@ function (Q, ko, base, _O_, stores, API) {
              *  Unless the user wants to delete the stack permanently (see below)
              *  then just PUT to the API with the appropriate action.
              */
+                console.log(stack);
             if (action !== 'Delete') {
-                $.ajax({
-                    url: '/api/stacks/' + stack.id + '/',
-                    type: 'PUT',
-                    data: data,
-                    headers: {
-                        "X-CSRFToken": stackdio.settings.csrftoken,
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    success: function (response) {
-                        API.Stacks.load();
-                    }
-                });
+                // $.ajax({
+                //     url: '/api/stacks/' + stack.id + '/',
+                //     type: 'PUT',
+                //     data: data,
+                //     headers: {
+                //         "X-CSRFToken": stackdio.settings.csrftoken,
+                //         "Accept": "application/json",
+                //         "Content-Type": "application/json"
+                //     },
+                //     success: function (response) {
+                //         API.Stacks.load();
+                //     }
+                // });
 
             /*
              *  Using the DELETE verb is truly destructive. Terminates all hosts, terminates all 
              *  EBS volumes, and deletes stack/host details from the stackd.io database.
              */
             } else {
-                $.ajax({
-                    url: '/api/stacks/' + stack.id + '/',
-                    type: 'DELETE',
-                    headers: {
-                        "X-CSRFToken": stackdio.settings.csrftoken,
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    success: function (response) {
-                        stores.Stacks.remove(function (s) {
-                            return s.id === stack.id;
-                        });
-                    }
-                });
+                // $.ajax({
+                //     url: '/api/stacks/' + stack.id + '/',
+                //     type: 'DELETE',
+                //     headers: {
+                //         "X-CSRFToken": stackdio.settings.csrftoken,
+                //         "Accept": "application/json",
+                //         "Content-Type": "application/json"
+                //     },
+                //     success: function (response) {
+                //         stores.Stacks.remove(function (s) {
+                //             return s.id === stack.id;
+                //         });
+                //     }
+                // });
             }
         };
 

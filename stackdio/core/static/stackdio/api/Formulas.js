@@ -1,4 +1,4 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     var self = this;
 
     return {
@@ -6,42 +6,65 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/formulas/',
+                url: settings.api.formulas,
                 type: 'GET',
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Accept': 'application/json'
                 },
-                success: function (data, status, response) {
-                    var formulae = data.results;
-
-                    // Clear the stores
-                    stores.Formulae.removeAll();
-                    stores.FormulaComponents.removeAll();
-
-                    for (var i in formulae) {
-                        var formula = new models.Formula().create(formulae[i]);
-
-                        // Inject the record into the store
-                        stores.Formulae.push(formula);
-
-                        for (var j in formula.components) {
-                            var component = new models.FormulaComponent().create(formula.components[j]);
-                            stores.FormulaComponents.push(component);
-                        }
-                    }
-
-                    // console.log('formulae', stores.Formulae());
-                    // console.log('components', stores.FormulaComponents());
-
-                    // Resolve the promise
-                    deferred.resolve();
+                success: function (response) {
+                    var formulas = response.results.map(function (formula) {
+                        return new models.Formula().create(formula);
+                    });
+                    deferred.resolve(formulas);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
             return deferred.promise;
         },
+
+        // load : function () {
+        //     var deferred = Q.defer();
+
+        //     $.ajax({
+        //         url: '/api/formulas/',
+        //         type: 'GET',
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //             "X-CSRFToken": stackdio.settings.csrftoken,
+        //             "Accept": "application/json"
+        //         },
+        //         success: function (data, status, response) {
+        //             var formulae = data.results;
+
+        //             // Clear the stores
+        //             stores.Formulae.removeAll();
+        //             stores.FormulaComponents.removeAll();
+
+        //             for (var i in formulae) {
+        //                 var formula = new models.Formula().create(formulae[i]);
+
+        //                 // Inject the record into the store
+        //                 stores.Formulae.push(formula);
+
+        //                 for (var j in formula.components) {
+        //                     var component = new models.FormulaComponent().create(formula.components[j]);
+        //                     stores.FormulaComponents.push(component);
+        //                 }
+        //             }
+
+        //             // console.log('formulae', stores.Formulae());
+        //             // console.log('components', stores.FormulaComponents());
+
+        //             // Resolve the promise
+        //             deferred.resolve();
+        //         }
+        //     });
+
+        //     return deferred.promise;
+        // },
         import: function (uri) {
             var deferred = Q.defer();
 
