@@ -92,8 +92,9 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         # check for profiles using this provider before deleting
         profiles = set(self.get_object().profiles.all())
         if profiles:
-            profiles = CloudProfileSerializer(profiles,
-                                              context={'request': request}).data # NOQA
+            profiles = CloudProfileSerializer(
+                profiles,
+                context={'request': request}).data
             return Response({
                 'detail': 'One or more profiles are making use of this '
                           'provider.',
@@ -104,7 +105,9 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         driver = self.get_object().get_driver()
         driver.destroy()
 
-        return super(CloudProviderDetailAPIView, self).destroy(*args, **kwargs)
+        return super(CloudProviderDetailAPIView, self).destroy(request,
+                                                               *args,
+                                                               **kwargs)
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
