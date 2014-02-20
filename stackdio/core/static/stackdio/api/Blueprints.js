@@ -44,7 +44,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var blueprint = JSON.stringify(blueprint);
 
             $.ajax({
-                url: '/api/blueprints/',
+                url: settings.api.blueprints,
                 type: 'POST',
                 data: blueprint,
                 dataType: 'json',
@@ -54,7 +54,10 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    deferred.resolve();
+                    deferred.resolve(new models.Blueprint().create(response));
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -76,6 +79,9 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 },
                 success: function (response) {
                     deferred.resolve();
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -85,7 +91,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/blueprints/' + blueprint.id,
+                url: blueprint.url,
                 type: 'DELETE',
                 dataType: 'json',
                 headers: {
@@ -94,10 +100,10 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    stores.Blueprints.remove(function (b) {
-                        return b.id === blueprint.id;
-                    });
                     deferred.resolve();
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 

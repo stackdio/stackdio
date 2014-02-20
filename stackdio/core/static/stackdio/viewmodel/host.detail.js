@@ -29,6 +29,7 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
         */
         self.selectedProfile = null;
         self.selectedBlueprint = ko.observable(null);
+        self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
         self.blueprintPropertiesStringified = ko.observable();
         self.hostIsSpotInstance = ko.observable(false);
@@ -113,6 +114,9 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 });
 
                 self.selectedBlueprint(blueprint);
+                self.blueprintTitle(blueprint.title);
+            } else {
+                self.blueprintTitle('New Blueprint');
             }
 
 

@@ -29,7 +29,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
         self.selectedBlueprintHosts = ko.observable();
         self.blueprintProperties = ko.observable();
         self.blueprintPropertiesStringified = ko.observable();
-        self.saveAction = self.createBlueprint;
+        self.editMode = 'create';
 
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
@@ -109,7 +109,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 $('#public_blueprint').val(blueprint.public);
 
                 self.blueprintTitle(blueprint.title);
-                self.saveAction = self.updateBlueprint;
+                self.editMode = 'update';
 
                 if (!BlueprintHostStore.isDirty()) {
                     BlueprintHostStore.empty();
@@ -139,15 +139,15 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 });
             }
 
-            if (BlueprintHostStore.collection().length) {
+
+            if (BlueprintHostStore.collection().length > 0) {
+                var propBuilder = self.blueprintProperties();
 
                 // Get the properties for each formula component in the list of hosts defined by user
-                var propBuilder = self.blueprintProperties();
                 BlueprintHostStore.collection().forEach(function (host) {
                     for (var key in host.properties) {
-                        propBuilder[key] = properties[key];
+                        propBuilder[key] = host.properties[key];
                     }
-
                     self.blueprintProperties(propBuilder);
                     self.blueprintPropertiesStringified(JSON.stringify(propBuilder, undefined, 3));
                 });
@@ -155,7 +155,11 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
         };
 
         self.saveBlueprint = function (model, evt) {
-            self.saveAction(model, evt);
+            if (self.editMode === 'create') {
+                self.createBlueprint(model, evt);
+            } else {
+                self.updateBlueprint(model, evt);
+            }
         };
 
         self.cancelChanges = function (model, evt) {
@@ -199,7 +203,8 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 hosts: strippedHosts
             };
 
-            API.Blueprints.save(blueprint).then(function () {
+            API.Blueprints.save(blueprint).then(function (newBlueprint) {
+                BlueprintStore.add(newBlueprint);
                 self.navigate({ view: 'blueprint.list' });
             })
             .catch(function (error) {
@@ -256,11 +261,6 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             });
         };
 
-        self.deleteBlueprint = function (blueprint) {
-            API.Blueprints.delete(blueprint).catch(function (error) {
-                self.showError(error);
-            });
-        };
 
         // Only show spot instance price box if the spot instance checkbox is checked
         self.hostIsSpotInstance = ko.observable(false);

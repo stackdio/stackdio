@@ -10,8 +10,7 @@ define(['q', 'knockout'], function (Q, ko) {
         var deferred = Q.defer();
         var self = this;
 
-        if (!self._dirty && self.collection().length) {  // Already populated and not dirty
-            // console.debug('Already populated and not dirty.')
+        if (!self._dirty && self.collection().length && !force) {  // Already populated and not dirty
             deferred.resolve();
         } else if (!self._dirty || force) {              // Not dirty, but client forces population
             self.proxy.load().then(function (models) {
@@ -50,8 +49,6 @@ define(['q', 'knockout'], function (Q, ko) {
     };
 
     Store.prototype.add = function (type) {
-        type._local = true;
-        this._dirty = true;
         this.collection.push(type);
     };
 

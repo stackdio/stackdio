@@ -9,7 +9,6 @@ define([
     'store/Blueprints'
 ],
 function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, BlueprintStore) {
-    console.log(arguments);
     var vm = function () {
 
         /*
@@ -57,12 +56,13 @@ function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, Bl
             self.navigate({ view: 'blueprint.detail', data: { blueprint: blueprint.id } });
         };
 
+
         self.deleteBlueprint = function (blueprint) {
-            API.Blueprints.delete(blueprint)
-                .then(self.showSuccess)
-                .catch(function (error) {
-                    self.showError(error);
-                });
+            API.Blueprints.delete(blueprint).then(function () {
+                BlueprintStore.remove(blueprint);
+            }).catch(function (error) {
+                self.showError(error);
+            });
         };
 
         self.newBlueprint = function () {
