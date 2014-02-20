@@ -4,11 +4,12 @@ define([
     'viewmodel/base',
     'util/postOffice',
     'util/form',
-    'store/stores',
-    'model/models',
+    'store/Accounts',
+    'store/Profiles',
+    'store/InstanceSizes',
     'api/api'
 ],
-function (Q, ko, base, _O_, formutils, stores, models, API) {
+function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeStore, API) {
     var vm = function () {
         var self = this;
 
@@ -17,11 +18,15 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
         */
-        self.stores = stores;
         self.selectedAccount = ko.observable(null);
-        self.selectedProfile = null;
+        self.selectedProfile = ko.observable(null);
         self.userCanModify = ko.observable(true);
+        self.profileTitle = ko.observable();
         self.saveAction = self.createProfile;
+
+        self.AccountStore = AccountStore;
+        self.ProfileStore = ProfileStore;
+        self.InstanceSizeStore = InstanceSizeStore;
 
         /*
          *  ==================================================================================
@@ -45,15 +50,25 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
          *  ==================================================================================
          */
         _O_.subscribe('profile.detail.rendered', function (data) {
-            if (stores.Accounts().length === 0) {
-                [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
-                    return loadData.then(next);
-                }, Q([])).then(function () {
-                    self.init(data);
-                });
-            } else {
+            AccountStore.populate().then(function () {
+                return ProfileStore.populate();
+            }).then(function () {
+                return InstanceSizeStore.populate();
+            }).then(function () {            
                 self.init(data);
-            }
+            });
+
+
+
+            // if (stores.Accounts().length === 0) {
+            //     [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
+            //         return loadData.then(next);
+            //     }, Q([])).then(function () {
+            //         self.init(data);
+            //     });
+            // } else {
+            //     self.init(data);
+            // }
         });
 
 
@@ -67,18 +82,17 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
             var profile = null;
 
             if (data.hasOwnProperty('profile')) {
-                profile = stores.Profiles().map(function (p) {
-                    if (p.id === parseInt(data.profile, 10)) {
-                        return p;
-                    }
-                }).reduce(function (p, c) {
-                    if (p.hasOwnProperty('id')) {
-                        return p;
-                    }
-                });
+                profile = ProfileStore.collection().filter(function (p) {
+                    return p.id === parseInt(data.profile, 10);
+                })[0];
+
+                profile.account = _.findWhere(AccountStore.collection(), { id: profile.cloud_provider });
+                self.profileTitle(profile.title);
+            } else {
+                self.profileTitle('New Profile');
             }
 
-            self.selectedProfile = profile;
+            self.selectedProfile(profile);
 
             if (profile && profile.hasOwnProperty('id')) {
                 $('#profile_account').val(profile.account.id);
@@ -115,12 +129,10 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
             var record = formutils.collectFormFields(evt.target.form);
             var profile = {};
 
-            // Clone the self.selectedProfile item so we don't modify the item in the store
-            for (var key in self.selectedProfile) {
-                profile[key] = self.selectedProfile[key];
-            }
-
             // Update property values with those submitted from form
+            profile.id = self.selectedProfile().id;
+            profile.url = self.selectedProfile().url;
+            profile.cloud_provider = self.selectedProfile().cloud_provider;
             profile.title = record.profile_title.value;
             profile.description = record.profile_description.value;
             profile.image_id = record.image_id.value;
@@ -128,11 +140,10 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
             profile.default_instance_size = record.default_instance_size.value;
 
             // PUT the update, and on success, replace the current item in the store with new one
-            API.Profiles.update(profile).then(function () {
-                stores.Profiles(_.reject(stores.Profiles(), function (profile) {
-                    return profile.id === self.selectedProfile.id;
-                }));
-                stores.Profiles.push(profile);
+            API.Profiles.update(profile).then(function (newProfile) {
+                self.ProfileStore.remove(self.selectedProfile());
+                self.ProfileStore.add(newProfile);
+                formutils.clearForm('profile-form');
                 self.navigate({ view: 'profile.list' });
             });
         };

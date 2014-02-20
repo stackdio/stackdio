@@ -120,8 +120,6 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
                 // Update observables
                 self.selectedBlueprint(blueprint);
                 self.blueprintTitle(blueprint.title);
-                console.log(self.blueprintTitle());
-
             } else {
                 self.stackTitle('New Stack');
             }
@@ -155,7 +153,6 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
             }
 
             API.Stacks.update(stack).then(function (newStack) {
-                console.log(newStack);
                 self.StackStore.remove(self.selectedStack());
                 self.StackStore.add(newStack);
                 formutils.clearForm('stack-launch-form');

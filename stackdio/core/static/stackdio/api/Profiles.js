@@ -13,7 +13,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     var profiles = response.results.map(function (profile) {
                         return new models.Profile().create(profile);
                     });
-                    console.log('profiles',profiles);
                     deferred.resolve(profiles);
                 },
                 error: function (request, status, error) {
@@ -36,7 +35,10 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     "Content-Type": "application/json"
                 },
                 success: function (response) {
-                    deferred.resolve();
+                    deferred.resolve(response);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -72,6 +74,9 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                         stores.Profiles.push(profile);
                         deferred.resolve(profile);
                     }
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -81,7 +86,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/profiles/' + profile.id,
+                url: profile.url,
                 type: 'DELETE',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,

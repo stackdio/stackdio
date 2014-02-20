@@ -3,10 +3,11 @@ define([
     'knockout',
     'viewmodel/base',
     'util/postOffice',
-    'store/stores',
+    'store/Accounts',
+    'store/Profiles',
     'api/api'
 ],
-function (Q, ko, base, _O_, stores, API) {
+function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
     var vm = function () {
         var self = this;
 
@@ -15,9 +16,12 @@ function (Q, ko, base, _O_, stores, API) {
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
         */
-        self.stores = stores;
         self.selectedAccount = ko.observable(null);
         self.userCanModify = ko.observable(true);
+
+        self.AccountStore = AccountStore;
+        self.ProfileStore = ProfileStore;
+        self.EnhancedProfileStore = ko.observableArray();
 
         /*
          *  ==================================================================================
@@ -41,15 +45,16 @@ function (Q, ko, base, _O_, stores, API) {
          *  ==================================================================================
          */
         _O_.subscribe('profile.list.rendered', function (data) {
-            if (stores.Accounts().length === 0) {
-                [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
-                    return loadData.then(next);
-                }, Q([])).then(function () {
-                    self.listProfiles(data);
+            self.EnhancedProfileStore.removeAll();
+
+            AccountStore.populate().then(function () {
+                return ProfileStore.populate();
+            }).then(function () {
+                ProfileStore.collection().forEach(function (profile) {
+                    profile.account = _.findWhere(AccountStore.collection(), { id: profile.cloud_provider });
+                    self.EnhancedProfileStore.push(profile);
                 });
-            } else {
-                self.listProfiles(data);
-            }
+            });
         });
 
 

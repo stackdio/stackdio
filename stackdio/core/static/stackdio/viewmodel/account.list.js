@@ -3,10 +3,12 @@ define([
     'knockout',
     'viewmodel/base',
     'util/postOffice',
-    'store/stores',
+    'store/ProviderTypes',
+    'store/Accounts',
+    'store/Profiles',
     'api/api'
 ],
-function (Q, ko, base, _O_, stores, API) {
+function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) {
     var vm = function () {
         var self = this;
 
@@ -15,10 +17,14 @@ function (Q, ko, base, _O_, stores, API) {
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
          */
-        self.stores = stores;
         self.selectedAccount = ko.observable(null);
         self.selectedProviderType = null;
         self.userCanModify = ko.observable(true);
+
+        self.ProviderTypeStore = ProviderTypeStore;
+        self.AccountStore = AccountStore;
+        self.ProfileStore = ProfileStore;
+        self.EnhancedAccountStore = ko.observableArray();
 
         /*
          *  ==================================================================================
@@ -35,20 +41,19 @@ function (Q, ko, base, _O_, stores, API) {
             console.log(ex);            
         }
 
-
         /*
          *  ==================================================================================
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
         _O_.subscribe('account.list.rendered', function (data) {
-            if (stores.Accounts().length === 0) {
-                [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
-                    return loadData.then(next);
-                }, Q([])).then(function () {
-                    
-                });
-            }
+            ProviderTypeStore.populate().then(function () {
+                return AccountStore.populate();
+            }).then(function () {
+                return ProfileStore.populate();
+            }).then(function () {
+                self.init();
+            });
         });
 
 
@@ -57,16 +62,16 @@ function (Q, ko, base, _O_, stores, API) {
          *   V I E W   M E T H O D S
          *  ==================================================================================
         */
-        self.accountProfileLink = function (accountId) {
-            var profileCount = _.filter(stores.Profiles(), function (profile) {
-                return profile.account.id === accountId;
-            }).length;
+        self.init = function (data) {
+            self.EnhancedAccountStore.removeAll();
+            
+            AccountStore.collection().forEach(function (account) {
+                account.profile_count = ProfileStore.collection().map(function (profile) {
+                    return profile.cloud_provider === account.id;
+                }).length;
 
-            if (profileCount === 0) {
-                return 'Add a profile';
-            } else {
-                return 'View ' + _.filter(stores.Profiles(), function (profile) {return profile.account.id === accountId; }).length + ' profiles';
-            }
+                self.EnhancedAccountStore.push(account);
+            });
         };
 
         self.addAccount = function (model, evt) {

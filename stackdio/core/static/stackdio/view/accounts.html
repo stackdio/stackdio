@@ -8,7 +8,7 @@
                         New Account
                         <span class="caret"></span>
                     </a>
-                    <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: stores.ProviderTypes">
+                    <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: ProviderTypeStore.collection()">
                         <li>
                             <a href="#" data-bind="text: title, click: $root.showAccountForm"></a>
                         </li>
@@ -32,14 +32,14 @@
                     <th style="width:5%"></th>
                 </tr>
             </thead>
-            <tbody data-bind="foreach: stores.Accounts">
+            <tbody data-bind="foreach: EnhancedAccountStore">
                 <tr>
                     <td>
                         <a data-bind="text: title, click: $root.editAccount"></a>
                     </td>
                     <td data-bind="text: description"></td>
                     <td>
-                        <a data-bind="click: $root.listProfiles, text: $root.accountProfileLink(id)"></a>
+                        <a data-bind="click: $root.listProfiles, text: 'View ' + $data.profile_count + ' profiles'"></a>
                     </td>
                     <td>
                         <div class="btn-group" data-bind="visible: $root.isSuperUser">

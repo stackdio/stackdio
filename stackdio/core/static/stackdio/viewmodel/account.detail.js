@@ -4,11 +4,13 @@ define([
     'viewmodel/base',
     'util/postOffice',
     'util/form',
-    'store/stores',
-    'model/models',
+    'store/ProviderTypes',
+    'store/Accounts',
+    'store/Profiles',
+    'store/Zones',
     'api/api'
 ],
-function (Q, ko, base, _O_, formutils, stores, models, API) {
+function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileStore, ZoneStore, API) {
     var vm = function () {
         var self = this;
 
@@ -16,16 +18,22 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
          *  ==================================================================================
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
-        */
-        self.stores = stores;
+         */
         self.selectedAccount = ko.observable(null);
+        self.accountTitle = ko.observable(null);
         self.saveAction = self.createAccount;
+
+        self.ProviderTypeStore = ProviderTypeStore;
+        self.AccountStore = AccountStore;
+        self.ProfileStore = ProfileStore;
+        self.ZoneStore = ZoneStore;
+
 
         /*
          *  ==================================================================================
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
-        */
+         */
         self.id = 'account.detail';
         self.templatePath = 'account.html';
         self.domBindingId = '#account-detail';
@@ -43,15 +51,15 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
          *  ==================================================================================
          */
         _O_.subscribe('account.detail.rendered', function (data) {
-            if (stores.Accounts().length === 0) {
-                [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
-                    return loadData.then(next);
-                }, Q([])).then(function () {
-                    self.init(data);
-                });
-            } else {
+            ZoneStore.populate();
+
+            ProviderTypeStore.populate().then(function () {
+                return AccountStore.populate();
+            }).then(function () {
+                return ProfileStore.populate();
+            }).then(function () {
                 self.init(data);
-            }
+            });
         });
 
 
@@ -63,20 +71,14 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
 
         self.init = function (data) {
             var account = null;
-
             if (data.hasOwnProperty('account')) {
-                account = stores.Accounts().map(function (p) {
-                    if (p.id === parseInt(data.account, 10)) {
-                        return p;
-                    }
-                }).reduce(function (p, c) {
-                    if (p.hasOwnProperty('id')) {
-                        return p;
-                    }
-                });
-            }
+                account = AccountStore.collection().filter(function (a) {
+                    return a.id === parseInt(data.account, 10);
+                })[0];
 
-            self.selectedAccount = account;
+                self.accountTitle(account.title);
+            }
+            self.selectedAccount(account);
 
             if (account && account.hasOwnProperty('id')) {
                 $('#account_provider').val(account.provider_type);
@@ -103,14 +105,8 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
         self.createAccount = function (model, evt) {
             var account = formutils.collectFormFields(evt.target.form);
 
-            // profile.account = stores.Accounts().map(function (account) {
-            //     if (account.id === parseInt(profile.profile_account.value, 10)) {
-            //         return account;
-            //     }
-            // })[0];
-
             API.Accounts.save(account).then(function (newAccount) {
-                stores.Accounts.push(newAccount);
+                AccountStore.add(newAccount);
                 self.navigate({ view: 'account.list' });
             });
         };
@@ -120,17 +116,22 @@ function (Q, ko, base, _O_, formutils, stores, models, API) {
             var account = {};
 
             // Clone the self.selectedAccount item so we don't modify the item in the store
-            for (var key in self.selectedAccount) {
-                account[key] = self.selectedAccount[key];
-            }
+            // for (var key in self.selectedAccount()) {
+            //     account[key] = self.selectedAccount()[key];
+            // }
 
             // Update property values with those submitted from form
+            account.id = self.selectedAccount().id;
+            account.url = self.selectedAccount().url;
             account.provider_type = record.account_provider.value;
             account.title = record.account_title.value;
             account.description = record.account_description.value;
             account.default_availability_zone = record.default_availability_zone.value;
 
-            delete account.yaml;
+            // delete account.yaml;
+
+            console.log(account);
+            // return;
 
             // PATCH the update, and on success, replace the current item in the store with new one
             API.Accounts.update(account).then(function () {
