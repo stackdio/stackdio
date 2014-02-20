@@ -118,18 +118,6 @@ function (Q, ko, base, _O_, stores, API) {
             }
         };
 
-        self.launchStack = function (blueprint) {
-            self.selectedBlueprint(blueprint);
-
-            API.Blueprints.getProperties(blueprint)
-                .then(function (properties) {
-                    self.blueprintProperties(properties);
-                    self.blueprintHosts(blueprint.host_definitions);
-                });
-
-            self.showStackForm();
-        };
-
         self.updateStack = function (obj, evt) {
             var record = formutils.collectFormFields(evt.target.form);
             var stack = self.selectedStack();
@@ -142,13 +130,9 @@ function (Q, ko, base, _O_, stores, API) {
                 stack.properties = JSON.parse(record.stack_properties_preview_edit.value);
             }
 
-            console.log(stack);
+            API.Stacks.update(stack).then(function () {
 
-            API.Stacks.update(stack)
-                .then(function () {
-                    self.closeStackForm();
-                    _O_.publish('stack.updated');
-                });
+            });
         };
 
         self.provisionStack = function (a, evt) {
@@ -175,10 +159,9 @@ function (Q, ko, base, _O_, stores, API) {
         self.showStackDetails = function (stack) {
             self.selectedStack(stack);
 
-            API.Stacks.getProperties(stack)
-                .then(function (properties) {
-                    $('#stack_properties_preview_edit').val(JSON.stringify(properties, undefined, 3));
-                }).done();
+            API.Stacks.getProperties(stack).then(function (properties) {
+                $('#stack_properties_preview_edit').val(JSON.stringify(properties, undefined, 3));
+            }).done();
 
             $('#stack_title_edit').val(stack.title);
             $('#stack_description_edit').val(stack.description);

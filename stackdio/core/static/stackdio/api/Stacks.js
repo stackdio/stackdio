@@ -81,12 +81,10 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     api.update = function (stack) {
         var deferred = Q.defer();
 
-        stack = JSON.stringify(stack);
-
         $.ajax({
             url: stack.url,
             type: 'PUT',
-            data: stack,
+            data: JSON.stringify(stack),
             dataType: 'json',
             headers: {
                 "Content-Type": "application/json",
@@ -95,7 +93,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             },
             success: function (newStack) {
                 api.getHistory(newStack).then(function (stackWithHistory) {
-                    stores.Stacks.push(new models.Stack().create(stackWithHistory));
                     deferred.resolve(stackWithHistory);
                 });
             },
@@ -138,7 +135,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         var deferred = Q.defer();
 
         $.ajax({
-            url: '/api/stacks/' + stack.id + '/hosts/',
+            url: stack.hosts,
             type: 'GET',
             dataType: 'json',
             headers: {

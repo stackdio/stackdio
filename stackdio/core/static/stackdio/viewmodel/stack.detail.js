@@ -22,10 +22,12 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
          *  ==================================================================================
         */
         self.selectedBlueprint = ko.observable(null);
+        self.selectedStack = ko.observable(null);
         self.stackTitle = ko.observable();
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
         self.blueprintPropertiesStringified = ko.observable();
+        self.editMode = ko.observable('create');
 
         self.StackStore = StackStore;
         self.ProfileStore = ProfileStore;
@@ -57,6 +59,8 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
          */
         _O_.subscribe('stack.detail.rendered', function (data) {
             BlueprintStore.populate().then(function () {
+                return StackStore.populate();
+            }).then(function () {
                 self.init(data);
             });
         });
@@ -72,16 +76,15 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
             var blueprint = null;
             var stack = null;
 
-            console.log(BlueprintStore.collection());
-
             // Blueprint specified, so creating a new stack
             if (data.hasOwnProperty('blueprint')) {
+                self.editMode('create');
+
                 blueprint = BlueprintStore.collection().filter(function (p) {
                     return p.id === parseInt(data.blueprint, 10);
                 })[0];
 
                 API.Blueprints.getProperties(blueprint).then(function (properties) {
-                    console.log(properties);
                     var stringify = JSON.stringify(properties, undefined, 3);
                     self.blueprintPropertiesStringified(stringify);
                 });
@@ -91,34 +94,72 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
             }
 
             if (data.hasOwnProperty('stack')) {
-                stack = StackStore.collection().map(function (s) {
+                self.editMode('update');
+
+                stack = StackStore.collection().filter(function (s) {
                     return s.id === parseInt(data.stack, 10);
                 })[0];
+
                 self.stackTitle(stack.title);
+
+                // Populate the form
+                $('#stack_title').val(stack.title);
+                $('#stack_description').val(stack.description);
+                $('#stack_namespace').val(stack.namespace);
+
+                // Get stack properties
+                API.Stacks.getProperties(stack).then(function (properties) {
+                    $('#stack_properties_preview').val(JSON.stringify(properties, undefined, 3));
+                }).done();
+
+                // Find the corresponding blueprint
+                blueprint = BlueprintStore.collection().filter(function (b) {
+                    return b.url === stack.blueprint;
+                })[0];
+
+                // Update observables
+                self.selectedBlueprint(blueprint);
+                self.blueprintTitle(blueprint.title);
+                console.log(self.blueprintTitle());
+
             } else {
                 self.stackTitle('New Stack');
             }
+
             self.selectedStack(stack);
         };
 
         self.updateStack = function (obj, evt) {
             var record = formutils.collectFormFields(evt.target.form);
-            var stack = self.selectedStack();
+            var stack = {};
 
-            stack.title = record.stack_title_edit.value;
-            stack.description = record.stack_description_edit.value;
-            stack.namespace = record.stack_namespace_edit.value;
+            // Create a new, complete stack representation for a PUT
+            stack.id = self.selectedStack().id;
+            stack.url = self.selectedStack().url;
+            stack.owner = self.selectedStack().owner;
+            stack.host_count = self.selectedStack().host_count;
+            stack.volume_count = self.selectedStack().volume_count;
+            stack.created = self.selectedStack().created;
+            stack.blueprint = self.selectedStack().blueprint;
+            stack.fqdns = self.selectedStack().fqdns;
+            stack.hosts = self.selectedStack().hosts;
+            stack.volumes = self.selectedStack().volumes;
+            stack.properties = self.selectedStack().properties;
+            stack.history = self.selectedStack().history;
+            stack.title = record.stack_title.value;
+            stack.description = record.stack_description.value;
+            stack.namespace = record.stack_namespace.value;
             
-            if (record.stack_properties_preview_edit.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview_edit.value);
+            if (record.stack_properties_preview.value !== '') {
+                stack.properties = JSON.parse(record.stack_properties_preview.value);
             }
 
-            console.log(stack);
-            return;
-
-            API.Stacks.update(stack).then(function () {
-                self.closeStackForm();
-                _O_.publish('stack.updated');
+            API.Stacks.update(stack).then(function (newStack) {
+                console.log(newStack);
+                self.StackStore.remove(self.selectedStack());
+                self.StackStore.add(newStack);
+                formutils.clearForm('stack-launch-form');
+                self.navigate({ view: 'stack.list' });
             });
         };
 

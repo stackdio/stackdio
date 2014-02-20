@@ -43,7 +43,8 @@
             <div class="row">
                  <div class="col-md-3 col-md-offset-9  pull-right">
                     <button class="btn" data-bind="click: cancelChanges">Cancel</button>
-                    <button class="btn btn-primary" data-bind="click: provisionStack">Begin Provisioning</button>
+                    <button class="btn btn-primary" data-bind="visible: editMode() === 'create', click: $root.provisionStack">Begin Provisioning</button>
+                    <button class="btn btn-primary" data-bind="visible: editMode() === 'update', click: $root.updateStack">Save</button>
                 </div>
             </div>
         </form>

@@ -137,48 +137,6 @@ function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
             self.showStackForm();
         };
 
-        self.updateStack = function (obj, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-            var stack = self.selectedStack();
-
-            stack.title = record.stack_title_edit.value;
-            stack.description = record.stack_description_edit.value;
-            stack.namespace = record.stack_namespace_edit.value;
-            
-            if (record.stack_properties_preview_edit.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview_edit.value);
-            }
-
-            console.log(stack);
-
-            API.Stacks.update(stack)
-                .then(function () {
-                    self.closeStackForm();
-                    _O_.publish('stack.updated');
-                });
-        };
-
-        self.provisionStack = function (a, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-
-            var stack = {
-                title: record.stack_title.value,
-                description: record.stack_description.value,
-                namespace: record.stack_namespace.value,
-                blueprint: self.selectedBlueprint().id
-            };
-
-            if (record.stack_properties_preview.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview.value);
-            }
-
-            API.Stacks.save(stack)
-                .then(function () {
-                    self.closeStackForm();
-                    _O_.publish('stack.updated');
-                });
-        };
-
         self.showStackDetails = function (stack) {
             self.selectedStack(stack);
 
@@ -215,7 +173,12 @@ function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
         };
 
         self.showStackDetails = function (stack) {
-            self.navigate({ view: 'stack.details', stack: stack });
+            self.navigate({
+                view: 'stack.detail',
+                data: {
+                    stack: stack.id
+                }
+            });
         };
 
         self.createNewStack = function (blueprint) {
