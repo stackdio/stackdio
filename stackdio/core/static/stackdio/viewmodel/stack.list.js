@@ -42,7 +42,7 @@ function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
         }
 
         _O_.subscribe('stack.list.rendered', function () {
-            StackStore.populate().then(function () {
+            BlueprintStore.populate().then(function () {
                 return StackStore.populate();
             }).then(function () {
 
@@ -182,20 +182,18 @@ function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
         self.showStackDetails = function (stack) {
             self.selectedStack(stack);
 
-            API.Stacks.getProperties(stack)
-                .then(function (properties) {
-                    $('#stack_properties_preview_edit').val(JSON.stringify(properties, undefined, 3));
-                }).done();
+            API.Stacks.getProperties(stack).then(function (properties) {
+                $('#stack_properties_preview_edit').val(JSON.stringify(properties, undefined, 3));
+            }).done();
 
             $('#stack_title_edit').val(stack.title);
             $('#stack_description_edit').val(stack.description);
             $('#stack_namespace_edit').val(stack.id);
 
             
-            API.StackHosts.load(stack)
-                .then(function (response) {
-                    $("#stack-edit-container").dialog("open");
-                });
+            API.StackHosts.load(stack).then(function (response) {
+                $("#stack-edit-container").dialog("open");
+            });
         };
 
         // 
@@ -218,6 +216,15 @@ function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
 
         self.showStackDetails = function (stack) {
             self.navigate({ view: 'stack.details', stack: stack });
+        };
+
+        self.createNewStack = function (blueprint) {
+            self.navigate({
+                view: 'stack.detail', 
+                data: { 
+                    blueprint: blueprint.id 
+                }
+            });
         };
 
     };

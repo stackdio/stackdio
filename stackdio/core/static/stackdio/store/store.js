@@ -21,7 +21,6 @@ define(['q', 'knockout'], function (Q, ko) {
                 deferred.reject();
             }).done();
         } else {
-            console.error('There are local changes to the data store. Please sync before populating again.');
             deferred.reject();
         }
 
@@ -31,7 +30,6 @@ define(['q', 'knockout'], function (Q, ko) {
     Store.prototype.isDirty = function () {
         return this._dirty;
     };
-    
 
     Store.prototype.sync = function () {
         var self = this;
@@ -45,7 +43,6 @@ define(['q', 'knockout'], function (Q, ko) {
                 }).done();
             }
         });
-        self._dirty = false;
     };
 
     Store.prototype.add = function (type) {
@@ -54,7 +51,6 @@ define(['q', 'knockout'], function (Q, ko) {
 
     Store.prototype.empty = function () {
         this.collection.removeAll();
-        this._dirty = false;
     };
 
     Store.prototype.remove = function (item) {
@@ -63,7 +59,6 @@ define(['q', 'knockout'], function (Q, ko) {
         });
 
         this.collection(filtered);
-        this._dirty = true;
     };
 
     return Store;

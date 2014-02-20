@@ -69,6 +69,9 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 var history = response.results;
                 stack.fullHistory = history;
                 deferred.resolve(stack);
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
             }
         });
 
@@ -95,6 +98,9 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     stores.Stacks.push(new models.Stack().create(stackWithHistory));
                     deferred.resolve(stackWithHistory);
                 });
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
             }
         });
 
@@ -105,12 +111,10 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     api.save = function (stack) {
         var deferred = Q.defer();
 
-        stack = JSON.stringify(stack);
-
         $.ajax({
-            url: '/api/stacks/',
+            url: settings.api.stacks.stacks,
             type: 'POST',
-            data: stack,
+            data: JSON.stringify(stack),
             dataType: 'json',
             headers: {
                 "Content-Type": "application/json",
@@ -119,9 +123,11 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             },
             success: function (newStack) {
                 api.getHistory(newStack).then(function (stackWithHistory) {
-                    stores.Stacks.push(new models.Stack().create(stackWithHistory));
                     deferred.resolve(stackWithHistory);
                 });
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
             }
         });
 
@@ -141,10 +147,11 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 "Accept": "application/json"
             },
             success: function (response) {
-                var hosts = response.results;
-                
-                // stores.Stacks.push(stack);
-                // deferred.resolve();
+                var hosts = response.results;                
+                deferred.resolve(hosts);
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
             }
         });
 
@@ -165,6 +172,9 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             },
             success: function (properties) {
                 deferred.resolve(properties);
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
             }
         });
 

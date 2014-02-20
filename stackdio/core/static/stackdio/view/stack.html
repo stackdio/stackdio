@@ -1,0 +1,51 @@
+<div id="account-detail-target">
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $root.navigate({view:'stack.list'}) }">Stacks</a></li>
+            <li data-bind="text: stackTitle"></li>
+        </ol>
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Stack Detail</div>
+        </div>
+
+        <form id="stack-launch-form" role="form" class="">
+            <div class="form-group">
+                <label for="blueprint_title" class=" control-label">Blueprint</label>
+                <input type="text" class="form-control" id="blueprint_title" data-bind="value: blueprintTitle" disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="stack_title" class=" control-label">Title</label>
+                <input type="text" class="form-control" id="stack_title" placeholder="Stack title">
+            </div>
+
+            <div class="form-group">
+                <label for="stack_description" class=" control-label">Description</label>
+                <input type="text" class="form-control" id="stack_description" placeholder="Purpose of Stack">
+            </div>
+
+            <div class="form-group">
+                <label class="control-label" for="stack_namespace">Namespace</label>
+                <input type="text" class="form-control" id="stack_namespace" placeholder="Optionally provide a namespace for this stack">
+            </div>
+
+            <div class="form-group">
+                <label class="control-label" for="stack_properties_preview">Properties</label>
+                <textarea  
+                       class="form-control" 
+                       rows="9" 
+                       id="stack_properties_preview" 
+                       data-bind="text: blueprintPropertiesStringified"
+                       placeholder="The formulas for the selected Blueprint do not contain properties"></textarea>
+            </div>
+
+            <div class="row">
+                 <div class="col-md-3 col-md-offset-9  pull-right">
+                    <button class="btn" data-bind="click: cancelChanges">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: provisionStack">Begin Provisioning</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
