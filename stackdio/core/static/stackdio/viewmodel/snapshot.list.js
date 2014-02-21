@@ -68,14 +68,22 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
          *  ==================================================================================
         */
         self.init = function (data) {
+            var enhancedSnapshot = {};
+
             self.EnhancedSnapshotStore.removeAll();
 
             SnapshotStore.collection().forEach(function (snapshot) {
-                snapshot.account = AccountStore.collection().filter(function (account) {
-                    return snapshot.cloud_provider === account.id;
+                // Clone each snapshot into an enhancedSnapshot object for populating the UI
+                enhancedSnapshot = {};
+                for (var key in snapshot) {
+                    enhancedSnapshot[key] = snapshot[key];
+                }
+
+                enhancedSnapshot.account = AccountStore.collection().filter(function (account) {
+                    return enhancedSnapshot.cloud_provider === account.id;
                 })[0];
 
-                self.EnhancedSnapshotStore.push(snapshot);
+                self.EnhancedSnapshotStore.push(enhancedSnapshot);
             });
         };
 
@@ -123,7 +131,8 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
 
         self.removeSnapshot = function (snapshot) {
             API.Snapshots.delete(snapshot).then(function () {
-                SnapshotStore.remove(snapshot);
+                SnapshotStore.removeById(snapshot.id);
+                self.init();
             })
             .catch(function (error) {
                 $("#alert-error").show();

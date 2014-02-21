@@ -61,6 +61,14 @@ define(['q', 'knockout'], function (Q, ko) {
         this.collection(filtered);
     };
 
+    Store.prototype.removeById = function (id) {
+        var filtered = this.collection().filter(function (type) {
+            return type.id !== id;
+        });
+
+        this.collection(filtered);
+    };
+
     return Store;
 
 });
