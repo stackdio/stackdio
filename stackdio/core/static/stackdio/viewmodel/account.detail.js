@@ -123,17 +123,8 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
             account.description = record.account_description.value;
             account.default_availability_zone = record.default_availability_zone.value;
 
-            // delete account.yaml;
-
-            console.log(account);
-            // return;
-
             // PATCH the update, and on success, replace the current item in the store with new one
             API.Accounts.update(account).then(function () {
-                stores.Accounts(_.reject(stores.Accounts(), function (acct) {
-                    return acct.id === self.selectedAccount.id;
-                }));
-                stores.Accounts.push(account);
                 self.navigate({ view: 'account.list' });
             });
         };

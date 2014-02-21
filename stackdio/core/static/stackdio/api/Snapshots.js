@@ -27,13 +27,16 @@ define(['q', 'store/stores', 'model/models', 'settings'], function (Q, stores, m
         save: function (snapshot) {
             var deferred = Q.defer();
 
+            console.log(snapshot);
+
             $.ajax({
                 url: settings.api.stacks.snapshots,
                 type: 'POST',
                 data: JSON.stringify(snapshot),
                 headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'X-CSRFToken': stackdio.settings.csrftoken,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 success: function (response) {
                     deferred.resolve(new models.Snapshot().create(response));
@@ -49,19 +52,14 @@ define(['q', 'store/stores', 'model/models', 'settings'], function (Q, stores, m
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/snapshots/' + snapshot.id,
+                url: snapshot.url,
                 type: 'DELETE',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    // Clear the store and the grid
-                    stores.Snapshots.remove(snapshot);
-
-                    // Resolve the promise and pass back the deleted item in case its
-                    // info is needed for a UI message
-                    deferred.resolve(snapshot);
+                    deferred.resolve();
                 },
                 error: function (request, status, error) {
                     deferred.reject(new Error(error));
@@ -74,7 +72,7 @@ define(['q', 'store/stores', 'model/models', 'settings'], function (Q, stores, m
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/snapshots/',
+                url:  settings.api.stacks.snapshots,
                 type: 'OPTIONS',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,

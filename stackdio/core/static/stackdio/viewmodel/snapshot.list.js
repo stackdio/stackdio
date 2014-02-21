@@ -57,7 +57,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
             }).then(function () {
                 return SnapshotStore.populate();
             }).then(function () {
-                self.init();
+                self.init(data);
             });
         });
 
@@ -68,12 +68,12 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
          *  ==================================================================================
         */
         self.init = function (data) {
-            self.EnhancedAccountStore.removeAll();
-            
+            self.EnhancedSnapshotStore.removeAll();
+
             SnapshotStore.collection().forEach(function (snapshot) {
-                snapshot.account = AccountStore.collection().map(function (account) {
+                snapshot.account = AccountStore.collection().filter(function (account) {
                     return snapshot.cloud_provider === account.id;
-                }).length;
+                })[0];
 
                 self.EnhancedSnapshotStore.push(snapshot);
             });
@@ -101,47 +101,30 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
                 });
         };
 
-        self.createSnapshot = function (snapshot) {
+        self.createSnapshot = function (account) {
             self.navigate({
-                view: 'snapshot.detail'
+                view: 'snapshot.detail',
+                data: {
+                    account: account.id
+                }
             });
         };
 
         self.updateSnapshot = function (model, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-            var account = {};
-
-            // Clone the self.selectedAccount item so we don't modify the item in the store
-            // for (var key in self.selectedAccount()) {
-            //     account[key] = self.selectedAccount()[key];
-            // }
-
-            // Update property values with those submitted from form
-            account.id = self.selectedAccount().id;
-            account.url = self.selectedAccount().url;
-            account.provider_type = record.account_provider.value;
-            account.title = record.account_title.value;
-            account.description = record.account_description.value;
-            account.default_availability_zone = record.default_availability_zone.value;
-
-            // delete account.yaml;
-
-            console.log(account);
-            // return;
-
             // PATCH the update, and on success, replace the current item in the store with new one
-            API.Accounts.update(account).then(function () {
-                stores.Accounts(_.reject(stores.Accounts(), function (acct) {
-                    return acct.id === self.selectedAccount.id;
-                }));
-                stores.Accounts.push(account);
-                self.navigate({ view: 'account.list' });
-            });
+            // API.Accounts.update(account).then(function () {
+            //     stores.Accounts(_.reject(stores.Accounts(), function (acct) {
+            //         return acct.id === self.selectedAccount.id;
+            //     }));
+            //     stores.Accounts.push(account);
+            //     self.navigate({ view: 'account.list' });
+            // });
         };
 
         self.removeSnapshot = function (snapshot) {
-            API.Snapshots.delete(snapshot)
-            .then(self.showSuccess)
+            API.Snapshots.delete(snapshot).then(function () {
+                SnapshotStore.remove(snapshot);
+            })
             .catch(function (error) {
                 $("#alert-error").show();
             });

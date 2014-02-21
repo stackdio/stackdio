@@ -4,13 +4,11 @@ define([
     'viewmodel/base',
     'util/postOffice',
     'util/form',
-    'store/ProviderTypes',
     'store/Accounts',
-    'store/Profiles',
     'store/Snapshots',
     'api/api'
 ],
-function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileStore, SnapshotStore, API) {
+function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
     var vm = function () {
         var self = this;
 
@@ -20,11 +18,10 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
          *  ==================================================================================
          */
         self.selectedSnapshot = ko.observable(null);
+        self.selectedAccount = ko.observable(null);
         self.snapshotTitle = ko.observable(null);
 
-        self.ProviderTypeStore = ProviderTypeStore;
         self.AccountStore = AccountStore;
-        self.ProfileStore = ProfileStore;
         self.SnapshotStore = SnapshotStore;
 
         self.osChoices = [
@@ -73,11 +70,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
          *  ==================================================================================
          */
         _O_.subscribe('snapshot.detail.rendered', function (data) {
-            ProviderTypeStore.populate().then(function () {
-                return AccountStore.populate();
-            }).then(function () {
-                return ProfileStore.populate();
-            }).then(function () {
+            AccountStore.populate().then(function () {
                 self.init(data);
             });
         });
@@ -100,27 +93,34 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
                 self.snapshotTitle(snapshot.title);
             } else {
                 self.snapshotTitle('New Snapshot');
-
             }
-
-
             self.selectedSnapshot(snapshot);
 
-            if (snapshot && snapshot.hasOwnProperty('id')) {
-                $('#account_provider').val(snapshot.provider_type);
-                $('#account_title').val(snapshot.title);
-                $('#account_description').val(snapshot.description);
-                $('#account_id').val(snapshot.account_id);
-                $('#account_id').attr('disabled', 'disabled');
-                $('#access_key_id').attr('disabled', 'disabled');
-                $('#secret_access_key').attr('disabled', 'disabled');
-                $('#keypair').attr('disabled', 'disabled');
-                $('#default_availability_zone').val(snapshot.default_availability_zone);
-                $('#route53_domain').val(' ');
-                $('#route53_domain').attr('disabled', 'disabled');
-                $('#private_key_file').val(snapshot.yaml);
 
-                self.saveAction = self.updateAccount;
+            if (data.hasOwnProperty('account')) {
+                account = AccountStore.collection().filter(function (s) {
+                    return s.id === parseInt(data.account, 10);
+                })[0];
+            }
+            self.selectedAccount(account);
+
+
+
+            if (snapshot && snapshot.hasOwnProperty('id')) {
+                // $('#account_provider').val(snapshot.provider_type);
+                // $('#account_title').val(snapshot.title);
+                // $('#account_description').val(snapshot.description);
+                // $('#account_id').val(snapshot.account_id);
+                // $('#account_id').attr('disabled', 'disabled');
+                // $('#access_key_id').attr('disabled', 'disabled');
+                // $('#secret_access_key').attr('disabled', 'disabled');
+                // $('#keypair').attr('disabled', 'disabled');
+                // $('#default_availability_zone').val(snapshot.default_availability_zone);
+                // $('#route53_domain').val(' ');
+                // $('#route53_domain').attr('disabled', 'disabled');
+                // $('#private_key_file').val(snapshot.yaml);
+
+                // self.saveAction = self.updateAccount;
             }
         };
 
@@ -140,10 +140,22 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
         };
 
         self.createSnapshot = function (model, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
+            var record = formutils.collectFormFields(evt.target.form),
+            snapshot = {
+                title: $('#snapshot_title').val(),
+                description: $('#snapshot_description').val(),
+                cloud_provider: self.selectedAccount().id,
+                snapshot_id: $('#snapshot_id').val(),
+                size_in_gb: $('#snapshot_size').val(),
+                filesystem_type: $('#filesystem_type').val()
+            };
 
-            API.Snapshots.save(snapshot).then(function () {
-                SnapshotStore.add(newSnapshot)
+            // console.log(snapshot);
+            // return;
+
+            API.Snapshots.save(snapshot).then(function (newSnapshot) {
+                SnapshotStore.add(newSnapshot);
+                self.navigate({ view: 'snapshot.list' });
             })
             .catch(function (error) {
                 $("#alert-error").show();
