@@ -30,27 +30,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         });
 
         return deferred.promise;
-        
-        // var deferred = Q.defer();
-        // var self = this;
-
-        // $.ajax({
-        //     url: '/api/stacks/',
-        //     type: 'GET',
-        //     headers: {
-        //         "X-CSRFToken": stackdio.settings.csrftoken,
-        //         "Accept": "application/json"
-        //     },
-        //     success: function (response) {
-        //         var stacks = response.results;
-        //         var historyPromises = [];
-
-        //         stores.Stacks.removeAll();
-
-        //     }
-        // });
-
-        // return deferred.promise;
     };
 
     api.getHistory = function (stack) {

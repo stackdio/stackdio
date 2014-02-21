@@ -12,53 +12,34 @@ define(['q', 'store/stores', 'model/models', 'settings'], function (Q, stores, m
                 success: function (response) {
                     var snapshots = response.results.map(function (s) {
                         var snapshot = new models.Snapshot().create(s);
-
-                        // Inject the name of the account used to create the snapshot
-                        // snapshot.account = _.find(stores.Accounts(), function (account) {
-                        //     return account.id === snapshot.cloud_provider;
-                        // });
-
                         return snapshot;
                     });
 
-                    // Resolve the promise and pass back the loaded items
                     deferred.resolve(snapshots);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
             return deferred.promise;
         },
-        save: function (record) {
+        save: function (snapshot) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/snapshots/',
+                url: settings.api.stacks.snapshots,
                 type: 'POST',
-                data: {
-                    title: record.snapshot_title.value,
-                    description: record.snapshot_description.value,
-                    cloud_provider: record.account.id,
-                    size_in_gb: record.snapshot_size.value,
-                    filesystem_type: record.filesystem_type.value,
-                    snapshot_id: record.snapshot_id.value
-                },
+                data: JSON.stringify(snapshot),
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    // Create new snapshot
-                    var snapshot = new models.Snapshot().create(response);
-
-                    // Inject account name
-                    snapshot.account = _.find(stores.Accounts(), function (account) {
-                        return account.id === response.cloud_provider;
-                    });
-
-                    // Add to observable collection
-                    stores.Snapshots.push(snapshot);
-
-                    deferred.resolve(snapshot);
+                    deferred.resolve(new models.Snapshot().create(response));
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -81,6 +62,9 @@ define(['q', 'store/stores', 'model/models', 'settings'], function (Q, stores, m
                     // Resolve the promise and pass back the deleted item in case its
                     // info is needed for a UI message
                     deferred.resolve(snapshot);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -98,6 +82,9 @@ define(['q', 'store/stores', 'model/models', 'settings'], function (Q, stores, m
                 },
                 success: function (data, textStatus, qwerty) {
                     deferred.resolve({verbs: qwerty.getResponseHeader('Allow').split(',') });
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
             

@@ -115,11 +115,6 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
             var record = formutils.collectFormFields(evt.target.form);
             var account = {};
 
-            // Clone the self.selectedAccount item so we don't modify the item in the store
-            // for (var key in self.selectedAccount()) {
-            //     account[key] = self.selectedAccount()[key];
-            // }
-
             // Update property values with those submitted from form
             account.id = self.selectedAccount().id;
             account.url = self.selectedAccount().url;

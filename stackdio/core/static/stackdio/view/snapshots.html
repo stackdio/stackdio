@@ -7,9 +7,9 @@
                     <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                         New Snapshot <span class="caret"></span>
                     </a>
-                    <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: stores.Accounts">
+                    <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: AccountStore.collection()">
                         <li>
-                            <a href="#" data-bind="text: title, click: $root.showSnapshotForm"></a>
+                            <a href="#" data-bind="text: title, click: $root.createSnapshot"></a>
                         </li>
                     </ul>
                 </div>
@@ -33,7 +33,7 @@
                     <th style="width:5%"></th>
                 </tr>
             </thead>
-            <tbody data-bind="foreach: stores.Snapshots">
+            <tbody data-bind="foreach: EnhancedSnapshotStore">
                 <tr>
                     <td data-bind="text: title"></td>
                     <td data-bind="text: description"></td>
