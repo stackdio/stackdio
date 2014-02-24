@@ -66,7 +66,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
             self.EnhancedAccountStore.removeAll();
 
             AccountStore.collection().forEach(function (account) {
-                account.profile_count = ProfileStore.collection().map(function (profile) {
+                account.profile_count = ProfileStore.collection().filter(function (profile) {
                     return profile.cloud_provider === account.id;
                 }).length;
 
@@ -85,6 +85,15 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
 
         self.listProfiles = function (account) {
             self.navigate({ view: 'profile.list', data: { account: account.id } });
+        };
+
+        self.createAccount = function (providerType) {
+            self.navigate({
+                view: 'account.detail',
+                data: {
+                    type: providerType.id
+                }
+            });
         };
 
         self.editAccount = function (account) {

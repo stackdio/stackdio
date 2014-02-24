@@ -50,10 +50,7 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
             AccountStore.populate().then(function () {
                 return ProfileStore.populate();
             }).then(function () {
-                ProfileStore.collection().forEach(function (profile) {
-                    profile.account = _.findWhere(AccountStore.collection(), { id: profile.cloud_provider });
-                    self.EnhancedProfileStore.push(profile);
-                });
+                self.init(data);
             });
         });
 
@@ -63,6 +60,24 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
          *   V I E W   M E T H O D S
          *  ==================================================================================
          */
+        self.init = function (data) {
+            self.EnhancedProfileStore.removeAll();
+
+            if (data.hasOwnProperty('account')) {
+                ProfileStore.collection().forEach(function (profile) {
+                    profile.account = _.findWhere(AccountStore.collection(), { id: profile.cloud_provider });
+                    if (profile.account.id === parseInt(data.account, 10)) {
+                        self.EnhancedProfileStore.push(profile);
+                    }
+                });
+            } else {
+                ProfileStore.collection().forEach(function (profile) {
+                    profile.account = _.findWhere(AccountStore.collection(), { id: profile.cloud_provider });
+                    self.EnhancedProfileStore.push(profile);
+                });
+            }
+        };
+
         self.newProfile = function () {
             self.navigate({ view: 'profile.detail' });
         };

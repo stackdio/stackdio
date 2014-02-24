@@ -24,21 +24,18 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise;
         },
-        save: function (record) {
+        save: function (account) {
             var deferred = Q.defer();
             var files, formData = new FormData(), xhr = new XMLHttpRequest();
 
-            // Add the provider type that the user chose from the account split button
-            formData.append('provider_type', record.providerType);
-
-            // Append all other required fields to the form data
-            for (r in record) {
-                rec = record[r];
-                formData.append(r, rec.value);
+            // Append required fields to the form data
+            for (var key in account) {
+                // rec = account[key];
+                formData.append(key, account[key]);
             }
 
             // Append private key file to the FormData() object
-            formData.append('private_key', record.private_key_file.value);
+            formData.append('private_key', account.private_key_file.value);
 
             // Open the connection to the provider URI and set authorization header
             xhr.open('POST', '/api/providers/');
@@ -53,9 +50,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 if (evt.target.status === 200 || evt.target.status === 201 || evt.target.status === 302) {
                     // Parse the response to get the created item
                     item = JSON.parse(evt.target.response);
-
-                    // Add it to the Accounts store
-                    stores.Accounts.push(item);
 
                     // Resolve the promise
                     deferred.resolve(item);

@@ -38,12 +38,6 @@ function (Q, ko, base, _O_, StackStore, API) {
 
         _O_.subscribe('stacklist.widget.rendered', function () {
             StackStore.populate().then(function () {
-                console.log(StackStore.collection());
-                
-                StackStore.populate().then(function () {
-                    console.log(StackStore.collection());
-
-                })
             }).done();
         });
 

@@ -20,6 +20,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
          *  ==================================================================================
          */
         self.selectedAccount = ko.observable(null);
+        self.selectedProviderType = ko.observable(null);
         self.accountTitle = ko.observable(null);
         self.saveAction = self.createAccount;
 
@@ -71,14 +72,38 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
 
         self.init = function (data) {
             var account = null;
+            var provider_type = null;
+
             if (data.hasOwnProperty('account')) {
                 account = AccountStore.collection().filter(function (a) {
                     return a.id === parseInt(data.account, 10);
                 })[0];
 
                 self.accountTitle(account.title);
+                self.selectedAccount(account);
+            } else {
+                self.accountTitle('New Account');
+
+                $('#account_title').val('');
+                $('#account_description').val('');
+                $('#account_id').val('');
+                $('#access_key_id').val('');
+                $('#secret_access_key').val('');
+                $('#keypair').val('');
+                $('#default_availability_zone').val('');
+                $('#route53_domain').val('');
+                $('#private_key_file').val('');
+
             }
-            self.selectedAccount(account);
+
+
+            if (data.hasOwnProperty('type')) {
+                provider_type = ProviderTypeStore.collection().filter(function (a) {
+                    return a.id === parseInt(data.type, 10);
+                })[0];
+
+                self.selectedProviderType(provider_type);
+            }
 
             if (account && account.hasOwnProperty('id')) {
                 $('#account_provider').val(account.provider_type);
@@ -86,24 +111,48 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
                 $('#account_description').val(account.description);
                 $('#account_id').val(account.account_id);
                 $('#account_id').attr('disabled', 'disabled');
+                $('#access_key_id').val('protected');
                 $('#access_key_id').attr('disabled', 'disabled');
+                $('#secret_access_key').val('protected');
                 $('#secret_access_key').attr('disabled', 'disabled');
+                $('#keypair').val('protected');
                 $('#keypair').attr('disabled', 'disabled');
                 $('#default_availability_zone').val(account.default_availability_zone);
-                $('#route53_domain').val(' ');
+                $('#route53_domain').val('protected');
                 $('#route53_domain').attr('disabled', 'disabled');
                 $('#private_key_file').val(account.yaml);
+                $('#private_key_file').attr('readonly', 'readonly');
 
                 self.saveAction = self.updateAccount;
+            } else if (provider_type && provider_type.hasOwnProperty('id')) {
+                $('#account_provider').val(provider_type.id);
             }
         };
 
         self.saveAccount = function (model, evt) {
-            self.saveAction(model, evt);
+            if (self.selectedAccount() === null) {
+                self.createAccount(model, evt);
+            } else {
+                self.updateAccount(model, evt);
+            }
         };
 
         self.createAccount = function (model, evt) {
-            var account = formutils.collectFormFields(evt.target.form);
+            var record = formutils.collectFormFields(evt.target.form), account = {};
+
+            account.provider_type = record.account_provider.value;
+            account.title = record.account_title.value;
+            account.description = record.account_description.value;
+            account.default_availability_zone = record.default_availability_zone.value;
+            account.account_id = record.account_id.value;
+            account.access_key_id = record.access_key_id.value;
+            account.secret_access_key = record.secret_access_key.value;
+            account.keypair = record.keypair.value;
+            account.route53_domain = record.route53_domain.value;
+            account.private_key_file = record.private_key_file.value;
+
+            // console.log(account);
+            // return;
 
             API.Accounts.save(account).then(function (newAccount) {
                 AccountStore.add(newAccount);
@@ -129,11 +178,10 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
             });
         };
 
-        self.deleteAccount = function (account) {
-            API.Accounts.delete(account).catch(function (error) {
-                self.showError(error);
-            });
+        self.cancelChanges = function (model, evt) {
+            self.navigate({ view: 'account.list' });
         };
+
     };
 
     vm.prototype = new base();

@@ -33,8 +33,6 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
 
         _O_.subscribe('welcome.rendered', function () {
             BlueprintStore.populate().then(function () {
-                console.log(BlueprintStore.collection());
-
                 // Specify a flattened array of Blueprint name as the store for the typeahead on the welcome page
                 $('#blueprint_search').typeahead({
                     name: 'blueprints',
