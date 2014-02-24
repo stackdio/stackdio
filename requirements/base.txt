@@ -6,7 +6,7 @@ South
 argparse
 boto
 dj_database_url
-django-celery
+django-celery>=3.0.0,<3.1.0
 django-cors-headers
 django-extensions
 django-filter
