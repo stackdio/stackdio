@@ -1,12 +1,13 @@
 define([
     'q', 
     'knockout',
+    'moment',
     'viewmodel/base',
     'util/postOffice',
     'store/Stacks',
     'api/api'
 ],
-function (Q, ko, base, _O_, StackStore, API) {
+function (Q, ko, moment, base, _O_, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -14,8 +15,9 @@ function (Q, ko, base, _O_, StackStore, API) {
          *  ==================================================================================
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
-        */
-        self.store = StackStore;
+         */
+        self.StackStore = StackStore;
+        self.EnhancedStackStore = ko.observableArray();
         self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch', 'Delete'];
 
 
@@ -23,7 +25,7 @@ function (Q, ko, base, _O_, StackStore, API) {
          *  ==================================================================================
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
-        */
+         */
         self.id = 'stacklist.widget';
         self.templatePath = 'stacklist.html';
         self.domBindingId = '.stacklist';
@@ -38,6 +40,11 @@ function (Q, ko, base, _O_, StackStore, API) {
 
         _O_.subscribe('stacklist.widget.rendered', function () {
             StackStore.populate().then(function () {
+                StackStore.collection().forEach(function (stack) {
+                    API.Stacks.getHistory(stack).then(function (stackwithhistory) {
+                        self.EnhancedStackStore.push(stackwithhistory);
+                    });
+                });
             }).done();
         });
 
@@ -46,10 +53,11 @@ function (Q, ko, base, _O_, StackStore, API) {
          *  ==================================================================================
          *   V I E W   M E T H O D S
          *  ==================================================================================
-        */
+         */
 
         // This builds the HTML for the stack history popover element
         self.popoverBuilder = function (stack) {
+            console.log(stack);
             return stack.fullHistory.map(function (h) {
                 var content = [];
 
@@ -121,9 +129,26 @@ function (Q, ko, base, _O_, StackStore, API) {
         };
 
         self.showStackDetails = function (stack) {
-            _O_.publish('navigate', { view: 'stack.details', stack: stack });
+            self.navigate({ view: 'stack.detail', data: {stack: stack.id} });
         };
+    };
 
+
+    /*
+     *  ==================================================================================
+     *  C U S T O M   B I N D I N G S
+     *  ==================================================================================
+     */
+    ko.bindingHandlers.bootstrapPopover = {
+        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+            var options = valueAccessor();
+            var defaultOptions = {};
+            options = $.extend(true, {}, defaultOptions, options);
+            options.trigger = "click";
+            options.placement = "bottom";
+            options.html = true;
+            $(element).popover(options);
+        }
     };
 
     vm.prototype = new base();
