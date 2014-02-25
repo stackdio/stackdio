@@ -103,15 +103,9 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
             // $('#availability_zone').selectpicker();
 
             if (data.hasOwnProperty('blueprint')) {
-                blueprint = BlueprintStore.collection().map(function (p) {
-                    if (p.id === parseInt(data.blueprint, 10)) {
-                        return p;
-                    }
-                }).reduce(function (p, c) {
-                    if (p.hasOwnProperty('id')) {
-                        return p;
-                    }
-                });
+                blueprint = BlueprintStore.collection().filter(function (p) {
+                    return p.id === parseInt(data.blueprint, 10);
+                })[0];
 
                 self.selectedBlueprint(blueprint);
                 self.blueprintTitle(blueprint.title);
@@ -119,17 +113,10 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 self.blueprintTitle('New Blueprint');
             }
 
-
             if (data.hasOwnProperty('profile')) {
-                profile = ProfileStore.collection().map(function (p) {
-                    if (p.id === parseInt(data.profile, 10)) {
-                        return p;
-                    }
-                }).reduce(function (p, c) {
-                    if (p.hasOwnProperty('id')) {
-                        return p;
-                    }
-                });
+                profile = ProfileStore.collection().filter(function (p) {
+                    return p.id === parseInt(data.profile, 10);
+                })[0];
 
                 self.selectedProfile = profile;
             }
@@ -151,8 +138,8 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 hostname_template: record.host_hostname.value,
                 zone: parseInt(record.availability_zone.value, 10),
                 cloud_profile: self.selectedProfile.id,
-                access_rules: _.map(HostRuleStore.collection(), function (rule) { return rule; }),
-                volumes: HostVolumeStore.collection(),
+                access_rules: HostRuleStore.collection().map(function (host) { return host; }),
+                volumes: HostVolumeStore.collection().map(function (volume) { return volume; }),
                 formula_components: record.formula_components.map(function (g) { return { id: g.value.split('|')[1], order: 0 }; })
             });
 
@@ -200,6 +187,8 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 host.spot_config.spot_price = parseFloat(record.spot_instance_price.value);
             }
 
+            console.log('host',host);
+
             // Request the forumula properties
             var formulaPromises = [];
             var propBuilder = {};
@@ -244,14 +233,42 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
 
         };
 
-
         self.viewBlueprint = function () {
             if (self.selectedBlueprint() === null) {
                 self.navigate({view: 'blueprint.detail'});
             } else {
                 self.navigate({view: 'blueprint.detail', data: {blueprint: self.selectedBlueprint().id} });
             }
+        };
 
+        self.addAccessRule = function () {
+            if (self.selectedBlueprint() === null) {
+                self.navigate({
+                    view: 'accessrule.detail'
+                });
+            } else {
+                self.navigate({
+                    view: 'blueprint.detail',
+                    data: {
+                        blueprint: self.selectedBlueprint().id
+                    }
+                });
+            }
+        };
+
+        self.addVolume = function () {
+            if (self.selectedBlueprint() === null) {
+                self.navigate({
+                    view: 'volume.detail'
+                });
+            } else {
+                self.navigate({
+                    view: 'volume.detail',
+                    data: {
+                        blueprint: self.selectedBlueprint().id
+                    }
+                });
+            }
         };
 
     };

@@ -3,7 +3,6 @@ var stackdio = {};
 requirejs.config({
    paths: {
         'jquery': 'bower_components/jquery/jquery.min',
-        'jui': 'bower_components/jquery-ui-amd/jquery-ui-1.10.0/jqueryui',
         'bootstrap': 'bower_components/bootstrap/dist/js/bootstrap.min',
         'bootstrap-select': 'bower_components/bootstrap-select/bootstrap-select.min',
         'bootstrap-typeahead': 'bower_components/typeahead.js/dist/typeahead.min',

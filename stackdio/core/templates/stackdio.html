@@ -1,45 +1,46 @@
 <!DOCTYPE HTML>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>stackd.io</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <head>
+        <meta charset="UTF-8">
+        <title>stackd.io</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
-    <link href="/static/css/theme/jquery-ui-1.10.3.custom.min.css" rel="stylesheet">
-    <link href="/static/stackdio/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/stackdio/bower_components/bootstrap-select/bootstrap-select.css" rel="stylesheet">
-    <link href="/static/css/stackdio.css" rel="stylesheet">
-</head>
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
+        <link href="/static/stackdio/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/static/stackdio/bower_components/bootstrap-select/bootstrap-select.css" rel="stylesheet">
+        <link href="/static/css/stackdio.css" rel="stylesheet">
+    </head>
 
-<body class="bootstrap-admin-with-small-navbar">
+    <body class="bootstrap-admin-with-small-navbar">
+        <div id="navigation"></div>
 
-    <div id="navigation"></div>
+        <div id="welcome"></div>
 
-    <div id="welcome"></div>
+        <div id="user-profile"></div>
 
-    <div id="user-profile"></div>
+        <div id="account-list"></div>
+        <div id="account-detail"></div>
+        <div id="profile-list"></div>
+        <div id="profile-detail"></div>
 
-    <div id="account-list"></div>
-    <div id="account-detail"></div>
-    <div id="profile-list"></div>
-    <div id="profile-detail"></div>
+        <div id="blueprint-list"></div>
+        <div id="blueprint-detail"></div>
+        <div id="host-detail"></div>
+        <div id="accessrule-detail"></div>
+        <div id="volume-detail"></div>
 
-    <div id="blueprint-list"></div>
-    <div id="blueprint-detail"></div>
-    <div id="host-detail"></div>
+        <div id="formula-list"></div>
+        <div id="formula-detail"></div>
 
-    <div id="formula-list"></div>
-    <div id="formula-detail"></div>
+        <div id="stack-list"></div>
+        <div id="stack-detail"></div>
 
-    <div id="stack-list"></div>
-    <div id="stack-detail"></div>
+        <div id="snapshot-list"></div>
+        <div id="snapshot-detail"></div>
 
-    <div id="snapshot-list"></div>
-    <div id="snapshot-detail"></div>
+    </body>
 
     <script data-main="/static/stackdio/application" src="/static/stackdio/require.js"></script>
     <script> window.stackdio_user = {}; window.stackdio_user.su = "{{ user.is_superuser }}"; </script>
 
-</body>
 </html>

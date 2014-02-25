@@ -49,8 +49,8 @@ define(function () {
     var BlueprintHostVolume = function () {};
     BlueprintHostVolume.prototype = new Model();
 
-    var BlueprintHostAccessRules = function () {};
-    BlueprintHostAccessRules.prototype = new Model();
+    var BlueprintHostAccessRule = function () {};
+    BlueprintHostAccessRule.prototype = new Model();
 
     var Role = function () {};
     Role.prototype = new Model();
@@ -80,7 +80,7 @@ define(function () {
         Blueprint: Blueprint,
         BlueprintHost: BlueprintHost,
         BlueprintHostVolume: BlueprintHostVolume,
-        BlueprintHostAccessRules: BlueprintHostAccessRules,
+        BlueprintHostAccessRule: BlueprintHostAccessRule,
         
         Formula: Formula,
         FormulaComponent: FormulaComponent,

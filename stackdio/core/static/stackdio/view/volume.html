@@ -1,0 +1,39 @@
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $root.navigate({view:'blueprint.list'}) }">Blueprints</a></li>
+            <li data-bind="text: blueprintTitle"></li>
+            <li data-bind="text: hostTitle"></li>
+            <li>New Volume</li>
+        </ol>
+
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Host Volume</div>
+        </div>
+
+        <form id="host-access-rule-form" role="form">
+            <div class="form-group">
+                <label for="volume_snapshot" class=" control-label">Snapshot</label>
+                <select id="volume_snapshot" class="form-control" data-bind="options: $root.SnapshotStore.collection(), optionsValue: 'id', optionsText: 'title'"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="volume_device" class="control-label">Device</label>
+                <input type="text" class="form-control" id="volume_device" placeholder="Device name">
+            </div>
+
+            <div class="form-group">
+                <label for="volume_mount_point" class="control-label">Mount point</label>
+                <input type="text" class="form-control" id="volume_mount_point" placeholder="/mnt/x">
+            </div>
+
+            <div class="row">
+                 <div class="col-md-3 col-md-offset-9  pull-right">
+                    <button class="btn" data-bind="click: cancelChanges">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: addVolume">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
