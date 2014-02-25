@@ -9,40 +9,6 @@ djcelery.setup_loader()
 
 STACKDIO_CONFIG = StackdioConfig()
 
-##
-# Required base-level environment variables. The salt and salt-cloud
-# environment variables usually don't need to be set for salt and
-# salt-cloud to work correctly, however, the stackd.io installation
-# must have them set and available for things to function correctly.
-##
-
-# Root of stackdio-based salt configuration and storage
-SALT_ROOT = os.path.join(STACKDIO_CONFIG['storage_root'], 'salt')
-
-# Salt configuration directory
-SALT_CONFIG_ROOT = os.path.join(SALT_ROOT, 'config')
-
-# Where salt states live (e.g., /srv/salt)
-SALT_STATE_ROOT = os.path.join(SALT_ROOT, 'core_states')
-
-# Where user environments are located. This is where imported salt
-# formulas will be cloned.
-SALT_USER_STATES_ROOT = os.path.join(SALT_ROOT, 'user_states')
-
-# These are the salt-master and salt-cloud configuration files.
-SALT_MASTER_CONFIG = os.path.join(SALT_CONFIG_ROOT, 'master')
-SALT_CLOUD_CONFIG = os.path.join(SALT_CONFIG_ROOT, 'cloud')
-
-# This is typically in the cloud.profiles.d directory located in
-# salt's configuration root directory. Each *.conf file is an
-# individual profile configuration
-SALT_CLOUD_PROFILES_DIR = os.path.join(SALT_CONFIG_ROOT, 'cloud.profiles.d')
-
-# This is typically in the cloud.providers.d directory located in
-# salt's configuration root directory. Each *.conf file is an
-# individual cloud provider configuration
-SALT_CLOUD_PROVIDERS_DIR = os.path.join(SALT_CONFIG_ROOT, 'cloud.providers.d')
-
 # The delimiter used in state execution results
 STATE_EXECUTION_DELIMITER = '_|-'
 
@@ -324,3 +290,8 @@ CLOUD_PROVIDERS = [
     'cloud.providers.aws.AWSCloudProvider',
     # 'cloud.providers.rackspace.RackspaceCloudProvider',
 ]
+
+##
+# Celery & RabbitMQ
+##
+BROKER_URL = 'amqp://guest:guest@localhost:5672/'
