@@ -19,7 +19,8 @@ class FormulaTaskException(Exception):
         super(FormulaTaskException, self).__init__(error)
 
 
-@celery.task(name='formulas.import_formula')
+# TODO: Ignoring complexity issues
+@celery.task(name='formulas.import_formula')  # NOQA
 def import_formula(formula_id):
     try:
         formula = Formula.objects.get(pk=formula_id)
@@ -48,15 +49,19 @@ def import_formula(formula_id):
             logger.debug('std_err: {0}'.format(result.std_err))
 
             if result.status_code == 128:
-                raise FormulaTaskException(formula,
-                    'Unable to clone provided URI. Are you sure this is a git repository?')
+                raise FormulaTaskException(
+                    formula,
+                    'Unable to clone provided URI. Are you sure this is '
+                    'a git repository?')
 
-            raise FormulaTaskException(formula,
+            raise FormulaTaskException(
+                formula,
                 'An error occurred while importing formula.')
 
         specfile_path = os.path.join(repodir, 'SPECFILE')
         if not os.path.isfile(specfile_path):
-            raise FormulaTaskException(formula,
+            raise FormulaTaskException(
+                formula,
                 'Formula did not have a SPECFILE. Each formula must define a '
                 'SPECFILE in the root of the repository.')
 
@@ -68,20 +73,23 @@ def import_formula(formula_id):
         formula_description = specfile.get('description', '')
         root_path = specfile.get('root_path', '')
         components = specfile.get('components', [])
-        root_dir = os.path.join(settings.SALT_USER_STATES_ROOT,
+        root_dir = os.path.join(settings.STACKDIO_CONFIG.salt_user_states,
                                 formula.owner.username,
                                 reponame)
 
         if os.path.isdir(root_dir):
-            raise FormulaTaskException(formula,
+            raise FormulaTaskException(
+                formula,
                 'Formula root path already exists.')
 
         if not formula_title:
-            raise FormulaTaskException(formula,
+            raise FormulaTaskException(
+                formula,
                 "Formula SPECFILE 'title' field is required.")
 
         if not root_path:
-            raise FormulaTaskException(formula,
+            raise FormulaTaskException(
+                formula,
                 "Formula SPECFILE 'root_path' field is required.")
 
         # update the formula title and description
@@ -92,21 +100,25 @@ def import_formula(formula_id):
 
         # check root path location
         if not os.path.isdir(os.path.join(repodir, root_path)):
-            raise FormulaTaskException(formula,
-                "Formula SPECFILE 'root_path' must exist in the formula. "
-                "Unable to locate directory: {0}".format(root_path))
+            raise FormulaTaskException(
+                formula,
+                'Formula SPECFILE \'root_path\' must exist in the formula. '
+                'Unable to locate directory: {0}'.format(root_path))
 
         if not components:
-            raise FormulaTaskException(formula,
-                "Formula SPECFILE 'components' field must be a non-empty "
-                "list of components.")
+            raise FormulaTaskException(
+                formula,
+                'Formula SPECFILE \'components\' field must be a non-empty '
+                'list of components.')
 
         # validate components
         for component in components:
             # check for required fields
             if 'title' not in component or 'sls_path' not in component:
-                raise FormulaTaskException(formula, "Each component in the "
-                    "SPECFILE must contain a 'title' and 'sls_path' field.")
+                raise FormulaTaskException(
+                    formula,
+                    'Each component in the SPECFILE must contain a \'title\' '
+                    'and \'sls_path\' field.')
 
             # determine if the sls_path is valid...we're looking for either
             # a directory with an init.sls or an sls file of the same name
@@ -118,10 +130,13 @@ def import_formula(formula_id):
             abs_init_file = os.path.join(repodir, init_file)
             abs_sls_file = os.path.join(repodir, sls_file)
 
-            if not os.path.isfile(abs_init_file) and not os.path.isfile(abs_sls_file):
-                raise FormulaTaskException(formula, "Could not locate an SLS "
-                    "file for component '{0}'. Expected to find either '{1}' "
-                    "or '{2}'.".format(component_title, init_file, sls_file))
+            if not os.path.isfile(abs_init_file) and \
+                    not os.path.isfile(abs_sls_file):
+                raise FormulaTaskException(
+                    formula,
+                    'Could not locate an SLS file for component \'{0}\'. '
+                    'Expected to find either \'{1}\' or \'{2}\'.'
+                    .format(component_title, init_file, sls_file))
 
         # all seems to be fine with the structure and mapping of the SPECFILE,
         # so now we'll build out the individual components of the formula
@@ -142,10 +157,10 @@ def import_formula(formula_id):
         if os.path.isdir(tmpdir):
             shutil.rmtree(tmpdir)
 
-        formula.set_status(Formula.COMPLETE, 'Import complete. Formula is now ready to be used.')
+        formula.set_status(Formula.COMPLETE,
+                           'Import complete. Formula is now ready to be used.')
 
         return True
     except Exception, e:
         logger.exception(e)
         raise FormulaTaskException(formula, 'An unhandled exception occurred.')
-
