@@ -367,11 +367,9 @@ class DjangoManageWrapperCommand(BaseCommand):
 
     def run(self):
         import sys
-        sys.path.insert(0, '/home/stackdio/.virtualenvs/testing/lib/python2.6/site-packages')
-        sys.path.insert(1, '/home/stackdio/.virtualenvs/testing/lib/python2.6/site-packages/stackdio-0.5a1-py2.6.egg')
-        sys.path.insert(2, '/home/stackdio/.virtualenvs/testing/lib/python2.6/site-packages/stackdio-0.5a1-py2.6.egg/stackdio')
-        sys.path.insert(3, '/home/stackdio/.virtualenvs/testing/lib/python2.6/site-packages/stackdio-0.5a1-py2.6.egg/stackdio/stackdio')
+        # update system path to include required stackdio paths
+        stackdio_root = self.load_resource()
+        sys.path.insert(0, stackdio_root)
         from django.core.management import execute_from_command_line
-        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.settings.development'
-        print self.args
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.stackdio.settings.__installed' # NOQA
         execute_from_command_line(self.args)

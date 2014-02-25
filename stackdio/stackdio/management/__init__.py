@@ -38,7 +38,8 @@ def main():
     # Runs the development Django server for stackdio API/UI
     config_parser = subparsers.add_parser(
         'manage.py',
-        help='start the Django development server')
+        help='convenience wrapper for Django\' manage.py command',
+        add_help=False)
     config_parser.set_defaults(command=commands.DjangoManageWrapperCommand)
     config_parser.set_defaults(raw_args=True)
 
