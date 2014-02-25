@@ -40,7 +40,12 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
                     limit: 10
                 }).on('typeahead:selected', function (object, selectedItem) {
                     var foundBlueprint = _.findWhere(BlueprintStore.collection(), { title: $('#blueprint_search').val() });
-                    self.navigate({ view: 'stack.launch', data: { blueprint: foundBlueprint.id } })
+                    self.navigate({
+                        view: 'stack.detail',
+                        data: {
+                            blueprint: foundBlueprint.id
+                        }
+                    });
                 });
             });
 
@@ -50,7 +55,12 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
             $("#blueprint_search").keypress(function (evt) {
                 if (evt.keyCode === 13) {
                     var foundBlueprint = _.findWhere(BlueprintStore.collection(), { title: $('#blueprint_search').val() });
-                    self.launchStack(foundBlueprint);
+                    self.navigate({
+                        view: 'stack.detail',
+                        data: {
+                            blueprint: foundBlueprint.id
+                        }
+                    });
                 }
             });
 

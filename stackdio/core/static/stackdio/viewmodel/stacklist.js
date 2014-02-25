@@ -39,6 +39,8 @@ function (Q, ko, moment, base, _O_, StackStore, API) {
         }
 
         _O_.subscribe('stacklist.widget.rendered', function () {
+            self.EnhancedStackStore.removeAll();
+            
             StackStore.populate().then(function () {
                 StackStore.collection().forEach(function (stack) {
                     API.Stacks.getHistory(stack).then(function (stackwithhistory) {
@@ -57,7 +59,6 @@ function (Q, ko, moment, base, _O_, StackStore, API) {
 
         // This builds the HTML for the stack history popover element
         self.popoverBuilder = function (stack) {
-            console.log(stack);
             return stack.fullHistory.map(function (h) {
                 var content = [];
 
