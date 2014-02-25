@@ -10,7 +10,7 @@ from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
-from queryset_transform import TransformManager, TransformQuerySet
+from core.queryset_transform import TransformManager, TransformQuerySet
 
 from core.fields import DeletingFileField
 from cloud.utils import get_provider_type_and_class
@@ -49,7 +49,7 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     provider_type = models.ForeignKey('CloudProviderType')
 
     # Used to store the provider-specifc YAML that will be written
-    # to disk in settings.SALT_CLOUD_PROVIDERS_FILE
+    # to disk in settings.STACKDIO_CONFIG.salt_providers_dir
     yaml = models.TextField()
 
     # The default availability zone for this account, may be overridden
@@ -68,7 +68,8 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.SALT_CLOUD_PROVIDERS_DIR))
+        storage=FileSystemStorage(
+            location=settings.STACKDIO_CONFIG.salt_providers_dir))
 
     def __unicode__(self):
         return self.title
@@ -148,7 +149,8 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.SALT_CLOUD_PROFILES_DIR))
+        storage=FileSystemStorage(
+            location=settings.STACKDIO_CONFIG.salt_profiles_dir))
 
     def __unicode__(self):
         return self.title
