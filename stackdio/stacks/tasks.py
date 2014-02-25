@@ -176,9 +176,9 @@ def launch_hosts(stack_id, parallel=True):
         cmd = ' '.join(cmd_args).format(
             log_file,
             stack.map_file.path,
-            settings.SALT_CLOUD_PROVIDERS_DIR,
-            settings.SALT_CLOUD_PROFILES_DIR,
-            settings.SALT_CLOUD_CONFIG,
+            settings.STACKDIO_CONFIG.salt_providers_dir,
+            settings.STACKDIO_CONFIG.salt_profiles_dir,
+            settings.STACKDIO_CONFIG.salt_cloud_config,
         )
 
         logger.debug('Executing command: {0}'.format(cmd))
@@ -205,7 +205,7 @@ def launch_hosts(stack_id, parallel=True):
 
             # grab all the hosts that salt knows about
             cmd = 'salt-run --config-dir={0} manage.present'.format(
-                settings.SALT_CONFIG_ROOT)
+                settings.STACKDIO_CONFIG.salt_config_root)
             verify_result = envoy.run(cmd)
             if verify_result.std_out:
                 all_hosts = set(yaml.safe_load(verify_result.std_out))
@@ -508,7 +508,7 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
         # Ping
         cmd_args = [
             'salt',
-            '--config-dir={0}'.format(settings.SALT_CONFIG_ROOT),
+            '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
             '--out=yaml',
             '-G stack_id:{0}'.format(stack_id),  # target the nodes in this
                                                  # stack only
@@ -608,7 +608,7 @@ def sync_all(stack_id):
         # build up the command for salt
         cmd_args = [
             'salt',
-            '--config-dir={0}'.format(settings.SALT_CONFIG_ROOT),
+            '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
             '-G stack_id:{0}'.format(stack_id),  # target the nodes in this
                                                  # stack only
             'saltutil.sync_all',                 # sync all systems
@@ -702,7 +702,7 @@ def highstate(stack_id, host_ids=None, max_retries=0):
             ##
             cmd = ' '.join([
                 'salt',
-                '--config-dir={0}'.format(settings.SALT_CONFIG_ROOT),
+                '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
                 '--out=yaml',              # yaml formatted output
                 '-G stack_id:{0}',         # target only the vms in this stack
                 '--log-file {1}',          # where to log
@@ -869,7 +869,7 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
             ##
             cmd = ' '.join([
                 'salt-run',
-                '--config-dir={0}'.format(settings.SALT_CONFIG_ROOT),
+                '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
                 '-lquiet',                  # quiet stdout
                 '--log-file {0}',           # where to log
                 '--log-file-level debug',   # full logging
@@ -1120,9 +1120,9 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
         ])
 
         cmd = ' '.join(cmd_args).format(
-            settings.SALT_CLOUD_PROVIDERS_DIR,
-            settings.SALT_CLOUD_PROFILES_DIR,
-            settings.SALT_CLOUD_CONFIG,
+            settings.STACKDIO_CONFIG.salt_providers_dir,
+            settings.STACKDIO_CONFIG.salt_profiles_dir,
+            settings.STACKDIO_CONFIG.salt_cloud_config,
         )
 
         logger.debug('Executing command: {0}'.format(cmd))

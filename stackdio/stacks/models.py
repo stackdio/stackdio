@@ -260,7 +260,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.SALT_STATE_ROOT))
+        storage=FileSystemStorage(
+            location=settings.STACKDIO_CONFIG.salt_core_states))
 
     # Where on disk is the custom overstate file stored
     overstate_file = DeletingFileField(
@@ -269,7 +270,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.SALT_STATE_ROOT))
+        storage=FileSystemStorage(
+            location=settings.STACKDIO_CONFIG.salt_core_states))
 
     # Where on disk is the custom pillar file for custom configuration for
     # all salt states used by the top file
@@ -590,9 +592,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 '--cloud-config={3}',
             ]).format(
                 self.map_file.path,
-                settings.SALT_CLOUD_PROVIDERS_DIR,
-                settings.SALT_CLOUD_PROFILES_DIR,
-                settings.SALT_CLOUD_CONFIG,
+                settings.STACKDIO_CONFIG.salt_providers_dir,
+                settings.STACKDIO_CONFIG.salt_profiles_dir,
+                settings.STACKDIO_CONFIG.salt_config_root,
             )
 
             logger.debug('Query hosts command: {0}'.format(query_cmd))
