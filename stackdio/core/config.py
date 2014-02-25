@@ -45,6 +45,12 @@ class StackdioConfig(dict):
         self.salt_config_root = os.path.join(self.salt_root, 'etc', 'salt')
         self.salt_master_config = os.path.join(self.salt_config_root, 'master')
         self.salt_cloud_config = os.path.join(self.salt_config_root, 'cloud')
+        self.salt_core_states = os.path.join(self.storage_root, 'core_states')
+        self.salt_user_states = os.path.join(self.storage_root, 'user_states')
+        self.salt_providers_dir = os.path.join(self.salt_config_root,
+                                               'cloud.providers.d')
+        self.salt_profiles_dir = os.path.join(self.salt_config_root,
+                                              'cloud.profiles.d')
 
         # defaults
         if not self.salt_master_log_level:
