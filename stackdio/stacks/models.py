@@ -594,7 +594,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 self.map_file.path,
                 settings.STACKDIO_CONFIG.salt_providers_dir,
                 settings.STACKDIO_CONFIG.salt_profiles_dir,
-                settings.STACKDIO_CONFIG.salt_config_root,
+                settings.STACKDIO_CONFIG.salt_cloud_config,
             )
 
             logger.debug('Query hosts command: {0}'.format(query_cmd))
