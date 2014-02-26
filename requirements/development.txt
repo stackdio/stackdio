@@ -1,7 +1,2 @@
 # Load the base requirements
 -r base.txt
-
-# TODO: We're using a specific revision of Salt's develop branch until
-# a release or release candidate with the pull requests we need is
-# available
-#-e git+https://github.com/saltstack/salt.git@3a894d760699ab155bc63a3e35e6730f87cc7d8c#egg=salt
