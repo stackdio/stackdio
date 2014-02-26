@@ -1,11 +1,4 @@
-define([
-    'q', 
-    'knockout',
-    'util/postOffice',
-    'viewmodel/base',
-    'viewmodel/stacklist',
-    'store/Blueprints'
-],
+define(['q', 'knockout', 'util/postOffice', 'viewmodel/base', 'viewmodel/stacklist', 'store/Blueprints'],
 function (Q, ko, _O_, base, stacklist, BlueprintStore) {
     var vm = function () {
         var self = this;
@@ -27,6 +20,11 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
             console.log(ex);            
         }
 
+        /*
+         *  ==================================================================================
+         *   E V E N T   S U B S C R I P T I O N S
+         *  ==================================================================================
+         */
         _O_.subscribe('welcome.registered', function () {
 
         });
@@ -65,8 +63,6 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
             });
 
         });
-
-
     };
 
     vm.prototype = new base();

@@ -63,7 +63,7 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
         self.init = function (data) {
             self.EnhancedProfileStore.removeAll();
 
-            if (data.hasOwnProperty('account')) {
+            if (data && data.hasOwnProperty('account')) {
                 ProfileStore.collection().forEach(function (profile) {
                     profile.account = _.findWhere(AccountStore.collection(), { id: profile.cloud_provider });
                     if (profile.account.id === parseInt(data.account, 10)) {
@@ -82,47 +82,20 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
             self.navigate({ view: 'profile.detail' });
         };
 
-        self.addProfile = function (model, evt) {
-            var profile = formutils.collectFormFields(evt.target.form);
-            profile.account = self.selectedAccount();
-
-            API.Profiles.save(profile)
-                .then(function (newProfile) {
-                    console.log(newProfile);
-                    stores.AccountProfiles.push(newProfile);
-                    formutils.clearForm('profile-form');
-                    self.showSuccess();
-                });
-        };
-
         self.deleteProfile = function (profile) {
-            API.Profiles.delete(profile)
-                .then(self.showSuccess)
-                .catch(function (error) {
-                    self.showError(error);
-                });
+            API.Profiles.delete(profile).then(function () {
+                ProfileStore.removeById(profile.id);
+                self.init();
+            })
+            .catch(function (error) {
+                self.showError(error);
+            });
         };
 
         self.viewProfile = function (profile) {
-            console.log('profile',profile);
             self.navigate({ view: 'profile.detail', data: { profile: profile.id } });
         };
 
-        self.listProfiles = function (data) {
-            stores.AccountProfiles.removeAll();
-
-            if (data && data.hasOwnProperty('account')) {
-                stores.Profiles().forEach(function (profile) {
-                    if (profile.account.id === parseInt(data.account, 10)) {
-                        stores.AccountProfiles.push(profile);
-                    }
-                });                
-            } else {
-                stores.Profiles().forEach(function (profile) {
-                    stores.AccountProfiles.push(profile);
-                });
-            }
-        };
     };
 
     vm.prototype = new base();

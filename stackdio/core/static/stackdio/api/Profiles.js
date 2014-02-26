@@ -63,17 +63,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, profile = response;
-
-                    if (profile.hasOwnProperty('id')) {
-                        // Inject the name of the provider account used to create the profile
-                        profile.account = _.find(stores.Accounts(), function (account) {
-                            return account.id === profile.cloud_provider;
-                        });
-
-                        stores.Profiles.push(profile);
-                        deferred.resolve(profile);
-                    }
+                    deferred.resolve(response);
                 },
                 error: function (request, status, error) {
                     deferred.reject(new Error(error));
@@ -93,8 +83,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    stores.Profiles.remove(profile);
-                    deferred.resolve(profile);
+                    deferred.resolve();
                 },
                 error: function (request, status, error) {
                     deferred.reject(new Error(error));

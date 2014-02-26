@@ -7,9 +7,10 @@ define([
     'store/Accounts',
     'store/Profiles',
     'store/InstanceSizes',
-    'api/api'
+    'api/api',
+    'model/models'
 ],
-function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeStore, API) {
+function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeStore, API, models) {
     var vm = function () {
         var self = this;
 
@@ -22,7 +23,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
         self.selectedProfile = ko.observable(null);
         self.userCanModify = ko.observable(true);
         self.profileTitle = ko.observable();
-        self.saveAction = self.createProfile;
+        self.saveAction = 'create';
 
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
@@ -90,6 +91,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 self.profileTitle(profile.title);
             } else {
                 self.profileTitle('New Profile');
+                self.saveAction = 'create';
             }
 
             self.selectedProfile(profile);
@@ -102,25 +104,28 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 $('#ssh_user').val(profile.ssh_user);
                 $('#default_instance_size').val(profile.default_instance_size);
 
-                self.saveAction = self.updateProfile;
+                self.saveAction = 'update';
             }
         };
 
         self.saveProfile = function (model, evt) {
-            self.saveAction(model, evt);
+            if (self.saveAction === 'create') {
+                self.createProfile(model, evt);
+            } else {
+                self.updateProfile(model,evt);
+            }
         };
 
         self.createProfile = function (model, evt) {
             var profile = formutils.collectFormFields(evt.target.form);
 
-            profile.account = stores.Accounts().map(function (account) {
-                if (account.id === parseInt(profile.profile_account.value, 10)) {
-                    return account;
-                }
+            profile.account = AccountStore.collection().filter(function (account) {
+                return account.id === parseInt(profile.profile_account.value, 10);
             })[0];
 
             API.Profiles.save(profile).then(function (newProfile) {
-                stores.Profiles.push(newProfile);
+                ProfileStore.add(new models.Profile().create(newProfile));
+                console.log(ProfileStore.collection());
                 self.navigate({ view: 'profile.list' });
             });
         };
@@ -152,6 +157,11 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             API.Profiles.delete(profile).catch(function (error) {
                 self.showError(error);
             });
+        };
+
+        self.cancelChanges = function (model, evt) {
+            formutils.clearForm('profile-form');
+            self.navigate({ view: 'profile.list' });
         };
     };
 
