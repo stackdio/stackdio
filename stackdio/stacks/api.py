@@ -219,7 +219,8 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             tasks.update_metadata.si(stack.id, remove_absent=False) |
             tasks.register_volume_delete.si(stack.id) |
             tasks.unregister_dns.si(stack.id) |
-            tasks.destroy_hosts.si(stack.id, parallel=parallel)
+            tasks.destroy_hosts.si(stack.id, parallel=parallel) |
+            tasks.destroy_stack.si(stack.id)
         )
 
         # execute the chain

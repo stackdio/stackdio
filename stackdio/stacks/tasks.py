@@ -1,5 +1,6 @@
 import time
 import os
+import shutil
 from datetime import datetime
 
 import envoy
@@ -508,7 +509,8 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
         # Ping
         cmd_args = [
             'salt',
-            '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
+            '--config-dir={0}'.format(
+                settings.STACKDIO_CONFIG.salt_config_root),
             '--out=yaml',
             '-G stack_id:{0}'.format(stack_id),  # target the nodes in this
                                                  # stack only
@@ -608,7 +610,8 @@ def sync_all(stack_id):
         # build up the command for salt
         cmd_args = [
             'salt',
-            '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
+            '--config-dir={0}'.format(
+                settings.STACKDIO_CONFIG.salt_config_root),
             '-G stack_id:{0}'.format(stack_id),  # target the nodes in this
                                                  # stack only
             'saltutil.sync_all',                 # sync all systems
@@ -702,7 +705,8 @@ def highstate(stack_id, host_ids=None, max_retries=0):
             ##
             cmd = ' '.join([
                 'salt',
-                '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
+                '--config-dir={0}'.format(
+                    settings.STACKDIO_CONFIG.salt_config_root),
                 '--out=yaml',              # yaml formatted output
                 '-G stack_id:{0}',         # target only the vms in this stack
                 '--log-file {1}',          # where to log
@@ -869,7 +873,8 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
             ##
             cmd = ' '.join([
                 'salt-run',
-                '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
+                '--config-dir={0}'.format(
+                    settings.STACKDIO_CONFIG.salt_config_root),
                 '-lquiet',                  # quiet stdout
                 '--log-file {0}',           # where to log
                 '--log-file-level debug',   # full logging
@@ -1070,7 +1075,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
-        stack.set_status(finish_stack.name,
+        stack.set_status(destroy_hosts.name,
                          'Destroying stack infrastructure. This could '
                          'take a while.')
         hosts = stack.get_hosts(host_ids)
@@ -1134,7 +1139,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
 
         if result.status_code > 0:
             err_msg = result.std_err if result.std_err else result.std_out
-            stack.set_status(Stack.ERROR, err_msg)
+            stack.set_status(destroy_hosts.name, err_msg, Stack.ERROR)
             raise StackTaskException('Error destroying hosts on stack {0}: '
                                      '{1!r}'.format(
                                          stack_id,
@@ -1154,7 +1159,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
                 ok, result = driver.wait_for_state(known_hosts,
                                                    driver.STATE_TERMINATED)
                 if not ok:
-                    stack.set_status(Stack.ERROR, result)
+                    stack.set_status(destroy_hosts.name, result, Stack.ERROR)
                     raise StackTaskException(result)
                 known_hosts.update(instance_id='', state='terminated')
 
@@ -1173,11 +1178,39 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
         if delete_stack:
             hosts.delete()
 
-        stack.set_status(finish_stack.name,
+        stack.set_status(destroy_hosts.name,
                          'Finished destroying stack infrastructure.')
 
-        # optionally delete the stack as well
-        if delete_stack:
+    except Stack.DoesNotExist:
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
+        raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
+    except Exception, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(destroy_hosts.name, err_msg, level=Stack.ERROR)
+        logger.exception(err_msg)
+        raise
+
+
+@celery.task(name='stacks.destroy_stack')
+def destroy_stack(stack_id):
+    '''
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        stack.set_status(destroy_stack.name,
+                         'Performing final cleanup of stack.')
+        hosts = stack.get_hosts()
+
+        if hosts.count() > 0:
+            stack.set_status(destroy_stack.name,
+                             'Stack appears to have hosts attached and '
+                             'can\'t be completely destroyed.',
+                             level=Stack.ERROR)
+        else:
+            # delete the stack storage directory
+            shutil.rmtree(stack.get_root_directory())
             stack.delete()
 
     except Stack.DoesNotExist:
