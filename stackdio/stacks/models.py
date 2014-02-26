@@ -60,11 +60,11 @@ def get_props_file_path(obj, filename):
 
 # Top and overstate files go into salt root
 def get_top_file_path(obj, filename):
-    return ".stackdio/stack_{0}_top.sls".format(obj.id)
+    return "stack_{0}_top.sls".format(obj.id)
 
 
 def get_overstate_file_path(obj, filename):
-    return ".stackdio/stack_{0}_overstate.sls".format(obj.id)
+    return "stack_{0}_overstate.sls".format(obj.id)
 
 
 class Level(object):
