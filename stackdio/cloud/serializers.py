@@ -79,27 +79,44 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         # validate provider specific request data
         request = self.context['request']
 
-        provider_type, provider_class = get_provider_type_and_class(
-            request.DATA.get('provider_type'))
+        # patch requests only accept a few things for modification
+        if request.method == 'PATCH':
+            fields_available = ('title',
+                                'description',
+                                'default_availability_zone')
 
-        # pull the availability zone name
-        try:
-            zone = models.CloudZone.objects.get(
-                pk=request.DATA['default_availability_zone'])
-            request.DATA['default_availability_zone_name'] = zone.slug
-        except models.CloudZone.DoesNotExist:
-            errors = ['Could not look up availability zone. Did you give '
-                      'a valid id?']
-            raise serializers.ValidationError({'errors': errors})
+            errors = {}
+            for k in request.DATA:
+                if k not in fields_available:
+                    errors.setdefault(k, []).append(
+                        'Field may not be modified.')
+            if errors:
+                logger.debug(errors)
+                raise serializers.ValidationError(errors)
 
-        provider = provider_class()
-        errors = provider.validate_provider_data(request.DATA,
-                                                 request.FILES)
+        elif request.method == 'POST':
 
-        if errors:
-            logger.error('Cloud provider validation errors: '
-                         '{0}'.format(errors))
-            raise serializers.ValidationError(errors)
+            provider_type, provider_class = get_provider_type_and_class(
+                request.DATA.get('provider_type'))
+
+            # pull the availability zone name
+            try:
+                zone = models.CloudZone.objects.get(
+                    pk=request.DATA['default_availability_zone'])
+                request.DATA['default_availability_zone_name'] = zone.slug
+            except models.CloudZone.DoesNotExist:
+                errors = ['Could not look up availability zone. Did you give '
+                          'a valid id?']
+                raise serializers.ValidationError({'errors': errors})
+
+            provider = provider_class()
+            errors = provider.validate_provider_data(request.DATA,
+                                                     request.FILES)
+
+            if errors:
+                logger.error('Cloud provider validation errors: '
+                             '{0}'.format(errors))
+                raise serializers.ValidationError(errors)
 
         return attrs
 
