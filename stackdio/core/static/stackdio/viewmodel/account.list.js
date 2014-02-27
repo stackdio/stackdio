@@ -76,7 +76,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
 
         self.deleteAccount = function (account) {
             API.Accounts.delete(account).then(function () {
-                AccountStore.remove(account);
+                AccountStore.removeById(account.id);
             })
             .catch(function (error) {
                 self.showError(error);

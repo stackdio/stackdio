@@ -8,5 +8,14 @@ define(['util/66'], function ($66) {
         self.navigate = function (options) {
             $66.navigate(options);
         };
+
+        self.showSuccess = function () {
+            $(".alert-success").removeClass('hide');
+            setTimeout("$('.alert-success').addClass('hide')", 3000);
+        };
+
+        self.closeSuccess = function () {
+            $(".alert-success").addClass('hide');
+        };
    }
 });

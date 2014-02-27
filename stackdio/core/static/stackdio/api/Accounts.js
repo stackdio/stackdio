@@ -106,8 +106,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    stores.Accounts.remove(account);
-                    deferred.resolve(account);
+                    deferred.resolve();
                 },
                 error: function (request, status, error) {
                     deferred.reject(new Error(error));
