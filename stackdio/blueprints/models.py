@@ -42,7 +42,9 @@ def get_props_file_path(obj, filename):
 
 
 class BlueprintManager(models.Manager):
-    @transaction.commit_on_success
+
+    # TODO: ignoring code complexity issues
+    @transaction.commit_on_success  # NOQA
     def create(self, owner, data):
         '''
         '''
@@ -170,6 +172,15 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
             return {}
         with open(self.props_file.path) as f:
             return json.loads(f.read())
+
+    @properties.setter
+    def properties(self, props):
+        props_json = json.dumps(props, indent=4)
+        if not self.props_file:
+            self.props_file.save(self.slug + '.props', ContentFile(props_json))
+        else:
+            with open(self.props_file.path, 'w') as f:
+                f.write(props_json)
 
 
 class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):

@@ -1,4 +1,3 @@
-import collections
 import json
 import os
 import re
@@ -21,28 +20,13 @@ import model_utils.models
 from model_utils import Choices
 
 from core.fields import DeletingFileField
+from core.utils import recursive_update
 from cloud.models import SecurityGroup
 from volumes.models import Volume
 
 logger = logging.getLogger(__name__)
 
 HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
-
-
-# Thanks Alex Martelli
-# http://goo.gl/nENTTt
-def recursive_update(d, u):
-    '''
-    Recursive update of one dictionary with another. The built-in
-    python dict::update will erase exisitng values.
-    '''
-    for k, v in u.iteritems():
-        if isinstance(v, collections.Mapping):
-            r = recursive_update(d.get(k, {}), v)
-            d[k] = r
-        else:
-            d[k] = u[k]
-    return d
 
 
 # Map, pillar, and properties files go into storage

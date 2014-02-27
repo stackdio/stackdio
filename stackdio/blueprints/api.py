@@ -1,7 +1,6 @@
 import logging
 import string
 
-from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
@@ -377,17 +376,13 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             raise BadRequest('Only the owner of a blueprint may modify it.')
 
         # rebuild properties list
-        properties = request.DATA.get('properties', None)
-        if isinstance(properties, list):
-            with transaction.commit_on_success():
-                blueprint.properties.all().delete()
-                for name, value in set([(p['name'], p['value'])
-                                        for p in properties]):
-                    blueprint.properties.create(name=name, value=value)
+        properties = request.DATA.pop('properties', None)
+        if properties:
+            blueprint.properties = properties
 
         # since we have already updated the properties list, trick
         # super::update method into thinking no properties have changed
-        request.DATA['properties'] = []
+        #request.DATA['properties'] = []
         return super(BlueprintDetailAPIView, self).update(request,
                                                           *args,
                                                           **kwargs)
