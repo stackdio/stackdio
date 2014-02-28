@@ -13,8 +13,6 @@ import boto
 import yaml
 from boto.route53.record import ResourceRecordSets
 
-from django.core.exceptions import ValidationError
-
 from cloud.providers.base import (
     BaseCloudProvider,
     TimeoutException,
@@ -52,7 +50,7 @@ class Route53Domain(object):
         # Loaded after connection is made
         self.hosted_zone = None
         self.zone_id = None
-        
+
         self.conn = boto.connect_route53(self.access_key,
                                          self.secret_key)
         self._load_domain()
@@ -81,7 +79,7 @@ class Route53Domain(object):
     def start_rr_transaction(self):
         '''
         Creates a new Route53 ResourceRecordSets object that is used
-        internally like a transaction of sorts. You may add or delete 
+        internally like a transaction of sorts. You may add or delete
         many resource records using a single set by calling the
         `add_rr_cname` and `delete_rr_cname` methods. Finish the transaction
         with `finish_rr_transaction`
@@ -133,7 +131,10 @@ class Route53Domain(object):
         # updating it
         rr_names = self.get_rrnames_set()
         if record_name in rr_names:
-            self._delete_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
+            self._delete_rr_record(record_name,
+                                   [record_value],
+                                   'CNAME',
+                                   ttl=ttl)
 
         self._add_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
 
@@ -151,23 +152,35 @@ class Route53Domain(object):
         # Only remove the record if it exists
         rr_names = self.get_rrnames_set()
         if record_name in rr_names:
-            self._delete_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
+            self._delete_rr_record(record_name,
+                                   [record_value],
+                                   'CNAME',
+                                   ttl=ttl)
             return True
         return False
 
-    def _add_rr_record(self, record_name, record_values, record_type, **kwargs):
-        rr = self._rr_txn.add_change('CREATE', record_name, record_type, **kwargs)
+    def _add_rr_record(self, record_name, record_values, record_type,
+                       **kwargs):
+        rr = self._rr_txn.add_change('CREATE',
+                                     record_name,
+                                     record_type,
+                                     **kwargs)
         for v in record_values:
             rr.add_value(v)
 
-    def _delete_rr_record(self, record_name, record_values, record_type, **kwargs):
-        rr = self._rr_txn.add_change('DELETE', record_name, record_type, **kwargs)
+    def _delete_rr_record(self, record_name, record_values, record_type,
+                          **kwargs):
+        rr = self._rr_txn.add_change('DELETE',
+                                     record_name,
+                                     record_type,
+                                     **kwargs)
         for v in record_values:
             rr.add_value(v)
+
 
 class AWSCloudProvider(BaseCloudProvider):
     SHORT_NAME = 'ec2'
-    LONG_NAME  = 'Amazon Web Services' 
+    LONG_NAME = 'Amazon Web Services'
 
     # The account/owner id
     ACCOUNT_ID = 'account_id'
@@ -201,9 +214,9 @@ class AWSCloudProvider(BaseCloudProvider):
     @classmethod
     def get_required_fields(self):
         return [
-            self.ACCOUNT_ID, 
-            self.ACCESS_KEY, 
-            self.SECRET_KEY, 
+            self.ACCOUNT_ID,
+            self.ACCESS_KEY,
+            self.SECRET_KEY,
             self.KEYPAIR,
             self.PRIVATE_KEY,
             self.ROUTE53_DOMAIN,
@@ -247,7 +260,7 @@ class AWSCloudProvider(BaseCloudProvider):
         config_data = {
             'provider': self.SHORT_NAME,
             'id': data[self.ACCESS_KEY],
-            'key': data[self.SECRET_KEY], 
+            'key': data[self.SECRET_KEY],
             'keyname': data[self.KEYPAIR],
             'private_key': private_key_path,
             'append_domain': data[self.ROUTE53_DOMAIN],
@@ -257,8 +270,10 @@ class AWSCloudProvider(BaseCloudProvider):
             'delvol_on_destroy': True,
         }
 
-        # Add in the default availability zone to be set in the configuration file
-        config_data['availability_zone'] = self.obj.default_availability_zone.title
+        # Add in the default availability zone to be set in the configuration
+        # file
+        config_data['availability_zone'] = \
+            self.obj.default_availability_zone.title
 
         # Save the data out to a file that can be reused by this provider
         # later if necessary
@@ -267,7 +282,8 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return config_data
 
-    def validate_provider_data(self, data, files=None):
+    # TODO: Ignoring code complexity issues...
+    def validate_provider_data(self, data, files=None):  # NOQA
 
         errors = super(AWSCloudProvider, self) \
             .validate_provider_data(data, files)
@@ -277,13 +293,14 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # check authentication credentials
         try:
-            ec2 = boto.connect_ec2(data[self.ACCESS_KEY], data[self.SECRET_KEY])
+            ec2 = boto.connect_ec2(data[self.ACCESS_KEY],
+                                   data[self.SECRET_KEY])
             ec2.get_all_zones()
         except boto.exception.EC2ResponseError, e:
             err_msg = 'Unable to authenticate to AWS with the provided keys.'
             errors.setdefault(self.ACCESS_KEY, []).append(err_msg)
             errors.setdefault(self.SECRET_KEY, []).append(err_msg)
-            
+
         if errors:
             return errors
 
@@ -302,18 +319,21 @@ class AWSCloudProvider(BaseCloudProvider):
         except boto.exception.EC2ResponseError, e:
             errors.setdefault(self.DEFAULT_AVAILABILITY_ZONE_NAME, []).append(
                 'The availability zone \'{0}\' does not exist in '
-                'this account.'.format(data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
+                'this account.'.format(
+                    data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
 
         # check route 53 domain
         try:
             if self.ROUTE53_DOMAIN in data:
                 # connect to route53 and check that the domain is available
-                r53 = boto.connect_route53(data[self.ACCESS_KEY], data[self.SECRET_KEY])
+                r53 = boto.connect_route53(data[self.ACCESS_KEY],
+                                           data[self.SECRET_KEY])
                 found_domain = False
                 domain = data[self.ROUTE53_DOMAIN]
 
                 hosted_zones = r53.get_all_hosted_zones()
-                hosted_zones = hosted_zones['ListHostedZonesResponse']['HostedZones']
+                hosted_zones = \
+                    hosted_zones['ListHostedZonesResponse']['HostedZones']
                 for hosted_zone in hosted_zones:
                     if hosted_zone['Name'].startswith(domain):
                         found_domain = True
@@ -400,7 +420,8 @@ class AWSCloudProvider(BaseCloudProvider):
             'protocol': tcp | udp | icmp
             'from_port': [1-65535]
             'to_port': [1-65535]
-            'rule': string (ex. 19.38.48.12/32, 0.0.0.0/0, 4328737383:stackdio-group)
+            'rule': string (ex. \
+                19.38.48.12/32, 0.0.0.0/0, 4328737383:stackdio-group)
         }
         '''
         ec2 = self.connect_ec2()
@@ -432,8 +453,6 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
         Revokes ALL rules on the security group.
         '''
-        ec2 = self.connect_ec2()
-
         groups = self.get_security_groups(group_name)
         for group_name, group in groups.iteritems():
             for rule in group['rules']:
@@ -451,7 +470,8 @@ class AWSCloudProvider(BaseCloudProvider):
             rules = []
             for rule in group.rules:
                 for grant in rule.grants:
-                    rule_string = grant.cidr_ip or ':'.join([grant.owner_id, grant.name])
+                    rule_string = grant.cidr_ip or ':'.join([grant.owner_id,
+                                                             grant.name])
                     rules.append({
                         'protocol': rule.ip_protocol,
                         'from_port': rule.from_port,
@@ -476,7 +496,7 @@ class AWSCloudProvider(BaseCloudProvider):
         try:
             ec2.get_all_images(image_id)
             return True, ''
-        except boto.exception.EC2ResponseError, e:
+        except boto.exception.EC2ResponseError:
             return False, 'The image id \'{0}\' does not exist in this ' \
                           'account.'.format(image_id)
 
@@ -488,7 +508,7 @@ class AWSCloudProvider(BaseCloudProvider):
         try:
             ec2.get_all_snapshots(snapshot_id)
             return True, ''
-        except boto.exception.EC2ResponseError, e:
+        except boto.exception.EC2ResponseError:
             return False, 'The snapshot id \'{0}\' does not exist in this ' \
                           'account.'.format(snapshot_id)
 
@@ -507,9 +527,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # for each host, create a CNAME record
         for host in hosts:
-            logger.debug('add_rr_cname for host {0!r} -> {1} : {2}'.format(host, host.hostname, host.provider_dns))
+            logger.debug('add_rr_cname for host {0!r} -> {1} : {2}'.format(
+                host, host.hostname, host.provider_dns))
             r53_domain.add_rr_cname(host.hostname,
-                                    host.provider_dns, 
+                                    host.provider_dns,
                                     ttl=DEFAULT_ROUTE53_TTL)
 
         # Finish the transaction
@@ -519,7 +540,7 @@ class AWSCloudProvider(BaseCloudProvider):
         for host in hosts:
             host.fqdn = '{0}.{1}'.format(host.hostname, r53_domain.domain)
             host.save()
-        
+
     def unregister_dns(self, hosts):
         '''
         Given a list of 'stacks.Host' objects, this method's
@@ -535,10 +556,12 @@ class AWSCloudProvider(BaseCloudProvider):
         finish = False
         for host in hosts:
             if not host.provider_dns:
+                logger.warn('Host {0} has no provider_dns...skipping '
+                            'DNS deregister.'.format(host))
                 continue
             logger.debug(host.hostname)
             logger.debug(host.provider_dns)
-            if r53_domain.delete_rr_cname(host.hostname, 
+            if r53_domain.delete_rr_cname(host.hostname,
                                           host.provider_dns,
                                           ttl=DEFAULT_ROUTE53_TTL):
                 finish = True
@@ -559,11 +582,14 @@ class AWSCloudProvider(BaseCloudProvider):
         # volume deletion automatically when the host is terminated
         for h in hosts:
             if not h.instance_id:
+                logger.warn('Host {0} has no instance ID...skipping volume '
+                            'delete.'.format(h))
                 continue
 
             # get current block device mappings
-            _, devices = ec2.get_instance_attribute(h.instance_id,
-                                                    'blockDeviceMapping').popitem()
+            _, devices = ec2.get_instance_attribute(
+                h.instance_id,
+                'blockDeviceMapping').popitem()
 
             # find those devices that aren't already registered for deletion
             # and build a list of the modify strings
@@ -574,22 +600,24 @@ class AWSCloudProvider(BaseCloudProvider):
 
             # use the modify strings to change the existing volumes flag
             if mods:
-                ec2.modify_instance_attribute(h.instance_id, 
-                                              'blockDeviceMapping', 
+                ec2.modify_instance_attribute(h.instance_id,
+                                              'blockDeviceMapping',
                                               mods)
 
             # for each volume, rename them so we can create new volumes with
             # the same now, just in case
             for v in h.volumes.all():
                 if not v.volume_id:
-                    logger.warn('{0!r} missing volume_id. Skipping delete retag.'.format(v))
+                    logger.warn('{0!r} missing volume_id. Skipping delete '
+                                'retag.'.format(v))
                     continue
-                name = 'stackdio::volume::{0!s}-DEL-{1}'.format(v.id, uuid4().hex)
-                logger.info('tagging volume {0}: {1}'.format(v.volume_id, name))
+                name = 'stackdio::volume::{0!s}-DEL-{1}'.format(v.id,
+                                                                uuid4().hex)
+                logger.info('tagging volume {0}: {1}'.format(v.volume_id,
+                                                             name))
                 ec2.create_tags([v.volume_id], {
                     'Name': name,
                 })
-
 
     def tag_resources(self, stack, hosts=[], volumes=[]):
         ec2 = self.connect_ec2()
@@ -621,24 +649,25 @@ class AWSCloudProvider(BaseCloudProvider):
         ec2 = self.connect_ec2()
 
         instance_ids = [i.instance_id for i in hosts]
-        return [i for r in ec2.get_all_instances(instance_ids) \
-                     for i in r.instances]
+        return [i
+                for r in ec2.get_all_instances(instance_ids)
+                for i in r.instances]
 
     def _wait(self,
               fun,
               fun_args=None,
               fun_kwargs=None,
-              timeout=5*60,
+              timeout=5 * 60,
               interval=5,
               max_failures=5):
         '''
-        Generic function that will call the given function `fun` with 
-        `fun_args` and `fun_kwargs` until the function returns a valid result 
-        or the `timeout` or `max_failures` is reached. A valid result is a 
+        Generic function that will call the given function `fun` with
+        `fun_args` and `fun_kwargs` until the function returns a valid result
+        or the `timeout` or `max_failures` is reached. A valid result is a
         tuple with the first element being boolean True and the second element
         being the return value for `fun`. If False is the first element of the
         tuple it will *not* be considered a failure and the loop will continue
-        waiting for a valid result. All exceptions from `fun` will be 
+        waiting for a valid result. All exceptions from `fun` will be
         considered failures.
         '''
 
@@ -650,7 +679,8 @@ class AWSCloudProvider(BaseCloudProvider):
         # start the loop
         while True:
             logger.debug(
-                'Calling given method {0!r}. Giving up in 00:{1:02d}:{2:02d}'.format(
+                'Calling given method {0!r}. Giving up in '
+                '00:{1:02d}:{2:02d}'.format(
                     fun,
                     int(timeout // 60),
                     int(timeout % 60)
@@ -660,7 +690,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 ok, result = fun(*fun_args, **fun_kwargs)
                 if ok:
                     return result
-            except Exception, e:
+            except Exception:
                 logger.exception('Function {0!r} threw exception. Remaining '
                                  'failures: {1}'.format(fun, max_failures))
 
@@ -672,12 +702,7 @@ class AWSCloudProvider(BaseCloudProvider):
                     )
 
             if timeout < 0:
-                raise TimeoutException(
-                    'Unable to reach {0} state in {1}s'.format(
-                        state,
-                        timeout
-                    )
-                )
+                raise TimeoutException()
             sleep(interval)
             timeout -= interval
 
@@ -691,15 +716,15 @@ class AWSCloudProvider(BaseCloudProvider):
                 fun_args=(hosts, state)
             )
             return (True, instances)
-        except MaxFailuresException, e:
+        except MaxFailuresException:
             err_msg = 'Max number of failures reached while waiting ' \
                       'for state: {0}'.format(state)
-        except TimeoutException, e:
+        except TimeoutException:
             err_msg = 'Timeout reached while waiting for state: ' \
                       '{0}'.format(state)
 
         return (False, err_msg)
-        
+
     def _wait_for_state(self, hosts, state):
         '''
         Checks if all hosts are in the given state. Returns a 2-element tuple
@@ -725,12 +750,13 @@ class AWSCloudProvider(BaseCloudProvider):
     # ACTION IMPLEMENTATIONS BELOW
     ##
 
-    def _execute_action(self, stack, status, success_state, state_fun, *args, **kwargs):
+    def _execute_action(self, stack, status, success_state, state_fun,
+                        *args, **kwargs):
         '''
         Generic function to handle most all states accordingly. If you need
         custom logic in the state handling, do so in the _action* methods.
         '''
-        stack.set_status(status, 
+        stack.set_status(status,
                          '%s all hosts in this stack.' % status.capitalize())
 
         hosts = stack.get_hosts()
@@ -742,10 +768,10 @@ class AWSCloudProvider(BaseCloudProvider):
         try:
             self.wait_for_state(hosts, success_state)
             return True
-        except MaxFailuresException, e:
+        except MaxFailuresException:
             logger.error('Max number of failures reached while waiting '
                          'for state: %s' % success_state)
-        except TimeoutException, e:
+        except TimeoutException:
             logger.error('Timeout reached while waiting for state: '
                          '%s.' % success_state)
 
@@ -755,8 +781,8 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
         Stop all of the hosts on the given stack.
         '''
-        ec2 = self.connect_ec2() 
-        return self._execute_action(stack, 
+        ec2 = self.connect_ec2()
+        return self._execute_action(stack,
                                     stack.STOPPING,
                                     self.STATE_STOPPED,
                                     ec2.stop_instances,
@@ -767,8 +793,8 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
         Starts all of the hosts on the given stack.
         '''
-        ec2 = self.connect_ec2() 
-        return self._execute_action(stack, 
+        ec2 = self.connect_ec2()
+        return self._execute_action(stack,
                                     stack.STARTING,
                                     self.STATE_RUNNING,
                                     ec2.start_instances,
@@ -779,8 +805,8 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
         Terminates all of the hosts on the given stack.
         '''
-        ec2 = self.connect_ec2() 
-        return self._execute_action(stack, 
+        ec2 = self.connect_ec2()
+        return self._execute_action(stack,
                                     stack.TERMINATING,
                                     self.STATE_TERMINATED,
                                     ec2.terminate_instances,
@@ -789,4 +815,3 @@ class AWSCloudProvider(BaseCloudProvider):
     ##
     # END ACTION IMPLEMENTATIONS
     ##
-
