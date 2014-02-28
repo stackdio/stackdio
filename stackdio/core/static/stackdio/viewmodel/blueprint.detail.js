@@ -105,9 +105,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 self.blueprintTitle(blueprint.title);
                 self.editMode = 'update';
 
-                if (!BlueprintHostStore.isDirty()) {
-                    BlueprintHostStore.empty();
-
+                if (BlueprintHostStore.collection().length === 0) {
                     blueprint.host_definitions.forEach(function (host) {
                         // Add the instance size object to the host so the title can be displayed in UI
                         host.instance_size = _.find(InstanceSizeStore.collection(), function (i) {
@@ -211,7 +209,6 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             var currentBlueprint = self.selectedBlueprint();
             var hosts = BlueprintHostStore.collection(), strippedHosts = [];
 
-            console.log(record);
 
             for (var host in hosts) {
                 var h = hosts[host];

@@ -187,8 +187,6 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 host.spot_config.spot_price = parseFloat(record.spot_instance_price.value);
             }
 
-            console.log('host',host);
-
             // Request the forumula properties
             var formulaPromises = [];
             var propBuilder = {};
@@ -248,7 +246,7 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 });
             } else {
                 self.navigate({
-                    view: 'blueprint.detail',
+                    view: 'accessrule.detail',
                     data: {
                         blueprint: self.selectedBlueprint().id
                     }

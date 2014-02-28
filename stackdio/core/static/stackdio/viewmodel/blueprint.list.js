@@ -53,6 +53,8 @@ function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, Bl
          *  ==================================================================================
         */
         self.editBlueprint = function (blueprint) {
+            BlueprintHostStore.empty();
+            BlueprintComponentStore.empty();
             self.navigate({ view: 'blueprint.detail', data: { blueprint: blueprint.id } });
         };
 
