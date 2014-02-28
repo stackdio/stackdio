@@ -12,6 +12,14 @@ import sys
 
 from . import commands
 
+SALT_COMMANDS = (
+    'salt',
+    'salt-master',
+    'salt-run',
+    'salt-cloud',
+    'salt-key',
+)
+
 
 def main():
     parser = argparse.ArgumentParser(prog='stackdio')
@@ -45,7 +53,7 @@ def main():
 
     # Expose salt-specific commands that we'll wrap and execute with
     # the appropriate arguments
-    for wrapper in ('salt', 'salt-master', 'salt-run', 'salt-cloud'):
+    for wrapper in SALT_COMMANDS:
         wrapper_parser = subparsers.add_parser(
             wrapper,
             add_help=False,
