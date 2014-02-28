@@ -51,6 +51,8 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
                 return ProfileStore.populate();
             }).then(function () {
                 self.init(data);
+            }).catch(function (error) {
+                console.log(error)
             });
         });
 
@@ -72,10 +74,14 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
                 });
             } else {
                 ProfileStore.collection().forEach(function (profile) {
+                    if (!profile.hasOwnProperty('image_id')) {
+                        profile.image_id = 'n/a';
+                    }
                     profile.account = _.findWhere(AccountStore.collection(), { id: profile.cloud_provider });
                     self.EnhancedProfileStore.push(profile);
                 });
             }
+
         };
 
         self.newProfile = function () {
