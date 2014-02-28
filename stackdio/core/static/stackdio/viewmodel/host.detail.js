@@ -98,6 +98,10 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
             var blueprint = null;
             var profile = null;
 
+            if (HostVolumeStore.collection().length === 0 && HostRuleStore.collection().length === 0) {
+                formutils.clearForm('blueprint-host-form');
+            }
+
             // $('#formula_components').selectpicker();
             // $('#host_instance_size').selectpicker();
             // $('#availability_zone').selectpicker();
