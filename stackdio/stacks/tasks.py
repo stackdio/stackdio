@@ -309,89 +309,108 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         # also keep track if volume information was updated
         bdm_updated = False
 
-        for host in stack.hosts.all():
-            host_data = query_results[host.hostname]
+        driver_hosts = stack.get_driver_hosts_map()
 
-            #XXX - can't remember what this was for...there's an edge case
-            # i'm sure, so leaving this in until I remember
-            #if 'state' in host_data \
-            #    and host_data['state'] == driver.STATE_TERMINATED:
-            #    hosts_to_remove.append(host)
-            #    continue
+        for driver, hosts in driver_hosts.iteritems():
+            logger.debug(driver)
+            logger.debug(hosts)
+            for host in hosts:
+                # FIXME: This is cloud provider specific. Should farm it out to
+                # the right implementation
+                host_data = query_results[host.hostname]
 
-            # FIXME: This is cloud provider specific. Should farm it out to
-            # the right implementation
+                # Check for terminated host state
+                if (host_data == 'Absent'
+                    or ('state' in host_data
+                        and host_data['state'] == driver.STATE_TERMINATED)):
 
-            # host could be "absent" from salt
-            if host_data == 'Absent':
-                if remove_absent:
-                    hosts_to_remove.append(host)
-                continue
+                    if host_data == 'Absent':
+                        is_absent = True
 
-            # The instance id of the host
-            host.instance_id = host_data['instanceId']
+                        if remove_absent:
+                            hosts_to_remove.append(host)
+                            continue
 
-            # Get the host's public IP/host set by the cloud provider. This is
-            # used later when we tie the machine to DNS
-            host.provider_dns = host_data['dnsName'] or ''
+                    # clear out relevant attributes
+                    host.instance_id = ''
+                    host.provider_dns = ''
+                    host.state = 'Absent' if is_absent else host_data['state']
+                    host.sir_id = 'NA'
 
-            # update the state of the host as provided by ec2
-            host.state = host_data['state']
+                    # if AWS gives a reason, save it with the host
+                    if not is_absent:
+                        state_reason = host_data \
+                            .get('stateReason', {}) \
+                            .get('message', None)
+                        if state_reason:
+                            host.state_reason = state_reason
+                    host.save()
+                    continue
 
-            # update volume information
-            block_device_mappings = host_data \
-                .get('blockDeviceMapping', {}) \
-                .get('item', [])
+                # The instance id of the host
+                host.instance_id = host_data['instanceId']
 
-            if type(block_device_mappings) is not list:
-                block_device_mappings = [block_device_mappings]
+                # Get the host's public IP/host set by the cloud provider. This
+                # is used later when we tie the machine to DNS
+                host.provider_dns = host_data['dnsName'] or ''
 
-            # for each block device mapping found on the running host,
-            # try to match the device name up with that stored in the DB
-            # if a match is found, fill in the metadata and save the volume
-            for bdm in block_device_mappings:
-                bdm_volume_id = bdm['ebs']['volumeId']
-                try:
-                    # attempt to get the volume for this host that
-                    # has been created
-                    volume = host.volumes.get(device=bdm['deviceName'])
+                # update the state of the host as provided by ec2
+                host.state = host_data['state']
 
-                    # update the volume information if needed
-                    if volume.volume_id != bdm_volume_id:
-                        volume.volume_id = bdm['ebs']['volumeId']
-                        volume.attach_time = bdm['ebs']['attachTime']
+                # update volume information
+                block_device_mappings = host_data \
+                    .get('blockDeviceMapping', {}) \
+                    .get('item', [])
 
-                        # save the new volume info
-                        volume.save()
-                        bdm_updated = True
+                if type(block_device_mappings) is not list:
+                    block_device_mappings = [block_device_mappings]
 
-                except Volume.DoesNotExist, e:
-                    # This is most likely fine. Usually means that the
-                    # EBS volume for the root drive was found instead.
-                    pass
-                except Exception, e:
-                    err_msg = 'Unhandled exception while updating volume ' \
-                              'metadata.'
-                    logger.exception(err_msg)
-                    logger.debug(block_device_mappings)
-                    raise
+                # for each block device mapping found on the running host,
+                # try to match the device name up with that stored in the DB
+                # if a match is found, fill in the metadata and save the volume
+                for bdm in block_device_mappings:
+                    bdm_volume_id = bdm['ebs']['volumeId']
+                    try:
+                        # attempt to get the volume for this host that
+                        # has been created
+                        volume = host.volumes.get(device=bdm['deviceName'])
 
-            # Update spot instance metadata
-            if 'spotInstanceRequestId' in host_data:
-                host.sir_id = host_data['spotInstanceRequestId']
-            else:
-                host.sir_id = 'NA'
+                        # update the volume information if needed
+                        if volume.volume_id != bdm_volume_id:
+                            volume.volume_id = bdm['ebs']['volumeId']
+                            volume.attach_time = bdm['ebs']['attachTime']
 
-            # save the host
-            host.save()
+                            # save the new volume info
+                            volume.save()
+                            bdm_updated = True
 
-        for h in hosts_to_remove:
-            h.delete()
+                    except Volume.DoesNotExist, e:
+                        # This is most likely fine. Usually means that the
+                        # EBS volume for the root drive was found instead.
+                        pass
+                    except Exception, e:
+                        err_msg = ('Unhandled exception while updating volume '
+                                   'metadata.')
+                        logger.exception(err_msg)
+                        logger.debug(block_device_mappings)
+                        raise
 
-        # if volume metadata was updated, regenerate the map file
-        # to account for the volume_id changes
-        if bdm_updated:
-            stack._generate_map_file()
+                # Update spot instance metadata
+                if 'spotInstanceRequestId' in host_data:
+                    host.sir_id = host_data['spotInstanceRequestId']
+                else:
+                    host.sir_id = 'NA'
+
+                # save the host
+                host.save()
+
+            for h in hosts_to_remove:
+                h.delete()
+
+            # if volume metadata was updated, regenerate the map file
+            # to account for the volume_id changes
+            if bdm_updated:
+                stack._generate_map_file()
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)

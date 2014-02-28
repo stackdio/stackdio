@@ -583,6 +583,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
             logger.debug('Query hosts command: {0}'.format(query_cmd))
             result = envoy.run(query_cmd)
+            logger.debug('Query hosts status: {0}'.format(result.status_code))
 
             # Run the envoy stdout through the yaml parser. The format
             # will always be a dictionary with one key (the provider type)
@@ -605,7 +606,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     .get(provider_type.type_name, {}) \
                     .get(host.hostname, None)
 
-            logger.debug('query_hosts transform: {0!r}'.format(host_result))
             return host_result
 
         except Exception:
@@ -679,6 +679,7 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     # The machine state as provided by the cloud provider
     state = models.CharField(max_length=32, default='unknown')
+    state_reason = models.CharField(max_length=255, default='', blank=True)
 
     # This must be updated automatically after the host is online.
     # After salt-cloud has launched VMs, we will need to look up

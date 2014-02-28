@@ -24,6 +24,11 @@ class Migration(SchemaMigration):
                       self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True),
                       keep_default=False)
 
+        # Adding field 'Host.state_reason'
+        db.add_column(u'stacks_host', 'state_reason',
+                      self.gf('django.db.models.fields.CharField')(default='', max_length=255, blank=True),
+                      keep_default=False)
+
 
     def backwards(self, orm):
         # Adding model 'StackProperty'
@@ -45,6 +50,9 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Stack.props_file'
         db.delete_column(u'stacks_stack', 'props_file')
+
+        # Deleting field 'Host.state_reason'
+        db.delete_column(u'stacks_host', 'state_reason')
 
 
     models = {
@@ -92,7 +100,7 @@ class Migration(SchemaMigration):
         u'blueprints.blueprinthostdefinition': {
             'Meta': {'object_name': 'BlueprintHostDefinition'},
             'blueprint': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'host_definitions'", 'to': u"orm['blueprints.Blueprint']"}),
-            'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProfile']"}),
+            'cloud_profile': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'host_definitions'", 'to': u"orm['cloud.CloudProfile']"}),
             'count': ('django.db.models.fields.IntegerField', [], {}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
@@ -101,7 +109,7 @@ class Migration(SchemaMigration):
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
-            'spot_price': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2'}),
+            'spot_price': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2', 'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'zone': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudZone']"})
         },
@@ -115,7 +123,7 @@ class Migration(SchemaMigration):
             'order': ('django.db.models.fields.IntegerField', [], {'default': '0'})
         },
         u'cloud.cloudinstancesize': {
-            'Meta': {'ordering': "['title']", 'object_name': 'CloudInstanceSize'},
+            'Meta': {'ordering': "['id']", 'object_name': 'CloudInstanceSize'},
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'instance_id': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
@@ -125,7 +133,7 @@ class Migration(SchemaMigration):
         },
         u'cloud.cloudprofile': {
             'Meta': {'unique_together': "(('title', 'cloud_provider'),)", 'object_name': 'CloudProfile'},
-            'cloud_provider': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudProvider']"}),
+            'cloud_provider': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'profiles'", 'to': u"orm['cloud.CloudProvider']"}),
             'config_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'default_instance_size': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['cloud.CloudInstanceSize']"}),
@@ -184,7 +192,7 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
         },
         u'formulas.formula': {
-            'Meta': {'ordering': "('-modified', '-created')", 'object_name': 'Formula'},
+            'Meta': {'ordering': "['pk']", 'object_name': 'Formula'},
             'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -200,7 +208,7 @@ class Migration(SchemaMigration):
             'uri': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         },
         u'formulas.formulacomponent': {
-            'Meta': {'object_name': 'FormulaComponent'},
+            'Meta': {'ordering': "['pk']", 'object_name': 'FormulaComponent'},
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'formula': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'components'", 'to': u"orm['formulas.Formula']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -226,6 +234,7 @@ class Migration(SchemaMigration):
             'sir_price': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2'}),
             'stack': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'hosts'", 'to': u"orm['stacks.Stack']"}),
             'state': ('django.db.models.fields.CharField', [], {'default': "'unknown'", 'max_length': '32'}),
+            'state_reason': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
             'status': ('model_utils.fields.StatusField', [], {'default': "'ok'", 'max_length': '100', 'no_check_for_status': 'True'}),
             'status_changed': ('model_utils.fields.MonitorField', [], {'default': 'datetime.datetime.now', 'monitor': "'status'"}),
             'status_detail': ('django.db.models.fields.TextField', [], {'blank': 'True'})
