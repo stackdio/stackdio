@@ -4,6 +4,8 @@ define([
     'viewmodel/base',
     'util/postOffice',
     'util/form',
+    'store/HostVolumes',
+    'store/HostAccessRules',
     'store/Accounts',
     'store/Profiles',
     'store/InstanceSizes',
@@ -13,7 +15,7 @@ define([
     'store/Formulas',
     'api/api'
 ],
-function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, FormulaStore, API) {
+function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, FormulaStore, API) {
     var vm = function () {
         var self = this;
 
@@ -28,7 +30,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
         self.blueprintTitle = ko.observable();
         self.selectedBlueprintHosts = ko.observable();
         self.blueprintProperties = ko.observable();
-        self.blueprintPropertiesStringified = ko.observable();
+        self.blueprintPropertiesStringified = ko.observable('');
         self.editMode = 'create';
 
         self.AccountStore = AccountStore;
@@ -81,6 +83,9 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
         self.init = function (data) {
             var blueprint = null;
 
+            HostVolumeStore.empty();
+            HostRuleStore.empty();
+
             // Editing existing blueprint
             if (data.hasOwnProperty('blueprint')) {
                 blueprint = BlueprintStore.collection().filter(function (p) {
@@ -124,10 +129,15 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                     });
                 }
 
-                API.Blueprints.getProperties(blueprint).then(function (properties) {
-                    var stringify = JSON.stringify(properties, undefined, 3);
-                    self.blueprintPropertiesStringified(stringify);
-                });
+                // Get the properties for the blueprint and then stringify the object for display in the form
+                if (self.blueprintPropertiesStringified() === '') {
+                    API.Blueprints.getProperties(blueprint).then(function (properties) {
+                        self.blueprintProperties(properties);
+
+                        var stringify = JSON.stringify(properties, undefined, 3);
+                        self.blueprintPropertiesStringified(stringify);
+                    });
+                }
             }
 
 
@@ -158,9 +168,18 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             self.navigate({ view: 'blueprint.list' });
         };
 
-        self.clearEditingData = function (model, evt) {
+        /*
+         * This function will empty out any cached collections or observables when
+         * the user is done editing the blueprint (save/cancel)
+         */
+        self.clearEditingData = function () {
             self.BlueprintHostStore.empty();
             self.BlueprintComponentStore.empty();
+            self.HostVolumeStore.empty();
+            self.HostRuleStore.empty();
+
+            self.blueprintPropertiesStringified('');
+            self.selectedBlueprint(null);
         };
 
         self.createBlueprint = function (model, evt) {
@@ -248,6 +267,8 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 self.selectedBlueprint(null);               // Clear out selected blueprint
                 BlueprintStore.removeById(blueprint.id);    // Remove old blueprint from store
                 BlueprintStore.add(updatedBlueprint);       // Add new one to store
+
+                self.clearEditingData();
                 self.navigate({ view: 'blueprint.list' });  // Go to the blueprint list
             })
             .catch(function (error) {
