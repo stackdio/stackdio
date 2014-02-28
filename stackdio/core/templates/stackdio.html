@@ -46,16 +46,7 @@
 
     </body>
 
-    <script>
-    window.stackdio = {};
-    window.stackdio.user = {};
-    window.stackdio.user.username = "{{ user.username }}";
-    window.stackdio.user.first_name = "{{ user.first_name }}";
-    window.stackdio.user.last_name = "{{ user.last_name }}";
-    window.stackdio.user.admin = "{{ user.is_superuser }}";
-    window.stackdio.user.public_key = "{{ user.public_key }}";
-    </script>
-
+    <script>window.stackdio = {}; window.stackdio.user = {}; window.stackdio.user.username = "{{ user.username }}"; window.stackdio.user.first_name = "{{ user.first_name }}"; window.stackdio.user.last_name = "{{ user.last_name }}"; window.stackdio.user.admin = "{{ user.is_superuser }}";</script>
     <script data-main="/static/stackdio/application" src="/static/stackdio/require.js"></script>
 
 </html>

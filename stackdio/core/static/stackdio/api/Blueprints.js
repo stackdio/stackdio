@@ -65,7 +65,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         },
         update: function (blueprint) {
             var deferred = Q.defer();
-            // var blueprint = JSON.stringify(blueprint);
 
             $.ajax({
                 url: blueprint.url,
@@ -78,7 +77,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    deferred.resolve();
+                    deferred.resolve(response);
                 },
                 error: function (request, status, error) {
                     deferred.reject(new Error(error));

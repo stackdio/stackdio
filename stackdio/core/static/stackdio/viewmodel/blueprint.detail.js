@@ -83,15 +83,9 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
 
             // Editing existing blueprint
             if (data.hasOwnProperty('blueprint')) {
-                blueprint = BlueprintStore.collection().map(function (p) {
-                    if (p.id === parseInt(data.blueprint, 10)) {
-                        return p;
-                    }
-                }).reduce(function (p, c) {
-                    if (p.hasOwnProperty('id')) {
-                        return p;
-                    }
-                });
+                blueprint = BlueprintStore.collection().filter(function (p) {
+                    return p.id === parseInt(data.blueprint, 10);
+                })[0];
 
             // New blueprint, so clear form fields and reset observable values
             } else {
@@ -106,7 +100,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 // Editing existing blueprint so populate form
                 $('#blueprint_title').val(blueprint.title);
                 $('#blueprint_purpose').val(blueprint.description);
-                $('#public_blueprint').val(blueprint.public);
+                $('#public_blueprint').prop('checked', blueprint.public);
 
                 self.blueprintTitle(blueprint.title);
                 self.editMode = 'update';
@@ -115,7 +109,6 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                     BlueprintHostStore.empty();
 
                     blueprint.host_definitions.forEach(function (host) {
-
                         // Add the instance size object to the host so the title can be displayed in UI
                         host.instance_size = _.find(InstanceSizeStore.collection(), function (i) {
                             return i.url === host.size;
@@ -218,6 +211,8 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             var currentBlueprint = self.selectedBlueprint();
             var hosts = BlueprintHostStore.collection(), strippedHosts = [];
 
+            console.log(record);
+
             for (var host in hosts) {
                 var h = hosts[host];
 
@@ -247,18 +242,20 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             // Update property values with those submitted from form
             blueprint.title = record.blueprint_title.value;
             blueprint.description = record.blueprint_purpose.value;
-            blueprint.public = record.public_blueprint.value;
+            blueprint.public = $('#public_blueprint').prop('checked');
             blueprint.properties = JSON.parse(record.blueprint_properties.value);
             blueprint.hosts = strippedHosts;
             delete blueprint.host_definitions;
 
-            API.Blueprints.update(blueprint).then(function () {
-                self.selectedBlueprint() = null;
-                self.navigate({ view: 'blueprint.list' });
+            API.Blueprints.update(blueprint).then(function (updatedBlueprint) {
+                self.selectedBlueprint(null);               // Clear out selected blueprint
+                BlueprintStore.removeById(blueprint.id);    // Remove old blueprint from store
+                BlueprintStore.add(updatedBlueprint);       // Add new one to store
+                self.navigate({ view: 'blueprint.list' });  // Go to the blueprint list
             })
             .catch(function (error) {
-                $("#alert-error").show();
-            });
+                console.log(error);
+            }).done();
         };
 
 

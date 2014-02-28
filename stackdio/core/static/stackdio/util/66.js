@@ -252,6 +252,8 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
 
         }).fail(function (ex) {
             console.error(ex);
+        }).catch(function (ex) {
+            console.error(ex);
         }).finally(function () { });
     };
 
