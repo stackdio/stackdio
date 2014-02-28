@@ -20,6 +20,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
         self.selectedAccount = ko.observable(null);
         self.selectedProviderType = null;
         self.userCanModify = ko.observable(true);
+        self.isSuperUser = stackdio.settings.superuser;
 
         self.ProviderTypeStore = ProviderTypeStore;
         self.AccountStore = AccountStore;

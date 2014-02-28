@@ -19,7 +19,7 @@ define(["jquery"], function ($) {
 
     stackdio.settings.pageSize = 15;
     stackdio.settings.csrftoken = getCookie('csrftoken');
-    // stackdio.settings.superuser = (window.stackdio.user.admin === "True");
+    stackdio.settings.superuser = (window.stackdio.user.admin === "True");
 
     // if (Object.hasOwnProperty('freeze')) {
     //     Object.freeze(stackdio.settings);
