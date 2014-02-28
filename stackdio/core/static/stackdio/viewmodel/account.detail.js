@@ -175,6 +175,8 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
             // PATCH the update, and on success, replace the current item in the store with new one
             API.Accounts.update(account).then(function () {
                 self.navigate({ view: 'account.list' });
+            }).catch(function (err) {
+                console.log(err);
             });
         };
 

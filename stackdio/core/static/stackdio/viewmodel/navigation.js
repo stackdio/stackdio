@@ -84,6 +84,10 @@ function (Q, ko, _O_, base, welcome) {
             self.navigate({ view: 'user.password' });
         };
 
+        self.showUserPassword = function () {
+            self.navigate({ view: 'user.password' });
+        };
+
     };
 
     vm.prototype = new base();

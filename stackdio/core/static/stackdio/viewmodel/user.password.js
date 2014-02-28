@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'viewmodel/base', 'util/postOffice', 'api/api'],
-function (Q, ko, base, _O_, API) {
+define(['q', 'knockout', 'viewmodel/base', 'util/postOffice', 'api/api', 'util/form'],
+function (Q, ko, base, _O_, API, formutils) {
     var vm = function () {
         var self = this;
 
@@ -16,9 +16,9 @@ function (Q, ko, base, _O_, API) {
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
          */
-        self.id = 'user.profile';
-        self.templatePath = 'user.profile.html';
-        self.domBindingId = '#user-profile';
+        self.id = 'user.password';
+        self.templatePath = 'user.password.html';
+        self.domBindingId = '#user-password';
 
         try {
             self.$66.register(self);
@@ -31,7 +31,7 @@ function (Q, ko, base, _O_, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('user.profile.rendered', function (data) {
+        _O_.subscribe('user.password.rendered', function (data) {
             API.Users.load().then(function (public_key) {
                 $('#first_name').val(window.stackdio.user.first_name);
                 $('#last_name').val(window.stackdio.user.last_name);
@@ -45,10 +45,37 @@ function (Q, ko, base, _O_, API) {
          *   V I E W   M E T H O D S
          *  ==================================================================================
         */
-        self.saveProfile = function () {
-            API.Users.saveKey($('#public_key').val()).then(function () {
-                self.showSuccess();
-            });
+        self.savePassword = function (model, evt) {
+            var record = formutils.collectFormFields(evt.target.form);
+
+            if (record.new_password.value !== record.new_password_confirm.value) {
+                self.showMessage('#password-error', 'Your new passwords do not match', true);
+                return;
+            }
+
+            API.Users.savePassword(record.current_password.value, 
+                                   record.new_password.value, 
+                                   record.new_password_confirm.value)
+                .then(function (error) {
+                    if (typeof error !== 'undefined') {
+                        self.showError();
+                        return;
+                    }
+
+                    $('#current_password').val('');
+                    $('#new_password').val('');
+                    $('#new_password_confirm').val('');
+                    self.showSuccess();
+                });
+        };
+
+        self.showError = function () {
+            $('#password-error').removeClass('hide');
+            setTimeout("$('#password-error').addClass('hide')", 3000);
+        };
+
+        self.closeError = function () {
+            $('#password-error').addClass('hide');
         };
 
     };

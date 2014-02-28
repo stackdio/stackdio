@@ -77,11 +77,16 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         },
         update: function (account) {
             var deferred = Q.defer();
+            var patchAccount = {
+                title: account.title,
+                description: account.description,
+                default_availability_zone: account.default_availability_zone
+            };
 
             $.ajax({
                 url: account.url,
                 type: 'PATCH',
-                data: JSON.stringify(account),
+                data: JSON.stringify(patchAccount),
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json",
