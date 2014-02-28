@@ -123,6 +123,15 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
 
         };
 
+        self.cancelHostCreation = function () {
+            self.navigate({
+                view: 'blueprint.detail',
+                data: {
+                    blueprint: self.selectedBlueprint().id
+                }
+            })
+        };
+
         self.createHost = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
             var v, vol;
