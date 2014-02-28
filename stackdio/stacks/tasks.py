@@ -312,28 +312,25 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         driver_hosts = stack.get_driver_hosts_map()
 
         for driver, hosts in driver_hosts.iteritems():
-            logger.debug(driver)
-            logger.debug(hosts)
+            bad_states = (driver.STATE_TERMINATED,
+                          driver.STATE_SHUTTING_DOWN)
+
             for host in hosts:
                 # FIXME: This is cloud provider specific. Should farm it out to
                 # the right implementation
                 host_data = query_results[host.hostname]
+                is_absent = host_data == 'Absent'
 
                 # Check for terminated host state
-                if (host_data == 'Absent'
-                    or ('state' in host_data
-                        and host_data['state'] == driver.STATE_TERMINATED)):
+                if is_absent or ('state' in host_data
+                                 and host_data['state'] in bad_states):
 
-                    if host_data == 'Absent':
-                        is_absent = True
+                    if is_absent and remove_absent:
+                        hosts_to_remove.append(host)
+                        continue
 
-                        if remove_absent:
-                            hosts_to_remove.append(host)
-                            continue
-
-                    # clear out relevant attributes
+                    # udpate relevant metadata
                     host.instance_id = ''
-                    host.provider_dns = ''
                     host.state = 'Absent' if is_absent else host_data['state']
                     host.sir_id = 'NA'
 

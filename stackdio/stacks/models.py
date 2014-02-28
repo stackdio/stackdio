@@ -29,6 +29,20 @@ logger = logging.getLogger(__name__)
 HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
 
 
+def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
+    hostnames = []
+    for hostdef in hostdefs:
+        for i in xrange(hostdef.count):
+            hostnames.append(
+                hostdef.hostname_template.format(
+                    namespace=namespace,
+                    username=username,
+                    index=i
+                )
+            )
+    return hostnames
+
+
 # Map, pillar, and properties files go into storage
 def get_map_file_path(obj, filename):
     return "stacks/{0}/{1}/stack.map".format(obj.owner.username, obj.slug)
@@ -49,6 +63,12 @@ def get_top_file_path(obj, filename):
 
 def get_overstate_file_path(obj, filename):
     return "stack_{0}_overstate.sls".format(obj.id)
+
+
+class StackCreationException(Exception):
+    def __init__(self, errors, *args, **kwargs):
+        self.errors = errors
+        super(StackCreationException, self).__init__(*args, **kwargs)
 
 
 class Level(object):
@@ -76,7 +96,6 @@ class StackManager(models.Manager):
     def create_stack(self, owner, blueprint, **data):
         '''
         '''
-
         title = data.get('title', '')
         description = data.get('description', '')
 

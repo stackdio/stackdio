@@ -209,6 +209,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
     STATE_STOPPED = 'stopped'
     STATE_RUNNING = 'running'
+    STATE_SHUTTING_DOWN = 'shutting-down'
     STATE_TERMINATED = 'terminated'
 
     @classmethod

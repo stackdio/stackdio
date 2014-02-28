@@ -144,6 +144,22 @@ class StackListAPIView(generics.ListCreateAPIView):
                     'The __stackdio__ key is reserved for system use.'
                 )
 
+        # check for hostname collisions if namespace is provided
+        namespace = request.DATA.get('namespace')
+        if namespace:
+            hostdefs = blueprint.host_definitions.all()
+            hostnames = models.get_hostnames_from_hostdefs(
+                hostdefs,
+                username=request.user.username,
+                namespace=namespace)
+
+            # query for existing host names
+            hosts = models.Host.objects.filter(hostname__in=hostnames)
+            if hosts.count():
+                errors.setdefault('duplicate_hostnames', []).extend(
+                    [h.hostname for h in hosts]
+                )
+
         if errors:
             raise BadRequest(errors)
 
