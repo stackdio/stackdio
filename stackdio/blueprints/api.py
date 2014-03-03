@@ -200,19 +200,6 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                                                  'with an id and optional '
                                                  'order field.')
                 else:
-                    # check component ordering
-                    order_set = set([c.get('order', 0)
-                                     for c in formula_components])
-
-                    if sorted(order_set) != range(len(order_set)):
-                        errors.setdefault(
-                            host_string + '.formula_components', []) \
-                            .append(
-                                'Ordering is zero-based, may have duplicates, '
-                                'but can not have any gaps in the order. '
-                                'Valid examples: [0,0,0,0] or '
-                                '[0,1,1,2,2,3] or [0,1,2,3,4]')
-
                     # check ownership of formula components
                     for component in formula_components:
                         if not isinstance(component, dict):
@@ -357,6 +344,19 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     elif spot_config['spot_price'] < 0:
                         errors.setdefault(host_string + '.spot_config', []) \
                             .append('spot_price must be a non-negative value.')
+
+        # check component ordering over all hosts
+        order_set = set()
+        for host in hosts:
+            formula_components = host.get('formula_components', [])
+            order_set.update([c.get('order', 0)
+                              for c in formula_components])
+
+        if sorted(order_set) != range(len(order_set)):
+            errors.setdefault('formula_components', []).append(
+                'Ordering is zero-based, may have duplicates across hosts, '
+                'but can not have any gaps in the order. Your de-duplicated '
+                'order: {0}'.format(sorted(order_set)))
 
         if errors:
             raise BadRequest(errors)
