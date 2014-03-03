@@ -376,12 +376,21 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
         return CIDR_PATTERN.match(rule)
 
-    def create_security_group(self, security_group_name, description):
+    def create_security_group(self,
+                              security_group_name,
+                              description,
+                              delete_if_exists=False):
         '''
         Returns the identifier of the group.
         '''
         if not description:
             description = 'Default description provided by stackd.io'
+
+        if delete_if_exists:
+            try:
+                self.delete_security_group(security_group_name)
+            except:
+                pass
 
         # create the group
         ec2 = self.connect_ec2()

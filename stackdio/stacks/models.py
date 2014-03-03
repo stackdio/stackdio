@@ -142,7 +142,9 @@ class StackManager(models.Manager):
                 hostdef.slug,
                 stack.pk)
             sg_description = 'stackd.io managed security group'
-            sg_id = driver.create_security_group(sg_name, sg_description)
+            sg_id = driver.create_security_group(sg_name,
+                                                 sg_description,
+                                                 delete_if_exists=True)
 
             for access_rule in hostdef.access_rules.all():
                 driver.authorize_security_group(sg_name, {
