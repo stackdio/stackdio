@@ -81,6 +81,8 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         if not isinstance(hosts, list) or not hosts:
             errors.setdefault('hosts', []).append('This is a required field.')
         elif hosts:
+            host_titles = []
+
             for host_index, host in enumerate(hosts):
                 host_string = 'hosts[{0}]'.format(host_index)
                 if not isinstance(host, dict):
@@ -97,6 +99,12 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                     errors.setdefault(host_string + '.title', []).append(
                         'This is a required field.'
                     )
+                elif host['title'] in host_titles:
+                    errors.setdefault(host_string + '.title', []).append(
+                        'Duplicate title. Each host title must be unique.'
+                    )
+                else:
+                    host_titles.append(host['title'])
                 if 'description' not in host or not host['description']:
                     errors.setdefault(host_string + '.description', []).append(
                         'This is a required field.'
@@ -192,6 +200,19 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                                                  'with an id and optional '
                                                  'order field.')
                 else:
+                    # check component ordering
+                    order_set = set([c.get('order', 0)
+                                     for c in formula_components])
+
+                    if sorted(order_set) != range(len(order_set)):
+                        errors.setdefault(
+                            host_string + '.formula_components', []) \
+                            .append(
+                                'Ordering is zero-based, may have duplicates, '
+                                'but can not have any gaps in the order. '
+                                'Valid examples: [0,0,0,0] or '
+                                '[0,1,1,2,2,3] or [0,1,2,3,4]')
+
                     # check ownership of formula components
                     for component in formula_components:
                         if not isinstance(component, dict):
