@@ -389,6 +389,9 @@ class AWSCloudProvider(BaseCloudProvider):
         if delete_if_exists:
             try:
                 self.delete_security_group(security_group_name)
+                logger.warn('create_security_group has deleted existing group '
+                            '{0} prior to creating it.'.format(
+                                security_group_name))
             except:
                 pass
 
