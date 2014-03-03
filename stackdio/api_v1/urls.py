@@ -13,10 +13,11 @@ def api_root(request, format=None):
     to them.
 
     '''
-    api = { 
+    api = {
         'core': {
             'settings': reverse('usersettings-detail', request=request, format=format),
             'change_password': reverse('change_password', request=request, format=format),
+            'version': reverse('version', request=request, format=format),
         },
         'cloud': {
             'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),

@@ -46,7 +46,7 @@ class UserSettingsDetailAPIView(generics.RetrieveUpdateAPIView):
 
 class ChangePasswordAPIView(views.APIView):
     '''
-    API that handles changing your account password. Note that 
+    API that handles changing your account password. Note that
     only PUT requests are available on this endpoint. Below
     are the required parameters of the JSON object you will PUT.
 
@@ -75,7 +75,8 @@ class ChangePasswordAPIView(views.APIView):
         if not request.user.check_password(current_password):
             errors.append('You entered an incorrect current password value.')
         if new_password != confirm_password:
-            errors.append('Your new password and password confirmation fields do not match.')
+            errors.append('Your new password and password confirmation fields '
+                          'do not match.')
         if errors:
             raise BadRequest(dict(errors=errors))
 
@@ -84,3 +85,15 @@ class ChangePasswordAPIView(views.APIView):
         request.user.save()
 
         return Response()
+
+
+class VersionAPIView(views.APIView):
+    '''
+    Returns a JSON object with version-specific fields.
+    '''
+
+    def get(self, request, *args, **kwargs):
+        from stackdio import get_version
+        return Response({
+            'version': get_version(),
+        })
