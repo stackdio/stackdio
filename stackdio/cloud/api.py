@@ -15,42 +15,25 @@ from rest_framework.response import Response
 from core.exceptions import BadRequest, ResourceConflict
 from blueprints.serializers import BlueprintSerializer
 
-from .models import (
-    CloudProvider,
-    CloudProviderType,
-    CloudInstanceSize,
-    CloudProfile,
-    Snapshot,
-    CloudZone,
-    SecurityGroup,
-)
-
-from .serializers import (
-    CloudProviderSerializer,
-    CloudProviderTypeSerializer,
-    CloudInstanceSizeSerializer,
-    CloudProfileSerializer,
-    SnapshotSerializer,
-    CloudZoneSerializer,
-    SecurityGroupSerializer,
-)
+from . import models
+from . import serializers
 
 logger = logging.getLogger(__name__)
 
 
 class CloudProviderTypeListAPIView(generics.ListAPIView):
-    model = CloudProviderType
-    serializer_class = CloudProviderTypeSerializer
+    model = models.CloudProviderType
+    serializer_class = serializers.CloudProviderTypeSerializer
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
-    model = CloudProviderType
-    serializer_class = CloudProviderTypeSerializer
+    model = models.CloudProviderType
+    serializer_class = serializers.CloudProviderTypeSerializer
 
 
 class CloudProviderListAPIView(generics.ListCreateAPIView):
-    model = CloudProvider
-    serializer_class = CloudProviderSerializer
+    model = models.CloudProvider
+    serializer_class = serializers.CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
     def post_save(self, provider_obj, created=False):
@@ -77,22 +60,22 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
             # Update the salt cloud providers file
             provider_obj.update_config()
 
-        except CloudProviderType.DoesNotExist:
+        except models.CloudProviderType.DoesNotExist:
             err_msg = 'Provider types does not exist.'
             logger.exception(err_msg)
             raise BadRequest(err_msg)
 
 
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = CloudProvider
-    serializer_class = CloudProviderSerializer
+    model = models.CloudProvider
+    serializer_class = serializers.CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
     def destroy(self, request, *args, **kwargs):
         # check for profiles using this provider before deleting
         profiles = set(self.get_object().profiles.all())
         if profiles:
-            profiles = CloudProfileSerializer(
+            profiles = serializers.CloudProfileSerializer(
                 profiles,
                 context={'request': request}).data
             return Response({
@@ -111,18 +94,18 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
-    model = CloudInstanceSize
-    serializer_class = CloudInstanceSizeSerializer
+    model = models.CloudInstanceSize
+    serializer_class = serializers.CloudInstanceSizeSerializer
 
 
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
-    model = CloudInstanceSize
-    serializer_class = CloudInstanceSizeSerializer
+    model = models.CloudInstanceSize
+    serializer_class = serializers.CloudInstanceSizeSerializer
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):
-    model = CloudProfile
-    serializer_class = CloudProfileSerializer
+    model = models.CloudProfile
+    serializer_class = serializers.CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
     def post_save(self, profile_obj, created=False):
@@ -130,8 +113,8 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
 
 
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = CloudProfile
-    serializer_class = CloudProfileSerializer
+    model = models.CloudProfile
+    serializer_class = serializers.CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
     def destroy(self, request, *args, **kwargs):
@@ -171,25 +154,25 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
-    model = Snapshot
-    serializer_class = SnapshotSerializer
+    model = models.Snapshot
+    serializer_class = serializers.SnapshotSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = Snapshot
-    serializer_class = SnapshotSerializer
+    model = models.Snapshot
+    serializer_class = serializers.SnapshotSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class CloudZoneListAPIView(generics.ListAPIView):
-    model = CloudZone
-    serializer_class = CloudZoneSerializer
+    model = models.CloudZone
+    serializer_class = serializers.CloudZoneSerializer
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):
-    model = CloudZone
-    serializer_class = CloudZoneSerializer
+    model = models.CloudZone
+    serializer_class = serializers.CloudZoneSerializer
 
 
 class SecurityGroupListAPIView(generics.ListCreateAPIView):
@@ -225,8 +208,8 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                     this property may only be set by an admin.
     '''
 
-    model = SecurityGroup
-    serializer_class = SecurityGroupSerializer
+    model = models.SecurityGroup
+    serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
@@ -238,7 +221,8 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
         else:
             return self.request.user.security_groups.all().with_rules()
 
-    def create(self, request, *args, **kwargs):
+    # TODO: Ignore code complexity issues
+    def create(self, request, *args, **kwargs):  # NOQA
         # Only admins may create security groups directly. Regular users
         # are restricted to using automatically managed security groups
         # on stacks
@@ -256,17 +240,17 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
         elif not isinstance(is_default, bool):
             is_default = False
 
-        provider = CloudProvider.objects.get(id=provider_id)
+        provider = models.CloudProvider.objects.get(id=provider_id)
         driver = provider.get_driver()
 
         # check if the group already exists in our DB first
         try:
-            SecurityGroup.objects.get(
+            models.SecurityGroup.objects.get(
                 name=name,
                 cloud_provider=provider
             )
             raise ResourceConflict('Security group already exists')
-        except SecurityGroup.DoesNotExist:
+        except models.SecurityGroup.DoesNotExist:
             # doesn't exist in our database
             pass
 
@@ -298,7 +282,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
             group_id = driver.create_security_group(name, description)
 
         # create a new group in the DB
-        group_obj = SecurityGroup.objects.create(
+        group_obj = models.SecurityGroup.objects.create(
             name=name,
             description=description,
             group_id=group_id,
@@ -314,7 +298,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                          'group was added with is_default flag set to True')
             provider.update_config()
 
-        serializer = SecurityGroupSerializer(group_obj, context={
+        serializer = serializers.SecurityGroupSerializer(group_obj, context={
             'request': request
         })
         return Response(serializer.data)
@@ -346,8 +330,8 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     and then delete it.
     '''
 
-    model = SecurityGroup
-    serializer_class = SecurityGroupSerializer
+    model = models.SecurityGroup
+    serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
 
     def get_object(self):
@@ -467,8 +451,8 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
     field's value to be "revoke"
     '''
 
-    model = SecurityGroup
-    serializer_class = SecurityGroupSerializer
+    model = models.SecurityGroup
+    serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
 
     def retrieve(self, request, *args, **kwargs):
@@ -546,7 +530,7 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
 
     def get_provider(self):
         pk = self.kwargs[self.lookup_field]
-        return CloudProvider.objects.get(pk=pk)
+        return models.CloudProvider.objects.get(pk=pk)
 
     def get_queryset(self):
         provider = self.get_provider()

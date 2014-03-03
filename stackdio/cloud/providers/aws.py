@@ -351,6 +351,14 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return errors
 
+    def validate_image_id(self, image_id):
+        ec2 = self.connect_ec2()
+        try:
+            ec2.get_all_images(image_ids=[image_id])
+            return True, ''
+        except boto.exception.EC2ResponseError, e:
+            return False, e.error_message
+
     def connect_route53(self):
 
         # Load the configuration file to get a few things we'll need

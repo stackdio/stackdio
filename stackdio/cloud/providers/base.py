@@ -1,4 +1,3 @@
-import collections
 import logging
 import os
 import shutil
@@ -7,15 +6,21 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-class TimeoutException(Exception): pass
-class MaxFailuresException(Exception): pass
+
+class TimeoutException(Exception):
+    pass
+
+
+class MaxFailuresException(Exception):
+    pass
+
 
 class BaseCloudProvider(object):
-    
+
     REQUIRED_MESSAGE = 'This field is required.'
 
     # SHORT_NAME - required
-    # Must correspond to a salt-cloud provider type (e.g, 'aws' or 
+    # Must correspond to a salt-cloud provider type (e.g, 'aws' or
     # 'rackspace')
     SHORT_NAME = None
 
@@ -24,7 +29,7 @@ class BaseCloudProvider(object):
     # Web Services' or 'Rackspace')
     LONG_NAME = None
 
-    # Actions that may be executed. Implement these 
+    # Actions that may be executed. Implement these
     # actions below
     ACTION_STOP = 'stop'
     ACTION_START = 'start'
@@ -34,7 +39,7 @@ class BaseCloudProvider(object):
 
     def __init__(self, obj=None, *args, **kwargs):
 
-        # The `obj` attribute is the Django ORM object for this cloud 
+        # The `obj` attribute is the Django ORM object for this cloud
         # provider instance. See models.py for more information.
         self.obj = obj
 
@@ -70,7 +75,7 @@ class BaseCloudProvider(object):
     @classmethod
     def get_provider_choice(self):
         '''
-        Should return a two-element tuple of the short and long name of the 
+        Should return a two-element tuple of the short and long name of the
         provider type. This should be what the choices attribute on a
         model field is expected (e.g., ('db_value', 'Label') )
         '''
@@ -86,7 +91,7 @@ class BaseCloudProvider(object):
     @classmethod
     def get_required_fields(self):
         '''
-        Return the fields required in the data dictionary for 
+        Return the fields required in the data dictionary for
         `get_provider_data` and `validate_provider_data`
         '''
         raise NotImplementedError()
@@ -94,17 +99,17 @@ class BaseCloudProvider(object):
     @classmethod
     def get_provider_data(self, data, files=None):
         '''
-        Takes a dict of values provided by the user (most likely from the 
+        Takes a dict of values provided by the user (most likely from the
         request data) and returns a new dict of info that's specific to
         the provider type you're implementing. The returned dict will be
         used in the yaml config written for salt cloud.
 
-        `files` is a list of files that might have been uploaded to the 
+        `files` is a list of files that might have been uploaded to the
         API that is available at this time. Each provider implementation
         must make sure that any files are written to disk and referenced
         properly in the result dict for salt cloud.
-        
-        See Salt Cloud documentation for more info on what needs to be in 
+
+        See Salt Cloud documentation for more info on what needs to be in
         this return dict for each provider.
         '''
         raise NotImplementedError()
@@ -125,6 +130,18 @@ class BaseCloudProvider(object):
                 )
 
         return errors
+
+    @classmethod
+    def validate_image_id(self, image_id):
+        '''
+        Given an image_id, check that it exists and you have
+        permissions to use it. It should a tuple:
+            (boolean, string)
+        where True means the image_id is available, and False
+        means it does not. The string is the underlying error
+        string if provided.
+        '''
+        raise NotImplementedError()
 
     @classmethod
     def register_dns(self, hosts):

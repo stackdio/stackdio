@@ -171,6 +171,49 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
 
         superuser_fields = ('image_id',)
 
+    # TODO: Ignoring code complexity issues
+    def validate(self, attrs):  # NOQA
+        # validate provider specific request data
+        request = self.context['request']
+
+        # patch requests only accept a few things for modification
+        if request.method in ('PATCH', 'PUT'):
+            fields_available = ('title',
+                                'description',
+                                'default_instance_size',
+                                'ssh_user',)
+
+            errors = {}
+            for k in request.DATA:
+                if k not in fields_available:
+                    errors.setdefault(k, []).append(
+                        'Field may not be modified.')
+            if errors:
+                logger.debug(errors)
+                raise serializers.ValidationError(errors)
+
+        elif request.method == 'POST':
+            image_id = request.DATA.get('image_id')
+            provider_id = request.DATA.get('cloud_provider')
+            if not provider_id:
+                raise serializers.ValidationError({
+                    'cloud_provider': 'Required field.'
+                })
+
+            provider = models.CloudProvider.objects.get(pk=provider_id)
+            driver = provider.get_driver()
+
+            valid, exc_msg = driver.validate_image_id(image_id)
+            if not valid:
+                raise serializers.ValidationError({
+                    'image_id': ['Image ID does not exist on the given cloud '
+                                 'provider. Check that it exists and you have '
+                                 'access to it.'],
+                    'image_id_exception': [exc_msg]
+                })
+
+        return attrs
+
 
 class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
     cloud_provider = serializers.PrimaryKeyRelatedField()
