@@ -123,6 +123,7 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 })[0];
 
                 self.selectedProfile = profile;
+                $('#host_instance_size').val(profile.default_instance_size);
             }
 
         };
