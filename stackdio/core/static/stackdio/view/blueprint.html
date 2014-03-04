@@ -84,6 +84,30 @@
             </div>
 
             <div class="row top-separation bottom-separation">
+                <div class="col-md-12 small-heading">Component Orchestration</div>
+                <div class="col-md-12">
+                    <table id="component_list" class="table table-bordered table-condensed">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Path</th>
+                                <th style="width:50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody data-bind="foreach: BlueprintComponentStore.collection()">
+                            <tr>
+                                <td data-bind="text: title"></td>
+                                <td data-bind="text: sls_path"></td>
+                                <td>
+                                    <input type="text" class="form-control" data-bind="attr: { id: 'component_order_' + id }">
+                                </td>
+                            </tr>     
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row top-separation bottom-separation">
                 <div class="col-md-12">
                     <a class="linkify" href="#" data-bind="click: $root.showOrchestration">Define component orchestration</a>
                 </div>

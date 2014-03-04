@@ -159,8 +159,8 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
             var host = new models.BlueprintHost().create({ 
                 id: '',
                 formulas: [],
-                title: 'title',
-                description: 'description',
+                title: record.host_title.value,
+                description: record.host_description.value,
                 count: parseInt(record.host_count.value, 10),
                 size: parseInt(record.host_instance_size.value, 10),
                 hostname_template: record.host_hostname.value,

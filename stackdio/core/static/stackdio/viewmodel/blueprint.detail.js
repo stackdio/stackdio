@@ -13,9 +13,12 @@ define([
     'store/BlueprintHosts',
     'store/BlueprintComponents',
     'store/Formulas',
-    'api/api'
+    'store/FormulaComponents',
+    'api/api',
+    'model/models'
 ],
-function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, FormulaStore, API) {
+function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, BlueprintStore, 
+          BlueprintHostStore, BlueprintComponentStore, FormulaStore, FormulaComponentStore, API, models) {
     var vm = function () {
         var self = this;
 
@@ -71,6 +74,8 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
             }).then(function () {
                 return BlueprintStore.populate();
             }).then(function () {
+                return FormulaStore.populate();
+            }).then(function () {
                 self.init(data);
             });
         });
@@ -114,6 +119,8 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
 
                 if (BlueprintHostStore.collection().length === 0) {
                     blueprint.host_definitions.forEach(function (host) {
+                        var hostComponents = [];
+
                         // Add the instance size object to the host so the title can be displayed in UI
                         host.instance_size = _.find(InstanceSizeStore.collection(), function (i) {
                             return i.url === host.size;
@@ -127,7 +134,22 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
                         // Add some HTML to display for the chosen security groups
                         host.flat_access_rules = host.access_rules.length + ' access rules';
 
-                        self.BlueprintHostStore.add(host);
+                        // Get the properties for each formula component in the host
+                        host.formula_components.forEach(function (component) {
+                            FormulaStore.collection().forEach(function (formula) {
+                                var found = formula.components.filter(function (formulaComponent) {
+                                    return formulaComponent.id === component.component_id;
+                                })[0];
+
+                                if (typeof found !== 'undefined') {
+                                    BlueprintComponentStore.add(found);
+                                }
+                            });
+                        });
+
+                        console.log('BlueprintComponentStore',BlueprintComponentStore.collection());
+
+                        self.BlueprintHostStore.add(new models.BlueprintHost().create(host));
                     });
                 }
 
@@ -187,25 +209,50 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
         };
 
         self.createBlueprint = function (model, evt) {
-           var hosts = BlueprintHostStore.collection(), strippedHosts = [], properties;
+            var hosts = BlueprintHostStore.collection(), strippedHosts = [], properties;
+            var orderedComponents = [];
 
-            for (var host in hosts) {
-                var h = hosts[host];
+            /*
+                Identify the orchestration fields in the form and match any entered value up 
+                to the corresponding formula component in the host
+            */
+            var fields = $('input[id^="component_order_"');
+            for (var i=0,length=fields.length; i < length; i += 1) {
+                var component = {};
+                component.id = parseInt(fields[i].id.split('_')[2], 10);
+                component.order = parseInt($('#' + fields[i].id).val(), 10);
+                orderedComponents[orderedComponents.length] = component;
+            }
+
+            /*
+                Apply the order specified by the user in the orchestration fields to the 
+                formula components in the host object
+            */
+            hosts.forEach(function (host) {
+                host.formula_components.forEach(function (formulaComponent) {
+                    orderedComponents.forEach(function (orderedComponent) {
+                        if (orderedComponent.id === parseInt(formulaComponent.id, 10)) {
+                            formulaComponent.order = orderedComponent.order;
+                        }
+                    });
+                });
 
                 strippedHosts.push({
-                    access_rules: h.access_rules,
-                    cloud_profile: h.cloud_profile,
-                    count: h.count,
-                    description: h.description,
-                    title: h.title,
-                    formula_components: h.formula_components,
-                    hostname_template: h.hostname_template,
-                    size: h.size,
-                    spot_config: h.spot_config,
-                    volumes: h.volumes,
-                    zone: h.zone,
+                    access_rules: host.access_rules,
+                    cloud_profile: host.cloud_profile,
+                    count: host.count,
+                    description: host.description,
+                    title: host.title,
+                    formula_components: host.formula_components,
+                    hostname_template: host.hostname_template,
+                    size: host.size,
+                    spot_config: host.spot_config,
+                    volumes: host.volumes,
+                    zone: host.zone,
                 });
-            }
+            });
+
+            // return;
 
             properties = JSON.parse(document.getElementById('blueprint_properties').value) || '';
 
@@ -232,7 +279,33 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
             var blueprint = {};
             var currentBlueprint = self.selectedBlueprint();
             var hosts = BlueprintHostStore.collection(), strippedHosts = [];
+            var orderedComponents = [];
 
+            /*
+                Identify the orchestration fields in the form and match any entered value up 
+                to the corresponding formula component in the host
+            */
+            var fields = $('input[id^="component_order_"');
+            for (var i=0,length=fields.length; i < length; i += 1) {
+                var component = {};
+                component.id = parseInt(fields[i].id.split('_')[2], 10);
+                component.order = parseInt($('#' + fields[i].id).val(), 10);
+                orderedComponents[orderedComponents.length] = component;
+            }
+
+            /*
+                Apply the order specified by the user in the orchestration fields to the 
+                formula components in the host object
+            */
+            hosts.forEach(function (host) {
+                host.formula_components.forEach(function (formulaComponent) {
+                    orderedComponents.forEach(function (orderedComponent) {
+                        if (orderedComponent.id === parseInt(formulaComponent.component_id, 10)) {
+                            formulaComponent.order = orderedComponent.order;
+                        }
+                    });
+                })
+            });
 
             for (var host in hosts) {
                 var h = hosts[host];
@@ -251,7 +324,6 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
                     zone: h.zone,
                 });
             }
-
 
             // Clone the self.selectedBlueprint() item so we don't modify the item in the store
             for (var key in self.selectedBlueprint()) {
@@ -279,33 +351,6 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
             .catch(function (error) {
                 console.log(error);
             }).done();
-        };
-
-        self.saveOrchestration = function (model, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-            var orderedComponents = [];
-
-            for (var c in record) {
-                var component = {}
-                component.formObject = record[c];
-                component.id = parseInt(c.split('_')[2], 10);
-                component.order = parseInt(component.formObject.value, 10);
-
-                orderedComponents.push(component);
-                // component.sourceObject = _.findWhere(stores.BlueprintComponents(), { id: component.id });
-            }
-
-            stores.BlueprintHosts().forEach(function (host) {
-                host.formula_components.forEach(function (formulaComponent) {
-                    orderedComponents.forEach(function (orderedComponent) {
-                        if (orderedComponent.id === parseInt(formulaComponent.id, 10)) {
-                            formulaComponent.order = orderedComponent.order;
-                        }
-                    });
-                })
-            });
-
-            self.closeOrchestration();
         };
 
         self.addHost = function (profile) {

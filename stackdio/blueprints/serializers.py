@@ -44,11 +44,13 @@ class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerial
     title = serializers.Field(source='component.title')
     description = serializers.Field(source='component.description')
     formula = serializers.Field(source='component.formula')
+    component_id = serializers.Field(source='component.id')
     sls_path = serializers.Field(source='component.sls_path')
 
     class Meta:
         model = models.BlueprintHostFormulaComponent
         fields = (
+            'component_id',
             'title',
             'description',
             'formula',
