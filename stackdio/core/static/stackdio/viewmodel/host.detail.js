@@ -212,8 +212,6 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                     for (var key in properties) {
                         propBuilder[key] = properties[key];
                     }
-                    // self.blueprintProperties(propBuilder);
-                    // self.blueprintPropertiesStringified(JSON.stringify(propBuilder, undefined, 3));
                 });
 
                 formulaPromises[formulaPromises.length] = promise;
@@ -228,7 +226,7 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 self.BlueprintHostStore.add(host);
 
                 // Clear out the forumla select control
-                $('#formula_components').selectpicker('deselectAll');
+                // $('#formula_components').selectpicker('deselectAll');
 
                 // Set spot instance boolean to false in order to hide the input field for next time
                 self.hostIsSpotInstance(false);
