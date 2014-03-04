@@ -4,6 +4,7 @@ define([
     'viewmodel/base',
     'util/postOffice',
     'util/form',
+    'store/Accounts',
     'store/Profiles',
     'store/Formulas',
     'store/InstanceSizes',
@@ -17,7 +18,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeStore, BlueprintStore, ZoneStore, 
+function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore, InstanceSizeStore, BlueprintStore, ZoneStore, 
           HostRuleStore, HostVolumeStore, BlueprintHostStore, FormulaComponentStore, BlueprintComponentStore, API, models) {
     var vm = function () {
         var self = this;
@@ -80,7 +81,9 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
             ZoneStore.populate();
 
             // Load profiles, and then blueprints
-            ProfileStore.populate().then(function () {
+            AccountStore.populate().then(function () {
+                return ProfileStore.populate();    
+            }).then(function () {
                 return BlueprintStore.populate();    
             }).then(function () {
                 self.init(data);
@@ -124,6 +127,12 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
 
                 self.selectedProfile = profile;
                 $('#host_instance_size').val(profile.default_instance_size);
+                
+                var profileAccount = AccountStore.collection().filter(function (account) {
+                    return account.id === profile.cloud_provider;
+                })[0];
+                $('#availability_zone').val(profileAccount.default_availability_zone);
+
             }
 
             // Only show spot instance price box if the spot instance checkbox is checked
