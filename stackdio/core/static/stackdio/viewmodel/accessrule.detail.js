@@ -109,6 +109,13 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintH
             };
 
             HostRuleStore.add(new models.BlueprintHostAccessRule().create(accessRule));
+
+            $('#rule_from_port').val('');
+            $('#rule_to_port').val('');
+            $('#rule_ip_address').val('');
+            $('#rule_group').val('');
+            $('#rule_protocol').val('');
+
             self.navigate({ view: 'host.detail' });
         };
 

@@ -103,11 +103,12 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStor
                 mount_point: record.volume_mount_point.value
             });
 
-            // volume.snapshot = SnapshotStore.collection().filter(function (s) {
-            //     return s.id === parseInt(record.volume_snapshot.value, 10);
-            // })[0].id;
-
             VolumeStore.add(volume);
+
+            $('#volume_snapshot').val('');
+            $('#volume_device').val('');
+            $('#volume_mount_point').val('');
+
             self.navigate({ view: 'host.detail' });
         };
 
