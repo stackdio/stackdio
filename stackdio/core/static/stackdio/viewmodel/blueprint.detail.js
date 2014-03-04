@@ -182,6 +182,8 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
 
             self.blueprintPropertiesStringified('');
             self.selectedBlueprint(null);
+
+            $('#public_blueprint').prop('checked', false);
         };
 
         self.createBlueprint = function (model, evt) {
@@ -217,6 +219,7 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
 
             API.Blueprints.save(blueprint).then(function (newBlueprint) {
                 BlueprintStore.add(newBlueprint);
+                self.clearEditingData();
                 self.navigate({ view: 'blueprint.list' });
             })
             .catch(function (error) {
@@ -277,13 +280,6 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
                 console.log(error);
             }).done();
         };
-
-
-        // Only show spot instance price box if the spot instance checkbox is checked
-        self.hostIsSpotInstance = ko.observable(false);
-        $('#spot_instance').click(function () {
-            self.hostIsSpotInstance(this.checked);
-        });
 
         self.saveOrchestration = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);

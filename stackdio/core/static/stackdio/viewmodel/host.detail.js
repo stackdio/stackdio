@@ -126,9 +126,23 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 $('#host_instance_size').val(profile.default_instance_size);
             }
 
+            // Only show spot instance price box if the spot instance checkbox is checked
+            $('#spot_instance').click(function () {
+                self.hostIsSpotInstance(this.checked);
+            });
+        };
+
+
+        self.resetFormFields = function () {
+            $("#formula_components").attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
+            $('#spot_instance_price').val('');
+
+            // Set spot instance boolean to false in order to hide the input field for next time
+            self.hostIsSpotInstance(false);
         };
 
         self.cancelHostCreation = function () {
+            self.resetFormFields();
             self.navigate({
                 view: 'blueprint.detail',
                 data: {
@@ -228,15 +242,11 @@ function (Q, ko, base, _O_, formutils, ProfileStore, FormulaStore, InstanceSizeS
                 // Clear out the forumla select control
                 // $('#formula_components').selectpicker('deselectAll');
 
-                // Set spot instance boolean to false in order to hide the input field for next time
-                self.hostIsSpotInstance(false);
+                self.resetFormFields();
 
                 // Clear volume and access rules stores
                 self.HostRuleStore.empty();
                 self.HostVolumeStore.empty();
-
-                // Clear out the spot instance bid price field
-                document.getElementById('spot_instance_price').value = "";
 
                 self.viewBlueprint();
             }).done();
