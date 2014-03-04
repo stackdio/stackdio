@@ -1,9 +1,8 @@
 import logging
 import string
 
-from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 
@@ -26,6 +25,29 @@ VAR_USERNAME = 'username'
 VAR_INDEX = 'index'
 VALID_TEMPLATE_VARS = (VAR_NAMESPACE, VAR_USERNAME, VAR_INDEX)
 VALID_PROTOCOLS = ('tcp', 'udp', 'icmp')
+
+
+class OwnerOrPublicPermission(permissions.BasePermission):
+    '''
+    A permission that allows safe methods through for public objects
+    and all access to owners.
+    '''
+    def has_object_permission(self, request, view, obj):
+        if request.user == obj.owner:
+            return True
+        if not obj.public:
+            return False
+        return request.method == 'GET'
+
+
+class PublicBlueprintMixin(object):
+    permission_classes = (permissions.IsAuthenticated,
+                          OwnerOrPublicPermission,)
+
+    def get_object(self):
+        obj = get_object_or_404(models.Blueprint, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
 
 
 class BlueprintListAPIView(generics.ListCreateAPIView):
@@ -376,18 +398,11 @@ class BlueprintPublicAPIView(generics.ListAPIView):
             .exclude(owner=self.request.user)
 
 
-class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-
+class BlueprintDetailAPIView(PublicBlueprintMixin,
+                             generics.RetrieveUpdateDestroyAPIView):
     model = models.Blueprint
     serializer_class = serializers.BlueprintSerializer
     parser_classes = (JSONParser,)
-
-    def get_object(self):
-        # Return the blueprint if it's owned by the request user or
-        # if it's public...else we'll raise a 404
-        return get_object_or_404(self.model,
-                                 Q(owner=self.request.user) | Q(public=True),
-                                 pk=self.kwargs.get('pk'))
 
     def update(self, request, *args, **kwargs):
         blueprint = self.get_object()
@@ -436,16 +451,7 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                                           **kwargs)
 
 
-class BlueprintPropertiesAPIView(generics.RetrieveAPIView):
-
+class BlueprintPropertiesAPIView(PublicBlueprintMixin,
+                                 generics.RetrieveAPIView):
     model = models.Blueprint
     serializer_class = serializers.BlueprintPropertiesSerializer
-
-    def get_object(self):
-        '''
-        Return the blueprint if it's owned by the request user or
-        if it's public...else we'll raise a 404
-        '''
-        return get_object_or_404(self.model,
-                                 Q(owner=self.request.user) | Q(public=True),
-                                 pk=self.kwargs.get('pk'))

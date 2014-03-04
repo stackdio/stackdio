@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import (
     generics,
     parsers,
+    permissions,
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -28,6 +29,48 @@ from . import tasks, models, serializers, filters
 logger = logging.getLogger(__name__)
 
 
+class OwnerOnlyPermission(permissions.BasePermission):
+    '''
+    A permission that allows safe methods through for public objects
+    and all access to owners.
+    '''
+    def has_object_permission(self, request, view, obj):
+        return request.user == obj.owner
+
+
+class OwnerOrPublicPermission(permissions.BasePermission):
+    '''
+    A permission that allows safe methods through for public objects
+    and all access to owners.
+    '''
+    def has_object_permission(self, request, view, obj):
+        if request.user == obj.owner:
+            return True
+        if not obj.public:
+            return False
+        return request.method == 'GET'
+
+
+class PublicStackMixin(object):
+    permission_classes = (permissions.IsAuthenticated,
+                          OwnerOrPublicPermission,)
+
+    def get_object(self):
+        obj = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+
+class StackPublicListAPIView(generics.ListAPIView):
+    model = models.Stack
+    serializer_class = serializers.StackSerializer
+
+    def get_queryset(self):
+        return self.model.objects \
+            .filter(public=True) \
+            .exclude(owner=self.request.user)
+
+
 class StackListAPIView(generics.ListCreateAPIView):
     '''
     TODO: Add docstring
@@ -39,7 +82,7 @@ class StackListAPIView(generics.ListCreateAPIView):
 
     ALLOWED_FIELDS = ('blueprint', 'title', 'description', 'properties',
                       'max_retries', 'namespace', 'auto_launch',
-                      'auto_provision', 'parallel',)
+                      'auto_provision', 'parallel', 'public')
 
     def get_queryset(self):
         return self.request.user.stacks.all()
@@ -209,14 +252,11 @@ class StackListAPIView(generics.ListCreateAPIView):
         return Response(serializer.data)
 
 
-class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+class StackDetailAPIView(PublicStackMixin,
+                         generics.RetrieveUpdateDestroyAPIView):
     model = models.Stack
     serializer_class = serializers.StackSerializer
     parser_classes = (parsers.JSONParser,)
-
-    def get_object(self):
-        return get_object_or_404(models.Stack, id=self.kwargs.get('pk'),
-                                 owner=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         '''
@@ -247,15 +287,10 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
 
-class StackPropertiesAPIView(generics.RetrieveUpdateAPIView):
-
+class StackPropertiesAPIView(PublicStackMixin, generics.RetrieveUpdateAPIView):
     model = models.Stack
     serializer_class = serializers.StackPropertiesSerializer
     parser_classes = (parsers.JSONParser,)
-
-    def get_object(self):
-        return get_object_or_404(models.Stack, id=self.kwargs.get('pk'),
-                                 owner=self.request.user)
 
     def update(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -271,8 +306,7 @@ class StackPropertiesAPIView(generics.RetrieveUpdateAPIView):
         return Response(stack.properties)
 
 
-class StackHistoryAPIView(generics.ListAPIView):
-
+class StackHistoryAPIView(PublicStackMixin, generics.ListAPIView):
     model = models.StackHistory
     serializer_class = serializers.StackHistorySerializer
 
@@ -280,19 +314,28 @@ class StackHistoryAPIView(generics.ListAPIView):
         stack = self.get_object()
         return stack.history.all()
 
-    def get_object(self):
-        return get_object_or_404(models.Stack,
-                                 id=self.kwargs.get('pk'),
-                                 owner=self.request.user)
-
 
 class StackActionAPIView(generics.SingleObjectAPIView):
-
+    model = models.Stack
     serializer_class = serializers.StackSerializer
+    permission_classes = (permissions.IsAuthenticated,
+                          OwnerOnlyPermission,)
 
     def get_object(self):
-        return get_object_or_404(models.Stack, id=self.kwargs.get('pk'),
-                                 owner=self.request.user)
+        obj = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get(self, request, *args, **kwargs):
+        stack = self.get_object()
+        driver_hosts_map = stack.get_driver_hosts_map()
+        available_actions = set()
+        for driver, hosts in driver_hosts_map.iteritems():
+            available_actions.update(driver.get_available_actions())
+
+        return Response({
+            'available_actions': sorted(available_actions),
+        })
 
     # TODO: Code complexity issues are ignored for now
     def post(self, request, *args, **kwargs):  # NOQA
@@ -436,7 +479,7 @@ class StackHistoryList(generics.ListAPIView):
     serializer_class = serializers.StackHistorySerializer
 
 
-class HostListAPIView(generics.ListAPIView):
+class HostListAPIView(PublicStackMixin, generics.ListAPIView):
     model = models.Host
     serializer_class = serializers.HostSerializer
 
@@ -448,9 +491,8 @@ class StackHostsAPIView(HostListAPIView):
     parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
-        return models.Host.objects.filter(
-            stack__pk=self.kwargs.get('pk'),
-            stack__owner=self.request.user)
+        stack = self.get_object()
+        return models.Host.objects.filter(stack=stack)
 
     def put(self, request, *args, **kwargs):
         '''
@@ -494,7 +536,7 @@ class StackHostsAPIView(HostListAPIView):
         if not provider_metadata or not result.data['results']:
             return result
 
-        stack = request.user.stacks.get(id=kwargs.get('pk'))
+        stack = self.get_object()
         query_results = stack.query_hosts()
 
         # TODO: query_results are highly dependent on the underlying
@@ -509,8 +551,7 @@ class StackHostsAPIView(HostListAPIView):
         return result
 
 
-class StackVolumesAPIView(VolumeListAPIView):
-
+class StackVolumesAPIView(PublicStackMixin, VolumeListAPIView):
     def get_queryset(self):
         return Volume.objects.filter(stack__pk=self.kwargs.get('pk'))
 
@@ -544,13 +585,8 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         return Response(serializer.data)
 
 
-class StackFQDNListAPIView(APIView):
+class StackFQDNListAPIView(PublicStackMixin, APIView):
     model = models.Stack
-
-    def get_object(self):
-        return get_object_or_404(models.Stack,
-                                 id=self.kwargs.get('pk'),
-                                 owner=self.request.user)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -558,13 +594,8 @@ class StackFQDNListAPIView(APIView):
         return Response(fqdns)
 
 
-class StackLogsAPIView(APIView):
+class StackLogsAPIView(PublicStackMixin, APIView):
     model = models.Stack
-
-    def get_object(self):
-        return get_object_or_404(models.Stack,
-                                 id=self.kwargs.get('pk'),
-                                 owner=self.request.user)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -615,13 +646,8 @@ class StackLogsAPIView(APIView):
         })
 
 
-class StackProvisioningErrorsAPIView(APIView):
+class StackProvisioningErrorsAPIView(PublicStackMixin, APIView):
     model = models.Stack
-
-    def get_object(self):
-        return get_object_or_404(models.Stack,
-                                 id=self.kwargs.get('pk'),
-                                 owner=self.request.user)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -635,13 +661,8 @@ class StackProvisioningErrorsAPIView(APIView):
         return Response(err_yaml)
 
 
-class StackOrchestrationErrorsAPIView(APIView):
+class StackOrchestrationErrorsAPIView(PublicStackMixin, APIView):
     model = models.Stack
-
-    def get_object(self):
-        return get_object_or_404(models.Stack,
-                                 id=self.kwargs.get('pk'),
-                                 owner=self.request.user)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()

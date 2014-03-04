@@ -19,6 +19,11 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.CharField')(default='', max_length=64, blank=True),
                       keep_default=False)
 
+        # Adding field 'Stack.public'
+        db.add_column(u'stacks_stack', 'public',
+                      self.gf('django.db.models.fields.BooleanField')(default=False),
+                      keep_default=False)
+
         # Adding field 'Stack.props_file'
         db.add_column(u'stacks_stack', 'props_file',
                       self.gf('core.fields.DeletingFileField')(default=None, max_length=255, null=True, blank=True),
@@ -47,6 +52,9 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Stack.namespace'
         db.delete_column(u'stacks_stack', 'namespace')
+
+        # Deleting field 'Stack.public'
+        db.delete_column(u'stacks_stack', 'public')
 
         # Deleting field 'Stack.props_file'
         db.delete_column(u'stacks_stack', 'props_file')
@@ -252,6 +260,7 @@ class Migration(SchemaMigration):
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stacks'", 'to': u"orm['auth.User']"}),
             'pillar_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'props_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'slug': ('django_extensions.db.fields.AutoSlugField', [], {'allow_duplicates': 'False', 'max_length': '50', 'separator': "u'-'", 'blank': 'True', 'populate_from': "'title'", 'overwrite': 'False'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'top_file': ('core.fields.DeletingFileField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'})

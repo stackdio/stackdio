@@ -98,6 +98,7 @@ class StackManager(models.Manager):
         '''
         title = data.get('title', '')
         description = data.get('description', '')
+        public = data.get('public', False)
 
         if not title:
             raise ValueError("Stack 'title' is a required field.")
@@ -105,7 +106,8 @@ class StackManager(models.Manager):
         stack = self.model(owner=owner,
                            blueprint=blueprint,
                            title=title,
-                           description=description)
+                           description=description,
+                           public=public)
         stack.save()
 
         # add the namespace
@@ -248,6 +250,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
     namespace = models.CharField(max_length=64, blank=True)
+
+    # is this stack publicly available -- meaning it can be found by other
+    # users and will remain in read-only mode to them
+    public = models.BooleanField(default=False)
 
     # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(

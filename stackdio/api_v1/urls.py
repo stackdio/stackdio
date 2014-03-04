@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
+
 @api_view(['GET'])
 def api_root(request, format=None):
     '''
@@ -15,27 +16,69 @@ def api_root(request, format=None):
     '''
     api = {
         'core': {
-            'settings': reverse('usersettings-detail', request=request, format=format),
-            'change_password': reverse('change_password', request=request, format=format),
-            'version': reverse('version', request=request, format=format),
+            'settings': reverse('usersettings-detail',
+                                request=request,
+                                format=format),
+            'change_password': reverse('change_password',
+                                       request=request,
+                                       format=format),
+            'version': reverse('version',
+                               request=request,
+                               format=format),
         },
         'cloud': {
-            'instance_sizes': reverse('cloudinstancesize-list', request=request, format=format),
-            'zones': reverse('cloudzone-list', request=request, format=format),
-            'profiles': reverse('cloudprofile-list', request=request, format=format),
-            'providers': reverse('cloudprovider-list', request=request, format=format),
-            'provider_types': reverse('cloudprovidertype-list', request=request, format=format),
-            'security_groups': reverse('securitygroup-list', request=request, format=format),
+            'instance_sizes': reverse('cloudinstancesize-list',
+                                      request=request,
+                                      format=format),
+            'zones': reverse('cloudzone-list',
+                             request=request,
+                             format=format),
+            'profiles': reverse('cloudprofile-list',
+                                request=request,
+                                format=format),
+            'providers': reverse('cloudprovider-list',
+                                 request=request,
+                                 format=format),
+            'provider_types': reverse('cloudprovidertype-list',
+                                      request=request,
+                                      format=format),
+            'security_groups': reverse('securitygroup-list',
+                                       request=request,
+                                       format=format),
         },
         'stacks': {
-            'hosts': reverse('host-list', request=request, format=format),
-            'snapshots': reverse('snapshot-list', request=request, format=format),
-            'stacks': reverse('stack-list', request=request, format=format),
-            'volumes': reverse('volume-list', request=request, format=format),
+            'hosts': reverse('host-list',
+                             request=request,
+                             format=format),
+            'snapshots': reverse('snapshot-list',
+                                 request=request,
+                                 format=format),
+            'stacks': reverse('stack-list',
+                              request=request,
+                              format=format),
+            'public_stacks': reverse('stack-public-list',
+                                     request=request,
+                                     format=format),
+            'volumes': reverse('volume-list',
+                               request=request,
+                               format=format),
         },
-        'blueprints': reverse('blueprint-list', request=request, format=format),
-        'formulas': reverse('formula-list', request=request, format=format),
-        'search': reverse('search', request=request, format=format),
+        'blueprints': {
+            'blueprints': reverse('blueprint-list',
+                                  request=request,
+                                  format=format),
+            'public_blueprints': reverse('blueprint-public-list',
+                                         request=request,
+                                         format=format),
+        },
+        'formulas': {
+            'formulas': reverse('formula-list',
+                                request=request,
+                                format=format),
+        },
+        'search': reverse('search',
+                          request=request,
+                          format=format),
     }
 
     if request.user.is_superuser:
@@ -45,7 +88,8 @@ def api_root(request, format=None):
 
     return Response(api)
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
 
     url(r'^$', api_root),
 

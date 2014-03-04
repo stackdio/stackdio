@@ -17,6 +17,10 @@ urlpatterns = patterns(
         api.StackListAPIView.as_view(),
         name='stack-list'),
 
+    url(r'^stacks/public/$',
+        api.StackPublicListAPIView.as_view(),
+        name='stack-public-list'),
+
     url(r'^stacks/(?P<pk>[0-9]+)/$',
         api.StackDetailAPIView.as_view(),
         name='stack-detail'),

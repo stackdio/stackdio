@@ -1,15 +1,16 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import patterns, url
 
 from . import api
 
-urlpatterns = patterns('blueprints.api',
+urlpatterns = patterns(
+    'blueprints.api',
 
     url(r'^blueprints/$',
-        api.BlueprintListAPIView.as_view(), 
+        api.BlueprintListAPIView.as_view(),
         name='blueprint-list'),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/$', 
-        api.BlueprintDetailAPIView.as_view(), 
+    url(r'^blueprints/(?P<pk>[0-9]+)/$',
+        api.BlueprintDetailAPIView.as_view(),
         name='blueprint-detail'),
 
     url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
@@ -18,8 +19,6 @@ urlpatterns = patterns('blueprints.api',
 
     # List of publicly available blueprints
     url(r'^blueprints/public/$',
-        api.BlueprintPublicAPIView.as_view(), 
-        name='blueprint-public'),
+        api.BlueprintPublicAPIView.as_view(),
+        name='blueprint-public-list'),
 )
-
-
