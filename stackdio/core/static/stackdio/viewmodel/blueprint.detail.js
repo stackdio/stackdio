@@ -33,6 +33,8 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
         self.blueprintPropertiesStringified = ko.observable('');
         self.editMode = 'create';
 
+        self.HostVolumeStore = HostVolumeStore;
+        self.HostRuleStore = HostRuleStore;
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
         self.InstanceSizeStore = InstanceSizeStore;
