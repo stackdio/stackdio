@@ -2,6 +2,7 @@ import jinja2
 import os
 import shutil
 import sys
+import textwrap
 
 from stackdio.core.config import StackdioConfig
 from django.utils.crypto import get_random_string
@@ -39,8 +40,10 @@ class BaseCommand(object):
     def post_run(self):
         pass
 
-    def out(self, msg, color=Colors.BLACK, fp=sys.stdout):
+    def out(self, msg='', color=Colors.BLACK, fp=sys.stdout, nl=1):
         fp.write(color + msg + Colors.ENDC)
+        for i in range(nl):
+            fp.write('\n')
 
     def _get_prompt_msg(self, msg, default_value, choices):
         s = ''
@@ -65,19 +68,19 @@ class BaseCommand(object):
                                                        choices))
 
                 if choices and value not in choices:
-                    self.out('Invalid response. Must be one of {0}\n\n'
-                             .format(choices), Colors.ERROR)
+                    self.out('Invalid response. Must be one of {0}'
+                             .format(choices), Colors.ERROR, nl=2)
                     continue
                 if not value and default is None:
-                    self.out('Invalid response. Please provide a value.\n\n',
-                             Colors.ERROR)
+                    self.out('Invalid response. Please provide a value.',
+                             Colors.ERROR, nl=2)
                     continue
                 if not value:
                     value = default
                 return value
 
         except (KeyboardInterrupt, EOFError):
-            self.out('\nAborting.\n', Colors.ERROR)
+            self.out('Aborting.', Colors.ERROR)
             sys.exit(1)
 
     def load_resource(self, rp=None, package='stackdio'):
@@ -102,21 +105,17 @@ class BaseCommand(object):
 
 class WizardCommand(BaseCommand):
     '''
-    QUESTIONS is required. It's a list of tuples and of the format:
-        (   index0: required
-            Unique name for this question. This will be the key into
-            the answers dictionary for storing the user's answers
+    QUESTIONS is required. It's a list of dict objects that look like:
 
-            index1:
-            A short description of the question.
-
-            index2:
-            A more detailed description of the question.
-
-            index3:
-            A default answer to provide to the user. This is either a string
-            or a tuple of choices (strings)
-        )
+        attr: required, the unique attribute name for this question that will
+              be used as the key in the answers dictionary
+        short_desc: required, a short description of this question
+        long_desc: optional, a longer, more detailed description of the
+                   question
+        default: optional, a default answer to give the user. This may be
+                 a string value or a tuple of string choices. If a tuple,
+                 the user will be required to provide one of the available
+                 choices.
 
     After each question, an optional validator can be ran to make
     sure the response is ok. To do so define a method on the class:
@@ -138,10 +137,22 @@ class WizardCommand(BaseCommand):
         while recording and validating their answers.
         '''
         for question in self.QUESTIONS:
-            attr, title, desc, default = question[:4]
-            default = self.answers[attr] or default
-            self.out('## {0}\n'.format(title), Colors.PROMPT)
-            self.out('{0}\n'.format(desc), Colors.PROMPT)
+            attr = question.get('attr')
+            title = question.get('short_desc')
+            desc = question.get('long_desc', '').format(**self.answers)
+            default = question.get('default')
+            true_value = question.get('true_value')
+            require_true = question.get('require_true')
+
+            if require_true and not self.answers.get(require_true):
+                self.answers[attr] = None
+                continue
+
+            if not isinstance(default, tuple):
+                default = self.answers.get(attr) or question.get('default')
+
+            self.out(textwrap.fill(title, initial_indent='## '), Colors.PROMPT)
+            self.out(textwrap.fill(desc), Colors.PROMPT)
 
             while True:
                 value = self.prompt('', default)
@@ -152,22 +163,27 @@ class WizardCommand(BaseCommand):
                 if ok:
                     break
                 self.out(msg, Colors.ERROR)
-            self.out('\n')
-            self.answers[attr] = value
 
-        self.out('Are the following values correct?\n', Colors.PROMPT)
+            if true_value is not None:
+                print 'TRUE VALUE = {0} : {1}'.format(attr, true_value)
+                value = true_value == value
+                print 'IS_TRUE: {0}'.format(value)
+            self.answers[attr] = value
+            self.out()
+
+        self.out('Are the following values correct?', Colors.PROMPT)
         for question in self.QUESTIONS:
-            self.out('    {0}\n'.format(
-                self.answers[question[0]]),
-                Colors.VALUE)
-        self.out('\nWARNING: If you say no, we will abort without changing '
-                 'anything!\n\n', Colors.ERROR)
+            self.out('    {0} = {1}\n'.format(
+                question['attr'],
+                self.answers[question['attr']]),
+                Colors.VALUE, nl=0)
+        self.out('WARNING: If you say no, we will abort without changing '
+                 'anything!', Colors.ERROR, nl=2)
 
         ok = self.prompt('Correct? ', default=('yes', 'no'))
-        self.out('\n')
 
         if ok == 'no':
-            self.out('Aborting.\n', Colors.ERROR)
+            self.out('Aborting.', Colors.ERROR)
             sys.exit(1)
 
 
@@ -178,37 +194,46 @@ class InitCommand(WizardCommand):
     # Default config file
     CONFIG_FILE = os.path.join(CONFIG_DIR, 'config')
 
-    QUESTIONS = [
-        ('user',
-         'Which user will stackdio and salt run as?',
-         'This user will own services, files, etc related to stackdio.',
-         'stackdio'),
-        ('storage_root',
-         'Where should stackdio and salt store their data?',
-         'Root directory for stackdio to store its files, logs, salt\n'
-         'configuration, etc. It must exist and be owned by the user\n'
-         'provided above.',
-         '/var/lib/stackdio'),
-        ('salt_bootstrap_script',
-         'Which bootstrap script should salt-cloud use when launching VMs?',
-         'When launching and bootstrapping machines using salt-cloud,\n'
-         'what bootstrap script should be used? Typically, this should\n'
-         'be left alone.',
-         'bootstrap-salt'),
-        ('salt_bootstrap_args',
-         'Any special arguments for the bootstrap script?',
-         'What arguments to pass to the bootstrap script above? For our\n'
-         'purposes, we are enabling debug output for tracking down issues\n'
-         'that may crop up during the bootstrap process. Override the\n'
-         'defaults here. See http://bootstrap.saltstack.org for more info',
-         '-K -D git 3a894d760699ab155bc63a3e35e6730f87cc7d8c'),
-        ('db_dsn',
-         'What database DSN should stackdio use to connect to the DB?',
-         'The database DSN the stackdio Django application will use to\n'
-         'acccess the database server. The server must be running, the\n'
-         'database must already exist, and the user must have access to it.',
-         'mysql://user:pass@localhost:3306/stackdio'),
-    ]
+    QUESTIONS = [{
+        'attr': 'user',
+        'short_desc': 'Which user will stackdio and salt run as?',
+        'long_desc': ('This user will own services, files, etc related to '
+                      'stackdio.'),
+        'default': 'stackdio',
+    }, {
+        'attr': 'storage_root',
+        'short_desc': 'Where should stackdio and salt store their data?',
+        'long_desc': ('Root directory for stackdio to store its files, logs, '
+                      'salt configuration, etc. It must exist and be owned by '
+                      'the user "{user}".'),
+        'default': '/var/lib/stackdio',
+    }, {
+        'attr': 'salt_bootstrap_script',
+        'short_desc': ('Which bootstrap script should salt-cloud use when '
+                       'launching VMs?'),
+        'long_desc': ('When launching and bootstrapping machines using '
+                      'salt-cloud, what bootstrap script should be used? '
+                      'Typically, this should be left alone.'),
+        'default': 'bootstrap-salt',
+    }, {
+        'attr': 'salt_bootstrap_args',
+        'short_desc': 'Any special arguments for the bootstrap script?',
+        'long_desc': ('What arguments to pass to the bootstrap script above? '
+                      'For our purposes, we are enabling debug output for '
+                      'tracking down issues that may crop up during the '
+                      'bootstrap process. Override the defaults here. See '
+                      'http://bootstrap.saltstack.org for more info.'),
+        'default': '-K -D',
+    }, {
+        'attr': 'db_dsn',
+        'short_desc': ('What database DSN should stackdio use to connect to '
+                       'the DB?'),
+        'long_desc': ('The database DSN the stackdio Django application will '
+                      'use to acccess the database server. The server must be '
+                      'running, the database must already exist, and the user '
+                      'must have access to it.'),
+        'default': 'mysql://user:pass@localhost:3306/stackdio',
+    }]
 
     def pre_run(self):
         self.answers = StackdioConfig()
@@ -217,7 +242,7 @@ class InitCommand(WizardCommand):
         # existing config
         if self.answers:
             self.out('## WARNING: Existing configuration file found. Using '
-                     'values as defaults.\n\n', Colors.WARN)
+                     'values as defaults.', Colors.WARN, nl=2)
 
         # The template expects a django_secret_key, and if we don't have one
         # we'll generate one for the user automatically (using the logic
@@ -229,7 +254,7 @@ class InitCommand(WizardCommand):
     def post_run(self):
         self._init_stackdio()
         self._init_salt()
-        self.out('Finished\n', Colors.INFO)
+        self.out('Finished', Colors.INFO)
 
     def _init_stackdio(self):
         # create config dir if it doesn't already exist
@@ -239,7 +264,7 @@ class InitCommand(WizardCommand):
         self.render_template('stackdio/management/templates/config.jinja2',
                              self.CONFIG_FILE,
                              context=self.answers)
-        self.out('stackdio configuration written to {0}\n'.format(
+        self.out('stackdio configuration written to {0}'.format(
             self.CONFIG_FILE), Colors.INFO)
 
         # grab a fresh copy of the config file to be used later
@@ -249,19 +274,19 @@ class InitCommand(WizardCommand):
         if not os.path.isdir(self.config.salt_config_root):
             os.makedirs(self.config.salt_config_root)
             self.out('Created salt configuration directory at '
-                     '{0}\n'.format(self.config.salt_config_root), Colors.INFO)
+                     '{0}'.format(self.config.salt_config_root), Colors.INFO)
 
         # Render salt-master and salt-cloud configuration files
         self.render_template('stackdio/management/templates/master.jinja2',
                              self.config.salt_master_config,
                              context=self.config)
-        self.out('Salt master configuration written to {0}\n'.format(
+        self.out('Salt master configuration written to {0}'.format(
             self.config.salt_master_config), Colors.INFO)
 
         self.render_template('stackdio/management/templates/cloud.jinja2',
                              self.config.salt_cloud_config,
                              context=self.config)
-        self.out('Salt cloud configuration written to {0}\n'.format(
+        self.out('Salt cloud configuration written to {0}'.format(
             self.config.salt_cloud_config), Colors.INFO)
 
         # Copy the salt directories needed
@@ -273,11 +298,11 @@ class InitCommand(WizardCommand):
             # check for existing dst and skip it
             if os.path.isdir(dst):
                 self.out('Salt configuration directory {0} already exists...'
-                         'skipping.\n'.format(rp), Colors.WARN)
+                         'skipping.'.format(rp), Colors.WARN)
                 continue
 
             shutil.copytree(path, dst)
-            self.out('Copied salt configuration directory {0}.\n'.format(rp),
+            self.out('Copied salt configuration directory {0}.'.format(rp),
                      Colors.INFO)
 
     def _validate_user(self, question, answer):
