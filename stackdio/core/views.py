@@ -1,7 +1,5 @@
 import logging
 
-from django.conf import settings
-from django.http import HttpResponse, HttpResponseBadRequest
 from django.contrib import messages, auth
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
@@ -12,10 +10,14 @@ LANDING_PAGE_TEMPLATE = 'index.html'
 
 logger = logging.getLogger(__name__)
 
+
 def render(request, view, context={}):
     if (request):
-        return render_to_response(view, context, context_instance=RequestContext(request))
+        return render_to_response(view,
+                                  context,
+                                  context_instance=RequestContext(request))
     return render_to_response(view, context)
+
 
 def index(request):
     template = LANDING_PAGE_TEMPLATE
@@ -23,13 +25,13 @@ def index(request):
         template = APPLICATION_TEMPLATE
     return render(request, template)
 
+
 def login(request):
-    next_url = request.GET.get('next', DEFAULT_REDIRECT)
     if request.method == 'POST':
         un = request.POST.get('username', '')
         pw = request.POST.get('password', '')
         user = auth.authenticate(username=un, password=pw)
-        
+
         if user is not None and user.is_active:
             # Login the user
             auth.login(request, user)
@@ -43,6 +45,7 @@ def login(request):
         messages.error(request, 'Invalid method \'{0}\' used. Please use '
                                 'POST.'.format(request.method))
         return redirect(index)
+
 
 def logout(request):
     auth.logout(request)
