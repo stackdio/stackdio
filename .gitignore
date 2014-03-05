@@ -4,7 +4,6 @@ dev.db
 *.pyc
 *.swp
 *.un~
-reload.sh
 stackdio/core/static/stackdio-built.js
 stackdio/core/static/stackdio/bower_components
 stackdio/core/static/stackdio/node_modules
@@ -19,5 +18,9 @@ dist/
 stackdio.egg*/
 
 # abe's development stuff
-stackdio/reset_rabbitmq.sh
-stackdio/salt-cloud.sh
+reload.sh
+reset_rabbitmq.sh
+salt-cloud.sh
+
+# ldap_settings.py
+stackdio/stackdio/settings/ldap_settings.py

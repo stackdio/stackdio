@@ -295,3 +295,12 @@ CLOUD_PROVIDERS = [
 # Celery & RabbitMQ
 ##
 BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+
+##
+# LDAP configuration. To enable this, you should copy ldap_settings.py.template
+# to ldap_settings.py and modify the settings there.
+##
+try:
+    from ldap_settings import *  # NOQA
+except ImportError:
+    pass
