@@ -1,103 +1,22 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'settings', 'model/models'], function (Q, settings, models) {
     return {
-        load : function (pageURL) {
-            var self = this;
-            var deferred = Q.defer();
-            var url = pageURL || '/api/security_groups/';
-
-            $.ajax({
-                url: url,
-                type: 'GET',
-                headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
-                },
-                success: function (response) {
-                    var i, item, items = response.results;
-                    var count = response.count, next = response.next, previous = response.previous;
-                    var group;
-
-                    // Clear the store and the grid
-                    stores.SecurityGroups.removeAll();
-
-                    for (i in items) {
-                        group = new models.SecurityGroup().create(items[i]);
-
-                        // The owner property is only provided if the user is a superuser.
-                        if (!stackdio.settings.superuser) group.owner = '';
-
-                        // Attach the corresponding Account to the group
-                        group.account = _.find(stores.Accounts(), function (a) {
-                            return a.id === group.provider_id;
-                        });
-
-                        // Add to store
-                        stores.SecurityGroups.push(group);
-                    }
-
-                    // Resolve the promise and pass back the loaded items
-                    console.info('groups', stores.SecurityGroups());
-                    deferred.resolve({count: count, next: next, previous: previous});
-                }
-            });
-
-            return deferred.promise
-        },
         loadByAccount : function (account) {
             var self = this;
             var deferred = Q.defer();
             var group;
 
             $.ajax({
-                url: '/api/providers/'+account.id+'/security_groups/',
+                url: account.security_groups,
                 type: 'GET',
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response.results;
-                    var aws = response.provider_groups;
-                    var currentGroup;
-
-                    // Clear the store and the grid
-                    stores.AWSSecurityGroups.removeAll();
-                    stores.DefaultSecurityGroups.removeAll();
-
-                    // All AWS groups are returned in the 'provider_groups' key on the response
-                    for (i in aws) {
-                        group = new models.AWSSecurityGroup().create(aws[i]);
-                        stores.AWSSecurityGroups.push(group);
-                    }
-
-                    // All stackd.io groups are returned in the 'results' key on the response
-                    for (i in items) {
-                        currentGroup = items[i];
-                        group = new models.SecurityGroup().create(currentGroup);
-                        group.title = currentGroup.name;
-
-                        if (currentGroup.is_default) {
-                            stores.DefaultSecurityGroups.push(group);
-                        }
-                        stores.AccountSecurityGroups.push(group);
-                    }
-
-                    // Extract the name of each group into a new array that is used as the 
-                    // store for the typeahead field on the default group form
-                    var flattened = stores.AWSSecurityGroups().map(function (g) {
-                        return g.name;
-                    });
-
-                    $('#new_securitygroup_name').typeahead({
-                        name: 'securityGroups',
-                        local: flattened,
-                        limit: 10
-                    });
-
-                    // Resolve the promise and pass back the loaded items
-                    console.log('account groups', stores.AccountSecurityGroups());
-                    console.log('default groups', stores.DefaultSecurityGroups());
-                    deferred.resolve();
+                    deferred.resolve(response);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -107,7 +26,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             var self = this;
             var deferred = Q.defer();
             var securityGroup = JSON.stringify(group);
-
 
             $.ajax({
                 url: '/api/security_groups/',
@@ -119,15 +37,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Content-Type": "application/json"
                 },
                 success: function (response) {
-                    var item = response;
-                    var newGroup = new models.SecurityGroup().create(item);
-
-                    // The owner property is only provided if the user is a superuser.
-                    if (!stackdio.settings.superuser) newGroup.owner = '';
-
-
-                    stores.DefaultSecurityGroups.push(newGroup);
-                    deferred.resolve(newGroup);
+                    deferred.resolve(response);
                 },
                 error: function (request, status, error) {
                     if (error === 'CONFLICT') {
@@ -159,7 +69,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
             var deferred = Q.defer();
             var securityGroup = JSON.stringify(group);
 
-
             $.ajax({
                 url: '/api/security_groups/' + group.id + '/',
                 type: 'PUT',
@@ -170,17 +79,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Content-Type": "application/json"
                 },
                 success: function (response) {
-                    var group = response;
-
-                    if (!group.is_default) {
-                        stores.DefaultSecurityGroups.remove(function (g) {
-                            return g.id === group.id;
-                        });
-                    } else {
-                        stores.DefaultSecurityGroups.push(group);
-                    }
-
-                    deferred.resolve(group);
+                    deferred.resolve(response);
                 }
             });
 
@@ -210,39 +109,6 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     console.log(arguments);
 
                     deferred.reject(new Error(JSON.parse(request.responseText).detail));
-                }
-            });
-
-            return deferred.promise
-        },
-        updateRule : function (group, rule, action) {
-            var self = this;
-            var deferred = Q.defer();
-            var stringifiedRule = JSON.stringify(rule);
-
-            $.ajax({
-                url: '/api/security_groups/' + group.id + '/rules/',
-                data: stringifiedRule,
-                type: 'PUT',
-                headers: {
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json",
-                    "Content-Type": "application/json"
-                },
-                success: function (response) {
-                    // Replace the rules array on the current group
-                    group.rules = response;
-
-                    // Empty the rules store
-                    stores.SecurityGroupRules.removeAll();
-
-                    // Push the new rules back into the store
-                    _.each(response, function (r) {
-                        stores.SecurityGroupRules.push(r);
-                    })
-
-                    // Resolve the promise
-                    deferred.resolve();
                 }
             });
 

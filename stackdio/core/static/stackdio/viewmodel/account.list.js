@@ -101,8 +101,8 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
             self.navigate({ view: 'account.detail', data: { account: account.id } });
         };
 
-        self.editSecurityGroups = function () {
-            return true;
+        self.editSecurityGroups = function (account) {
+            self.navigate({ view: 'account.securitygroup', data: { account: account.id } });
         };
 
     };
