@@ -6,7 +6,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: settings.api.formulas,
+                url: settings.api.formulas.formulas,
                 type: 'GET',
                 headers: {
                     'Accept': 'application/json'
@@ -69,7 +69,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/formulas/',
+                url: settings.api.formulas.formulas,
                 type: 'POST',
                 data: JSON.stringify({uri: uri}),
                 headers: {
@@ -92,7 +92,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/formulas/' + formula.id,
+                url: formula.url,
                 type: 'DELETE',
                 headers: {
                     "Content-Type": "application/json",
@@ -133,7 +133,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var self = this;
 
             $.ajax({
-                url: '/api/formulas/' + formula.id,
+                url: formula.url,
                 type: 'PUT',
                 data: JSON.stringify({public: !formula.public}),
                 headers: {

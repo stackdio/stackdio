@@ -4,7 +4,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: settings.api.blueprints,
+                url: settings.api.blueprints.blueprints,
                 type: 'GET',
                 headers: {
                     'Accept': 'application/json'
@@ -44,7 +44,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var blueprint = JSON.stringify(blueprint);
 
             $.ajax({
-                url: settings.api.blueprints,
+                url: settings.api.blueprints.blueprints,
                 type: 'POST',
                 data: blueprint,
                 dataType: 'json',

@@ -147,8 +147,6 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
                             });
                         });
 
-                        console.log('BlueprintComponentStore',BlueprintComponentStore.collection());
-
                         self.BlueprintHostStore.add(new models.BlueprintHost().create(host));
                     });
                 }

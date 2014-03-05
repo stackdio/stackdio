@@ -4,9 +4,9 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
        this.name = "DuplicateViewRegistrationException";
     };
 
-    var UnregisteredViewException = function (message) {
+    var UnregisteredViewWarning = function (message) {
        this.message = message;
-       this.name = "UnregisteredViewException";
+       this.name = "UnregisteredViewWarning";
     };
 
     var MissingViewModelException = function (message) {
@@ -286,7 +286,7 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
                 deferred.resolve();
             }
         } else { 
-            console.warn(new UnregisteredViewException('View with id `' + id + '` has not been registered. Attempting to register now.'));
+            console.warn(new UnregisteredViewWarning('View with id `' + id + '` has not been registered. Attempting to register now.'));
             require([this.viewmodelDir+'/'+id], function (vm) {});
         }
 

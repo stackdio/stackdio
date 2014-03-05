@@ -101,10 +101,6 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore,
             var blueprint = null;
             var profile = null;
 
-            if (HostVolumeStore.collection().length === 0 && HostRuleStore.collection().length === 0) {
-                formutils.clearForm('blueprint-host-form');
-            }
-
             // $('#formula_components').selectpicker();
             // $('#host_instance_size').selectpicker();
             // $('#availability_zone').selectpicker();
@@ -151,6 +147,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore,
         };
 
         self.cancelHostCreation = function () {
+            formutils.clearForm('blueprint-host-form');
             self.resetFormFields();
             self.navigate({
                 view: 'blueprint.detail',

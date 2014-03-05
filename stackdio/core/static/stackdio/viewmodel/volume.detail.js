@@ -105,7 +105,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStor
 
             VolumeStore.add(volume);
 
-            $('#volume_snapshot').val('');
+            $('#volume_snapshot').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
             $('#volume_device').val('');
             $('#volume_mount_point').val('');
 

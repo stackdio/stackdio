@@ -114,7 +114,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintH
             $('#rule_to_port').val('');
             $('#rule_ip_address').val('');
             $('#rule_group').val('');
-            $('#rule_protocol').val('');
+            $('#rule_protocol').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
 
             self.navigate({ view: 'host.detail' });
         };
