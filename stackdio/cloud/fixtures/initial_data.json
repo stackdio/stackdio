@@ -7,13 +7,6 @@
         }
     },
     {
-        "pk": 2,
-        "model": "cloud.cloudprovidertype",
-        "fields": {
-            "type_name": "openstack"
-        }
-    },
-    {
         "pk": 1,
         "model": "cloud.cloudzone",
         "fields": {

@@ -24,3 +24,6 @@ salt-cloud.sh
 
 # ldap_settings.py
 stackdio/stackdio/settings/ldap_settings.py
+
+# collectstatic junk
+stackdio/static

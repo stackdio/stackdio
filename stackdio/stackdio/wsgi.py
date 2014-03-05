@@ -22,7 +22,7 @@ import os
 
 # @todo pointing this at local settings for now, but should add
 # settings.production and use it here
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "stackdio.settings.local")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "stackdio.settings.development")
 
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION

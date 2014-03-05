@@ -21,6 +21,10 @@ STATE_EXECUTION_FIELDS = ('module', 'declaration_id', 'name', 'func')
 FILE_STORAGE_DIRECTORY = os.path.join(STACKDIO_CONFIG['storage_root'],
                                       'storage')
 
+LOG_DIRECTORY = os.path.join(STACKDIO_CONFIG['storage_root'], 'logs')
+if not os.path.isdir(LOG_DIRECTORY):
+    os.makedirs(LOG_DIRECTORY)
+
 ##
 #
 ##
@@ -209,6 +213,14 @@ LOGGING = {
             'formatter': 'default',
             'class': 'logging.StreamHandler',
         },
+        "file": {
+            "level": "DEBUG",
+            "formatter": "default",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": os.path.join(LOG_DIRECTORY, 'stackdio.log'),
+            "maxBytes": 5242880,
+            "backupCount": 5
+        },
     },
     'loggers': {
         'django.request': {
@@ -221,28 +233,13 @@ LOGGING = {
             'propagate': False,
             'level': 'DEBUG',
         },
-        'core': {
-            'handlers': ['console'],
+        'django_auth_ldap': {
+            'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
         },
-        'cloud': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'stacks': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'blueprints': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'serach': {
-            'handlers': ['console'],
+        '': {
+            'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
         },
