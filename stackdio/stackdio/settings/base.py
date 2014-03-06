@@ -223,18 +223,28 @@ LOGGING = {
         },
     },
     'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
+        'django': {
+            'handlers': ['null'],
             'level': 'ERROR',
             'propagate': True,
         },
-        'django.db.backends': {
-            'handlers': ['null'],
-            'propagate': False,
-            'level': 'DEBUG',
-        },
         'django_auth_ldap': {
-            'handlers': ['console', 'file'],
+            'handlers': ['null'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'boto': {
+            'handlers': ['null'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'south': {
+            'handlers': ['null'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'amqp': {
+            'handlers': ['null'],
             'level': 'DEBUG',
             'propagate': False,
         },
