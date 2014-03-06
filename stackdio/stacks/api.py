@@ -232,7 +232,8 @@ class StackListAPIView(generics.ListCreateAPIView):
             # provisioning is optional (mainly useful for getting machines
             # up so you can play with salt states)
             if provision_stack:
-                task_list.append(tasks.orchestrate.si(stack.id))
+                task_list.append(tasks.orchestrate.si(stack.id,
+                                                      max_retries=max_retries))
 
             # always finish
             task_list.append(tasks.finish_stack.si(stack.id))

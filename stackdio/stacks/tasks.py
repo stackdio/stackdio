@@ -684,10 +684,6 @@ def highstate(stack_id, host_ids=None, max_retries=0):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Running core provisioning for stack: {0!r}'.format(stack))
 
-        # Update status
-        stack.set_status(highstate.name,
-                         'Executing core provisioning. This may take a while.')
-
         # Set up logging for this task
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
@@ -700,6 +696,13 @@ def highstate(stack_id, host_ids=None, max_retries=0):
                 highstate.name,
                 current_try,
                 stack))
+
+            # Update status
+            stack.set_status(highstate.name,
+                             'Executing core provisioning try {0} of {1}. '
+                             'This may take a while.'.format(
+                                 current_try,
+                                 max_retries + 1))
 
             now = datetime.now().strftime('%Y%m%d-%H%M%S')
             log_file = os.path.join(log_dir,
@@ -853,10 +856,6 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing orchestration for stack: {0!r}'.format(stack))
 
-        # Update status
-        stack.set_status(orchestrate.name,
-                         'Executing orchestration. This may take a while.')
-
         # Set up logging for this task
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
@@ -869,6 +868,12 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
                 orchestrate.name,
                 current_try,
                 stack))
+
+            # Update status
+            stack.set_status(orchestrate.name,
+                             'Executing orchestration try {0} of {1}. This '
+                             'may take a while.'.format(current_try,
+                                                        max_retries + 1))
 
             now = datetime.now().strftime('%Y%m%d-%H%M%S')
             log_file = os.path.join(log_dir,
@@ -1168,7 +1173,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
         for driver, hosts in driver_hosts.iteritems():
             security_groups.update(SecurityGroup.objects.filter(
                 hosts__in=hosts,
-                owner=stack.owner))
+                owner=stack.owner).exclude(is_default=True))
 
             known_hosts = hosts.exclude(instance_id='')
             if known_hosts:
@@ -1183,6 +1188,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
             for security_group in security_groups:
                 try:
                     driver.delete_security_group(security_group.name)
+                    logger.debug('Managed security group {0} '
+                                 'deleted...'.format(security_group.name))
                 except BadRequest, e:
                     if 'does not exist' in e.message:
                         logger.warn(e.message)
