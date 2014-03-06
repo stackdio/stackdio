@@ -88,6 +88,10 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
             });
         });
 
+        $galaxy.network.subscribe('newhost', function () {
+            formutils.clearForm('blueprint-host-form');
+        });
+
 
         /*
          *  ==================================================================================
@@ -147,12 +151,17 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
         self.cancelHostCreation = function () {
             formutils.clearForm('blueprint-host-form');
             self.resetFormFields();
-            $galaxy.transport({
-                location: 'blueprint.detail',
-                payload: {
-                    blueprint: self.selectedBlueprint().id
-                }
-            })
+
+            if (self.selectedBlueprint() === null) {
+                $galaxy.transport('blueprint.detail');
+            } else {
+                $galaxy.transport({
+                    location: 'blueprint.detail',
+                    payload: {
+                        blueprint: self.selectedBlueprint().id
+                    }
+                });
+            }
         };
 
         self.createHost = function (model, evt) {

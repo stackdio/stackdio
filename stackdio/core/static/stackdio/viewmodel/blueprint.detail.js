@@ -367,6 +367,8 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
                     }
                 });
             }
+
+            $galaxy.network.publish('newhost');
         };
 
         self.removeHost = function (host) {
