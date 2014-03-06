@@ -52,6 +52,6 @@ AUTH_LDAP_USER_FLAGS_BY_GROUP = {
     'is_staff': 'cn=stackdio-admin,ou=Group,dc=yourcompany,dc=com',
 }
 AUTH_LDAP_CONNECTION_OPTIONS = {
-    ldap.OPT_X_TLS_REQUIRE_CERT: False,
+    ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER,
     ldap.OPT_X_TLS_NEWCTX: 0,
 }
