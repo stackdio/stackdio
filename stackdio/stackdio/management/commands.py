@@ -5,6 +5,7 @@ import sys
 import textwrap
 
 from stackdio.core.config import StackdioConfig
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
 
@@ -236,7 +237,10 @@ class InitCommand(WizardCommand):
     }]
 
     def pre_run(self):
-        self.answers = StackdioConfig()
+        try:
+            self.answers = StackdioConfig()
+        except ImproperlyConfigured:
+            self.answers = {}
 
         # Let the user know we've changed the defaults by reusing the
         # existing config
