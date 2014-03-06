@@ -149,10 +149,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
             account.secret_access_key = record.secret_access_key.value;
             account.keypair = record.keypair.value;
             account.route53_domain = record.route53_domain.value;
-            account.private_key_file = record.private_key_file.value;
-
-            // console.log(account);
-            // return;
+            account.private_key = record.private_key_file.value;
 
             API.Accounts.save(account).then(function (newAccount) {
                 AccountStore.add(newAccount);

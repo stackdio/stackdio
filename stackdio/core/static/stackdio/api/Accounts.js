@@ -30,12 +30,8 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             // Append required fields to the form data
             for (var key in account) {
-                // rec = account[key];
                 formData.append(key, account[key]);
             }
-
-            // Append private key file to the FormData() object
-            formData.append('private_key', account.private_key_file.value);
 
             // Open the connection to the provider URI and set authorization header
             xhr.open('POST', '/api/providers/');
