@@ -65,9 +65,7 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('host.detail.rendered', function (data) {
-
-            // Ensure formulas are loaded
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             FormulaStore.populate().then(function (formulas) {
                 FormulaStore.collection().forEach(function (formula) {
                     for (var c in formula.components) {
@@ -150,8 +148,8 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
             formutils.clearForm('blueprint-host-form');
             self.resetFormFields();
             $galaxy.transport({
-                view: 'blueprint.detail',
-                data: {
+                location: 'blueprint.detail',
+                payload: {
                     blueprint: self.selectedBlueprint().id
                 }
             })
@@ -261,21 +259,24 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
 
         self.viewBlueprint = function () {
             if (self.selectedBlueprint() === null) {
-                $galaxy.transport({view: 'blueprint.detail'});
+                $galaxy.transport('blueprint.detail');
             } else {
-                $galaxy.transport({view: 'blueprint.detail', data: {blueprint: self.selectedBlueprint().id} });
+                $galaxy.transport({
+                    location: 'blueprint.detail',
+                    payload: {
+                        blueprint: self.selectedBlueprint().id
+                    }
+                });
             }
         };
 
         self.addAccessRule = function () {
             if (self.selectedBlueprint() === null) {
-                $galaxy.transport({
-                    view: 'accessrule.detail'
-                });
+                $galaxy.transport('accessrule.detail');
             } else {
                 $galaxy.transport({
-                    view: 'accessrule.detail',
-                    data: {
+                    location: 'accessrule.detail',
+                    payload: {
                         blueprint: self.selectedBlueprint().id
                     }
                 });
@@ -284,13 +285,11 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
 
         self.addVolume = function () {
             if (self.selectedBlueprint() === null) {
-                $galaxy.transport({
-                    view: 'volume.detail'
-                });
+                $galaxy.transport('volume.detail');
             } else {
                 $galaxy.transport({
-                    view: 'volume.detail',
-                    data: {
+                    location: 'volume.detail',
+                    payload: {
                         blueprint: self.selectedBlueprint().id
                     }
                 });
@@ -298,7 +297,5 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
         };
 
     };
-
-    vm.prototype = new base();
     return new vm();
 });

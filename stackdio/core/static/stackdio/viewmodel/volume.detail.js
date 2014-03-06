@@ -1,8 +1,7 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/Blueprints',
     'store/HostVolumes',
@@ -11,7 +10,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStore, BlueprintHostStore, API, models) {
+function (Q, ko, $galaxy, formutils, BlueprintStore, VolumeStore, SnapshotStore, BlueprintHostStore, API, models) {
     var vm = function () {
         var self = this;
 
@@ -24,6 +23,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStor
         self.blueprintTitle = ko.observable();
         self.selectedHost = ko.observable();
         self.hostTitle = ko.observable();
+        self.$galaxy = $galaxy;
 
         self.BlueprintStore = BlueprintStore;
         self.VolumeStore = VolumeStore;
@@ -51,7 +51,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStor
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('volume.detail.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             SnapshotStore.populate().then(function () {
                 self.init(data);
             });
@@ -109,16 +109,12 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStor
             $('#volume_device').val('');
             $('#volume_mount_point').val('');
 
-            $galaxy.transport({ view: 'host.detail' });
+            $galaxy.transport('host.detail');
         };
 
         self.cancelChanges = function (model, evt) {
-            $galaxy.transport({ view: 'host.detail' });
+            $galaxy.transport('host.detail');
         };
-
-
     };
-
-    vm.prototype = new base();
     return new vm();
 });

@@ -1,8 +1,7 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/ProviderTypes',
     'store/Accounts',
@@ -10,7 +9,7 @@ define([
     'store/Zones',
     'api/api'
 ],
-function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileStore, ZoneStore, API) {
+function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileStore, ZoneStore, API) {
     var vm = function () {
         var self = this;
 
@@ -23,6 +22,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
         self.selectedProviderType = ko.observable(null);
         self.accountTitle = ko.observable(null);
         self.saveAction = self.createAccount;
+        self.$galaxy = $galaxy;
 
         self.ProviderTypeStore = ProviderTypeStore;
         self.AccountStore = AccountStore;
@@ -51,7 +51,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('account.detail.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             ZoneStore.populate();
 
             ProviderTypeStore.populate().then(function () {
@@ -149,14 +149,11 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
             account.secret_access_key = record.secret_access_key.value;
             account.keypair = record.keypair.value;
             account.route53_domain = record.route53_domain.value;
-            account.private_key_file = record.private_key_file.value;
-
-            // console.log(account);
-            // return;
+            account.private_key = record.private_key_file.value;
 
             API.Accounts.save(account).then(function (newAccount) {
                 AccountStore.add(newAccount);
-                $galaxy.transport({ view: 'account.list' });
+                $galaxy.transport('account.list');
             });
         };
 
@@ -174,18 +171,15 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
 
             // PATCH the update, and on success, replace the current item in the store with new one
             API.Accounts.update(account).then(function () {
-                $galaxy.transport({ view: 'account.list' });
+                $galaxy.transport('account.list');
             }).catch(function (err) {
                 console.log(err);
             });
         };
 
         self.cancelChanges = function (model, evt) {
-            $galaxy.transport({ view: 'account.list' });
+            $galaxy.transport('account.list');
         };
-
     };
-
-    vm.prototype = new base();
     return new vm();
 });

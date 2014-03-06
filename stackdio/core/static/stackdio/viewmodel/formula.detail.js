@@ -1,12 +1,12 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
+    'util/galaxy',
     'util/form',
     'store/Formulas',
     'api/api'
 ],
-function (Q, ko, base, formutils, FormulaStore, API) {
+function (Q, ko, $galaxy, formutils, FormulaStore, API) {
     var vm = function () {
         var self = this;
 
@@ -43,55 +43,20 @@ function (Q, ko, base, formutils, FormulaStore, API) {
         */
 
         self.cancelChanges = function () {
-            $galaxy.transport({ view: 'formula.list' });
+            $galaxy.transport('formula.list');
         };
 
         self.importFormula = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
 
-            API.Formulas.import(record.formula_url.value)
-                .then(function () {
-                    formutils.clearForm('formula-form');
-                })
-                .catch(function (error) {
-                    self.showError(error, 15000);
-                })
-        };
-
-        self.share = function (formula) {
-            return API.Formulae.update(formula);
-        };
-
-        self.popoverBuilder = function (formula) { 
-            return formula.components.map(function (item) {
-                var content = [];
-
-                content.push("<div class=\'dotted-border xxsmall-padding\'>");
-                content.push("<div>");
-                content.push(item.title);
-                content.push('</div>');
-                content.push("<div class='grey'>");
-                content.push(item.description);
-                content.push('</div>');
-                content.push('</div>');
-
-                return content.join('');
-            }).join('');
-        };
-
-        self.showDetails = function (formula) {
-            console.log(formula);
-        };
-
-        self.delete = function (formula) {
-            return API.Formulae.delete(formula);
-        };
-
-        self.loadFormula = function () {
-            return API.Formulae.load();
+            API.Formulas.import(record.formula_url.value).then(function () {
+                formutils.clearForm('formula-form');
+                $galaxy.transport('formula.list');
+            })
+            .catch(function (error) {
+                console.error(error);
+            }).done();
         };
     };
-
-    vm.prototype = new base();
     return new vm();
 });

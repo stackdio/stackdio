@@ -1,12 +1,11 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'store/Formulas',
     'api/api'
 ],
-function (Q, ko, base, _O_, FormulaStore, API) {
+function (Q, ko, $galaxy, FormulaStore, API) {
     var vm = function () {
         var self = this;
 
@@ -40,10 +39,8 @@ function (Q, ko, base, _O_, FormulaStore, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('formula.list.rendered', function (data) {
-            FormulaStore.populate().then(function () {
-                console.log(FormulaStore.collection());
-            });
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
+            FormulaStore.populate().then(function () {}).catch(function (err) { console.error(err); } ).done();
         });
 
 
@@ -70,24 +67,28 @@ function (Q, ko, base, _O_, FormulaStore, API) {
         };
 
         self.share = function (formula) {
-            return API.Formulae.update(formula);
+            API.Formulas.update(formula).then(function () {
+                FormulaStore.populate(true).then(function () {}).catch(function (err) { console.error(err); } ).done();
+            });
         };
 
-        self.popoverBuilder = function (formula) { 
-            return formula.components.map(function (item) {
-                var content = [];
+        self.popoverBuilder = function (formula) {
+            if (formula.hasOwnProperty('components')) {
+                return formula.components.map(function (item) {
+                    var content = [];
 
-                content.push("<div class=\'dotted-border xxsmall-padding\'>");
-                content.push("<div>");
-                content.push(item.title);
-                content.push('</div>');
-                content.push("<div class='grey'>");
-                content.push(item.description);
-                content.push('</div>');
-                content.push('</div>');
+                    content.push("<div class=\'dotted-border xxsmall-padding\'>");
+                    content.push("<div>");
+                    content.push(item.title);
+                    content.push('</div>');
+                    content.push("<div class='grey'>");
+                    content.push(item.description);
+                    content.push('</div>');
+                    content.push('</div>');
 
-                return content.join('');
-            }).join('');
+                    return content.join('');
+                }).join('');
+            }
         };
 
         self.showDetails = function (formula) {
@@ -103,11 +104,8 @@ function (Q, ko, base, _O_, FormulaStore, API) {
         };
 
         self.showImportForm = function () {
-            $galaxy.transport({ view: 'formula.detail' });
+            $galaxy.transport('formula.detail');
         };
-
     };
-
-    vm.prototype = new base();
     return new vm();
 });

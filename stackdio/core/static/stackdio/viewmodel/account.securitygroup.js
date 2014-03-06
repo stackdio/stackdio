@@ -10,7 +10,7 @@ define([
     'store/AccountSecurityGroups',
     'api/api'
 ],
-function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileStore, AccountSecurityGroupStore, API) {
+function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileStore, AccountSecurityGroupStore, API) {
     var vm = function () {
         var self = this;
 

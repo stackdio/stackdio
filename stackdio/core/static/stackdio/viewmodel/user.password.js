@@ -1,5 +1,5 @@
 define(['q', 'knockout', 'viewmodel/base', 'util/postOffice', 'api/api', 'util/form'],
-function (Q, ko, base, _O_, API, formutils) {
+function (Q, ko, $galaxy, API, formutils) {
     var vm = function () {
         var self = this;
 

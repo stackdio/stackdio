@@ -1,8 +1,7 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/Blueprints',
     'store/HostAccessRules',
@@ -10,7 +9,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintHostStore, API, models) {
+function (Q, ko, $galaxy, formutils, BlueprintStore, HostRuleStore, BlueprintHostStore, API, models) {
     var vm = function () {
         var self = this;
 
@@ -23,6 +22,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintH
         self.blueprintTitle = ko.observable();
         self.selectedHost = ko.observable();
         self.hostTitle = ko.observable();
+        self.$galaxy = $galaxy;
 
         self.BlueprintStore = BlueprintStore;
         self.HostRuleStore = HostRuleStore;
@@ -49,7 +49,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintH
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('accessrule.detail.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             self.init(data);
         });
 
@@ -116,16 +116,12 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintH
             $('#rule_group').val('');
             $('#rule_protocol').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
 
-            $galaxy.transport({ view: 'host.detail' });
+            $galaxy.transport('host.detail');
         };
 
         self.cancelChanges = function (model, evt) {
-            $galaxy.transport({ view: 'host.detail' });
+            $galaxy.transport('host.detail');
         };
-
-
     };
-
-    vm.prototype = new base();
     return new vm();
 });

@@ -1,14 +1,13 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/Accounts',
     'store/Snapshots',
     'api/api'
 ],
-function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
+function (Q, ko, $galaxy, formutils, AccountStore, SnapshotStore, API) {
     var vm = function () {
         var self = this;
 
@@ -69,7 +68,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('snapshot.detail.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             AccountStore.populate().then(function () {
                 self.init(data);
             });
@@ -103,8 +102,6 @@ function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
                 })[0];
             }
             self.selectedAccount(account);
-
-
 
             if (snapshot && snapshot.hasOwnProperty('id')) {
                 // $('#account_provider').val(snapshot.provider_type);
@@ -155,15 +152,12 @@ function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
 
             API.Snapshots.save(snapshot).then(function (newSnapshot) {
                 SnapshotStore.add(newSnapshot);
-                $galaxy.transport({ view: 'snapshot.list' });
+                $galaxy.transport('snapshot.list');
             })
             .catch(function (error) {
                 $("#alert-error").show();
             });
         };
-
     };
-
-    vm.prototype = new base();
     return new vm();
 });

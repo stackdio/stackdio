@@ -1,8 +1,7 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/Accounts',
     'store/Profiles',
@@ -10,7 +9,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeStore, API, models) {
+function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, InstanceSizeStore, API, models) {
     var vm = function () {
         var self = this;
 
@@ -24,6 +23,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
         self.userCanModify = ko.observable(true);
         self.profileTitle = ko.observable();
         self.saveAction = 'create';
+        self.$galaxy = $galaxy;
 
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
@@ -44,13 +44,12 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             console.log(ex);            
         }
 
-
         /*
          *  ==================================================================================
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('profile.detail.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             AccountStore.populate().then(function () {
                 return ProfileStore.populate();
             }).then(function () {
@@ -58,18 +57,6 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             }).then(function () {            
                 self.init(data);
             });
-
-
-
-            // if (stores.Accounts().length === 0) {
-            //     [API.Accounts.load, API.Profiles.load].reduce(function (loadData, next) {
-            //         return loadData.then(next);
-            //     }, Q([])).then(function () {
-            //         self.init(data);
-            //     });
-            // } else {
-            //     self.init(data);
-            // }
         });
 
 
@@ -78,7 +65,6 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
          *   V I E W   M E T H O D S
          *  ==================================================================================
          */
-
         self.init = function (data) {
             var profile = null;
 
@@ -125,8 +111,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
 
             API.Profiles.save(profile).then(function (newProfile) {
                 ProfileStore.add(new models.Profile().create(newProfile));
-                console.log(ProfileStore.collection());
-                $galaxy.transport({ view: 'profile.list' });
+                $galaxy.transport('profile.list');
             });
         };
 
@@ -149,7 +134,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 self.ProfileStore.remove(self.selectedProfile());
                 self.ProfileStore.add(newProfile);
                 formutils.clearForm('profile-form');
-                $galaxy.transport({ view: 'profile.list' });
+                $galaxy.transport('profile.list');
             });
         };
 
@@ -161,10 +146,8 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
 
         self.cancelChanges = function (model, evt) {
             formutils.clearForm('profile-form');
-            $galaxy.transport({ view: 'profile.list' });
+            $galaxy.transport('profile.list');
         };
     };
-
-    vm.prototype = new base();
     return new vm();
 });

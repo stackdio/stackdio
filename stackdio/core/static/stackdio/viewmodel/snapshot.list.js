@@ -1,15 +1,14 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'store/ProviderTypes',
     'store/Accounts',
     'store/Profiles',
     'store/Snapshots',
     'api/api'
 ],
-function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, SnapshotStore, API) {
+function (Q, ko, $galaxy, ProviderTypeStore, AccountStore, ProfileStore, SnapshotStore, API) {
     var vm = function () {
         var self = this;
 
@@ -19,6 +18,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
          *  ==================================================================================
         */
         self.userCanModify = ko.observable();
+        self.isSuperUser = stackdio.settings.superuser;
 
         self.ProviderTypeStore = ProviderTypeStore;
         self.AccountStore = AccountStore;
@@ -49,7 +49,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('snapshot.list.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             ProviderTypeStore.populate().then(function () {
                 return AccountStore.populate();
             }).then(function () {
@@ -88,10 +88,9 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
         };
 
         // Query OPTIONS on /providers and if DELETE is not in allowed verb list, user is not admin
-        API.Snapshots.options()
-            .then(function (allowed) {
-                self.userCanModify(allowed.verbs.indexOf('DELETE') !== -1);
-            });
+        API.Snapshots.options().then(function (allowed) {
+            self.userCanModify(allowed.verbs.indexOf('DELETE') !== -1);
+        });
 
         self.addSnapshot = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
@@ -111,8 +110,8 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
 
         self.createSnapshot = function (account) {
             $galaxy.transport({
-                view: 'snapshot.detail',
-                data: {
+                location: 'snapshot.detail',
+                payload: {
                     account: account.id
                 }
             });
@@ -140,7 +139,5 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
         };
 
     };
-
-    vm.prototype = new base();
     return new vm();
 });

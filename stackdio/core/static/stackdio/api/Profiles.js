@@ -24,11 +24,16 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         },
         update: function (profile) {
             var deferred = Q.defer();
+            var _profile = {
+                title: profile.title,
+                description: profile.description,
+                ssh_user: profile.ssh_user
+            };
 
             $.ajax({
                 url: profile.url,
-                type: 'PUT',
-                data: JSON.stringify(profile),
+                type: 'PATCH',
+                data: JSON.stringify(_profile),
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json",

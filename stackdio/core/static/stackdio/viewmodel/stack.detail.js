@@ -76,6 +76,8 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
             var blueprint = null;
             var stack = null;
 
+            formutils.clearForm('stack-launch-form');
+
             // Blueprint specified, so creating a new stack
             if (data.hasOwnProperty('blueprint')) {
                 self.editMode('create');

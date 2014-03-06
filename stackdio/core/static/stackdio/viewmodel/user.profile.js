@@ -1,5 +1,5 @@
 define(['q', 'knockout', 'viewmodel/base', 'util/postOffice', 'api/api'],
-function (Q, ko, base, _O_, API) {
+function (Q, ko, $galaxy, API) {
     var vm = function () {
         var self = this;
 

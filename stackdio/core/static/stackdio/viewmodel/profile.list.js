@@ -1,13 +1,12 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'store/Accounts',
     'store/Profiles',
     'api/api'
 ],
-function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
+function (Q, ko, $galaxy, AccountStore, ProfileStore, API) {
     var vm = function () {
         var self = this;
 
@@ -18,6 +17,8 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
         */
         self.selectedAccount = ko.observable(null);
         self.userCanModify = ko.observable(true);
+        self.$galaxy = $galaxy;
+        self.isSuperUser = stackdio.settings.superuser;
 
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
@@ -44,7 +45,7 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('profile.list.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             self.EnhancedProfileStore.removeAll();
 
             AccountStore.populate().then(function () {
@@ -85,7 +86,7 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
         };
 
         self.newProfile = function () {
-            $galaxy.transport({ view: 'profile.detail' });
+            $galaxy.transport('profile.detail');
         };
 
         self.deleteProfile = function (profile) {
@@ -99,11 +100,13 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
         };
 
         self.viewProfile = function (profile) {
-            $galaxy.transport({ view: 'profile.detail', data: { profile: profile.id } });
+            $galaxy.transport({
+                location: 'profile.detail',
+                payload: {
+                    profile: profile.id
+                }
+            });
         };
-
     };
-
-    vm.prototype = new base();
     return new vm();
 });

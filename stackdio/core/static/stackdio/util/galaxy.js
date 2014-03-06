@@ -129,9 +129,6 @@ define(['q', 'knockout', 'postal'], function (Q, ko, postal) {
                 this.currentLocation = options.location;
             }
 
-            console.log('$galaxy.prototype.transport');
-            console.log('this.currentLocation',this.currentLocation);
-
             hashBuilder[hashBuilder.length] = this.currentLocation;   // Start building the location hash
 
             if (options.hasOwnProperty('payload') && options.payload) {
@@ -176,9 +173,6 @@ define(['q', 'knockout', 'postal'], function (Q, ko, postal) {
 
     $galaxy.prototype.join = function (viewmodel) {
         var self = this;
-
-        console.log('$galaxy.prototype.join');
-        console.log('viewmodel',viewmodel);
 
         if (!viewmodel.hasOwnProperty('__joined')) {
             
@@ -269,7 +263,6 @@ define(['q', 'knockout', 'postal'], function (Q, ko, postal) {
                 });
             }
 
-            console.log(currentViewModel.id + '.docked');
             self.network.publish(currentViewModel.id + '.docked', self.currentPayload);
 
         }).fail(function (ex) {
