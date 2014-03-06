@@ -229,8 +229,8 @@ LOGGING = {
             'propagate': True,
         },
         'django_auth_ldap': {
-            'handlers': ['null'],
-            'level': 'DEBUG',
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
             'propagate': False,
         },
         'boto': {
