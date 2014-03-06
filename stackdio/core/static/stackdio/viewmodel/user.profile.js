@@ -21,7 +21,7 @@ function (Q, ko, base, _O_, API) {
         self.domBindingId = '#user-profile';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -31,7 +31,7 @@ function (Q, ko, base, _O_, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('user.profile.rendered', function (data) {
+        self.$66.news.subscribe('user.profile.rendered', function (data) {
             API.Users.load().then(function (public_key) {
                 $('#first_name').val(window.stackdio.user.first_name);
                 $('#last_name').val(window.stackdio.user.last_name);

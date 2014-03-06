@@ -30,7 +30,7 @@ function (Q, ko, base, formutils, FormulaStore, API) {
         self.domBindingId = '#formula-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -43,7 +43,7 @@ function (Q, ko, base, formutils, FormulaStore, API) {
         */
 
         self.cancelChanges = function () {
-            self.navigate({ view: 'formula.list' });
+            $galaxy.transport({ view: 'formula.list' });
         };
 
         self.importFormula = function (model, evt) {

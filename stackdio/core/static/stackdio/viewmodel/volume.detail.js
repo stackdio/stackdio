@@ -40,7 +40,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStor
         self.domBindingId = '#volume-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -51,7 +51,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStor
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('volume.detail.rendered', function (data) {
+        self.$66.news.subscribe('volume.detail.rendered', function (data) {
             SnapshotStore.populate().then(function () {
                 self.init(data);
             });
@@ -109,11 +109,11 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, VolumeStore, SnapshotStor
             $('#volume_device').val('');
             $('#volume_mount_point').val('');
 
-            self.navigate({ view: 'host.detail' });
+            $galaxy.transport({ view: 'host.detail' });
         };
 
         self.cancelChanges = function (model, evt) {
-            self.navigate({ view: 'host.detail' });
+            $galaxy.transport({ view: 'host.detail' });
         };
 
 

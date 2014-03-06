@@ -5,7 +5,7 @@ define(['util/66'], function ($66) {
         self.$66 = $66;
         self.isSuperUser = stackdio.settings.superuser;
 
-        self.navigate = function (options) {
+        $galaxy.transport = function (options) {
             $66.navigate(options);
         };
 

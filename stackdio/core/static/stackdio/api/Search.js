@@ -1,4 +1,4 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'model/models'], function (Q, models) {
     var api = {};
 
     api.search = function (terms) {
@@ -13,23 +13,12 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                 "Accept": "application/json"
             },
             success: function (response) {
-                var matches = response.results;
-
-                // stores.Stacks.removeAll();
-
-                // stacks.forEach(function (stack) {
-                //     api.getHistory(stack).then(function (stackWithHistory) {
-                //         stores.Stacks.push(new models.Stack().create(stackWithHistory));
-                //     }).done();
-                // });
-
-                deferred.resolve(matches);
+                deferred.resolve(response.results);
             }
         });
 
         return deferred.promise;
     };
-
 
     return api;
 });

@@ -58,7 +58,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
         self.domBindingId = '#snapshot-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -69,7 +69,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('snapshot.detail.rendered', function (data) {
+        self.$66.news.subscribe('snapshot.detail.rendered', function (data) {
             AccountStore.populate().then(function () {
                 self.init(data);
             });
@@ -125,7 +125,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
         };
 
         self.cancelChanges = function () {
-            self.navigate({ view: 'formula.list' });
+            $galaxy.transport({ view: 'formula.list' });
         };
 
         self.updateSnapshot = function (model, evt) {
@@ -155,7 +155,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, SnapshotStore, API) {
 
             API.Snapshots.save(snapshot).then(function (newSnapshot) {
                 SnapshotStore.add(newSnapshot);
-                self.navigate({ view: 'snapshot.list' });
+                $galaxy.transport({ view: 'snapshot.list' });
             })
             .catch(function (error) {
                 $("#alert-error").show();

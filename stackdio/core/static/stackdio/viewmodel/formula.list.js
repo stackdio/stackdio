@@ -30,7 +30,7 @@ function (Q, ko, base, _O_, FormulaStore, API) {
         self.domBindingId = '#formula-list';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -40,7 +40,7 @@ function (Q, ko, base, _O_, FormulaStore, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('formula.list.rendered', function (data) {
+        self.$66.news.subscribe('formula.list.rendered', function (data) {
             FormulaStore.populate().then(function () {
                 console.log(FormulaStore.collection());
             });
@@ -103,7 +103,7 @@ function (Q, ko, base, _O_, FormulaStore, API) {
         };
 
         self.showImportForm = function () {
-            self.navigate({ view: 'formula.detail' });
+            $galaxy.transport({ view: 'formula.detail' });
         };
 
     };

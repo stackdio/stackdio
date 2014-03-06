@@ -33,7 +33,7 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
         self.domBindingId = '#profile-list';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -44,7 +44,7 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('profile.list.rendered', function (data) {
+        self.$66.news.subscribe('profile.list.rendered', function (data) {
             self.EnhancedProfileStore.removeAll();
 
             AccountStore.populate().then(function () {
@@ -85,7 +85,7 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
         };
 
         self.newProfile = function () {
-            self.navigate({ view: 'profile.detail' });
+            $galaxy.transport({ view: 'profile.detail' });
         };
 
         self.deleteProfile = function (profile) {
@@ -99,7 +99,7 @@ function (Q, ko, base, _O_, AccountStore, ProfileStore, API) {
         };
 
         self.viewProfile = function (profile) {
-            self.navigate({ view: 'profile.detail', data: { profile: profile.id } });
+            $galaxy.transport({ view: 'profile.detail', data: { profile: profile.id } });
         };
 
     };

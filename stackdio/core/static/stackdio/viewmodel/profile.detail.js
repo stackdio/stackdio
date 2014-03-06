@@ -39,7 +39,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
         self.domBindingId = '#profile-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -50,7 +50,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('profile.detail.rendered', function (data) {
+        self.$66.news.subscribe('profile.detail.rendered', function (data) {
             AccountStore.populate().then(function () {
                 return ProfileStore.populate();
             }).then(function () {
@@ -126,7 +126,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
             API.Profiles.save(profile).then(function (newProfile) {
                 ProfileStore.add(new models.Profile().create(newProfile));
                 console.log(ProfileStore.collection());
-                self.navigate({ view: 'profile.list' });
+                $galaxy.transport({ view: 'profile.list' });
             });
         };
 
@@ -149,7 +149,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
                 self.ProfileStore.remove(self.selectedProfile());
                 self.ProfileStore.add(newProfile);
                 formutils.clearForm('profile-form');
-                self.navigate({ view: 'profile.list' });
+                $galaxy.transport({ view: 'profile.list' });
             });
         };
 
@@ -161,7 +161,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, InstanceSizeS
 
         self.cancelChanges = function (model, evt) {
             formutils.clearForm('profile-form');
-            self.navigate({ view: 'profile.list' });
+            $galaxy.transport({ view: 'profile.list' });
         };
     };
 

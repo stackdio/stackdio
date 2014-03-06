@@ -8,7 +8,7 @@ function (ko, Q, base, _O_) {
 
         };
 
-        _O_.subscribe('*.updated', function (data) {
+        self.$66.news.subscribe('*.updated', function (data) {
             $('#omnibox_search').typeahead({
                 name: 'search',
                 valueKey: 'title',

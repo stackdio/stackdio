@@ -37,7 +37,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
         self.domBindingId = '#account-list';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -47,7 +47,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('account.list.rendered', function (data) {
+        self.$66.news.subscribe('account.list.rendered', function (data) {
             ProviderTypeStore.populate().then(function () {
                 return AccountStore.populate();
             }).then(function () {
@@ -85,11 +85,11 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
         };
 
         self.listProfiles = function (account) {
-            self.navigate({ view: 'profile.list', data: { account: account.id } });
+            $galaxy.transport({ view: 'profile.list', data: { account: account.id } });
         };
 
         self.createAccount = function (providerType) {
-            self.navigate({
+            $galaxy.transport({
                 view: 'account.detail',
                 data: {
                     type: providerType.id
@@ -98,11 +98,11 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, API) 
         };
 
         self.editAccount = function (account) {
-            self.navigate({ view: 'account.detail', data: { account: account.id } });
+            $galaxy.transport({ view: 'account.detail', data: { account: account.id } });
         };
 
         self.editSecurityGroups = function (account) {
-            self.navigate({ view: 'account.securitygroup', data: { account: account.id } });
+            $galaxy.transport({ view: 'account.securitygroup', data: { account: account.id } });
         };
 
     };

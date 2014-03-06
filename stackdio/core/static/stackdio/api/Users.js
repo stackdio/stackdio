@@ -1,4 +1,4 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'model/models'], function (Q, models) {
     return {
         load : function () {
             var deferred = Q.defer();

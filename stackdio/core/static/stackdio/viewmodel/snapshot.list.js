@@ -38,7 +38,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
         self.domBindingId = '#snapshot-list';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -49,7 +49,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('snapshot.list.rendered', function (data) {
+        self.$66.news.subscribe('snapshot.list.rendered', function (data) {
             ProviderTypeStore.populate().then(function () {
                 return AccountStore.populate();
             }).then(function () {
@@ -110,7 +110,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
         };
 
         self.createSnapshot = function (account) {
-            self.navigate({
+            $galaxy.transport({
                 view: 'snapshot.detail',
                 data: {
                     account: account.id
@@ -125,7 +125,7 @@ function (Q, ko, base, _O_, ProviderTypeStore, AccountStore, ProfileStore, Snaps
             //         return acct.id === self.selectedAccount.id;
             //     }));
             //     stores.Accounts.push(account);
-            //     self.navigate({ view: 'account.list' });
+            //     $galaxy.transport({ view: 'account.list' });
             // });
         };
 

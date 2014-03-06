@@ -1,8 +1,7 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/HostVolumes',
     'store/HostAccessRules',
@@ -17,7 +16,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, BlueprintStore, 
+function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, BlueprintStore, 
           BlueprintHostStore, BlueprintComponentStore, FormulaStore, FormulaComponentStore, API, models) {
     var vm = function () {
         var self = this;
@@ -35,6 +34,7 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
         self.blueprintProperties = ko.observable();
         self.blueprintPropertiesStringified = ko.observable('');
         self.editMode = 'create';
+        self.$galaxy = $galaxy;
 
         self.HostVolumeStore = HostVolumeStore;
         self.HostRuleStore = HostRuleStore;
@@ -55,7 +55,7 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
         self.domBindingId = '#blueprint-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -66,7 +66,7 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('blueprint.detail.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             AccountStore.populate().then(function () {
                 return ProfileStore.populate();
             }).then(function () {
@@ -86,7 +86,6 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
          *   V I E W   M E T H O D S
          *  ==================================================================================
          */
-
         self.init = function (data) {
             var blueprint = null;
 
@@ -187,7 +186,7 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
 
         self.cancelChanges = function (model, evt) {
             self.clearEditingData();
-            self.navigate({ view: 'blueprint.list' });
+            $galaxy.transport('blueprint.list');
         };
 
         /*
@@ -265,7 +264,7 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
             API.Blueprints.save(blueprint).then(function (newBlueprint) {
                 BlueprintStore.add(newBlueprint);
                 self.clearEditingData();
-                self.navigate({ view: 'blueprint.list' });
+                $galaxy.transport('blueprint.list');
             })
             .catch(function (error) {
                 $("#alert-error").show();
@@ -344,7 +343,7 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
                 BlueprintStore.add(updatedBlueprint);       // Add new one to store
 
                 self.clearEditingData();
-                self.navigate({ view: 'blueprint.list' });  // Go to the blueprint list
+                $galaxy.transport('blueprint.list');  // Go to the blueprint list
             })
             .catch(function (error) {
                 console.log(error);
@@ -353,9 +352,20 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
 
         self.addHost = function (profile) {
             if (self.selectedBlueprint() === null) {
-                self.navigate({view: 'host.detail', data: { profile: profile.id } });
+                $galaxy.transport({
+                    location: 'host.detail',
+                    payload: {
+                        profile: profile.id
+                    }
+                });
             } else {
-                self.navigate({view: 'host.detail', data: { blueprint: self.selectedBlueprint().id, profile: profile.id } });
+                $galaxy.transport({
+                    location: 'host.detail',
+                    payload: {
+                        blueprint: self.selectedBlueprint().id,
+                        profile: profile.id
+                    }
+                });
             }
         };
 
@@ -364,7 +374,5 @@ function (Q, ko, base, _O_, formutils, HostVolumeStore, HostRuleStore, AccountSt
         };
 
     };
-
-    vm.prototype = new base();
     return new vm();
 });

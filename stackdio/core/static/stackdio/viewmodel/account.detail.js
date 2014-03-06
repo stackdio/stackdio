@@ -40,7 +40,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
         self.domBindingId = '#account-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -51,7 +51,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('account.detail.rendered', function (data) {
+        self.$66.news.subscribe('account.detail.rendered', function (data) {
             ZoneStore.populate();
 
             ProviderTypeStore.populate().then(function () {
@@ -156,7 +156,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
 
             API.Accounts.save(account).then(function (newAccount) {
                 AccountStore.add(newAccount);
-                self.navigate({ view: 'account.list' });
+                $galaxy.transport({ view: 'account.list' });
             });
         };
 
@@ -174,14 +174,14 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
 
             // PATCH the update, and on success, replace the current item in the store with new one
             API.Accounts.update(account).then(function () {
-                self.navigate({ view: 'account.list' });
+                $galaxy.transport({ view: 'account.list' });
             }).catch(function (err) {
                 console.log(err);
             });
         };
 
         self.cancelChanges = function (model, evt) {
-            self.navigate({ view: 'account.list' });
+            $galaxy.transport({ view: 'account.list' });
         };
 
     };

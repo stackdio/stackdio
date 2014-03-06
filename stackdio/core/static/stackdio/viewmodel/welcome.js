@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'util/postOffice', 'viewmodel/base', 'viewmodel/stacklist', 'store/Blueprints'],
-function (Q, ko, _O_, base, stacklist, BlueprintStore) {
+define(['q', 'knockout', 'util/galaxy', 'viewmodel/stacklist', 'store/Blueprints'],
+function (Q, ko, $galaxy, stacklist, BlueprintStore) {
     var vm = function () {
         var self = this;
 
@@ -15,7 +15,7 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
         self.defaultView = true;
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -25,11 +25,7 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('welcome.registered', function () {
-
-        });
-
-        _O_.subscribe('welcome.rendered', function () {
+        $galaxy.network.subscribe(self.id + '.docked', function () {
             BlueprintStore.populate().then(function () {
                 // Specify a flattened array of Blueprint name as the store for the typeahead on the welcome page
                 $('#blueprint_search').typeahead({
@@ -38,7 +34,7 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
                     limit: 10
                 }).on('typeahead:selected', function (object, selectedItem) {
                     var foundBlueprint = _.findWhere(BlueprintStore.collection(), { title: $('#blueprint_search').val() });
-                    self.navigate({
+                    $galaxy.transport({
                         view: 'stack.detail',
                         data: {
                             blueprint: foundBlueprint.id
@@ -53,18 +49,15 @@ function (Q, ko, _O_, base, stacklist, BlueprintStore) {
             $("#blueprint_search").keypress(function (evt) {
                 if (evt.keyCode === 13) {
                     var foundBlueprint = _.findWhere(BlueprintStore.collection(), { title: $('#blueprint_search').val() });
-                    self.navigate({
-                        view: 'stack.detail',
-                        data: {
+                    $galaxy.transport({
+                        location: 'stack.detail',
+                        payload: {
                             blueprint: foundBlueprint.id
                         }
                     });
                 }
             });
-
         });
     };
-
-    vm.prototype = new base();
     return new vm();
 });

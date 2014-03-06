@@ -1,8 +1,7 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/Accounts',
     'store/Profiles',
@@ -18,7 +17,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore, InstanceSizeStore, BlueprintStore, ZoneStore, 
+function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, InstanceSizeStore, BlueprintStore, ZoneStore, 
           HostRuleStore, HostVolumeStore, BlueprintHostStore, FormulaComponentStore, BlueprintComponentStore, API, models) {
     var vm = function () {
         var self = this;
@@ -34,6 +33,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore,
         self.blueprintProperties = ko.observable();
         self.blueprintPropertiesStringified = ko.observable();
         self.hostIsSpotInstance = ko.observable(false);
+        self.$galaxy = $galaxy;
 
         self.ProfileStore = ProfileStore;
         self.FormulaStore = FormulaStore;
@@ -54,7 +54,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore,
         self.domBindingId = '#host-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -65,7 +65,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore,
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('host.detail.rendered', function (data) {
+        self.$66.news.subscribe('host.detail.rendered', function (data) {
 
             // Ensure formulas are loaded
             FormulaStore.populate().then(function (formulas) {
@@ -149,7 +149,7 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore,
         self.cancelHostCreation = function () {
             formutils.clearForm('blueprint-host-form');
             self.resetFormFields();
-            self.navigate({
+            $galaxy.transport({
                 view: 'blueprint.detail',
                 data: {
                     blueprint: self.selectedBlueprint().id
@@ -261,19 +261,19 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore,
 
         self.viewBlueprint = function () {
             if (self.selectedBlueprint() === null) {
-                self.navigate({view: 'blueprint.detail'});
+                $galaxy.transport({view: 'blueprint.detail'});
             } else {
-                self.navigate({view: 'blueprint.detail', data: {blueprint: self.selectedBlueprint().id} });
+                $galaxy.transport({view: 'blueprint.detail', data: {blueprint: self.selectedBlueprint().id} });
             }
         };
 
         self.addAccessRule = function () {
             if (self.selectedBlueprint() === null) {
-                self.navigate({
+                $galaxy.transport({
                     view: 'accessrule.detail'
                 });
             } else {
-                self.navigate({
+                $galaxy.transport({
                     view: 'accessrule.detail',
                     data: {
                         blueprint: self.selectedBlueprint().id
@@ -284,11 +284,11 @@ function (Q, ko, base, _O_, formutils, AccountStore, ProfileStore, FormulaStore,
 
         self.addVolume = function () {
             if (self.selectedBlueprint() === null) {
-                self.navigate({
+                $galaxy.transport({
                     view: 'volume.detail'
                 });
             } else {
-                self.navigate({
+                $galaxy.transport({
                     view: 'volume.detail',
                     data: {
                         blueprint: self.selectedBlueprint().id

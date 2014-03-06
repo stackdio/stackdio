@@ -1,13 +1,12 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'store/Blueprints',
     'store/Stacks',
     'api/api'
 ],
-function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
+function (Q, ko, $galaxy, BlueprintStore, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -25,6 +24,7 @@ function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
         self.selectedStack = ko.observable();
         self.BlueprintStore = BlueprintStore;
         self.StackStore = StackStore;
+        self.$galaxy = $galaxy;
 
         /*
          *  ==================================================================================
@@ -36,12 +36,12 @@ function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
         self.domBindingId = '#stack-list';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
 
-        _O_.subscribe('stack.list.rendered', function () {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             BlueprintStore.populate().then(function () {
                 return StackStore.populate();
             }).then(function () {
@@ -173,25 +173,23 @@ function (Q, ko, base, _O_, BlueprintStore, StackStore, API) {
         };
 
         self.showStackDetails = function (stack) {
-            self.navigate({
-                view: 'stack.detail',
-                data: {
+            $galaxy.transport({
+                location: 'stack.detail',
+                payload: {
                     stack: stack.id
                 }
             });
         };
 
         self.createNewStack = function (blueprint) {
-            self.navigate({
-                view: 'stack.detail', 
-                data: { 
+            $galaxy.transport({
+                location: 'stack.detail', 
+                payload: { 
                     blueprint: blueprint.id 
                 }
             });
         };
 
     };
-
-    vm.prototype = new base();
     return new vm();
 });

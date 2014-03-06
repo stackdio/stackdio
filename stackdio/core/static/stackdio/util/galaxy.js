@@ -1,4 +1,4 @@
-define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, postal) {
+define(['q', 'knockout', 'postal'], function (Q, ko, postal) {
     var DuplicateViewRegistrationException = function (message) {
        this.message = message;
        this.name = "DuplicateViewRegistrationException";
@@ -29,14 +29,19 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
        this.name = "MissingOptionException";
     };
 
-    var $66 = function (options) {
+    var $galaxy = function (options) {
         var self = this;
 
-        this.$news = postal.channel('route-66');
+        if (options && options.hasOwnProperty('channel') && options.channel !== '') {
+            this.network = postal.channel(options.channel);
+        } else {
+            this.network = postal.channel('galaxy');
+        }
 
         // Handle errors when require tries to load a view model id that is invalid
         requirejs.onError = function (err) {
-            console.error(new MissingViewModelException('Unable to locate the file `'+self.currentView+'.js`.'));
+            console.error(err);
+            console.error(new MissingViewModelException('Unable to find the location of `' + self.currentLocation + '.js`.'));
         };
 
         // Detect when the hash changes
@@ -44,31 +49,37 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
             self.parseHash();
         });
 
-        if (options && options.hasOwnProperty('viewmodelDir')) {
-            this.viewmodelDir = options.viewmodelDir;
+        if (options && options.hasOwnProperty('viewmodelDirectory')) {
+            this.viewmodelDirectory = options.viewmodelDirectory;
         } else {
-            this.viewmodelDir = 'viewmodel';
+            this.viewmodelDirectory = 'viewmodel';
+        }
+
+        if (options && options.hasOwnProperty('viewDirectory')) {
+            this.viewDirectory = options.viewDirectory;
+        } else {
+            this.viewDirectory = 'view';
         }
 
         this.currentPayload = null;
-        this.registeredViews = [];
-        this.currentView = null;
+        this.federation = [];
+        this.currentLocation = null;
         
         this.parseHash();
 
         // If view specified in URL hash isn't registered, require it now (which will automatically register it)
-        var exists = this.registeredViews.map(function (view) {
-            if (view.id === self.currentView) {
+        var exists = this.federation.map(function (view) {
+            if (view.id === self.currentLocation) {
                 return view;
             }
         });
 
-        if (!exists.length && this.currentView !== null) {
-            require([this.viewmodelDir+'/'+this.currentView], function (vm) {});
+        if (!exists.length && this.currentLocation !== null) {
+            require([this.viewmodelDirectory + '/' + this.currentLocation], function (vm) {});
         }
     };
 
-    $66.prototype.parseHash = function () {
+    $galaxy.prototype.parseHash = function () {
         var self = this;
         var redirectAfterParse = false;
 
@@ -78,12 +89,12 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
          */
         var grabHash = location.hash.split('#')[1];
 
-        if (this.currentView && (this.currentView !== grabHash.split('&')[0])) {
+        if (grabHash && this.currentLocation && (this.currentLocation !== grabHash.split('&')[0])) {
             redirectAfterParse = true;
         }
 
         if (grabHash) {
-            this.currentView = grabHash.split('&')[0];
+            this.currentLocation = grabHash.split('&')[0];
             var urlParamArray = grabHash.split('&');
             urlParamArray.splice(0,1);
 
@@ -101,37 +112,44 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
 
         // redirectAfterParse should only be true on browser history change
         if (redirectAfterParse) {
-            this.render(this.currentView);
+            this.render(this.currentLocation);
         }
     };
 
-    $66.prototype.navigate = function (options) {
+    $galaxy.prototype.transport = function (options) {
         var hashBuilder = [];
 
         try {
-            if (!options.hasOwnProperty('view')) {
-                throw new MissingOptionException('You must provide a view property and a data property when publishing the `navigate` event.');
+            // If the argument is a string, assume it's the location for transport 
+            if (options && typeof options === 'string') {
+                this.currentLocation = options;
+            } else if (options && typeof options === 'object' && !options.hasOwnProperty('location')) {
+                throw new MissingOptionException('You must provide a location property and a payload property when publishing the `transport` event with an object parameter.');
+            } else if (options && typeof options === 'object' && options.hasOwnProperty('location')) {
+                this.currentLocation = options.location;
             }
-           
-            this.currentView = options.view;
-            hashBuilder[hashBuilder.length] = options.view;   // Start building the location hash
 
-            if (options.hasOwnProperty('data') && options.data) {
-                this.currentPayload = options.data;
-                for (var key in options.data) {    // Add each k/v pair as a URL hash parameter
-                    var param = options.data[key];
+            console.log('$galaxy.prototype.transport');
+            console.log('this.currentLocation',this.currentLocation);
+
+            hashBuilder[hashBuilder.length] = this.currentLocation;   // Start building the location hash
+
+            if (options.hasOwnProperty('payload') && options.payload) {
+                this.currentPayload = options.payload;
+                for (var key in options.payload) {    // Add each k/v pair as a URL hash parameter
+                    var param = options.payload[key];
                     hashBuilder[hashBuilder.length] = '&' + key + '=' + param;
                 }
             }
 
             window.location.hash = hashBuilder.join('');  // Set the location hash
-            this.render(options.view);                    // Render the view
+            this.render(this.currentLocation);            // Render the view
         } catch (ex) {
             console.error(ex);                
         }
     };
 
-    $66.prototype.getDOMElements = function (id) {
+    $galaxy.prototype.getDOMElements = function (id) {
         var bindingType = (id.substr(0,1) === '.') ? 'class' : 'id';
         var undecoratedDomBindingId = id.replace(/[\.#]/, '');
         var elements = [];
@@ -150,18 +168,21 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
         }
 
         if (elements[elements.length-1] === null) {
-            throw new MissingDOMElementException('The DOM element you specified ('+id+') for view model `'+this.currentView+'` was not found.')
+            throw new MissingDOMElementException('The DOM element you specified ('+id+') for view model `'+this.currentLocation+'` was not found.')
         }
 
         return elements;
     };
 
-    $66.prototype.register = function (viewmodel) {
+    $galaxy.prototype.join = function (viewmodel) {
         var self = this;
 
-        if (!viewmodel.hasOwnProperty('__registered')) {
+        console.log('$galaxy.prototype.join');
+        console.log('viewmodel',viewmodel);
+
+        if (!viewmodel.hasOwnProperty('__joined')) {
             
-            // If a view model defined any children, register them first, and mark them as children
+            // If a view model defined any children, join them first, and mark them as children
             if (viewmodel.hasOwnProperty('children') && viewmodel.children.length > 0) {
                 viewmodel.children.map(function (child) {
                     child.__parent = viewmodel.id;
@@ -173,7 +194,7 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
                 viewmodel.__loaded = false;
             }
 
-            // Give each model a show method that delegates to the internal register() function
+            // Give each model a show method that delegates to the internal join() function
             if (!viewmodel.hasOwnProperty('show')) {
                 viewmodel.show = function () {
                     self.render(this.id);
@@ -181,9 +202,9 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
             }
 
             // Add the viewmodel to the internal registry
-            viewmodel.__registered = true;
-            self.registeredViews.push(viewmodel);
-            _O_.publish(viewmodel.id + '.registered');
+            viewmodel.__joined = true;
+            self.federation.push(viewmodel);
+            this.network.publish(viewmodel.id + '.joined');
 
             // Immediately render any module marked with autoRender (usually navigation elements)
             if (viewmodel.hasOwnProperty('autoRender') && viewmodel.autoRender) {
@@ -191,43 +212,43 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
             }
 
             // location.hash has a view id in it, and the current view matches it.  Render view.
-            if (self.currentView !== null && viewmodel.id === self.currentView) {
+            if (self.currentLocation !== null && viewmodel.id === self.currentLocation) {
                 self.render(viewmodel.id);
             }
 
             // Nothing in the location.hash, and current view marked as default. Render view.
-            if (self.currentView === null && viewmodel.hasOwnProperty('defaultView') && viewmodel.defaultView) {
-                self.currentView = viewmodel.id;
+            if (self.currentLocation === null && viewmodel.hasOwnProperty('defaultView') && viewmodel.defaultView) {
+                self.currentLocation = viewmodel.id;
                 self.render(viewmodel.id);
             }
 
-        // View already registered
+        // View already joined
         } else {
             if (!viewmodel.hasOwnProperty('__parent')) {
-                console.warn('The view model with id `' + viewmodel.id + '` is already registered.');
+                console.warn('The view model with id `' + viewmodel.id + '` has already joined the federation.');
             }
         }
     };
 
-    $66.prototype.unregister = function (id) {
-        var exists = _.findWhere(this.registeredViews, {id: id});
+    $galaxy.prototype.leave = function (id) {
+        var exists = _.findWhere(this.federation, {id: id});
 
         if (exists) {
-            this.registeredViews = _.filter(this.registeredViews, function (vm) {
+            this.federation = _.filter(this.federation, function (vm) {
                 vm.id !== id;
             });
         }
     };
 
-    $66.prototype.render = function (id) {
+    $galaxy.prototype.render = function (id) {
         var self = this;
         var currentViewModel = null;
 
         // Capture current view and hide all others (not autoRender views)
-        self.registeredViews.forEach(function (view) {
+        self.federation.forEach(function (view) {
             if (view.id === id) {
                 currentViewModel = view;
-            } else if (!view.autoRender && view.id !== self.currentView) {
+            } else if (!view.autoRender && view.id !== self.currentLocation) {
                 self.getDOMElements(view.domBindingId).forEach(function (el) {
                     el.style.display = 'none';
                 });
@@ -248,7 +269,8 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
                 });
             }
 
-            _O_.publish(currentViewModel.id + '.rendered', self.currentPayload);
+            console.log(currentViewModel.id + '.docked');
+            self.network.publish(currentViewModel.id + '.docked', self.currentPayload);
 
         }).fail(function (ex) {
             console.error(ex);
@@ -257,41 +279,44 @@ define(['q', 'knockout', 'util/postOffice', 'postal'], function (Q, ko, _O_, pos
         }).finally(function () { });
     };
 
-    $66.prototype.load = function (id) {
+    $galaxy.prototype.load = function (id) {
         var self = this;
         var deferred = Q.defer();
-        var viewmodel = _.findWhere(self.registeredViews, {id: id});
+        var viewmodel = _.findWhere(self.federation, {id: id});
 
         if (viewmodel) {
             if (!viewmodel.loaded) {
-                var template = '/static/stackdio/view/' + viewmodel.templatePath;
+                var viewTemplate = [this.viewDirectory, viewmodel.templatePath].join('');
 
                 self.getDOMElements(viewmodel.domBindingId).forEach(function (el) {
                     var xhr = new XMLHttpRequest();     // Create XHR object
-                    xhr.open('GET', template, true);    // GET the HTML file for the view model
+                    xhr.open('GET', viewTemplate, true);    // GET the HTML file for the view model
                     xhr.onloadend = function (evt) {    // After it's loaded
                         if (evt.target.status === 200 || evt.target.status === 302) {
-                            el.innerHTML = evt.target.responseText;     // Inject the HTML
-                            ko.applyBindings(viewmodel, el);            // Bind view model to DOM
-                            viewmodel.loaded = true;                    // Flag view model as loaded
-                            _O_.publish(viewmodel.id + '.loaded');      // Notify subscribers of load event
-                            deferred.resolve();                         // Resolve promise
+                            el.innerHTML = evt.target.responseText;             // Inject the HTML
+                            ko.applyBindings(viewmodel, el);                    // Bind view model to DOM
+                            viewmodel.loaded = true;                            // Flag view model as loaded
+                            self.network.publish(viewmodel.id + '.arrived');    // Notify subscribers of arrived event
+                            deferred.resolve();                                 // Resolve promise
                         }
                     };
 
                     xhr.send();
                 });
             } else {
-                _O_.publish(viewmodel.id + '.loaded');
+                this.network.publish(viewmodel.id + '.arrived');
                 deferred.resolve();
             }
         } else { 
-            console.warn(new UnregisteredViewWarning('View with id `' + id + '` has not been registered. Attempting to register now.'));
-            require([this.viewmodelDir+'/'+id], function (vm) {});
+            console.warn(new UnregisteredViewWarning('Location with id `' + id + '` has not joined the federation. Attempting to join in now.'));
+            require([self.viewmodelDirectory + '/' + id], function (vm) {});
         }
 
         return deferred.promise;
     };
 
-    return new $66();
+    return new $galaxy({
+        viewmodelDirectory: 'viewmodel',
+        viewDirectory: '/static/stackdio/view/'
+    });
 });

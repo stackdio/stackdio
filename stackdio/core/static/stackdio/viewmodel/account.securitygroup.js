@@ -41,7 +41,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
         self.domBindingId = '#account-securitygroup';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -52,7 +52,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('account.securitygroup.rendered', function (data) {
+        self.$66.news.subscribe('account.securitygroup.rendered', function (data) {
 
             ProviderTypeStore.populate().then(function () {
                 return AccountStore.populate();
@@ -108,7 +108,7 @@ function (Q, ko, base, _O_, formutils, ProviderTypeStore, AccountStore, ProfileS
         };
 
         self.cancelChanges = function (model, evt) {
-            self.navigate({ view: 'account.list' });
+            $galaxy.transport({ view: 'account.list' });
         };
 
         self.capture = function (model, evt) {

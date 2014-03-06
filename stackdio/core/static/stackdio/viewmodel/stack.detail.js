@@ -1,8 +1,7 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/Stacks',
     'store/Profiles',
@@ -12,7 +11,7 @@ define([
     'store/BlueprintComponents',
     'api/api'
 ],
-function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
     var vm = function () {
         var self = this;
 
@@ -35,6 +34,7 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
         self.BlueprintHostStore = BlueprintHostStore;
         self.BlueprintComponentStore = BlueprintComponentStore;
         self.BlueprintStore = BlueprintStore;
+        self.$galaxy = $galaxy;
 
         /*
          *  ==================================================================================
@@ -46,7 +46,7 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
         self.domBindingId = '#stack-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -57,7 +57,7 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('stack.detail.rendered', function (data) {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             BlueprintStore.populate().then(function () {
                 return StackStore.populate();
             }).then(function () {
@@ -156,7 +156,7 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
                 self.StackStore.remove(self.selectedStack());
                 self.StackStore.add(newStack);
                 formutils.clearForm('stack-launch-form');
-                self.navigate({ view: 'stack.list' });
+                $galaxy.transport('stack.list');
             });
         };
 
@@ -177,16 +177,14 @@ function (Q, ko, base, _O_, formutils, StackStore, ProfileStore, InstanceSizeSto
             API.Stacks.save(stack).then(function (newStack) {
                 self.StackStore.add(newStack);
                 formutils.clearForm('stack-launch-form');
-                self.navigate({ view: 'stack.list' });
+                $galaxy.transport('stack.list');
             });
         };
 
         self.cancelChanges = function (a, evt) {
             formutils.clearForm('stack-launch-form');
-            self.navigate({ view: 'stack.list' });
+            $galaxy.transport('stack.list');
         };
     };
-
-    vm.prototype = new base();
     return new vm();
 });

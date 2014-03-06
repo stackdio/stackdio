@@ -1,4 +1,4 @@
-define(["q", "store/stores", "model/models"], function (Q, stores, models) {
+define(['q', 'model/models'], function (Q, models) {
     return {
         load : function (stack) {
             var deferred = Q.defer();
@@ -11,23 +11,7 @@ define(["q", "store/stores", "model/models"], function (Q, stores, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    var i, item, items = response.results;
-                    var stackHost;
-
-                    // Clear the store and the grid
-                    stores.StackHosts.removeAll();
-
-                    for (i in items) {
-                        stackHost = new models.StackHost().create(items[i]);
-
-                        // Inject the record into the store
-                        stores.StackHosts.push(stackHost);
-                    }
-
-                    console.log('stack hosts', stores.StackHosts());
-
-                    // Resolve the promise and pass back the loaded items
-                    deferred.resolve(stores.StackHosts());
+                    deferred.resolve(response);
                 }
             });
 

@@ -1,16 +1,6 @@
-define([
-    'q', 
-    'knockout',
-    'viewmodel/base',
-    'util/postOffice',
-    'api/api',
-    'store/BlueprintComponents',
-    'store/BlueprintHosts',
-    'store/Blueprints'
-],
-function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, BlueprintStore) {
+define(['q', 'knockout', 'util/galaxy', 'api/api', 'store/BlueprintComponents', 'store/BlueprintHosts', 'store/Blueprints'],
+function (Q, ko, $galaxy, API, BlueprintComponentStore, BlueprintHostStore, BlueprintStore) {
     var vm = function () {
-
         /*
          *  ==================================================================================
          *   V I E W   V A R I A B L E S
@@ -30,7 +20,7 @@ function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, Bl
         self.domBindingId = '#blueprint-list';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -41,9 +31,8 @@ function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, Bl
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('blueprint.list.rendered', function (data) {
-            BlueprintStore.populate().then(function () {
-            });
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
+            BlueprintStore.populate().then(function () {}).catch(function (err) {console.error(err); });
         });
 
 
@@ -55,7 +44,12 @@ function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, Bl
         self.editBlueprint = function (blueprint) {
             BlueprintHostStore.empty();
             BlueprintComponentStore.empty();
-            self.navigate({ view: 'blueprint.detail', data: { blueprint: blueprint.id } });
+            $galaxy.transport({
+                location: 'blueprint.detail',
+                payload: {
+                    blueprint: blueprint.id
+                }
+            });
         };
 
 
@@ -73,11 +67,8 @@ function (Q, ko, base, _O_, API, BlueprintComponentStore, BlueprintHostStore, Bl
             BlueprintHostStore.empty();
             BlueprintComponentStore.empty();
 
-            self.navigate({ view: 'blueprint.detail' });
+            $galaxy.transport('blueprint.detail');
         }
-
     };
-
-    vm.prototype = new base();
     return new vm();
 });

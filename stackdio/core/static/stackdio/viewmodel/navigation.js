@@ -1,11 +1,10 @@
 define([
     'q', 
     'knockout',
-    'util/postOffice',
-    'viewmodel/base',
+    'util/galaxy',
     'viewmodel/welcome'
 ],
-function (Q, ko, _O_, base, welcome) {
+function (Q, ko, $galaxy, welcome) {
     var vm = function () {
         var self = this;
 
@@ -18,7 +17,7 @@ function (Q, ko, _O_, base, welcome) {
         self.autoRender = true;
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -73,23 +72,21 @@ function (Q, ko, _O_, base, welcome) {
             if (!section.hasOwnProperty('id')) {
                 section = _.findWhere(self.sections, {view: section});
             }
-            self.navigate({ view: section.view });
+            $galaxy.transport(section.view);
         };
 
         self.showUserProfile = function () {
-            self.navigate({ view: 'user.profile' });
+            $galaxy.transport('user.profile');
         };
 
         self.showUserPassword = function () {
-            self.navigate({ view: 'user.password' });
+            $galaxy.transport('user.password');
         };
 
         self.showUserPassword = function () {
-            self.navigate({ view: 'user.password' });
+            $galaxy.transport('user.password');
         };
 
     };
-
-    vm.prototype = new base();
     return new vm();
 });

@@ -10,8 +10,8 @@
     "q": "~0.9.7",
     "underscore-amd": "~1.5.2",
     "knockout.js": "~3.0.0",
-    "jquery-ui-amd": "~0.0.3",
-    "postal.js": "~0.8.11"
+    "postal.js": "~0.8.11",
+    "requirejs": "~2.1.11"
   },
   "resolutions": {
     "jquery": "~2.0.3"

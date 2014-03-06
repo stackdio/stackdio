@@ -38,7 +38,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintH
         self.domBindingId = '#accessrule-detail';
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
@@ -49,7 +49,7 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintH
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        _O_.subscribe('accessrule.detail.rendered', function (data) {
+        self.$66.news.subscribe('accessrule.detail.rendered', function (data) {
             self.init(data);
         });
 
@@ -116,11 +116,11 @@ function (Q, ko, base, _O_, formutils, BlueprintStore, HostRuleStore, BlueprintH
             $('#rule_group').val('');
             $('#rule_protocol').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
 
-            self.navigate({ view: 'host.detail' });
+            $galaxy.transport({ view: 'host.detail' });
         };
 
         self.cancelChanges = function (model, evt) {
-            self.navigate({ view: 'host.detail' });
+            $galaxy.transport({ view: 'host.detail' });
         };
 
 

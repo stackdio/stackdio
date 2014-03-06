@@ -2,12 +2,11 @@ define([
     'q', 
     'knockout',
     'moment',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'store/Stacks',
     'api/api'
 ],
-function (Q, ko, moment, base, _O_, StackStore, API) {
+function (Q, ko, moment, $galaxy, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -33,12 +32,12 @@ function (Q, ko, moment, base, _O_, StackStore, API) {
         self.defaultView = false;
 
         try {
-            self.$66.register(self);
+            $galaxy.join(self);
         } catch (ex) {
             console.log(ex);            
         }
 
-        _O_.subscribe('stacklist.widget.rendered', function () {
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             self.EnhancedStackStore.removeAll();
             
             StackStore.populate().then(function () {
@@ -130,7 +129,7 @@ function (Q, ko, moment, base, _O_, StackStore, API) {
         };
 
         self.showStackDetails = function (stack) {
-            self.navigate({ view: 'stack.detail', data: {stack: stack.id} });
+            $galaxy.transport({ location: 'stack.detail', payload: {stack: stack.id}});
         };
     };
 
@@ -151,7 +150,5 @@ function (Q, ko, moment, base, _O_, StackStore, API) {
             $(element).popover(options);
         }
     };
-
-    vm.prototype = new base();
     return new vm();
 });
