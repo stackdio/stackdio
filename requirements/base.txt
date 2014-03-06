@@ -6,7 +6,6 @@ South==0.7.6
 argparse==1.2.1
 boto==2.9.5
 dj-database-url==0.2.2
-django-auth-ldap==1.1.8
 django-celery>=3.0.0,<3.1.0
 django-cors-headers==0.12
 django-extensions==1.1.1
