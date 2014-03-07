@@ -247,17 +247,18 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
                             continue
 
                         try:
-                            component_order = int(component.get('order', 0))
+                            component_order = int(component.get('order', 0) or 0)  # NOQA
                             if component_order < 0:
                                 errors.setdefault(
                                     host_string + '.formula_components', []) \
                                     .append('Order field must contain a '
                                             'non-negative value.')
-                        except ValueError:
+                        except (TypeError, ValueError):
                             errors.setdefault(
                                 host_string + '.formula_components', []) \
-                                .append('Order field must be a non-negative '
-                                        'integer.')
+                                .append('Order value {0} could not be '
+                                        'converted to an integer.'.format(
+                                            component.get('order')))
 
                         try:
                             d = {'formula__owner': request.user}
@@ -371,7 +372,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         order_set = set()
         for host in hosts:
             formula_components = host.get('formula_components', [])
-            order_set.update([c.get('order', 0)
+            order_set.update([c.get('order', 0) or 0
                               for c in formula_components])
 
         if sorted(order_set) != range(len(order_set)):
