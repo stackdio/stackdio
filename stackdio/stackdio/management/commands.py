@@ -23,6 +23,12 @@ class Colors(object):
 
 
 class BaseCommand(object):
+    ERROR_INDENT = dict(initial_indent='ERROR: ',
+                        subsequent_indent='       ')
+    WARNING_INDENT = dict(initial_indent='WARNING: ',
+                          subsequent_indent='         ')
+    INFO_INDENT = dict(initial_indent='INFO: ',
+                       subsequent_indent='      ')
 
     def __init__(self, args):
         self.args = args
@@ -41,7 +47,10 @@ class BaseCommand(object):
     def post_run(self):
         pass
 
-    def out(self, msg='', color=Colors.BLACK, fp=sys.stdout, nl=1):
+    def out(self, msg='', color=Colors.BLACK, fp=sys.stdout,
+            wrap=True, nl=1, **kwargs):
+        if wrap:
+            msg = textwrap.fill(msg, **kwargs)
         fp.write(color + msg + Colors.ENDC)
         for i in range(nl):
             fp.write('\n')
@@ -69,12 +78,17 @@ class BaseCommand(object):
                                                        choices))
 
                 if choices and value not in choices:
-                    self.out('Invalid response. Must be one of {0}'
-                             .format(choices), Colors.ERROR, nl=2)
+                    self.out('Invalid response. Must be one of {0}'.format(
+                        choices),
+                        Colors.ERROR,
+                        nl=2,
+                        **self.ERROR_INDENT)
                     continue
                 if not value and default is None:
                     self.out('Invalid response. Please provide a value.',
-                             Colors.ERROR, nl=2)
+                             Colors.ERROR,
+                             nl=2,
+                             **self.ERROR_INDENT)
                     continue
                 if not value:
                     value = default
@@ -132,16 +146,17 @@ class WizardCommand(BaseCommand):
         # name must be unique.
         self.answers = {}
 
-    def run(self):
+    # TODO: Ignoring code complexity issues
+    def run(self):  # NOQA
         '''
         Iterate over the QUESTIONS attribute, prompting the user
         while recording and validating their answers.
         '''
         for question in self.QUESTIONS:
             attr = question.get('attr')
-            title = question.get('short_desc')
+            title = question.get('short_desc').format(**self.answers)
             desc = question.get('long_desc', '').format(**self.answers)
-            default = question.get('default')
+            default = question.get('default').format(**self.answers)
             true_value = question.get('true_value')
             require_true = question.get('require_true')
 
@@ -150,10 +165,10 @@ class WizardCommand(BaseCommand):
                 continue
 
             if not isinstance(default, tuple):
-                default = self.answers.get(attr) or question.get('default')
+                default = self.answers.get(attr) or default
 
-            self.out(textwrap.fill(title, initial_indent='## '), Colors.PROMPT)
-            self.out(textwrap.fill(desc), Colors.PROMPT)
+            self.out(title, Colors.PROMPT, initial_indent='## ')
+            self.out(desc, Colors.PROMPT)
 
             while True:
                 value = self.prompt('', default)
@@ -163,23 +178,28 @@ class WizardCommand(BaseCommand):
                 ok, msg = func(question, value)
                 if ok:
                     break
-                self.out(msg, Colors.ERROR)
+                self.out(msg,
+                         Colors.ERROR,
+                         **self.ERROR_INDENT)
 
             if true_value is not None:
-                print 'TRUE VALUE = {0} : {1}'.format(attr, true_value)
                 value = true_value == value
-                print 'IS_TRUE: {0}'.format(value)
             self.answers[attr] = value
             self.out()
 
         self.out('Are the following values correct?', Colors.PROMPT)
         for question in self.QUESTIONS:
-            self.out('    {0} = {1}\n'.format(
+            self.out('{0} = {1}'.format(
                 question['attr'],
                 self.answers[question['attr']]),
-                Colors.VALUE, nl=0)
-        self.out('WARNING: If you say no, we will abort without changing '
-                 'anything!', Colors.ERROR, nl=2)
+                Colors.VALUE,
+                initial_indent='    * ')
+        self.out()
+        self.out('If you say no, we will abort without writing any of your '
+                 'configuration or saving any values you provided.',
+                 Colors.WARN,
+                 nl=2,
+                 **self.WARNING_INDENT)
 
         ok = self.prompt('Correct? ', default=('yes', 'no'))
 
@@ -205,9 +225,9 @@ class InitCommand(WizardCommand):
         'attr': 'storage_root',
         'short_desc': 'Where should stackdio and salt store their data?',
         'long_desc': ('Root directory for stackdio to store its files, logs, '
-                      'salt configuration, etc. It must exist and be owned by '
-                      'the user "{user}".'),
-        'default': '/var/lib/stackdio',
+                      'salt configuration, etc. We will attempt to create '
+                      'this path if it does not already exist.'),
+        'default': '/home/{user}/.stackdio/storage',
     }, {
         'attr': 'salt_bootstrap_script',
         'short_desc': ('Which bootstrap script should salt-cloud use when '
@@ -233,7 +253,7 @@ class InitCommand(WizardCommand):
                       'use to acccess the database server. The server must be '
                       'running, the database must already exist, and the user '
                       'must have access to it.'),
-        'default': 'mysql://user:pass@localhost:3306/stackdio',
+        'default': 'mysql://{user}:password@localhost:3306/stackdio',
     }]
 
     def pre_run(self):
@@ -245,8 +265,12 @@ class InitCommand(WizardCommand):
         # Let the user know we've changed the defaults by reusing the
         # existing config
         if self.answers:
-            self.out('## WARNING: Existing configuration file found. Using '
-                     'values as defaults.', Colors.WARN, nl=2)
+            self.out()
+            self.out('Existing configuration file found. Default values '
+                     'for questions below will use existing values.',
+                     Colors.WARN,
+                     nl=2,
+                     **self.WARNING_INDENT)
 
         # The template expects a django_secret_key, and if we don't have one
         # we'll generate one for the user automatically (using the logic
@@ -268,8 +292,11 @@ class InitCommand(WizardCommand):
         self.render_template('stackdio/management/templates/config.jinja2',
                              self.CONFIG_FILE,
                              context=self.answers)
-        self.out('stackdio configuration written to {0}'.format(
-            self.CONFIG_FILE), Colors.INFO)
+        self.out('stackdio configuration written to '
+                 '{0}'.format(self.CONFIG_FILE),
+                 Colors.INFO,
+                 width=1024,
+                 **self.INFO_INDENT)
 
         # grab a fresh copy of the config file to be used later
         self.config = StackdioConfig()
@@ -278,20 +305,29 @@ class InitCommand(WizardCommand):
         if not os.path.isdir(self.config.salt_config_root):
             os.makedirs(self.config.salt_config_root)
             self.out('Created salt configuration directory at '
-                     '{0}'.format(self.config.salt_config_root), Colors.INFO)
+                     '{0}'.format(self.config.salt_config_root),
+                     Colors.INFO,
+                    width=1024,
+                     **self.INFO_INDENT)
 
         # Render salt-master and salt-cloud configuration files
         self.render_template('stackdio/management/templates/master.jinja2',
                              self.config.salt_master_config,
                              context=self.config)
-        self.out('Salt master configuration written to {0}'.format(
-            self.config.salt_master_config), Colors.INFO)
+        self.out('Salt master configuration written to '
+                 '{0}'.format(self.config.salt_master_config),
+                 Colors.INFO,
+                 width=1024,
+                 **self.INFO_INDENT)
 
         self.render_template('stackdio/management/templates/cloud.jinja2',
                              self.config.salt_cloud_config,
                              context=self.config)
-        self.out('Salt cloud configuration written to {0}'.format(
-            self.config.salt_cloud_config), Colors.INFO)
+        self.out('Salt cloud configuration written to '
+                 '{0}'.format(self.config.salt_cloud_config),
+                 Colors.INFO,
+                 width=1024,
+                 **self.INFO_INDENT)
 
         # Copy the salt directories needed
         saltdirs = self.load_resource('stackdio/management/saltdirs')
@@ -302,12 +338,18 @@ class InitCommand(WizardCommand):
             # check for existing dst and skip it
             if os.path.isdir(dst):
                 self.out('Salt configuration directory {0} already exists...'
-                         'skipping.'.format(rp), Colors.WARN)
+                         'skipping.'.format(rp),
+                         Colors.WARN,
+                         width=1024,
+                         **self.WARNING_INDENT)
                 continue
 
             shutil.copytree(path, dst)
-            self.out('Copied salt configuration directory {0}.'.format(rp),
-                     Colors.INFO)
+            self.out('Copied salt configuration directory {0} to '
+                     '{1}'.format(rp, dst),
+                     Colors.INFO,
+                     width=1024,
+                     **self.INFO_INDENT)
 
     def _validate_user(self, question, answer):
         from pwd import getpwnam
@@ -318,13 +360,28 @@ class InitCommand(WizardCommand):
         return True, ''
 
     def _validate_storage_root(self, question, path):
+        if not os.path.isabs(path):
+            return False, ('Relative paths are not allowed. Please provide '
+                           'the absolute path to the storage directory.')
+        if os.path.isdir(path):
+            self.out()
+            self.out('Directory already exists. stackd.io will manage its '
+                     'data in this location, and as such we cannot guarantee '
+                     'that any files or directories already located here '
+                     'are safe from removal or modifiation. Please backup '
+                     'anything important!',
+                     Colors.WARN,
+                     **self.WARNING_INDENT)
+        else:
+            try:
+                os.makedirs(path)
+            except:
+                return False, ('Directory did not exist and we could not '
+                               'create it. Make sure appropriate permissions '
+                               'are set.')
+
+        # Check ownership
         from pwd import getpwnam
-
-        if not os.path.exists(path):
-            return False, 'Directory does not exist.\n'
-        if not os.path.isdir(path):
-            return False, 'Path is not a directory.\n'
-
         user = self.answers['user']
         uid = getpwnam(user).pw_uid
         stat = os.stat(path)
