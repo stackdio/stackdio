@@ -4,6 +4,6 @@ TODO
 
 # Contributors
 
-* @abemusic
-* @cpenner461
-* @chortlehoort
+* [@abemusic](https://github.com/abemusic)
+* [@cpenner461](https://github.com/cpenner461)
+* [@chortlehoort](https://github.com/chortlehoort)
