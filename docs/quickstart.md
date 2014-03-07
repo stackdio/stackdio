@@ -140,14 +140,4 @@ The newly created users will now have access to stackd.io. Test this by logging 
 
 # Next steps
 
-This concludes the quick start. At this point you should have a running stackd.io install, but you may need a bit more help in using the system. Check out the [stackd.io tutorial](http://foo.com) or [stackd.io screencast](http://foo.com) to learn a bit more about using the system to manage your cloud infrastructure.
-
-# Contributing
-
-We are an open-source project and we depend on folks like you to help move the project forward. You don't even have to know how to code to help us out! If you find problems in our documentation or screencasts, encounter bugs, or see some missing piece of functionality that would stackd.io that more awesome, kindly drop us a note or submit an issue. If you do know how to code and you want to get your hands dirty, take a shot at one of our outstanding issues and submit a pull request. Please take a look at our contributor guidelines before submitting pull requests though.
-
-As always, we are constantly working to improve the usability and usefulness of stackd.io. If you ever have any questions, comments, or find any problems, please contact us at any of the places below or [file an issue](https://github.com/stackdio/stackdio/issues) and we'll be glad to help!
-
-* Email - [info@stackd.io](info@stackd.io)
-* IRC - [#stackdio on freenode](irc://irc.freenode.net/stackdio)
-* Twitter: [@stackdio](http://twitter.com/stackdio)
+This concludes the quick start. At this point you should have a running stackd.io install, but you may need a bit more help in using the system. You can read through the [stackd.io tutorial](http://foo.com) or watch the [stackd.io screencast](http://foo.com) to learn a bit more about using the system to manage your cloud infrastructure.
