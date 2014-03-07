@@ -368,7 +368,7 @@ class InitCommand(WizardCommand):
             self.out('Directory already exists. stackd.io will manage its '
                      'data in this location, and as such we cannot guarantee '
                      'that any files or directories already located here '
-                     'are safe from removal or modifiation. Please backup '
+                     'are safe from removal or modification. Please backup '
                      'anything important!',
                      Colors.WARN,
                      **self.WARNING_INDENT)
