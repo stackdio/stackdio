@@ -14,8 +14,7 @@ We are an open-source project and we depend on folks like you to help move the p
 
 As always, we are constantly working to improve the usability and usefulness of stackd.io. If you ever have any questions, comments, or find any problems, please contact us at any of the places below or [file an issue](https://github.com/stackdio/stackdio/issues) and we'll be glad to help!
 
-* Email - [info@stackd.io](info@stackd.io)
-* IRC - [#stackdio on freenode](irc://irc.freenode.net/stackdio)
+* Email - [info@stackd.io](mailto:info@stackd.io)
+* IRC - [#stackdio on irc.freenode.net](http://webchat.freenode.net/?channels=stackdio)
 * Twitter: [@stackdio](http://twitter.com/stackdio)
 * StackExchange: Ask a question on any [StackExchange site](http://stackexchange.com/sites) and tag it with `stackd.io` or `stackdio`
-
