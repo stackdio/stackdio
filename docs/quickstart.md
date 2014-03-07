@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-This guide is intended to quickly march you through the steps of installing and running stackd.io and its dependencies. We're not intending to be complete or provide you with everything needed for a production-ready install, we may make some assumptions you don't agree with, and there may be things we missed. If you feel anything is out of the ordinary, a bit confusing, or just plain missing, please [contact us at http://stackd.io](http://stackd.io).
+This guide is intended to quickly march you through the steps of installing and running stackd.io and its dependencies. We're not intending to be complete or provide you with everything needed for a production-ready install, we may make some assumptions you don't agree with, and there may be things we missed. If you feel anything is out of the ordinary, a bit confusing, or just plain missing, please [contact us](../README.md).
 
 ### MySQL
 
@@ -29,8 +29,8 @@ su - stackdio
 
 Follow one of the individual guides below to prepare your particular environment for stackd.io. Once you finish, come back here and continue on.
 
-* [Preparing CentOS for stackd.io installation](http://foo.com)
-* [Preparing Ubuntu for stackd.io installation](http://foo.com)
+* [Preparing CentOS for stackd.io installation](centos_prep.md)
+* [Preparing Ubuntu for stackd.io installation](ubuntu_prep.md)
 
 # Installing stackd.io
 
@@ -89,7 +89,7 @@ stackdio manage.py migrate
 
 ### Start the development server
 
-For the quick start, we're going to run with Django's built-in web server. In production, you'll definitely want to consider something more appropriate like Apache or Nginx. See [Django's WSGI deployment documentation](https://docs.djangoproject.com/en/1.5/howto/deployment/wsgi/) or check out our guides on putting stackd.io behind [Apache](http://foo.com) or [Nginx](http://foo.com).
+For the quick start, we're going to run with Django's built-in web server. In production, you'll definitely want to consider something more appropriate like Apache or Nginx. See [Django's WSGI deployment documentation](https://docs.djangoproject.com/en/1.5/howto/deployment/wsgi/) or check out our guides on putting stackd.io behind [Apache](apache_guide.md) or [Nginx](nginx_guide.md).
 
 ```bash
 stackdio manage.py runserver
@@ -121,7 +121,7 @@ Like the Django development server, Celery will also run in the foreground and s
 
 ### Create a stackd.io admin user
 
-> **NOTE**: stackd.io can also integrate with an existing LDAP server. See our [LDAP guide](http://foo.com) for more information on configuring stackd.io to use your existing LDAP server. If you choose to go the LDAP route, you can skip this entire section because users who successfully authenticate via LDAP will automatically be created in stackd.io.
+> **NOTE**: stackd.io can also integrate with an existing LDAP server. See our [LDAP guide](ldap_guide.md) for more information on configuring stackd.io to use your existing LDAP server. If you choose to go the LDAP route, you can skip this entire section because users who successfully authenticate via LDAP will automatically be created in stackd.io.
 
 If you point your browser to http://localhost:8000, you should be presented with the stackd.io login page. You won't have any users to authenticate with, so let's create an admin user now and then take advantage of Django's admin interface to create non-admin users.
 
@@ -140,4 +140,4 @@ The newly created users will now have access to stackd.io. Test this by logging 
 
 # Next steps
 
-This concludes the quick start. At this point you should have a running stackd.io install, but you may need a bit more help in using the system. You can read through the [stackd.io tutorial](http://foo.com) or watch the [stackd.io screencast](http://foo.com) to learn a bit more about using the system to manage your cloud infrastructure.
+This concludes the quick start. At this point you should have a running stackd.io install, but you may need a bit more help in using the system. You can read through the [stackd.io tutorial](tutorial.md) or watch the [stackd.io screencast](http://stackd.io/tour) to learn a bit more about using the system to manage your cloud infrastructure.
