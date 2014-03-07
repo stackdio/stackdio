@@ -307,7 +307,5 @@ BROKER_URL = 'amqp://guest:guest@localhost:5672/'
 # LDAP configuration. To enable this, you should copy ldap_settings.py.template
 # to ldap_settings.py and modify the settings there.
 ##
-try:
+if os.path.isfile(os.path.join(PROJECT_ROOT, 'settings', 'ldap_settings.py')):
     from ldap_settings import *  # NOQA
-except ImportError:
-    pass
