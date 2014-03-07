@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Bla bla bla bla
+This guide is intended to quickly march you through the steps of installing and running stackd.io and its dependencies. We're not intending to be complete or provide you with everything needed for a production-ready install, we may make some assumptions you don't agree with, and there may be things we missed. If you feel anything is out of the ordinary, a bit confusing, or just plain missing, please [contact us at http://stackd.io](http://stackd.io).
 
 ### MySQL
 
