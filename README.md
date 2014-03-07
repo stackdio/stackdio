@@ -17,3 +17,4 @@ As always, we are constantly working to improve the usability and usefulness of 
 * Email - [info@stackd.io](info@stackd.io)
 * IRC - [#stackdio on freenode](irc://irc.freenode.net/stackdio)
 * Twitter: [@stackdio](http://twitter.com/stackdio)
+* StackExchange: Ask a question on any [StackExchange site](http://stackexchange.com/sites) and tag it with `stackd.io` or `stackdio`
