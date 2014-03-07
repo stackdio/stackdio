@@ -12,6 +12,8 @@ Please see our [Quick Start Guide](docs/quickstart.md) for a fast track to insta
 
 We are an open-source project and we depend on folks like you to help move the project forward. You don't even have to know how to code to help us out! If you find problems in our documentation or screencasts, encounter bugs, or see some missing piece of functionality that would make stackd.io that more awesome, kindly drop us a note or submit an issue. If you do know how to code and you want to get your hands dirty, take a shot at one of our outstanding issues and submit a pull request. Please take a look at our [contributor guidelines](docs/contributors.md) before submitting pull requests though.
 
+# Contact us
+
 As always, we are constantly working to improve the usability and usefulness of stackd.io. If you ever have any questions, comments, or find any problems, please contact us at any of the places below or [file an issue](https://github.com/stackdio/stackdio/issues) and we'll be glad to help!
 
 * Email - [info@stackd.io](mailto:info@stackd.io)
