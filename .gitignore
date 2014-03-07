@@ -21,6 +21,9 @@ stackdio.egg*/
 reload.sh
 reset_rabbitmq.sh
 salt-cloud.sh
+*.sublime-project
+*.sublime-workspace
+.codeintel
 
 # ldap_settings.py
 stackdio/stackdio/settings/ldap_settings.py
