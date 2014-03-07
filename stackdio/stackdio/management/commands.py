@@ -307,7 +307,7 @@ class InitCommand(WizardCommand):
             self.out('Created salt configuration directory at '
                      '{0}'.format(self.config.salt_config_root),
                      Colors.INFO,
-                    width=1024,
+                     width=1024,
                      **self.INFO_INDENT)
 
         # Render salt-master and salt-cloud configuration files
