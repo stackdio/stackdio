@@ -14,12 +14,12 @@
             <td data-bind="text: description"></td>
             <td data-bind="text: host_count"></td>
             <td>
-                <a href='#' 
+                <span style="cursor: pointer; text-decoration:underline; color: #428bca;"
                    data-bind="bootstrapPopover: {
                                 content: $root.popoverBuilder($data),
                                 title: 'Stack History'
                               },
-                              text: 'View (' + $data.fullHistory.length + ') messages'"></a>
+                              text: 'View (' + $data.fullHistory.length + ') messages'"></span>
             </td>
             <td>
                 <div class="btn-group">

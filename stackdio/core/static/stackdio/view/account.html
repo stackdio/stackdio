@@ -9,10 +9,9 @@
             <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Account Detail</div>
         </div>
 
-        <form id="account-form" role="form" class="form-horizontal">
+        <form id="account-form" role="form">
             <div class="form-group">
-                <label for="account_provider" class="col-sm-2 control-label">Provider</label>
-                <div class="col-sm-10">
+                <label for="account_provider" class="control-label">Provider</label>
                     <select id="account_provider" 
                         data-bind="options: ProviderTypeStore.collection(), 
                                    optionsText: 'title', 
@@ -21,54 +20,40 @@
                         data-size="8"
                         data-container="body"
                         class="form-control"></select>
-                </div>
             </div>
 
             <div class="form-group">
-                <label for="account_title" class="col-sm-2 control-label">Title</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="account_title" placeholder="">
-                </div>
+                <label for="account_title" class="control-label">Title</label>
+                <input type="text" class="form-control" id="account_title" placeholder="">
             </div>
 
             <div class="form-group">
-                <label for="account_description" class="col-sm-2 control-label">Description</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="account_description" placeholder="">
-                </div>
+                <label for="account_description" class="control-label">Description</label>
+                <input type="text" class="form-control" id="account_description" placeholder="">
             </div>
 
             <div class="form-group">
-                <label for="account_id" class="col-sm-2 control-label">Account ID</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="account_id" placeholder="Log into your account to obtain the id">
-                </div>
+                <label for="account_id" class="control-label">Account ID</label>
+                <input type="text" class="form-control" id="account_id" placeholder="Log into your account to obtain the id">
+            </div>
+
+            <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
+                <label for="access_key_id" class="control-label">AWS Access Key</label>
+                <input type="text" class="form-control" id="access_key_id" placeholder="">
+            </div>
+
+            <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
+                <label for="secret_access_key" class="control-label">AWS Secret Key</label>
+                <input type="text" class="form-control" id="secret_access_key" placeholder="">
+            </div>
+
+            <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
+                <label for="keypair" class="control-label">AWS Keypair Name</label>
+                <input type="text" class="form-control" id="keypair" placeholder="">
             </div>
 
             <div class="form-group">
-                <label for="access_key_id" class="col-sm-2 control-label">AWS Access Key</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="access_key_id" placeholder="">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="secret_access_key" class="col-sm-2 control-label">AWS Secret Key</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="secret_access_key" placeholder="">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="keypair" class="col-sm-2 control-label">AWS Keypair Name</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="keypair" placeholder="">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="default_availability_zone" class="col-sm-2 control-label">Default Zone</label>
-                <div class="col-sm-10">
+                <label for="default_availability_zone" class="control-label">Default Zone</label>
                     <select id="default_availability_zone" 
                         data-bind="options: ZoneStore.collection(), 
                                    optionsText: 'title', 
@@ -76,24 +61,25 @@
                                    optionsCaption: 'Choose default zone...'" 
                         data-container="body"
                         class="form-control selectpicker"></select>
-                </div>
+            </div>
+
+            <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
+                <label for="route53_domain" class="control-label">Route 53 Domain</label>
+                <input type="text" class="form-control" id="route53_domain" placeholder="e.g. dev.synthesyscloud.com">
             </div>
 
             <div class="form-group">
-                <label for="route53_domain" class="col-sm-2 control-label">Route 53 Domain</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="route53_domain" placeholder="e.g. dev.synthesyscloud.com">
-                </div>
-            </div>
+                <label for="private_key_file" 
+                       class="control-label"
+                       data-bind="visible: ($root.currentMode() === 'create')">Private Key File</label>
+                <label for="private_key_file" 
+                       class="control-label" 
+                       data-bind="visible: ($root.currentMode() === 'edit')">Account Info</label>
 
-            <div class="form-group">
-                <label for="private_key_file" class="col-sm-2 control-label">Private Key File</label>
-                <div class="col-sm-10">
-                    <textarea class="form-control" 
-                              id="private_key_file" 
-                              rows="6" 
-                              placeholder="Enter in the private key that will be used to set up instances for this account"></textarea>
-                </div>
+                <textarea class="form-control" 
+                          id="private_key_file" 
+                          rows="9" 
+                          placeholder="Enter in the private key that will be used to set up instances for this account"></textarea>
             </div>
 
             <div class="row">

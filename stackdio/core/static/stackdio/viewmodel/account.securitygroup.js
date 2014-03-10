@@ -1,8 +1,7 @@
 define([
     'q', 
     'knockout',
-    'viewmodel/base',
-    'util/postOffice',
+    'util/galaxy',
     'util/form',
     'store/ProviderTypes',
     'store/Accounts',
@@ -52,8 +51,7 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
          *   E V E N T   S U B S C R I P T I O N S
          *  ==================================================================================
          */
-        self.$66.news.subscribe('account.securitygroup.rendered', function (data) {
-
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
             ProviderTypeStore.populate().then(function () {
                 return AccountStore.populate();
             }).then(function () {
@@ -196,10 +194,6 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                 });
             self.showDefaultGroupForm();
         };
-
-
     };
-
-    vm.prototype = new base();
     return new vm();
 });

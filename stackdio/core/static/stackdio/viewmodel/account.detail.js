@@ -21,7 +21,7 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
         self.selectedAccount = ko.observable(null);
         self.selectedProviderType = ko.observable(null);
         self.accountTitle = ko.observable(null);
-        self.saveAction = self.createAccount;
+        self.currentMode = ko.observable('create');
         self.$galaxy = $galaxy;
 
         self.ProviderTypeStore = ProviderTypeStore;
@@ -93,9 +93,7 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                 $('#default_availability_zone').val('');
                 $('#route53_domain').val('');
                 $('#private_key_file').val('');
-
             }
-
 
             if (data.hasOwnProperty('type')) {
                 provider_type = ProviderTypeStore.collection().filter(function (a) {
@@ -123,14 +121,14 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                 $('#private_key_file').val(account.yaml);
                 $('#private_key_file').attr('readonly', 'readonly');
 
-                self.saveAction = self.updateAccount;
+                self.currentMode('edit');
             } else if (provider_type && provider_type.hasOwnProperty('id')) {
                 $('#account_provider').val(provider_type.id);
             }
         };
 
         self.saveAccount = function (model, evt) {
-            if (self.selectedAccount() === null) {
+            if (self.currentMode() === 'create') {
                 self.createAccount(model, evt);
             } else {
                 self.updateAccount(model, evt);

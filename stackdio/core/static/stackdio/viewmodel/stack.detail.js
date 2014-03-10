@@ -25,7 +25,7 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
         self.stackTitle = ko.observable();
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
-        self.blueprintPropertiesStringified = ko.observable();
+        self.stackPropertiesStringified = ko.observable();
         self.editMode = ko.observable('create');
 
         self.StackStore = StackStore;
@@ -76,7 +76,7 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
             var blueprint = null;
             var stack = null;
 
-            formutils.clearForm('stack-launch-form');
+            self.stackPropertiesStringified('');
 
             // Blueprint specified, so creating a new stack
             if (data.hasOwnProperty('blueprint')) {
@@ -88,7 +88,8 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
 
                 API.Blueprints.getProperties(blueprint).then(function (properties) {
                     var stringify = JSON.stringify(properties, undefined, 3);
-                    self.blueprintPropertiesStringified(stringify);
+                    self.blueprintProperties(properties);
+                    self.stackPropertiesStringified(stringify);
                 });
 
                 self.blueprintTitle(blueprint.title);

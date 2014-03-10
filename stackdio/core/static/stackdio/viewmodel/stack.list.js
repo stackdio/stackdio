@@ -1,11 +1,4 @@
-define([
-    'q', 
-    'knockout',
-    'util/galaxy',
-    'store/Blueprints',
-    'store/Stacks',
-    'api/api'
-],
+define(['q', 'knockout', 'util/galaxy', 'store/Blueprints', 'store/Stacks', 'api/api'],
 function (Q, ko, $galaxy, BlueprintStore, StackStore, API) {
     var vm = function () {
         var self = this;
@@ -97,7 +90,7 @@ function (Q, ko, $galaxy, BlueprintStore, StackStore, API) {
              */
             if (action !== 'Delete') {
                 $.ajax({
-                    url: '/api/stacks/' + stack.id + '/',
+                    url: stack.url,
                     type: 'PUT',
                     data: data,
                     headers: {
@@ -106,7 +99,7 @@ function (Q, ko, $galaxy, BlueprintStore, StackStore, API) {
                         "Content-Type": "application/json"
                     },
                     success: function (response) {
-                        API.Stacks.load();
+                        StackStore.populate();
                     }
                 });
 

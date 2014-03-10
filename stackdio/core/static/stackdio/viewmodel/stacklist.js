@@ -1,11 +1,4 @@
-define([
-    'q', 
-    'knockout',
-    'moment',
-    'util/galaxy',
-    'store/Stacks',
-    'api/api'
-],
+define(['q', 'knockout', 'moment', 'util/galaxy', 'store/Stacks', 'api/api'],
 function (Q, ko, moment, $galaxy, StackStore, API) {
     var vm = function () {
         var self = this;
@@ -90,41 +83,38 @@ function (Q, ko, moment, $galaxy, StackStore, API) {
              *  Unless the user wants to delete the stack permanently (see below)
              *  then just PUT to the API with the appropriate action.
              */
-                console.log(stack);
             if (action !== 'Delete') {
-                // $.ajax({
-                //     url: '/api/stacks/' + stack.id + '/',
-                //     type: 'PUT',
-                //     data: data,
-                //     headers: {
-                //         "X-CSRFToken": stackdio.settings.csrftoken,
-                //         "Accept": "application/json",
-                //         "Content-Type": "application/json"
-                //     },
-                //     success: function (response) {
-                //         API.Stacks.load();
-                //     }
-                // });
+                $.ajax({
+                    url: stack.url,
+                    type: 'PUT',
+                    data: data,
+                    headers: {
+                        "X-CSRFToken": stackdio.settings.csrftoken,
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    success: function (response) {
+                        StackStore.populate();
+                    }
+                });
 
             /*
              *  Using the DELETE verb is truly destructive. Terminates all hosts, terminates all 
              *  EBS volumes, and deletes stack/host details from the stackd.io database.
              */
             } else {
-                // $.ajax({
-                //     url: '/api/stacks/' + stack.id + '/',
-                //     type: 'DELETE',
-                //     headers: {
-                //         "X-CSRFToken": stackdio.settings.csrftoken,
-                //         "Accept": "application/json",
-                //         "Content-Type": "application/json"
-                //     },
-                //     success: function (response) {
-                //         stores.Stacks.remove(function (s) {
-                //             return s.id === stack.id;
-                //         });
-                //     }
-                // });
+                $.ajax({
+                    url: stack.url,
+                    type: 'DELETE',
+                    headers: {
+                        "X-CSRFToken": stackdio.settings.csrftoken,
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    },
+                    success: function (response) {
+                        StackStore.populate();
+                    }
+                });
             }
         };
 

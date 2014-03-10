@@ -40,12 +40,13 @@
                     <td><a href="#" data-bind="text: $data.title, click: $root.showStackDetails"></a></td>
                     <td data-bind="text: $data.description"></td>
                     <td>
-                        <a href='#' 
+                        <span style="cursor: pointer; text-decoration:underline; color: #428bca;"
                            data-bind="bootstrapPopover: {
                                         content: $root.popoverBuilder($data),
                                         title: 'Stack History'
                                       },
-                                      text: 'View (' + $data.fullHistory.length + ') messages'"></a>
+                                      text: 'View (' + $data.fullHistory.length + ') messages'">
+                        </span>
                     </td>
                     <td>
                         <div class="btn-group">
