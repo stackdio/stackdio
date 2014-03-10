@@ -94,15 +94,15 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 type: 'DELETE',
                 dataType: 'json',
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': stackdio.settings.csrftoken,
+                    'Accept': 'application/json'
                 },
                 success: function (response) {
                     deferred.resolve();
                 },
                 error: function (request, status, error) {
-                    deferred.reject(new Error(error));
+                    deferred.reject(JSON.parse(request.responseText).detail);
                 }
             });
 

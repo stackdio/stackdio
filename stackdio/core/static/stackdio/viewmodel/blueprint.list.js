@@ -57,7 +57,7 @@ function (Q, ko, $galaxy, API, BlueprintComponentStore, BlueprintHostStore, Blue
             API.Blueprints.delete(blueprint).then(function () {
                 BlueprintStore.remove(blueprint);
             }).catch(function (error) {
-                self.showError(error);
+                self.showMessage('#error', error, true, 3000);
             });
         };
 
@@ -69,6 +69,13 @@ function (Q, ko, $galaxy, API, BlueprintComponentStore, BlueprintHostStore, Blue
 
             $galaxy.transport('blueprint.detail');
         }
+
+        self.showMessage = function (id, content, autohide, delay) {
+            var timeout = (autohide && typeof delay === 'undefined') ? 3000 : delay;
+            if (typeof content !== 'undefined' && content !== '') $(id+'-content').append(content);
+            $(id).removeClass('hide');
+            if (autohide) setTimeout(function () { $(id).addClass('hide'); $(id+'-content').empty(); }, timeout);
+        };
     };
     return new vm();
 });
