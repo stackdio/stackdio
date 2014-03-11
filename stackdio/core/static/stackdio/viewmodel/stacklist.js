@@ -33,7 +33,7 @@ function (Q, ko, moment, $galaxy, StackStore, API) {
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
             self.EnhancedStackStore.removeAll();
             
-            StackStore.populate().then(function () {
+            StackStore.populate(true).then(function () {
                 StackStore.collection().forEach(function (stack) {
                     API.Stacks.getHistory(stack).then(function (stackwithhistory) {
                         self.EnhancedStackStore.push(stackwithhistory);

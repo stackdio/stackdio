@@ -41,9 +41,7 @@ function (Q, ko, $galaxy, BlueprintStore, StackStore, API) {
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
             BlueprintStore.populate().then(function () {
-                return StackStore.populate();
-            }).then(function () {
-
+                return StackStore.populate(true);
             }).catch(function (err) {
                 console.error(err);
             });

@@ -28,6 +28,13 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
         self.stackPropertiesStringified = ko.observable();
         self.editMode = ko.observable('create');
 
+        self.historicalLogText = ko.observable();
+        self.launchLogText = ko.observable();
+        self.orchestrationLogText = ko.observable();
+        self.orchestrationErrorLogText = ko.observable();
+        self.provisioningLogText = ko.observable();
+        self.provisioningErrorLogText = ko.observable();
+
         self.StackStore = StackStore;
         self.ProfileStore = ProfileStore;
         self.InstanceSizeStore = InstanceSizeStore;
@@ -113,6 +120,13 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
                 // Get stack properties
                 API.Stacks.getProperties(stack).then(function (properties) {
                     $('#stack_properties_preview').val(JSON.stringify(properties, undefined, 3));
+                }).then(function () {
+                    return API.Stacks.getLogs(stack);
+                }).then(function (logs) {
+                    self.logObject = logs;
+                    self.getLogs();
+                }).catch(function(error) {
+                    console.error(error);
                 }).done();
 
                 // Find the corresponding blueprint
@@ -187,6 +201,64 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
         self.cancelChanges = function (a, evt) {
             formutils.clearForm('stack-launch-form');
             $galaxy.transport('stack.list');
+        };
+
+        self.getLogs = function () {
+            var promises = [];
+            var historical = [];
+
+            self.logObject.historical.forEach(function (url) {
+                promises[promises.length] = API.Stacks.getLog(url).then(function (log) {
+                    historical[historical.length] = log;
+                });
+            });
+
+            Q.all(promises).then(function () {
+                $('#historical_logs').text(historical.join(''));
+            }).catch(function (error) {
+                console.log('error', error.toString());
+            }).done();
+
+            API.Stacks.getLog(self.logObject.latest.launch).then(function (log) {
+                $('#launch_logs').text(log);
+            }).catch(function (error) {
+                $('#launch_logs').text(error);
+            });
+
+            API.Stacks.getLog(self.logObject.latest.orchestration).then(function (log) {
+                $('#orchestration_logs').text(log);
+            }).catch(function (error) {
+                $('#orchestration_logs').text(error);
+            });
+
+            API.Stacks.getLog(self.logObject.latest["orchestration-error"]).then(function (log) {
+                $('#orchestration_error_logs').text(log);
+            }).catch(function (error) {
+                $('#orchestration_error_logs').text(error);
+            });
+
+            API.Stacks.getLog(self.logObject.latest.provisioning).then(function (log) {
+                $('#provisioning_logs').text(log);
+            }).catch(function (error) {
+                $('#provisioning_logs').text(error);
+            });
+
+            API.Stacks.getLog(self.logObject.latest["provisioning-error"]).then(function (log) {
+                $('#provisioning_error_logs').text(log);
+            }).catch(function (error) {
+                $('#provisioning_error_logs').text(error);
+            });            
+        };
+
+        self.showLogs = function () {
+            $('#logs-container').toggle(
+                function () {
+                    $('#logs-container').addClass('hide');
+                },
+                function () {
+                    $('#logs-container').removeClass('hide');
+                }
+            );
         };
     };
     return new vm();

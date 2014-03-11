@@ -315,6 +315,7 @@ body.bootstrap-admin-with-small-navbar {
 .linkify {
     color: #428bca !important;
     text-decoration: underline;
+    cursor: pointer;
 }
 
 .form-group a {
