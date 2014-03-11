@@ -42,7 +42,7 @@ function (Q, ko, $galaxy, welcome) {
                 visible: true
             },
             {
-                id:'Accounts',
+                id:'Providers',
                 view: 'account.list',
                 icon: null,
                 visible: false

@@ -1,11 +1,11 @@
 <div id="accounts-binding-target">
     <div class="view">
         <div class="row bottom-separation">
-            <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Accounts</div>
+            <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Providers</div>
             <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
                 <div class="btn-group pull-right bottom-separation" data-bind="visible: isSuperUser">
                     <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                        New Account
+                        New Provider
                         <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: ProviderTypeStore.collection()">
@@ -19,7 +19,7 @@
 
         <div class="row bottom-separation">
             <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
-                The Accounts page is where you can define all of the different accounts that you have established for each of the supported cloud providers. Please have the private key, and account id, issued by your provider before setting one up. For more information on Accounts, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
+                The Providers page is where you can define all of the different accounts that you have established for each of the supported cloud providers. Please have the private key, and account id, issued by your provider before setting one up. For more information on Providers, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
             </div>
         </div>
 

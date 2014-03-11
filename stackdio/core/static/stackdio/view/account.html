@@ -6,12 +6,12 @@
         </ol>
 
         <div class="row bottom-separation">
-            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Account Detail</div>
+            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Provider Detail</div>
         </div>
 
         <form id="account-form" role="form">
             <div class="form-group">
-                <label for="account_provider" class="control-label">Provider</label>
+                <label for="account_provider" class="control-label">Provider Type</label>
                     <select id="account_provider" 
                         data-bind="options: ProviderTypeStore.collection(), 
                                    optionsText: 'title', 
@@ -74,12 +74,12 @@
                        data-bind="visible: ($root.currentMode() === 'create')">Private Key File</label>
                 <label for="private_key_file" 
                        class="control-label" 
-                       data-bind="visible: ($root.currentMode() === 'edit')">Account Info</label>
+                       data-bind="visible: ($root.currentMode() === 'edit')">Provider Info</label>
 
                 <textarea class="form-control" 
                           id="private_key_file" 
                           rows="9" 
-                          placeholder="Enter in the private key that will be used to set up instances for this account"></textarea>
+                          placeholder="Enter in the private key that will be used to set up instances for this provider account"></textarea>
             </div>
 
             <div class="row">
