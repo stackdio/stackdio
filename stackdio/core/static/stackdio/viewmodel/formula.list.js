@@ -40,7 +40,7 @@ function (Q, ko, $galaxy, FormulaStore, API) {
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
-            FormulaStore.populate().then(function () {}).catch(function (err) { console.error(err); } ).done();
+            FormulaStore.populate(true).then(function () {}).catch(function (err) { console.error(err); } ).done();
         });
 
 
