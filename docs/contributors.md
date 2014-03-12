@@ -6,9 +6,20 @@ We're hopeful that you'll find value in using stackd.io along with your existing
 
 # Filing issues and feature requests
 
-We want stackd.io to be solid, but there's always going to be issues to fix and new features to enhance the product. If you find any problems or would like to request a particular feature, feel free to head over to [stackd.io's issue tracker](https://github.com/digitalreasoning/stackdio/issues). Below are some general guidelines for filing issues.
+We want stackd.io to be solid, but there's always going to be issues to fix and new features to enhance the product. If you find any problems or would like to request a particular feature, feel free to head over to [stackd.io's issue tracker](https://github.com/digitalreasoning/stackdio/issues). Below are some general guidelines.
 
-## Bug Reports
+### Feature Requests
+
+We definitely want this project to be better in every way, but sometimes we just can't see the forest because of those trees. If you think of something that would make stackd.io be more intuitive, easier, faster, or efficient, we encourage you to [file a feature request](https://github.com/digitalreasoning/stackdio/issues), but please keep the following in mind:
+
+1. Double-check that the feature hasn't already made its way into the tracker and/or been completed
+
+2. After filing it, please be patient -- sometimes it might take a while for things to get prioritized, so don't be bummed that it's not available tomorrow ;) 
+
+3. As always, the quickest way to get your shiny new feature is to get your hands dirty and implement it yourself!
+
+
+### Bug Reports
 
 If you think you've found a bug, here's what we ask of you:
 
@@ -38,7 +49,7 @@ In a nutshell, we'll need you to:
 
 # Authors
 
-* Abe: [abemusic](https://github.com/abemusic) / [abe_music in #stackdio](http://webchat.freenode.net/?channels=stackdio) / [@abe_music](https://twitter.com/abe_music)
+* [abemusic](https://github.com/abemusic) / [abe_music in #stackdio](http://webchat.freenode.net/?channels=stackdio) / [@abe_music](https://twitter.com/abe_music)
 * [chortlehoort](https://github.com/chortlehoort)
 
 # Contributors
