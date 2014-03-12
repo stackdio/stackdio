@@ -684,7 +684,7 @@ class StackLogsDetailAPIView(StackLogsAPIView):
     # TODO: Code complexity ignored for now
     def get(self, request, *args, **kwargs):  # NOQA
         stack = self.get_object()
-        log = self.kwargs.get('log', '')
+        log_file = self.kwargs.get('log', '')
 
         try:
             tail = int(request.QUERY_PARAMS.get('tail', 0))
@@ -699,15 +699,16 @@ class StackLogsDetailAPIView(StackLogsAPIView):
         if head and tail:
             raise BadRequest('Both head and tail may not be used.')
 
-        if log.endswith('.latest'):
-            log = join(stack.get_root_directory(), self.kwargs['log'])
-        elif log.endswith('.log') or log.endswith('.err'):
-            log = join(stack.get_log_directory(), self.kwargs['log'])
+        if log_file.endswith('.latest'):
+            log = join(stack.get_root_directory(), log_file)
+        elif log_file.endswith('.log') or log_file.endswith('.err'):
+            log = join(stack.get_log_directory(), log_file)
         else:
             log = None
 
         if not log or not isfile(log):
-            raise BadRequest('Log does not exist. {0}'.format(self.kwargs))
+            raise BadRequest('Requested log file does not exist. {0}'.format(
+                log_file))
 
         if tail:
             ret = envoy.run('tail -{0} {1}'.format(tail, log)).std_out
