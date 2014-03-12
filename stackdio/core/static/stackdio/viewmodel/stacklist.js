@@ -35,9 +35,7 @@ function (Q, ko, moment, $galaxy, StackStore, API) {
             
             StackStore.populate(true).then(function () {
                 StackStore.collection().forEach(function (stack) {
-                    API.Stacks.getHistory(stack).then(function (stackwithhistory) {
-                        self.EnhancedStackStore.push(stackwithhistory);
-                    });
+                    self.EnhancedStackStore.push(stack);
                 });
             }).done();
         });
