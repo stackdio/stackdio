@@ -52,7 +52,7 @@
         
         <div id="expand-logs" class="row linkify" data-bind="visible: editMode() === 'update', click: $root.showLogs">Show logs</div>
 
-        <div id="logs-container" class="row hide">
+        <div id="logs-container" class="row hide" data-bind="visible: editMode() === 'update'">
             <h4>Historical Logs</h4>
             <textarea class="form-control"
                    rows="9" 
