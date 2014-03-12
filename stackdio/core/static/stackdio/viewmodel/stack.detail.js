@@ -204,6 +204,8 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
         };
 
         self.getLogs = function () {
+            // Query param ?tail=20&head=20
+
             var promises = [];
             var historical = [];
 

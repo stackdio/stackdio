@@ -50,52 +50,62 @@
         </form>
 
         
-        <div id="expand-logs" class="row linkify" data-bind="visible: editMode() === 'update', click: $root.showLogs">Show logs</div>
-
-        <div id="logs-container" class="row hide" data-bind="visible: editMode() === 'update'">
-            <h4>Historical Logs</h4>
-            <textarea class="form-control"
-                   rows="9" 
-                   id="historical_logs" 
-                   data-bind="text: $root.historicalLogText"
-                   placeholder="Historical logs will be shown here."></textarea>
-
-            <h4>Launch Logs</h4>
-            <textarea class="form-control"
-                   rows="9" 
-                   id="launch_logs" 
-                   data-bind="text: $root.launchLogText"
-                   placeholder="Launch logs will be shown here."></textarea>
-
-            <h4>Orchestration Logs</h4>
-            <textarea class="form-control"
-                   rows="9" 
-                   id="orchestration_logs" 
-                   data-bind="text: $root.orchestrationLogText"
-                   placeholder="Orchestration logs will be shown here."></textarea>
-
-            <h4>Orchestration Error Logs</h4>
-            <textarea class="form-control"
-                   rows="9" 
-                   id="orchestration_error_logs" 
-                   data-bind="text: $root.orchestrationErrorLogText"
-                   placeholder="Orchestration error logs will be shown here."></textarea>
-
-            <h4>Provisioning Logs</h4>
-            <textarea class="form-control"
-                   rows="9" 
-                   id="provisioning_logs" 
-                   data-bind="text: $root.provisioningLogText"
-                   placeholder="Provisioning logs will be shown here."></textarea>
-
-            <h4>Provisioning Error Logs</h4>
-            <textarea class="form-control"
-                   rows="9" 
-                   id="provisioning_error_logs" 
-                   data-bind="text: $root.provisioningErrorLogText"
-                   placeholder="Provisioning error logs will be shown here."></textarea>
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Stack Logs</div>
         </div>
-                
 
+        <ul class="nav nav-tabs" data-bind="visible: editMode() === 'update'">
+          <li class="active"><a href="#historical" data-toggle="tab">Historical</a></li>
+          <li><a href="#launch" data-toggle="tab">Launch</a></li>
+          <li><a href="#orchestration" data-toggle="tab">Orchestration</a></li>
+          <li><a href="#orchestration-error" data-toggle="tab">Orchestration Error</a></li>
+          <li><a href="#provisioning" data-toggle="tab">Provisioning</a></li>
+          <li><a href="#provisioning-error" data-toggle="tab">Provisioning Error</a></li>
+        </ul>
+
+        <div class="tab-content" data-bind="visible: editMode() === 'update'">
+            <div class="tab-pane active" id="historical">
+                <textarea class="form-control"
+                       rows="9" 
+                       id="historical_logs" 
+                       data-bind="text: $root.historicalLogText"
+                       placeholder="Historical logs will be shown here."></textarea>
+            </div>
+            <div class="tab-pane" id="launch">
+                <textarea class="form-control"
+                       rows="9" 
+                       id="launch_logs" 
+                       data-bind="text: $root.launchLogText"
+                       placeholder="Launch logs will be shown here."></textarea>
+            </div>
+            <div class="tab-pane" id="orchestration">
+                <textarea class="form-control"
+                       rows="9" 
+                       id="orchestration_logs" 
+                       data-bind="text: $root.orchestrationLogText"
+                       placeholder="Orchestration logs will be shown here."></textarea>
+            </div>
+            <div class="tab-pane" id="orchestration-error">
+                <textarea class="form-control"
+                       rows="9" 
+                       id="orchestration_error_logs" 
+                       data-bind="text: $root.orchestrationErrorLogText"
+                       placeholder="Orchestration error logs will be shown here."></textarea>
+            </div>
+            <div class="tab-pane" id="provisioning">
+                <textarea class="form-control"
+                       rows="9" 
+                       id="provisioning_logs" 
+                       data-bind="text: $root.provisioningLogText"
+                       placeholder="Provisioning logs will be shown here."></textarea>
+            </div>
+            <div class="tab-pane" id="provisioning-error">
+                <textarea class="form-control"
+                       rows="9" 
+                       id="provisioning_error_logs" 
+                       data-bind="text: $root.provisioningErrorLogText"
+                       placeholder="Provisioning error logs will be shown here."></textarea>
+            </div>
+        </div>
     </div>
 </div>
