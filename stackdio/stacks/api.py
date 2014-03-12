@@ -12,6 +12,7 @@ from rest_framework import (
     generics,
     parsers,
     permissions,
+    status,
 )
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -697,7 +698,8 @@ class StackLogsDetailAPIView(StackLogsAPIView):
             head = None
 
         if head and tail:
-            raise BadRequest('Both head and tail may not be used.')
+            return Response('Both head and tail may not be used.',
+                            status=status.HTTP_400_BAD_REQUEST)
 
         if log_file.endswith('.latest'):
             log = join(stack.get_root_directory(), log_file)
@@ -707,8 +709,8 @@ class StackLogsDetailAPIView(StackLogsAPIView):
             log = None
 
         if not log or not isfile(log):
-            raise BadRequest('Requested log file does not exist. {0}'.format(
-                log_file))
+            return Response('Log file does not exist: {0}.'.format(log_file),
+                            status=status.HTTP_400_BAD_REQUEST)
 
         if tail:
             ret = envoy.run('tail -{0} {1}'.format(tail, log)).std_out
