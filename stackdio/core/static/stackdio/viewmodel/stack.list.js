@@ -1,5 +1,6 @@
-define(['q', 'knockout', 'util/galaxy', 'store/Blueprints', 'store/Stacks', 'api/api'],
-function (Q, ko, $galaxy, BlueprintStore, StackStore, API) {
+define(['q', 'knockout', 'util/galaxy', 'util/alerts', 'store/Blueprints', 'store/Stacks', 'api/api'],
+function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
+    console.log(alerts);
     var vm = function () {
         var self = this;
 
@@ -97,6 +98,7 @@ function (Q, ko, $galaxy, BlueprintStore, StackStore, API) {
                         "Content-Type": "application/json"
                     },
                     success: function (response) {
+                        alerts.showMessage('#success', 'Stack is currently being torn down and will deleted soon.', true);
                         StackStore.populate();
                     }
                 });
@@ -115,7 +117,11 @@ function (Q, ko, $galaxy, BlueprintStore, StackStore, API) {
                         "Content-Type": "application/json"
                     },
                     success: function (response) {
+                        alerts.showMessage('#success', 'Stack is currently being torn down and will be deleted once all hosts are terminated.', true, 5000);
                         StackStore.populate();
+                    },
+                    error: function (request, status, error) {
+                        alerts.showMessage('#error', 'Unable to delete this stack.', true, 2000);
                     }
                 });
             }
