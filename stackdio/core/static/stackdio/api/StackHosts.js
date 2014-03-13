@@ -11,7 +11,7 @@ define(['q', 'model/models'], function (Q, models) {
                     "Accept": "application/json"
                 },
                 success: function (response) {
-                    deferred.resolve(response);
+                    deferred.resolve(response.results);
                 }
             });
 
