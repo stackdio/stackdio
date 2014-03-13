@@ -40,6 +40,7 @@ function (Q, ko, $galaxy, FormulaStore, API) {
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
+            $('span').popover('hide');
             FormulaStore.populate(true).then(function () {}).catch(function (err) { console.error(err); } ).done();
         });
 
