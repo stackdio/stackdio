@@ -99,7 +99,7 @@
                                 <td data-bind="text: title"></td>
                                 <td data-bind="text: sls_path"></td>
                                 <td>
-                                    <input type="text" class="form-control" data-bind="attr: { id: 'component_order_' + id }">
+                                    <input type="text" class="form-control" data-bind="attr: { id: 'component_order_' + id }, value: order">
                                 </td>
                             </tr>     
                         </tbody>
@@ -108,7 +108,7 @@
             </div>
 
             <div class="row">
-                 <div class="col-md-2 col-md-offset-10 pull-right">
+                 <div class="col-md-3 col-md-offset-9 pull-right">
                     <button class="btn" data-bind="click: cancelChanges">Cancel</button>
                     <button class="btn btn-primary" data-bind="click: saveBlueprint">Save</button>
                 </div>

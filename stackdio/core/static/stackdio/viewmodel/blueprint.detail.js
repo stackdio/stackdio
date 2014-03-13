@@ -141,6 +141,9 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
                                 })[0];
 
                                 if (typeof found !== 'undefined') {
+                                    // Copy the order property from the formula_component object to 
+                                    // the found object for display in the UI
+                                    found.order = component.order;
                                     BlueprintComponentStore.add(found);
                                 }
                             });

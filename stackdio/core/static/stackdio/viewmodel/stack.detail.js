@@ -82,6 +82,7 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
         self.init = function (data) {
             var blueprint = null;
             var stack = null;
+            var stackHosts = [];
 
             self.stackPropertiesStringified('');
 
@@ -134,6 +135,11 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
                     return b.url === stack.blueprint;
                 })[0];
 
+                // Get the hosts for the stack
+                API.StackHosts.load(stack).then(function (hosts) {
+                    stackHosts = hosts;
+                })
+
                 // Update observables
                 self.selectedBlueprint(blueprint);
                 self.blueprintTitle(blueprint.title);
@@ -142,7 +148,9 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
             }
 
             self.selectedStack(stack);
+            
         };
+
 
         self.updateStack = function (obj, evt) {
             var record = formutils.collectFormFields(evt.target.form);
@@ -250,17 +258,6 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
             }).catch(function (error) {
                 $('#provisioning_error_logs').text(error);
             });            
-        };
-
-        self.showLogs = function () {
-            $('#logs-container').toggle(
-                function () {
-                    $('#logs-container').addClass('hide');
-                },
-                function () {
-                    $('#logs-container').removeClass('hide');
-                }
-            );
         };
     };
     return new vm();
