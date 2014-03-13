@@ -1,6 +1,5 @@
 define(['q', 'knockout', 'util/galaxy', 'util/alerts', 'store/Blueprints', 'store/Stacks', 'api/api'],
 function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
-    console.log(alerts);
     var vm = function () {
         var self = this;
 
@@ -9,7 +8,7 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
         */
-        self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch', 'Delete'];
+        self.stackActions = ['Stop', 'Terminate', 'Start', 'Launch', 'Delete', 'Provision'];
         self.stackHostActions = ['Stop', 'Terminate', 'Start'];
         self.selectedProfile = null;
         self.selectedAccount = null;
@@ -42,6 +41,7 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
             BlueprintStore.populate().then(function () {
+                $('span').popover('hide');
                 return StackStore.populate(true);
             }).catch(function (err) {
                 console.error(err);
