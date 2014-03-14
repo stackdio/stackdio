@@ -83,10 +83,10 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                 self.selectedAccount(account);
 
                 API.SecurityGroups.loadByAccount(account).then(function (data) {
-                    console.log(data);
-
                     for (var group in data.provider_groups) {
-                        self.AccountSecurityGroupStore.add(data.provider_groups[group]);
+                        var thisGroup = data.provider_groups[group];
+                        thisGroup.display_name = thisGroup.name + ' (' + thisGroup.id + ') ' + thisGroup.description;
+                        self.AccountSecurityGroupStore.add(thisGroup);
                     }
 
                     for (group in data.results) {
@@ -94,8 +94,6 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                             self.DefaultGroupStore.push(data.results[group]);
                         }
                     }
-
-                    console.log('self.DefaultGroupStore',self.DefaultGroupStore());
 
                     self.listDefaultGroups();
                 });
