@@ -36,20 +36,30 @@ def main():
     init_parser.set_defaults(command=commands.InitCommand)
     init_parser.set_defaults(raw_args=False)
 
-    # Simply dumps the available StackdioConfig object
+    # Dumps the configuration of various things
     config_parser = subparsers.add_parser(
         'config',
-        help='show the current configuration')
+        help='dumps configuration for stackdio and 3rd-party services')
+    config_parser.add_argument('type',
+                               nargs='?',
+                               default='stackdio',
+                               help=('The type of configuration to dump. '
+                                     'Valid choices: stackdio, nginx, '
+                                     'apache, supervisord. Default is '
+                                     'stackdio.'))
+    config_parser.add_argument('--with-ssl',
+                               default=False,
+                               action='store_true')
     config_parser.set_defaults(command=commands.ConfigCommand)
     config_parser.set_defaults(raw_args=False)
 
     # Runs the development Django server for stackdio API/UI
-    config_parser = subparsers.add_parser(
+    managepy_parser = subparsers.add_parser(
         'manage.py',
         help='convenience wrapper for Django\' manage.py command',
         add_help=False)
-    config_parser.set_defaults(command=commands.DjangoManageWrapperCommand)
-    config_parser.set_defaults(raw_args=True)
+    managepy_parser.set_defaults(command=commands.DjangoManageWrapperCommand)
+    managepy_parser.set_defaults(raw_args=True)
 
     # Expose salt-specific commands that we'll wrap and execute with
     # the appropriate arguments
@@ -66,7 +76,7 @@ def main():
     if args.raw_args:
         args.command(sys.argv[1:])()
     else:
-        args.command(args)()
+        args.command(args, parser=parser)()
 
 if __name__ == '__main__':
     main()

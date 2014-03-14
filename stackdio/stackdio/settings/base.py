@@ -21,7 +21,10 @@ STATE_EXECUTION_FIELDS = ('module', 'declaration_id', 'name', 'func')
 FILE_STORAGE_DIRECTORY = os.path.join(STACKDIO_CONFIG['storage_root'],
                                       'storage')
 
-LOG_DIRECTORY = os.path.join(STACKDIO_CONFIG['storage_root'], 'logs')
+LOG_DIRECTORY = os.path.join(STACKDIO_CONFIG['storage_root'],
+                             'var',
+                             'log',
+                             'stackdio')
 if not os.path.isdir(LOG_DIRECTORY):
     os.makedirs(LOG_DIRECTORY)
 
@@ -217,7 +220,7 @@ LOGGING = {
             "level": "DEBUG",
             "formatter": "default",
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": os.path.join(LOG_DIRECTORY, 'stackdio.log'),
+            "filename": os.path.join(LOG_DIRECTORY, 'django.log'),
             "maxBytes": 5242880,
             "backupCount": 5
         },
