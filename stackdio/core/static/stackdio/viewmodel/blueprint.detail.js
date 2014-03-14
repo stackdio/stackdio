@@ -252,8 +252,6 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
                 });
             });
 
-            // return;
-
             properties = JSON.parse(document.getElementById('blueprint_properties').value) || '';
 
             var blueprint = {

@@ -201,6 +201,9 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
                     return comp.id === componentId;
                 });
 
+                // Provide a default component orchestration order of 0
+                component.order = 0;
+
                 if (typeof _.findWhere(BlueprintComponentStore.collection(), { id: component.id }) === "undefined") {
                     BlueprintComponentStore.add(component);
                 }
