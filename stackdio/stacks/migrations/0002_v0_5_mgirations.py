@@ -188,6 +188,7 @@ class Migration(SchemaMigration):
             'group_id': ('django.db.models.fields.CharField', [], {'max_length': '16', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'is_default': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_managed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'security_groups'", 'to': u"orm['auth.User']"})

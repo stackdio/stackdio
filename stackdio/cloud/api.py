@@ -561,8 +561,13 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
         if not request.user.is_superuser:
             return response
 
-        # Grab the groups from the provider and inject them into the response
-        driver = self.get_provider().get_driver()
+        # Grab the groups from the provider and inject them into the response,
+        # removing the known managed security groups first
+        provider = self.get_provider()
+        driver = provider.get_driver()
         provider_groups = driver.get_security_groups()
+        for group in provider.security_groups.all():
+            if group.name in provider_groups:
+                del provider_groups[group.name]
         response.data['provider_groups'] = provider_groups
         return response

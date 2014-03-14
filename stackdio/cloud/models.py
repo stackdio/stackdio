@@ -285,6 +285,13 @@ class SecurityGroup(TimeStampedModel, models.Model):
     # the related cloud provider
     is_default = models.BooleanField(default=False)
 
+    # Flag for us to track which security groups were created by
+    # stackd.io and should be managed by the system. Any stack
+    # that is launched will have n security groups created and
+    # managed, where n is the number of distinct host definitions
+    # based on the blueprint used to create the stack
+    is_managed = models.BooleanField(default=False)
+
     def __unicode__(self):
         return self.name
 
