@@ -45,7 +45,7 @@
                                         content: $root.popoverBuilder($data),
                                         title: 'Stack History'
                                       },
-                                      text: 'View (' + $data.fullHistory.length + ') messages'">
+                                      text: (($data.fullHistory.length >= $data.historyCount) ? $data.fullHistory.length : $data.fullHistory.length + ' of ' + $data.historyCount) + ' messages'">
                         </span>
                     </td>
                     <td>

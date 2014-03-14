@@ -112,6 +112,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             success: function (response) {
                 var history = response.results;
                 stack.fullHistory = history;
+                stack.historyCount = response.count;
                 deferred.resolve(stack);
             },
             error: function (request, status, error) {
