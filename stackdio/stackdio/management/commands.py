@@ -1,3 +1,4 @@
+from __future__ import print_function
 import jinja2
 import os
 import shutil
@@ -30,8 +31,9 @@ class BaseCommand(object):
     INFO_INDENT = dict(initial_indent='INFO: ',
                        subsequent_indent='      ')
 
-    def __init__(self, args):
+    def __init__(self, args, parser=None):
         self.args = args
+        self.parser = parser
 
     def __call__(self, *args, **kwargs):
         self.pre_run()
@@ -109,13 +111,14 @@ class BaseCommand(object):
             return provider.module_path
         return provider.get_resource_filename(ResourceManager(), rp)
 
-    def render_template(self, tmpl, outfile, context={}):
+    def render_template(self, tmpl, outfile=None, context={}):
         tmpl = self.load_resource(tmpl)
         with open(tmpl) as f:
-            t = jinja2.Template(f.read())
-
-        with open(outfile, 'w') as f:
-            f.write(t.render(context))
+            t = jinja2.Template(f.read()).render(context)
+        if outfile:
+            with open(outfile, 'w') as f:
+                f.write(t)
+        return t
 
 
 class WizardCommand(BaseCommand):
@@ -139,8 +142,8 @@ class WizardCommand(BaseCommand):
     This method will receive the current question
     '''
 
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, *args, **kwargs):
+        super(WizardCommand, self).__init__(*args, **kwargs)
 
         # Answers holds the values from each question. Each question
         # name must be unique.
@@ -227,7 +230,7 @@ class InitCommand(WizardCommand):
         'long_desc': ('Root directory for stackdio to store its files, logs, '
                       'salt configuration, etc. We will attempt to create '
                       'this path if it does not already exist.'),
-        'default': '/home/{user}/.stackdio/storage',
+        'default': '/home/{user}/.stackdio',
     }, {
         'attr': 'salt_bootstrap_script',
         'short_desc': ('Which bootstrap script should salt-cloud use when '
@@ -416,8 +419,39 @@ class ConfigCommand(BaseCommand):
 
     def run(self):
         config = StackdioConfig()
-        import json
-        print(json.dumps(config, indent=4))
+        stackdio_root = self.load_resource()
+        site_packages_root = os.path.dirname(stackdio_root)
+        context = {
+            'site_packages_root': site_packages_root,
+            'stackdio_root': stackdio_root,
+            'storage_root': config.storage_root,
+        }
+        if self.args.type == 'stackdio':
+            import json
+            print(json.dumps(config, indent=4))
+            return
+        elif self.args.type == 'apache':
+            context.update({
+                'user': config.user,
+                'with_ssl': self.args.with_ssl
+            })
+            tmpl = 'stackdio/management/templates/apache2.jinja2'
+        elif self.args.type == 'nginx':
+            context.update({
+                'with_ssl': self.args.with_ssl
+            })
+            tmpl = 'stackdio/management/templates/nginx.jinja2'
+        elif self.args.type == 'supervisord':
+            tmpl = 'stackdio/management/templates/supervisord.jinja2'
+        else:
+            self.out('Unknown config type: {0}'.format(self.args.type),
+                     Colors.ERROR,
+                     nl=2,
+                     **self.ERROR_INDENT)
+            self.parser.print_help()
+            return
+
+        print(self.render_template(tmpl, context=context))
 
 
 class SaltWrapperCommand(BaseCommand):

@@ -1,0 +1,54 @@
+;;
+;; Example stackd.io configuration for supervisord
+;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; supervisord settings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; For more information on the config file, please see:
+; http://supervisord.org/configuration.html
+
+; we want to run via a socket file (vs an open http server)
+[unix_http_server]
+file=/tmp/supervisor.sock
+username=root
+password=1234
+
+[supervisord]
+logfile={{ storage_root }}/var/log/supervisord.log ; (main log file;default $CWD/supervisord.log)
+pidfile={{ storage_root }}/var/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[supervisorctl]
+serverurl=unix:///tmp/supervisor.sock
+username=root
+password=1234
+history_file=~/.sc_history
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; app specific settings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;
+;; django webserver
+[program:gunicorn-django]
+command=gunicorn stackdio.wsgi
+directory={{ stackdio_root }}
+autorestart=true
+
+;;
+;; celery
+[program:celery]
+command=stackdio manage.py celery worker -lINFO
+directory={{ stackdio_root }}
+autorestart=true
+
+;;
+;; salt-master
+[program:salt-master]
+command=stackdio salt-master 
+directory={{ stackdio_root }}
+autorestart=true

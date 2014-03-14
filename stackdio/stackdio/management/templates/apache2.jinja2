@@ -1,0 +1,42 @@
+##
+# Example stackd.io configuration for apache
+##
+
+# Global mod_wsgi configuration
+WSGISocketPrefix {{ storage_root }}/var/run/wsgi
+WSGIPythonPath {{ stackdio_root }}:{{ site_packages_root }}
+
+{% if with_ssl %}
+<VirtualHost *:443>
+    SSLEngine On
+    SSLCertificateFile /tmp/stackdio.crt
+    SSLCertificateKeyFile /tmp/stackdio.key
+{% else %}
+<VirtualHost *:80>
+{% endif %}
+    ServerAdmin admin@example.com
+    ServerName stackdio.example.com
+    DocumentRoot {{ stackdio_root }}
+
+    LogLevel warn
+    ErrorLog {{ storage_root }}/var/log/httpd/error_log
+    CustomLog {{ storage_root }}/var/log/httpd/access_log
+
+    <Location "/static/">
+        SetHandler none
+    </Location>
+
+    ## Non-Django directories
+    Alias /static {{ stackdio_root }}/static
+    <Directory "{{ stackdio_root }}/static">
+        Order allow,deny
+        Allow from all
+        Options -Indexes
+    </Directory>
+
+    # Django and mod_wsgi settings
+    WSGIDaemonProcess {{ user }} user={{ user }} group={{ user }} processes=2 python-path={{ stackdio_root }}:{{ site_packages_root }}
+    WSGIProcessGroup {{ user }}
+    WSGIScriptAlias / {{ stackdio_root }}/stackdio/wsgi.py
+    WSGIPassAuthorization On
+</VirtualHost>
