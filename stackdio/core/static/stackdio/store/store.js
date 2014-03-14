@@ -46,7 +46,15 @@ define(['q', 'knockout'], function (Q, ko) {
     };
 
     Store.prototype.add = function (type) {
-        this.collection.push(type);
+        var self = this;
+
+        if (type instanceof Array) {
+            type.forEach(function (item) {
+                self.collection.push(item);
+            });
+        } else {
+            self.collection.push(type);
+        }
     };
 
     Store.prototype.empty = function () {
