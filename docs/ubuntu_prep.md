@@ -47,7 +47,6 @@ To quickly get up and running, you can run the following to install the required
 
 ```bash
 # Install requirements needed to install stackd.io
-sudo apt-get install 
 sudo apt-get install python-dev libssl-dev libncurses5-dev swig \
     libmysqlclient-dev rabbitmq-server git
 ```
