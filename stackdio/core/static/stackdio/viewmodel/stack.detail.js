@@ -4,6 +4,7 @@ define([
     'util/galaxy',
     'util/form',
     'store/Stacks',
+    'store/StackHosts',
     'store/Profiles',
     'store/InstanceSizes',
     'store/Blueprints',
@@ -11,7 +12,7 @@ define([
     'store/BlueprintComponents',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
     var vm = function () {
         var self = this;
 
@@ -36,6 +37,7 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
         self.provisioningErrorLogText = ko.observable();
 
         self.StackStore = StackStore;
+        self.StackHostStore = StackHostStore;
         self.ProfileStore = ProfileStore;
         self.InstanceSizeStore = InstanceSizeStore;
         self.BlueprintHostStore = BlueprintHostStore;
@@ -137,8 +139,8 @@ function (Q, ko, $galaxy, formutils, StackStore, ProfileStore, InstanceSizeStore
 
                 // Get the hosts for the stack
                 API.StackHosts.load(stack).then(function (hosts) {
-                    stackHosts = hosts;
-                })
+                    self.StackHostStore.add(hosts);
+                });
 
                 // Update observables
                 self.selectedBlueprint(blueprint);

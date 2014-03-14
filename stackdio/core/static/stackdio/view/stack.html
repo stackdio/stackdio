@@ -7,12 +7,12 @@
 
         <ul class="nav nav-tabs">
             <li class="active"><a href="#detail" class="small-heading" data-toggle="tab">Stack Details</a></li>
+            <li><a href="#hosts" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Hosts</a></li>
             <li><a href="#logs" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Logs</a></li>
         </ul>
 
         <div class="tab-content">
             <div class="tab-pane active" id="detail">
-
                 <form id="stack-launch-form" role="form">
                     <div class="form-group">
                         <label for="blueprint_title" class=" control-label">Blueprint</label>
@@ -37,15 +37,15 @@
                     <div class="form-group">
                         <label class="control-label" for="stack_properties_preview">Stack Properties</label>
                         <textarea  
-                               class="form-control" 
-                               rows="20"
-                               id="stack_properties_preview" 
-                               data-bind="text: $root.stackPropertiesStringified()"
-                               placeholder="The formulas for the selected Blueprint do not contain properties"></textarea>
+                            class="form-control" 
+                            rows="20"
+                            id="stack_properties_preview" 
+                            data-bind="text: $root.stackPropertiesStringified()"
+                            placeholder="The formulas for the selected Blueprint do not contain properties"></textarea>
                     </div>
 
                     <div class="row">
-                         <div class="col-md-3 col-md-offset-9  pull-right">
+                        <div class="col-md-3 col-md-offset-9  pull-right">
                             <button class="btn" data-bind="click: cancelChanges">Cancel</button>
                             <button class="btn btn-primary" data-bind="visible: editMode() === 'create', click: $root.provisionStack">Begin Provisioning</button>
                             <button class="btn btn-primary" data-bind="visible: editMode() === 'update', click: $root.updateStack">Save</button>
@@ -53,8 +53,29 @@
                     </div>
                 </form>
                 <div class="row">
-                  <hr/>
+                    <hr/>
                 </div>
+            </div>
+
+            <div class="tab-pane active" id="hosts">
+                <table id="stack-hosts" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>FQDN</th>
+                            <th>State</th>
+                            <th>Provider DNS</th>
+                            <th>Hostname</th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: StackHostStore.collection">
+                        <tr>
+                            <td data-bind="text: $data.fqdn"></td>
+                            <td data-bind="text: $data.state"></td>
+                            <td data-bind="text: $data.provider_dns"></td>
+                            <td data-bind="text: $data.hostname"></td>
+                        </tr>     
+                    </tbody>
+                </table>
             </div>
 
             <div class="tab-pane" id="logs" data-bind="visible: editMode() === 'update'">
