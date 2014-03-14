@@ -42,10 +42,11 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
             'provider_id',
             'owner',
             'is_default',
+            'is_managed',
             'active_hosts',
             'rules',
         )
-        superuser_fields = ('owner', 'is_default')
+        superuser_fields = ('owner', 'is_default', 'is_managed')
 
 
 class CloudProviderSerializer(SuperuserFieldsMixin,

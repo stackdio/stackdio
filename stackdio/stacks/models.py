@@ -162,7 +162,8 @@ class StackManager(models.Manager):
                 cloud_provider=cloud_provider,
                 name=sg_name,
                 description=sg_description,
-                group_id=sg_id
+                group_id=sg_id,
+                is_managed=True
             )
 
             # iterate over the host definition count and create individual
