@@ -104,7 +104,7 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
         };
 
         self.cancelChanges = function (model, evt) {
-            $galaxy.transport({ view: 'account.list' });
+            $galaxy.transport('account.list');
         };
 
         self.capture = function (model, evt) {
