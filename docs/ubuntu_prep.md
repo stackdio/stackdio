@@ -34,6 +34,9 @@ mysql -hlocalhost -uroot -ppassword
 ```bash
 # install the package
 sudo apt-get install virtualenvwrapper
+
+# post-install step for virtualenvwrapper shortcuts
+source /etc/bash_completion.d/virtualenvwrapper
 ```
 
 ### Core requirements
