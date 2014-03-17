@@ -91,7 +91,7 @@ class BlueprintManager(models.Manager):
                 component_id = component.get('id')
                 component_title = component.get('title')
                 component_sls_path = component.get('sls_path')
-                component_order = int(component.get('order', 0))
+                component_order = int(component.get('order', 0) or 0)
 
                 d = {'formula__owner': owner}
                 if component_id:
