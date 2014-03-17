@@ -14,7 +14,9 @@ with `apt-get` you should run `apt-get update` first.
 Install MySQL server:
 
 ```bash
-sudo apt-get install mysql-server mysql-client 
+sudo apt-get install mysql-server mysql-client
+
+# When prompted, provide a password for the root user to access the MySQL server.
 ```
 
 Below we'll create a `stackdio` database and grant permissions to the `stackdio` user for that database.
