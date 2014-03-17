@@ -19,13 +19,15 @@
             </div>
 
             <div class="form-group">
-                <label for="volume_device" class="control-label">Device</label>
-                <input type="text" class="form-control" id="volume_device" placeholder="Device name">
+                <label for="volume_device" class="control-label">Device ID</label>
+                <div>These are some standard device ids for mounted EBS volumes</div>
+                <select id="volume_device" class="form-control" data-bind="options: $root.volumeIds, optionsValue: $data, optionsText: $data"></select>
             </div>
 
             <div class="form-group">
                 <label for="volume_mount_point" class="control-label">Mount point</label>
-                <input type="text" class="form-control" id="volume_mount_point" placeholder="/mnt/x">
+                <div>This is the location on disk where your device will be mounted</div>
+                <input type="text" class="form-control" id="volume_mount_point" placeholder="e.g. /mnt/device1 or /mnt/logs or /mnt/backup">
             </div>
 
             <div class="row">

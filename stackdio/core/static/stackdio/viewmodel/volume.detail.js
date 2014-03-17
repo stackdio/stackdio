@@ -24,6 +24,7 @@ function (Q, ko, $galaxy, formutils, BlueprintStore, VolumeStore, SnapshotStore,
         self.selectedHost = ko.observable();
         self.hostTitle = ko.observable();
         self.$galaxy = $galaxy;
+        self.volumeIds = ['/dev/xvdj','/dev/xvdk','/dev/xvdm','/dev/xvdn'];
 
         self.BlueprintStore = BlueprintStore;
         self.VolumeStore = VolumeStore;
@@ -67,7 +68,6 @@ function (Q, ko, $galaxy, formutils, BlueprintStore, VolumeStore, SnapshotStore,
         self.init = function (data) {
             var blueprint = null;
             var host = null;
-
 
             if (data.hasOwnProperty('blueprint')) {
                 blueprint = BlueprintStore.collection().filter(function (p) {
