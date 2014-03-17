@@ -32,7 +32,7 @@ stackdio_authorized_keys:
 # Add a sudoers entry
 stackdio_sudoers:
   file.managed:
-    - name: /etc/sudoers.d/{{ username }}
+    - name: /etc/sudoers.d/stackdio_user
     - contents: "{{ username }}  ALL=(ALL)  NOPASSWD:ALL"
     - mode: 400
     - user: root
