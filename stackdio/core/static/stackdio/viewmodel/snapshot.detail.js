@@ -23,7 +23,7 @@ function (Q, ko, $galaxy, formutils, AccountStore, SnapshotStore, API) {
         self.AccountStore = AccountStore;
         self.SnapshotStore = SnapshotStore;
 
-        self.osChoices = [
+        self.fileSystemChoices = [
             {
                 id: 'ext2',
                 title: 'ext2'
@@ -104,36 +104,16 @@ function (Q, ko, $galaxy, formutils, AccountStore, SnapshotStore, API) {
             self.selectedAccount(account);
 
             if (snapshot && snapshot.hasOwnProperty('id')) {
-                // $('#account_provider').val(snapshot.provider_type);
-                // $('#account_title').val(snapshot.title);
-                // $('#account_description').val(snapshot.description);
-                // $('#account_id').val(snapshot.account_id);
-                // $('#account_id').attr('disabled', 'disabled');
-                // $('#access_key_id').attr('disabled', 'disabled');
-                // $('#secret_access_key').attr('disabled', 'disabled');
-                // $('#keypair').attr('disabled', 'disabled');
-                // $('#default_availability_zone').val(snapshot.default_availability_zone);
-                // $('#route53_domain').val(' ');
-                // $('#route53_domain').attr('disabled', 'disabled');
-                // $('#private_key_file').val(snapshot.yaml);
 
-                // self.saveAction = self.updateAccount;
             }
         };
 
         self.cancelChanges = function () {
-            $galaxy.transport({ view: 'formula.list' });
+            $galaxy.transport('formula.list');
         };
 
         self.updateSnapshot = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
-
-            // API.Snapshots.update(record).then(function () {
-
-            // })
-            // .catch(function (error) {
-            //     $("#alert-error").show();
-            // });
         };
 
         self.createSnapshot = function (model, evt) {
@@ -146,9 +126,6 @@ function (Q, ko, $galaxy, formutils, AccountStore, SnapshotStore, API) {
                 size_in_gb: $('#snapshot_size').val(),
                 filesystem_type: $('#filesystem_type').val()
             };
-
-            // console.log(snapshot);
-            // return;
 
             API.Snapshots.save(snapshot).then(function (newSnapshot) {
                 SnapshotStore.add(newSnapshot);
