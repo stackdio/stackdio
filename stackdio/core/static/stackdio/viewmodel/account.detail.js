@@ -118,8 +118,6 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                 $('#account_provider').val(provider_type.id);
                 self.currentMode('create');
             }
-
-            console.log('self.currentMode',self.currentMode());
         };
 
         self.saveAccount = function (model, evt) {
