@@ -3,7 +3,7 @@
         <div class="row bottom-separation">
             <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Snapshots</div>
             <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
-                <div class="btn-group pull-right small-top-separation">
+                <div class="btn-group pull-right small-top-separation" data-bind="visible: $root.isSuperUser">
                     <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                         New Snapshot <span class="caret"></span>
                     </a>
@@ -25,12 +25,13 @@
         <table id="snapshots" class="table table-bordered">
             <thead>
                 <tr>
-                    <th style="width:20%">Title</th>
-                    <th style="width:25%">Description</th>
-                    <th style="width:15%">ID</th>
-                    <th style="width:10%">Size (GB)</th>
-                    <th style="width:20%">Account</th>
-                    <th style="width:5%"></th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>ID</th>
+                    <th>Size (GB)</th>
+                    <th>File system</th>
+                    <th>Account</th>
+                    <th data-bind="visible: $root.isSuperUser"></th>
                 </tr>
             </thead>
             <tbody data-bind="foreach: EnhancedSnapshotStore">
@@ -39,8 +40,9 @@
                     <td data-bind="text: description"></td>
                     <td data-bind="text: snapshot_id"></td>
                     <td data-bind="text: size_in_gb"></td>
+                    <td data-bind="text: filesystem_type"></td>
                     <td data-bind="text: account.title"></td>
-                    <td>
+                    <td data-bind="visible: $root.isSuperUser">
                         <div class="btn-group" data-bind="visible: $root.isSuperUser">
                             <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
                                 Action <span class="caret"></span>
