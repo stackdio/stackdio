@@ -108,30 +108,18 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                 $('#account_title').val(account.title);
                 $('#account_description').val(account.description);
                 $('#account_id').val(account.account_id);
-                $('#account_id').attr('disabled', 'disabled');
-                $('#access_key_id').val('protected');
-                $('#access_key_id').attr('disabled', 'disabled');
-                $('#secret_access_key').val('protected');
-                $('#secret_access_key').attr('disabled', 'disabled');
-                $('#keypair').val('protected');
-                $('#keypair').attr('disabled', 'disabled');
                 $('#default_availability_zone').val(account.default_availability_zone);
-                $('#route53_domain').val('protected');
-                $('#route53_domain').attr('disabled', 'disabled');
                 $('#private_key_file').val(account.yaml);
-                $('#private_key_file').attr('readonly', 'readonly');
+                $('#private_key_file').attr('disabled', 'disabled');
 
                 self.currentMode('edit');
             } else if (provider_type && provider_type.hasOwnProperty('id')) {
-                $('#account_id').attr('disabled', false);
-                $('#access_key_id').attr('disabled', false);
-                $('#secret_access_key').attr('disabled', false);
-                $('#keypair').attr('disabled', false);
-                $('#route53_domain').attr('disabled', false);
-                $('#private_key_file').attr('readonly', false);
-                
+                $('#private_key_file').removeAttr('disabled');                
                 $('#account_provider').val(provider_type.id);
+                self.currentMode('create');
             }
+
+            console.log('self.currentMode',self.currentMode());
         };
 
         self.saveAccount = function (model, evt) {
