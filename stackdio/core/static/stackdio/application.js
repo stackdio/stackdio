@@ -26,9 +26,7 @@ require([
 ], 
 function (select, typeahead, _, RootAPI, navigation) {
     RootAPI.load().then(function (apiNamespaces) {
-        require(['viewmodel/navigation'], function (nav) {
-
-        });
+        require(['viewmodel/navigation'], function (nav) { });
     }).catch(function (error) {
         console.error(error.name, error.message);
     });

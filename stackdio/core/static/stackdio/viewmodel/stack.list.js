@@ -127,18 +127,6 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
             }
         };
 
-        self.launchStack = function (blueprint) {
-            self.selectedBlueprint(blueprint);
-
-            API.Blueprints.getProperties(blueprint)
-                .then(function (properties) {
-                    self.blueprintProperties(properties);
-                    self.blueprintHosts(blueprint.host_definitions);
-                });
-
-            self.showStackForm();
-        };
-
         self.showStackDetails = function (stack) {
             self.selectedStack(stack);
 
@@ -156,24 +144,6 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
             });
         };
 
-        // 
-        //      S T A C K   H O S T S
-        // 
-        self.showStackHostMetaData = function (stack) {
-            API.Stacks.getHosts(stack).then(function (data) {
-
-            });
-
-            // stores.HostMetadata.removeAll();
-            // _.each(host.ec2_metadata, function (v, k, l) {
-            //     if (typeof v !== "object") {
-            //         stores.HostMetadata.push({ key: k, value: v });
-            //     }
-            // });
-
-            // $("#host-metadata-container").dialog("open");
-        };
-
         self.showStackDetails = function (stack) {
             $galaxy.transport({
                 location: 'stack.detail',
@@ -184,10 +154,16 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
         };
 
         self.createNewStack = function (blueprint) {
-            $galaxy.transport({
-                location: 'stack.detail', 
-                payload: { 
-                    blueprint: blueprint.id 
+            API.Users.load().then(function (public_key) {
+                if (public_key === '') {
+                    alerts.showMessage('#error', 'You have not saved your public key, and cannot launch any new stacks. Please open your user profile to save one.', true, 4000);
+                } else {
+                    $galaxy.transport({
+                        location: 'stack.detail', 
+                        payload: { 
+                            blueprint: blueprint.id 
+                        }
+                    });
                 }
             });
         };

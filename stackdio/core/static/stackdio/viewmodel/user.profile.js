@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'util/galaxy', 'api/api'],
-function (Q, ko, $galaxy, API) {
+define(['q', 'knockout', 'util/galaxy', 'util/alerts', 'api/api'],
+function (Q, ko, $galaxy, alerts, API) {
     var vm = function () {
         var self = this;
 
@@ -47,7 +47,7 @@ function (Q, ko, $galaxy, API) {
         */
         self.saveProfile = function () {
             API.Users.saveKey($('#public_key').val()).then(function () {
-                self.showSuccess();
+                alerts.showMessage('#success', 'Your profile was successfully saved.', true);
             });
         };
 
