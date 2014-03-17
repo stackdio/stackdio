@@ -55,7 +55,7 @@ workon stackdio
 > **NOTE** Double-check that your virtualenv is activated or else this will probably complain that you don't have permissions to install (because it's trying to install into the global python site-packages directory which we don't want!)
 
 ```bash
-pip install https://github.com/stackdio/stackdio.git
+pip install https://github.com/digitalreasoning/stackdio.git
 
 # The above should install directly from github, but if
 # you'd rather install manually:
