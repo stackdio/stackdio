@@ -32,12 +32,22 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 type: 'POST',
                 data: JSON.stringify({uri: uri}),
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': stackdio.settings.csrftoken,
+                    'Accept': 'application/json'
                 },
                 success: function (data, status, response) {
                     deferred.resolve(new models.Formula().create(data));
+                },
+                error: function (request, status, error) {
+                    var response = '';
+
+                    try {
+                        response = JSON.parse(request.responseText).detail;
+                    } catch (ex) {
+                        response = request.responseText.substr(0,100);
+                    }
+                    deferred.reject(response);
                 }
             });
 
@@ -50,12 +60,15 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 url: formula.url,
                 type: 'DELETE',
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': stackdio.settings.csrftoken,
+                    'Accept': 'application/json'
                 },
                 success: function (data, status, response) {
                     deferred.resolve();
+                },
+                error: function (request, status, error) {
+                    deferred.reject(JSON.parse(request.responseText).detail);
                 }
             });
 
@@ -69,12 +82,13 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 url: formula.properties,
                 type: 'GET',
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Accept': 'application/json'
                 },
                 success: function (data, status, response) {
                     deferred.resolve(data.properties);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -89,12 +103,15 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 type: 'PUT',
                 data: JSON.stringify({public: !formula.public}),
                 headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": stackdio.settings.csrftoken,
-                    "Accept": "application/json"
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': stackdio.settings.csrftoken,
+                    'Accept': 'application/json'
                 },
                 success: function (data, status, response) {
                     deferred.resolve();
+                },
+                error: function (request, status, error) {
+                    deferred.reject(JSON.parse(request.responseText).detail);
                 }
             });
 

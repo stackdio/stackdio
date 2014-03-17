@@ -2,11 +2,12 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'util/alerts',
     'util/form',
     'store/Formulas',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, FormulaStore, API) {
+function (Q, ko, $galaxy, alerts, formutils, FormulaStore, API) {
     var vm = function () {
         var self = this;
 
@@ -49,12 +50,11 @@ function (Q, ko, $galaxy, formutils, FormulaStore, API) {
         self.importFormula = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
 
+            formutils.clearForm('formula-form');
             API.Formulas.import(record.formula_url.value).then(function () {
-                formutils.clearForm('formula-form');
-                $galaxy.transport('formula.list');
-            })
-            .catch(function (error) {
-                console.error(error);
+                alerts.showMessage('#success', 'Formula is now being imported and should be complete in a few seconds.', true, 3000, $galaxy.transport('formula.list'));
+            }).catch(function (error) {
+                alerts.showMessage('#error', 'There was an error while importing your formula. ' + error, true, 4000, $galaxy.transport('formula.list'));
             }).done();
         };
     };

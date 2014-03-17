@@ -123,6 +123,13 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
 
                 self.currentMode('edit');
             } else if (provider_type && provider_type.hasOwnProperty('id')) {
+                $('#account_id').attr('disabled', false);
+                $('#access_key_id').attr('disabled', false);
+                $('#secret_access_key').attr('disabled', false);
+                $('#keypair').attr('disabled', false);
+                $('#route53_domain').attr('disabled', false);
+                $('#private_key_file').attr('readonly', false);
+                
                 $('#account_provider').val(provider_type.id);
             }
         };

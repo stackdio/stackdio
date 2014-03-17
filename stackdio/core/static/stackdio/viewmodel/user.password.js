@@ -36,7 +36,7 @@ function (Q, ko, $galaxy, API, formutils) {
                 $('#first_name').val(window.stackdio.user.first_name);
                 $('#last_name').val(window.stackdio.user.last_name);
                 $('#public_key').val(public_key);
-            })
+            });
         });
 
 
