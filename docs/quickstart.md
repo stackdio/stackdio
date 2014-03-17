@@ -61,7 +61,7 @@ pip install https://github.com/digitalreasoning/stackdio.git
 # you'd rather install manually:
 
 cd /tmp
-git clone https://github.com/stackdio/stackdio.git
+git clone https://github.com/digitalreasoning/stackdio.git
 cd stackdio
 pip install .
 ```
