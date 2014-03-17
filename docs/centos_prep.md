@@ -56,6 +56,12 @@ Install MySQL server:
 sudo yum install mysql-server
 ```
 
+Start MySQL server:
+
+```bash
+sudo service mysqld start
+```
+
 Below we'll create a `stackdio` database and grant permissions to the `stackdio` user for that database.
 
 > **WARNING**: we're not focusing on security here, so the default MySQL setup definitely needs to be tweaked, passwords changed, etc., but for a quick-start guide this is out of scope. Please, don't run this as-is in production :)
