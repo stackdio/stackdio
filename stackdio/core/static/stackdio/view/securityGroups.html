@@ -30,16 +30,14 @@
                 </div>
                 <div class="col-sm-2">
                     <button class="btn btn-success glyphicon glyphicon-plus" 
-                        data-bind="click: function (data, event) { 
-                            addDefaultSecurityGroup($('#stackdio_security_group option:selected').text(), event); 
-                        }"> Add</button>
+                        data-bind="click: addDefaultSecurityGroup"> Add</button>
                 </div>
             </div>
 
             <div class="form-group">
                 <div class="lead">Option 2. Create new group</div>
                 If you would like to create a new security group that does not already exist in stackd.io, 
-                simply type in the name for the group here and it will created.
+                simply type in the name for the group here and it will be created.
             </div>
 
             <div class="form-group">
@@ -53,9 +51,7 @@
                 </div>
                 <div class="col-sm-2">
                     <button class="btn btn-success glyphicon glyphicon-plus" 
-                            data-bind="click: function (data, event) { 
-                                addDefaultSecurityGroup(document.getElementById('new_securitygroup_name').value, event); 
-                            }"> Add</button>
+                            data-bind="click: addNewDefaultSecurityGroup"> Add</button>
                 </div>
             </div>
 

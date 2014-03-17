@@ -28,7 +28,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var securityGroup = JSON.stringify(group);
 
             $.ajax({
-                url: '/api/security_groups/',
+                url: settings.api.cloud.security_groups,
                 type: 'POST',
                 data: securityGroup,
                 headers: {

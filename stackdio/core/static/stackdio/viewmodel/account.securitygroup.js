@@ -73,6 +73,7 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
             var provider_type = null;
 
             self.DefaultGroupStore.removeAll();
+            self.AccountSecurityGroupStore.empty();
 
             if (data.hasOwnProperty('account')) {
                 account = AccountStore.collection().filter(function (a) {
@@ -96,11 +97,20 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                     }
 
                     self.listDefaultGroups();
+
+                    // var typeaheadStore = self.AccountSecurityGroupStore.collection().map(function (b) { return b; })
+                    // console.log('typeaheadStore',typeaheadStore);
+
+                    // $('#new_securitygroup_name').typeahead({
+                    //     name: 'new_security_group',
+                    //     local: self.AccountSecurityGroupStore.collection().map(function (b) {return b.name; }),
+                    //     limit: 10
+                    // }).on('typeahead:selected', function (object, selectedItem) {
+                    //     var foundGroup = _.findWhere(self.AccountSecurityGroupStore.collection(), { name: document.getElementById('new_securitygroup_name').value });
+                    //     console.log('foundGroup',foundGroup);
+                    // });
                 });
             }
-        };
-
-        self.saveSecurityGroups = function (model, evt) {
         };
 
         self.cancelChanges = function (model, evt) {
@@ -123,12 +133,13 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
             return true;
         };
 
-        self.addDefaultSecurityGroup = function (name, evt) {
+        self.addNewDefaultSecurityGroup = function (model, evt) {
             var record = {};
-            record.name = name;
+            record.name = document.getElementById('new_securitygroup_name').value;
             record.cloud_provider = self.selectedAccount().id;
             record.is_default = true;
             record.description = "";
+
 
             API.SecurityGroups.save(record).then(function (newGroup) {
                 formutils.clearForm('default-securitygroup-form');
@@ -140,10 +151,31 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
             }).done();
         };
 
+        self.addDefaultSecurityGroup = function (model, evt) {
+            var selectedId = document.getElementById('stackdio_security_group').value;
+
+            var selectedGroup = self.AccountSecurityGroupStore.collection().filter(function (group) {
+                return group.id === selectedId;
+            })[0];
+
+            var record = {};
+            record.name = selectedGroup.name;
+            record.cloud_provider = self.selectedAccount().id;
+            record.is_default = true;
+            record.description = "";
+
+            API.SecurityGroups.save(record).then(function (newGroup) {
+                document.getElementById('stackdio_security_group').value = '';
+                self.DefaultGroupStore.push(newGroup);
+                self.listDefaultGroups();
+            })
+            .catch(function (error) {
+                console.error(error);
+            }).done();
+        };
+
         self.deleteDefaultSecurityGroup = function (groupId) {
-            console.log('group to delete', groupId);
             var record = _.findWhere(self.DefaultGroupStore(), { id: parseInt(groupId, 10) });
-            console.log('found record', record);
 
             if (typeof record !== 'undefined') {
                 record.is_default = false;
