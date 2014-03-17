@@ -106,4 +106,4 @@ sudo yum install git mysql-devel swig python-devel rabbitmq-server
 ```
 # Next Steps
 
-You're now finished with the CentOS-specific requirements for stackd.io. You can head back over to the [Quick Start Guide](http://foo.com) and continue the installation of stackd.io.
+You're now finished with the CentOS-specific requirements for stackd.io. You can head back over to the [Quick Start Guide](quickstart.md) and continue the installation of stackd.io.
