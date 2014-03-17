@@ -150,7 +150,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
             }
 
             self.selectedStack(stack);
-            
         };
 
 
@@ -203,7 +202,12 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
 
             API.Stacks.save(stack).then(function (newStack) {
                 self.StackStore.add(newStack);
-                formutils.clearForm('stack-launch-form');
+                
+                $('#stack_title').val('');
+                $('#stack_description').val('');
+                $('#stack_namespace').val('');
+                $('#stack_properties_preview').text('');
+
                 $galaxy.transport('stack.list');
             });
         };
