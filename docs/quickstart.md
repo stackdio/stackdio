@@ -16,7 +16,7 @@ Some of the coming steps in the Quick Start Guide require sudo/root access, but 
 
 ```bash
 # Create the user
-useradd -m -s/bin/bash -U stackdio
+sudo useradd -m -s/bin/bash -U stackdio
 
 # Give sudo
 sudo echo 'stackdio ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/stackdio
