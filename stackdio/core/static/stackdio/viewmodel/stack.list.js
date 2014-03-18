@@ -98,8 +98,11 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
                         "Content-Type": "application/json"
                     },
                     success: function (response) {
-                        alerts.showMessage('#success', 'Stack is currently being torn down and will deleted soon.', true);
-                        StackStore.populate();
+                        alerts.showMessage('#success', 'Stack action ' + data + ' has been initiated.', true);
+                        StackStore.populate(true);
+                    },
+                    error: function (request, status, error) {
+                        alerts.showMessage('#error', 'Unable to perform action ' + data + ' on that stack. Please try again.', true, 2000);
                     }
                 });
 
@@ -118,7 +121,7 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
                     },
                     success: function (response) {
                         alerts.showMessage('#success', 'Stack is currently being torn down and will be deleted once all hosts are terminated.', true, 5000);
-                        StackStore.populate();
+                        StackStore.populate(true);
                     },
                     error: function (request, status, error) {
                         alerts.showMessage('#error', 'Unable to delete this stack.', true, 2000);
