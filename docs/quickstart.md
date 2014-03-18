@@ -22,7 +22,7 @@ sudo useradd -m -s/bin/bash -U stackdio
 sudo echo 'stackdio ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/stackdio > /dev/null
 
 # Switch to user...and remain as this user for the rest of the guide
-su - stackdio
+sudo su - stackdio
 ```
 
 # OS-specifc preparation
