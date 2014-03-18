@@ -89,7 +89,7 @@ stackdio manage.py migrate
 
 ### Start the development server
 
-For the quick start, we're going to run with Django's built-in web server. In production, you'll definitely want to consider something more appropriate like Apache or Nginx. See [Django's WSGI deployment documentation](https://docs.djangoproject.com/en/1.5/howto/deployment/wsgi/) or check out our guides on putting stackd.io behind [Apache](apache_guide.md) or [Nginx](nginx_guide.md).
+For the quick start, we're going to run with Django's built-in web server. In production, you'll definitely want to consider something more appropriate like Apache or Nginx. See [Django's WSGI deployment documentation](https://docs.djangoproject.com/en/1.5/howto/deployment/wsgi/) or check out our [stackd.io webserver guide](webserver_guide.md) for quickly getting stackd.io running behind Apache2 or Nginx.
 
 ```bash
 stackdio manage.py runserver
