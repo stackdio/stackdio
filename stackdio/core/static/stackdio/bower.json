@@ -8,10 +8,10 @@
     "typeahead.js": "~0.9.3",
     "moment": "~2.4.0",
     "q": "~0.9.7",
-    "underscore-amd": "~1.5.2",
     "knockout.js": "~3.0.0",
     "postal.js": "~0.8.11",
-    "requirejs": "~2.1.11"
+    "requirejs": "~2.1.11",
+    "underscore": "~1.6.0"
   },
   "resolutions": {
     "jquery": "~2.0.3"
@@ -27,7 +27,7 @@
   "authors": [
     "Steve Brownlee <chortlehoort@gmail.com>"
   ],
-  "license": "MIT",
+  "license": "Apache 2",
   "homepage": "http://www.stackd.io",
   "private": true
 }

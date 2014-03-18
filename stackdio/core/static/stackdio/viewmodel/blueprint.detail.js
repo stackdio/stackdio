@@ -80,6 +80,11 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
             });
         });
 
+        $galaxy.network.subscribe('blueprint.open', function (data) {
+            console.log('data',data);
+        });
+
+
 
         /*
          *  ==================================================================================
