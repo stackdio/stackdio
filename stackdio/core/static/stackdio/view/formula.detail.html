@@ -1,0 +1,31 @@
+<div id="formula-binding-target" class="" data-bind="">
+    <div class="view">
+        <div class="row bottom-separation">
+            <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Formula Details</div>
+        </div>
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                Formulas are imported from external repositories where you can build up an entire ecosystem of components to be installed on a Stack. For details on how to define your own formula to import into stackd.io, please refer to the <a href="#" data-bind="click: $root.showHelp">help section</a>.
+            </div>
+        </div>
+
+        <table id="formula-detail" class="table table-bordered ">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>SLS Path</th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: formulaComponents">
+                <tr>
+                    <td data-bind="text: title"></td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: sls_path"></td>
+                </tr>     
+            </tbody>
+        </table>
+
+    </div>
+</div>

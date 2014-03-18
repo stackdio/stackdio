@@ -45,6 +45,10 @@ function (Q, ko, $galaxy, alerts, FormulaStore, API) {
             FormulaStore.populate(true).then(function () {}).catch(function (err) { console.error(err); } ).done();
         });
 
+        $galaxy.network.subscribe('formula.open', function (data) {
+            console.log('data',data);
+        });
+
 
         /*
          *  ==================================================================================

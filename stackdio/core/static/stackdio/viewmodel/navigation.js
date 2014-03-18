@@ -2,9 +2,10 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'viewmodel/search',
     'viewmodel/welcome'
 ],
-function (Q, ko, $galaxy, welcome) {
+function (Q, ko, $galaxy, search, welcome) {
     var vm = function () {
         var self = this;
 
@@ -14,6 +15,7 @@ function (Q, ko, $galaxy, welcome) {
         self.id = 'navigation';
         self.templatePath = 'navigation.html';
         self.domBindingId = '#navigation';
+        self.children = [search];
         self.autoRender = true;
 
         try {
