@@ -2,6 +2,7 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'util/alerts',
     'util/form',
     'store/ProviderTypes',
     'store/Accounts',
@@ -9,7 +10,7 @@ define([
     'store/Zones',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileStore, ZoneStore, API) {
+function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, ProfileStore, ZoneStore, API) {
     var vm = function () {
         var self = this;
 
@@ -144,7 +145,9 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
 
             API.Accounts.save(account).then(function (newAccount) {
                 AccountStore.add(newAccount);
-                $galaxy.transport('account.list');
+                $galaxy.transport('account.securitygroup');
+
+                alerts.showMessage('#success', 'Provider account successfully created. You are strongly urged to specify at least default security group for this provider so that hosts can successfully be provisioned.', true, 10000);
             });
         };
 
