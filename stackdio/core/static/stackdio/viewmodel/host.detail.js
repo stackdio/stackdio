@@ -74,15 +74,15 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
                 });
             });
 
-            // Load instance sizes and availability zones
-            InstanceSizeStore.populate();
-            ZoneStore.populate();
-
-            // Load profiles, and then blueprints
+            // Load accounts, profiles, blueprints, instance sizes and availability zones
             AccountStore.populate().then(function () {
                 return ProfileStore.populate();    
             }).then(function () {
                 return BlueprintStore.populate();    
+            }).then(function () {
+                return InstanceSizeStore.populate();
+            }).then(function () {
+                return ZoneStore.populate(); 
             }).then(function () {
                 self.init(data);
             });
