@@ -117,17 +117,6 @@ function (Q, ko, $galaxy, ProviderTypeStore, AccountStore, ProfileStore, Snapsho
             });
         };
 
-        self.updateSnapshot = function (model, evt) {
-            // PATCH the update, and on success, replace the current item in the store with new one
-            // API.Accounts.update(account).then(function () {
-            //     stores.Accounts(_.reject(stores.Accounts(), function (acct) {
-            //         return acct.id === self.selectedAccount.id;
-            //     }));
-            //     stores.Accounts.push(account);
-            //     $galaxy.transport({ view: 'account.list' });
-            // });
-        };
-
         self.removeSnapshot = function (snapshot) {
             API.Snapshots.delete(snapshot).then(function () {
                 SnapshotStore.removeById(snapshot.id);

@@ -110,7 +110,7 @@ function (Q, ko, $galaxy, alerts, formutils, AccountStore, SnapshotStore, API) {
         };
 
         self.cancelChanges = function () {
-            $galaxy.transport('formula.list');
+            $galaxy.transport('snapshot.list');
         };
 
         self.updateSnapshot = function (model, evt) {
