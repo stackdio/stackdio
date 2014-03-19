@@ -33,7 +33,6 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
         self.blueprintTitle = ko.observable();
         self.selectedBlueprintHosts = ko.observable();
         self.blueprintProperties = ko.observable();
-        self.blueprintPropertiesStringified = ko.observable('');
         self.editMode = 'create';
         self.$galaxy = $galaxy;
 
@@ -100,16 +99,19 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
             HostVolumeStore.empty();
             HostRuleStore.empty();
 
+            $('#blueprint_properties').val('');
+            self.blueprintProperties({});
+
             // Editing existing blueprint
             if (data.hasOwnProperty('blueprint')) {
                 blueprint = BlueprintStore.collection().filter(function (p) {
                     return p.id === parseInt(data.blueprint, 10);
                 })[0];
+                self.editMode = 'update';
 
             // New blueprint, so clear form fields and reset observable values
             } else {
-                self.blueprintPropertiesStringified('');
-                self.blueprintProperties({});
+                self.editMode = 'create';
                 self.blueprintTitle('New Blueprint');
             }
 
@@ -122,7 +124,6 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 $('#public_blueprint').prop('checked', blueprint.public);
 
                 self.blueprintTitle(blueprint.title);
-                self.editMode = 'update';
 
                 if (BlueprintHostStore.collection().length === 0) {
                     blueprint.host_definitions.forEach(function (host) {
@@ -169,32 +170,33 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
 
                         self.BlueprintHostStore.add(new models.BlueprintHost().create(host));
                     });
-                }
 
-                // Get the properties for the blueprint and then stringify the object for display in the form
-                if (self.blueprintPropertiesStringified() === '') {
+                    // Get the properties for the blueprint and then stringify the object for display in the form
                     API.Blueprints.getProperties(blueprint).then(function (properties) {
                         self.blueprintProperties(properties);
 
                         var stringify = JSON.stringify(properties, undefined, 3);
-                        self.blueprintPropertiesStringified(stringify);
+                        $('#blueprint_properties').val(stringify);
                     });
                 }
+            } else {
+                // Build the property JSON
+                self.propertyBuilder();
             }
+        };
 
+        self.propertyBuilder = function () {
+            var propBuilder = self.blueprintProperties();
 
-            if (BlueprintHostStore.collection().length > 0) {
-                var propBuilder = self.blueprintProperties();
+            // Get the properties for each formula component in the list of hosts defined by user
+            BlueprintHostStore.collection().forEach(function (host) {
+                for (var key in host.properties) {
+                    propBuilder[key] = host.properties[key];
+                }
+            });
+            self.blueprintProperties(propBuilder);
+            $('#blueprint_properties').val(JSON.stringify(propBuilder, undefined, 3));
 
-                // Get the properties for each formula component in the list of hosts defined by user
-                BlueprintHostStore.collection().forEach(function (host) {
-                    for (var key in host.properties) {
-                        propBuilder[key] = host.properties[key];
-                    }
-                    self.blueprintProperties(propBuilder);
-                    self.blueprintPropertiesStringified(JSON.stringify(propBuilder, undefined, 3));
-                });
-            }
         };
 
         self.saveBlueprint = function (model, evt) {
@@ -220,7 +222,6 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
             self.HostVolumeStore.empty();
             self.HostRuleStore.empty();
 
-            self.blueprintPropertiesStringified('');
             self.selectedBlueprint(null);
 
             $('#public_blueprint').prop('checked', false);
@@ -229,6 +230,7 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
         self.createBlueprint = function (model, evt) {
             var hosts = BlueprintHostStore.collection(), strippedHosts = [], properties;
             var orderedComponents = [];
+            var currentProperties = $('#blueprint_properties').val();
 
             /*
                 Identify the orchestration fields in the form and match any entered value up 
@@ -270,10 +272,10 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 });
             });
 
-            if (document.getElementById('blueprint_properties').value === '') {
+            if (currentProperties === '') {
                 properties = {};
             } else {
-                properties = JSON.parse(document.getElementById('blueprint_properties').value);
+                properties = JSON.parse(currentProperties);
             }
 
             var blueprint = {

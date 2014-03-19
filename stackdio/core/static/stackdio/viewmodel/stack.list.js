@@ -89,8 +89,8 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
              */
             if (action !== 'Delete') {
                 $.ajax({
-                    url: stack.url,
-                    type: 'PUT',
+                    url: stack.action,
+                    type: 'POST',
                     data: data,
                     headers: {
                         "X-CSRFToken": stackdio.settings.csrftoken,
@@ -98,11 +98,11 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
                         "Content-Type": "application/json"
                     },
                     success: function (response) {
-                        alerts.showMessage('#success', 'Stack action ' + data + ' has been initiated.', true);
+                        alerts.showMessage('#success', 'Stack ' + action.toLowerCase() + ' has been initiated.', true);
                         StackStore.populate(true);
                     },
                     error: function (request, status, error) {
-                        alerts.showMessage('#error', 'Unable to perform action ' + data + ' on that stack. Please try again.', true, 2000);
+                        alerts.showMessage('#error', 'Unable to perform ' + action.toLowerCase() + ' action on that stack. ' + JSON.parse(request.responseText).detail, true, 7000);
                     }
                 });
 
@@ -112,7 +112,7 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
              */
             } else {
                 $.ajax({
-                    url: stack.url,
+                    url: stack.action,
                     type: 'DELETE',
                     headers: {
                         "X-CSRFToken": stackdio.settings.csrftoken,
