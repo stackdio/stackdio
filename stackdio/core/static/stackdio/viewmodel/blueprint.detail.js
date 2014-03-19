@@ -257,7 +257,11 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
                 });
             });
 
-            properties = JSON.parse(document.getElementById('blueprint_properties').value) || '';
+            if (document.getElementById('blueprint_properties').value === '') {
+                properties = {};
+            } else {
+                properties = JSON.parse(document.getElementById('blueprint_properties').value);
+            }
 
             var blueprint = {
                 title: document.getElementById('blueprint_title').value,
@@ -339,8 +343,12 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
             blueprint.title = record.blueprint_title.value;
             blueprint.description = record.blueprint_purpose.value;
             blueprint.public = $('#public_blueprint').prop('checked');
-            blueprint.properties = JSON.parse(record.blueprint_properties.value);
             blueprint.hosts = strippedHosts;
+            if (record.blueprint_properties.value !== '') {
+                blueprint.properties = JSON.parse(record.blueprint_properties.value);
+            } else {
+                blueprint.properties = {};
+            }
             delete blueprint.host_definitions;
 
             API.Blueprints.update(blueprint).then(function (updatedBlueprint) {
