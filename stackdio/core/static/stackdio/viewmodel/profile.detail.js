@@ -2,6 +2,7 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'util/alerts',
     'util/form',
     'store/Accounts',
     'store/Profiles',
@@ -9,7 +10,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, InstanceSizeStore, API, models) {
+function (Q, ko, $galaxy, alerts, formutils, AccountStore, ProfileStore, InstanceSizeStore, API, models) {
     var vm = function () {
         var self = this;
 
@@ -68,6 +69,19 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, InstanceSizeSto
         self.init = function (data) {
             var profile = null;
 
+            formutils.clearForm('profile-form');
+
+
+            if (data.hasOwnProperty('account')) {
+                var account = AccountStore.collection().filter(function (a) {
+                    return a.id === parseInt(data.account, 10);
+                })[0];
+
+                self.selectedAccount(account);
+
+                $('#profile_account').val(account.title);
+            }
+
             if (data.hasOwnProperty('profile')) {
                 profile = ProfileStore.collection().filter(function (p) {
                     return p.id === parseInt(data.profile, 10);
@@ -105,13 +119,15 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, InstanceSizeSto
         self.createProfile = function (model, evt) {
             var profile = formutils.collectFormFields(evt.target.form);
 
-            profile.account = AccountStore.collection().filter(function (account) {
-                return account.id === parseInt(profile.profile_account.value, 10);
-            })[0];
+            profile.cloud_provider = self.selectedAccount().id;
 
             API.Profiles.save(profile).then(function (newProfile) {
                 ProfileStore.add(new models.Profile().create(newProfile));
                 $galaxy.transport('profile.list');
+            }).catch(function (errors) {
+                if (errors.hasOwnProperty('image_id')) {
+                    alerts.showMessage('#error', errors.image_id + ' ' + errors.image_id_exception, true, 5000);
+                }
             });
         };
 
@@ -133,7 +149,6 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, InstanceSizeSto
             API.Profiles.update(profile).then(function (newProfile) {
                 self.ProfileStore.remove(self.selectedProfile());
                 self.ProfileStore.add(newProfile);
-                formutils.clearForm('profile-form');
                 $galaxy.transport('profile.list');
             });
         };
@@ -145,7 +160,6 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, InstanceSizeSto
         };
 
         self.cancelChanges = function (model, evt) {
-            formutils.clearForm('profile-form');
             $galaxy.transport('profile.list');
         };
     };

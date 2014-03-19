@@ -35,8 +35,8 @@ function (Q, ko, $galaxy, stacklist, BlueprintStore) {
                 }).on('typeahead:selected', function (object, selectedItem) {
                     var foundBlueprint = _.findWhere(BlueprintStore.collection(), { title: $('#blueprint_search').val() });
                     $galaxy.transport({
-                        view: 'stack.detail',
-                        data: {
+                        location: 'stack.detail',
+                        payload: {
                             blueprint: foundBlueprint.id
                         }
                     });

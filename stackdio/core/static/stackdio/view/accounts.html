@@ -35,7 +35,12 @@
             <tbody data-bind="foreach: EnhancedAccountStore">
                 <tr>
                     <td>
+                        <!-- ko if: $root.isSuperUser -->
                         <a data-bind="text: title, click: $root.editAccount"></a>
+                        <!-- /ko -->
+                        <!-- ko ifnot: $root.isSuperUser -->
+                        <span data-bind="text: title"></span>
+                        <!-- /ko -->
                     </td>
                     <td data-bind="text: description"></td>
                     <td>
