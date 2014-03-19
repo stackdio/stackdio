@@ -42,7 +42,7 @@ define(['q', 'model/models', 'settings'], function (Q, models, settings) {
                     deferred.resolve(new models.Snapshot().create(response));
                 },
                 error: function (request, status, error) {
-                    deferred.reject(new Error(error));
+                    deferred.reject(JSON.parse(request.responseText).errors);
                 }
             });
 

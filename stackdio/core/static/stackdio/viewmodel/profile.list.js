@@ -85,8 +85,13 @@ function (Q, ko, $galaxy, AccountStore, ProfileStore, API) {
 
         };
 
-        self.newProfile = function () {
-            $galaxy.transport('profile.detail');
+        self.createProfile = function (account) {
+            $galaxy.transport({
+                location: 'profile.detail',
+                payload: {
+                    account: account.id
+                }
+            });
         };
 
         self.deleteProfile = function (profile) {

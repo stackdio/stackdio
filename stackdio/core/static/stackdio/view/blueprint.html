@@ -52,7 +52,7 @@
                     <table id="blueprint_hosts" class="table table-bordered">
                         <thead>
                             <tr>
-                                <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th></th>
+                                <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th>Volumes</th><th></th>
                             </tr>
                         </thead>
                         <tbody data-bind="foreach: $root.BlueprintHostStore.collection">
@@ -62,6 +62,7 @@
                                 <td data-bind="text: instance_size.title"></td>
                                 <td data-bind="text: hostname_template"></td>
                                 <td data-bind="html: flat_access_rules"></td>
+                                <td data-bind="html: flat_volumes"></td>
                                 <td>
                                     <a class="linkify" data-bind="click: $root.removeHost"> Delete </a>
                                 </td>
