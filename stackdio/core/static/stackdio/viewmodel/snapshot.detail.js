@@ -2,12 +2,13 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'util/alerts',
     'util/form',
     'store/Accounts',
     'store/Snapshots',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, AccountStore, SnapshotStore, API) {
+function (Q, ko, $galaxy, alerts, formutils, AccountStore, SnapshotStore, API) {
     var vm = function () {
         var self = this;
 
@@ -129,10 +130,11 @@ function (Q, ko, $galaxy, formutils, AccountStore, SnapshotStore, API) {
 
             API.Snapshots.save(snapshot).then(function (newSnapshot) {
                 SnapshotStore.add(newSnapshot);
+                alerts.showMessage('#success', 'Snapshot successfully created', true, 2000);
                 $galaxy.transport('snapshot.list');
             })
-            .catch(function (error) {
-                $("#alert-error").show();
+            .catch(function (errors) {
+                alerts.showMessage('#error', errors.join(' '), true, 5000);
             });
         };
     };
