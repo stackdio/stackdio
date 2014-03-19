@@ -33,7 +33,10 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     "Accept": "application/json"
                 },
                 success: function (properties) {
-                    deferred.resolve(properties);   // Resolve promise and pass back properties
+                    deferred.resolve(properties); 
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
                 }
             });
 
