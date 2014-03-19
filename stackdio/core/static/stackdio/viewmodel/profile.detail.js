@@ -71,6 +71,17 @@ function (Q, ko, $galaxy, alerts, formutils, AccountStore, ProfileStore, Instanc
 
             formutils.clearForm('profile-form');
 
+
+            if (data.hasOwnProperty('account')) {
+                var account = AccountStore.collection().filter(function (a) {
+                    return a.id === parseInt(data.account, 10);
+                })[0];
+
+                self.selectedAccount(account);
+
+                $('#profile_account').val(account.title);
+            }
+
             if (data.hasOwnProperty('profile')) {
                 profile = ProfileStore.collection().filter(function (p) {
                     return p.id === parseInt(data.profile, 10);
@@ -108,9 +119,7 @@ function (Q, ko, $galaxy, alerts, formutils, AccountStore, ProfileStore, Instanc
         self.createProfile = function (model, evt) {
             var profile = formutils.collectFormFields(evt.target.form);
 
-            profile.account = AccountStore.collection().filter(function (account) {
-                return account.id === parseInt(profile.profile_account.value, 10);
-            })[0];
+            profile.cloud_provider = self.selectedAccount().id;
 
             API.Profiles.save(profile).then(function (newProfile) {
                 ProfileStore.add(new models.Profile().create(newProfile));

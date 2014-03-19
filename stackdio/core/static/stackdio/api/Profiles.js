@@ -53,12 +53,12 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/profiles/',
+                url:  settings.api.cloud.profiles,
                 type: 'POST',
                 data: {
                     title: record.profile_title.value,
                     description: record.profile_description.value,
-                    cloud_provider: record.account.id,
+                    cloud_provider: record.cloud_provider,
                     image_id: record.image_id.value,
                     default_instance_size: record.default_instance_size.value,
                     ssh_user: record.ssh_user.value
