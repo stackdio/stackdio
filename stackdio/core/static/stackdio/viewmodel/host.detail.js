@@ -9,6 +9,7 @@ define([
     'store/InstanceSizes',
     'store/Blueprints',
     'store/Zones',
+    'store/Snapshots',
     'store/HostAccessRules',
     'store/HostVolumes',
     'store/BlueprintHosts',
@@ -17,7 +18,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, InstanceSizeStore, BlueprintStore, ZoneStore, 
+function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, InstanceSizeStore, BlueprintStore, ZoneStore, SnapshotStore,
           HostRuleStore, HostVolumeStore, BlueprintHostStore, FormulaComponentStore, BlueprintComponentStore, API, models) {
     var vm = function () {
         var self = this;
@@ -40,6 +41,7 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
         self.InstanceSizeStore = InstanceSizeStore;
         self.BlueprintStore = BlueprintStore;
         self.ZoneStore = ZoneStore;
+        self.SnapshotStore = SnapshotStore;
         self.HostRuleStore = HostRuleStore;
         self.HostVolumeStore = HostVolumeStore;
         self.BlueprintHostStore = BlueprintHostStore;
@@ -73,6 +75,8 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
                     }
                 });
             });
+
+            SnapshotStore.populate();
 
             // Load accounts, profiles, blueprints, instance sizes and availability zones
             AccountStore.populate().then(function () {
@@ -222,8 +226,18 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
                 return '<div style="line-height:15px !important;">' + fc.text + '</div>'; 
             }).join('');
 
+            // Add some HTML to display for the added volumes
+            host.flat_volumes = host.volumes.map(function (volume) { 
+                var snapshot = SnapshotStore.collection().filter(function (snapshot) {
+                    return snapshot.id === parseInt(volume.snapshot, 10);
+                })[0];
+                return '<div style="line-height:15px !important;">Snapshot '+ snapshot.title + ' (' + volume.device + ') mounted to '+volume.mount_point+'</div>'; 
+            }).join('');
+
             // Add some HTML to display for the chosen security groups
-            host.flat_access_rules = HostRuleStore.collection().length + ' access rules';
+            host.flat_access_rules = HostRuleStore.collection().map(function (rule) {
+                return '<div style="line-height:15px !important;">Port(s) '+rule.from_port+'-'+rule.to_port+' allow '+rule.rule+'</div>'; 
+            }).join('');
 
             // Add spot instance config
             if (record.spot_instance_price.value !== '') {

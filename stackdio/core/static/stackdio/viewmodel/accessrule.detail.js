@@ -92,7 +92,6 @@ function (Q, ko, $galaxy, formutils, BlueprintStore, HostRuleStore, BlueprintHos
 
         self.addRule = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
-            console.log(record);
             var rule;
 
             if (record.rule_ip_address.value !== '') {

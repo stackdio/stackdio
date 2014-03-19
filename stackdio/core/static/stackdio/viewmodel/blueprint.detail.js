@@ -4,6 +4,7 @@ define([
     'util/galaxy',
     'util/form',
     'store/HostVolumes',
+    'store/Snapshots',
     'store/HostAccessRules',
     'store/Accounts',
     'store/Profiles',
@@ -16,8 +17,8 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, BlueprintStore, 
-          BlueprintHostStore, BlueprintComponentStore, FormulaStore, FormulaComponentStore, API, models) {
+function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, 
+          BlueprintStore, BlueprintHostStore, BlueprintComponentStore, FormulaStore, FormulaComponentStore, API, models) {
     var vm = function () {
         var self = this;
 
@@ -38,6 +39,7 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
 
         self.HostVolumeStore = HostVolumeStore;
         self.HostRuleStore = HostRuleStore;
+        self.SnapshotStore = SnapshotStore;
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
         self.InstanceSizeStore = InstanceSizeStore;
@@ -67,6 +69,7 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
+            SnapshotStore.populate();
             AccountStore.populate().then(function () {
                 return ProfileStore.populate();
             }).then(function () {
@@ -135,8 +138,18 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, HostRuleStore, AccountStor
                             return '<div style="line-height:15px !important;">' + fc.description + '</div>'; 
                         }).join('');
 
+                        // Add some HTML to display for the added volumes
+                        host.flat_volumes = host.volumes.map(function (volume) { 
+                            var snapshot = SnapshotStore.collection().filter(function (snapshot) {
+                                return snapshot.id === parseInt(volume.snapshot, 10);
+                            })[0];
+                            return '<div style="line-height:15px !important;">Snapshot '+ snapshot.title + ' (' + volume.device + ') mounted to '+volume.mount_point+'</div>'; 
+                        }).join('');
+
                         // Add some HTML to display for the chosen security groups
-                        host.flat_access_rules = host.access_rules.length + ' access rules';
+                        host.flat_access_rules = host.access_rules.map(function (rule) {
+                            return '<div style="line-height:15px !important;">Port(s) '+rule.from_port+'-'+rule.to_port+' allow '+rule.rule+'</div>'; 
+                        }).join('');
 
                         // Get the properties for each formula component in the host
                         host.formula_components.forEach(function (component) {
