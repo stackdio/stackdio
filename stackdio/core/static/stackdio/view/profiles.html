@@ -28,7 +28,12 @@
             <tbody data-bind="foreach: EnhancedProfileStore">
                 <tr>
                     <td>
+                        <!-- ko if: $root.isSuperUser -->
                         <a href="#" data-bind="text:title, click: $root.viewProfile"></a>
+                        <!-- /ko -->
+                        <!-- ko ifnot: $root.isSuperUser -->
+                        <span data-bind="text: title"></span>
+                        <!-- /ko -->
                     </td>
                     <td data-bind="text: description"></td>
                     <td data-bind="text: image_id"></td>
