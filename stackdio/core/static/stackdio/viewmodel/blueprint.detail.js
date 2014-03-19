@@ -105,9 +105,11 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 blueprint = BlueprintStore.collection().filter(function (p) {
                     return p.id === parseInt(data.blueprint, 10);
                 })[0];
+                self.editMode = 'update';
 
             // New blueprint, so clear form fields and reset observable values
             } else {
+                self.editMode = 'create';
                 self.blueprintPropertiesStringified('');
                 self.blueprintProperties({});
                 self.blueprintTitle('New Blueprint');
@@ -122,7 +124,6 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 $('#public_blueprint').prop('checked', blueprint.public);
 
                 self.blueprintTitle(blueprint.title);
-                self.editMode = 'update';
 
                 if (BlueprintHostStore.collection().length === 0) {
                     blueprint.host_definitions.forEach(function (host) {
