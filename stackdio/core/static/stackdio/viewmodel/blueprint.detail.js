@@ -247,17 +247,17 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
             }
 
             var notOrdered = false;
-            orderedComponents.reduce(function (p,n) {
-                if (n.order !== p.order + 1) {
+            orderedComponents.reduce(function (prev, curr) {
+                if (curr.order !== prev.order + 1 && curr.order !== prev.order) {
                     notOrdered = true;
                 }
+                return curr;
             })
 
-            if (!notOrdered) {
-                alerts.showMessage('#error', 'You cannot skip numbers in your component orchestration.', true, 3000);
+            if (notOrdered) {
+                alerts.showMessage('#orchestration-error', 'You cannot skip numbers in your component orchestration.', true, 3000);
+                return;
             }
-
-            return;
 
             /*
                 Apply the order specified by the user in the orchestration fields to the 
