@@ -147,7 +147,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                 AccountStore.add(newAccount);
                 $galaxy.transport('account.securitygroup');
 
-                alerts.showMessage('#success', 'Provider account successfully created. You are strongly urged to specify at least one default security group for this provider that opens ports for SSH and Salt so that hosts can successfully be provisioned.', true, 10000);
+                alerts.showMessage('#success', 'Provider account successfully created. You are strongly urged to specify at least one default security group for this provider that opens ports for SSH and Salt so that hosts can successfully be provisioned.', false);
             });
         };
 

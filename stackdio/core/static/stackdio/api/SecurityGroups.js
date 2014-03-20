@@ -40,25 +40,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                     deferred.resolve(response);
                 },
                 error: function (request, status, error) {
-                    if (error === 'CONFLICT') {
-                        var newGroup = _.findWhere(stores.AccountSecurityGroups(), { name: group.name });
-
-                        if (typeof newGroup !== "undefined") {
-                            console.log('group already exists, so setting to default');
-                            newGroup.is_default = true;
-
-
-                            self.updateDefault(newGroup)
-                                .then(function () {
-                                    deferred.resolve();
-                                });
-                            
-                        } else {
-                            deferred.resolve();
-                        }
-                    } else {
-                        deferred.reject(new Error(error));
-                    }
+                    deferred.reject(new Error(error));
                 }
             });
 
@@ -70,7 +52,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var securityGroup = JSON.stringify(group);
 
             $.ajax({
-                url: '/api/security_groups/' + group.id + '/',
+                url: group.url,
                 type: 'PUT',
                 data: securityGroup,
                 headers: {

@@ -1,4 +1,13 @@
 define(function () {
+
+    $('#clearError').click(function () {
+        $('.alert').addClass('hide');
+    });
+
+    $('#clearSuccess').click(function () {
+        $('.alert').addClass('hide');
+    });
+
     return {
         showMessage : function (id, content, autohide, delay, action) {
             var timeout = (autohide && typeof delay === 'undefined') ? 3000 : delay;

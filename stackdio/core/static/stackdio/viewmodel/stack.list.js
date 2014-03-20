@@ -112,7 +112,7 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
              */
             } else {
                 $.ajax({
-                    url: stack.action,
+                    url: stack.url,
                     type: 'DELETE',
                     headers: {
                         "X-CSRFToken": stackdio.settings.csrftoken,
