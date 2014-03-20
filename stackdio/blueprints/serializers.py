@@ -68,6 +68,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.BlueprintHostDefinition
         fields = (
+            'id',
             'title',
             'description',
             'cloud_profile',

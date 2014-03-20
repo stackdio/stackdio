@@ -2,6 +2,7 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'util/alerts',
     'util/form',
     'store/HostVolumes',
     'store/Snapshots',
@@ -17,7 +18,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, 
+function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, 
           BlueprintStore, BlueprintHostStore, BlueprintComponentStore, FormulaStore, FormulaComponentStore, API, models) {
     var vm = function () {
         var self = this;
@@ -163,6 +164,7 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                                     // Copy the order property from the formula_component object to 
                                     // the found object for display in the UI
                                     found.order = component.order;
+                                    found.host = host;
                                     BlueprintComponentStore.add(found);
                                 }
                             });
@@ -244,6 +246,19 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 orderedComponents[orderedComponents.length] = component;
             }
 
+            var notOrdered = false;
+            orderedComponents.reduce(function (p,n) {
+                if (n.order !== p.order + 1) {
+                    notOrdered = true;
+                }
+            })
+
+            if (!notOrdered) {
+                alerts.showMessage('#error', 'You cannot skip numbers in your component orchestration.', true, 3000);
+            }
+
+            return;
+
             /*
                 Apply the order specified by the user in the orchestration fields to the 
                 formula components in the host object
@@ -313,6 +328,19 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 component.id = parseInt(fields[i].id.split('_')[2], 10);
                 component.order = parseInt($('#' + fields[i].id).val(), 10);
                 orderedComponents[orderedComponents.length] = component;
+            }
+
+            var notOrdered = false;
+            orderedComponents.reduce(function (prev, curr) {
+                if (curr.order !== prev.order + 1 && curr.order !== prev.order) {
+                    notOrdered = true;
+                }
+                return curr;
+            })
+
+            if (notOrdered) {
+                alerts.showMessage('#orchestration-error', 'You cannot skip numbers in your component orchestration.', true, 3000);
+                return;
             }
 
             /*
