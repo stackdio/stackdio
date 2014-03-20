@@ -95,7 +95,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                     }
 
                     data.results.forEach(function (group) {
-                        group.display_name = group.description + ' (' + group.name + ')';
+                        group.display_name = group.name + ' (' + group.description + ')';
                         self.stackdioGroupStore.push(group);
 
                         if (group.is_default) {
@@ -138,9 +138,8 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             record.description = "";
 
             API.SecurityGroups.save(record).then(function (newGroup) {
-                $('#new_securitygroup_name').val('');
                 self.DefaultGroupStore.push(newGroup);
-                self.listDefaultGroups();
+                self.resetView();
             })
             .catch(function (error) {
                 console.error(error);
@@ -161,9 +160,8 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             record.description = "";
 
             API.SecurityGroups.save(record).then(function (newGroup) {
-                $('#aws_security_group').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
                 self.DefaultGroupStore.push(newGroup);
-                self.listDefaultGroups();
+                self.resetView();
             })
             .catch(function (error) {
                 console.error(error);
@@ -187,22 +185,28 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             record.url = selectedGroup.url;
 
             API.SecurityGroups.save(record).then(function (newGroup) {
-                $('#stackdio_security_group').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
                 self.DefaultGroupStore.push(newGroup);
-                self.listDefaultGroups();
+                self.resetView();
             })
             .catch(function (error) {
                 if (error.message === 'CONFLICT') {
                     API.SecurityGroups.updateDefault(record).then(function (newGroup) {
                         self.DefaultGroupStore.push(newGroup);
-                        self.listDefaultGroups();
-                        $('#stackdio_security_group').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
+                        self.resetView();
                     }).catch(function (error) {
                         alerts.showMessage('#error', 'Unable to add security group as a default. Please try again.', true);
                     }).done();
                 }
 
             }).done();
+        };
+
+        self.resetView = function () {
+            $('#new_securitygroup_name').val('');
+            $('#stackdio_security_group').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
+            $('#aws_security_group').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
+            self.listDefaultGroups();
+            self.init({account: self.selectedAccount().id});
         };
 
         self.deleteDefaultSecurityGroup = function (groupId) {
