@@ -90,6 +90,14 @@
                            placeholder="If you select a formula that has default properties, they will be shown here"></textarea>
                 </div>
             </div>
+            
+            <div class="row">
+                <div id="orchestration-error" class="alert alert-danger alert-dismissable hide view">
+                    <button id="clearError" type="button" class="close" aria-hidden="true">&times;</button>
+                    <strong>Error!</strong>
+                    <div id="orchestration-error-content"></div>
+                </div>
+            </div>
 
             <div class="row top-separation bottom-separation">
                 <div class="col-md-12 small-heading">Component Orchestration</div>
@@ -116,6 +124,7 @@
                     </table>
                 </div>
             </div>
+
 
             <div class="row">
                  <div class="col-md-3 col-md-offset-9 pull-right">
