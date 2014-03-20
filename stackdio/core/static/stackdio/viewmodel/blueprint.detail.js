@@ -163,6 +163,7 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                                     // Copy the order property from the formula_component object to 
                                     // the found object for display in the UI
                                     found.order = component.order;
+                                    found.host = host;
                                     BlueprintComponentStore.add(found);
                                 }
                             });

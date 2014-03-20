@@ -52,11 +52,19 @@
                     <table id="blueprint_hosts" class="table table-bordered">
                         <thead>
                             <tr>
-                                <th>Components</th><th>Count</th><th>Size</th><th>Host Pattern</th><th>Access Rules</th><th>Volumes</th><th></th>
+                                <th>Title</th>
+                                <th>Components</th>
+                                <th>Count</th>
+                                <th>Size</th>
+                                <th>Host Pattern</th>
+                                <th>Access Rules</th>
+                                <th>Volumes</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody data-bind="foreach: $root.BlueprintHostStore.collection">
                             <tr>
+                                <td data-bind="text: title"></td>
                                 <td data-bind="html: flat_components"></td>
                                 <td data-bind="text: count"></td>
                                 <td data-bind="text: instance_size.title"></td>
@@ -89,13 +97,15 @@
                     <table id="component_list" class="table table-bordered table-condensed">
                         <thead>
                             <tr>
-                                <th>Title</th>
+                                <th>Host</th>
+                                <th>Component</th>
                                 <th>Path</th>
                                 <th style="width:50px;"></th>
                             </tr>
                         </thead>
                         <tbody data-bind="foreach: BlueprintComponentStore.collection()">
                             <tr>
+                                <td data-bind="with: host"><span data-bind="text: title"></span></td>
                                 <td data-bind="text: title"></td>
                                 <td data-bind="text: sls_path"></td>
                                 <td>
