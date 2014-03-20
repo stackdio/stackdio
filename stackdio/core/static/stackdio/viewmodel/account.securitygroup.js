@@ -2,6 +2,7 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'util/alerts',
     'util/form',
     'store/ProviderTypes',
     'store/Accounts',
@@ -9,7 +10,7 @@ define([
     'store/AccountSecurityGroups',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileStore, AccountSecurityGroupStore, API) {
+function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, ProfileStore, AccountSecurityGroupStore, API) {
     var vm = function () {
         var self = this;
 
@@ -23,6 +24,8 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
         self.accountTitle = ko.observable(null);
         self.saveAction = self.createAccount;
         self.DefaultGroupStore = ko.observableArray();
+        self.stackdioGroupStore = ko.observableArray();
+        self.$galaxy = $galaxy;
 
         self.ProviderTypeStore = ProviderTypeStore;
         self.AccountStore = AccountStore;
@@ -73,6 +76,7 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
             var provider_type = null;
 
             self.DefaultGroupStore.removeAll();
+            self.stackdioGroupStore.removeAll();
             self.AccountSecurityGroupStore.empty();
 
             if (data.hasOwnProperty('account')) {
@@ -90,25 +94,18 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
                         self.AccountSecurityGroupStore.add(thisGroup);
                     }
 
-                    for (group in data.results) {
-                        if (data.results[group].is_default) {
-                            self.DefaultGroupStore.push(data.results[group]);
+                    data.results.forEach(function (group) {
+                        group.display_name = group.description + ' (' + group.name + ')';
+                        self.stackdioGroupStore.push(group);
+
+                        if (group.is_default) {
+                            self.DefaultGroupStore.push(group);
                         }
-                    }
+                    });
 
                     self.listDefaultGroups();
-
-                    // var typeaheadStore = self.AccountSecurityGroupStore.collection().map(function (b) { return b; })
-                    // console.log('typeaheadStore',typeaheadStore);
-
-                    // $('#new_securitygroup_name').typeahead({
-                    //     name: 'new_security_group',
-                    //     local: self.AccountSecurityGroupStore.collection().map(function (b) {return b.name; }),
-                    //     limit: 10
-                    // }).on('typeahead:selected', function (object, selectedItem) {
-                    //     var foundGroup = _.findWhere(self.AccountSecurityGroupStore.collection(), { name: document.getElementById('new_securitygroup_name').value });
-                    //     console.log('foundGroup',foundGroup);
-                    // });
+                }).catch(function (error) {
+                    alerts.showMessage('#error', 'Unable to load security groups for this provider. ' + error.message, false);
                 });
             }
         };
@@ -119,7 +116,7 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
 
         self.capture = function (model, evt) {
             if (evt.charCode === 13) {
-                self.addDefaultSecurityGroup(document.getElementById('new_securitygroup_name').value);
+                self.addNewDefaultSecurityGroup();
                 return false;
             }
             return true;
@@ -140,9 +137,8 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
             record.is_default = true;
             record.description = "";
 
-
             API.SecurityGroups.save(record).then(function (newGroup) {
-                formutils.clearForm('default-securitygroup-form');
+                $('#new_securitygroup_name').val('');
                 self.DefaultGroupStore.push(newGroup);
                 self.listDefaultGroups();
             })
@@ -151,8 +147,8 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
             }).done();
         };
 
-        self.addDefaultSecurityGroup = function (model, evt) {
-            var selectedId = document.getElementById('stackdio_security_group').value;
+        self.addAWSDefaultSecurityGroup = function (model, evt) {
+            var selectedId = document.getElementById('aws_security_group').value;
 
             var selectedGroup = self.AccountSecurityGroupStore.collection().filter(function (group) {
                 return group.id === selectedId;
@@ -165,12 +161,47 @@ function (Q, ko, $galaxy, formutils, ProviderTypeStore, AccountStore, ProfileSto
             record.description = "";
 
             API.SecurityGroups.save(record).then(function (newGroup) {
-                document.getElementById('stackdio_security_group').value = '';
+                $('#aws_security_group').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
                 self.DefaultGroupStore.push(newGroup);
                 self.listDefaultGroups();
             })
             .catch(function (error) {
                 console.error(error);
+            }).done();
+        };
+
+
+        self.addStackdioDefaultSecurityGroup = function (model, evt) {
+            var selectedId = document.getElementById('stackdio_security_group').value;
+
+            var selectedGroup = self.stackdioGroupStore().filter(function (group) {
+                return group.id === parseInt(selectedId, 10);
+            })[0];
+            console.log('selectedGroup',selectedGroup);
+
+            var record = {};
+            record.name = selectedGroup.name;
+            record.cloud_provider = self.selectedAccount().id;
+            record.is_default = true;
+            record.description = "";
+            record.url = selectedGroup.url;
+
+            API.SecurityGroups.save(record).then(function (newGroup) {
+                $('#stackdio_security_group').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
+                self.DefaultGroupStore.push(newGroup);
+                self.listDefaultGroups();
+            })
+            .catch(function (error) {
+                if (error.message === 'CONFLICT') {
+                    API.SecurityGroups.updateDefault(record).then(function (newGroup) {
+                        self.DefaultGroupStore.push(newGroup);
+                        self.listDefaultGroups();
+                        $('#stackdio_security_group').attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
+                    }).catch(function (error) {
+                        alerts.showMessage('#error', 'Unable to add security group as a default. Please try again.', true);
+                    }).done();
+                }
+
             }).done();
         };
 

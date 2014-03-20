@@ -1,71 +1,78 @@
-<div>
-    <div class="view">
-        <ol class="breadcrumb">
-            <li><a href="#" data-bind="click: function () { $galaxy.transport('account.list'); }">Providers</a></li>
-            <li data-bind="text: accountTitle"></li>
-            <li>Security Groups</li>
-        </ol>
+<div class="view">
+    <ol class="breadcrumb">
+        <li><a href="#" data-bind="click: function () { $galaxy.transport('account.list'); }">Providers</a></li>
+        <li data-bind="text: accountTitle"></li>
+        <li>Security Groups</li>
+    </ol>
 
-        <div class="row bottom-separation">
-            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Security Groups</div>
+    <div class="row bottom-separation">
+        <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Security Groups</div>
+    </div>
+
+    <form id="default-securitygroup-form" class="form-horizontal" role="form">
+
+        <div class="form-group">
+            <div class="lead">Option 1. Pick an AWS security group</div>
+            <div class="col-sm-10">
+                <select id="aws_security_group" 
+                        class="form-control"
+                        data-bind="options: AccountSecurityGroupStore.collection(), 
+                                   optionsValue: 'id', 
+                                   optionsText: 'display_name'",
+                        data-size="12"
+                        size="6"
+                        data-container="body"></select> 
+            </div>
+            <div class="col-sm-2">
+                <button class="btn btn-success glyphicon glyphicon-plus" 
+                    data-bind="click: addAWSDefaultSecurityGroup"> Add</button>
+            </div>
         </div>
 
-        <form id="default-securitygroup-form" class="form-horizontal" role="form">
-
-            <div class="form-group">
-                <div class="lead">Option 1. Use an existing group</div>
-                If you previously imported AWS groups, or created your own through stackd.io, you can select one of 
-                those groups that are listed here.
+        <div class="form-group">
+            <div class="lead">Option 2. Pick existing stackd.io security group</div>
+            <div class="col-sm-10">
+                <select id="stackdio_security_group" 
+                        class="form-control"
+                        data-bind="options: $root.stackdioGroupStore, 
+                                   optionsValue: 'id', 
+                                   optionsText: 'display_name'",
+                        data-size="12"
+                        size="6"
+                        data-container="body"></select> 
             </div>
-
-            <div class="form-group">
-                <div class="col-sm-10">
-                    <select id="stackdio_security_group" 
-                            class="form-control"
-                            data-bind="options: AccountSecurityGroupStore.collection(), 
-                                       optionsValue: 'id', 
-                                       optionsText: 'display_name'",
-                            data-size="12"
-                            data-container="body"></select> 
-                </div>
-                <div class="col-sm-2">
-                    <button class="btn btn-success glyphicon glyphicon-plus" 
-                        data-bind="click: addDefaultSecurityGroup"> Add</button>
-                </div>
+            <div class="col-sm-2">
+                <button class="btn btn-success glyphicon glyphicon-plus" 
+                    data-bind="click: addStackdioDefaultSecurityGroup"> Add</button>
             </div>
+        </div>
 
-            <div class="form-group">
-                <div class="lead">Option 2. Create new group</div>
-                If you would like to create a new security group that does not already exist in stackd.io, 
-                simply type in the name for the group here and it will be created.
+        <div class="form-group">
+            <div class="lead">Option 3. Create a new security group</div>
+            <div class="col-sm-10">
+                <input id="new_securitygroup_name" 
+                       type="text"
+                       placeholder="Enter in a new security group label"
+                       class="form-control"
+                       data-bind="event: { keypress: capture }"> 
+
             </div>
-
-            <div class="form-group">
-                <div class="col-sm-10">
-                    <input id="new_securitygroup_name" 
-                           type="text"
-                           placeholder="Enter in a new security group label"
-                           class="form-control"
-                           data-bind="event: { keypress: capture }"> 
-
-                </div>
-                <div class="col-sm-2">
-                    <button class="btn btn-success glyphicon glyphicon-plus" 
-                            data-bind="click: addNewDefaultSecurityGroup"> Add</button>
-                </div>
+            <div class="col-sm-2">
+                <button class="btn btn-success glyphicon glyphicon-plus" 
+                        data-bind="click: addNewDefaultSecurityGroup"> Add</button>
             </div>
+        </div>
 
-            <div class="form-group">
-                <div class="lead">Assigned Default Groups</div>
-                <div>To remove any default security groups assigned to this account, click on the label below.</div>
-                <div style="margin: 10px 0 0 0;" id="default_group_list"></div>
-            </div>
+        <div class="form-group">
+            <div class="lead">Assigned Default Groups</div>
+            <div>To remove any default security groups assigned to this account, click on the label below.</div>
+            <div style="margin: 10px 0 0 0;" id="default_group_list"></div>
+        </div>
 
-            <div class="row">
-                 <div class="col-md-2 col-md-offset-10 pull-right">
-                    <button class="btn btn-primary" data-bind="click: cancelChanges">Done</button>
-                </div>
+        <div class="row">
+             <div class="col-md-2 col-md-offset-10 pull-right">
+                <button class="btn btn-primary" data-bind="click: cancelChanges">Done</button>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
