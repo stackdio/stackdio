@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'util/galaxy', 'util/alerts', 'store/Blueprints', 'store/Stacks', 'api/api'],
-function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
+define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'store/Blueprints', 'store/Stacks', 'api/api'],
+function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -88,21 +88,25 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
              *  then just PUT to the API with the appropriate action.
              */
             if (action !== 'Delete') {
-                $.ajax({
-                    url: stack.action,
-                    type: 'POST',
-                    data: data,
-                    headers: {
-                        "X-CSRFToken": stackdio.settings.csrftoken,
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    success: function (response) {
-                        alerts.showMessage('#success', 'Stack ' + action.toLowerCase() + ' has been initiated.', true);
-                        StackStore.populate(true);
-                    },
-                    error: function (request, status, error) {
-                        alerts.showMessage('#error', 'Unable to perform ' + action.toLowerCase() + ' action on that stack. ' + JSON.parse(request.responseText).detail, true, 7000);
+                bootbox.confirm("Please confirm that you want to perform this action on the stack.", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: stack.action,
+                            type: 'POST',
+                            data: data,
+                            headers: {
+                                "X-CSRFToken": stackdio.settings.csrftoken,
+                                "Accept": "application/json",
+                                "Content-Type": "application/json"
+                            },
+                            success: function (response) {
+                                alerts.showMessage('#success', 'Stack ' + action.toLowerCase() + ' has been initiated.', true);
+                                StackStore.populate(true);
+                            },
+                            error: function (request, status, error) {
+                                alerts.showMessage('#error', 'Unable to perform ' + action.toLowerCase() + ' action on that stack. ' + JSON.parse(request.responseText).detail, true, 7000);
+                            }
+                        });
                     }
                 });
 
@@ -111,20 +115,24 @@ function (Q, ko, $galaxy, alerts, BlueprintStore, StackStore, API) {
              *  EBS volumes, and deletes stack/host details from the stackd.io database.
              */
             } else {
-                $.ajax({
-                    url: stack.url,
-                    type: 'DELETE',
-                    headers: {
-                        "X-CSRFToken": stackdio.settings.csrftoken,
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    success: function (response) {
-                        alerts.showMessage('#success', 'Stack is currently being torn down and will be deleted once all hosts are terminated.', true, 5000);
-                        StackStore.populate(true);
-                    },
-                    error: function (request, status, error) {
-                        alerts.showMessage('#error', 'Unable to delete this stack.', true, 2000);
+                bootbox.confirm("Please confirm that you want to delete this stack. Be advised that this is a completely destructive act that will stop, terminate, and delete all hosts, as well as the definition of this stack.", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: stack.url,
+                            type: 'DELETE',
+                            headers: {
+                                "X-CSRFToken": stackdio.settings.csrftoken,
+                                "Accept": "application/json",
+                                "Content-Type": "application/json"
+                            },
+                            success: function (response) {
+                                alerts.showMessage('#success', 'Stack is currently being torn down and will be deleted once all hosts are terminated.', true, 5000);
+                                StackStore.populate(true);
+                            },
+                            error: function (request, status, error) {
+                                alerts.showMessage('#error', 'Unable to delete this stack.', true, 2000);
+                            }
+                        });
                     }
                 });
             }

@@ -229,6 +229,22 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
             $('#public_blueprint').prop('checked', false);
         };
 
+        self.checkComponentOrdering = function (components) {
+            var ordered = true;
+            components.reduce(function (prev, curr) {
+                if (curr.order !== prev.order + 1 && curr.order !== prev.order) {
+                    ordered = false;
+                }
+                return curr;
+            });
+
+            if (!ordered) {
+                alerts.showMessage('#orchestration-error', 'You cannot skip numbers in your component orchestration.', true, 3000);
+            }
+
+            return ordered;
+        };
+
         self.createBlueprint = function (model, evt) {
             var hosts = BlueprintHostStore.collection(), strippedHosts = [], properties;
             var orderedComponents = [];
@@ -246,16 +262,7 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
                 orderedComponents[orderedComponents.length] = component;
             }
 
-            var notOrdered = false;
-            orderedComponents.reduce(function (prev, curr) {
-                if (curr.order !== prev.order + 1 && curr.order !== prev.order) {
-                    notOrdered = true;
-                }
-                return curr;
-            })
-
-            if (notOrdered) {
-                alerts.showMessage('#orchestration-error', 'You cannot skip numbers in your component orchestration.', true, 3000);
+            if (!self.checkComponentOrdering(orderedComponents)) {
                 return;
             }
 
@@ -330,16 +337,7 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
                 orderedComponents[orderedComponents.length] = component;
             }
 
-            var notOrdered = false;
-            orderedComponents.reduce(function (prev, curr) {
-                if (curr.order !== prev.order + 1 && curr.order !== prev.order) {
-                    notOrdered = true;
-                }
-                return curr;
-            })
-
-            if (notOrdered) {
-                alerts.showMessage('#orchestration-error', 'You cannot skip numbers in your component orchestration.', true, 3000);
+            if (!self.checkComponentOrdering(orderedComponents)) {
                 return;
             }
 
