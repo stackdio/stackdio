@@ -3,12 +3,13 @@ define([
     'knockout',
     'bootbox',
     'util/galaxy',
+    'util/alerts',
     'store/ProviderTypes',
     'store/Accounts',
     'store/Profiles',
     'api/api'
 ],
-function (Q, ko, bootbox, $galaxy, ProviderTypeStore, AccountStore, ProfileStore, API) {
+function (Q, ko, bootbox, $galaxy, alerts, ProviderTypeStore, AccountStore, ProfileStore, API) {
     var vm = function () {
         var self = this;
 
@@ -84,7 +85,7 @@ function (Q, ko, bootbox, $galaxy, ProviderTypeStore, AccountStore, ProfileStore
                         self.init();
                     })
                     .catch(function (error) {
-                        self.showError(error);
+                        alerts.showMessage('#error', error, true);
                     });
                 }
             });
