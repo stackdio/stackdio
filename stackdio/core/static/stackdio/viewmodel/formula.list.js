@@ -46,10 +46,6 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
             FormulaStore.populate(true).then(function () {}).catch(function (err) { console.error(err); } ).done();
         });
 
-        $galaxy.network.subscribe('formula.open', function (data) {
-            console.log('data',data);
-        });
-
 
         /*
          *  ==================================================================================
@@ -101,10 +97,6 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
             }
         };
 
-        self.showDetails = function (formula) {
-            console.log(formula);
-        };
-
         self.delete = function (formula) {
             bootbox.confirm("Please confirm that you want to delete this formula.", function (result) {
                 if (result) {
@@ -124,6 +116,15 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
 
         self.showImportForm = function () {
             $galaxy.transport('formula.detail');
+        };
+
+        self.showFormulaDetail = function (formula) {
+            $galaxy.transport({
+                location: 'formula.detail',
+                payload: {
+                    formula: formula.id
+                }
+            });
         };
     };
     return new vm();
