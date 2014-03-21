@@ -26,14 +26,7 @@
             </thead>
             <tbody data-bind="foreach: FormulaStore.collection()">
                 <tr data-bind="attr: { class: ($data.public) ? 'success' : '' }">
-                    <td>
-                        <a href='#' 
-                           data-bind="bootstrapPopover: {
-                                        content: $root.popoverBuilder($data),
-                                        title: 'Formula Components'
-                                      },
-                                      text: title"></a>
-                    </td>
+                    <td><a href="#" data-bind="text: title, click: $root.showFormulaDetail"></a></td>
                     <td data-bind="text: description"></td>
                     <td data-bind="text: status_detail"></td>
                     <td>
