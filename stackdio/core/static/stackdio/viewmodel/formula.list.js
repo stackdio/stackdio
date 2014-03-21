@@ -1,12 +1,13 @@
 define([
     'q', 
     'knockout',
+    'bootbox',
     'util/galaxy',
     'util/alerts',
     'store/Formulas',
     'api/api'
 ],
-function (Q, ko, $galaxy, alerts, FormulaStore, API) {
+function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
     var vm = function () {
         var self = this;
 
@@ -105,12 +106,16 @@ function (Q, ko, $galaxy, alerts, FormulaStore, API) {
         };
 
         self.delete = function (formula) {
-            API.Formulas.delete(formula).then(function () {
-                alerts.showMessage('#success', 'Formula successfully deleted.', true);
-                return FormulaStore.populate(true);
-            }).catch(function (error) {
-                alerts.showMessage('#error', 'There was an error while importing your formula. ' + error, true, 4000);
-            }).done();
+            bootbox.confirm("Please confirm that you want to delete this formula.", function (result) {
+                if (result) {
+                    API.Formulas.delete(formula).then(function () {
+                        alerts.showMessage('#success', 'Formula successfully deleted.', true);
+                        return FormulaStore.populate(true);
+                    }).catch(function (error) {
+                        alerts.showMessage('#error', 'There was an error while importing your formula. ' + error, true, 4000);
+                    }).done();
+                }
+            });
         };
 
         self.loadFormula = function () {

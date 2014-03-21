@@ -1,14 +1,16 @@
 define([
     'q', 
     'knockout',
+    'bootbox',
     'util/galaxy',
+    'util/alerts',
     'store/ProviderTypes',
     'store/Accounts',
     'store/Profiles',
     'store/Snapshots',
     'api/api'
 ],
-function (Q, ko, $galaxy, ProviderTypeStore, AccountStore, ProfileStore, SnapshotStore, API) {
+function (Q, ko, bootbox, $galaxy, alerts, ProviderTypeStore, AccountStore, ProfileStore, SnapshotStore, API) {
     var vm = function () {
         var self = this;
 
@@ -118,12 +120,16 @@ function (Q, ko, $galaxy, ProviderTypeStore, AccountStore, ProfileStore, Snapsho
         };
 
         self.removeSnapshot = function (snapshot) {
-            API.Snapshots.delete(snapshot).then(function () {
-                SnapshotStore.removeById(snapshot.id);
-                self.init();
-            })
-            .catch(function (error) {
-                $("#alert-error").show();
+            bootbox.confirm("Please confirm that you want to delete this snapshot.", function (result) {
+                if (result) {
+                    API.Snapshots.delete(snapshot).then(function () {
+                        SnapshotStore.removeById(snapshot.id);
+                        self.init();
+                    })
+                    .catch(function (error) {
+                        alerts.showMessage('#error', 'Unable to delete this snapshot. ' + error, true);
+                    });
+                }
             });
         };
 

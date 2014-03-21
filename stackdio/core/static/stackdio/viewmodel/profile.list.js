@@ -1,12 +1,13 @@
 define([
     'q', 
     'knockout',
+    'bootbox',
     'util/galaxy',
     'store/Accounts',
     'store/Profiles',
     'api/api'
 ],
-function (Q, ko, $galaxy, AccountStore, ProfileStore, API) {
+function (Q, ko, bootbox, $galaxy, AccountStore, ProfileStore, API) {
     var vm = function () {
         var self = this;
 
@@ -95,12 +96,16 @@ function (Q, ko, $galaxy, AccountStore, ProfileStore, API) {
         };
 
         self.deleteProfile = function (profile) {
-            API.Profiles.delete(profile).then(function () {
-                ProfileStore.removeById(profile.id);
-                self.init();
-            })
-            .catch(function (error) {
-                self.showError(error);
+            bootbox.confirm("Please confirm that you want to delete this profile.", function (result) {
+                if (result) {
+                    API.Profiles.delete(profile).then(function () {
+                        ProfileStore.removeById(profile.id);
+                        self.init();
+                    })
+                    .catch(function (error) {
+                        self.showError(error);
+                    });
+                }
             });
         };
 
