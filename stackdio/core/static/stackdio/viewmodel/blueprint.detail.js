@@ -83,11 +83,6 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
             });
         });
 
-        $galaxy.network.subscribe('blueprint.open', function (data) {
-            console.log('data',data);
-        });
-
-
 
         /*
          *  ==================================================================================
@@ -231,8 +226,11 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
 
         self.checkComponentOrdering = function (components) {
             var ordered = true;
-            components.reduce(function (prev, curr) {
-                if (curr.order !== prev.order + 1 && curr.order !== prev.order) {
+
+            components.map(function (component) {
+                return component.order;
+            }).sort().reduce(function (prev, curr) {
+                if (curr !== prev + 1 && curr !== prev) {
                     ordered = false;
                 }
                 return curr;
