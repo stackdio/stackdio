@@ -96,7 +96,10 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
 
                     data.results.forEach(function (group) {
                         group.display_name = group.name + ' (' + group.description + ')';
-                        self.stackdioGroupStore.push(group);
+
+                        if (!group.is_managed) {
+                            self.stackdioGroupStore.push(group);
+                        }
 
                         if (group.is_default) {
                             self.DefaultGroupStore.push(group);

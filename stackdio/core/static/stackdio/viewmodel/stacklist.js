@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'moment', 'util/galaxy', 'store/Stacks', 'api/api'],
-function (Q, ko, moment, $galaxy, StackStore, API) {
+define(['q', 'knockout', 'bootbox', 'moment', 'util/galaxy', 'store/Stacks', 'api/api'],
+function (Q, ko, bootbox, moment, $galaxy, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -83,7 +83,7 @@ function (Q, ko, moment, $galaxy, StackStore, API) {
              */
             if (action !== 'Delete') {
                 $.ajax({
-                    url: stack.url,
+                    url: stack.action,
                     type: 'PUT',
                     data: data,
                     headers: {
@@ -101,16 +101,20 @@ function (Q, ko, moment, $galaxy, StackStore, API) {
              *  EBS volumes, and deletes stack/host details from the stackd.io database.
              */
             } else {
-                $.ajax({
-                    url: stack.url,
-                    type: 'DELETE',
-                    headers: {
-                        "X-CSRFToken": stackdio.settings.csrftoken,
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    success: function (response) {
-                        StackStore.populate();
+                bootbox.confirm("Please confirm that you want to delete this stack. Be advised that this is a completely destructive act that will stop, terminate, and delete all hosts, as well as the definition of this stack.", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: stack.url,
+                            type: 'DELETE',
+                            headers: {
+                                "X-CSRFToken": stackdio.settings.csrftoken,
+                                "Accept": "application/json",
+                                "Content-Type": "application/json"
+                            },
+                            success: function (response) {
+                                StackStore.populate();
+                            }
+                        });
                     }
                 });
             }

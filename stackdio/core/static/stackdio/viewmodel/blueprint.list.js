@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'util/galaxy', 'api/api', 'store/BlueprintComponents', 'store/BlueprintHosts', 'store/Blueprints'],
-function (Q, ko, $galaxy, API, BlueprintComponentStore, BlueprintHostStore, BlueprintStore) {
+define(['q', 'knockout', 'bootbox', 'util/galaxy', 'api/api', 'store/BlueprintComponents', 'store/BlueprintHosts', 'store/Blueprints'],
+function (Q, ko, bootbox, $galaxy, API, BlueprintComponentStore, BlueprintHostStore, BlueprintStore) {
     var vm = function () {
         /*
          *  ==================================================================================
@@ -54,10 +54,15 @@ function (Q, ko, $galaxy, API, BlueprintComponentStore, BlueprintHostStore, Blue
 
 
         self.deleteBlueprint = function (blueprint) {
-            API.Blueprints.delete(blueprint).then(function () {
-                BlueprintStore.remove(blueprint);
-            }).catch(function (error) {
-                self.showMessage('#error', error, true, 3000);
+            bootbox.confirm("Please confirm that you want to delete this blueprint", function (result) {
+                if (result) {
+                    API.Blueprints.delete(blueprint).then(function () {
+                        BlueprintStore.remove(blueprint);
+                    }).catch(function (error) {
+                        self.showMessage('#error', error, true, 3000);
+                    });
+
+                }
             });
         };
 

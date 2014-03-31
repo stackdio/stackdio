@@ -1,13 +1,15 @@
 define([
     'q', 
     'knockout',
+    'bootbox',
     'util/galaxy',
+    'util/alerts',
     'store/ProviderTypes',
     'store/Accounts',
     'store/Profiles',
     'api/api'
 ],
-function (Q, ko, $galaxy, ProviderTypeStore, AccountStore, ProfileStore, API) {
+function (Q, ko, bootbox, $galaxy, alerts, ProviderTypeStore, AccountStore, ProfileStore, API) {
     var vm = function () {
         var self = this;
 
@@ -76,12 +78,16 @@ function (Q, ko, $galaxy, ProviderTypeStore, AccountStore, ProfileStore, API) {
         };
 
         self.deleteAccount = function (account) {
-            API.Accounts.delete(account).then(function () {
-                AccountStore.removeById(account.id);
-                self.init();
-            })
-            .catch(function (error) {
-                self.showError(error);
+            bootbox.confirm("Please confirm that you want to delete this provider.", function (result) {
+                if (result) {
+                    API.Accounts.delete(account).then(function () {
+                        AccountStore.removeById(account.id);
+                        self.init();
+                    })
+                    .catch(function (error) {
+                        alerts.showMessage('#error', error, true);
+                    });
+                }
             });
         };
 

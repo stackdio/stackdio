@@ -20,7 +20,7 @@
           <div class="row">
             <div class="messages span6 offset3">
               {% for message in messages %}
-                <div{% if message.tags %} class="alert alert-{{ message.tags }}"{% endif %}>
+                <div{% if message.tags %} class="alert alert-{% if message.tags == "error" %}danger{%else%}success{% endif %}"{% endif %}>
                   <a class="close" data-dismiss="alert" href="#">&times;</a>
                   {{ message }}
                 </div>

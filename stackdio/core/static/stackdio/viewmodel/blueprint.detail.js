@@ -2,6 +2,7 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'util/alerts',
     'util/form',
     'store/HostVolumes',
     'store/Snapshots',
@@ -17,7 +18,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, 
+function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, HostRuleStore, AccountStore, ProfileStore, InstanceSizeStore, 
           BlueprintStore, BlueprintHostStore, BlueprintComponentStore, FormulaStore, FormulaComponentStore, API, models) {
     var vm = function () {
         var self = this;
@@ -81,11 +82,6 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 self.init(data);
             });
         });
-
-        $galaxy.network.subscribe('blueprint.open', function (data) {
-            console.log('data',data);
-        });
-
 
 
         /*
@@ -163,6 +159,7 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                                     // Copy the order property from the formula_component object to 
                                     // the found object for display in the UI
                                     found.order = component.order;
+                                    found.host = host;
                                     BlueprintComponentStore.add(found);
                                 }
                             });
@@ -227,6 +224,25 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
             $('#public_blueprint').prop('checked', false);
         };
 
+        self.checkComponentOrdering = function (components) {
+            var ordered = true;
+
+            components.map(function (component) {
+                return component.order;
+            }).sort().reduce(function (prev, curr) {
+                if (curr !== prev + 1 && curr !== prev) {
+                    ordered = false;
+                }
+                return curr;
+            });
+
+            if (!ordered) {
+                alerts.showMessage('#orchestration-error', 'You cannot skip numbers in your component orchestration.', true, 3000);
+            }
+
+            return ordered;
+        };
+
         self.createBlueprint = function (model, evt) {
             var hosts = BlueprintHostStore.collection(), strippedHosts = [], properties;
             var orderedComponents = [];
@@ -242,6 +258,10 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 component.id = parseInt(fields[i].id.split('_')[2], 10);
                 component.order = parseInt($('#' + fields[i].id).val(), 10);
                 orderedComponents[orderedComponents.length] = component;
+            }
+
+            if (!self.checkComponentOrdering(orderedComponents)) {
+                return;
             }
 
             /*
@@ -313,6 +333,10 @@ function (Q, ko, $galaxy, formutils, HostVolumeStore, SnapshotStore, HostRuleSto
                 component.id = parseInt(fields[i].id.split('_')[2], 10);
                 component.order = parseInt($('#' + fields[i].id).val(), 10);
                 orderedComponents[orderedComponents.length] = component;
+            }
+
+            if (!self.checkComponentOrdering(orderedComponents)) {
+                return;
             }
 
             /*

@@ -4,6 +4,7 @@ requirejs.config({
         'bootstrap': 'bower_components/bootstrap/dist/js/bootstrap.min',
         'bootstrap-select': 'bower_components/bootstrap-select/bootstrap-select.min',
         'bootstrap-typeahead': 'bower_components/typeahead.js/dist/typeahead.min',
+        'bootbox': 'bower_components/bootbox/bootbox',
         'knockout': 'bower_components/knockout.js/knockout',
         'q': 'bower_components/q/q.min',
         'underscore': 'bower_components/underscore/underscore',
@@ -14,6 +15,7 @@ requirejs.config({
     shim: {
         'bootstrap': ['jquery'],
         'bootstrap-select': ['bootstrap'],
+        'bootbox': ['bootstrap'],
         'bootstrap-typeahead': ['bootstrap']
     }
 });

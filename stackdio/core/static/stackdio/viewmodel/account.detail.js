@@ -145,7 +145,12 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
 
             API.Accounts.save(account).then(function (newAccount) {
                 AccountStore.add(newAccount);
-                $galaxy.transport('account.securitygroup');
+                $galaxy.transport({
+                    location: 'account.securitygroup',
+                    payload: {
+                        account: newAccount.id
+                    }
+                });
 
                 alerts.showMessage('#success', 'Provider account successfully created. You are strongly urged to specify at least one default security group for this provider that opens ports for SSH and Salt so that hosts can successfully be provisioned.', false);
             });
