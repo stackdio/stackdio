@@ -20,7 +20,7 @@ WSGIPythonPath {{ stackdio_root }}:{{ site_packages_root }}
 
     LogLevel warn
     ErrorLog {{ storage_root }}/var/log/httpd/error_log
-    CustomLog {{ storage_root }}/var/log/httpd/access_log
+    CustomLog {{ storage_root }}/var/log/httpd/access_log common
 
     <Location "/static/">
         SetHandler none
