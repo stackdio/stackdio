@@ -7,8 +7,10 @@
 # command `stackdio` will be available.
 
 import argparse
-import readline  # NOQA
 import sys
+
+if sys.stdout.isatty():
+    import readline  # NOQA
 
 from . import commands
 

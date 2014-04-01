@@ -28,7 +28,7 @@ salt_bootstrap_args: {{ salt_bootstrap_args }}
 # This should be a unique and unpredictable value that is 
 # used by Django for cryptographic signing. For more info,
 # see the Django settings docs.
-django_secret_key: {{ django_secret_key }}
+django_secret_key: "{{ django_secret_key }}"
 
 ##
 # The DSN for the database stackdio will use. The host

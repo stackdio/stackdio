@@ -488,6 +488,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         result = {}
         for group in groups:
+            # skip VPC security groups for now
+            # FIXME: We will eventually need to support VPC and Classic
+            if group.vpc_id:
+                continue
             rules = []
             for rule in group.rules:
                 for grant in rule.grants:
