@@ -85,6 +85,16 @@ stackdio manage.py syncdb --noinput
 stackdio manage.py migrate
 ```
 
+### Create a stackd.io admin user
+
+> **NOTE**: stackd.io can also integrate with an existing LDAP server. See our [LDAP guide](ldap_guide.md) for more information on configuring stackd.io to use your existing LDAP server. If you choose to go the LDAP route, you can skip this entire section because users who successfully authenticate via LDAP will automatically be created in stackd.io.
+
+```bash
+stackdio manage.py createsuperuser
+
+# and follow prompts...
+```
+
 # stackd.io operations
 
 ### Start the development server
@@ -92,7 +102,7 @@ stackdio manage.py migrate
 For the quick start, we're going to run with Django's built-in web server. In production, you'll definitely want to consider something more appropriate like Apache or Nginx. See [Django's WSGI deployment documentation](https://docs.djangoproject.com/en/1.5/howto/deployment/wsgi/) or check out our [stackd.io webserver guide](webserver_guide.md) for quickly getting stackd.io running behind Apache2 or Nginx.
 
 ```bash
-stackdio manage.py runserver
+stackdio manage.py runserver 0.0.0.0:8000
 ```
 
 This will run the Django development server in the foreground, meaning you won't be able to do anything else in your current shell while it's running. You will need to either use something like `nohup` to put it in the background or open a new shell (remember to use the `workon` command to activate your virtualenv!)
@@ -100,10 +110,8 @@ This will run the Django development server in the foreground, meaning you won't
 To use nohup, you can do:
 
 ```bash
-nohup stackdio manage.py runserver &> webserver.nohup.out &
+nohup stackdio manage.py runserver 0.0.0.0:8000 &> webserver.nohup.out &
 ```
-
-By default, the server will bind to the local socket on port 8000 and only the machine you're running it on will have access. If instead you would like to enable access to outside users you can use `stackdio manage.py runserver 0.0.0.0:8000`. See the runserver docs for more information: https://docs.djangoproject.com/en/1.5/ref/django-admin/#runserver-port-or-address-port
 
 ### Start rabbitmq and celery
 
@@ -119,17 +127,10 @@ stackdio manage.py celery worker -ldebug -c1
 
 Like the Django development server, Celery will also run in the foreground and steal your shell. If you want to run celery in the background, use nohup like above or consider using something better like supervisord. See [Celery's daemonizing documentation](http://docs.celeryproject.org/en/3.0/tutorials/daemonizing.html) for more information.
 
-### Create a stackd.io admin user
 
-> **NOTE**: stackd.io can also integrate with an existing LDAP server. See our [LDAP guide](ldap_guide.md) for more information on configuring stackd.io to use your existing LDAP server. If you choose to go the LDAP route, you can skip this entire section because users who successfully authenticate via LDAP will automatically be created in stackd.io.
+### Creating additional users
 
-If you point your browser to http://localhost:8000, you should be presented with the stackd.io login page. You won't have any users to authenticate with, so let's create an admin user now and then take advantage of Django's admin interface to create non-admin users.
-
-```bash
-stackdio manage.py createsuperuser
-```
-
-Now, point your browser to http://hostname:8000/__private/admin and use the username and password for the super user you just created. You should be presented with the Django admin interface. To create additional users, follow the steps below.
+The superuser we created earlier will give us admin access to stackd.io, however, you probably want at least one non-superuser. Point your browser to http://hostname:8000/__private/admin and use the username and password for the super user you created earlier. You should be presented with the Django admin interface. To create additional users, follow the steps below.
 
 * click Users
 * click Add user in the top right of the page
