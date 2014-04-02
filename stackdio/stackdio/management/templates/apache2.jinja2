@@ -17,9 +17,9 @@ Listen 443
     SSLCertificateFile /tmp/stackdio.crt
     SSLCertificateKeyFile /tmp/stackdio.key
 {% else %}
-# By default, serve on port 8000. Modify these to suit your needs.
-Listen 8000
-<VirtualHost *:8000>
+# By default, serve on port 80. Modify these to suit your needs.
+Listen 80
+<VirtualHost *:80>
 {% endif %}
     # Modify your server administrator email address and server name
     ServerAdmin admin@example.com
