@@ -11,7 +11,7 @@ Both Apache and Nginx installs need a place to store logs and some static files 
 ```bash
 # Create the log directory that we'll have Apache or Nginx log to
 
-mkdir -p /home/stackdio/.stackdio/var/log/web
+mkdir -p ~/.stackdio/var/log/web
 
 # And tell Django to collect its static files into a common directory for the webserver to serve up
 stackdio manage.py collectstatic --noinput
@@ -31,6 +31,12 @@ Followed by having stackd.io generate a simple Apache configuration file for ser
 
 ```bash
 stackdio config apache | sudo tee /etc/httpd/conf.d/stackdio.conf > /dev/null
+```
+
+Fix a permissions problem with the user's home directory not having execute permissions. This is needed because of httpd v2.2 needing directory execute permissions from the web directory up to the root directory.
+
+```bash
+chmod +x ~/
 ```
 
 > NOTE: You may pass --with-ssl to generate boilerplate for serving over SSL, but you will need to add your certs and point to them in the configuration file.
