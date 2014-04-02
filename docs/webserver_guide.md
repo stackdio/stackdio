@@ -6,6 +6,19 @@ So, with that said, there are two paths to take: Apache or Nginx. We recommend u
 
 # Apache
 
+### Common Steps
+
+Both CentOS and Ubuntu steps below need log directories and static files available:
+
+```bash
+# Create the log directory that Apache needs:
+
+mkdir -p /home/stackdio/.stackdio/var/log/httpd
+
+# And tell Django to collect its static files into a common directory for Apache
+stackdio manage.py collectstatic --noinput
+```
+
 ### CentOS Installation
 
 Install required packages:
