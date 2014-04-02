@@ -44,7 +44,11 @@ stackdio config apache | sudo tee /etc/apache2/sites-enabled/stackdio.conf > /de
 
 > NOTE: You may pass --with-ssl to generate boilerplate for serving over SSL, but you will need to add your certs and point to them in the configuration file.
 
-And that's it...let's start the server and then point your browser to the hostname on port 80 (use https if you decided to serve over SSL.)
+and finally, start the server:
+
+```bash
+sudo service apache2 start
+```
 
 # Nginx
 
