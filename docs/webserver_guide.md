@@ -38,7 +38,7 @@ stackdio config apache | sudo tee /etc/httpd/conf.d/stackdio.conf > /dev/null
 And that's it...let's start the server and then point your browser to the hostname on port 80 (use https if you decided to serve over SSL.)
 
 ```bash
-sudo service httpd start
+sudo service httpd restart
 ```
 
 ### Ubuntu Installation
@@ -60,7 +60,7 @@ stackdio config apache | sudo tee /etc/apache2/sites-enabled/stackdio.conf > /de
 and finally, start the server:
 
 ```bash
-sudo service apache2 start
+sudo service apache2 restart
 ```
 
 # Nginx
