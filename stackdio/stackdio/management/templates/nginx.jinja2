@@ -19,8 +19,8 @@ server {
     access_log  {{ storage_root }}/var/log/web/access.log;
    
     # static content - assuming standard installation location
-    location /static/ {
-        root {{ stackdio_root }}/static;
+    location /static {
+        root {{ stackdio_root }};
     }
 
     # gunicorn 
