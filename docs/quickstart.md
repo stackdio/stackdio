@@ -27,6 +27,10 @@ sudo su - stackdio
 
 # OS-specifc preparation
 
+> :warning:       **WARNING**       :warning:
+> 
+> You must follow the steps in one of the following prep guides for the OS you're installing stackd.io in.
+
 Follow one of the individual guides below to prepare your particular environment for stackd.io. Once you finish, come back here and continue on.
 
 * [Preparing CentOS for stackd.io installation](centos_prep.md)
