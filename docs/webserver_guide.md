@@ -82,6 +82,9 @@ sudo yum install nginx
 
 stackdio config nginx | sudo tee /etc/nginx/conf.d/stackdio.conf > /dev/null
 
+# rename the default server configuration
+sudo mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
+
 sudo service nginx restart
 ```
 
@@ -91,6 +94,9 @@ sudo service nginx restart
 sudo apt-get install nginx
 
 stackdio config nginx | sudo tee /etc/nginx/sites-enabled/stackdio.conf > /dev/null
+
+# remove the default configuration symlink
+sudo rm /etc/nginx/sites-enabled/default
 
 sudo service nginx restart
 ```
