@@ -71,6 +71,26 @@ sudo service apache2 restart
 
 # Nginx
 
+In our configuration, Nginx will be used to serve static files and as a proxy to send requests down to the Django application running via gunicorn on port 8000. The configuration we'll generate is useful to use a quick start mechanism to get you up and running behind Nginx/gunicorn very quickly.
+
 ### CentOS Installation
 
+Install required packaged, generate and write configuration file, and restart server:
+
+```bash
+sudo yum install nginx
+
+stackdio config nginx | sudo tee /etc/nginx/conf.d/stackdio.conf > /dev/null
+
+sudo service nginx restart
+```
+
 ### Ubuntu Installation
+
+```bash
+sudo apt-get install nginx
+
+stackdio config nginx | sudo tee /etc/nginx/sites-enabled/stackdio.conf > /dev/null
+
+sudo service nginx restart
+```
