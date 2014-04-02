@@ -8,10 +8,10 @@ So, with that said, there are two paths to take: Apache or Nginx. We recommend u
 
 ### CentOS Installation
 
-First, let's install the required packages. Only the httpd and mod\_wsgi packages are needed, but if you want to run behind SSL (which you should!), then you also need to install mod\_ssl. For the purposes of this walkthrough we'll forget about it -- but come back and do it later :)
+Install required packages:
 
 ```bash
-sudo yum install httpd mod_wsgi
+sudo yum install httpd mod_wsgi mod_ssl
 ```
 
 Followed by having stackd.io generate a simple Apache configuration file for serving up the Django-based API and static assets and store the output into the appropriate location.
@@ -29,6 +29,22 @@ sudo service httpd start
 ```
 
 ### Ubuntu Installation
+
+Install required packages:
+
+```bash
+sudo apt-get install apache2 libapache2-mod-wsgi
+```
+
+and just like the CentOS instructions, generate and store the Apache configuration file into the correct location:
+
+```bash
+stackdio config apache | sudo tee /etc/apache2/sites-enabled/stackdio.conf > /dev/null
+```
+
+> NOTE: You may pass --with-ssl to generate boilerplate for serving over SSL, but you will need to add your certs and point to them in the configuration file.
+
+And that's it...let's start the server and then point your browser to the hostname on port 80 (use https if you decided to serve over SSL.)
 
 # Nginx
 
