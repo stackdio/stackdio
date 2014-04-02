@@ -4,20 +4,20 @@ This guide will help you quickly get the web portion of stackd.io running behind
 
 So, with that said, there are two paths to take: Apache or Nginx. We recommend using whichever you feel more comfortable with. Some of us here like Apache, while others like Nginx. Your mileage may vary :)
 
-# Apache
+# Common Steps
 
-### Common Steps
-
-Both CentOS and Ubuntu steps below need log directories and static files available:
+Both Apache and Nginx installs need a place to store logs and some static files to serve up. These two steps are common to both and should be run before proceeding with configuring the web server.
 
 ```bash
-# Create the log directory that Apache needs:
+# Create the log directory that we'll have Apache or Nginx log to
 
-mkdir -p /home/stackdio/.stackdio/var/log/httpd
+mkdir -p /home/stackdio/.stackdio/var/log/web
 
-# And tell Django to collect its static files into a common directory for Apache
+# And tell Django to collect its static files into a common directory for the webserver to serve up
 stackdio manage.py collectstatic --noinput
 ```
+
+# Apache
 
 ### CentOS Installation
 
