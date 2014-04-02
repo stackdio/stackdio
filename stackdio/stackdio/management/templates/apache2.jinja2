@@ -3,38 +3,48 @@
 ##
 
 # Global mod_wsgi configuration
-WSGISocketPrefix {{ storage_root }}/var/run/wsgi
 WSGIPythonPath {{ stackdio_root }}:{{ site_packages_root }}
 
 {% if with_ssl %}
+# Enable listening on port 443 and set up basic SSL. Note that mod_ssl
+# must be installed and available.
+Listen 443
 <VirtualHost *:443>
     SSLEngine On
     SSLCertificateFile /tmp/stackdio.crt
     SSLCertificateKeyFile /tmp/stackdio.key
 {% else %}
-<VirtualHost *:80>
+# By default, serve on port 8000. Modify these to suit your needs.
+Listen 8000
+<VirtualHost *:8000>
 {% endif %}
+    # Modify your server administrator email address and server name
     ServerAdmin admin@example.com
     ServerName stackdio.example.com
+
     DocumentRoot {{ stackdio_root }}
 
+    # NOTE: The following directories must exist.
     LogLevel warn
     ErrorLog {{ storage_root }}/var/log/httpd/error_log
     CustomLog {{ storage_root }}/var/log/httpd/access_log common
 
-    <Location "/static/">
-        SetHandler none
-    </Location>
-
     ## Non-Django directories
     Alias /static {{ stackdio_root }}/static
     <Directory "{{ stackdio_root }}/static">
-        Order allow,deny
-        Allow from all
         Options -Indexes
+        Order deny,allow
+        Require all granted
     </Directory>
 
     # Django and mod_wsgi settings
+    <Directory {{ stackdio_root }}/stackdio>
+        <Files wsgi.py>
+            Order deny,allow
+            Require all granted
+        </Files>
+    </Directory>
+
     WSGIDaemonProcess {{ user }} user={{ user }} group={{ user }} processes=2 python-path={{ stackdio_root }}:{{ site_packages_root }}
     WSGIProcessGroup {{ user }}
     WSGIScriptAlias / {{ stackdio_root }}/stackdio/wsgi.py
