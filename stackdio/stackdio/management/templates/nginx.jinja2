@@ -2,22 +2,15 @@
 # Example stackd.io configuration for nginx
 ##
 
-{% if with_ssl %}
 server {
-    listen 80;
-    rewrite ^ https://$host$request_uri;
-}
-{% endif %}
-
-server {
-    listen 80;
-
     {% if with_ssl %}
     listen 443 ssl;
 
     # provide paths to your ssl cert and key
     ssl_certificate /path/to/your/ssl.crt
     ssl_certificate_key /path/to/your/ssl.key
+    {% else %}
+    listen 80;
     {% endif %}
   
     # set the hostname of your stackd.io instance
