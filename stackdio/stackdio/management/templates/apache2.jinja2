@@ -26,8 +26,8 @@ Listen 8000
 
     # NOTE: The following directories must exist.
     LogLevel warn
-    ErrorLog {{ storage_root }}/var/log/httpd/error_log
-    CustomLog {{ storage_root }}/var/log/httpd/access_log common
+    ErrorLog {{ storage_root }}/var/log/web/error_log
+    CustomLog {{ storage_root }}/var/log/web/access_log common
 
     ## Non-Django directories
     Alias /static {{ stackdio_root }}/static

@@ -23,7 +23,7 @@ server {
     # set the hostname of your stackd.io instance
     server_name stackdio.example.com;
 
-    access_log  {{ storage_root }}/var/log/nginx/access.log;
+    access_log  {{ storage_root }}/var/log/web/access.log;
    
     # static content - assuming standard installation location
     location /static/ {
