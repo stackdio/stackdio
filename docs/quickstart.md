@@ -25,7 +25,7 @@ sudo echo 'stackdio ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/stackdio >
 sudo su - stackdio
 ```
 
-# OS-specifc preparation
+# OS-specific preparation
 
 > :warning:       **WARNING**       :warning:
 > 
