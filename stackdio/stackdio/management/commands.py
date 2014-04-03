@@ -288,9 +288,19 @@ class InitCommand(WizardCommand):
         self.out('Finished', Colors.INFO)
 
     def _init_stackdio(self):
-        # create config dir if it doesn't already exist
-        if not os.path.isdir(self.CONFIG_DIR):
-            os.makedirs(self.CONFIG_DIR, mode=0755)
+        # create some directories we need
+        dirs = (
+            self.CONFIG_DIR,
+            os.path.join(self.CONFIG_DIR, 'var/log/web'),
+            os.path.join(self.CONFIG_DIR, 'var/log/supervisord'),
+            os.path.join(self.CONFIG_DIR, 'var/run'),
+        )
+
+        for d in dirs:
+            try:
+                os.makedirs(d, mode=0755)
+            except OSError:
+                pass
 
         self.render_template('stackdio/management/templates/config.jinja2',
                              self.CONFIG_FILE,
