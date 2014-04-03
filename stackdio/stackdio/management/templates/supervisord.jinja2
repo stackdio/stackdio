@@ -36,7 +36,7 @@ history_file=~/.sc_history
 {% if with_gunicorn %}
 ;;
 ;; django webserver
-[program:gunicorn-django]
+[program:gunicorn]
 command=gunicorn stackdio.wsgi
 directory={{ stackdio_root }}
 autorestart=true
