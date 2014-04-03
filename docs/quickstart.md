@@ -89,15 +89,25 @@ stackdio manage.py syncdb --noinput
 stackdio manage.py migrate
 ```
 
-### Create a stackd.io admin user
+# stackd.io users
 
-> **NOTE**: stackd.io can also integrate with an existing LDAP server. See our [LDAP guide](ldap_guide.md) for more information on configuring stackd.io to use your existing LDAP server. If you choose to go the LDAP route, you can skip this entire section because users who successfully authenticate via LDAP will automatically be created in stackd.io.
+### LDAP
+
+stackd.io can easily integrate with an LDAP server. See our [LDAP guide](ldap_guide.md) for more information on configuring stackd.io to work with LDAP. If you choose to go the LDAP route, you can skip this entire section because users who successfully authenticate and are members of the right groups via LDAP will automatically be created in stackd.io.
+
+### Non-LDAP admin user
+
+Admin users in stackd.io have less restriction to various pieces of the platform. For example, only admin users are allowed to create and modify cloud providers and profiles that other users can use to spin up their stacks. 
+
+> NOTE: You will need at least one admin user to configure some key areas of the system.
 
 ```bash
 stackdio manage.py createsuperuser
 
 # and follow prompts...
 ```
+
+### Non-LDAP regular users
 
 # stackd.io operations
 
