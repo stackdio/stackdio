@@ -111,20 +111,47 @@ stackdio manage.py createsuperuser
 
 When not using LDAP, the easiest way to create new non-admin users is to use the built-in Django admin interface. First we need the server to be up and running so keep following the steps below and we'll come back to adding users later.
 
-# stackd.io operations
+# Web server configuration
 
-# Web server
+For the quickstart, walk through configuring Nginx to serve our static content as well as proxying the Python app through gunicorn. The required packages should have already been installed during the OS-specific guides above. A couple steps are OS-specific, but we'll call those out below.
 
-For the quickstart, walk through configuring Nginx to serve our static content as well as proxying the Python app through gunicorn. The required packages should have already been installed during the OS-specific guides above.
+The `stackdio` command has a config option that can generate simple configuration for Nginx and Apache2. Here we'll use the nginx generated configuration and store it in the appropriate location.
 
+To configure Nginx for CentOS:
 
-# Rabbitmq
+```bash
+# CENTOS
+stackdio config nginx | sudo tee /etc/nginx/conf.d/stackdio.conf > /dev/null
+
+# rename the default server configuration
+sudo mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
+```
+
+To configure Nginx for Ubuntu:
+
+```bash
+# UBUNTU ONLY
+stackdio config nginx | sudo tee /etc/nginx/sites-available/stackdio.conf > /dev/null
+sudo ln -s /etc/nginx/sites-available/stackdio.conf /etc/nginx/sites-enabled
+
+# remove the default configuration symlink
+sudo rm /etc/nginx/sites-enabled/default
+```
+
+and finally, start Nginx:
+
+```bash
+sudo service nginx restart
+```
+
+# Rabbitmq, celery, and salt
+
+Start the rabbitmq server:
+
 
 ```bash
 sudo service rabbitmq-server start
 ```
-
-# Supervisord for celery and salt
 
 For celery and salt-master, we'll be using supervisord. The required packages should already be installed, so we'll just need to configure supervisor and start the services.
 
