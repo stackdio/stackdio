@@ -109,40 +109,28 @@ stackdio manage.py createsuperuser
 
 ### Non-LDAP regular users
 
+When not using LDAP, the easiest way to create new non-admin users is to use the built-in Django admin interface. First we need the server to be up and running so keep following the steps below and we'll come back to adding users later.
+
 # stackd.io operations
 
-### Start the development server
+# Web server
 
-For the quick start, we're going to run with Django's built-in web server. In production, you'll definitely want to consider something more appropriate like Apache or Nginx. See [Django's WSGI deployment documentation](https://docs.djangoproject.com/en/1.5/howto/deployment/wsgi/) or check out our [stackd.io webserver guide](webserver_guide.md) for quickly getting stackd.io running behind Apache2 or Nginx.
+For the quickstart, walk through configuring Nginx to serve our static content as well as proxying the Python app through gunicorn. The required packages should have already been installed during the OS-specific guides above.
 
-```bash
-stackdio manage.py runserver 0.0.0.0:8000
-```
 
-This will run the Django development server in the foreground, meaning you won't be able to do anything else in your current shell while it's running. You will need to either use something like `nohup` to put it in the background or open a new shell (remember to use the `workon` command to activate your virtualenv!)
-
-To use nohup, you can do:
+# Rabbitmq
 
 ```bash
-nohup stackdio manage.py runserver 0.0.0.0:8000 &> webserver.nohup.out &
-```
-
-### Start rabbitmq and celery
-
-Asynchronous celery tasks handle most of the heavy-lifting within stackd.io and they depend on rabbitmq-server and celery to be running. Let's start them both:
-
-```bash
-# rabbitmq-server
 sudo service rabbitmq-server start
-
-# celery
-stackdio manage.py celery worker -ldebug -c1
 ```
 
-Like the Django development server, Celery will also run in the foreground and steal your shell. If you want to run celery in the background, use nohup like above or consider using something better like supervisord. See [Celery's daemonizing documentation](http://docs.celeryproject.org/en/3.0/tutorials/daemonizing.html) for more information.
+# Supervisord for celery and salt
 
+For celery and salt-master, we'll be using supervisord. The required packages should already be installed, so we'll just need to configure supervisor and start the services.
 
-### Creating additional users
+# Creating additional users
+
+> NOTE: If you're using LDAP, you can skip this step.
 
 The superuser we created earlier will give us admin access to stackd.io, however, you probably want at least one non-superuser. Point your browser to http://hostname:8000/__private/admin and use the username and password for the super user you created earlier. You should be presented with the Django admin interface. To create additional users, follow the steps below.
 
