@@ -153,6 +153,20 @@ sudo service rabbitmq-server start
 
 For celery and salt-master, we'll be using supervisord. The required packages should already be installed, so we'll just need to configure supervisor and start the services.
 
+```bash
+
+# generate supervisord configuration that controls gunicorn, celery, and salt-master and store it in the .stackdio directory.
+stackdio config supervisord > ~/.stackdio/supervisord.conf
+
+# launch supervisord and start the services
+supervisord -c ~/.stackdio/supervisord.conf
+supervisorctl -c ~/.stackdio/supervisord.conf start all
+```
+
+# Try it out!
+
+At this point, you should have everything configured and running, so fire up a web browser and point it to your hostname and you should see the stackd.io login page. If you're using LDAP, try logging in with a user that is a member of the `stackdio-admin` and `stackdio-user` groups, or login with the admin user you created earlier.
+
 # Creating additional users
 
 > NOTE: If you're using LDAP, you can skip this step.
