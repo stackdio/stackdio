@@ -433,7 +433,7 @@ class ConfigCommand(BaseCommand):
         elif self.args.type == 'apache':
             context.update({
                 'user': config.user,
-                'with_ssl': self.args.with_ssl
+                'with_ssl': self.args.with_ssl,
             })
             tmpl = 'stackdio/management/templates/apache2.jinja2'
         elif self.args.type == 'nginx':
@@ -443,6 +443,11 @@ class ConfigCommand(BaseCommand):
             tmpl = 'stackdio/management/templates/nginx.jinja2'
         elif self.args.type == 'supervisord':
             tmpl = 'stackdio/management/templates/supervisord.jinja2'
+            context.update({
+                'with_gunicorn': self.args.with_gunicorn,
+                'with_celery': self.args.with_celery,
+                'with_salt_master': self.args.with_salt_master,
+            })
         else:
             self.out('Unknown config type: {0}'.format(self.args.type),
                      Colors.ERROR,

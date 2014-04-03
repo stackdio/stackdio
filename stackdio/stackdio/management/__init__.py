@@ -51,7 +51,24 @@ def main():
                                      'stackdio.'))
     config_parser.add_argument('--with-ssl',
                                default=False,
-                               action='store_true')
+                               action='store_true',
+                               help=('Toggles SSL for apache and nginx '
+                                     'configuration.'))
+    config_parser.add_argument('--exclude-gunicorn',
+                               dest='with_gunicorn',
+                               default=True,
+                               action='store_false',
+                               help=('Excludes gunicorn from supervisord.'))
+    config_parser.add_argument('--exclude-celery',
+                               dest='with_celery',
+                               default=True,
+                               action='store_false',
+                               help=('Excludes celery from supervisord.'))
+    config_parser.add_argument('--exclude-salt-master',
+                               dest='with_salt_master',
+                               default=True,
+                               action='store_false',
+                               help=('Excludes salt-master from supervisord.'))
     config_parser.set_defaults(command=commands.ConfigCommand)
     config_parser.set_defaults(raw_args=False)
 

@@ -16,8 +16,9 @@ username=root
 password=1234
 
 [supervisord]
-logfile={{ storage_root }}/var/log/supervisord.log ; (main log file;default $CWD/supervisord.log)
+logfile={{ storage_root }}/var/log/supervisord/supervisord.log ; (main log file;default $CWD/supervisord.log)
 pidfile={{ storage_root }}/var/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
+childlogdir={{ storage_root }}/var/log/supervisord
 
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
@@ -32,23 +33,29 @@ history_file=~/.sc_history
 ;; app specific settings
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+{% if with_gunicorn %}
 ;;
 ;; django webserver
 [program:gunicorn-django]
 command=gunicorn stackdio.wsgi
 directory={{ stackdio_root }}
 autorestart=true
+{% endif %}
 
+{% if with_celery %}
 ;;
 ;; celery
 [program:celery]
-command=stackdio manage.py celery worker -lINFO
+command=stackdio manage.py celery worker -linfo -c1
 directory={{ stackdio_root }}
 autorestart=true
+{% endif %}
 
+{% if with_salt_master %}
 ;;
 ;; salt-master
 [program:salt-master]
-command=stackdio salt-master 
+command=stackdio salt-master -linfo
 directory={{ stackdio_root }}
 autorestart=true
+{% endif %}
