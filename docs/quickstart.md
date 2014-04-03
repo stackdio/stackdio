@@ -113,9 +113,7 @@ When not using LDAP, the easiest way to create new non-admin users is to use the
 
 # Web server configuration
 
-For the quickstart, walk through configuring Nginx to serve our static content as well as proxying the Python app through gunicorn. The required packages should have already been installed during the OS-specific guides above. A couple steps are OS-specific, but we'll call those out below.
-
-The `stackdio` command has a config option that can generate simple configuration for Nginx and Apache2. Here we'll use the nginx generated configuration and store it in the appropriate location.
+For the quickstart, we'll use the `stackdio` command to generate the necessary configuration for Nginx to serve our static content as well as proxying the Python app through gunicorn.
 
 To configure Nginx for CentOS:
 
