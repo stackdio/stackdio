@@ -94,6 +94,7 @@ echo "source /usr/bin/virtualenvwrapper.sh" >> ~/.bash_profile
 * swig
 * python-devel
 * rabbitmq-server
+* nginx
 
 To quickly get up and running, you can run the following to install the required packages.
 
@@ -102,7 +103,7 @@ To quickly get up and running, you can run the following to install the required
 sudo yum groupinstall "Development Tools"
 
 # Install the other requirements needed to install stackd.io
-sudo yum install git mysql-devel swig python-devel rabbitmq-server
+sudo yum install git mysql-devel swig python-devel rabbitmq-server nginx
 ```
 # Next Steps
 
