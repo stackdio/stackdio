@@ -136,6 +136,12 @@ sudo ln -s /etc/nginx/sites-available/stackdio /etc/nginx/sites-enabled
 sudo rm /etc/nginx/sites-enabled/default
 ```
 
+generate the static content we'll need to serve:
+
+```bash
+stackdio manage.py collectstatic --noinput
+```
+
 and finally, start Nginx:
 
 ```bash
