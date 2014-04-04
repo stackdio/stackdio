@@ -119,6 +119,10 @@ To configure Nginx for CentOS:
 
 ```bash
 # CENTOS
+
+# add execute permissions to the user's home directory for static content to serve correctly
+chmod +x ~/
+
 stackdio config nginx | sudo tee /etc/nginx/conf.d/stackdio.conf > /dev/null
 
 # rename the default server configuration
