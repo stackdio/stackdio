@@ -129,8 +129,8 @@ To configure Nginx for Ubuntu:
 
 ```bash
 # UBUNTU ONLY
-stackdio config nginx | sudo tee /etc/nginx/sites-available/stackdio.conf > /dev/null
-sudo ln -s /etc/nginx/sites-available/stackdio.conf /etc/nginx/sites-enabled
+stackdio config nginx | sudo tee /etc/nginx/sites-available/stackdio > /dev/null
+sudo ln -s /etc/nginx/sites-available/stackdio /etc/nginx/sites-enabled
 
 # remove the default configuration symlink
 sudo rm /etc/nginx/sites-enabled/default
