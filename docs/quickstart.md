@@ -2,6 +2,19 @@
 
 This guide is intended to quickly march you through the steps of installing and running stackd.io and its dependencies. We're not intending to be complete or provide you with everything needed for a production-ready install, we may make some assumptions you don't agree with, and there may be things we missed. If you feel anything is out of the ordinary, a bit confusing, or just plain missing, please [contact us](../README.md).
 
+### Quick Start Script
+
+We know that reading through a big, messy guide like this one and executing each and every command will be time consuming and error prone. If you would rather just run a script to do a lot of this for you, we have a script for just that. Keep in mind that the script is somewhat opinionated and won't let you make many decisions (you're free to modify it to suit your needs though!) Here's a list of things it will do:
+
+* Detect your OS (only Ubuntu 13.10 and CentOS 6.4 were tested)
+* Install all of the necessary stuff (MySQL, virtualenv-wrapper, tons of packages, etc)
+* Create a `stackdio` virtualenv
+* Install stackdio and its python dependencies
+* Install and configure Nginx
+* Install and configure supervisord to run gunicorn, celery, and salt-master
+
+If you're cool with this, download the script located in `scripts/stackdio_quickstart.sh` and execute it on a server as a user with sudo access.
+
 ### MySQL
 
 We're using stackd.io internally with MySQL. Since stackd.io is using Django, it inherently supports many different database servers, so if you need something different feel free, but you're on your own for its install. Be sure to plug in the correct settings later when configuring stackd.io with different servers. For more information on Django's database support, see: https://docs.djangoproject.com/en/1.5/ref/databases/
