@@ -5,29 +5,11 @@
 # This script follows very closely with the Quick Start code located at
 # https://github.com/digitalreasoning/stackdio.git. The intent is to
 # plop this on a server and run it to quickly get a functional stackd.io
-# environment.
+# environment. Feel free to make tweaks to suit your needs.
 #
-# Feel free to make tweaks to suit your needs.
+# NOTE: You must have sudo access to execute this script.
 #
 ##########
-
-# Create stackdio user if necessary
-if ! id -u stackdio &> /dev/null; then
-    sudo useradd -m -s/bin/bash -U stackdio
-    sudo echo 'stackdio ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/stackdio > /dev/null
-    sudo cp $0 ~stackdio/stackdio_quickstart.sh
-    sudo chown stackdio:stackdio ~stackdio/stackdio_quickstart.sh
-
-    echo "stackdio user created..."
-    echo "Please switch to the stackdio user and run ~/stackdio_quickstart.sh"
-    exit 0
-fi
-
-# Prevent script from running as anyone but the stackdio user
-if [ `id -u -n` != "stackdio" ]; then
-    echo "Please run this script as the stackdio user"
-    exit 1
-fi
 
 # detect OS (centos or ubuntu only)
 OS=
@@ -52,29 +34,7 @@ if [ -z "$OS" ]; then
 fi
 
 ###
-# CORE STEPS
-###
-
-# XXX: Remove this after making stackdio public
-
-# Private key for github access...use your own please :)
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-cat > ~/.ssh/id_rsa <<EOF
------BEGIN RSA PRIVATE KEY-----
-INSERT
-YOUR
-OWN
-KEY
-HERE
------END RSA PRIVATE KEY-----
-EOF
-
-chmod 600 ~/.ssh/id_rsa
-# XXX: End
-
-###
-# CENTOS PREP
+# CENTOS PREPARATION
 ###
 if [ $OS == "centos" ]; then
 
@@ -95,7 +55,7 @@ if [ $OS == "centos" ]; then
 fi
 
 ###
-# UBUNTU PREP
+# UBUNTU PREPARATION
 ###
 if [ $OS == "ubuntu" ]; then
 
@@ -119,16 +79,6 @@ fi
 # Create the virtualenv and make sure to install everything into it
 mkvirtualenv stackdio
 workon stackdio
-
-cd /tmp
-
-# Prevent host checking when cloning from github
-cat >> ~/.ssh/config << EOF
-Host github.com
-    StrictHostKeyChecking no
-
-EOF
-chmod 600 ~/.ssh/config
 
 # Install directly from GitHub
 pip install git+ssh://git@github.com/digitalreasoning/stackdio.git

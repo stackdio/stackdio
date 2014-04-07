@@ -1,4 +1,5 @@
 from __future__ import print_function
+import getpass
 import jinja2
 import os
 import shutil
@@ -223,7 +224,7 @@ class InitCommand(WizardCommand):
         'short_desc': 'Which user will stackdio and salt run as?',
         'long_desc': ('This user will own services, files, etc related to '
                       'stackdio.'),
-        'default': 'stackdio',
+        'default': getpass.getuser(),
     }, {
         'attr': 'storage_root',
         'short_desc': 'Where should stackdio and salt store their data?',
