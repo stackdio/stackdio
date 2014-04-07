@@ -257,7 +257,7 @@ class InitCommand(WizardCommand):
                       'use to acccess the database server. The server must be '
                       'running, the database must already exist, and the user '
                       'must have access to it.'),
-        'default': 'mysql://{user}:password@localhost:3306/stackdio',
+        'default': 'mysql://stackdio:password@localhost:3306/stackdio',
     }]
 
     def pre_run(self):
