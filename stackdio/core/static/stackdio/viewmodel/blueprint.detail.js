@@ -227,6 +227,10 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
         self.checkComponentOrdering = function (components) {
             var ordered = true;
 
+            if(components.length === 0) {
+                return [];
+            }
+
             components.map(function (component) {
                 return component.order;
             }).sort().reduce(function (prev, curr) {
