@@ -6,6 +6,12 @@ So, with that said, there are two paths to take: Apache or Nginx. We recommend u
 
 # Common Steps
 
+To do some of the steps below you will need to have already installed stackdio and be in the virtual environment. To make sure you're in the virtualenv:
+
+```bash
+workon stackdio
+```
+
 Both Apache and Nginx installs need a place to store logs and some static files to serve up. These two steps are common to both and should be run before proceeding with configuring the web server.
 
 ```bash
