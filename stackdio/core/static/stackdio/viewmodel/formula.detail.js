@@ -43,10 +43,8 @@ function (Q, ko, $galaxy, alerts, FormulaStore, API) {
             FormulaStore.populate().then(function () {
                 var components = FormulaStore.collection().filter(function (formula) {
                     return formula.id === parseInt(data.formula, 10);
-                })[0].components;
-
+                });
                 self.formulaComponents(components);
-
             }).catch(function (err) {
                 console.error(err);
             }).done();
