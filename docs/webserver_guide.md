@@ -45,7 +45,7 @@ Fix a permissions problem with the user's home directory not having execute perm
 chmod +x ~/
 ```
 
-> NOTE: You may pass --with-ssl to generate boilerplate for serving over SSL, but you will need to add your certs and point to them in the configuration file.
+> NOTE: You may pass --with-ssl to generate boilerplate for serving over SSL, but you will need to add your certs and point to them in the configuration file. You may also need to remove the existing ssl.conf from within conf.d.
 
 And that's it...let's start the server and then point your browser to the hostname on port 80 (use https if you decided to serve over SSL.)
 
