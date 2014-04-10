@@ -34,7 +34,7 @@ define(function () {
             // Collect the fields from the form
             for (i in obj) {
                 item = obj[i];
-                if (item !== null && item.hasOwnProperty('localName') && ['select','input','textarea'].indexOf(item.localName) !== -1) {
+                if (item !== null && item.localName !== undefined && ['select','input','textarea'].indexOf(item.localName) !== -1) {
 
                     id = item.id;
                     form[id] = {};
