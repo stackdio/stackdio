@@ -99,7 +99,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api/providers/' + account.id,
+                url: account.url,
                 type: 'DELETE',
                 headers: {
                     "Content-Type": "application/json",
