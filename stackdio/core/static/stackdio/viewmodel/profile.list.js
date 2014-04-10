@@ -118,6 +118,10 @@ function (Q, ko, bootbox, $galaxy, alerts, AccountStore, ProfileStore, API) {
                 }
             });
         };
+
+        self.refresh = function() {
+            ProfileStore.populate(true);
+        };
     };
     return new vm();
 });

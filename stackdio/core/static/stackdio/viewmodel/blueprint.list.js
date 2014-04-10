@@ -81,6 +81,10 @@ function (Q, ko, bootbox, $galaxy, API, BlueprintComponentStore, BlueprintHostSt
             $(id).removeClass('hide');
             if (autohide) setTimeout(function () { $(id).addClass('hide'); $(id+'-content').empty(); }, timeout);
         };
+
+        self.refresh = function() {
+            BlueprintStore.populate(true);
+        };
     };
     return new vm();
 });

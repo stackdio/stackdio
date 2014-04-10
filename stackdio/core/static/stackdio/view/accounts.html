@@ -3,17 +3,23 @@
         <div class="row bottom-separation">
             <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Providers</div>
             <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
-                <div class="btn-group pull-right bottom-separation" data-bind="visible: isSuperUser">
-                    <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
-                        New Provider
-                        <span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: ProviderTypeStore.collection()">
-                        <li>
-                            <a href="#" data-bind="text: title, click: $root.createAccount"></a>
-                        </li>
-                    </ul>
+              <div class="pull-right bottom-separation" data-bind="visible: isSuperUser">
+                <div class="btn-group">
+                  <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                      New Provider
+                      <span class="caret"></span>
+                  </a>
+                  <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: ProviderTypeStore.collection()">
+                      <li>
+                          <a href="#" data-bind="text: title, click: $root.createAccount"></a>
+                      </li>
+                  </ul>
                 </div>
+                <button class="btn btn-success" data-bind="click: $root.refresh">
+                  <span class="fa fa-refresh">&nbsp;</span>
+                  Refresh
+                </button>
+              </div>
             </div>
         </div>
 

@@ -54,13 +54,20 @@ function (Q, ko, bootbox, $galaxy, alerts, formutils, FormulaStore, API) {
          *  ==================================================================================
         */
 
+        self.cancelChanges = function() {
+            formutils.clearForm('formula-form');
+            $galaxy.transport('formula.list');
+        };
+
         self.importFormula = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
 
             API.Formulas.import(record.formula_url.value)
                 .then(function () {
                     alerts.showMessage('#success', 'Formula has been submitted for import. Depending on the size of the formula repository it may take some time to complete.', true);
-                    $galaxy.transport('formula.list');
+
+                    // clear form and head back to the list
+                    self.cancelChanges();
                 })
                 .catch(function (error) {
                     self.showError(error, 15000);

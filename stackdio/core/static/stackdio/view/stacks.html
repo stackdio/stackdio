@@ -4,8 +4,8 @@
         <div class="row bottom-separation">
             <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Stacks</div>
             <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
-                <div class="small-top-separation btn-group pull-right">
-                    <div class="btn-group pull-right bottom-separation" data-bind="">
+                <div class="small-top-separation pull-right">
+                    <div class="btn-group" data-bind="">
                         <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                             New Stack from Blueprint
                             <span class="caret"></span>
@@ -16,6 +16,10 @@
                             </li>
                         </ul>
                     </div>
+                    <button class="btn btn-success" data-bind="click: $root.refresh">
+                      <span class="fa fa-refresh">&nbsp;</span>
+                      Refresh
+                    </button>
                 </div>
             </div>
         </div>
