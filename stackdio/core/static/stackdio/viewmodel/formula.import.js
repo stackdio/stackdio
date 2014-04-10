@@ -4,10 +4,11 @@ define([
     'bootbox',
     'util/galaxy',
     'util/alerts',
+    'util/form',
     'store/Formulas',
     'api/api'
 ],
-function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
+function (Q, ko, bootbox, $galaxy, alerts, formutils, FormulaStore, API) {
     var vm = function () {
         var self = this;
 
@@ -26,9 +27,9 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
         */
-        self.id = 'formula.list';
-        self.templatePath = 'formula.list.html';
-        self.domBindingId = '#formula-list';
+        self.id = 'formula.import';
+        self.templatePath = 'formula.import.html';
+        self.domBindingId = '#formula-import';
 
         try {
             $galaxy.join(self);
@@ -58,11 +59,8 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
 
             API.Formulas.import(record.formula_url.value)
                 .then(function () {
-                    // Close the form and clear it out
-                    self.closeFormulaForm();
-                    formutils.clearForm('formula-form');
-
-                    self.showSuccess();
+                    alerts.showMessage('#success', 'Formula has been submitted for import. Depending on the size of the formula repository it may take some time to complete.', true);
+                    $galaxy.transport('formula.list');
                 })
                 .catch(function (error) {
                     self.showError(error, 15000);
@@ -111,11 +109,11 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
         };
 
         self.loadFormula = function () {
-            FormulaStore.populate(true);
+            return API.Formulae.load();
         };
 
         self.showImportForm = function () {
-            $galaxy.transport('formula.import');
+            $galaxy.transport('formula');
         };
 
         self.showFormulaDetail = function (formula) {
