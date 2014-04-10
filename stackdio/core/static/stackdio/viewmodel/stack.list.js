@@ -179,6 +179,10 @@ function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
             });
         };
 
+        self.refresh = function() {
+            StackStore.populate(true);
+        };
+
     };
     return new vm();
 });

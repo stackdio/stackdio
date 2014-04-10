@@ -111,6 +111,10 @@ function (Q, ko, bootbox, $galaxy, alerts, ProviderTypeStore, AccountStore, Prof
         self.editSecurityGroups = function (account) {
             $galaxy.transport({ location: 'account.securitygroup', payload: { account: account.id } });
         };
+
+        self.refresh = function() {
+            AccountStore.populate(true);
+        };
     };
     return new vm();
 });

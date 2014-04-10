@@ -3,7 +3,7 @@
         <div class="row bottom-separation">
             <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Snapshots</div>
             <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
-                <div class="btn-group pull-right small-top-separation" data-bind="visible: $root.isSuperUser">
+                <div class="pull-right small-top-separation" data-bind="visible: $root.isSuperUser">
                     <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
                         New Snapshot <span class="caret"></span>
                     </a>
@@ -12,6 +12,10 @@
                             <a href="#" data-bind="text: title, click: $root.createSnapshot"></a>
                         </li>
                     </ul>
+                    <button class="btn btn-success" data-bind="click: $root.refresh">
+                      <span class="fa fa-refresh">&nbsp;</span>
+                      Refresh
+                    </button>
                 </div>
             </div>
         </div>

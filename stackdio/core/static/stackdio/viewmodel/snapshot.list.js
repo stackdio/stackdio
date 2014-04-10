@@ -133,6 +133,10 @@ function (Q, ko, bootbox, $galaxy, alerts, ProviderTypeStore, AccountStore, Prof
             });
         };
 
+        self.refresh = function() {
+            SnapshotStore.populate(true);
+        };
+
     };
     return new vm();
 });
