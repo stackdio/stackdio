@@ -50,6 +50,7 @@ class Route53Domain(object):
         # Loaded after connection is made
         self.hosted_zone = None
         self.zone_id = None
+        self.rr_sets = None
 
         self.conn = boto.connect_route53(self.access_key,
                                          self.secret_key)
@@ -69,12 +70,16 @@ class Route53Domain(object):
         # Get the zone id, but strip off the first part /hostedzone/
         self.zone_id = self.hosted_zone['Id'][len('/hostedzone/'):]
 
-    def get_rrnames_set(self):
+    def get_rrnames_set(self, force=False):
         '''
-        Returns a set of resource record names for our zone id
+        Returns a cached set of resource record names for our zone id, and
+        builds the cached set if we haven't already.
         '''
-        rr_sets = self.conn.get_all_rrsets(self.zone_id)
-        return set([rr.name for rr in rr_sets])
+        if not force and self.rr_sets is not None:
+            return self.rr_sets
+        self.rr_sets = set([rr.name
+                            for rr in self.conn.get_all_rrsets(self.zone_id)])
+        return self.rr_sets
 
     def start_rr_transaction(self):
         '''
@@ -107,7 +112,7 @@ class Route53Domain(object):
         '''
         self._rr_txn = None
 
-    def add_rr_cname(self, record_name, record_value, ttl=86400):
+    def add_rr_cname(self, record_name, record_value, ttl=DEFAULT_ROUTE53_TTL):
         '''
         NOTE: This method must be called after `start_rr_transaction`.
 
@@ -121,7 +126,7 @@ class Route53Domain(object):
             The host or IP the CNAME record will point to.
 
         `ttl`
-            The TTL for the record in seconds, default is 24 hours
+            The TTL for the record in seconds, default is 30 seconds
         '''
         # Update the record name to be fully qualified with the domain
         # for this instance. The period on the end is required.
@@ -138,7 +143,8 @@ class Route53Domain(object):
 
         self._add_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
 
-    def delete_rr_cname(self, record_name, record_value, ttl=86400):
+    def delete_rr_cname(self, record_name, record_value,
+                        ttl=DEFAULT_ROUTE53_TTL):
         '''
         Almost the same as `add_rr_cname` but it deletes the CNAME record
 
@@ -543,17 +549,16 @@ class AWSCloudProvider(BaseCloudProvider):
         implementation should handle the registration of DNS
         for the given cloud provider (e.g., Route53 on AWS)
         '''
-
-        logger.debug('register_dns for hosts {0!r}'.format(hosts))
-
         # Start a resource record "transaction"
         r53_domain = self.connect_route53()
         r53_domain.start_rr_transaction()
 
         # for each host, create a CNAME record
         for host in hosts:
-            logger.debug('add_rr_cname for host {0!r} -> {1} : {2}'.format(
-                host, host.hostname, host.provider_dns))
+            logger.debug('Registering DNS: {0} - {1}'.format(
+                host.hostname,
+                host.provider_dns
+            ))
             r53_domain.add_rr_cname(host.hostname,
                                     host.provider_dns,
                                     ttl=DEFAULT_ROUTE53_TTL)
@@ -584,8 +589,10 @@ class AWSCloudProvider(BaseCloudProvider):
                 logger.warn('Host {0} has no provider_dns...skipping '
                             'DNS deregister.'.format(host))
                 continue
-            logger.debug(host.hostname)
-            logger.debug(host.provider_dns)
+            logger.debug('Unregistering DNS: {0} - {1}'.format(
+                host.hostname,
+                host.provider_dns
+            ))
             if r53_domain.delete_rr_cname(host.hostname,
                                           host.provider_dns,
                                           ttl=DEFAULT_ROUTE53_TTL):
