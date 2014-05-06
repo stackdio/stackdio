@@ -380,7 +380,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                      c in host.formula_components.all()]
             instance_size = host.instance_size.title
             security_groups = set([
-                sg.name for sg in host.security_groups.all()
+                sg.group_id for sg in host.security_groups.all()
             ])
             volumes = host.volumes.all()
 
@@ -440,7 +440,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     # specific and control the VM in various ways
                     # depending on the cloud provider being used.
                     'size': instance_size,
-                    'securitygroup': list(security_groups),
+                    'securitygroupid': list(security_groups),
                     'availability_zone': availability_zone,
                     'volumes': map_volumes,
                 }
@@ -618,6 +618,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # and a value that's a dictionary containing keys for every
             # host in the stack.
             yaml_result = yaml.safe_load(result.std_out)
+
+            if not yaml_result:
+                return {}
 
             # yaml_result contains all host information in the stack, but
             # we have to dig a bit to get individual host metadata out

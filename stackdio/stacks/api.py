@@ -83,7 +83,8 @@ class StackListAPIView(generics.ListCreateAPIView):
 
     ALLOWED_FIELDS = ('blueprint', 'title', 'description', 'properties',
                       'max_retries', 'namespace', 'auto_launch',
-                      'auto_provision', 'parallel', 'public')
+                      'auto_provision', 'parallel', 'public',
+                      'simulate_failures', 'simulate_zombies')
 
     def get_queryset(self):
         return self.request.user.stacks.all()
@@ -113,19 +114,26 @@ class StackListAPIView(generics.ListCreateAPIView):
         if errors:
             raise BadRequest(errors)
 
-        # REQUIRED
+        # REQUIRED PARAMS
         blueprint_id = request.DATA.pop('blueprint', '')
         title = request.DATA.get('title', '')
         description = request.DATA.get('description', '')
 
-        # OPTIONAL
+        # OPTIONAL PARAMS
         properties = request.DATA.get('properties', {})
         max_retries = request.DATA.get('max_retries', 0)
 
-        # UNDOCUMENTED
+        # UNDOCUMENTED PARAMS
+        # Skips launching if set to False
         launch_stack = request.DATA.get('auto_launch', True)
+        # Skips provisioning if set to False
         provision_stack = request.DATA.get('auto_provision', True)
+        # Launches in parallel mode if set to True
         parallel = request.DATA.get('parallel', True)
+
+        # See stacks.tasks::launch_hosts for information on these params
+        simulate_failures = request.DATA.get('simulate_failures', False)
+        simulate_zombies = request.DATA.get('simulate_zombies', False)
 
         # check for required blueprint
         if not blueprint_id:
@@ -220,8 +228,13 @@ class StackListAPIView(generics.ListCreateAPIView):
         if launch_stack:
             # Queue up stack creation and provisioning using Celery
             task_list = [
-                tasks.launch_hosts.si(stack.id, parallel=parallel),
+                tasks.launch_hosts.si(stack.id,
+                                      parallel=parallel,
+                                      max_retries=max_retries,
+                                      simulate_failures=simulate_failures,
+                                      simulate_zombies=simulate_zombies),
                 tasks.update_metadata.si(stack.id),
+                tasks.cure_zombies.si(stack.id, max_retries=max_retries),
                 tasks.tag_infrastructure.si(stack.id),
                 tasks.register_dns.si(stack.id),
                 tasks.ping.si(stack.id),
@@ -423,6 +436,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # Launch is slightly different than other actions
         if action == BaseCloudProvider.ACTION_LAUNCH:
             task_list.append(tasks.launch_hosts.si(stack.id))
+            task_list.append(tasks.cure_zombies.si(stack.id))
 
         # Terminate should leverage salt-cloud or salt gets confused about
         # the state of things
@@ -509,6 +523,7 @@ class StackHostsAPIView(HostListAPIView):
         # Queue up stack creation and provisioning using Celery
         task_chain = (
             tasks.launch_hosts.si(stack.id, host_ids=host_ids) |
+            tasks.cure_zombies.si(stack.id) |
             tasks.update_metadata.si(stack.id, host_ids=host_ids) |
             tasks.tag_infrastructure.si(stack.id, host_ids=host_ids) |
             tasks.register_dns.si(stack.id, host_ids=host_ids) |

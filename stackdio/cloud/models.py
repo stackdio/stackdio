@@ -86,11 +86,11 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         Writes the yaml configuration file for the given provider object.
         '''
         # update the provider object's security group information
-        security_groups = [sg.name for sg in self.security_groups.filter(
+        security_groups = [sg.group_id for sg in self.security_groups.filter(
             is_default=True
         )]
         provider_yaml = yaml.safe_load(self.yaml)
-        provider_yaml[self.slug]['securitygroup'] = security_groups
+        provider_yaml[self.slug]['securitygroupid'] = security_groups
         self.yaml = yaml.safe_dump(provider_yaml, default_flow_style=False)
         self.save()
 
