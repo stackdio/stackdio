@@ -141,9 +141,7 @@ def find_zombie_hosts(stack):
     zombies = hostnames - pinged_hosts
     if not zombies:
         return None
-
-    return stack.hosts.filter(hostname=zombies.pop())
-    # return stack.hosts.filter(hostname__in=zombies)
+    return stack.hosts.filter(hostname__in=zombies)
 
 
 def bootstrap_hosts(stack, hosts):
