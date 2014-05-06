@@ -305,6 +305,7 @@ CLOUD_PROVIDERS = [
 # Celery & RabbitMQ
 ##
 BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+CELERY_REDIRECT_STDOUTS = False
 
 ##
 # LDAP configuration. To enable this, you should copy ldap_settings.py.template

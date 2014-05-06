@@ -201,7 +201,7 @@ class AWSCloudProvider(BaseCloudProvider):
     KEYPAIR = 'keypair'
 
     # The AWS security groups
-    #SECURITY_GROUPS = 'security_groups'
+    # SECURITY_GROUPS = 'security_groups'
 
     # The default availablity zone to use
     DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
@@ -227,7 +227,7 @@ class AWSCloudProvider(BaseCloudProvider):
             self.KEYPAIR,
             self.PRIVATE_KEY,
             self.ROUTE53_DOMAIN,
-            #self.SECURITY_GROUPS
+            # self.SECURITY_GROUPS
         ]
 
     @classmethod
@@ -350,7 +350,7 @@ class AWSCloudProvider(BaseCloudProvider):
                     err = 'The Route53 domain \'{0}\' does not exist in ' \
                           'this account.'.format(domain)
                     errors.setdefault(self.ROUTE53_DOMAIN, []).append(err)
-        #except boto.exception.DNSServerError, e:
+        # except boto.exception.DNSServerError, e:
         except Exception, e:
             logger.exception('Route53 issue?')
             errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))
@@ -738,14 +738,15 @@ class AWSCloudProvider(BaseCloudProvider):
             sleep(interval)
             timeout -= interval
 
-    def wait_for_state(self, hosts, state):
+    def wait_for_state(self, hosts, state, timeout=5 * 60):
         if not hosts:
             return (True, 'No hosts defined.')
 
         try:
             instances = self._wait(
                 self._wait_for_state,
-                fun_args=(hosts, state)
+                fun_args=(hosts, state),
+                timeout=timeout,
             )
             return (True, instances)
         except MaxFailuresException:

@@ -619,6 +619,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # host in the stack.
             yaml_result = yaml.safe_load(result.std_out)
 
+            if not yaml_result:
+                return {}
+
             # yaml_result contains all host information in the stack, but
             # we have to dig a bit to get individual host metadata out
             # of provider and provider type dictionaries

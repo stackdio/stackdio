@@ -12,6 +12,7 @@ from django.conf import settings
 
 from volumes.models import Volume
 
+import stacks.utils
 from stacks.models import (
     Stack,
     Level,
@@ -122,154 +123,230 @@ def handle_error(stack_id, task_id):
 
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.launch_hosts')  # NOQA
-def launch_hosts(stack_id, parallel=True):
+def launch_hosts(stack_id, parallel=True, max_retries=0,
+                 simulate_failures=False, simulate_zombies=False,
+                 failure_percent=0.3):
     '''
-    Use salt cloud to launch machines using the given stack's map_file
-    that was generated when the stack was created. Salt cloud will
+    Uses salt cloud to launch machines using the given Stack's map_file
+    that was generated when the Stack was created. Salt cloud will
     handle launching machines, provisioning them as salt minions,
-    connecting to the master, etc. Downstream stack.tasks will
-    handle the rest...
+    connecting to the master, etc. Downstream tasks will
+    handle the rest of the operational details.
+
+    @param stack_id (int) - the primary key of the stack to launch
+    @param parallel (bool) - if True, salt-cloud will launch the stack
+        in parallel using multiprocessing.
+    @param max_retries (int) - the number of retries to use if launch
+        issues were detected.
+    @param simulate_failures (bool) - if True, will modify the stack's map
+        file to set a 'simulate_failure' flag to True for `failure_percent`
+        of the hosts in the stack which will cause those flagged hosts to be
+        skipped during salt-cloud's launch of the map. After the launch is
+        finished, we will then modify the map again to remove those flags so
+        that the retry logic will work the second try.
+    @param simulate_zombies (bool) - if True, like the `simulate_failures`
+        parameter, we will modify the Map to include a flag to force some
+        hosts to be "zombie hosts" which mean they launched fine, but failed
+        to bootstrap as a salt minion. The zombie detection and retry logic
+        should then kick in and fix the issue.
+    @param failure_percent (float) - percentage of the Stack's hosts to be
+        flagged to fail during launch or become zombie hosts. This will be
+        ignored if `simulate_failures` and `simulate_zombies` flags are False.
+        Defaults to 0.3 (30%).
+
+    NOTE: For `simulate_failures` and `simulate_zombies` to work correctly, the
+    EC2 driver in salt-cloud and the bootstrap-salt.sh script need to be
+    modified. For salt-cloud modifications:
+
+    1) In salt.cloud.clouds.ec2::create, place the following near the top of
+    the method. This will cause the create method to fail if the particular
+    host has been flagged to fail.
+
+        if vm_.get('fail_launch', False):
+            raise SaltCloudSystemExit(
+                'fail_launch flag set; VM launch will be skipped.'
+            )
+
+    2) Also in salt.cloud.clouds.ec2::create, find where deploy_kwargs is being
+    created in the method (near line 1390) place the following code after the
+    deploy_kwargs dict has been created which will update the host's deploy
+    arguments to pass in the -Z options to the minion bootstrap which will
+    cause the bootstrap process to fail, in turn creating a zombie host.
+
+        if vm_.get('zombie', False):
+            deploy_kwargs['script_args'] += ' -Z'
+
+    3) Copy stackdio/management/etc/bootstrap-zombie.sh to
+        ~/.stackdio/etc/salt/cloud.deploy.d/bootstrap-zombie.sh
+    and update your cloud profile script to use bootstrap-zombie.sh instead of
+    bootstrap-salt.sh.
     '''
+
     try:
         stack = Stack.objects.get(id=stack_id)
         hosts = stack.get_hosts()
+        log_file = stacks.utils.get_salt_cloud_log_file(stack, 'launch')
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
-        stack.set_status(
-            launch_hosts.name,
-            'Hosts are being launched. This could take a while.')
+        logger.info('Log file: {0}'.format(log_file))
 
-        # Set up logging for this launch
-        root_dir = stack.get_root_directory()
-        log_dir = stack.get_log_directory()
+        current_try, unrecoverable_error = 0, False
+        while True:
+            current_try += 1
+            logger.info('Task {0} try {1} of {2} for stack {3!r}'.format(
+                launch_hosts.name,
+                current_try,
+                max_retries + 1,
+                stack))
 
-        now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir, '{0}.launch.log'.format(now))
-        log_symlink = os.path.join(root_dir, 'launch.log.latest')
+            stack.set_status(
+                launch_hosts.name,
+                'Hosts are being launched. Try {0} of {1}. '
+                'This may take a while.'.format(
+                    current_try,
+                    max_retries + 1))
 
-        # "touch" the log file and symlink it to the latest
-        with open(log_file, 'w') as f:  # NOQA
-            pass
-        symlink(log_file, log_symlink)
+            # Modify the stack's map to simulate failures for a percentage
+            # of the stack
+            if simulate_failures:
+                n = int(len(hosts) * failure_percent)
+                logger.info('Simulating failures on {0} host(s).'.format(n))
+                stacks.utils.mod_hosts_map(stack, n, fail_launch=True)
 
-        # Launch stack
-        cmd_args = [
-            'salt-cloud',
-            '-y',                    # assume yes
-            '-lquiet',               # no logging on console
-            '--log-file {0}',        # where to log
-            '--log-file-level debug',  # full logging
-            '--out=yaml',            # return YAML formatted results
-            '-m {1}',                # the map file to use for launching
-            # Until environment variables work
-            '--providers-config={2}',
-            '--profiles={3}',
-            '--cloud-config={4}',
-        ]
+            # only do one simulation at time, so if we're wanting to simulate
+            # zombie hosts, we wait until launch failures have been fixed
+            # first
+            if not simulate_failures and simulate_zombies:
+                n = int(len(hosts) * failure_percent)
+                logger.info('Simulating zombies on {0} host(s).'.format(n))
+                stacks.utils.mod_hosts_map(stack, n, zombie=True)
 
-        # parallize the salt-cloud launch
-        if parallel:
-            cmd_args.append('-P')
-            logger.info('Launching hosts in PARALLEL mode!')
-        else:
-            logger.info('Launching hosts in SERIAL mode!')
+            cmd = stacks.utils.get_launch_command(stack,
+                                                  log_file,
+                                                  parallel=parallel)
 
-        cmd = ' '.join(cmd_args).format(
-            log_file,
-            stack.map_file.path,
-            settings.STACKDIO_CONFIG.salt_providers_dir,
-            settings.STACKDIO_CONFIG.salt_profiles_dir,
-            settings.STACKDIO_CONFIG.salt_cloud_config,
-        )
+            if parallel:
+                logger.info('Launching hosts in PARALLEL mode.')
+            else:
+                logger.info('Launching hosts in SERIAL mode.')
 
-        logger.debug('Executing command: {0}'.format(cmd))
-        launch_result = envoy.run(str(cmd))
-        logger.debug('Command results:')
-        logger.debug('status_code = {0}'.format(launch_result.status_code))
-        logger.debug('std_out = {0}'.format(launch_result.std_out))
-        logger.debug('std_err = {0}'.format(launch_result.std_err))
+            logger.debug('Executing command: {0}'.format(cmd))
+            launch_result = envoy.run(str(cmd))
+            logger.debug('Command results:')
+            logger.debug('status_code = {0}'.format(launch_result.status_code))
+            logger.debug('std_out = {0}'.format(launch_result.std_out))
+            logger.debug('std_err = {0}'.format(launch_result.std_err))
 
-        # Start verifying hosts were launched and all are available
-        try:
-            launch_yaml = yaml.safe_load(launch_result.std_out)
+            # Remove the failure modifications if necessary
+            if simulate_failures:
+                logger.debug('Removing failure simulation modifications.')
+                stacks.utils.unmod_hosts_map(stack, 'fail_launch')
 
-            # are all launched hosts accounted for?
-            expected_hosts = set([h.hostname for h in hosts])
-            launched_hosts = set(launch_yaml.keys())
-            unlaunched_hosts = expected_hosts.difference(launched_hosts)
+                # disable future simulation of failures
+                simulate_failures = False
 
-            if unlaunched_hosts:
-                err_msg = 'Unlaunched hosts: {0}'.format(
-                    ', '.join(unlaunched_hosts))
-                stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+            if not simulate_failures and simulate_zombies:
+                logger.debug('Removing zombie simulation modifications.')
+                stacks.utils.unmod_hosts_map(stack, 'zombie')
+                simulate_zombies = False
+
+            # Start verifying hosts were launched and all are available
+            try:
+                launch_yaml = yaml.safe_load(launch_result.std_out)
+
+                # Check for launch failures...
+                # If the salt cloud map data has VMs that need to be created
+                # then we know some of the VMs did not launch. In this case
+                # we should try again if we haven't reached our max retries.
+                dmap = stacks.utils.get_stack_map_data(stack)
+                if 'create' in dmap and len(dmap['create']) > 0:
+                    failed_hosts = dmap['create'].keys()
+                    n = len(failed_hosts)
+                    logger.debug('VMs failed to launch: {0}'.format(
+                        failed_hosts
+                    ))
+
+                    if current_try <= max_retries:
+                        stack.set_status(launch_hosts.name,
+                                         '{0} host(s) failed to launch and '
+                                         'will be retried.'.format(n),
+                                         Level.WARN)
+                        continue
+
+                    else:
+                        # Max tries reached...unrecoverable failure.
+                        err_msg = ('{0} host(s) failed to launch and the '
+                                   'maximum number of tries have been '
+                                   'reached.'.format(n))
+                        stack.set_status(launch_hosts.name,
+                                         err_msg,
+                                         Level.ERROR)
+                        raise StackTaskException(err_msg)
+
+                # Look for errors if we got valid JSON
+                errors = set()
+                for h, v in launch_yaml.iteritems():
+                    logger.debug('Checking host {0} for errors.'.format(h))
+
+                    # Error format #1
+                    if 'Errors' in v and 'Error' in v['Errors']:
+                        err_msg = v['Errors']['Error']['Message']
+                        logger.debug('Error on host {0}: {1}'.format(
+                            h,
+                            err_msg)
+                        )
+                        errors.add(err_msg)
+
+                    # Error format #2
+                    elif 'Error' in v:
+                        err_msg = v['Error']
+                        logger.debug('Error on host {0}: {1}'.format(
+                            h,
+                            err_msg))
+                        errors.add(err_msg)
+
+                if errors:
+                    logger.debug('Errors found!: {0!r}'.format(errors))
+
+                    if not unrecoverable_error and current_try <= max_retries:
+                        continue
+
+                    for err_msg in errors:
+                        stack.set_status(launch_hosts.name,
+                                         err_msg,
+                                         Level.ERROR)
+                    raise StackTaskException('Error(s) while launching stack '
+                                             '{0}'.format(stack_id))
+
+                # Everything worked?
+                break
+
+            except Exception, e:
+                if isinstance(e, StackTaskException):
+                    raise
+                err_msg = 'Unhandled exception while launching hosts.'
+                logger.exception(err_msg)
                 raise StackTaskException(err_msg)
 
-            # grab all the hosts that salt knows about
-            cmd = 'salt-run --config-dir={0} manage.present'.format(
-                settings.STACKDIO_CONFIG.salt_config_root)
-            verify_result = envoy.run(cmd)
-            if verify_result.std_out:
-                all_hosts = set(yaml.safe_load(verify_result.std_out))
-                unavailable_hosts = launched_hosts.difference(all_hosts)
+            if launch_result.status_code > 0:
+                if ERROR_ALL_NODES_EXIST not in launch_result.std_err and \
+                        ERROR_ALL_NODES_EXIST not in launch_result.std_out and \
+                        ERROR_ALL_NODES_RUNNING not in launch_result.std_err and \
+                        ERROR_ALL_NODES_RUNNING not in launch_result.std_out:
 
-                if unavailable_hosts:
-                    err_msg = 'Unavailable hosts: {0}'.format(
-                        ', '.join(unavailable_hosts)
-                    )
+                    if launch_result.std_err:
+                        err_msg = launch_result.std_err
+                    else:
+                        err_msg = launch_result.std_out
                     stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
-                    raise StackTaskException(err_msg)
+                    raise StackTaskException('Error launching stack {0} with '
+                                             'salt-cloud: {1!r}'.format(
+                                                 stack_id,
+                                                 err_msg))
 
-            # Look for errors if we got valid JSON
-            errors = set()
-            for h, v in launch_yaml.iteritems():
-                logger.debug('Checking host {0} for errors.'.format(h))
-
-                # Error format #1
-                if 'Errors' in v and 'Error' in v['Errors']:
-                    err_msg = v['Errors']['Error']['Message']
-                    logger.debug('Error on host {0}: {1}'.format(h, err_msg))
-                    errors.add(err_msg)
-
-                # Error format #2
-                elif 'Error' in v:
-                    err_msg = v['Error']
-                    logger.debug('Error on host {0}: {1}'.format(h, err_msg))
-                    errors.add(err_msg)
-
-                # Not exactly error format #3
-                #elif 'Message' in v and v['Message'] == ERROR_ALREADY_RUNNING:
-                #    err_msg = 'A host with this name already exists.'
-                #    logger.debug('Error on host {0}: {1}'.format(h, err_msg))
-                #    errors.add(err_msg)
-
-            if errors:
-                logger.debug('Errors found!: {0!r}'.format(errors))
-                for err_msg in errors:
-                    stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
-                raise StackTaskException('Error(s) while launching stack '
-                                         '{0}'.format(stack_id))
-        except Exception, e:
-            if isinstance(e, StackTaskException):
-                raise
-            err_msg = 'Unhandled exception while launching hosts.'
-            logger.exception(err_msg)
-            raise StackTaskException(err_msg)
-
-        if launch_result.status_code > 0:
-            if ERROR_ALL_NODES_EXIST not in launch_result.std_err and \
-               ERROR_ALL_NODES_EXIST not in launch_result.std_out and \
-               ERROR_ALL_NODES_RUNNING not in launch_result.std_err and \
-               ERROR_ALL_NODES_RUNNING not in launch_result.std_out:
-                err_msg = launch_result.std_err \
-                    if launch_result.std_err else launch_result.std_out
-                stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
-                raise StackTaskException('Error launching stack {0} with '
-                                         'salt-cloud: {1!r}'.format(
-                                             stack_id,
-                                             err_msg))
-
-        # Seems good...let's set the status and allow other tasks to go through
-        stack.set_status(launch_hosts.name, 'Finished launching hosts.')
+            # Seems good...let's set the status and allow other tasks to
+            # go through
+            stack.set_status(launch_hosts.name, 'Finished launching hosts.')
 
     except Stack.DoesNotExist, e:
         err_msg = 'Unknown stack id {0}'.format(stack_id)
@@ -280,6 +357,72 @@ def launch_hosts(stack_id, parallel=True):
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
+
+
+# TODO: Ignoring code complexity issues for now
+@celery.task(name='stacks.cure_zombies')  # NOQA
+def cure_zombies(stack_id, max_retries=0):
+    '''
+    Attempts to detect zombie hosts, or those hosts in the stack that are
+    up and running but are failing to be pinged. This usually means that
+    the bootstrapping process failed or went wrong. To fix this, we will
+    try to rerun the bootstrap process to get the zombie hosts to sync
+    up with the master.
+
+    @ param stack_id (int) -
+    @ param max_retries (int) -
+    '''
+    try:
+        stack = Stack.objects.get(id=stack_id)
+
+        current_try = 0
+        while True:
+            current_try += 1
+
+            # Attempt to find zombie hosts
+            zombies = stacks.utils.find_zombie_hosts(stack)
+            if zombies is not None and zombies.count() > 0:
+                n = len(zombies)
+                if current_try <= max_retries:
+                    logger.info('Zombies found: {0}'.format(zombies))
+                    logger.info('Zombie bootstrap try {0} of {1}'.format(
+                        current_try,
+                        max_retries + 1))
+
+                    # If we have some zombie hosts, we'll attempt to bootstrap
+                    # them again, up to the max retries
+                    stack.set_status(
+                        launch_hosts.name,
+                        '{0} zombie host(s) detected. Attempting try {1} of '
+                        '{2} to bootstrap them. This may take a while.'
+                        ''.format(
+                            n,
+                            current_try,
+                            max_retries + 1),
+                        Level.WARN)
+                    stacks.utils.bootstrap_hosts(stack, zombies)
+                    continue
+                else:
+                    err_msg = ('{0} zombie host(s) detected and the '
+                               'maximum number of tries have been '
+                               'reached.'.format(n))
+                    stack.set_status(launch_hosts.name,
+                                     err_msg,
+                                     Level.ERROR)
+                    raise StackTaskException(err_msg)
+            else:
+                break
+
+    except Stack.DoesNotExist:
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
+        raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
+    except Exception, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(update_metadata.name, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -1178,7 +1321,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
             known_hosts = hosts.exclude(instance_id='')
             if known_hosts:
                 ok, result = driver.wait_for_state(known_hosts,
-                                                   driver.STATE_TERMINATED)
+                                                   driver.STATE_TERMINATED,
+                                                   timeout=10 * 60)
                 if not ok:
                     stack.set_status(destroy_hosts.name, result, Stack.ERROR)
                     raise StackTaskException(result)
