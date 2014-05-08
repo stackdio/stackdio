@@ -124,8 +124,8 @@ def handle_error(stack_id, task_id):
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.launch_hosts')  # NOQA
 def launch_hosts(stack_id, parallel=True, max_retries=0,
-                 simulate_failures=False, simulate_zombies=False,
-                 failure_percent=0.3):
+                 simulate_launch_failures=False, simulate_zombies=False,
+                 simulate_ssh_failures=False, failure_percent=0.3):
     '''
     Uses salt cloud to launch machines using the given Stack's map_file
     that was generated when the Stack was created. Salt cloud will
@@ -137,54 +137,32 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
     @param parallel (bool) - if True, salt-cloud will launch the stack
         in parallel using multiprocessing.
     @param max_retries (int) - the number of retries to use if launch
-        issues were detected.
-    @param simulate_failures (bool) - if True, will modify the stack's map
-        file to set a 'simulate_failure' flag to True for `failure_percent`
-        of the hosts in the stack which will cause those flagged hosts to be
-        skipped during salt-cloud's launch of the map. After the launch is
-        finished, we will then modify the map again to remove those flags so
-        that the retry logic will work the second try.
-    @param simulate_zombies (bool) - if True, like the `simulate_failures`
-        parameter, we will modify the Map to include a flag to force some
-        hosts to be "zombie hosts" which mean they launched fine, but failed
-        to bootstrap as a salt minion. The zombie detection and retry logic
-        should then kick in and fix the issue.
+        failures are detected.
+
+    Failure simulations:
+    @param simulate_launch_failures (bool) - if True, will modify the stack's
+        map file to set a new `private_key` parameter that does not actually
+        exist. This causes salt-cloud to bail out when launching the host,
+        and then retry logic will kick in. After a launch attempt, this flag
+        is removed.
+    @param simulate_ssh_failures (bool) - if True, we will modify the map file
+        to use an existing, yet invalid SSH key, causing SSH failures in
+        salt-cloud during any SSH auth attempts. After launch, we clean this
+        modification up so subsequent launches do not intentionally fail.
+    @param simulate_zombies (bool) - if True, after a successful launch of
+        hosts, we will manually kill salt-minion service on a random subset of
+        the stack's hosts. This task doesn't actually attempt to fix zombie
+        hosts, but we will in the `cure_zombies` task later.
     @param failure_percent (float) - percentage of the Stack's hosts to be
-        flagged to fail during launch or become zombie hosts. This will be
-        ignored if `simulate_failures` and `simulate_zombies` flags are False.
+        flagged to fail during launch or become zombie hosts. This param
+        is ignored if all of the above failure flags are set to False.
         Defaults to 0.3 (30%).
-
-    NOTE: For `simulate_failures` and `simulate_zombies` to work correctly, the
-    EC2 driver in salt-cloud and the bootstrap-salt.sh script need to be
-    modified. For salt-cloud modifications:
-
-    1) In salt.cloud.clouds.ec2::create, place the following near the top of
-    the method. This will cause the create method to fail if the particular
-    host has been flagged to fail.
-
-        if vm_.get('fail_launch', False):
-            raise SaltCloudSystemExit(
-                'fail_launch flag set; VM launch will be skipped.'
-            )
-
-    2) Also in salt.cloud.clouds.ec2::create, find where deploy_kwargs is being
-    created in the method (near line 1390) place the following code after the
-    deploy_kwargs dict has been created which will update the host's deploy
-    arguments to pass in the -Z options to the minion bootstrap which will
-    cause the bootstrap process to fail, in turn creating a zombie host.
-
-        if vm_.get('zombie', False):
-            deploy_kwargs['script_args'] += ' -Z'
-
-    3) Copy stackdio/management/etc/bootstrap-zombie.sh to
-        ~/.stackdio/etc/salt/cloud.deploy.d/bootstrap-zombie.sh
-    and update your cloud profile script to use bootstrap-zombie.sh instead of
-    bootstrap-salt.sh.
     '''
 
     try:
         stack = Stack.objects.get(id=stack_id)
         hosts = stack.get_hosts()
+        num_hosts = len(hosts)
         log_file = stacks.utils.get_salt_cloud_log_file(stack, 'launch')
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
@@ -199,27 +177,41 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
                 max_retries + 1,
                 stack))
 
+            if num_hosts > 1:
+                label = '{0} hosts are'.format(num_hosts)
+            else:
+                label = '1 host is'
+
             stack.set_status(
                 launch_hosts.name,
-                'Hosts are being launched. Try {0} of {1}. '
+                '{0} being launched. Try {1} of {2}. '
                 'This may take a while.'.format(
+                    label,
                     current_try,
                     max_retries + 1))
 
-            # Modify the stack's map to simulate failures for a percentage
-            # of the stack
-            if simulate_failures:
+            # Modify the stack's map to inject a private key that does not
+            # exist, which will fail immediately and the host will not launch
+            if simulate_launch_failures:
                 n = int(len(hosts) * failure_percent)
                 logger.info('Simulating failures on {0} host(s).'.format(n))
-                stacks.utils.mod_hosts_map(stack, n, fail_launch=True)
+                stacks.utils.mod_hosts_map(stack,
+                                           n,
+                                           private_key='/tmp/bogus-key-file')
 
-            # only do one simulation at time, so if we're wanting to simulate
-            # zombie hosts, we wait until launch failures have been fixed
-            # first
-            if not simulate_failures and simulate_zombies:
+            # Modify the map file to inject a real key file, but one that
+            # will not auth via SSH
+            if not simulate_launch_failures and simulate_ssh_failures:
+                bogus_key = '/tmp/id_rsa-bogus-key'
+                if os.path.isfile(bogus_key):
+                    os.remove(bogus_key)
+                envoy.run("ssh-keygen -f {0} -N \"''\"".format(bogus_key))
                 n = int(len(hosts) * failure_percent)
-                logger.info('Simulating zombies on {0} host(s).'.format(n))
-                stacks.utils.mod_hosts_map(stack, n, zombie=True)
+                logger.info('Simulating SSH failures on {0} host(s).'
+                            ''.format(n))
+                stacks.utils.mod_hosts_map(stack,
+                                           n,
+                                           private_key=bogus_key)
 
             cmd = stacks.utils.get_launch_command(stack,
                                                   log_file,
@@ -238,50 +230,116 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
             logger.debug('std_err = {0}'.format(launch_result.std_err))
 
             # Remove the failure modifications if necessary
-            if simulate_failures:
+            if simulate_launch_failures:
                 logger.debug('Removing failure simulation modifications.')
-                stacks.utils.unmod_hosts_map(stack, 'fail_launch')
-
-                # disable future simulation of failures
-                simulate_failures = False
-
-            if not simulate_failures and simulate_zombies:
-                logger.debug('Removing zombie simulation modifications.')
-                stacks.utils.unmod_hosts_map(stack, 'zombie')
-                simulate_zombies = False
+                stacks.utils.unmod_hosts_map(stack, 'private_key')
+                simulate_launch_failures = False
 
             # Start verifying hosts were launched and all are available
             try:
                 launch_yaml = yaml.safe_load(launch_result.std_out)
 
-                # Check for launch failures...
-                # If the salt cloud map data has VMs that need to be created
-                # then we know some of the VMs did not launch. In this case
-                # we should try again if we haven't reached our max retries.
+                # Check for launch failures...a couple things happen here:
+                #
+                # 1) We'll query salt-cloud looking for hosts that salt
+                # believes need to be created. This indicates that the
+                # host never came online, so we'll just retry and attempt
+                # to launch those hosts again; and
+                #
+                # 2) We'll look for zombie hosts check for a successful
+                # SSH connection. If we couldn't connect via SSH then we'll
+                # consider this a launch failure, terminate the machine and
+                # let salt relaunch them
+
+                # First we'll attempt to SSH to all zombie nodes and terminate
+                # the unsuccessful ones so we can relaunch them
+                zombies = stacks.utils.find_zombie_hosts(stack)
+                terminate_list = []
+                if zombies is not None and zombies.count() > 0:
+                    check_ssh_results = stacks.utils.check_for_ssh(
+                        stack, zombies)
+                    if check_ssh_results:
+                        for ssh_ok, host in check_ssh_results:
+                            if not ssh_ok:
+                                # build the list of hosts we need to kill
+                                # and relaunch
+                                terminate_list.append(host)
+
+                        n = len(terminate_list)
+                        if n > 0:
+                            label = '{0} host'.format(n)
+                            if n > 1:
+                                label += 's were'
+                            else:
+                                label += ' was'
+
+                            err_msg = (
+                                '{0} unresponsive and will be terminated '
+                                'and tried again.'.format(label))
+                            logger.debug(err_msg)
+                            stack.set_status(
+                                launch_hosts.name,
+                                err_msg,
+                                Level.WARN)
+
+                            # terminate the unresponsive zombie hosts
+                            stacks.utils.terminate_hosts(stack, terminate_list)
+
+                # Revert SSH failure simulation after we've found the SSH
+                # issues and terminated the hosts
+                if simulate_ssh_failures:
+                    logger.debug('Reverting SSH failure simulation '
+                                 'modifications.')
+                    stacks.utils.unmod_hosts_map(stack,
+                                                 'private_key')
+                    simulate_ssh_failures = False
+
+                # The map data structure gives us the list of hosts that
+                # salt believes need to be created. This also includes any
+                # unresponsive zombie hosts we just terminated. Note that
+                # we don't have to actually wait for those hosts to die
+                # because salt-cloud renames them and will not consider
+                # them available.
                 dmap = stacks.utils.get_stack_map_data(stack)
+
                 if 'create' in dmap and len(dmap['create']) > 0:
                     failed_hosts = dmap['create'].keys()
-                    n = len(failed_hosts)
+
+                    # reset number of hosts we think we are launching
+                    num_hosts = len(failed_hosts)
+                    label = '{0} host'.format(num_hosts)
+                    if num_hosts > 1:
+                        label += 's'
+
                     logger.debug('VMs failed to launch: {0}'.format(
                         failed_hosts
                     ))
 
                     if current_try <= max_retries:
                         stack.set_status(launch_hosts.name,
-                                         '{0} host(s) failed to launch and '
-                                         'will be retried.'.format(n),
+                                         '{0} failed to launch and '
+                                         'will be retried.'.format(label),
                                          Level.WARN)
                         continue
 
                     else:
                         # Max tries reached...unrecoverable failure.
-                        err_msg = ('{0} host(s) failed to launch and the '
+                        err_msg = ('{0} failed to launch and the '
                                    'maximum number of tries have been '
-                                   'reached.'.format(n))
+                                   'reached.'.format(label))
                         stack.set_status(launch_hosts.name,
                                          err_msg,
                                          Level.ERROR)
                         raise StackTaskException(err_msg)
+
+                # Simulating zombies is a bit more work than just modifying the
+                # stacks' map file. At this point we assume hosts are up and
+                # functional, so we simply need to disable the salt-minion
+                # service on some of the hosts.
+                if simulate_zombies:
+                    n = int(len(hosts) * failure_percent)
+                    logger.info('Simulating zombies on {0} host(s).'.format(n))
+                    stacks.utils.create_zombies(stack, n)
 
                 # Look for errors if we got valid JSON
                 errors = set()
@@ -385,6 +443,9 @@ def cure_zombies(stack_id, max_retries=0):
             zombies = stacks.utils.find_zombie_hosts(stack)
             if zombies is not None and zombies.count() > 0:
                 n = len(zombies)
+                label = '{0} zombie host'.format(n)
+                if n > 1:
+                    label += 's'
                 if current_try <= max_retries:
                     logger.info('Zombies found: {0}'.format(zombies))
                     logger.info('Zombie bootstrap try {0} of {1}'.format(
@@ -395,19 +456,18 @@ def cure_zombies(stack_id, max_retries=0):
                     # them again, up to the max retries
                     stack.set_status(
                         launch_hosts.name,
-                        '{0} zombie host(s) detected. Attempting try {1} of '
-                        '{2} to bootstrap them. This may take a while.'
+                        '{0} detected. Attempting try {1} of {2} to '
+                        'bootstrap. This may take a while.'
                         ''.format(
-                            n,
+                            label,
                             current_try,
                             max_retries + 1),
                         Level.WARN)
                     stacks.utils.bootstrap_hosts(stack, zombies)
                     continue
                 else:
-                    err_msg = ('{0} zombie host(s) detected and the '
-                               'maximum number of tries have been '
-                               'reached.'.format(n))
+                    err_msg = ('{0} detected and the maximum number of '
+                               'tries have been reached.'.format(label))
                     stack.set_status(launch_hosts.name,
                                      err_msg,
                                      Level.ERROR)
@@ -1240,7 +1300,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
     try:
         stack = Stack.objects.get(id=stack_id)
         stack.set_status(destroy_hosts.name,
-                         'Destroying stack infrastructure. This could '
+                         'Destroying stack infrastructure. This may '
                          'take a while.')
         hosts = stack.get_hosts(host_ids)
 

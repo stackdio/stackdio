@@ -84,7 +84,8 @@ class StackListAPIView(generics.ListCreateAPIView):
     ALLOWED_FIELDS = ('blueprint', 'title', 'description', 'properties',
                       'max_retries', 'namespace', 'auto_launch',
                       'auto_provision', 'parallel', 'public',
-                      'simulate_failures', 'simulate_zombies')
+                      'simulate_launch_failures', 'simulate_zombies',
+                      'simulate_ssh_failures', 'failure_percent',)
 
     def get_queryset(self):
         return self.request.user.stacks.all()
@@ -121,7 +122,7 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # OPTIONAL PARAMS
         properties = request.DATA.get('properties', {})
-        max_retries = request.DATA.get('max_retries', 0)
+        max_retries = request.DATA.get('max_retries', 2)
 
         # UNDOCUMENTED PARAMS
         # Skips launching if set to False
@@ -132,8 +133,12 @@ class StackListAPIView(generics.ListCreateAPIView):
         parallel = request.DATA.get('parallel', True)
 
         # See stacks.tasks::launch_hosts for information on these params
-        simulate_failures = request.DATA.get('simulate_failures', False)
+        simulate_launch_failures = request.DATA.get('simulate_launch_failures',
+                                                    False)
+        simulate_ssh_failures = request.DATA.get('simulate_ssh_failures',
+                                                 False)
         simulate_zombies = request.DATA.get('simulate_zombies', False)
+        failure_percent = request.DATA.get('failure_percent', 0.3)
 
         # check for required blueprint
         if not blueprint_id:
@@ -228,11 +233,14 @@ class StackListAPIView(generics.ListCreateAPIView):
         if launch_stack:
             # Queue up stack creation and provisioning using Celery
             task_list = [
-                tasks.launch_hosts.si(stack.id,
-                                      parallel=parallel,
-                                      max_retries=max_retries,
-                                      simulate_failures=simulate_failures,
-                                      simulate_zombies=simulate_zombies),
+                tasks.launch_hosts.si(
+                    stack.id,
+                    parallel=parallel,
+                    max_retries=max_retries,
+                    simulate_launch_failures=simulate_launch_failures,
+                    simulate_ssh_failures=simulate_ssh_failures,
+                    simulate_zombies=simulate_zombies,
+                    failure_percent=failure_percent),
                 tasks.update_metadata.si(stack.id),
                 tasks.cure_zombies.si(stack.id, max_retries=max_retries),
                 tasks.tag_infrastructure.si(stack.id),

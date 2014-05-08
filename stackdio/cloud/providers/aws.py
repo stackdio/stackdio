@@ -273,6 +273,8 @@ class AWSCloudProvider(BaseCloudProvider):
             'append_domain': data[self.ROUTE53_DOMAIN],
 
             'ssh_interface': 'private_ips',
+            'ssh_connect_timeout': 300,
+            'wait_for_passwd_timeout': 5,
             'rename_on_destroy': True,
             'delvol_on_destroy': True,
         }
