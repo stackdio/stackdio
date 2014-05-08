@@ -78,14 +78,27 @@ def get_salt_master_opts():
     )
 
 
-def get_stack_map_data(stack):
+def get_stack_mapper(stack):
     opts = get_salt_cloud_opts()
     opts.update({
         'map': stack.map_file.path,
         'hard': False,
     })
-    mapper = salt.cloud.Map(opts)
+    return salt.cloud.Map(opts)
+
+
+def get_stack_map_data(stack):
+    mapper = get_stack_mapper(stack)
     return mapper.map_data()
+
+
+def get_stack_vm_map(stack):
+    dmap = get_stack_map_data(stack)
+    vms = {}
+    for k in ('create', 'existing',):
+        if k in dmap:
+            vms.update(dmap[k])
+    return vms
 
 
 def regenerate_minion_keys(vm_, __opts__, **kwargs):
@@ -142,6 +155,83 @@ def find_zombie_hosts(stack):
     if not zombies:
         return None
     return stack.hosts.filter(hostname__in=zombies)
+
+
+def check_for_ssh(stack, hosts):
+    '''
+    Attempts to SSH to the given hosts.
+
+    @param (stacks.models.Stack) - the stack the hosts belong to
+    @param (list[stacks.models.Host]) - hosts to check for SSH
+    @returns (list) - list of tuples (bool, Host) where the bool value is
+    True if we could connect to Host over SSH, False otherwise
+    '''
+    opts = get_salt_cloud_opts()
+    vms = get_stack_vm_map(stack)
+    mapper = get_stack_mapper(stack)
+    result = []
+
+    # Iterate over the given hosts. If the host hasn't been assigned a
+    # hostname or is not physically running, there's nothing we can do
+    # so we skip them
+    for host in hosts:
+        if host.hostname not in vms:
+            continue
+
+        # Build the standard vm_ object and inject some additional stuff
+        # we'll need
+        vm_ = vms[host.hostname]
+        vm_provider_metadata = mapper.get_running_by_names(host.hostname)
+        if not vm_provider_metadata:
+            # host is not actually running so skip it
+            continue
+
+        provider, provider_type = vm_['provider'].split(':')
+        vm_.update(
+            vm_provider_metadata[provider][provider_type][vm_['name']]
+        )
+
+        # Pull some values we need to test for SSH
+        key_filename = config.get_cloud_config_value(
+            'private_key', vm_, opts, search_global=False, default=None
+        )
+        username = config.get_cloud_config_value(
+            'ssh_username', vm_, opts, search_global=False, default=None
+        )
+        hostname = config.get_cloud_config_value(
+            'private_ips', vm_, opts, search_global=False, default=None
+        )
+
+        # Test SSH connection
+        ok = salt.utils.cloud.wait_for_passwd(
+            hostname,
+            key_filename=key_filename,
+            username=username,
+            ssh_timeout=1,  # 1 second timeout
+            maxtries=3,     # 3 max tries per host
+            trysleep=0.5,   # half second between tries
+            display_ssh_output=False)
+
+        result.append((ok, host))
+    return result
+
+
+def terminate_hosts(stack, hosts):
+    '''
+    Uses salt-cloud to terminate the given list of hosts.
+
+    @param (list[stacks.models.Host]) - the hosts to terminate.
+    @returns None
+    '''
+
+    opts = get_salt_cloud_opts()
+    opts.update({
+        'parallel': True
+    })
+    mapper = salt.cloud.Map(opts)
+    hostnames = [h.hostname for h in hosts]
+    logger.debug('Terminating hosts: {0}'.format(hostnames))
+    mapper.destroy(hostnames)
 
 
 def bootstrap_hosts(stack, hosts):
@@ -330,3 +420,30 @@ def unmod_hosts_map(stack, *args):
                 del host_data[k]
 
     write_map_file(stack, map_yaml)
+
+
+def create_zombies(stack, n):
+    '''
+    For the given stack, will randomly select `n` hosts and kill the
+    salt-minion service that should already be running on the host.
+
+    @param (stacks.models.Stack) stack - the stack we're targeting
+    @param (int) n - the number of randomly selected hosts to zombify
+    @returns (None)
+    '''
+
+    # Random sampling of n hosts
+    hosts = random.sample(stack.hosts.all(), n)
+    if not hosts:
+        return
+
+    client = salt.client.LocalClient(
+        settings.STACKDIO_CONFIG.salt_master_config
+    )
+    result = client.cmd(
+        ' or '.join([h.hostname for h in hosts]),
+        'service.stop',
+        arg=('salt-minion',),
+        expr_form='compound'
+    )
+    print result
