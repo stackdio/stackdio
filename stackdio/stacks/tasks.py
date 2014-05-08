@@ -137,51 +137,26 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
     @param parallel (bool) - if True, salt-cloud will launch the stack
         in parallel using multiprocessing.
     @param max_retries (int) - the number of retries to use if launch
-        issues were detected.
+        failures are detected.
+
+    Failure simulations:
     @param simulate_launch_failures (bool) - if True, will modify the stack's
-        map file to set a 'simulate_failure' flag to True for `failure_percent`
-        of the hosts in the stack which will cause those flagged hosts to be
-        skipped during salt-cloud's launch of the map. After the launch is
-        finished, we will then modify the map again to remove those flags so
-        that the retry logic will work the second try.
+        map file to set a new `private_key` parameter that does not actually
+        exist. This causes salt-cloud to bail out when launching the host,
+        and then retry logic will kick in. After a launch attempt, this flag
+        is removed.
     @param simulate_ssh_failures (bool) - if True, we will modify the map file
-        to use a completely invalid SSH key, causing SSH failures in salt-cloud
-        during the launch/bootstrap
-    @param simulate_zombies (bool) - if True, parameter, we will modify the Map
-        to include a flag to force some hosts to be "zombie hosts" which mean
-        they launched fine, but failed to bootstrap as a salt minion. The
-        zombie detection and retry logic should then kick in and fix the issue.
+        to use an existing, yet invalid SSH key, causing SSH failures in
+        salt-cloud during any SSH auth attempts. After launch, we clean this
+        modification up so subsequent launches do not intentionally fail.
+    @param simulate_zombies (bool) - if True, after a successful launch of
+        hosts, we will manually kill salt-minion service on a random subset of
+        the stack's hosts. This task doesn't actually attempt to fix zombie
+        hosts, but we will in the `cure_zombies` task later.
     @param failure_percent (float) - percentage of the Stack's hosts to be
-        flagged to fail during launch or become zombie hosts. This will be
-        ignored if `simulate_launch_failures` and `simulate_zombies` flags are
-        False. Defaults to 0.3 (30%).
-
-    NOTE: For `simulate_launch_failures` and `simulate_zombies` to work
-    correctly, the EC2 driver in salt-cloud and the bootstrap-salt.sh script
-    need to be modified. For salt-cloud modifications:
-
-    1) In salt.cloud.clouds.ec2::create, place the following near the top of
-    the method. This will cause the create method to fail if the particular
-    host has been flagged to fail.
-
-        if vm_.get('fail_launch', False):
-            raise SaltCloudSystemExit(
-                'fail_launch flag set; VM launch will be skipped.'
-            )
-
-    2) Also in salt.cloud.clouds.ec2::create, find where deploy_kwargs is being
-    created in the method (near line 1390) place the following code after the
-    deploy_kwargs dict has been created which will update the host's deploy
-    arguments to pass in the -Z options to the minion bootstrap which will
-    cause the bootstrap process to fail, in turn creating a zombie host.
-
-        if vm_.get('zombie', False):
-            deploy_kwargs['script_args'] += ' -Z'
-
-    3) Copy stackdio/management/etc/bootstrap-zombie.sh to
-        ~/.stackdio/etc/salt/cloud.deploy.d/bootstrap-zombie.sh
-    and update your cloud profile script to use bootstrap-zombie.sh instead of
-    bootstrap-salt.sh.
+        flagged to fail during launch or become zombie hosts. This param
+        is ignored if all of the above failure flags are set to False.
+        Defaults to 0.3 (30%).
     '''
 
     try:
