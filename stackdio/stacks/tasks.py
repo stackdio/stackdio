@@ -421,7 +421,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
 
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.cure_zombies')  # NOQA
-def cure_zombies(stack_id, max_retries=0):
+def cure_zombies(stack_id, max_retries=2):
     '''
     Attempts to detect zombie hosts, or those hosts in the stack that are
     up and running but are failing to be pinged. This usually means that
@@ -441,39 +441,49 @@ def cure_zombies(stack_id, max_retries=0):
 
             # Attempt to find zombie hosts
             zombies = stacks.utils.find_zombie_hosts(stack)
-            if zombies is not None and zombies.count() > 0:
-                n = len(zombies)
-                label = '{0} zombie host'.format(n)
-                if n > 1:
-                    label += 's'
-                if current_try <= max_retries:
-                    logger.info('Zombies found: {0}'.format(zombies))
-                    logger.info('Zombie bootstrap try {0} of {1}'.format(
-                        current_try,
-                        max_retries + 1))
 
-                    # If we have some zombie hosts, we'll attempt to bootstrap
-                    # them again, up to the max retries
-                    stack.set_status(
-                        launch_hosts.name,
-                        '{0} detected. Attempting try {1} of {2} to '
-                        'bootstrap. This may take a while.'
-                        ''.format(
-                            label,
-                            current_try,
-                            max_retries + 1),
-                        Level.WARN)
-                    stacks.utils.bootstrap_hosts(stack, zombies)
-                    continue
-                else:
-                    err_msg = ('{0} detected and the maximum number of '
-                               'tries have been reached.'.format(label))
-                    stack.set_status(launch_hosts.name,
-                                     err_msg,
-                                     Level.ERROR)
-                    raise StackTaskException(err_msg)
-            else:
+            if zombies is None or zombies.count() == 0:
                 break
+
+            n = len(zombies)
+            label = '{0} zombie host'.format(n)
+            if n > 1:
+                label += 's'
+
+            if current_try <= max_retries + 1:
+                logger.info('Zombies found: {0}'.format(zombies))
+                logger.info('Zombie bootstrap try {0} of {1}'.format(
+                    current_try,
+                    max_retries + 1))
+
+                # If we have some zombie hosts, we'll attempt to bootstrap
+                # them again, up to the max retries
+                stack.set_status(
+                    launch_hosts.name,
+                    '{0} detected. Attempting try {1} of {2} to '
+                    'bootstrap. This may take a while.'
+                    ''.format(
+                        label,
+                        current_try,
+                        max_retries + 1),
+                    Level.WARN)
+                stacks.utils.bootstrap_hosts(
+                    stack,
+                    zombies,
+                    parallel=True
+                )
+                continue
+            else:
+                err_msg = (
+                    '{0} detected and the maximum number of '
+                    'tries have been reached.'.format(label)
+                )
+                stack.set_status(
+                    launch_hosts.name,
+                    err_msg,
+                    Level.ERROR
+                )
+                raise StackTaskException(err_msg)
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -1152,13 +1162,15 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
 
                 # load JSON so we can attempt to catch provisioning errors
                 output = yaml.safe_load(result.std_out)
+                errors = {}
+
+                if isinstance(output, basestring):
+                    errors['general'] = [output]
 
                 # each key in the dict is a host, and the value of the host
                 # is either a list or dict. Those that are lists we can
                 # assume to be a list of errors
-                if output is not None:
-                    errors = {}
-
+                elif output is not None:
                     for host, stage_results in output.iteritems():
                         # check for orchestration stage errors first
                         if host == '__stage__error__':
