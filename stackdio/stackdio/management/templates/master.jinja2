@@ -13,7 +13,8 @@ file_roots:
     - {{ salt_root }}/core_states
 
 stackdio:
-  user_envs: {{ salt_root }}/user_states
+  user_envs:
+    - {{ salt_root }}/user_states
 
 file_ignore_glob:
   - '.git/*'
