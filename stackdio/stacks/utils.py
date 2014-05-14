@@ -102,8 +102,24 @@ def get_stack_vm_map(stack):
     return vms
 
 
-def regenerate_minion_keys(vm_, __opts__, **kwargs):
-    logger.info('Generating minion keys for: {0}'.format(vm_['name']))
+def get_ssh_kwargs(host, vm_, __opts__):
+    return {
+        'host': host.provider_dns,
+        'hostname': host.provider_dns,
+        'timeout': 3,
+        'display_ssh_output': False,
+        'key_filename': config.get_cloud_config_value(
+            'private_key', vm_, __opts__, search_global=False, default=None
+        ),
+        'username': config.get_cloud_config_value(
+            'ssh_username', vm_, __opts__, search_global=False, default=None
+        )
+
+    }
+
+
+def regenerate_minion_keys(host, vm_, __opts__):
+    logger.info('Regenerating minion keys for: {0}'.format(vm_['name']))
 
     # Kill existing master keys
     key_cli = salt.key.KeyCLI(__opts__)
@@ -112,18 +128,27 @@ def regenerate_minion_keys(vm_, __opts__, **kwargs):
         key_cli.key.delete_key(match_dict=matches)
 
     # Kill remote master keys
-    salt.utils.cloud.root_cmd('rm -rf /etc/salt/pki', **kwargs)
+    kwargs = get_ssh_kwargs(host, vm_, __opts__)
+    tty = config.get_cloud_config_value(
+        'tty', vm_, __opts__, default=True
+    )
+    sudo = config.get_cloud_config_value(
+        'sudo', vm_, __opts__, default=True
+    )
+    salt.utils.cloud.root_cmd('rm -rf /etc/salt/pki', tty, sudo, **kwargs)
 
     # Generate new keys for the minion
     minion_pem, minion_pub = salt.utils.cloud.gen_keys(
         config.get_cloud_config_value('keysize', vm_, __opts__)
     )
 
-    # Preauthorize the newly generated keys
+    # Preauthorize the minion
+    logger.info('Accepting key for {0}'.format(vm_['name']))
     key_id = vm_.get('id', vm_['name'])
     salt.utils.cloud.accept_key(
         __opts__['pki_dir'], minion_pub, key_id
     )
+
     return minion_pem, minion_pub
 
 
@@ -263,6 +288,16 @@ def bootstrap_hosts(stack, hosts, parallel=True):
         if vm_ is None:
             continue
 
+        # Regenerate minion keys which will kill the keys for this host
+        # on the master as well as the pki directory on the minion to
+        # ensure we have the same keys in use or else the automatic
+        # key acceptance will fail and the minion will still be in limbo
+        minion_pem, minion_pub = regenerate_minion_keys(host, vm_, __opts__)
+
+        # Add the keys
+        vm_['priv_key'] = minion_pem
+        vm_['pub_key'] = minion_pub
+
         d = {
             'host_obj': host,
             'vm_': vm_,
@@ -383,24 +418,12 @@ def deploy_vm(params):
         'make_minion': config.get_cloud_config_value(
             'make_minion', vm_, __opts__, default=True
         ),
+        'minion_pem': vm_['priv_key'],
+        'minion_pub': vm_['pub_key'],
     }
 
-    # Regenerate minion keys which will kill the keys for this host
-    # on the master as well as the pki directory on the minion to
-    # ensure we have the same keys in use or else the automatic
-    # key acceptance will fail and the minion will still be in limbo
-    minion_pem, minion_pub = regenerate_minion_keys(vm_,
-                                                    __opts__,
-                                                    **deploy_kwargs)
-    deploy_kwargs.update({
-        'minion_pem': minion_pem,
-        'minion_pub': minion_pub,
-    })
-
-    logger.info('Executing deploy_script for {0}'.format(vm_['name']))
-
     # TODO(abemusic): log this to a file instead of dumping to celery
-
+    logger.info('Executing deploy_script for {0}'.format(vm_['name']))
     try:
         deployed = salt.utils.cloud.deploy_script(**deploy_kwargs)
         if deployed:
