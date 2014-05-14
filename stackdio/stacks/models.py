@@ -484,6 +484,38 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
     def _generate_overstate_file(self):
         hosts = self.hosts.all()
+        stack_target = 'G@stack_id:{0}'.format(self.pk)
+
+        def _matcher(sls_set):
+            return ' and '.join(
+                [stack_target] + ['G@roles:{0}'.format(i) for i in sls_set]
+            )
+
+        groups = {}
+        for host in hosts:
+            for c in host.formula_components.all():
+                groups.setdefault(
+                    c.order, set()
+                ).add(c.component.sls_path)
+
+        overstate = {}
+        for order in sorted(groups.keys()):
+            overstate['group_{0}'.format(order)] = {
+                'match': _matcher(groups[order]),
+                'sls': list(groups[order]),
+            }
+
+        yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
+        if not self.overstate_file:
+            self.overstate_file.save(
+                'stack_{0}_overstate.sls'.format(self.pk),
+                ContentFile(yaml_data))
+        else:
+            with open(self.overstate_file.path, 'w') as f:
+                f.write(yaml_data)
+
+    def _generate_overstate_file_bak(self):
+        hosts = self.hosts.all()
 
         # Get the unique set of components for this stack
         components = set()

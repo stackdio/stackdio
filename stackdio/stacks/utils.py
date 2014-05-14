@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 import random
 import yaml
@@ -234,7 +235,7 @@ def terminate_hosts(stack, hosts):
     mapper.destroy(hostnames)
 
 
-def bootstrap_hosts(stack, hosts):
+def bootstrap_hosts(stack, hosts, parallel=True):
     '''
     Iterates over the given `hosts` and executes the bootstrapping process
     via salt cloud.
@@ -242,6 +243,9 @@ def bootstrap_hosts(stack, hosts):
     @param stack (stacks.models.Stack) - Stack object (should be the stack that
         owns the given `hosts`.
     @param hosts (QuerySet) - QuerySet of stacks.models.Host objects
+    @param parallel (bool) - if True, we'll bootstrap in parallel using a
+        multiprocessing Pool with a size determined by salt-cloud's config
+        Defaults to True
 
     WARNING: This is not parallelized. My only hope is that the list is
     relatively small (e.g, only bootstrap hosts that were unsuccessful...see
@@ -250,23 +254,61 @@ def bootstrap_hosts(stack, hosts):
     __opts__ = get_salt_cloud_opts()
     dmap = get_stack_map_data(stack)
 
+    # Params list holds the dict objects that will be used during
+    # the deploy process; this will be handed off to the multiprocessing
+    # Pool as the "iterable" argument
+    params = []
     for host in hosts:
         vm_ = dmap['existing'].get(host.hostname)
-        logger.info('Bootstrapping host {0}'.format(host.hostname))
-        deploy_vm(host, vm_, __opts__)
+        if vm_ is None:
+            continue
+
+        d = {
+            'host_obj': host,
+            'vm_': vm_,
+            '__opts__': __opts__,
+        }
+
+        # if we're not deploying in parallel, simply pass the dict
+        # in, else we'll shove the dict into the params list
+        if not parallel:
+            deploy_vm(d)
+        else:
+            params.append(d)
+
+    # Parallel deployment using multiprocessing Pool. The size of the
+    # Pool object is either pulled from salt-cloud's config file or
+    # the length of `params` is used. Note, it's highly recommended to
+    # set the `pool_size` parameter in the salt-cloud config file to
+    # prevent issues with larger pool sizes
+    if parallel and len(params) > 0:
+        pool_size = __opts__.get('pool_size', len(params))
+        multiprocessing.Pool(pool_size).map(
+            func=deploy_vm,
+            iterable=params
+        )
 
 
-def deploy_vm(host_obj, vm_, __opts__):
+def deploy_vm(params):
     '''
     Basically duplicating the deploy logic from `salt.cloud.clouds.ec2::create`
     so we can bootstrap minions whenever needed. Ideally, this would be handled
     in salt-cloud directly, but for now it's easier to handle this on our end.
 
-    @param host_obj (stacks.models.Host) - a Django ORM Host object
-    @param vm_ (dict) - the vm data structure that salt likes to use
-    @param __opts__ (dict) - the big config object that salt passes around to
-        all of its modules. See `get_salt_cloud_opts`
+    @param params (dict) - a dictionary containing all the necessary
+        params we need and are defined below:
+
+    @params[host_obj] (stacks.models.Host) - a Django ORM Host object
+    @params[vm_] (dict) - the vm data structure that salt likes to use
+    @params[__opts__] (dict) - the big config object that salt passes
+        around to all of its modules. See `get_salt_cloud_opts`
     '''
+
+    host_obj = params['host_obj']
+    vm_ = params['vm_']
+    __opts__ = params['__opts__']
+
+    logger.info('Deploying minion on VM: {0}'.format(vm_['name']))
 
     # Start gathering the information we need to build up the deploy kwargs
     # object that will be handed to `salt.utils.cloud.deploy_script`
@@ -358,11 +400,17 @@ def deploy_vm(host_obj, vm_, __opts__):
     logger.info('Executing deploy_script for {0}'.format(vm_['name']))
 
     # TODO(abemusic): log this to a file instead of dumping to celery
-    deployed = salt.utils.cloud.deploy_script(**deploy_kwargs)
-    if deployed:
-        logger.info('Salt installed on {name}'.format(**vm_))
-    else:
-        logger.error('Failed to start Salt on Cloud VM {name}'.format(**vm_))
+
+    try:
+        deployed = salt.utils.cloud.deploy_script(**deploy_kwargs)
+        if deployed:
+            logger.info('Salt installed on {name}'.format(**vm_))
+        else:
+            logger.error('Failed to start Salt on Cloud VM '
+                         '{name}'.format(**vm_))
+    except Exception:
+        logger.exception('Unhandled exception while deploying minion')
+        deployed = False
 
     # TODO(abemusic): the create method in the EC2 driver currently handles
     # the creation logic for EBS volumes. We should be checking for those
