@@ -42,28 +42,23 @@ def get_salt_cloud_log_file(stack, suffix):
 def get_launch_command(stack, log_file, parallel=False):
     cmd_args = [
         'salt-cloud',
-        '-y',                    # assume yes
-        '-lquiet',               # no logging on console
-        '--log-file {0}',        # where to log
-        '--log-file-level debug',  # full logging
-        '--out=yaml',            # return YAML formatted results
-        '-m {1}',                # the map file to use for launching
-        # Until environment variables work
-        '--providers-config={2}',
-        '--profiles={3}',
-        '--cloud-config={4}',
+        '--assume-yes',
+        '--log-level=quiet',        # no logging on console
+        '--log-file={0}',           # where to log
+        '--log-file-level=debug',   # full logging
+        '--config-dir={1}',         # salt config dir
+        '--out=yaml',               # return YAML formatted results
+        '--map={2}',                # the map file to use for launching
     ]
 
     # parallize the salt-cloud launch
     if parallel:
-        cmd_args.append('-P')
+        cmd_args.append('--parallel')
 
     return ' '.join(cmd_args).format(
         log_file,
+        settings.STACKDIO_CONFIG.salt_config_root,
         stack.map_file.path,
-        settings.STACKDIO_CONFIG.salt_providers_dir,
-        settings.STACKDIO_CONFIG.salt_profiles_dir,
-        settings.STACKDIO_CONFIG.salt_cloud_config,
     )
 
 
