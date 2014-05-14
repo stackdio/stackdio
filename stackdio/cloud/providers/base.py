@@ -36,6 +36,7 @@ class BaseCloudProvider(object):
     ACTION_TERMINATE = 'terminate'
     ACTION_LAUNCH = 'launch'
     ACTION_PROVISION = 'provision'
+    ACTION_ORCHESTRATE = 'orchestrate'
 
     def __init__(self, obj=None, *args, **kwargs):
 

@@ -238,6 +238,7 @@ class AWSCloudProvider(BaseCloudProvider):
             self.ACTION_TERMINATE,
             self.ACTION_LAUNCH,
             self.ACTION_PROVISION,
+            self.ACTION_ORCHESTRATE,
         ]
 
     def get_private_key_path(self):
