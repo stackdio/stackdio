@@ -1322,6 +1322,9 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
             '-y',                   # assume yes
             '-d',                   # destroy argument
             '--out=yaml',           # output in JSON
+            '--config-dir={0}'.format(
+                settings.STACKDIO_CONFIG.salt_config_root
+            )
         ]
 
         if parallel:
@@ -1353,18 +1356,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
             # Add the location to the map to destroy the entire stack
             cmd_args.append('-m {0}'.format(stack.map_file.path))
 
-        # Until environment variables work
-        cmd_args.extend([
-            '--providers-config={0}',
-            '--profiles={1}',
-            '--cloud-config={2}'
-        ])
-
-        cmd = ' '.join(cmd_args).format(
-            settings.STACKDIO_CONFIG.salt_providers_dir,
-            settings.STACKDIO_CONFIG.salt_profiles_dir,
-            settings.STACKDIO_CONFIG.salt_cloud_config,
-        )
+        cmd = ' '.join(cmd_args)
 
         logger.debug('Executing command: {0}'.format(cmd))
         result = envoy.run(str(cmd))

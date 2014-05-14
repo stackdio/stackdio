@@ -627,23 +627,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # a yaml output
             query_cmd = ' '.join([
                 'salt-cloud',
-                '-m {0}',                   # map file to use
-                '-F',                       # execute a full query
-                '--out yaml',               # output in yaml format
-                # Until environment variables work
-                '--providers-config={1}',
-                '--profiles={2}',
-                '--cloud-config={3}',
+                '--full-query',             # execute a full query
+                '--out=yaml',               # output in yaml format
+                '--config-dir={0}',         # salt config dir
+                '--map={1}',                # map file to use
             ]).format(
+                settings.STACKDIO_CONFIG.salt_config_root,
                 self.map_file.path,
-                settings.STACKDIO_CONFIG.salt_providers_dir,
-                settings.STACKDIO_CONFIG.salt_profiles_dir,
-                settings.STACKDIO_CONFIG.salt_cloud_config,
             )
 
-            logger.debug('Query hosts command: {0}'.format(query_cmd))
             result = envoy.run(query_cmd)
-            logger.debug('Query hosts status: {0}'.format(result.status_code))
 
             # Run the envoy stdout through the yaml parser. The format
             # will always be a dictionary with one key (the provider type)
