@@ -1,7 +1,6 @@
 import logging
 import multiprocessing
 import os
-import pprint
 import random
 import yaml
 from django.conf import settings
@@ -136,7 +135,6 @@ def regenerate_minion_keys(host, vm_, __opts__):
     sudo = config.get_cloud_config_value(
         'sudo', vm_, __opts__, default=True
     )
-    pprint.pprint(kwargs)
     salt.utils.cloud.root_cmd('rm -rf /etc/salt/pki', tty, sudo, **kwargs)
 
     # Generate new keys for the minion
