@@ -367,7 +367,8 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         with the stack. Request contains JSON with an `action` parameter
         and optional `args` depending on the action being executed.
 
-        Valid actions: stop, start, restart, terminate, provision
+        Valid actions: stop, start, restart, terminate, provision,
+        orchestrate
         '''
 
         stack = self.get_object()
@@ -421,12 +422,14 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                                      'state first. At least one host is '
                                      'reporting an invalid state: {0}'
                                      .format(host.state))
-                if action == driver.ACTION_PROVISION and \
-                   host.state not in (driver.STATE_RUNNING,):
-                    raise BadRequest('Provision action requires all hosts to '
-                                     'be in the running state first. At least '
-                                     'one host is reporting an invalid state: '
-                                     '{0}'.format(host.state))
+                if (
+                    action == driver.ACTION_PROVISION or
+                    action == driver.ACTION_ORCHESTRATE
+                ) and host.state not in (driver.STATE_RUNNING,):
+                    raise BadRequest(
+                        'Provisioning actions require all hosts to be in the '
+                        'running state first. At least one host is reporting '
+                        'an invalid state: {0}'.format(host.state))
 
         # Kick off the celery task for the given action
         stack.set_status(models.Stack.EXECUTING_ACTION,
@@ -452,7 +455,8 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             task_list.append(tasks.destroy_hosts.si(stack.id,
                                                     delete_stack=False))
 
-        elif action == BaseCloudProvider.ACTION_PROVISION:
+        elif action in (BaseCloudProvider.ACTION_PROVISION,
+                        BaseCloudProvider.ACTION_ORCHESTRATE,):
             # action that gets handled later
             pass
 
@@ -477,10 +481,16 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # provisioning tasks
         if action in (BaseCloudProvider.ACTION_START,
                       BaseCloudProvider.ACTION_LAUNCH,
-                      BaseCloudProvider.ACTION_PROVISION):
+                      BaseCloudProvider.ACTION_PROVISION,
+                      BaseCloudProvider.ACTION_ORCHESTRATE):
             task_list.append(tasks.ping.si(stack.id))
             task_list.append(tasks.sync_all.si(stack.id))
+
+        if action == BaseCloudProvider.ACTION_PROVISION:
             task_list.append(tasks.highstate.si(stack.id))
+            task_list.append(tasks.orchestrate.si(stack.id))
+
+        if action == BaseCloudProvider.ACTION_ORCHESTRATE:
             task_list.append(tasks.orchestrate.si(stack.id))
 
         task_list.append(tasks.finish_stack.si(stack.id))
