@@ -1111,7 +1111,7 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
                     settings.STACKDIO_CONFIG.salt_config_root),
                 '-lquiet',                  # quiet stdout
                 '--log-file {0}',           # where to log
-                '--log-file-level debug',   # full logging
+                '--log-file-level info',    # full logging
                 'stackdio.orchestrate',     # custom overstate execution
                 stack.owner.username,       # username is the environment to
                                             # execute in
@@ -1161,9 +1161,35 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
                     f.write(result.std_out)
 
                 # load JSON so we can attempt to catch provisioning errors
-                output = yaml.safe_load(result.std_out)
-                errors = {}
 
+                # Sometimes orchestration likes to output a string before
+                # dumping the yaml, so check for this before loading the
+                # yaml object and strip off the unnecessary strings
+                output = result.std_out
+                stripped = ''
+                while True:
+                    newline = output.find('\n')
+                    if newline < 0:
+                        break
+                    if isinstance(yaml.safe_load(output[:newline]),
+                                  basestring):
+                        # strip off the line and keep going, keeping
+                        # the stripped off portion in case there is
+                        # no yaml to decode
+                        stripped += output[:newline + 1]
+                        output = output[newline + 1:]
+                        continue
+                    break
+
+                # if output still contains data, then it should be a
+                # decodable yaml object/list; else, the stdout was
+                # one big string and is probably an error message
+                if len(output) > 0:
+                    output = yaml.safe_load(output)
+                else:
+                    output = stripped
+
+                errors = {}
                 if isinstance(output, basestring):
                     errors['general'] = [output]
 
