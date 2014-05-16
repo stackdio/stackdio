@@ -4,33 +4,44 @@ import logging
 # Import salt libs
 import salt.overstate
 import salt.output
+from salt.exceptions import SaltInvocationError
 
 logger = logging.getLogger(__name__)
+
+if '__opts__' not in globals():
+    __opts__ = {}
 
 
 def orchestrate(saltenv='base', os_fn=None):
     '''
-    Execute an overstate sequence to orchestrate the executing of states
-    over a group of systems
+    Borrowed and adpated from slat.runners.state::over()
+
+    Modifying this to provide output more suitable to automating our
+    orchestration in stackd.io
 
     CLI Examples:
 
     .. code-block:: bash
 
-        salt-run state.over base /path/to/myoverstate.sls
+        salt-run stackdio.orchestrate <env> </path/to/orchestration.file>
     '''
+    try:
+        overstate = salt.overstate.OverState(__opts__, saltenv, os_fn)
+    except IOError as exc:
+        raise SaltInvocationError(
+            '{0}: {1!r}'.format(exc.strerror, exc.filename)
+        )
     ret = {}
-    overstate = salt.overstate.OverState(__opts__, saltenv, os_fn) # NOQA
     for stage in overstate.stages_iter():
-        if not isinstance(stage, dict):
+        if isinstance(stage, dict):
+            # This is highstate data
+            for host, result in stage.items():
+                if '_|-' in host:
+                    ret.setdefault('__stage__error__', []).append(result)
+                else:
+                    ret.setdefault(host, []).append(result)
+        elif isinstance(stage, list):
+            # we don't care about output from stage executions
             continue
-        for host, result in stage.items():
-            if '_|-' in host:
-                ret.setdefault('__stage__error__', []) \
-                    .append(result)
-            else:
-                ret.setdefault(host, []) \
-                    .append(result)
-
-    salt.output.display_output(ret, 'yaml', opts=__opts__) # NOQA
+    salt.output.display_output(ret, 'yaml', opts=__opts__)
     return overstate.over_run
