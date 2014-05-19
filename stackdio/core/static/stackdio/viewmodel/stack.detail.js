@@ -197,9 +197,13 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
             var stack = {
                 title: record.stack_title.value,
                 description: record.stack_description.value,
-                namespace: record.stack_namespace.value,
                 blueprint: self.selectedBlueprint().id
             };
+
+            // Only send in the namespace if user provided one
+            if(record.stack_namespace.value != '') {
+                stack.namespace = record.stack_namespace.value;
+            }
 
             if (record.stack_properties_preview.value !== '') {
                 stack.properties = JSON.parse(record.stack_properties_preview.value);
