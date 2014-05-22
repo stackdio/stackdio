@@ -32,30 +32,36 @@ define(function () {
             var o, option, options, selectedOptions;
 
             // Collect the fields from the form
-            for (i in obj) {
-                item = obj[i];
-                if (item !== null && item.localName !== undefined && ['select','input','textarea'].indexOf(item.localName) !== -1) {
-
+            for (i = 0; i < obj.elements.length; ++i) {
+                item = obj.elements[i];
+                if(item !== null) {
+                  field_type = item.type.toLowerCase();
                     id = item.id;
                     form[id] = {};
 
-
-                    switch (item.localName) {
+                    switch (field_type) {
                         case 'textarea':
                             form[id].text = item.text;
                             form[id].value = item.value;
                             break;
-                        case 'input':
+                        case 'checkbox':
+                            form[id].text = '';
+                            form[id].value = item.checked;
+                            break;
+                        case 'text':
                             if (item.files === null) {
                                 form[id].text = item.text;
                                 form[id].value = item.value;
-                            } else {
+                            }
+                            else {
                                 form[id].text = '';
                                 form[id].value = '';
                                 form[id].files = item.files;
                             }
                             break;
-                        case 'select':
+                        case 'select-one':
+                        case 'select-multi':
+                        case 'select-multiple':
                             el = document.getElementById(id);
 
                             if (el.multiple) {

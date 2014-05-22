@@ -71,8 +71,15 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         storage=FileSystemStorage(
             location=settings.STACKDIO_CONFIG.salt_providers_dir))
 
+    # Are we using VPC?
+    vpc_id = models.CharField(max_length=64, blank=True)
+
     def __unicode__(self):
         return self.title
+
+    @property
+    def vpc_enabled(self):
+        return len(self.vpc_id) > 0
 
     def get_driver(self):
         # determine the type and implementation class for this provider
@@ -240,13 +247,18 @@ class SecurityGroupQuerySet(TransformQuerySet):
             by_provider.setdefault(group.cloud_provider, []).append(group)
 
         for provider, groups in by_provider.iteritems():
-            names = [group.name for group in groups]
+            group_ids = [group.group_id for group in groups]
             driver = provider.get_driver()
-            provider_groups = driver.get_security_groups(names)
+            provider_groups = driver.get_security_groups(group_ids)
 
             # add in the rules
             for group in groups:
-                group.rules = provider_groups[group.name]['rules']
+                try:
+                    group.rules = provider_groups[group.name]['rules']
+                except KeyError:
+                    logger.debug('Provider groups: {0}'.format(provider_groups))
+                    logger.debug('Group ids: {0}'.format(group_ids))
+                    raise
 
 
 class SecurityGroupManager(TransformManager):
@@ -304,4 +316,9 @@ class SecurityGroup(TimeStampedModel, models.Model):
         '''
         logger.debug('SecurityGroup::rules called...')
         driver = self.cloud_provider.get_driver()
-        return driver.get_security_groups([self.name])[self.name]['rules']
+        try:
+            groups = driver.get_security_groups([self.group_id])
+            return groups[self.name]['rules']
+        except KeyError:
+            logger.debug(groups)
+            raise

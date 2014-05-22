@@ -142,6 +142,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             account.keypair = record.keypair.value;
             account.route53_domain = record.route53_domain.value;
             account.private_key = record.private_key_file.value;
+            account.vpc_enabled = record.vpc_enabled.value == 'yes';
 
             API.Accounts.save(account).then(function (newAccount) {
                 AccountStore.add(newAccount);

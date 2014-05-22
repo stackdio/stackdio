@@ -47,6 +47,14 @@
                 <input type="text" class="form-control" id="secret_access_key" placeholder="">
             </div>
 
+            <div class="form-group">
+                <label for="vpc_enabled" class="control-label">Enable VPC</label>
+                <select id="vpc_enabled" class="form-control selectpicker">
+                    <option value="yes" selected>Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+
             <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
                 <label for="keypair" class="control-label">AWS Keypair Name</label>
                 <input type="text" class="form-control" id="keypair" placeholder="">

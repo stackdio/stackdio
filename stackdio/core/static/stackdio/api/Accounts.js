@@ -26,6 +26,27 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         },
         save: function (account) {
             var deferred = Q.defer();
+
+            $.ajax({
+                url: settings.api.cloud.providers,
+                type: 'POST',
+                data: JSON.stringify(account),
+                headers: {
+                    'X-CSRFToken': stackdio.settings.csrftoken,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                success: function (response) {
+                    deferred.resolve(response);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(JSON.parse(request.responseText));
+                }
+            });
+
+            return deferred.promise;
+
+            /*
             var files, formData = new FormData(), xhr = new XMLHttpRequest();
 
             // Append required fields to the form data
@@ -70,6 +91,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             xhr.send(formData);
 
             return deferred.promise;
+            */
         },
         update: function (account) {
             var deferred = Q.defer();

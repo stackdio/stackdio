@@ -72,6 +72,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'default_availability_zone',
             'yaml',
             'security_groups',
+            'vpc_id',
         )
 
         superuser_fields = ('yaml',)
