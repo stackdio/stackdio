@@ -17,6 +17,7 @@ from cloud.models import (
     CloudProfile,
     CloudInstanceSize,
     CloudZone,
+    Snapshot
 )
 from formulas.models import FormulaComponent
 
@@ -118,10 +119,11 @@ class BlueprintManager(models.Manager):
             # build out the volumes
             for volume in host.get('volumes', []):
                 logger.debug(volume)
+                snapshot = Snapshot.objects.get(pk=volume['snapshot'])
                 host_obj.volumes.create(
                     device=volume['device'],
                     mount_point=volume['mount_point'],
-                    snapshot=volume['snapshot']
+                    snapshot=snapshot
                 )
 
         return blueprint

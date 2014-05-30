@@ -574,3 +574,21 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
                 del provider_groups[group.name]
         response.data['provider_groups'] = provider_groups
         return response
+
+
+class CloudProviderVPCSubnetListAPIView(generics.ListAPIView):
+    '''
+    '''
+
+    def get_provider(self):
+        pk = self.kwargs[self.lookup_field]
+        return models.CloudProvider.objects.get(pk=pk)
+
+    def list(self, request, *args, **kwargs):
+        provider = self.get_provider()
+        driver = provider.get_driver()
+
+        subnets = driver.get_vpc_subnets()
+        return Response({
+            'results': serializers.VPCSubnetSerializer(subnets).data
+        })

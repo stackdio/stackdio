@@ -563,6 +563,8 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                 # Get the host's public IP/host set by the cloud provider. This
                 # is used later when we tie the machine to DNS
                 host.provider_dns = host_data['dnsName'] or ''
+                host.provider_private_dns = host_data['privateDnsName'] or ''
+                host.provider_private_ip = host_data['privateIpAddress'] or ''
 
                 # update the state of the host as provided by ec2
                 host.state = host_data['state']
@@ -1419,6 +1421,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
                 known_hosts.update(instance_id='', state='terminated')
 
         if delete_stack:
+            time.sleep(5)
             for security_group in security_groups:
                 try:
                     driver.delete_security_group(security_group.name)

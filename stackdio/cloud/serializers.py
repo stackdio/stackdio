@@ -259,3 +259,11 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'provider_type',
         )
+
+
+class VPCSubnetSerializer(serializers.Serializer):
+    vpc_id = serializers.Field()
+    id = serializers.Field()
+    availability_zone = serializers.Field()
+    cidr_block = serializers.Field()
+    tags = serializers.Field()

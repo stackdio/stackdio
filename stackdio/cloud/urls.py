@@ -25,6 +25,11 @@ urlpatterns = patterns(
         api.CloudProviderSecurityGroupListAPIView.as_view(),
         name='cloudprovider-securitygroup-list'),
 
+    url(r'^providers/(?P<pk>[0-9]+)/vpc_subnets/$',
+        api.CloudProviderVPCSubnetListAPIView.as_view(),
+        name='cloudprovider-vpcsubnet-list'),
+
+
     url(r'^instance_sizes/$',
         api.CloudInstanceSizeListAPIView.as_view(),
         name='cloudinstancesize-list'),

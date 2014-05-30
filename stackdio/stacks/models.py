@@ -744,6 +744,8 @@ class Host(TimeStampedModel, StatusDetailModel):
     # the DNS name set by whatever cloud provider is being used
     # and set it here
     provider_dns = models.CharField(max_length=64, blank=True)
+    provider_private_dns = models.CharField(max_length=64, blank=True)
+    provider_private_ip = models.CharField(max_length=64, blank=True)
 
     # The FQDN for the host. This includes the hostname and the
     # domain if it was registered with DNS

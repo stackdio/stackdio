@@ -99,8 +99,8 @@ def get_stack_vm_map(stack):
 
 def get_ssh_kwargs(host, vm_, __opts__):
     return {
-        'host': host.provider_dns,
-        'hostname': host.provider_dns,
+        'host': host.provider_private_dns,
+        'hostname': host.provider_private_dns,
         'timeout': 3,
         'display_ssh_output': False,
         'key_filename': config.get_cloud_config_value(
@@ -374,8 +374,8 @@ def deploy_vm(params):
     # The big deploy kwargs object. This is roughly the exact same as that
     # in the salt.cloud.clouds.ec2::create method.
     deploy_kwargs = {
-        'host': host_obj.provider_dns,
-        'hostname': host_obj.provider_dns,
+        'host': host_obj.provider_private_dns,
+        'hostname': host_obj.provider_private_dns,
         'username': username,
         'key_filename': key_filename,
         'tmp_dir': config.get_cloud_config_value(
