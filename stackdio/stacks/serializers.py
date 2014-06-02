@@ -17,6 +17,7 @@ class StackPropertiesSerializer(serializers.Serializer):
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
     availability_zone = serializers.PrimaryKeyRelatedField()
+    subnet_id = serializers.Field()
     formula_components = BlueprintHostFormulaComponentSerializer(many=True)
 
     class Meta:
@@ -31,6 +32,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'status',
             'status_detail',
             'availability_zone',
+            'subnet_id',
             'created',
             'sir_id',
             'sir_price',
@@ -65,7 +67,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     volume_count = serializers.Field(source='volumes.count')
     properties = serializers.HyperlinkedIdentityField(
         view_name='stack-properties')
-    #history = StackHistorySerializer(many=True)
     history = serializers.HyperlinkedIdentityField(
         view_name='stack-history')
 

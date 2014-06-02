@@ -57,6 +57,8 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
     provider_type_name = serializers.Field(source='provider_type.type_name')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-securitygroup-list')
+    vpc_subnets = serializers.HyperlinkedIdentityField(
+        view_name='cloudprovider-vpcsubnet-list')
 
     class Meta:
         model = models.CloudProvider
@@ -71,8 +73,9 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'account_id',
             'default_availability_zone',
             'yaml',
-            'security_groups',
             'vpc_id',
+            'security_groups',
+            'vpc_subnets',
         )
 
         superuser_fields = ('yaml',)

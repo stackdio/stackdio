@@ -612,9 +612,15 @@ class AWSCloudProvider(BaseCloudProvider):
         return result
 
     def get_vpc_subnets(self, subnet_ids=[]):
-        vpc = self.connect_vpc()
-        subnets = vpc.get_all_subnets(subnet_ids)
-        return subnets
+        try:
+            vpc = self.connect_vpc()
+            subnets = vpc.get_all_subnets(subnet_ids)
+            return subnets
+        except boto.exception.EC2ResponseError:
+            logger.exception('Error looking up subnet_ids: {0}'.format(
+                subnet_ids
+            ))
+            return None
 
     def has_image(self, image_id):
         '''

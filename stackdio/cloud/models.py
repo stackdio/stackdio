@@ -253,12 +253,7 @@ class SecurityGroupQuerySet(TransformQuerySet):
 
             # add in the rules
             for group in groups:
-                try:
-                    group.rules = provider_groups[group.name]['rules']
-                except KeyError:
-                    logger.debug('Provider groups: {0}'.format(provider_groups))
-                    logger.debug('Group ids: {0}'.format(group_ids))
-                    raise
+                group.rules = provider_groups[group.name]['rules']
 
 
 class SecurityGroupManager(TransformManager):

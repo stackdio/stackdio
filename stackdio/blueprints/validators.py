@@ -33,6 +33,8 @@ class ValidationErrors(object):
     MIN_HOSTS = 'Must have at least one host.'
     MIN_ONE = 'Must be greater than zero.'
 
+    UNHANDLED_ERROR = 'An unhandled error occurred.'
+
 
 class BlueprintValidator(object):
 
@@ -118,8 +120,18 @@ class BlueprintValidator(object):
             host_errors.update(self._validate_host_count(host))
             host_errors.update(self._validate_host_size(host))
             host_errors.update(self._validate_host_template(host))
-            host_errors.update(self._validate_host_profile(host))
-            host_errors.update(self._validate_host_zone(host))
+            profile_error = self._validate_host_profile(host)
+            host_errors.update(profile_error)
+
+            if not profile_error:
+                cloud_profile = models.CloudProfile.objects.get(
+                    pk=host['cloud_profile']
+                )
+                if not cloud_profile.cloud_provider.vpc_enabled:
+                    host_errors.update(self._validate_host_zone(host))
+                else:
+                    host_errors.update(self._validate_host_subnet(host))
+
             host_errors.update(self._validate_host_components(host))
             host_errors.update(self._validate_host_access_rules(host))
             host_errors.update(self._validate_host_volumes(host))
@@ -231,6 +243,26 @@ class BlueprintValidator(object):
                 e['zone'] = ValidationErrors.DOES_NOT_EXIST
         return e
 
+    def _validate_host_subnet(self, host):
+        e = {}
+        # Subnets are for hosts being launched into a provider that's using
+        # VPC
+        if 'subnet_id' not in host:
+            e['subnet_id'] = ValidationErrors.REQUIRED_FIELD
+        # check for the zone
+        else:
+            try:
+                cloud_profile = models.CloudProfile.objects.get(
+                    pk=host['cloud_profile']
+                )
+                driver = cloud_profile.get_driver()
+                subnets = driver.get_vpc_subnets([host['subnet_id']])
+                if subnets is None:
+                    e['subnet_id'] = ValidationErrors.DOES_NOT_EXIST
+            except Exception:
+                e['subnet_id'] = ValidationErrors.UNHANDLED_ERROR
+        return e
+
     def _validate_host_components(self, host):
         e = {}
         formula_components = host.get('formula_components', [])
@@ -264,7 +296,7 @@ class BlueprintValidator(object):
 
                 e.setdefault('formula_components', []).append(errors)
 
-        if not any(e['formula_components']):
+        if not any(e.get('formula_components', [])):
             return {}
         return e
 
@@ -323,7 +355,8 @@ class BlueprintValidator(object):
                     errors['rule'] = ValidationErrors.REQUIRED_FIELD
 
                 e.setdefault('access_rules', []).append(errors)
-        if not any(e['access_rules']):
+
+        if not any(e.get('access_rules', [])):
             return {}
         return e
 
@@ -372,7 +405,7 @@ class BlueprintValidator(object):
                 errors.update(self._validate_host_volume_snapshot(volume))
                 e.setdefault('volumes', []).append(errors)
 
-        if not any(e['volumes']):
+        if not any(e.get('volumes', [])):
             return {}
         return e
 
