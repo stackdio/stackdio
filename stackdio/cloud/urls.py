@@ -29,7 +29,6 @@ urlpatterns = patterns(
         api.CloudProviderVPCSubnetListAPIView.as_view(),
         name='cloudprovider-vpcsubnet-list'),
 
-
     url(r'^instance_sizes/$',
         api.CloudInstanceSizeListAPIView.as_view(),
         name='cloudinstancesize-list'),

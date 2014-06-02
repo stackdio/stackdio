@@ -53,7 +53,8 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
     provider_type = serializers.PrimaryKeyRelatedField()
-    default_availability_zone = serializers.PrimaryKeyRelatedField()
+    default_availability_zone = serializers.PrimaryKeyRelatedField(
+        required=False)
     provider_type_name = serializers.Field(source='provider_type.type_name')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-securitygroup-list')
@@ -105,14 +106,17 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
                 request.DATA.get('provider_type'))
 
             # pull the availability zone name
-            try:
-                zone = models.CloudZone.objects.get(
-                    pk=request.DATA['default_availability_zone'])
-                request.DATA['default_availability_zone_name'] = zone.slug
-            except models.CloudZone.DoesNotExist:
-                errors = ['Could not look up availability zone. Did you give '
-                          'a valid id?']
-                raise serializers.ValidationError({'errors': errors})
+            zone = request.DATA.get('default_availability_zone')
+            if zone:
+                try:
+                    zone = models.CloudZone.objects.get(pk=zone)
+                    request.DATA['default_availability_zone_name'] = zone.slug
+                except models.CloudZone.DoesNotExist:
+                    errors = [
+                        'Could not look up availability zone. Did you give '
+                        'a valid id?'
+                    ]
+                    raise serializers.ValidationError({'errors': errors})
 
             provider = provider_class()
             errors = provider.validate_provider_data(request.DATA,

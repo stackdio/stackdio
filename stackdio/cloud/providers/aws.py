@@ -289,8 +289,9 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # Add in the default availability zone to be set in the configuration
         # file
-        config_data['availability_zone'] = \
-            self.obj.default_availability_zone.title
+        if not self.obj.vpc_enabled:
+            config_data['availability_zone'] = \
+                self.obj.default_availability_zone.title
 
         # Save the data out to a file that can be reused by this provider
         # later if necessary
@@ -329,15 +330,6 @@ class AWSCloudProvider(BaseCloudProvider):
                 'The keypair \'{0}\' does not exist in this account.'
                 ''.format(data[self.KEYPAIR])
             )
-
-        # check availability zone
-        try:
-            ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
-        except boto.exception.EC2ResponseError, e:
-            errors.setdefault(self.DEFAULT_AVAILABILITY_ZONE_NAME, []).append(
-                'The availability zone \'{0}\' does not exist in '
-                'this account.'.format(
-                    data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
 
         # check route 53 domain
         try:
@@ -386,6 +378,20 @@ class AWSCloudProvider(BaseCloudProvider):
                         'The VPC \'{0}\' does not exist in this account.'
                         .format(vpc_id)
                     )
+
+        # Check availability zone
+        else:
+            try:
+                ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
+            except boto.exception.EC2ResponseError, e:
+                errors.setdefault(
+                    self.DEFAULT_AVAILABILITY_ZONE_NAME,
+                    []
+                ).append(
+                    'The availability zone \'{0}\' does not exist in '
+                    'this account.'.format(
+                        data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
+                )
 
             '''
             subnets = data.get(self.VPC_SUBNETS)
