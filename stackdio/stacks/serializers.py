@@ -68,6 +68,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     #history = StackHistorySerializer(many=True)
     history = serializers.HyperlinkedIdentityField(
         view_name='stack-history')
+    security_groups = serializers.HyperlinkedIdentityField(
+        view_name='stack-security-groups')
 
     class Meta:
         model = models.Stack
@@ -89,6 +91,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'properties',
             'history',
             'action',
+            'security_groups',
             'logs',
             'orchestration_errors',
             'provisioning_errors',

@@ -24,6 +24,8 @@ from volumes.api import VolumeListAPIView
 from volumes.models import Volume
 from blueprints.models import Blueprint
 from cloud.providers.base import BaseCloudProvider
+from cloud.models import SecurityGroup
+from cloud.serializers import SecurityGroupSerializer
 
 from . import tasks, models, serializers, filters
 
@@ -753,3 +755,26 @@ class StackLogsDetailAPIView(StackLogsAPIView):
             with open(log, 'r') as f:
                 ret = f.read()
         return Response(ret)
+
+
+class StackSecurityGroupsAPIView(generics.ListAPIView):
+
+    model = models.Stack
+
+    def get(self, request, *args, **kwargs):
+        queryset = SecurityGroup.objects.filter(is_managed=True)
+
+        stack = self.get_object()
+
+        ret = []
+
+        for group in queryset:
+            spl = group.name.split('-')
+            pk = int(spl[len(spl)-1])
+               
+            if pk == stack.pk:
+                ret.append(group)
+
+        serializer = SecurityGroupSerializer(ret, many=True)
+
+        return Response(serializer.data)
