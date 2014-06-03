@@ -778,3 +778,19 @@ class StackSecurityGroupsAPIView(generics.ListAPIView):
         serializer = SecurityGroupSerializer(ret, many=True)
 
         return Response(serializer.data)
+    
+class StackAccessRulesAPIView(generics.ListCreateAPIView):
+
+    model = models.StackAccessRule
+    #serializer_class = serializers.AccessRuleSerializer
+
+    def get(self, request, pk, *args, **kwargs):
+        stack_id = pk
+
+        query = models.StackAccessRule.objects.filter(stack=stack_id)
+
+        serializer = serializers.AccessRuleSerializer(query, many=True)
+
+        return Response(serializer.data)
+
+   

@@ -68,6 +68,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     #history = StackHistorySerializer(many=True)
     history = serializers.HyperlinkedIdentityField(
         view_name='stack-history')
+    access_rules = serializers.HyperlinkedIdentityField(
+        view_name='stack-access-rules')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='stack-security-groups')
 
@@ -91,8 +93,20 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'properties',
             'history',
             'action',
+            'access_rules',
             'security_groups',
             'logs',
             'orchestration_errors',
             'provisioning_errors',
+        )
+
+class AccessRuleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.StackAccessRule
+        fields = (
+            'protocol',
+            'from_port',
+            'to_port',
+            'rule',
         )
