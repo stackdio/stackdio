@@ -1,11 +1,12 @@
 define([
     'q', 
+    'settings',
     'knockout',
     'util/galaxy',
     'viewmodel/search',
     'viewmodel/welcome'
 ],
-function (Q, ko, $galaxy, search, welcome) {
+function (Q, settings, ko, $galaxy, search, welcome) {
     var vm = function () {
         var self = this;
 

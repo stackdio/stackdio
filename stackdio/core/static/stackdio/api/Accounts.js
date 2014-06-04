@@ -137,6 +137,26 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             });
             
             return deferred.promise;
+        },
+        subnets: function (account) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: account.url + 'vpc_subnets/',
+                type: 'GET',
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve(response.results);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(JSON.parse(request.responseText).detail);
+                }
+            });
+            
+            return deferred.promise;
         }
     }
 });
