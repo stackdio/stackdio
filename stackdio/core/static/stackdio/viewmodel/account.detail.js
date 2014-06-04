@@ -23,6 +23,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
         self.selectedProviderType = ko.observable(null);
         self.accountTitle = ko.observable(null);
         self.currentMode = ko.observable('create');
+        self.vpcId = ko.observable(null);
         self.$galaxy = $galaxy;
 
         self.ProviderTypeStore = ProviderTypeStore;
@@ -142,6 +143,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             account.keypair = record.keypair.value;
             account.route53_domain = record.route53_domain.value;
             account.private_key = record.private_key_file.value;
+            account.vpc_id = record.vpc_id.value;
 
             API.Accounts.save(account).then(function (newAccount) {
                 AccountStore.add(newAccount);

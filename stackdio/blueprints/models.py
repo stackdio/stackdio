@@ -17,6 +17,7 @@ from cloud.models import (
     CloudProfile,
     CloudInstanceSize,
     CloudZone,
+    Snapshot
 )
 from formulas.models import FormulaComponent
 
@@ -70,21 +71,28 @@ class BlueprintManager(models.Manager):
         for host in data['hosts']:
             profile_obj = CloudProfile.objects.get(pk=host['cloud_profile'])
             size_obj = CloudInstanceSize.objects.get(pk=host['size'])
-            zone_obj = CloudZone.objects.get(pk=host['zone'])
             spot_price = host.get('spot_config', {}).get('spot_price', None)
             formula_components = host.get('formula_components', [])
             if spot_price is not None:
                 spot_price = Decimal(str(spot_price))
-            host_obj = blueprint.host_definitions.create(
+
+            kwargs = dict(
                 title=host['title'],
                 description=host.get('description', ''),
                 count=host['count'],
                 hostname_template=host['hostname_template'],
                 cloud_profile=profile_obj,
                 size=size_obj,
-                zone=zone_obj,
                 spot_price=spot_price,
             )
+
+            if profile_obj.cloud_provider.vpc_enabled:
+                kwargs['subnet_id'] = host.get('subnet_id')
+            else:
+                zone_obj = CloudZone.objects.get(pk=host['zone'])
+                kwargs['zone'] = zone_obj
+
+            host_obj = blueprint.host_definitions.create(**kwargs)
 
             # create extended formula components for the blueprint
             for component in formula_components:
@@ -118,10 +126,11 @@ class BlueprintManager(models.Manager):
             # build out the volumes
             for volume in host.get('volumes', []):
                 logger.debug(volume)
+                snapshot = Snapshot.objects.get(pk=volume['snapshot'])
                 host_obj.volumes.create(
                     device=volume['device'],
                     mount_point=volume['mount_point'],
-                    snapshot=volume['snapshot']
+                    snapshot=snapshot
                 )
 
         return blueprint
@@ -209,7 +218,10 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     size = models.ForeignKey('cloud.CloudInstanceSize')
 
     # The default availability zone for the host
-    zone = models.ForeignKey('cloud.CloudZone')
+    zone = models.ForeignKey('cloud.CloudZone', null=True)
+
+    # The subnet id for VPC enabled providers
+    subnet_id = models.CharField(max_length=32, blank=True, default='')
 
     # The spot instance price for this host. If null, spot
     # instances will not be used for this host.

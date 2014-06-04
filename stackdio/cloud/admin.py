@@ -1,35 +1,25 @@
 from django.contrib import admin
+from . import models
 
-from .models import (
-    CloudProviderType, 
-    CloudProvider, 
-    CloudInstanceSize,
-    CloudProfile,
-    Snapshot,
-    SecurityGroup,
-)
 
 class CloudProviderTypeAdmin(admin.ModelAdmin):
-
-
     list_display = [
         'type_name',
     ]
-admin.site.register(CloudProviderType, CloudProviderTypeAdmin)
+admin.site.register(models.CloudProviderType, CloudProviderTypeAdmin)
+
 
 class CloudProviderAdmin(admin.ModelAdmin):
-
-
     list_display = [
         'title',
         'slug',
         'description',
+        'vpc_enabled',
     ]
-admin.site.register(CloudProvider, CloudProviderAdmin)
+admin.site.register(models.CloudProvider, CloudProviderAdmin)
+
 
 class CloudInstanceSizeAdmin(admin.ModelAdmin):
-
-
     list_display = [
         'title',
         'slug',
@@ -37,11 +27,10 @@ class CloudInstanceSizeAdmin(admin.ModelAdmin):
         'provider_type',
         'instance_id',
     ]
-admin.site.register(CloudInstanceSize, CloudInstanceSizeAdmin)
+admin.site.register(models.CloudInstanceSize, CloudInstanceSizeAdmin)
+
 
 class CloudProfileAdmin(admin.ModelAdmin):
-
-
     list_display = [
         'title',
         'cloud_provider',
@@ -49,7 +38,7 @@ class CloudProfileAdmin(admin.ModelAdmin):
         'default_instance_size',
         'ssh_user',
     ]
-admin.site.register(CloudProfile, CloudProfileAdmin)
+admin.site.register(models.CloudProfile, CloudProfileAdmin)
 
 
 class SnapshotAdmin(admin.ModelAdmin):
@@ -61,7 +50,7 @@ class SnapshotAdmin(admin.ModelAdmin):
         'size_in_gb',
         'filesystem_type',
     ]
-admin.site.register(Snapshot, SnapshotAdmin)
+admin.site.register(models.Snapshot, SnapshotAdmin)
 
 
 class SecurityGroupAdmin(admin.ModelAdmin):
@@ -72,5 +61,4 @@ class SecurityGroupAdmin(admin.ModelAdmin):
         'owner',
         'is_default',
     ]
-admin.site.register(SecurityGroup, SecurityGroupAdmin)
-
+admin.site.register(models.SecurityGroup, SecurityGroupAdmin)

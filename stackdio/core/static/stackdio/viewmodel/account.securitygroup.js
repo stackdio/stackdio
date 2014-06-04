@@ -90,7 +90,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                 API.SecurityGroups.loadByAccount(account).then(function (data) {
                     for (var group in data.provider_groups) {
                         var thisGroup = data.provider_groups[group];
-                        thisGroup.display_name = thisGroup.name + ' (' + thisGroup.id + ') ' + thisGroup.description;
+                        thisGroup.display_name = thisGroup.name + ' (' + thisGroup.group_id + ') ' + thisGroup.description;
                         self.AccountSecurityGroupStore.add(thisGroup);
                     }
 
@@ -153,10 +153,11 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             var selectedId = document.getElementById('aws_security_group').value;
 
             var selectedGroup = self.AccountSecurityGroupStore.collection().filter(function (group) {
-                return group.id === selectedId;
+                return group.group_id === selectedId;
             })[0];
 
             var record = {};
+            record.group_id = selectedGroup.group_id;
             record.name = selectedGroup.name;
             record.cloud_provider = self.selectedAccount().id;
             record.is_default = true;
@@ -182,6 +183,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
 
             var record = {};
             record.name = selectedGroup.name;
+            record.group_id = selectedGroup.group_id;
             record.cloud_provider = self.selectedAccount().id;
             record.is_default = true;
             record.description = "";
