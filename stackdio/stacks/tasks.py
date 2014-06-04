@@ -1188,6 +1188,11 @@ def orchestrate(stack_id, host_ids=None, max_retries=0):
                 # one big string and is probably an error message
                 if len(output) > 0:
                     output = yaml.safe_load(output)
+
+                    # Log out the stripped off portion
+                    logger.info('Stripped orchestration output: {0}'.format(
+                        stripped
+                    ))
                 else:
                     output = stripped
 
