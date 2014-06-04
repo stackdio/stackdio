@@ -113,6 +113,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                 $('#default_availability_zone').val(account.default_availability_zone);
                 $('#private_key_file').val(account.yaml);
                 $('#private_key_file').attr('disabled', 'disabled');
+                self.vpcId(account.vpc_id);
 
                 self.currentMode('edit');
             } else if (provider_type && provider_type.hasOwnProperty('id')) {
