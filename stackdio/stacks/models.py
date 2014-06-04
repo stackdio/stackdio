@@ -111,7 +111,7 @@ class StackManager(models.Manager):
         stack.save()
 
         # add the namespace
-        namespace = data.get('namespace', None)
+        namespace = data.get('namespace', '').strip()
         if not namespace:
             namespace = 'stack{0}'.format(stack.pk)
         stack.namespace = namespace
