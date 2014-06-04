@@ -95,6 +95,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                 $('#default_availability_zone').val('');
                 $('#route53_domain').val('');
                 $('#private_key_file').val('');
+                self.vpcId(null);
             }
 
             if (data.hasOwnProperty('type')) {
