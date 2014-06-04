@@ -685,6 +685,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             os.makedirs(log_dir)
         return log_dir
 
+    def get_security_groups(self):
+        groups = SecurityGroup.objects.filter(is_managed=True, hosts__stack=self)
+        
+        ret = []
+        for group in groups:
+            if group not in ret:
+                 ret.append(group)
+
+        return ret
 
 class StackHistory(TimeStampedModel):
 

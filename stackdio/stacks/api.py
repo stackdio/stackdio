@@ -757,24 +757,18 @@ class StackLogsDetailAPIView(StackLogsAPIView):
         return Response(ret)
 
 
-class StackSecurityGroupsAPIView(generics.ListAPIView):
+class StackSecurityGroupsAPIView(PublicStackMixin, generics.ListAPIView):
     model = SecurityGroup
     serializer_class = SecurityGroupSerializer
   
     def get_queryset(self):
-        stack = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
-        groups = SecurityGroup.objects.filter(is_managed=True, 
-                                              hosts__stack=stack)
-        ret = []
-        for group in groups:
-            if group not in ret:
-                ret.append(group)
-
-        return ret
+        stack = self.get_object()
+        return stack.get_security_groups()
     
 
-class AccessRuleListAPIView(generics.ListAPIView):
+class AccessRuleListAPIView(PublicStackMixin, generics.ListAPIView):
     model = models.StackAccessRule
+    serializer_class = serializers.AccessRuleSerializer
 
     def get_queryset(self):
         return models.StackAccessRule.objects.filter(
@@ -783,20 +777,95 @@ class AccessRuleListAPIView(generics.ListAPIView):
 
 class AccessRuleDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = models.StackAccessRule
+    serializer_class = serializers.AccessRuleSerializer
+
+    def pre_save(self, obj):
+        sgs = obj.stack.get_security_groups()
+        
+        data = {
+            "protocol": obj.protocol,
+            "from_port": obj.from_port,
+            "to_port": obj.to_port
+        }
+
+        old_rule = self.model.objects.get(pk=self.kwargs.get('pk'))
+        
+        old_data = {
+            "protocol": old_rule.protocol,
+            "from_port": old_rule.from_port,
+            "to_port": old_rule.to_port,
+            "rule": old_rule.rule
+        }
+
+        if old_rule is not obj:
+        
+            for sg in sgs:
+                provider = sg.cloud_provider
+                driver = provider.get_driver()
+
+                rule = obj.rule
+                if not driver.is_cidr_rule(rule) and ':' not in rule:
+                    rule = provider.account_id + ':' + rule
+                    obj.rule = rule
+                    logger.debug('Prefixing group rule with account id. '
+                                'New rule: {0}'.format(rule))
+
+                data['rule'] = obj.rule
+                
+                driver.revoke_security_group(sg.name, old_data)
+                driver.authorize_security_group(sg.name, data)
+
+    def pre_delete(self, obj):
+        sgs = obj.stack.get_security_groups()
+        
+        data = {
+            "protocol": obj.protocol,
+            "from_port": obj.from_port,
+            "to_port": obj.to_port,
+            "rule": obj.rule
+        }
+
+        for sg in sgs:
+            provider = sg.cloud_provider
+            driver = provider.get_driver()
+
+            driver.revoke_security_group(sg.name, data)
 
 
 class StackAccessRulesAPIView(generics.ListCreateAPIView):
 
     model = models.StackAccessRule
-    #serializer_class = serializers.AccessRuleSerializer
+    serializer_class = serializers.AccessRuleSerializer
 
-    def get(self, request, pk, *args, **kwargs):
-        stack_id = pk
+    def get_object(self):
+       return get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
 
-        query = models.StackAccessRule.objects.filter(stack=stack_id)
+    def get_queryset(self):
+        stack = self.get_object()
+        return models.StackAccessRule.objects.filter(stack=stack)
 
-        serializer = serializers.AccessRuleSerializer(query, many=True)
+    def pre_save(self, obj):
+        obj.stack = self.get_object()
+        sgs = obj.stack.get_security_groups()
+        
+        for sg in sgs:
+            provider = sg.cloud_provider
+            driver = provider.get_driver()
 
-        return Response(serializer.data)
+            rule = obj.rule
+            if not driver.is_cidr_rule(rule) and ':' not in rule:
+                rule = provider.account_id + ':' + rule
+                obj.rule = rule
+                logger.debug('Prefixing group rule with account id. '
+                             'New rule: {0}'.format(rule))
 
-   
+            data = {
+                "protocol": obj.protocol,
+                "from_port": obj.from_port,
+                "to_port": obj.to_port,
+                "rule": obj.rule
+            }
+
+            driver.authorize_security_group(sg.name, data)
+
+

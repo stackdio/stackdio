@@ -100,11 +100,18 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'provisioning_errors',
         )
 
-class AccessRuleSerializer(serializers.ModelSerializer):
+class AccessRuleSerializer(serializers.HyperlinkedModelSerializer):
+
+    stack = serializers.HyperlinkedRelatedField(read_only=True, 
+                                            view_name='stack-detail')
 
     class Meta:
         model = models.StackAccessRule
+        view_name = 'access-rule-detail'
         fields = (
+            'id',
+            'url',
+            'stack',
             'protocol',
             'from_port',
             'to_port',

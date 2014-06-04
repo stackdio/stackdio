@@ -13,6 +13,14 @@ urlpatterns = patterns(
         api.HostDetailAPIView.as_view(),
         name='host-detail'),
 
+    url(r'^access_rules/$',
+        api.AccessRuleListAPIView.as_view(),
+        name='access-rule-list'),
+    
+    url(r'^access_rules/(?P<pk>[0-9]+)/$',
+        api.AccessRuleDetailAPIView.as_view(),
+        name='access-rule-detail'),
+
     url(r'^stacks/$',
         api.StackListAPIView.as_view(),
         name='stack-list'),
@@ -69,7 +77,7 @@ urlpatterns = patterns(
         api.StackSecurityGroupsAPIView.as_view(),
         name='stack-security-groups'),
 
-    url(r'stacks/(?P<pk>[0-9]+)/access_rules/$',
+    url(r'^stacks/(?P<pk>[0-9]+)/access_rules/$',
         api.StackAccessRulesAPIView.as_view(),
         name='stack-access-rules'),
 )
