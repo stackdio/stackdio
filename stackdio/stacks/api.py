@@ -758,27 +758,33 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 
 
 class StackSecurityGroupsAPIView(generics.ListAPIView):
-
-    model = models.Stack
-
-    def get(self, request, *args, **kwargs):
-        queryset = SecurityGroup.objects.filter(is_managed=True)
-
-        stack = self.get_object()
-
+    model = SecurityGroup
+    serializer_class = SecurityGroupSerializer
+  
+    def get_queryset(self):
+        stack = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
+        groups = SecurityGroup.objects.filter(is_managed=True, 
+                                              hosts__stack=stack)
         ret = []
-
-        for group in queryset:
-            spl = group.name.split('-')
-            pk = int(spl[len(spl)-1])
-               
-            if pk == stack.pk:
+        for group in groups:
+            if group not in ret:
                 ret.append(group)
 
-        serializer = SecurityGroupSerializer(ret, many=True)
-
-        return Response(serializer.data)
+        return ret
     
+
+class AccessRuleListAPIView(generics.ListAPIView):
+    model = models.StackAccessRule
+
+    def get_queryset(self):
+        return models.StackAccessRule.objects.filter(
+                stack__owner=self.request.user)
+        
+
+class AccessRuleDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    model = models.StackAccessRule
+
+
 class StackAccessRulesAPIView(generics.ListCreateAPIView):
 
     model = models.StackAccessRule
