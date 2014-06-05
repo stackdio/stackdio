@@ -635,6 +635,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         Uses salt-cloud to query all the hosts for the given stack id.
         '''
         try:
+            if not self.map_file:
+                return {}
+
             logger.info('get_hosts_info: {0!r}'.format(self))
 
             # salt-cloud command to pull host information with
