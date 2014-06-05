@@ -230,6 +230,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
             raise PermissionDenied()
 
         name = request.DATA.get('name')
+        group_id = request.DATA.get('group_id')
         description = request.DATA.get('description')
         provider_id = request.DATA.get('cloud_provider')
         is_default = request.DATA.get('is_default', False)
@@ -247,6 +248,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
         try:
             models.SecurityGroup.objects.get(
                 name=name,
+                group_id=group_id,
                 cloud_provider=provider
             )
             raise ResourceConflict('Security group already exists')
@@ -256,26 +258,27 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
         # check if the group exists on the provider
         provider_group = None
-        try:
-            provider_group = driver.get_security_groups([name])[name]
-            logger.debug('Security group already exists on the '
-                         'provider: {0!r}'.format(provider_group))
+        if group_id:
+            try:
+                provider_group = driver.get_security_groups([group_id])[name]
+                logger.debug('Security group already exists on the '
+                             'provider: {0!r}'.format(provider_group))
 
-            # only admins are allowed to use an existing security group
-            # for security purposes
-            if not owner.is_superuser:
-                raise PermissionDenied('Security group already exists on the '
-                                       'cloud provider and only admins are '
-                                       'allowed to import them.')
-        except (KeyError, PermissionDenied):
-            raise
-        except Exception:
-            # doesn't exist on the provider either, we'll create it now
-            provider_group = None
+                # only admins are allowed to use an existing security group
+                # for security purposes
+                if not owner.is_superuser:
+                    raise PermissionDenied(
+                        'Security group already exists on the cloud provider '
+                        'and only admins are allowed to import them.')
+            except (KeyError, PermissionDenied):
+                raise
+            except Exception:
+                # doesn't exist on the provider either, we'll create it now
+                provider_group = None
 
         # admin is using an existing group, use the existing group id
         if provider_group:
-            group_id = provider_group['id']
+            group_id = provider_group['group_id']
             description = provider_group['description']
         else:
             # create a new group
@@ -458,7 +461,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
     def retrieve(self, request, *args, **kwargs):
         sg = self.get_object()
         driver = sg.cloud_provider.get_driver()
-        result = driver.get_security_groups(sg.name)
+        result = driver.get_security_groups(sg.group_id)
         return Response(result[sg.name]['rules'])
 
     def update(self, request, *args, **kwargs):
@@ -506,7 +509,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
             raise BadRequest('Missing or invalid `action` parameter. Must be '
                              'one of \'authorize\' or \'revoke\'')
 
-        result = driver.get_security_groups(sg.name)
+        result = driver.get_security_groups(sg.group_id)
         return Response(result[sg.name]['rules'])
 
 
@@ -571,3 +574,21 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
                 del provider_groups[group.name]
         response.data['provider_groups'] = provider_groups
         return response
+
+
+class CloudProviderVPCSubnetListAPIView(generics.ListAPIView):
+    '''
+    '''
+
+    def get_provider(self):
+        pk = self.kwargs[self.lookup_field]
+        return models.CloudProvider.objects.get(pk=pk)
+
+    def list(self, request, *args, **kwargs):
+        provider = self.get_provider()
+        driver = provider.get_driver()
+
+        subnets = driver.get_vpc_subnets()
+        return Response({
+            'results': serializers.VPCSubnetSerializer(subnets).data
+        })

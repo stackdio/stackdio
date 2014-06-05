@@ -34,6 +34,8 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
         self.blueprintProperties = ko.observable();
         self.blueprintPropertiesStringified = ko.observable();
         self.hostIsSpotInstance = ko.observable(false);
+        self.vpcEnabled = ko.observable(false);
+        self.subnets = ko.observable([]);
         self.$galaxy = $galaxy;
 
         self.ProfileStore = ProfileStore;
@@ -106,6 +108,7 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
         self.init = function (data) {
             var blueprint = null;
             var profile = null;
+            var provider = null;
 
             // $('#formula_components').selectpicker();
             // $('#host_instance_size').selectpicker();
@@ -133,6 +136,13 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
                 var profileAccount = AccountStore.collection().filter(function (account) {
                     return account.id === profile.cloud_provider;
                 })[0];
+
+                // VPC-related logic
+                self.vpcEnabled(profileAccount.vpc_id.length > 0);
+                API.Accounts.subnets(profileAccount).then(function(subnets) {
+                    self.subnets(subnets);
+                });
+
                 $('#availability_zone').val(profileAccount.default_availability_zone);
 
             }
@@ -143,6 +153,13 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
             });
         };
 
+        self._subnetLabel = function(subnet) {
+            if(subnet.tags && subnet.tags.Name) {
+                return subnet.tags.Name + ' (' + subnet.id + ')';
+            } else {
+                return subnet.id;
+            }
+        };
 
         self.resetFormFields = function () {
             $("#formula_components").attr('selectedIndex', '-1').find("option:selected").removeAttr("selected");
@@ -172,8 +189,7 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
             var record = formutils.collectFormFields(evt.target.form);
             var v, vol;
 
-            // Create a new host definition
-            var host = new models.BlueprintHost().create({ 
+            var params = { 
                 id: '',
                 formulas: [],
                 title: record.host_title.value,
@@ -182,12 +198,15 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
                 size: parseInt(record.host_instance_size.value, 10),
                 hostname_template: record.host_hostname.value,
                 zone: parseInt(record.availability_zone.value, 10),
+                subnet_id: record.subnet_id.value,
                 cloud_profile: self.selectedProfile.id,
                 access_rules: HostRuleStore.collection().map(function (host) { return host; }),
                 volumes: HostVolumeStore.collection().map(function (volume) { return volume; }),
                 formula_components: record.formula_components.map(function (g) { return { id: g.value.split('|')[1], order: 0 }; })
-            });
-
+            };
+            
+            // Create a new host definition
+            var host = new models.BlueprintHost().create(params);
 
             // Get the properties for each formula component the user chose
             record.formula_components.forEach(function (component) {

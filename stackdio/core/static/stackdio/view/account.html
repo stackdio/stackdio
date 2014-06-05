@@ -9,9 +9,12 @@
             <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Provider Detail</div>
         </div>
 
-        <form id="account-form" role="form">
-            <div class="form-group">
-                <label for="account_provider" class="control-label">Provider Type</label>
+        <form id="account-form" role="form" class="row">
+
+            <!-- first column -->
+            <div class="col-xs-6 col-sm-6 col-md-6">
+                <div class="form-group">
+                    <label for="account_provider" class="control-label">Provider Type</label>
                     <select id="account_provider" 
                         data-bind="options: ProviderTypeStore.collection(), 
                                    optionsText: 'title', 
@@ -19,68 +22,83 @@
                                    optionsCaption: 'Choose...'" 
                         data-size="8"
                         data-container="body"
-                        class="form-control"></select>
-            </div>
+                        class="form-control">
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <label for="account_title" class="control-label">Title</label>
-                <input type="text" class="form-control" id="account_title" placeholder="">
-            </div>
+                <div class="form-group">
+                    <label for="account_title" class="control-label">Title</label>
+                    <input type="text" class="form-control" id="account_title" placeholder="">
+                </div>
 
-            <div class="form-group">
-                <label for="account_description" class="control-label">Description</label>
-                <input type="text" class="form-control" id="account_description" placeholder="">
-            </div>
+                <div class="form-group">
+                    <label for="account_description" class="control-label">Description</label>
+                    <input type="text" class="form-control" id="account_description" placeholder="">
+                </div>
 
-            <div class="form-group">
-                <label for="account_id" class="control-label">Account ID</label>
-                <input type="text" class="form-control" id="account_id" placeholder="Log into your account to obtain the id">
-            </div>
+                <div class="form-group">
+                    <label for="account_id" class="control-label">Account ID</label>
+                    <input type="text" class="form-control" id="account_id" placeholder="Log into your account to obtain the id">
+                </div>
 
-            <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
-                <label for="access_key_id" class="control-label">AWS Access Key</label>
-                <input type="text" class="form-control" id="access_key_id" placeholder="">
-            </div>
+                <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
+                    <label for="access_key_id" class="control-label">AWS Access Key</label>
+                    <input type="text" class="form-control" id="access_key_id" placeholder="">
+                </div>
 
-            <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
-                <label for="secret_access_key" class="control-label">AWS Secret Key</label>
-                <input type="text" class="form-control" id="secret_access_key" placeholder="">
-            </div>
+                <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
+                    <label for="secret_access_key" class="control-label">AWS Secret Key</label>
+                    <input type="text" class="form-control" id="secret_access_key" placeholder="">
+                </div>
 
-            <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
-                <label for="keypair" class="control-label">AWS Keypair Name</label>
-                <input type="text" class="form-control" id="keypair" placeholder="">
-            </div>
+                <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
+                    <label for="keypair" class="control-label">AWS Keypair Name</label>
+                    <input type="text" class="form-control" id="keypair" placeholder="">
+                </div>
 
-            <div class="form-group">
-                <label for="default_availability_zone" class="control-label">Default Zone</label>
-                    <select id="default_availability_zone" 
-                        data-bind="options: ZoneStore.collection(), 
-                                   optionsText: 'title', 
-                                   optionsValue: 'id', 
-                                   optionsCaption: 'Choose default zone...'" 
-                        data-container="body"
-                        class="form-control selectpicker"></select>
             </div>
+            <!-- / first column -->
 
-            <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
-                <label for="route53_domain" class="control-label">Route 53 Domain</label>
-                <input type="text" class="form-control" id="route53_domain" placeholder="e.g. dev.synthesyscloud.com">
+            <!-- second column -->
+            <div class="col-xs-6 col-sm-6 col-md-6">
+
+                <div class="form-group">
+                    <label for="vpc_id" class="control-label">VPC ID</label>
+                    <input type="text" class="form-control" id="vpc_id" data-bind="value: vpcId" placeholder="VPC ID if you choose to enable VPC for this provider.">
+                </div>
+
+                <div class="form-group">
+                    <label for="default_availability_zone" class="control-label">Default Zone</label>
+                        <select id="default_availability_zone" 
+                            data-bind="options: ZoneStore.collection(), 
+                                       optionsText: 'title', 
+                                       optionsValue: 'id', 
+                                       optionsCaption: 'Choose default zone...',
+                                       disable: vpcId"
+                            data-container="body"
+                            class="form-control selectpicker"></select>
+                </div>
+
+                <div class="form-group" data-bind="visible: ($root.currentMode() === 'create')">
+                    <label for="route53_domain" class="control-label">Route 53 Domain</label>
+                    <input type="text" class="form-control" id="route53_domain" placeholder="e.g. dev.synthesyscloud.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="private_key_file" 
+                           class="control-label"
+                           data-bind="visible: ($root.currentMode() === 'create')">Private Key File</label>
+                    <label for="private_key_file" 
+                           class="control-label" 
+                           data-bind="visible: ($root.currentMode() === 'edit')">Provider Info</label>
+
+                    <textarea class="form-control" 
+                              id="private_key_file" 
+                              rows="9" 
+                              placeholder="Enter in the private key that will be used to set up instances for this provider account"></textarea>
+                </div>
             </div>
-
-            <div class="form-group">
-                <label for="private_key_file" 
-                       class="control-label"
-                       data-bind="visible: ($root.currentMode() === 'create')">Private Key File</label>
-                <label for="private_key_file" 
-                       class="control-label" 
-                       data-bind="visible: ($root.currentMode() === 'edit')">Provider Info</label>
-
-                <textarea class="form-control" 
-                          id="private_key_file" 
-                          rows="9" 
-                          placeholder="Enter in the private key that will be used to set up instances for this provider account"></textarea>
-            </div>
+            <!-- / second column -->
 
             <div class="row">
                  <div class="col-md-2 col-md-offset-10">
@@ -88,6 +106,7 @@
                     <button class="btn btn-primary pull-right" data-bind="click: saveAccount">Save</button>
                 </div>
             </div>
+            <br>
             
         </form>
     </div>

@@ -47,7 +47,7 @@ function (Q, ko, $galaxy, alerts, API) {
         */
         self.saveProfile = function () {
             API.Users.saveKey($('#public_key').val()).then(function () {
-                alerts.showMessage('#success', 'Your profile was successfully saved.', true);
+                alerts.showMessage('#success', 'Cloud profile successfully saved.', true);
             });
         };
 
