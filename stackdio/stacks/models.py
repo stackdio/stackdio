@@ -759,6 +759,10 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     subnet_id = models.CharField(max_length=32, blank=True, default='')
 
+    blueprint_host_definition = models.ForeignKey(
+        'blueprints.BlueprintHostDefinition',
+        related_name='hosts')
+
     formula_components = models.ManyToManyField(
         'blueprints.BlueprintHostFormulaComponent',
         related_name='hosts')

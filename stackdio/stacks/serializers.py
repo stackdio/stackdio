@@ -95,7 +95,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'properties',
             'history',
             'action',
-            'access_rules',
             'security_groups',
             'logs',
             'orchestration_errors',
