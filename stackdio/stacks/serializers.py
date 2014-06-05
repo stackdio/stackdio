@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from . import models
 from blueprints.serializers import BlueprintHostFormulaComponentSerializer
+from cloud.serializers import SecurityGroupSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,9 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'orchestration_errors',
             'provisioning_errors',
         )
+
+class StackSecurityGroupSerializer(SecurityGroupSerializer):
+    pass
 
 class AccessRuleSerializer(serializers.HyperlinkedModelSerializer):
 

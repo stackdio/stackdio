@@ -25,7 +25,6 @@ from volumes.models import Volume
 from blueprints.models import Blueprint
 from cloud.providers.base import BaseCloudProvider
 from cloud.models import SecurityGroup
-from cloud.serializers import SecurityGroupSerializer
 
 from . import tasks, models, serializers, filters
 
@@ -759,7 +758,7 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 
 class StackSecurityGroupsAPIView(PublicStackMixin, generics.ListAPIView):
     model = SecurityGroup
-    serializer_class = SecurityGroupSerializer
+    serializer_class = serializers.StackSecurityGroupSerializer
   
     def get_queryset(self):
         stack = self.get_object()

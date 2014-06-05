@@ -686,8 +686,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return log_dir
 
     def get_security_groups(self):
-        groups = SecurityGroup.objects.filter(is_managed=True, hosts__stack=self)
-        
+        groups = SecurityGroup.objects.filter(is_managed=True, 
+                                              hosts__stack=self)
         ret = []
         for group in groups:
             if group not in ret:
@@ -793,39 +793,39 @@ class Host(TimeStampedModel, StatusDetailModel):
         return self.cloud_profile.get_driver()
 
 
-class StackAccessRule(TimeStampedModel):
-    '''
-    Access rules are a white list of rules for a stack that defines
-    what protocols and ports are available for the corresponding
-    machines in the stack. In other words, they define the
-    firefall rules for the machine.
-    '''
-    
-    class Meta:
-        verbose_name_plural = 'access rules'
-
-    stack = models.ForeignKey('stacks.Stack',
-                              related_name='access_rules')
-
-    # The protocol for the access rule. One of tcp, udp, or icmp
-    protocol = models.CharField(max_length=4, choices=PROTOCOL_CHOICES)
-
-    # The from and to ports define the range of ports to open for the
-    # given protocol and rule string. To open a single port, the
-    # from and to ports should be the same integer.
-    from_port = models.IntegerField()
-    to_port = models.IntegerField()
-
-    # Rule is a string specifying the CIDR for what network has access
-    # to the given protocl and ports. For AWS, you may also specify
-    # a rule of the form "owner_id:security_group", that will authorize
-    # access to the given security group owned by the owner_id's account
-    rule = models.CharField(max_length=255)
-
-    def __unicode__(self):
-        return u'{0} {1}-{2} {3}'.format(
-            self.protocol,
-            self.from_port,
-            self.to_port,
-            self.rule
-        )
+#class StackAccessRule(TimeStampedModel):
+#    '''
+#    Access rules are a white list of rules for a stack that defines
+#    what protocols and ports are available for the corresponding
+#    machines in the stack. In other words, they define the
+#    firefall rules for the machine.
+#    '''
+#    
+#    class Meta:
+#        verbose_name_plural = 'access rules'
+#
+#    stack = models.ForeignKey('stacks.Stack',
+#                              related_name='access_rules')
+#
+#    # The protocol for the access rule. One of tcp, udp, or icmp
+#    protocol = models.CharField(max_length=4, choices=PROTOCOL_CHOICES)
+#
+#    # The from and to ports define the range of ports to open for the
+#    # given protocol and rule string. To open a single port, the
+#    # from and to ports should be the same integer.
+#    from_port = models.IntegerField()
+#    to_port = models.IntegerField()
+#
+#    # Rule is a string specifying the CIDR for what network has access
+#    # to the given protocl and ports. For AWS, you may also specify
+#    # a rule of the form "owner_id:security_group", that will authorize
+#    # access to the given security group owned by the owner_id's account
+#    rule = models.CharField(max_length=255)
+#
+#    def __unicode__(self):
+#        return u'{0} {1}-{2} {3}'.format(
+#            self.protocol,
+#            self.from_port,
+#            self.to_port,
+#            self.rule
+#        )
