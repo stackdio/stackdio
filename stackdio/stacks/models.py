@@ -195,6 +195,9 @@ class StackManager(models.Manager):
                 else:
                     kwargs['availability_zone'] = hostdef.zone
 
+                # Set blueprint host definition
+                kwargs['blueprint_host_definition_id'] = hostdef.id
+
                 host = stack.hosts.create(**kwargs)
 
                 # Add in the cloud provider default security groups as
@@ -208,7 +211,7 @@ class StackManager(models.Manager):
                 # set security groups
                 host.security_groups.add(*provider_groups)
                 host.security_groups.add(security_group)
-
+                
                 # add formula components
                 host.formula_components.add(*components)
 

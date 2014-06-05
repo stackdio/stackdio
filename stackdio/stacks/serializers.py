@@ -3,8 +3,13 @@ import logging
 from rest_framework import serializers
 
 from . import models
-from blueprints.serializers import BlueprintHostFormulaComponentSerializer
+from blueprints.serializers import (
+        BlueprintHostFormulaComponentSerializer, 
+        BlueprintHostDefinitionSerializer
+    )
+from blueprints.models import BlueprintHostDefinition
 from cloud.serializers import SecurityGroupSerializer
+from cloud.models import SecurityGroup
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +106,36 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'provisioning_errors',
         )
 
+class StackBlueprintHostDefinitionSerializer(
+        BlueprintHostDefinitionSerializer):
+    
+    class Meta:
+        model = BlueprintHostDefinition
+        fields = (
+            'title',
+            'description',
+        )
+
 class StackSecurityGroupSerializer(SecurityGroupSerializer):
-    pass
+    blueprint_host_definition = StackBlueprintHostDefinitionSerializer()
+
+    class Meta:
+        model = SecurityGroup
+        fields = (
+            'id',
+            'url',
+            'name',
+            'description',
+            'group_id',
+            'blueprint_host_definition',
+            'cloud_provider',
+            'provider_id',
+            'owner',
+            'is_default',
+            'is_managed',
+            'active_hosts',
+            'rules',
+        )  
 
 #class AccessRuleSerializer(serializers.HyperlinkedModelSerializer):
 #
