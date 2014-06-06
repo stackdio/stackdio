@@ -5,6 +5,7 @@ define([
     'util/form',
     'store/Stacks',
     'store/StackHosts',
+    'store/StackSecurityGroups',
     'store/Profiles',
     'store/InstanceSizes',
     'store/Blueprints',
@@ -12,7 +13,7 @@ define([
     'store/BlueprintComponents',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
     var vm = function () {
         var self = this;
 
@@ -27,7 +28,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
         self.stackPropertiesStringified = ko.observable();
-        self.stackSecurityGroups = ko.observableArray();
         self.editMode = ko.observable('create');
 
         self.historicalLogText = ko.observable();
@@ -39,6 +39,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
 
         self.StackStore = StackStore;
         self.StackHostStore = StackHostStore;
+        self.StackSecurityGroupStore = StackSecurityGroupStore;
         self.ProfileStore = ProfileStore;
         self.InstanceSizeStore = InstanceSizeStore;
         self.BlueprintHostStore = BlueprintHostStore;
@@ -138,7 +139,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
                     console.error(error);
                 }).done();
 
-                self.stackSecurityGroups.removeAll();
+                self.StackSecurityGroupStore.collection.removeAll();
 
                 // Get stack security groups
                 API.Stacks.getSecurityGroups(stack).then(function (groups) {
@@ -146,11 +147,13 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
                         group.flat_access_rules = group.rules.map(function (rule) {
                             return '<div style="line-height:15px !important;">'+rule.protocol.toUpperCase()+' port(s) '+rule.from_port+'-'+rule.to_port+' allow '+rule.rule+'</div>';
                         }).join('');
-                    });
+                    })
 
-                    for (var i = 0; i < groups.results.length; ++i) {
-                        self.stackSecurityGroups.push(groups.results[i]);
-                    }
+                    self.StackSecurityGroupStore.add(groups.results);
+                }).then(function () {
+                    self.StackSecurityGroupStore.collection.sort(function (left, right) {
+                        return left.blueprint_host_definition.title < right.blueprint_host_definition.title ? -1 : 1;   
+                    });
                 });
 
                 // Find the corresponding blueprint
@@ -159,8 +162,13 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
                 })[0];
 
                 // Get the hosts for the stack
+                self.StackHostStore.collection.removeAll();
                 API.StackHosts.load(stack).then(function (hosts) {
                     self.StackHostStore.add(hosts);
+                }).then(function () {
+                    self.StackHostStore.collection.sort(function (left, right) {
+                        return left.fqdn < right.fqdn ? -1 : 1;
+                    });
                 });
 
                 // Update observables
