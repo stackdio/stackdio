@@ -27,6 +27,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
         self.stackPropertiesStringified = ko.observable();
+        self.stackSecurityGroups = ko.observableArray();
         self.editMode = ko.observable('create');
 
         self.historicalLogText = ko.observable();
@@ -136,6 +137,21 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
                 }).catch(function(error) {
                     console.error(error);
                 }).done();
+
+                self.stackSecurityGroups.removeAll();
+
+                // Get stack security groups
+                API.Stacks.getSecurityGroups(stack).then(function (groups) {
+                    groups.results.forEach(function(group) {
+                        group.flat_access_rules = group.rules.map(function (rule) {
+                            return '<div style="line-height:15px !important;">'+rule.protocol.toUpperCase()+' port(s) '+rule.from_port+'-'+rule.to_port+' allow '+rule.rule+'</div>';
+                        }).join('');
+                    });
+
+                    for (var i = 0; i < groups.results.length; ++i) {
+                        self.stackSecurityGroups.push(groups.results[i]);
+                    }
+                });
 
                 // Find the corresponding blueprint
                 blueprint = BlueprintStore.collection().filter(function (b) {

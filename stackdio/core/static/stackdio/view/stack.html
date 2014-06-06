@@ -9,6 +9,7 @@
             <li class="active"><a href="#detail" class="small-heading" data-toggle="tab">Stack Details</a></li>
             <li><a href="#hosts" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Hosts</a></li>
             <li><a href="#logs" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Logs</a></li>
+            <li><a href="#access" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Access Rules</a></li>
         </ul>
 
         <div class="tab-content">
@@ -57,7 +58,7 @@
                 </div>
             </div>
 
-            <div class="tab-pane active" id="hosts" data-bind="visible: editMode() === 'update'">
+            <div class="tab-pane" id="hosts" data-bind="visible: editMode() === 'update'">
                 <table id="stack-hosts" class="table table-bordered">
                     <thead>
                         <tr>
@@ -133,6 +134,26 @@
                                placeholder="Provisioning error logs will be shown here."></textarea>
                     </div>
                 </div>
+            </div>
+            <div class="tab-pane" id="access" data-bind="visible: editMode() === 'update'">
+                <table id="stack-access" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <td>Host Type</td>
+                            <td>Host Description</td>
+                            <td>Rules</td>
+                            <td data-bind="text: blueprintProperties"></td>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: stackSecurityGroups">
+                        <tr>
+                            <td data-bind="text: $data.blueprint_host_definition.title"></td>
+                            <td data-bind="text: $data.blueprint_host_definition.description"></td>
+                            <td data-bind="html: $data.flat_access_rules"></td>
+                            <td><a data-bind="">Edit</a></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
