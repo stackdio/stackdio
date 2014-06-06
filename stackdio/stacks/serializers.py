@@ -126,6 +126,7 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'url',
             'name',
             'description',
+            'rules_url',
             'group_id',
             'blueprint_host_definition',
             'cloud_provider',

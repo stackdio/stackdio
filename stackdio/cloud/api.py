@@ -455,7 +455,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
     '''
 
     model = models.SecurityGroup
-    serializer_class = serializers.SecurityGroupSerializer
+    serializer_class = serializers.SecurityGroupRuleSerializer
     parser_classes = (parsers.JSONParser,)
 
     def retrieve(self, request, *args, **kwargs):
