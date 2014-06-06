@@ -46,10 +46,10 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise
         },
-        updateRules : function (group, ruleData) {
+        updateRule : function (group, ruleData) {
             var deferred = Q.defer();
             var newRule = JSON.stringify(ruleData);
-            
+           
             $.ajax({
                 url: group.rules_url,
                 type: 'PUT',
