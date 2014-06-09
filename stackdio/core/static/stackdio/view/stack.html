@@ -149,21 +149,33 @@
                         <tr>
                             <td data-bind="text: $data.blueprint_host_definition.title"></td>
                             <td data-bind="text: $data.blueprint_host_definition.description"></td>
-                            <td data-bind="foreach: $data.rules">
+                            <td>
+                              <ul class="list-group" data-bind="foreach: $data.rules">
+                                <li class="list-group-item">
                                 <form role="form" data-bind="attr: { id : $data.uid }">
-                                    <div style="line-height:15px !important;" data-bind="if: $data.from_port == $data.to_port">
-                                      <span data-bind="text: $data.protocol.toUpperCase()"></span> port <span data-bind="text: $data.from_port"></span> allows <span data-bind="text: $data.rule"></span>
-                                    <button type="submit" data-bind="click: $root.deleteRule">Delete</button>
-                                    </div>
-                                    <div style="line-height:15px !important;" data-bind="if: $data.from_port != $data.to_port">
-                                      <span data-bind="text: $data.protocol.toUpperCase()"></span> ports <span data-bind="text: $data.from_port"></span>-<span data-bind="text: $data.to_port"></span> allow <span data-bind="text: $data.rule"></span>
-                                    <button type="submit" data-bind="click: $root.deleteRule">Delete</button>
-                                    </div>
-                                    <input type="hidden" id="rule_protocol" data-bind="attr: { value : $data.protocol }" />
-                                    <input type="hidden" id="rule_from_port" data-bind="attr: { value : $data.from_port }" />
-                                    <input type="hidden" id="rule_to_port" data-bind="attr: { value : $data.to_port }" />
-                                    <input type="hidden" id="rule_rule" data-bind="attr: { value : $data.rule }" />
+                                    <span data-bind="visible: $data.from_port == $data.to_port">
+                                        <span data-bind="text: $data.protocol.toUpperCase()"></span> 
+                                        port <span data-bind="text: $data.from_port"></span> 
+                                        allows <span data-bind="text: $data.rule"></span>
+                                    </span>
+                                    <span data-bind="visible: $data.from_port != $data.to_port">
+                                        <span data-bind="text: $data.protocol.toUpperCase()"></span> 
+                                        ports <span data-bind="text: $data.from_port"></span>-<span data-bind="text: $data.to_port"></span> 
+                                        allow <span data-bind="text: $data.rule"></span>
+                                    </span>
+                                    <input type="hidden" id="rule_protocol" 
+                                           data-bind="attr: { value : $data.protocol }" />
+                                    <input type="hidden" id="rule_from_port" 
+                                           data-bind="attr: { value : $data.from_port }" />
+                                    <input type="hidden" id="rule_to_port" 
+                                           data-bind="attr: { value : $data.to_port }" />
+                                    <input type="hidden" id="rule_rule" 
+                                           data-bind="attr: { value : $data.rule }" />
+                                    <button type="submit" class="btn btn-danger btn-xs" 
+                                           data-bind="click: $root.deleteRule">Delete</button>
                                 </form>
+                                </li>
+                              </ul>
                             </td>
                             <td>
                                 <form class="form-inline" data-bind="attr: { id : $data.id }" role="form">
