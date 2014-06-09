@@ -128,6 +128,8 @@ class StackManager(models.Manager):
             with open(stack.props_file.path, 'w') as f:
                 f.write(props_json)
 
+        stack.create_security_groups()
+
         # create host records on the stack based on the host definitions in
         # the blueprint
         for hostdef in blueprint.host_definitions.all():
@@ -139,34 +141,7 @@ class StackManager(models.Manager):
             cloud_provider = hostdef.cloud_profile.cloud_provider
             driver = cloud_provider.get_driver()
 
-            # create the managed security group for each host definition
-            # and assign the rules to the group
-            sg_name = 'managed-{0}-{1}-stack-{2}'.format(
-                owner.username,
-                hostdef.slug,
-                stack.pk)
-            sg_description = 'stackd.io managed security group'
-            sg_id = driver.create_security_group(sg_name,
-                                                 sg_description,
-                                                 delete_if_exists=True)
-
-            for access_rule in hostdef.access_rules.all():
-                driver.authorize_security_group(sg_name, {
-                    'protocol': access_rule.protocol,
-                    'from_port': access_rule.from_port,
-                    'to_port': access_rule.to_port,
-                    'rule': access_rule.rule,
-                })
-
-            # create a security group object that we can use for tracking
-            security_group = SecurityGroup.objects.create(
-                owner=owner,
-                cloud_provider=cloud_provider,
-                name=sg_name,
-                description=sg_description,
-                group_id=sg_id,
-                is_managed=True
-            )
+            # security_group = # TODO
 
             # iterate over the host definition count and create individual
             # host records on the stack
@@ -367,6 +342,43 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         else:
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
+
+    def create_security_groups(self):
+        for hostdef in self.blueprint.host_definitions.all():
+
+            # create the managed security group for each host definition
+            # and assign the rules to the group
+            sg_name = 'managed-{0}-{1}-stack-{2}'.format(
+                self.username,
+                hostdef.slug,
+                self.pk)
+            sg_description = 'stackd.io managed security group'
+
+            # cloud provider and driver for the host definition
+            cloud_provider = hostdef.cloud_profile.cloud_provider
+            driver = cloud_provider.get_driver()
+
+            sg_id = driver.create_security_group(sg_name,
+                                                 sg_description,
+                                                 delete_if_exists=True)
+
+            for access_rule in hostdef.access_rules.all():
+                driver.authorize_security_group(sg_name, {
+                    'protocol': access_rule.protocol,
+                    'from_port': access_rule.from_port,
+                    'to_port': access_rule.to_port,
+                    'rule': access_rule.rule,
+                })
+
+            # create the security group object that we can use for tracking
+            self.security_groups.create(
+                owner=self.owner,
+                cloud_provider=cloud_provider,
+                name=sg_name,
+                description=sg_description,
+                group_id=sg_id,
+                is_managed=True
+            )
 
     def _generate_map_file(self):
         # TODO: Figure out a way to make this provider agnostic

@@ -22,10 +22,10 @@ from core.exceptions import BadRequest
 from core.renderers import PlainTextRenderer
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
-from blueprints.models import Blueprint
+from blueprints.models import Blueprint, BlueprintHostDefinition
 from cloud.providers.base import BaseCloudProvider
 
-from . import tasks, models, serializers, filters
+from . import tasks, models, serializers, filters, validators
 
 logger = logging.getLogger(__name__)
 
@@ -516,25 +516,110 @@ class StackHistoryList(generics.ListAPIView):
 class HostListAPIView(PublicStackMixin, generics.ListAPIView):
     model = models.Host
     serializer_class = serializers.HostSerializer
+    parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
         return models.Host.objects.filter(stack__owner=self.request.user)
 
 
 class StackHostsAPIView(HostListAPIView):
-    parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
         stack = self.get_object()
         return models.Host.objects.filter(stack=stack)
 
-    def put(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         '''
-        Overriding PUT for a stack to be able to add additional
-        hosts after a stack has already been created.
+        Overriding POST for a stack to be able to add or remove
+        hosts from the stack. Both actions are dependent on
+        a blueprint host definition in the blueprint used to
+        launch the stack.
+
+        POST /api/stacks/<stack_id>/hosts/
+        Allows users to add or remove hosts on a running stack. The action is
+        specified along with a list of objects specifying what hosts to add or
+        remove, which implies that only a single type of action may be used
+        at one time.
+
+        {
+            "action": "<action>",
+            "args": [
+                {
+                    "host_definition": <int>,
+                    "count": <int>,
+                    "backfill": <bool>
+                },
+                ...
+                ...
+                {
+                    "host_definition": <int>,
+                    "count": <int>,
+                    "backfill": <bool>
+                }
+            ]
+        }
+
+        where:
+
+        @param action (string) REQUIRED; what type of action to take on the
+        stack, must be one of 'add' or 'remove'
+        @param count (int) REQUIRED; how many additional hosts to add or remove
+        @param host_definition (int) REQUIRED; the id of a blueprint host
+        definition that is part of the blueprint the stack was initially
+        launched from
+        @param backfill (bool) OPTIONAL DEFAULT=false; if true, the hostnames
+        will be generated in a way to fill in any gaps in the existing
+        hostnames of the stack. For example, if your stack has a host list
+        [foo-1, foo-3, foo-4] and you ask for three additional hosts, the
+        resulting set of hosts is [foo-1, foo-2, foo-3, foo4, foo-5, foo-6]
         '''
 
         stack = self.get_object()
+
+        errors = validators.StackAddRemoveHostsValidator(request).validate()
+        if errors:
+            raise BadRequest(errors)
+
+        raise NotImplementedError('TODO(abe)')
+
+        action = request.DATA['action']
+        args = request.DATA['args']
+
+        if action == 'add':
+            for arg in args:
+                hostdef = BlueprintHostDefinition.objects.get(
+                    pk=arg['host_definition']
+                )
+
+                for i in xrange(10):
+                    hostname = hostdef.hostname_template.format(
+                        namespace=stack.namespace,
+                        username=request.user,
+                        index=i
+                    )
+
+                    params = dict(
+                        cloud_profile=hostdef.cloud_profile,
+                        instance_size=hostdef.size,
+                        hostname=hostname,
+                        sir_price=hostdef.spot_price,
+                    )
+
+                    if hostdef.cloud_profile.cloud_provider.vpc_enabled:
+                        params['subnet_id'] = hostdef.subnet_id
+                    else:
+                        params['availability_zone'] = hostdef.zone
+
+                    host = stack.hosts.create(**params)
+                    provider = host.cloud_profile.cloud_provider
+
+                    provider_groups = set(list(
+                        provider.security_groups.filter(
+                            is_default=True
+                        )
+                    ))
+                    host.security_groups.add(*provider_groups)
+
         new_hosts = stack.add_hosts(request.DATA['hosts'])
         host_ids = [h.id for h in new_hosts]
 

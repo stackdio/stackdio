@@ -279,6 +279,12 @@ class SecurityGroup(TimeStampedModel, models.Model):
     # provider and will be ignored if passed in
     group_id = models.CharField(max_length=16, blank=True)
 
+    # The stack that the security group is for (this is only
+    # useful if it's a managed security group)
+    stack = models.ForeignKey('stacks.Stack',
+                              null=True,
+                              related_name='security_groups')
+
     # the cloud provider for this group
     cloud_provider = models.ForeignKey('cloud.CloudProvider',
                                        related_name='security_groups')
