@@ -24,6 +24,12 @@ from core.utils import recursive_update
 from cloud.models import SecurityGroup
 from volumes.models import Volume
 
+PROTOCOL_CHOICES = [
+    ('tcp', 'TCP'),
+    ('udp', 'UDP'),
+    ('icmp', 'ICMP'),
+]
+
 logger = logging.getLogger(__name__)
 
 HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
@@ -111,7 +117,7 @@ class StackManager(models.Manager):
         stack.save()
 
         # add the namespace
-        namespace = data.get('namespace', None)
+        namespace = data.get('namespace', '').strip()
         if not namespace:
             namespace = 'stack{0}'.format(stack.pk)
         stack.namespace = namespace
@@ -176,11 +182,23 @@ class StackManager(models.Manager):
                     username=owner.username,
                     index=i
                 )
-                host = stack.hosts.create(cloud_profile=hostdef.cloud_profile,
-                                          instance_size=hostdef.size,
-                                          availability_zone=hostdef.zone,
-                                          hostname=hostname,
-                                          sir_price=hostdef.spot_price)
+
+                kwargs = dict(
+                    cloud_profile=hostdef.cloud_profile,
+                    instance_size=hostdef.size,
+                    hostname=hostname,
+                    sir_price=hostdef.spot_price
+                )
+
+                if hostdef.cloud_profile.cloud_provider.vpc_enabled:
+                    kwargs['subnet_id'] = hostdef.subnet_id
+                else:
+                    kwargs['availability_zone'] = hostdef.zone
+
+                # Set blueprint host definition
+                kwargs['blueprint_host_definition_id'] = hostdef.id
+
+                host = stack.hosts.create(**kwargs)
 
                 # Add in the cloud provider default security groups as
                 # defined by an admin.
@@ -193,7 +211,7 @@ class StackManager(models.Manager):
                 # set security groups
                 host.security_groups.add(*provider_groups)
                 host.security_groups.add(security_group)
-
+                
                 # add formula components
                 host.formula_components.add(*components)
 
@@ -389,8 +407,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             fqdn = '{0}.{1}'.format(host.hostname,
                                     cloud_provider_yaml['append_domain'])
 
-            availability_zone = host.availability_zone.title
-
             # The volumes will be defined on the map as well as in the grains.
             # Those in the map are used by salt-cloud to create and attach
             # the volumes (using the snapshot), whereas those on the grains
@@ -443,10 +459,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     # depending on the cloud provider being used.
                     'size': instance_size,
                     'securitygroupid': list(security_groups),
-                    'availability_zone': availability_zone,
                     'volumes': map_volumes,
                 }
             }
+
+            if cloud_provider.vpc_enabled:
+                host_metadata[host.hostname]['subnetid'] = host.subnet_id
+            else:
+                host_metadata[host.hostname]['availability_zone'] \
+                    = host.availability_zone.title
 
             # Add in spot instance config if needed
             if host.sir_price:
@@ -623,6 +644,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         Uses salt-cloud to query all the hosts for the given stack id.
         '''
         try:
+            if not self.map_file:
+                return {}
+
             logger.info('get_hosts_info: {0!r}'.format(self))
 
             # salt-cloud command to pull host information with
@@ -679,6 +703,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             os.makedirs(log_dir)
         return log_dir
 
+    def get_security_groups(self):
+        groups = SecurityGroup.objects.filter(is_managed=True, 
+                                              hosts__stack=self)
+        ret = []
+        for group in groups:
+            if group not in ret:
+                 ret.append(group)
+
+        return ret
 
 class StackHistory(TimeStampedModel):
 
@@ -724,7 +757,14 @@ class Host(TimeStampedModel, StatusDetailModel):
                                       related_name='hosts')
 
     availability_zone = models.ForeignKey('cloud.CloudZone',
+                                          null=True,
                                           related_name='hosts')
+
+    subnet_id = models.CharField(max_length=32, blank=True, default='')
+
+    blueprint_host_definition = models.ForeignKey(
+        'blueprints.BlueprintHostDefinition',
+        related_name='hosts')
 
     formula_components = models.ManyToManyField(
         'blueprints.BlueprintHostFormulaComponent',
@@ -744,6 +784,8 @@ class Host(TimeStampedModel, StatusDetailModel):
     # the DNS name set by whatever cloud provider is being used
     # and set it here
     provider_dns = models.CharField(max_length=64, blank=True)
+    provider_private_dns = models.CharField(max_length=64, blank=True)
+    provider_private_ip = models.CharField(max_length=64, blank=True)
 
     # The FQDN for the host. This includes the hostname and the
     # domain if it was registered with DNS

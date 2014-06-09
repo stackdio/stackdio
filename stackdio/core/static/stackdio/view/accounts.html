@@ -35,6 +35,7 @@
                     <th>Title</th>
                     <th>Description</th>
                     <th>Profiles</th>
+                    <th class="text-center">VPC Enabled</th>
                     <th style="width:5%"></th>
                 </tr>
             </thead>
@@ -51,6 +52,9 @@
                     <td data-bind="text: description"></td>
                     <td>
                         <a data-bind="click: $root.listProfiles, text: 'View ' + $data.profile_count + ' profiles'"></a>
+                    </td>
+                    <td class="text-center">
+                        <span class="fa fa-2x" data-bind="css: {'fa-check': vpc_id, 'fa-times': !vpc_id}">&nbsp;</span>
                     </td>
                     <td>
                         <div class="btn-group" data-bind="visible: $root.isSuperUser">

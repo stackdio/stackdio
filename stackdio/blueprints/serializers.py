@@ -1,8 +1,5 @@
 import logging
 
-from django.conf import settings
-from django.contrib.auth import get_user_model
-
 from rest_framework import serializers
 
 from . import models
@@ -40,7 +37,8 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
         )
 
 
-class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+class BlueprintHostFormulaComponentSerializer(
+        serializers.HyperlinkedModelSerializer):
     title = serializers.Field(source='component.title')
     description = serializers.Field(source='component.description')
     formula = serializers.Field(source='component.formula')
@@ -59,7 +57,8 @@ class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerial
         )
 
 
-class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
+class BlueprintHostDefinitionSerializer(
+        serializers.HyperlinkedModelSerializer):
 
     formula_components = BlueprintHostFormulaComponentSerializer(many=True)
     access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
@@ -76,6 +75,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
             'hostname_template',
             'size',
             'zone',
+            'subnet_id',
             'formula_components',
             'access_rules',
             'volumes',
@@ -84,9 +84,11 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
-    
-    properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
-    host_definitions = BlueprintHostDefinitionSerializer(many=True, required=False)
+
+    properties = serializers.HyperlinkedIdentityField(
+        view_name='blueprint-properties')
+    host_definitions = BlueprintHostDefinitionSerializer(many=True,
+                                                         required=False)
 
     class Meta:
         model = models.Blueprint
@@ -99,4 +101,3 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
             'properties',
             'host_definitions',
         )
-

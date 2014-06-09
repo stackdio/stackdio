@@ -64,7 +64,6 @@ class Route53Domain(object):
         '''
         # look up the hosted zone based on the domain
         response = self.conn.get_hosted_zone_by_name(self.domain)
-        logger.debug(response)
         self.hosted_zone = response['GetHostedZoneResponse']['HostedZone']
 
         # Get the zone id, but strip off the first part /hostedzone/
@@ -86,7 +85,7 @@ class Route53Domain(object):
         Creates a new Route53 ResourceRecordSets object that is used
         internally like a transaction of sorts. You may add or delete
         many resource records using a single set by calling the
-        `add_rr_cname` and `delete_rr_cname` methods. Finish the transaction
+        `add_record` and `delete_record` methods. Finish the transaction
         with `finish_rr_transaction`
 
         NOTE: Calling this method again before finishing will not finish
@@ -112,18 +111,22 @@ class Route53Domain(object):
         '''
         self._rr_txn = None
 
-    def add_rr_cname(self, record_name, record_value, ttl=DEFAULT_ROUTE53_TTL):
+    def add_record(self, record_name, record_value, record_type,
+                   ttl=DEFAULT_ROUTE53_TTL):
         '''
         NOTE: This method must be called after `start_rr_transaction`.
 
         Adds a new record to the existing resource record transaction.
 
         `record_name`
-            The subdomain part of the CNAME record (e.g., web-1 for a domain
+            The subdomain part of the record (e.g., web-1 for a domain
             like web-1.dev.example.com)
 
         `record_value`
-            The host or IP the CNAME record will point to.
+            The host or IP the record will point to.
+
+        `record_type`
+            The type of the record (CNAME or A)
 
         `ttl`
             The TTL for the record in seconds, default is 30 seconds
@@ -132,23 +135,23 @@ class Route53Domain(object):
         # for this instance. The period on the end is required.
         record_name += '.{0}.'.format(self.domain)
 
-        # Check for an existing CNAME record and remove it before
+        # Check for an existing record and remove it before
         # updating it
         rr_names = self.get_rrnames_set()
         if record_name in rr_names:
             self._delete_rr_record(record_name,
                                    [record_value],
-                                   'CNAME',
+                                   record_type,
                                    ttl=ttl)
 
-        self._add_rr_record(record_name, [record_value], 'CNAME', ttl=ttl)
+        self._add_rr_record(record_name, [record_value], record_type, ttl=ttl)
 
-    def delete_rr_cname(self, record_name, record_value,
-                        ttl=DEFAULT_ROUTE53_TTL):
+    def delete_record(self, record_name, record_value, record_type,
+                      ttl=DEFAULT_ROUTE53_TTL):
         '''
-        Almost the same as `add_rr_cname` but it deletes the CNAME record
+        Almost the same as `add_record` but it deletes an existing record
 
-        NOTE: The name, value, and ttl must all match an existing CNAME record
+        NOTE: The name, value, and ttl must all match an existing record
         or Route53 will not allow it to be removed.
         '''
         # Update the record name to be fully qualified with the domain
@@ -160,7 +163,7 @@ class Route53Domain(object):
         if record_name in rr_names:
             self._delete_rr_record(record_name,
                                    [record_value],
-                                   'CNAME',
+                                   record_type,
                                    ttl=ttl)
             return True
         return False
@@ -209,6 +212,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
     # The path to the private key for SSH
     PRIVATE_KEY = 'private_key'
+
+    # VPC fields
+    VPC_ID = 'vpc_id'
+    # VPC_SUBNETS = 'vpc_subnets'
 
     # The route53 zone to use for managing DNS
     ROUTE53_DOMAIN = 'route53_domain'
@@ -282,8 +289,9 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # Add in the default availability zone to be set in the configuration
         # file
-        config_data['availability_zone'] = \
-            self.obj.default_availability_zone.title
+        if not self.obj.vpc_enabled:
+            config_data['availability_zone'] = \
+                self.obj.default_availability_zone.title
 
         # Save the data out to a file that can be reused by this provider
         # later if necessary
@@ -323,15 +331,6 @@ class AWSCloudProvider(BaseCloudProvider):
                 ''.format(data[self.KEYPAIR])
             )
 
-        # check availability zone
-        try:
-            ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
-        except boto.exception.EC2ResponseError, e:
-            errors.setdefault(self.DEFAULT_AVAILABILITY_ZONE_NAME, []).append(
-                'The availability zone \'{0}\' does not exist in '
-                'this account.'.format(
-                    data[self.DEFAULT_AVAILABILITY_ZONE_NAME]))
-
         # check route 53 domain
         try:
             if self.ROUTE53_DOMAIN in data:
@@ -357,6 +356,60 @@ class AWSCloudProvider(BaseCloudProvider):
         except Exception, e:
             logger.exception('Route53 issue?')
             errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))
+
+        # check VPC required fields
+        if self.VPC_ID in data and data[self.VPC_ID]:
+            vpc_id = data[self.VPC_ID]
+
+            try:
+                vpc = boto.connect_vpc(data[self.ACCESS_KEY],
+                                       data[self.SECRET_KEY])
+            except boto.exception.EC2ResponseError, e:
+                err_msg = ('Unable to authenticate to AWS VPC with the '
+                           'provided keys.')
+                errors.setdefault(self.ACCESS_KEY, []).append(err_msg)
+                errors.setdefault(self.SECRET_KEY, []).append(err_msg)
+
+            if not errors:
+                try:
+                    vpc.get_all_vpcs([vpc_id])
+                except boto.exception.EC2ResponseError, e:
+                    errors.setdefault(self.VPC_ID, []).append(
+                        'The VPC \'{0}\' does not exist in this account.'
+                        .format(vpc_id)
+                    )
+
+        # Check availability zone
+        else:
+            try:
+                ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
+            except boto.exception.EC2ResponseError, e:
+                errors.setdefault(
+                    self.DEFAULT_AVAILABILITY_ZONE_NAME,
+                    []
+                ).append(
+                    'The availability zone \'{0}\' does not exist in '
+                    'this account.'.format(
+                        data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
+                )
+
+            '''
+            subnets = data.get(self.VPC_SUBNETS)
+            if not isinstance(subnets, list) or not subnets:
+                errors.setdefault(self.VPC_SUBNETS, []).append(
+                    'Must be a list of subnets.'
+                )
+            elif not errors:
+                # check account for subnets
+                try:
+                    for subnet in subnets:
+                        vpc.get_all_subnets([subnet])
+                except boto.exception.EC2ResponseError, e:
+                    errors.setdefault(self.VPC_SUBNETS, []).append(
+                        'The subnet id \'{0}\' does not exist in this '
+                        'account.'.format(subnet)
+                    )
+            '''
 
         return errors
 
@@ -387,6 +440,12 @@ class AWSCloudProvider(BaseCloudProvider):
             self._ec2_connection = boto.connect_ec2(*credentials)
         return self._ec2_connection
 
+    def connect_vpc(self):
+        if not hasattr(self, '_vpc_connection'):
+            credentials = self.get_credentials()
+            self._vpc_connection = boto.connect_vpc(*credentials)
+        return self._vpc_connection
+
     def is_cidr_rule(self, rule):
         '''
         Determines if the rule string conforms to the CIDR pattern.
@@ -412,9 +471,16 @@ class AWSCloudProvider(BaseCloudProvider):
             except:
                 pass
 
-        # create the group
+        # create the group in the VPC or classic
+        kwargs = {}
+        if self.obj.vpc_id:
+            kwargs['vpc_id'] = self.obj.vpc_id
+
         ec2 = self.connect_ec2()
-        group = ec2.create_security_group(security_group_name, description)
+        group = ec2.create_security_group(security_group_name,
+                                          description,
+                                          **kwargs)
+
         return group.id
 
     def _security_group_rule_to_kwargs(self, rule):
@@ -435,10 +501,24 @@ class AWSCloudProvider(BaseCloudProvider):
         return kwargs
 
     def delete_security_group(self, group_name):
+        from django.core.exceptions import ObjectDoesNotExist
+
+        if self.obj.vpc_id:
+            try:
+                sg = self.obj.security_groups.get(name=group_name)
+                kwargs = {'group_id': sg.group_id}
+            except ObjectDoesNotExist:
+                pass
+        else:
+            kwargs = {'name': group_name}
+
         ec2 = self.connect_ec2()
         try:
-            ec2.delete_security_group(group_name)
+            ec2.delete_security_group(**kwargs)
         except boto.exception.EC2ResponseError, e:
+            logger.exception('Error deleting security group {0}'.format(
+                group_name)
+            )
             if e.status == 400:
                 raise BadRequest(e.error_message)
             raise InternalServerError(e.error_message)
@@ -488,39 +568,65 @@ class AWSCloudProvider(BaseCloudProvider):
             for rule in group['rules']:
                 self.revoke_security_group(group_name, rule)
 
-    def get_security_groups(self, group_names=[]):
-        if not isinstance(group_names, list):
-            group_names = [group_names]
+    # FIXME(abe): Ignoring code complexity
+    def get_security_groups(self, group_ids=[]):  # NOQA
+        if not isinstance(group_ids, list):
+            group_ids = [group_ids]
 
         ec2 = self.connect_ec2()
-        groups = ec2.get_all_security_groups(group_names)
+        groups = ec2.get_all_security_groups(group_ids=group_ids)
 
         result = {}
         for group in groups:
-            # skip VPC security groups for now
-            # FIXME: We will eventually need to support VPC and Classic
-            if group.vpc_id:
+            if self.obj.vpc_enabled and not group.vpc_id:
                 continue
-            rules = []
-            for rule in group.rules:
+            if not self.obj.vpc_enabled and group.vpc_id:
+                continue
+
+            rules_ingress, rules_egress = [], []
+            group_rules = [(0, r) for r in group.rules] + \
+                [(1, r) for r in group.rules_egress]
+            for rule_type, rule in group_rules:
                 for grant in rule.grants:
-                    rule_string = grant.cidr_ip or ':'.join([grant.owner_id,
-                                                             grant.name])
-                    rules.append({
+                    if grant.cidr_ip:
+                        rule_string = grant.cidr_ip
+                    elif grant.name:
+                        rule_string = '{0.owner_id}:{0.name}'.format(grant)
+                    else:
+                        rule_string = None
+
+                    d = {
                         'protocol': rule.ip_protocol,
                         'from_port': rule.from_port,
                         'to_port': rule.to_port,
                         'rule': rule_string,
-                    })
+                    }
+                    if rule_type == 0:
+                        rules_ingress.append(d)
+                    else:
+                        rules_egress.append(d)
 
             result[group.name] = {
-                'id': group.id,
+                'group_id': group.id,
                 'name': group.name,
                 'description': group.description,
-                'rules': rules,
+                'rules': rules_ingress,
+                'rules_egress': rules_egress,
+                'vpc_id': group.vpc_id,
             }
 
         return result
+
+    def get_vpc_subnets(self, subnet_ids=[]):
+        try:
+            vpc = self.connect_vpc()
+            subnets = vpc.get_all_subnets(subnet_ids)
+            return subnets
+        except boto.exception.EC2ResponseError:
+            logger.exception('Error looking up subnet_ids: {0}'.format(
+                subnet_ids
+            ))
+            return None
 
     def has_image(self, image_id):
         '''
@@ -556,15 +662,24 @@ class AWSCloudProvider(BaseCloudProvider):
         r53_domain = self.connect_route53()
         r53_domain.start_rr_transaction()
 
-        # for each host, create a CNAME record
+        # for each host, create a new record in Route 53
         for host in hosts:
-            logger.debug('Registering DNS: {0} - {1}'.format(
+            if self.obj.vpc_id:
+                record_value = host.provider_private_ip
+                record_type = 'A'
+            else:
+                record_value = host.provider_dns
+                record_type = 'CNAME'
+
+            logger.info('Registering DNS: {0} - {1}'.format(
                 host.hostname,
-                host.provider_dns
+                record_value
             ))
-            r53_domain.add_rr_cname(host.hostname,
-                                    host.provider_dns,
-                                    ttl=DEFAULT_ROUTE53_TTL)
+
+            r53_domain.add_record(host.hostname,
+                                  record_value,
+                                  record_type,
+                                  ttl=DEFAULT_ROUTE53_TTL)
 
         # Finish the transaction
         r53_domain.finish_rr_transaction()
@@ -585,26 +700,36 @@ class AWSCloudProvider(BaseCloudProvider):
         r53_domain = self.connect_route53()
         r53_domain.start_rr_transaction()
 
-        # for each host, delete the CNAME record
+        # for each host, delete the existing record
         finish = False
         for host in hosts:
-            if not host.provider_dns:
-                logger.warn('Host {0} has no provider_dns...skipping '
-                            'DNS deregister.'.format(host))
+            if self.obj.vpc_id:
+                record_value = host.provider_private_ip
+                record_type = 'A'
+            else:
+                record_value = host.provider_dns
+                record_type = 'CNAME'
+
+            if not record_value:
+                logger.warn(
+                    'Host {0} has no provider_dns or provider_private_ip...'
+                    'skipping DNS deregister.'.format(host)
+                )
                 continue
-            logger.debug('Unregistering DNS: {0} - {1}'.format(
+
+            logger.info('Unregistering DNS: {0} - {1}'.format(
                 host.hostname,
-                host.provider_dns
+                record_value
             ))
-            if r53_domain.delete_rr_cname(host.hostname,
-                                          host.provider_dns,
-                                          ttl=DEFAULT_ROUTE53_TTL):
+
+            if r53_domain.delete_record(host.hostname,
+                                        record_value,
+                                        record_type,
+                                        ttl=DEFAULT_ROUTE53_TTL):
                 finish = True
 
         if finish:
             # Finish the transaction
-            logger.debug(r53_domain)
-            logger.debug(dir(r53_domain))
             r53_domain.finish_rr_transaction()
 
         # update hosts to remove fqdn

@@ -30,6 +30,9 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     rules = serializers.Field(source='rules')
     provider_id = serializers.Field(source='cloud_provider.id')
 
+    rules_url = serializers.HyperlinkedIdentityField(
+            view_name='securitygroup-rules')
+
     class Meta:
         model = models.SecurityGroup
         fields = (
@@ -37,6 +40,7 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
             'url',
             'name',
             'description',
+            'rules_url',
             'group_id',
             'cloud_provider',
             'provider_id',
@@ -48,15 +52,24 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
         )
         superuser_fields = ('owner', 'is_default', 'is_managed')
 
-
+class SecurityGroupRuleSerializer(serializers.Serializer):
+    action = serializers.CharField(max_length=15)
+    protocol = serializers.CharField(max_length=4)
+    from_port = serializers.IntegerField()
+    to_port = serializers.IntegerField()
+    rule = serializers.CharField(max_length=255)
+    
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
     provider_type = serializers.PrimaryKeyRelatedField()
-    default_availability_zone = serializers.PrimaryKeyRelatedField()
+    default_availability_zone = serializers.PrimaryKeyRelatedField(
+        required=False)
     provider_type_name = serializers.Field(source='provider_type.type_name')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-securitygroup-list')
+    vpc_subnets = serializers.HyperlinkedIdentityField(
+        view_name='cloudprovider-vpcsubnet-list')
 
     class Meta:
         model = models.CloudProvider
@@ -71,7 +84,9 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'account_id',
             'default_availability_zone',
             'yaml',
+            'vpc_id',
             'security_groups',
+            'vpc_subnets',
         )
 
         superuser_fields = ('yaml',)
@@ -101,14 +116,17 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
                 request.DATA.get('provider_type'))
 
             # pull the availability zone name
-            try:
-                zone = models.CloudZone.objects.get(
-                    pk=request.DATA['default_availability_zone'])
-                request.DATA['default_availability_zone_name'] = zone.slug
-            except models.CloudZone.DoesNotExist:
-                errors = ['Could not look up availability zone. Did you give '
-                          'a valid id?']
-                raise serializers.ValidationError({'errors': errors})
+            zone = request.DATA.get('default_availability_zone')
+            if zone:
+                try:
+                    zone = models.CloudZone.objects.get(pk=zone)
+                    request.DATA['default_availability_zone_name'] = zone.slug
+                except models.CloudZone.DoesNotExist:
+                    errors = [
+                        'Could not look up availability zone. Did you give '
+                        'a valid id?'
+                    ]
+                    raise serializers.ValidationError({'errors': errors})
 
             provider = provider_class()
             errors = provider.validate_provider_data(request.DATA,
@@ -258,3 +276,11 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'provider_type',
         )
+
+
+class VPCSubnetSerializer(serializers.Serializer):
+    vpc_id = serializers.Field()
+    id = serializers.Field()
+    availability_zone = serializers.Field()
+    cidr_block = serializers.Field()
+    tags = serializers.Field()

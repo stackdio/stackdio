@@ -281,7 +281,7 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
                     });
                 });
 
-                strippedHosts.push({
+                var params = {
                     access_rules: host.access_rules,
                     cloud_profile: host.cloud_profile,
                     count: host.count,
@@ -291,9 +291,17 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
                     hostname_template: host.hostname_template,
                     size: host.size,
                     spot_config: host.spot_config,
-                    volumes: host.volumes,
-                    zone: host.zone,
-                });
+                    volumes: host.volumes
+                };
+
+                if(host.zone) {
+                    params.zone = host.zone;
+                }
+                else if(host.subnet_id) {
+                    params.subnet_id = host.subnet_id;
+                }
+
+                strippedHosts.push(params);
             });
 
             if (currentProperties === '') {
@@ -408,22 +416,20 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
         };
 
         self.addHost = function (profile) {
-            if (self.selectedBlueprint() === null) {
-                $galaxy.transport({
-                    location: 'host.detail',
-                    payload: {
-                        profile: profile.id
-                    }
-                });
-            } else {
-                $galaxy.transport({
-                    location: 'host.detail',
-                    payload: {
-                        blueprint: self.selectedBlueprint().id,
-                        profile: profile.id
-                    }
-                });
+            var payload = {
+                profile: profile.id
+            };
+
+            if (self.selectedBlueprint() !== null) {
+                payload.blueprint = self.selectedBlueprint().id;
             }
+
+            $galaxy.transport({
+                location: 'host.detail',
+                payload: {
+                    profile: profile.id
+                }
+            });
 
             $galaxy.network.publish('newhost');
         };
