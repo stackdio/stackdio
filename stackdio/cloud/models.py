@@ -317,3 +317,6 @@ class SecurityGroup(TimeStampedModel, models.Model):
         except KeyError:
             logger.debug(groups)
             raise
+
+    def blueprint_host_definition(self):
+        return self.hosts.all()[0].blueprint_host_definition

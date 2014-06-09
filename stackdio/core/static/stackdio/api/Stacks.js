@@ -223,5 +223,28 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         return deferred.promise;
     };
 
+    api.getSecurityGroups = function (stack) {
+        var deferred = Q.defer();
+
+        $.ajax({
+            url: stack.security_groups,
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': stackdio.settings.csrftoken,
+                'Accept': 'application/json'
+            },
+            success: function (securitygroups) {
+                deferred.resolve(securitygroups);
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
+            }
+        });
+
+        return deferred.promise;
+    };
+
     return api;
 });

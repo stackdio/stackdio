@@ -30,6 +30,9 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     rules = serializers.Field(source='rules')
     provider_id = serializers.Field(source='cloud_provider.id')
 
+    rules_url = serializers.HyperlinkedIdentityField(
+            view_name='securitygroup-rules')
+
     class Meta:
         model = models.SecurityGroup
         fields = (
@@ -37,6 +40,7 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
             'url',
             'name',
             'description',
+            'rules_url',
             'group_id',
             'cloud_provider',
             'provider_id',
@@ -48,7 +52,13 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
         )
         superuser_fields = ('owner', 'is_default', 'is_managed')
 
-
+class SecurityGroupRuleSerializer(serializers.Serializer):
+    action = serializers.CharField(max_length=15)
+    protocol = serializers.CharField(max_length=4)
+    from_port = serializers.IntegerField()
+    to_port = serializers.IntegerField()
+    rule = serializers.CharField(max_length=255)
+    
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()

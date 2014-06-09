@@ -3,7 +3,13 @@ import logging
 from rest_framework import serializers
 
 from . import models
-from blueprints.serializers import BlueprintHostFormulaComponentSerializer
+from blueprints.serializers import (
+        BlueprintHostFormulaComponentSerializer, 
+        BlueprintHostDefinitionSerializer
+    )
+from blueprints.models import BlueprintHostDefinition
+from cloud.serializers import SecurityGroupSerializer
+from cloud.models import SecurityGroup
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +75,10 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         view_name='stack-properties')
     history = serializers.HyperlinkedIdentityField(
         view_name='stack-history')
+    access_rules = serializers.HyperlinkedIdentityField(
+        view_name='stack-access-rules')
+    security_groups = serializers.HyperlinkedIdentityField(
+        view_name='stack-security-groups')
 
     class Meta:
         model = models.Stack
@@ -90,7 +100,40 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'properties',
             'history',
             'action',
+            'security_groups',
             'logs',
             'orchestration_errors',
             'provisioning_errors',
         )
+
+class StackBlueprintHostDefinitionSerializer(
+        BlueprintHostDefinitionSerializer):
+    
+    class Meta:
+        model = BlueprintHostDefinition
+        fields = (
+            'title',
+            'description',
+        )
+
+class StackSecurityGroupSerializer(SecurityGroupSerializer):
+    blueprint_host_definition = StackBlueprintHostDefinitionSerializer()
+
+    class Meta:
+        model = SecurityGroup
+        fields = (
+            'id',
+            'url',
+            'name',
+            'description',
+            'rules_url',
+            'group_id',
+            'blueprint_host_definition',
+            'cloud_provider',
+            'provider_id',
+            'owner',
+            'is_default',
+            'is_managed',
+            'active_hosts',
+            'rules',
+        )  

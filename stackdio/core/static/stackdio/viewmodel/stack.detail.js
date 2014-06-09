@@ -5,6 +5,7 @@ define([
     'util/form',
     'store/Stacks',
     'store/StackHosts',
+    'store/StackSecurityGroups',
     'store/Profiles',
     'store/InstanceSizes',
     'store/Blueprints',
@@ -12,7 +13,7 @@ define([
     'store/BlueprintComponents',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
     var vm = function () {
         var self = this;
 
@@ -23,6 +24,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
         */
         self.selectedBlueprint = ko.observable(null);
         self.selectedStack = ko.observable(null);
+        self.selectedSecurityGroup = ko.observable(null);
         self.stackTitle = ko.observable();
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
@@ -38,6 +40,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
 
         self.StackStore = StackStore;
         self.StackHostStore = StackHostStore;
+        self.StackSecurityGroupStore = StackSecurityGroupStore;
         self.ProfileStore = ProfileStore;
         self.InstanceSizeStore = InstanceSizeStore;
         self.BlueprintHostStore = BlueprintHostStore;
@@ -137,14 +140,22 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
                     console.error(error);
                 }).done();
 
+                // Get security groups 
+                getSecurityGroups(stack);
+
                 // Find the corresponding blueprint
                 blueprint = BlueprintStore.collection().filter(function (b) {
                     return b.url === stack.blueprint;
                 })[0];
 
                 // Get the hosts for the stack
+                self.StackHostStore.collection.removeAll();
                 API.StackHosts.load(stack).then(function (hosts) {
                     self.StackHostStore.add(hosts);
+                }).then(function () {
+                    self.StackHostStore.collection.sort(function (left, right) {
+                        return left.fqdn < right.fqdn ? -1 : 1;
+                    });
                 });
 
                 // Update observables
@@ -156,7 +167,54 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, ProfileStore, I
 
             self.selectedStack(stack);
         };
+        
+        self.initiateAddRule = function (obj, evt) {
+            var curId = evt.currentTarget.id;
+            var col = self.StackSecurityGroupStore.collection();
+            for (var i = 0; i < col.length; ++i) {
+                if (col[i].id.toString() === curId) {
+                    self.selectedSecurityGroup(col[i]);
+                    break;
+                }
+            }
+            $('#addRuleModal').modal('show');
+        };
 
+        self.addRule = function (obj, evt) {
+            var record = formutils.collectFormFields(evt.target.form);
+            API.SecurityGroups.updateRule(self.selectedSecurityGroup(), {
+                "action" : "authorize",
+                "protocol": record.rule_protocol.value,
+                "from_port": record.rule_from_port.value,
+                "to_port": record.rule_to_port.value,
+                "rule": record.rule_ip_address.value === "" ? record.rule_group.value : record.rule_ip_address.value
+            }).then(function () {
+                self.selectedSecurityGroup(null);
+                $('#addRuleModal').modal('hide');
+                formutils.clearForm('add-rule-form');
+                getSecurityGroups(self.selectedStack());
+            });
+        };
+
+        function getSecurityGroups(stack) {
+            self.StackSecurityGroupStore.collection.removeAll();
+
+            API.Stacks.getSecurityGroups(stack).then(function (groups) {
+                groups.results.forEach(function(group) {
+                     group.flat_access_rules = group.rules.map(function (rule) {
+                        return '<div style="line-height:15px !important;">'+rule.protocol.toUpperCase()+' port(s) '+rule.from_port+'-'+rule.to_port+' allow '+rule.rule+'</div>';
+                    }).join('');
+                })
+
+                self.StackSecurityGroupStore.add(groups.results);
+                self.tmpgroup = groups.results[0];
+            }).then(function () {
+                self.StackSecurityGroupStore.collection.sort(function (left, right) {
+                    return left.blueprint_host_definition.title < right.blueprint_host_definition.title ? -1 : 1;   
+                });
+            });
+
+        }
 
         self.updateStack = function (obj, evt) {
             var record = formutils.collectFormFields(evt.target.form);
