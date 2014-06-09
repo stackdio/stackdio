@@ -24,7 +24,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
         */
         self.selectedBlueprint = ko.observable(null);
         self.selectedStack = ko.observable(null);
-        self.selectedSecurityGroup = ko.observable(null);
         self.stackTitle = ko.observable();
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
@@ -167,45 +166,83 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
             self.selectedStack(stack);
         };
-        
-        self.initiateAddRule = function (obj, evt) {
-            var curId = evt.currentTarget.id;
+    
+        self.addRule = function (obj, evt) {
+            var curId = evt.target.form.id;
             var col = self.StackSecurityGroupStore.collection();
+            var curGroup = null;
+
             for (var i = 0; i < col.length; ++i) {
                 if (col[i].id.toString() === curId) {
-                    self.selectedSecurityGroup(col[i]);
+                    curGroup = col[i];
                     break;
                 }
             }
-            $('#addRuleModal').modal('show');
-        };
-
-        self.addRule = function (obj, evt) {
+            
             var record = formutils.collectFormFields(evt.target.form);
-            API.SecurityGroups.updateRule(self.selectedSecurityGroup(), {
+            
+            var from_port = null;
+            var to_port = null;
+
+            if (record.add_rule_port_range.value.indexOf("-") > -1) {
+                var spl = record.add_rule_port_range.value.split("-");
+                from_port = parseInt(spl[0]);
+                to_port = parseInt(spl[1]);
+            } else {
+                from_port = parseInt(record.add_rule_port_range.value);
+                to_port = from_port;
+            }
+
+            API.SecurityGroups.updateRule(curGroup, {
                 "action" : "authorize",
-                "protocol": record.rule_protocol.value,
-                "from_port": record.rule_from_port.value,
-                "to_port": record.rule_to_port.value,
-                "rule": record.rule_ip_address.value === "" ? record.rule_group.value : record.rule_ip_address.value
+                "protocol": record.add_rule_protocol.value,
+                "from_port": from_port,
+                "to_port": to_port,
+                "rule": record.add_rule_ip_address.value === "" ? record.add_rule_group.value : record.add_rule_ip_address.value
             }).then(function () {
-                self.selectedSecurityGroup(null);
-                $('#addRuleModal').modal('hide');
-                formutils.clearForm('add-rule-form');
+                formutils.clearForm(curId);
                 getSecurityGroups(self.selectedStack());
             });
         };
 
+        self.deleteRule = function (obj, evt) {
+            var curId = evt.target.form.id.split("_")[0];
+            var col = self.StackSecurityGroupStore.collection();
+            var curGroup = null;
+
+            for (var i = 0; i < col.length; ++i) {
+                if (col[i].id.toString() === curId) {
+                    curGroup = col[i];
+                    break;
+                }
+            }
+
+            var record = formutils.collectFormFields(evt.target.form);
+
+            console.log(record);
+
+            API.SecurityGroups.updateRule(curGroup, {
+                "action" : "revoke",
+                "protocol": record.rule_protocol.value,
+                "from_port": parseInt(record.rule_from_port.value),
+                "to_port": parseInt(record.rule_to_port.value),
+                "rule": record.rule_rule.value
+            }).then(function () {
+                getSecurityGroups(self.selectedStack());
+            });
+
+        }
+
         function getSecurityGroups(stack) {
-            self.StackSecurityGroupStore.collection.removeAll();
-
             API.Stacks.getSecurityGroups(stack).then(function (groups) {
-                groups.results.forEach(function(group) {
-                     group.flat_access_rules = group.rules.map(function (rule) {
-                        return '<div style="line-height:15px !important;">'+rule.protocol.toUpperCase()+' port(s) '+rule.from_port+'-'+rule.to_port+' allow '+rule.rule+'</div>';
-                    }).join('');
-                })
+                
+                groups.results.forEach(function (group) {
+                    group.rules.forEach(function (rule) {
+                        rule.uid = group.id + "_" + rule.protocol + "-" + rule.from_port + "-" + rule.to_port;
+                    });
+                });
 
+                self.StackSecurityGroupStore.collection.removeAll();
                 self.StackSecurityGroupStore.add(groups.results);
                 self.tmpgroup = groups.results[0];
             }).then(function () {
