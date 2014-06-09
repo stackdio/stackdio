@@ -12,6 +12,9 @@ define(function () {
                 case "hidden":
                     elements[i].value = "";
                     break;
+                case "number":
+                    elements[i].value = NaN;
+                    break;
                 case "radio":
                 case "checkbox":
                     if (elements[i].checked) {
@@ -58,6 +61,10 @@ define(function () {
                                 form[id].value = '';
                                 form[id].files = item.files;
                             }
+                            break;
+                        case 'number':
+                            form[id].text = item.text;
+                            form[id].value = parseInt(item.value);
                             break;
                         case 'select-one':
                         case 'select-multi':

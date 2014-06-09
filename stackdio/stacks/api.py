@@ -24,6 +24,7 @@ from volumes.api import VolumeListAPIView
 from volumes.models import Volume
 from blueprints.models import Blueprint, BlueprintHostDefinition
 from cloud.providers.base import BaseCloudProvider
+from cloud.models import SecurityGroup
 
 from . import tasks, models, serializers, filters, validators
 
@@ -838,3 +839,12 @@ class StackLogsDetailAPIView(StackLogsAPIView):
             with open(log, 'r') as f:
                 ret = f.read()
         return Response(ret)
+
+
+class StackSecurityGroupsAPIView(PublicStackMixin, generics.ListAPIView):
+    model = SecurityGroup
+    serializer_class = serializers.StackSecurityGroupSerializer
+  
+    def get_queryset(self):
+        stack = self.get_object()
+        return stack.get_security_groups()

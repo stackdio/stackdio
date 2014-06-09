@@ -24,6 +24,12 @@ from core.utils import recursive_update
 from cloud.models import SecurityGroup
 from volumes.models import Volume
 
+PROTOCOL_CHOICES = [
+    ('tcp', 'TCP'),
+    ('udp', 'UDP'),
+    ('icmp', 'ICMP'),
+]
+
 logger = logging.getLogger(__name__)
 
 HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
@@ -164,6 +170,9 @@ class StackManager(models.Manager):
                 else:
                     kwargs['availability_zone'] = hostdef.zone
 
+                # Set blueprint host definition
+                kwargs['blueprint_host_definition_id'] = hostdef.id
+
                 host = stack.hosts.create(**kwargs)
 
                 # Add in the cloud provider default security groups as
@@ -177,7 +186,7 @@ class StackManager(models.Manager):
                 # set security groups
                 host.security_groups.add(*provider_groups)
                 host.security_groups.add(security_group)
-
+                
                 # add formula components
                 host.formula_components.add(*components)
 
@@ -647,6 +656,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         Uses salt-cloud to query all the hosts for the given stack id.
         '''
         try:
+            if not self.map_file:
+                return {}
+
             logger.info('get_hosts_info: {0!r}'.format(self))
 
             # salt-cloud command to pull host information with
@@ -703,6 +715,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             os.makedirs(log_dir)
         return log_dir
 
+    def get_security_groups(self):
+        groups = SecurityGroup.objects.filter(is_managed=True, 
+                                              hosts__stack=self)
+        ret = []
+        for group in groups:
+            if group not in ret:
+                 ret.append(group)
+
+        return ret
 
 class StackHistory(TimeStampedModel):
 
@@ -752,6 +773,10 @@ class Host(TimeStampedModel, StatusDetailModel):
                                           related_name='hosts')
 
     subnet_id = models.CharField(max_length=32, blank=True, default='')
+
+    blueprint_host_definition = models.ForeignKey(
+        'blueprints.BlueprintHostDefinition',
+        related_name='hosts')
 
     formula_components = models.ManyToManyField(
         'blueprints.BlueprintHostFormulaComponent',

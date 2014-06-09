@@ -46,6 +46,29 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise
         },
+        updateRule : function (group, ruleData) {
+            var deferred = Q.defer();
+            var newRule = JSON.stringify(ruleData);
+           
+            $.ajax({
+                url: group.rules_url,
+                type: 'PUT',
+                data: newRule,
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve(response);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
+                }
+            });
+
+            return deferred.promise;
+        },
         updateDefault : function (group) {
             var self = this;
             var deferred = Q.defer();
