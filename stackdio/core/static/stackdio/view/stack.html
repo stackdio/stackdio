@@ -150,7 +150,14 @@
                             <td data-bind="text: $data.blueprint_host_definition.title"></td>
                             <td data-bind="text: $data.blueprint_host_definition.description"></td>
                             <td data-bind="html: $data.flat_access_rules"></td>
-                            <td><a data-bind="click: $root.initiateAddRule, attr: {id : $data.id }">Add Rule</a></td>
+                            <td><!--a data-bind="click: $root.initiateAddRule, attr: {id : $data.id }">Add Rule</a-->
+                                <form class="form-inline addRuleForm" data-bind="attr: { id : $data.id }" role="form">
+                                    <div class="form-group">
+                                      <label class="sr-only"></label>
+                                    </div>
+
+                                </form>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -160,7 +167,7 @@
                             <form id="add-rule-form" role="form">
                                 <div class="modal-header">
                                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                                    <h4 class="modal-title">Modal title</h4>
+                                    <h4 class="modal-title">Add Access Rule</h4>
                                 </div>
                                 <div class="modal-body">
                                      <div class="form-group">
