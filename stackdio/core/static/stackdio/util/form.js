@@ -51,6 +51,7 @@ define(function () {
                             form[id].text = '';
                             form[id].value = item.checked;
                             break;
+                        case 'hidden':
                         case 'text':
                             if (item.files === null) {
                                 form[id].text = item.text;

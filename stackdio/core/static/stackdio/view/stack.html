@@ -141,78 +141,79 @@
                         <tr>
                             <td>Host Type</td>
                             <td>Host Description</td>
-                            <td>Rules</td>
-                            <td data-bind="text: blueprintProperties"></td>
+                            <td>Current Rules</td>
+                            <td>Add New Rule</td>
                         </tr>
                     </thead>
                     <tbody data-bind="foreach: StackSecurityGroupStore.collection">
                         <tr>
                             <td data-bind="text: $data.blueprint_host_definition.title"></td>
                             <td data-bind="text: $data.blueprint_host_definition.description"></td>
-                            <td data-bind="html: $data.flat_access_rules"></td>
-                            <td><!--a data-bind="click: $root.initiateAddRule, attr: {id : $data.id }">Add Rule</a-->
-                                <form class="form-inline addRuleForm" data-bind="attr: { id : $data.id }" role="form">
+                            <td>
+                              <ul class="list-group" data-bind="foreach: $data.rules">
+                                <li class="list-group-item">
+                                <form role="form" data-bind="attr: { id : $data.uid }">
+                                    <span data-bind="visible: $data.from_port == $data.to_port">
+                                        <span data-bind="text: $data.protocol.toUpperCase()"></span> 
+                                        port <span data-bind="text: $data.from_port"></span> 
+                                        allows <span data-bind="text: $data.rule"></span>
+                                    </span>
+                                    <span data-bind="visible: $data.from_port != $data.to_port">
+                                        <span data-bind="text: $data.protocol.toUpperCase()"></span> 
+                                        ports <span data-bind="text: $data.from_port"></span>-<span data-bind="text: $data.to_port"></span> 
+                                        allow <span data-bind="text: $data.rule"></span>
+                                    </span>
+                                    <input type="hidden" id="rule_protocol" 
+                                           data-bind="attr: { value : $data.protocol }" />
+                                    <input type="hidden" id="rule_from_port" 
+                                           data-bind="attr: { value : $data.from_port }" />
+                                    <input type="hidden" id="rule_to_port" 
+                                           data-bind="attr: { value : $data.to_port }" />
+                                    <input type="hidden" id="rule_rule" 
+                                           data-bind="attr: { value : $data.rule }" />
+                                    <button type="submit" class="btn btn-danger btn-xs" 
+                                           data-bind="click: $root.deleteRule">Delete</button>
+                                </form>
+                                </li>
+                              </ul>
+                            </td>
+                            <td>
+                                <form class="form-inline" data-bind="attr: { id : $data.id }" role="form">
                                     <div class="form-group">
-                                      <label class="sr-only"></label>
+                                        <label class="sr-only" for="rule_protocol">Protocol</label>
+                                        <select id="add_rule_protocol"
+                                          data-bind="options: ['tcp','udp','icmp']",
+                                          data-container="body"
+                                          class="form-control selectpicker input-sm"></select>
                                     </div>
 
+                                    <div class="form-group">
+                                        <label for="rule_from_port" class="sr-only">Port Range</label>
+                                        <input type="text" class="form-control input-sm" id="add_rule_port_range" placeholder="Port Range (ex 22 or 0-500)">
+                                    </div>
+
+                                    <div class="form-group"></div>
+
+	                                  <div class="form-group">
+                                        <label class="sr-only" for="rule_ip_address">IP Address</label>
+                                        <input type="text" class="form-control input-sm" id="add_rule_ip_address" placeholder="IP Address">
+                                    </div>
+
+               	                    <div class="form-group">
+                                        or
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="sr-only" for="rule_group">Group</label>
+                                        <input type="text" class="form-control input-sm" id="add_rule_group" placeholder="another group name">
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-sm btn-primary" data-bind="click: $root.addRule">Add Rule</button>
                                 </form>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-                <div class="modal fade" id="addRuleModal" role="dialog" aria-labelledby="addRuleModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <form id="add-rule-form" role="form">
-                                <div class="modal-header">
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                                    <h4 class="modal-title">Add Access Rule</h4>
-                                </div>
-                                <div class="modal-body">
-                                     <div class="form-group">
-                <label for="rule_protocol" class="control-label">Protocol</label>
-                <select id="rule_protocol"
-                        data-bind="options: ['tcp','udp','icmp']",
-                        data-container="body"
-                        class="form-control selectpicker"></select>
-            </div>
-
-            <div class="form-group">
-                <label for="rule_from_port" class=" control-label">From port</label>
-                <input type="number" class="form-control" id="rule_from_port" placeholder="22" autofocus>
-            </div>
-
-            <div class="form-group">
-                <label for="rule_to_port" class=" control-label">To port</label>
-                <input type="number" class="form-control" id="rule_to_port" placeholder="22">
-            </div>
-
-            <div class="well">
-               	<div class="form-group">
-                    <label class="control-label" for="rule_ip_address">IP Address</label>
-                    <input type="text" class="form-control" id="rule_ip_address" placeholder="0.0.0.0/32">
-                </div>
-
-               	<div class="form-group">
-                    or
-                </div>
-
-                <div class="form-group">
-                    <label class="control-label" for="rule_group">Group</label>
-                    <input type="text" class="form-control" id="rule_group" placeholder="another group name">
-               	</div>
-            </div>
-
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                    <button type="button" class="btn btn-primary" data-bind="click: $root.addRule">Add Rule</button>
-                                </div>
-                            </form>
-                        </div><!-- /.modal-content -->
-                    </div><!-- /.modal-dialog -->
-                </div><!-- /.modal -->
             </div>
         </div>
     </div>
