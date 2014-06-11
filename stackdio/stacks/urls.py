@@ -13,6 +13,10 @@ urlpatterns = patterns(
         api.HostDetailAPIView.as_view(),
         name='host-detail'),
 
+    url(r'^actions/(?P<pk>[0-9]+)/$',
+        api.StackActionDetailAPIView.as_view(),
+        name='stackaction-detail'),
+
     url(r'^stacks/$',
         api.StackListAPIView.as_view(),
         name='stack-list'),
@@ -66,8 +70,8 @@ urlpatterns = patterns(
         name='stack-action'),
     
     url(r'^stacks/(?P<pk>[0-9]+)/actions/$',
-        api.StackActionsAPIView.as_view(),
-        name='stack-action-list'),
+        api.StackActionListAPIView.as_view(),
+        name='stackaction-list'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/security_groups/$',
         api.StackSecurityGroupsAPIView.as_view(),

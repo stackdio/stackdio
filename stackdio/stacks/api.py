@@ -459,9 +459,9 @@ class StackActionAPIView(generics.SingleObjectAPIView):
 
             ret = {
                 "results_url" : reverse(
-                    'stack-action-list',
+                    'stackaction-detail',
                     kwargs={
-                        'pk': stack.pk,
+                        'pk': action.id,
                     },
                     request=request),
             }
@@ -539,13 +539,17 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         serializer = self.get_serializer(stack)
         return Response(serializer.data)
 
-class StackActionsAPIView(PublicStackMixin, generics.ListAPIView):
+class StackActionListAPIView(PublicStackMixin, generics.ListAPIView):
     model = models.StackAction
     serializer_class = serializers.StackActionSerializer
 
     def get_queryset(self):
         stack = self.get_object()
         return models.StackAction.objects.filter(stack=stack)
+
+class StackActionDetailAPIView(generics.RetrieveDestroyAPIView):
+    model = models.StackAction
+    serializer_class = serializers.StackActionSerializer
 
 class StackHistoryList(generics.ListAPIView):
     model = models.StackHistory

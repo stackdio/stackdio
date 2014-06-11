@@ -138,7 +138,7 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'rules',
         )
 
-class StackActionSerializer(serializers.ModelSerializer):
+class StackActionSerializer(serializers.HyperlinkedModelSerializer):
     submit_time = serializers.Field(source='submit_time')
     start_time = serializers.Field(source='start_time')
     finish_time = serializers.Field(source='finish_time')
@@ -149,7 +149,7 @@ class StackActionSerializer(serializers.ModelSerializer):
         model = models.StackAction
         fields = (
             'id',
-            #'url',
+            'url',
             'submit_time',
             'start_time',
             'finish_time',
