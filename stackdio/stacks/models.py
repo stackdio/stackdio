@@ -22,6 +22,7 @@ from model_utils import Choices
 from core.fields import DeletingFileField
 from core.utils import recursive_update
 from cloud.models import SecurityGroup
+from cloud.providers.base import BaseCloudProvider
 from volumes.models import Volume
 
 PROTOCOL_CHOICES = [
@@ -736,6 +737,58 @@ class StackHistory(TimeStampedModel):
         (Level.ERROR, Level.ERROR),
     ))
 
+class StackAction(TimeStampedModel):
+    WAITING = 'waiting'
+    RUNNING = 'running'
+    FINISHED = 'finished'
+    STATUS = Choices(WAITING, RUNNING, FINISHED)
+
+    class Meta:
+        verbose_name_plural = 'stack actions'
+
+    stack = models.ForeignKey('Stack', related_name='actions')
+
+    # The started executing
+    start = models.DateTimeField()
+
+    # The status of the action
+    status = models.CharField(max_length=8, choices=STATUS, default=WAITING)
+
+    # Type of action (custom, launch, etc)
+    type = models.CharField(max_length=50)
+
+    # Which hosts we want to target
+    host_target = models.CharField(max_length=255)
+
+    # The command to be run (for custom actions)
+    command = models.TextField()
+    
+    # The output from the action
+    std_out_storage = models.TextField()
+
+    # The error output from the action
+    std_err_storage = models.TextField()
+
+    def std_out(self):
+        return yaml.safe_load(self.std_out_storage)
+
+    def std_err(self):
+        return yaml.safe_load(self.std_err_storage)
+
+    def submit_time(self):
+        return self.created
+
+    def start_time(self):
+        if self.status in (self.RUNNING, self.FINISHED):
+            return self.start
+        else:
+            return ""
+
+    def finish_time(self):
+        if self.status == self.FINISHED:
+            return self.modified
+        else:
+            return ""
 
 class Host(TimeStampedModel, StatusDetailModel):
     OK = 'ok'

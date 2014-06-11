@@ -7,6 +7,7 @@ from os.path import join, isfile
 import envoy
 import yaml
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 
 from rest_framework import (
     generics,
@@ -425,7 +426,8 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                                      .format(host.state))
                 if (
                     action == driver.ACTION_PROVISION or
-                    action == driver.ACTION_ORCHESTRATE
+                    action == driver.ACTION_ORCHESTRATE or
+                    action == driver.ACTION_CUSTOM
                 ) and host.state not in (driver.STATE_RUNNING,):
                     raise BadRequest(
                         'Provisioning actions require all hosts to be in the '
@@ -435,6 +437,35 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # Kick off the celery task for the given action
         stack.set_status(models.Stack.EXECUTING_ACTION,
                          'Stack is executing action \'{0}\''.format(action))
+
+        if action == BaseCloudProvider.ACTION_CUSTOM:
+            if len(args) is not 2:
+                raise BadRequest('Custom actions require exactly 2 arg '
+                                 'parameters: hostname and command. '
+                                 'Received: {0}'.format(len(args)))
+ 
+            action = models.StackAction(stack=stack)
+            action.host_target = args[0]
+            action.command = args[1]
+            action.type = BaseCloudProvider.ACTION_CUSTOM
+            action.start = datetime.now()
+            action.save()
+
+            task_list = [tasks.custom_action.si(action.id, args[0], args[1])]
+
+            task_chain = reduce(or_, task_list)
+
+            task_chain()
+
+            ret = {
+                "results_url" : reverse(
+                    'stack-action-list',
+                    kwargs={
+                        'pk': stack.pk,
+                    },
+                    request=request),
+            }
+            return Response(ret)
 
         # Keep track of the tasks we need to run for this execution
         task_list = []
@@ -508,6 +539,13 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         serializer = self.get_serializer(stack)
         return Response(serializer.data)
 
+class StackActionsAPIView(PublicStackMixin, generics.ListAPIView):
+    model = models.StackAction
+    serializer_class = serializers.StackActionSerializer
+
+    def get_queryset(self):
+        stack = self.get_object()
+        return models.StackAction.objects.filter(stack=stack)
 
 class StackHistoryList(generics.ListAPIView):
     model = models.StackHistory

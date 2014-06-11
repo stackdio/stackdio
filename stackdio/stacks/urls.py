@@ -64,6 +64,10 @@ urlpatterns = patterns(
     url(r'^stacks/(?P<pk>[0-9]+)/action/$',
         api.StackActionAPIView.as_view(),
         name='stack-action'),
+    
+    url(r'^stacks/(?P<pk>[0-9]+)/actions/$',
+        api.StackActionsAPIView.as_view(),
+        name='stack-action-list'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/security_groups/$',
         api.StackSecurityGroupsAPIView.as_view(),

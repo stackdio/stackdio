@@ -136,4 +136,27 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'is_managed',
             'active_hosts',
             'rules',
-        )  
+        )
+
+class StackActionSerializer(serializers.ModelSerializer):
+    submit_time = serializers.Field(source='submit_time')
+    start_time = serializers.Field(source='start_time')
+    finish_time = serializers.Field(source='finish_time')
+    std_out = serializers.Field(source='std_out')
+    std_err = serializers.Field(source='std_err')
+
+    class Meta:
+        model = models.StackAction
+        fields = (
+            'id',
+            #'url',
+            'submit_time',
+            'start_time',
+            'finish_time',
+            'status',
+            'type',
+            'host_target',
+            'command',
+            'std_out',
+            'std_err',
+        )
