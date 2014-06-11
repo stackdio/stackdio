@@ -6,6 +6,7 @@ define([
     'store/Stacks',
     'store/StackHosts',
     'store/StackSecurityGroups',
+    'store/StackActions',
     'store/Profiles',
     'store/InstanceSizes',
     'store/Blueprints',
@@ -13,7 +14,7 @@ define([
     'store/BlueprintComponents',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, StackActionStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
     var vm = function () {
         var self = this;
 
@@ -40,6 +41,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
         self.StackStore = StackStore;
         self.StackHostStore = StackHostStore;
         self.StackSecurityGroupStore = StackSecurityGroupStore;
+        self.StackActionStore = StackActionStore;
         self.ProfileStore = ProfileStore;
         self.InstanceSizeStore = InstanceSizeStore;
         self.BlueprintHostStore = BlueprintHostStore;
@@ -141,6 +143,9 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
                 // Get security groups 
                 getSecurityGroups(stack);
+
+                // Get actions
+                getActions(stack);
 
                 // Find the corresponding blueprint
                 blueprint = BlueprintStore.collection().filter(function (b) {
@@ -244,13 +249,23 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
                 self.StackSecurityGroupStore.collection.removeAll();
                 self.StackSecurityGroupStore.add(groups.results);
-                self.tmpgroup = groups.results[0];
             }).then(function () {
                 self.StackSecurityGroupStore.collection.sort(function (left, right) {
                     return left.blueprint_host_definition.title < right.blueprint_host_definition.title ? -1 : 1;   
                 });
             });
 
+        }
+
+        function getActions(stack) {
+            API.Stacks.getActions(stack).then(function (actions) {
+                self.StackActionStore.collection.removeAll();
+                self.StackActionStore.add(actions.results);
+            }).then(function () {
+                self.StackActionStore.collection.sort(function (left, right) {
+                    return left.id < right.id ? 1 : -1;
+                });
+            });
         }
 
         self.updateStack = function (obj, evt) {

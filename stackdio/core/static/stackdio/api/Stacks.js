@@ -246,5 +246,28 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         return deferred.promise;
     };
 
+    api.getActions = function (stack) {
+        var deferred = Q.defer();
+        
+        $.ajax({
+            url: stack.actions,
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                'ContentType': 'application/json',
+                'X-CSRFToken': stackdio.settings.csrftoken,
+                'Accept': 'application/json'
+            },
+            success: function (actions) {
+                deferred.resolve(actions);
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
+            }
+        });
+
+        return deferred.promise;
+    };
+
     return api;
 });

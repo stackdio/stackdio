@@ -10,6 +10,7 @@
             <li><a href="#hosts" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Hosts</a></li>
             <li><a href="#logs" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Logs</a></li>
             <li><a href="#access" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Access Rules</a></li>
+            <li><a href="#action" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update'">Stack Actions</a></li>
         </ul>
 
         <div class="tab-content">
@@ -211,6 +212,22 @@
                                     <button type="submit" class="btn btn-sm btn-primary" data-bind="click: $root.addRule">Add Rule</button>
                                 </form>
                             </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane" id="action">
+                <table id="stack-access" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <td>Host Target</td>
+                            <td>Command</td>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: StackActionStore.collection">
+                        <tr>
+                            <td data-bind="text: $data.host_target"></td>
+                            <td data-bind="text: $data.command"></td>
                         </tr>
                     </tbody>
                 </table>
