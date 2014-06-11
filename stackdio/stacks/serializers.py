@@ -63,6 +63,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     hosts = serializers.HyperlinkedIdentityField(view_name='stack-hosts')
     fqdns = serializers.HyperlinkedIdentityField(view_name='stack-fqdns')
     action = serializers.HyperlinkedIdentityField(view_name='stack-action')
+    actions = serializers.HyperlinkedIdentityField(
+        view_name='stackaction-list')
     logs = serializers.HyperlinkedIdentityField(view_name='stack-logs')
     orchestration_errors = serializers.HyperlinkedIdentityField(
         view_name='stack-orchestration-errors')
@@ -100,6 +102,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'properties',
             'history',
             'action',
+            'actions',
             'security_groups',
             'logs',
             'orchestration_errors',
