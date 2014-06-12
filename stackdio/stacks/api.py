@@ -22,11 +22,11 @@ from core.exceptions import BadRequest
 from core.renderers import PlainTextRenderer
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
-from blueprints.models import Blueprint
+from blueprints.models import Blueprint, BlueprintHostDefinition
 from cloud.providers.base import BaseCloudProvider
 from cloud.models import SecurityGroup
 
-from . import tasks, models, serializers, filters
+from . import tasks, models, serializers, filters, validators, workflows
 
 logger = logging.getLogger(__name__)
 
@@ -128,8 +128,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         # UNDOCUMENTED PARAMS
         # Skips launching if set to False
         launch_stack = request.DATA.get('auto_launch', True)
-        # Skips provisioning if set to False
-        provision_stack = request.DATA.get('auto_provision', True)
+
         # Launches in parallel mode if set to True
         parallel = request.DATA.get('parallel', True)
 
@@ -232,42 +231,17 @@ class StackListAPIView(generics.ListCreateAPIView):
             raise BadRequest(str(e))
 
         if launch_stack:
-            # Queue up stack creation and provisioning using Celery
-            task_list = [
-                tasks.launch_hosts.si(
-                    stack.id,
-                    parallel=parallel,
-                    max_retries=max_retries,
-                    simulate_launch_failures=simulate_launch_failures,
-                    simulate_ssh_failures=simulate_ssh_failures,
-                    simulate_zombies=simulate_zombies,
-                    failure_percent=failure_percent),
-                tasks.update_metadata.si(stack.id),
-                tasks.cure_zombies.si(stack.id, max_retries=max_retries),
-                tasks.tag_infrastructure.si(stack.id),
-                tasks.register_dns.si(stack.id),
-                tasks.ping.si(stack.id),
-                tasks.sync_all.si(stack.id),
-                # highstate of core SLS is not optional
-                tasks.highstate.si(stack.id, max_retries=max_retries),
-            ]
+            workflow = workflows.LaunchWorkflow(stack)
+            workflow.opts.parallel = parallel
+            workflow.opts.max_retries = max_retries
+            workflow.opts.simulate_launch_failures = simulate_launch_failures
+            workflow.opts.simulate_ssh_failures = simulate_ssh_failures
+            workflow.opts.simulate_zombies = simulate_zombies
+            workflow.opts.failure_percent = failure_percent
+            workflow.execute()
 
-            # provisioning is optional (mainly useful for getting machines
-            # up so you can play with salt states)
-            if provision_stack:
-                task_list.append(tasks.orchestrate.si(stack.id,
-                                                      max_retries=max_retries))
-
-            # always finish
-            task_list.append(tasks.finish_stack.si(stack.id))
-
-            logger.debug(task_list)
-            task_chain = reduce(or_, task_list)
-
-            # execute the chain
             stack.set_status('queued',
                              'Stack has been submitted to launch queue.')
-            task_chain(link_error=tasks.handle_error.s(stack.id))
 
         # return serialized stack object
         serializer = serializers.StackSerializer(stack, context={
@@ -294,17 +268,10 @@ class StackDetailAPIView(PublicStackMixin,
         stack.set_status(models.Stack.DESTROYING, msg)
         parallel = request.DATA.get('parallel', True)
 
-        # Queue up stack destroy tasks
-        task_chain = (
-            tasks.update_metadata.si(stack.id, remove_absent=False) |
-            tasks.register_volume_delete.si(stack.id) |
-            tasks.unregister_dns.si(stack.id) |
-            tasks.destroy_hosts.si(stack.id, parallel=parallel) |
-            tasks.destroy_stack.si(stack.id)
-        )
-
-        # execute the chain
-        task_chain()
+        # Execute the workflow
+        workflow = workflows.DestroyStackWorkflow(stack)
+        workflow.opts.parallel = parallel
+        workflow.execute()
 
         # Return the stack while its deleting
         serializer = self.get_serializer(stack)
@@ -453,8 +420,11 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # Terminate should leverage salt-cloud or salt gets confused about
         # the state of things
         elif action == BaseCloudProvider.ACTION_TERMINATE:
-            task_list.append(tasks.destroy_hosts.si(stack.id,
-                                                    delete_stack=False))
+            task_list.append(
+                tasks.destroy_hosts.si(stack.id,
+                                       delete_hosts=False,
+                                       delete_security_groups=False)
+            )
 
         elif action in (BaseCloudProvider.ACTION_PROVISION,
                         BaseCloudProvider.ACTION_ORCHESTRATE,):
@@ -499,11 +469,11 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # chain together our tasks using the bitwise or operator
         task_chain = reduce(or_, task_list)
 
-        # Update all host states
-        stack.get_hosts().update(state='actioning')
-
         # execute the chain
         task_chain()
+
+        # Update all host states
+        stack.get_hosts().update(state='actioning')
 
         serializer = self.get_serializer(stack)
         return Response(serializer.data)
@@ -517,47 +487,127 @@ class StackHistoryList(generics.ListAPIView):
 class HostListAPIView(PublicStackMixin, generics.ListAPIView):
     model = models.Host
     serializer_class = serializers.HostSerializer
+    parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
         return models.Host.objects.filter(stack__owner=self.request.user)
 
 
 class StackHostsAPIView(HostListAPIView):
-    parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
         stack = self.get_object()
         return models.Host.objects.filter(stack=stack)
 
-    def put(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         '''
-        Overriding PUT for a stack to be able to add additional
-        hosts after a stack has already been created.
-        '''
+        Overriding POST for a stack to be able to add or remove
+        hosts from the stack. Both actions are dependent on
+        a blueprint host definition in the blueprint used to
+        launch the stack.
 
+        POST /api/stacks/<stack_id>/hosts/
+        Allows users to add or remove hosts on a running stack. The action is
+        specified along with a list of objects specifying what hosts to add or
+        remove, which implies that only a single type of action may be used
+        at one time.
+
+        {
+            "action": "<action>",
+            "args": [
+                {
+                    "host_definition": <int>,
+                    "count": <int>,
+                    "backfill": <bool>
+                },
+                ...
+                ...
+                {
+                    "host_definition": <int>,
+                    "count": <int>,
+                    "backfill": <bool>
+                }
+            ]
+        }
+
+        where:
+
+        @param action (string) REQUIRED; what type of action to take on the
+            stack, must be one of 'add' or 'remove'
+        @param count (int) REQUIRED; how many additional hosts to add or remove
+        @param host_definition (int) REQUIRED; the id of a blueprint host
+            definition that is part of the blueprint the stack was initially
+            launched from
+        @param backfill (bool) OPTIONAL DEFAULT=false; if true, the hostnames
+            will be generated in a way to fill in any gaps in the existing
+            hostnames of the stack. For example, if your stack has a host list
+            [foo-1, foo-3, foo-4] and you ask for three additional hosts, the
+            resulting set of hosts is [foo-1, foo-2, foo-3, foo4, foo-5, foo-6]
+        '''
+        errors = validators.StackAddRemoveHostsValidator(request).validate()
+        if errors:
+            raise BadRequest(errors)
+
+        action = request.DATA['action']
+
+        if action == 'add':
+            return self.add_hosts(request)
+        elif action == 'remove':
+            return self.remove_hosts(request)
+
+    def add_hosts(self, request):
         stack = self.get_object()
-        new_hosts = stack.add_hosts(request.DATA['hosts'])
-        host_ids = [h.id for h in new_hosts]
+        args = request.DATA['args']
 
-        # Queue up stack creation and provisioning using Celery
-        task_chain = (
-            tasks.launch_hosts.si(stack.id, host_ids=host_ids) |
-            tasks.cure_zombies.si(stack.id) |
-            tasks.update_metadata.si(stack.id, host_ids=host_ids) |
-            tasks.tag_infrastructure.si(stack.id, host_ids=host_ids) |
-            tasks.register_dns.si(stack.id, host_ids=host_ids) |
-            tasks.ping.si(stack.id) |
-            tasks.sync_all.si(stack.id) |
-            tasks.highstate.si(stack.id, host_ids=host_ids) |
-            tasks.orchestrate.si(stack.id, host_ids=host_ids) |
-            tasks.finish_stack.si(stack.id)
-        )
+        created_hosts = []
+        for arg in args:
+            hostdef = BlueprintHostDefinition.objects.get(
+                pk=arg['host_definition']
+            )
+            count = arg['count']
+            backfill = arg.get('backfill', False)
 
-        # execute the chain
-        task_chain()
+            hosts = stack.create_hosts(host_definition=hostdef,
+                                       count=count,
+                                       backfill=backfill)
+            created_hosts.extend(hosts)
 
-        serializer = self.get_serializer(stack)
+        if created_hosts:
+            host_ids = [h.id for h in created_hosts]
+
+            # regnerate the map file and run the standard set of launch tasks
+            stack._generate_map_file()
+            workflows.LaunchWorkflow(stack, host_ids=host_ids).execute()
+
+        serializer = self.get_serializer(created_hosts, many=True)
         return Response(serializer.data)
+
+    def remove_hosts(self, request):
+        stack = self.get_object()
+        args = request.DATA['args']
+
+        hosts = []
+        for arg in args:
+            hostdef = BlueprintHostDefinition.objects.get(
+                pk=arg['host_definition']
+            )
+            count = arg['count']
+
+            logger.debug(arg)
+            logger.debug(hostdef)
+
+            hosts.extend(
+                stack.hosts.filter(blueprint_host_definition=hostdef)
+                .order_by('-index')[:count]
+            )
+
+        logger.debug('Hosts to remove: {0}'.format(hosts))
+        host_ids = [h.pk for h in hosts]
+        if host_ids:
+            workflows.DestroyHostsWorkflow(stack, host_ids).execute()
+        else:
+            raise BadRequest('No hosts were found to remove.')
+        return Response()
 
     def get(self, request, *args, **kwargs):
         '''
@@ -605,16 +655,11 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         host = self.get_object()
         host.set_status(models.Host.DELETING, 'Deleting host.')
 
-        # unregister DNS and destroy the host
-        task_chain = (
-            tasks.register_volume_delete.si(host.stack.id,
-                                            host_ids=[host.id]) |
-            tasks.unregister_dns.si(host.stack.id, host_ids=[host.id]) |
-            tasks.destroy_hosts.si(host.stack.id, host_ids=[host.id])
-        )
+        stack = host.stack
+        host_ids = [host.pk]
 
-        # execute the chain
-        task_chain()
+        # unregister DNS and destroy the host
+        workflows.DestroyHostsWorkflow(stack, host_ids).execute()
 
         # Return the host while its deleting
         serializer = self.get_serializer(host)
@@ -759,7 +804,7 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 class StackSecurityGroupsAPIView(PublicStackMixin, generics.ListAPIView):
     model = SecurityGroup
     serializer_class = serializers.StackSecurityGroupSerializer
-  
+
     def get_queryset(self):
         stack = self.get_object()
         return stack.get_security_groups()
