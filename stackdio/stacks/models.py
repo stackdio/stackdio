@@ -359,12 +359,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             host_definitions = [host_definition]
 
         for hostdef in host_definitions:
+            hosts = self.hosts.all()
+
             if count is None:
                 start, end = 0, hostdef.count
                 indexes = xrange(start, end)
+            elif not hosts:
+                start, end = 0, count
+                indexes = xrange(start, end)
             else:
                 if backfill:
-                    hosts = self.hosts.all().order_by('index')
+                    hosts = hosts.order_by('index')
 
                     # The set of existing host indexes
                     host_indexes = set([h.index for h in hosts])
@@ -388,7 +393,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     end = start + count
                     indexes += range(start, end)
                 else:
-                    start = self.hosts.all().order_by('-index')[0].index + 1
+                    start = hosts.order_by('-index')[0].index + 1
                     end = start + count
                     indexes = xrange(start, end)
 
