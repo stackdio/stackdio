@@ -364,9 +364,31 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 indexes = xrange(start, end)
             else:
                 if backfill:
-                    raise NotImplementedError('TODO')
+                    hosts = self.hosts.all().order_by('index')
+
+                    # The set of existing host indexes
+                    host_indexes = set([h.index for h in hosts])
+
+                    # The last index available
+                    last_index = sorted(host_indexes)[-1]
+
+                    # The set of expected indexes based on the last known
+                    # index
+                    expected_indexes = set(range(last_index + 1))
+
+                    # Any gaps any the expected indexes?
+                    gaps = expected_indexes - host_indexes
+
+                    indexes = []
+                    if gaps:
+                        indexes = list(gaps)
+
+                    count -= len(indexes)
+                    start = sorted(host_indexes)[-1] + 1
+                    end = start + count
+                    indexes += range(start, end)
                 else:
-                    start = self.hosts.count()
+                    start = self.hosts.all().order_by('-index')[0].index + 1
                     end = start + count
                     indexes = xrange(start, end)
 
@@ -383,6 +405,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 )
 
                 kwargs = dict(
+                    index=i,
                     cloud_profile=hostdef.cloud_profile,
                     blueprint_host_definition=hostdef,
                     instance_size=hostdef.size,
@@ -829,6 +852,8 @@ class Host(TimeStampedModel, StatusDetailModel):
         related_name='hosts')
 
     hostname = models.CharField(max_length=64)
+
+    index = models.IntegerField()
 
     security_groups = models.ManyToManyField('cloud.SecurityGroup',
                                              related_name='hosts')

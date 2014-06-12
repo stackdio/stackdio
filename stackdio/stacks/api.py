@@ -598,7 +598,7 @@ class StackHostsAPIView(HostListAPIView):
 
             hosts.extend(
                 stack.hosts.filter(blueprint_host_definition=hostdef)
-                .order_by('-created')[:count]
+                .order_by('-index')[:count]
             )
 
         logger.debug('Hosts to remove: {0}'.format(hosts))
