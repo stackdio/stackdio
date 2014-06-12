@@ -492,7 +492,7 @@ def cure_zombies(stack_id, max_retries=2):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(update_metadata.name, err_msg, Level.ERROR)
+        stack.set_status(cure_zombies.name, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -522,13 +522,15 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         # also keep track if volume information was updated
         bdm_updated = False
 
-        driver_hosts = stack.get_driver_hosts_map()
+        driver_hosts = stack.get_driver_hosts_map(host_ids)
 
         for driver, hosts in driver_hosts.iteritems():
             bad_states = (driver.STATE_TERMINATED,
                           driver.STATE_SHUTTING_DOWN)
 
             for host in hosts:
+                logger.debug('Updating metadata for host {0}'.format(host))
+
                 # FIXME: This is cloud provider specific. Should farm it out to
                 # the right implementation
                 host_data = query_results[host.hostname]
@@ -648,7 +650,6 @@ def tag_infrastructure(stack_id, host_ids=None):
     '''
     try:
         stack = Stack.objects.get(id=stack_id)
-        hosts = stack.get_hosts()
 
         logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
 
@@ -658,7 +659,7 @@ def tag_infrastructure(stack_id, host_ids=None):
 
         # for each set of hosts on a provider, use the driver implementation
         # to tag the various infrastructure
-        driver_hosts = stack.get_driver_hosts_map()
+        driver_hosts = stack.get_driver_hosts_map(host_ids)
 
         for driver, hosts in driver_hosts.iteritems():
             volumes = stack.volumes.filter(host__in=hosts)
@@ -694,7 +695,7 @@ def register_dns(stack_id, host_ids=None):
 
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
-        driver_hosts = stack.get_driver_hosts_map()
+        driver_hosts = stack.get_driver_hosts_map(host_ids)
         for driver, hosts in driver_hosts.iteritems():
             driver.register_dns(hosts)
 
@@ -882,7 +883,7 @@ def sync_all(stack_id):
 
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.highstate')  # NOQA
-def highstate(stack_id, host_ids=None, max_retries=0):
+def highstate(stack_id, max_retries=0):
     '''
     Executes the state.top function using the custom top file generated via
     the stacks.models._generate_top_file. This will only target the 'base'
@@ -1054,7 +1055,7 @@ def highstate(stack_id, host_ids=None, max_retries=0):
 
 # TODO: Ignoring code complexity issues
 @celery.task(name='stacks.orchestrate') # NOQA
-def orchestrate(stack_id, host_ids=None, max_retries=0):
+def orchestrate(stack_id, max_retries=0):
     '''
     Executes the runners.state.over function with the custom overstate
     file  generated via the stacks.models._generate_overstate_file. This
@@ -1309,14 +1310,11 @@ def register_volume_delete(stack_id, host_ids=None):
         stack.set_status(finish_stack.name,
                          'Registering volumes for deletion.')
 
-        hosts = stack.get_hosts(host_ids)
-        if not hosts:
-            return
-
         # use the stack driver to register all volumes on the hosts to
         # automatically delete after the host is terminated
-        driver_hosts = stack.get_driver_hosts_map()
+        driver_hosts = stack.get_driver_hosts_map(host_ids)
         for driver, hosts in driver_hosts.iteritems():
+            logger.debug('Deleting volumes for hosts {0}'.format(hosts))
             driver.register_volumes_for_delete(hosts)
 
         stack.set_status(finish_stack.name,
@@ -1336,7 +1334,8 @@ def register_volume_delete(stack_id, host_ids=None):
 
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.destroy_hosts') # NOQA
-def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
+def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
+                  delete_security_groups=True, parallel=True):
     '''
     Destroy the given stack id or a subset of the stack if host_ids
     is set. After all hosts have been destroyed we must also clean
@@ -1349,66 +1348,69 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
                          'take a while.')
         hosts = stack.get_hosts(host_ids)
 
-        # Build up the salt-cloud command
-        cmd_args = [
-            'salt-cloud',
-            '-y',                   # assume yes
-            '-d',                   # destroy argument
-            '--out=yaml',           # output in JSON
-            '--config-dir={0}'.format(
-                settings.STACKDIO_CONFIG.salt_config_root
-            )
-        ]
+        if hosts:
+            # Build up the salt-cloud command
+            cmd_args = [
+                'salt-cloud',
+                '-y',                   # assume yes
+                '-d',                   # destroy argument
+                '--out=yaml',           # output in JSON
+                '--config-dir={0}'.format(
+                    settings.STACKDIO_CONFIG.salt_config_root
+                )
+            ]
 
-        if parallel:
-            cmd_args.append('-P')
+            if parallel:
+                cmd_args.append('-P')
 
-        # if host ids are given, we're going to terminate only those hosts
-        if host_ids:
-            logger.info('Destroying hosts {0!r} on stack {1!r}'.format(
-                hosts,
-                stack
-            ))
+            # if host ids are given, we're going to terminate only those hosts
+            if host_ids:
+                logger.info('Destroying hosts {0!r} on stack {1!r}'.format(
+                    hosts,
+                    stack
+                ))
 
-            # add the machines to destroy on to the cmd_args list
-            cmd_args.extend([h.hostname for h in hosts])
+                # add the machines to destroy on to the cmd_args list
+                cmd_args.extend([h.hostname for h in hosts])
 
-        # or we'll destroy the entire stack by giving the map file with all
-        # hosts defined
-        else:
-            logger.info('Destroying complete stack: {0!r}'.format(stack))
+            # or we'll destroy the entire stack by giving the map file with all
+            # hosts defined
+            else:
+                logger.info('Destroying complete stack: {0!r}'.format(stack))
 
-            # Check for map file, and if it doesn't exist just remove
-            # the stack and return
-            if not stack.map_file or not os.path.isfile(stack.map_file.path):
-                logger.warn('Map file for stack {0} does not exist. '
-                            'Deleting stack anyway.'.format(stack))
-                stack.delete()
-                return
+                # Check for map file, and if it doesn't exist just remove
+                # the stack and return
+                map_file = stack.map_file
+                if not map_file or not os.path.isfile(map_file.path):
+                    logger.warn('Map file for stack {0} does not exist. '
+                                'Deleting stack anyway.'.format(stack))
+                    return
 
-            # Add the location to the map to destroy the entire stack
-            cmd_args.append('-m {0}'.format(stack.map_file.path))
+                # Add the location to the map to destroy the entire stack
+                cmd_args.append('-m {0}'.format(stack.map_file.path))
 
-        cmd = ' '.join(cmd_args)
+            cmd = ' '.join(cmd_args)
 
-        logger.debug('Executing command: {0}'.format(cmd))
-        result = envoy.run(str(cmd))
-        logger.debug('Command results:')
-        logger.debug('status_code = {0}'.format(result.status_code))
-        logger.debug('std_out = {0}'.format(result.std_out))
-        logger.debug('std_err = {0}'.format(result.std_err))
+            logger.debug('Executing command: {0}'.format(cmd))
+            result = envoy.run(str(cmd))
+            logger.debug('Command results:')
+            logger.debug('status_code = {0}'.format(result.status_code))
+            logger.debug('std_out = {0}'.format(result.std_out))
+            logger.debug('std_err = {0}'.format(result.std_err))
 
-        if result.status_code > 0:
-            err_msg = result.std_err if result.std_err else result.std_out
-            stack.set_status(destroy_hosts.name, err_msg, Stack.ERROR)
-            raise StackTaskException('Error destroying hosts on stack {0}: '
-                                     '{1!r}'.format(
-                                         stack_id,
-                                         err_msg))
+            if result.status_code > 0:
+                err_msg = result.std_err if result.std_err else result.std_out
+                stack.set_status(destroy_hosts.name, err_msg, Stack.ERROR)
+                raise StackTaskException(
+                    'Error destroying hosts on stack {0}: {1!r}'.format(
+                        stack_id,
+                        err_msg
+                    )
+                )
 
         # wait for all hosts to finish terminating so we can
         # destroy security groups
-        driver_hosts = stack.get_driver_hosts_map()
+        driver_hosts = stack.get_driver_hosts_map(host_ids)
         security_groups = set()
         for driver, hosts in driver_hosts.iteritems():
             security_groups.update(SecurityGroup.objects.filter(
@@ -1425,7 +1427,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
                     raise StackTaskException(result)
                 known_hosts.update(instance_id='', state='terminated')
 
-        if delete_stack:
+        if delete_security_groups:
             time.sleep(5)
             for security_group in security_groups:
                 try:
@@ -1440,7 +1442,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_stack=True, parallel=True):
                 security_group.delete()
 
         # delete hosts
-        if delete_stack:
+        if delete_hosts and hosts:
             hosts.delete()
 
         stack.set_status(destroy_hosts.name,
@@ -1506,8 +1508,9 @@ def unregister_dns(stack_id, host_ids=None):
 
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
-        driver_hosts = stack.get_driver_hosts_map()
+        driver_hosts = stack.get_driver_hosts_map(host_ids)
         for driver, hosts in driver_hosts.iteritems():
+            logger.debug('Unregistering DNS for hosts: {0}'.format(hosts))
             driver.unregister_dns(hosts)
 
         stack.set_status(Stack.CONFIGURING,
@@ -1538,8 +1541,6 @@ def execute_action(stack_id, action, *args, **kwargs):
             stack)
         )
 
-        # Use the provider implementation to register a set of hosts
-        # with the appropriate cloud's DNS service
         driver_hosts_map = stack.get_driver_hosts_map()
         for driver, hosts in driver_hosts_map.iteritems():
             fun = getattr(driver, '_action_{0}'.format(action))

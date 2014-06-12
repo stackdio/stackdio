@@ -297,7 +297,8 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
                 if(host.zone) {
                     params.zone = host.zone;
                 }
-                else if(host.subnet_id) {
+
+                if(host.subnet_id) {
                     params.subnet_id = host.subnet_id;
                 }
 

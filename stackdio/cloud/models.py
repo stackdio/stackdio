@@ -285,6 +285,12 @@ class SecurityGroup(TimeStampedModel, models.Model):
                               null=True,
                               related_name='security_groups')
 
+    blueprint_host_definition = models.ForeignKey(
+        'blueprints.BlueprintHostDefinition',
+        null=True,
+        default=None,
+        related_name='security_groups')
+
     # the cloud provider for this group
     cloud_provider = models.ForeignKey('cloud.CloudProvider',
                                        related_name='security_groups')
@@ -323,6 +329,3 @@ class SecurityGroup(TimeStampedModel, models.Model):
         except KeyError:
             logger.debug(groups)
             raise
-
-    def blueprint_host_definition(self):
-        return self.hosts.all()[0].blueprint_host_definition
