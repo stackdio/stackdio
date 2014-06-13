@@ -266,21 +266,59 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             });
         }
 
+        self.runActionAgain = function (action, evt) {
+
+            var data = {
+                action: "custom",
+                args: [
+                    action.host_target,
+                    action.command
+                ]
+            };
+
+            startAction(data);
+        };
+
         self.runAction = function (obj, evt) {
             var record = formutils.collectFormFields(evt.target.form);
         
-            var data = JSON.stringify({
+            var data = {
                 action: "custom",
                 args: [
                     record.host_target.value,
                     record.command.value
                 ]
+            };
+
+           startAction(data);
+
+           formutils.clearForm('action-form');
+        };
+
+        self.deleteAction = function (action, evt) {
+            console.log(action);
+            $.ajax({
+                url: action.url,
+                type: 'DELETE',
+                headers: {
+                    "Accept": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken
+                },
+                success: function (response) {
+                    getActions(self.selectedStack());
+                },
+                error: function (response, status, error) {
+                    alerts.showMessage('#error', 'Unable to delete command', true, 7000);
+                }
             });
 
-            $.ajax({
+        };
+
+        function startAction(data) {
+             $.ajax({
                 url: self.selectedStack().action,
                 type: 'POST',
-                data: data,
+                data: JSON.stringify(data),
                 headers: {
                     "X-CSRFToken": stackdio.settings.csrftoken,
                     "Accept": "application/json",
@@ -290,11 +328,12 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                     getActions(self.selectedStack());
                 },
                 error: function (request, status, error) {
+                    console.log(error);
                     alerts.showMessage('#error', 'Unable to run command', true, 7000);
                 }
             });
-            formutils.clearForm('action-form');
-        };
+
+        }
 
         self.refreshActions = function () {
             getActions(self.selectedStack());
@@ -321,7 +360,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                 default:
                     return 'default';
             }
-	};
+	    };
 
         self.updateStack = function (obj, evt) {
             var record = formutils.collectFormFields(evt.target.form);
