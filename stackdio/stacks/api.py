@@ -6,8 +6,12 @@ from os.path import join, isfile
 
 import envoy
 import yaml
+import zipfile
+import StringIO
 from django.shortcuts import get_object_or_404
 from django.conf import settings
+from django.http import HttpResponse
+from django.core.servers.basehttp import FileWrapper
 
 from rest_framework import (
     generics,
@@ -18,6 +22,7 @@ from rest_framework import (
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse
+from rest_framework.decorators import api_view
 
 from core.exceptions import BadRequest
 from core.renderers import PlainTextRenderer
@@ -550,6 +555,30 @@ class StackActionListAPIView(PublicStackMixin, generics.ListAPIView):
 class StackActionDetailAPIView(generics.RetrieveDestroyAPIView):
     model = models.StackAction
     serializer_class = serializers.StackActionSerializer
+
+@api_view(['GET'])
+def stack_action_zip(request, pk):
+    actions = models.StackAction.objects.filter(pk=pk)
+    if len(actions) is 1:
+        action = actions[0]
+
+        if len(action.std_out()) is 0:
+            return Response({"detail": "Not found"})
+
+        buffer = StringIO.StringIO()
+        action_zip = zipfile.ZipFile(buffer, 'w')
+
+        for output in action.std_out():
+            action_zip.writestr(str('output/'+output['host']+'.txt'), 
+                    str(output['output']))
+
+        action_zip.close()
+
+        response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename=output.zip'
+        return response
+    else:
+        return Response({"detail": "Not found"})
 
 class StackHistoryList(generics.ListAPIView):
     model = models.StackHistory

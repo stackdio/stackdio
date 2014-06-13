@@ -224,8 +224,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
             var record = formutils.collectFormFields(evt.target.form);
 
-            console.log(record);
-
             API.SecurityGroups.updateRule(curGroup, {
                 "action" : "revoke",
                 "protocol": record.rule_protocol.value,
@@ -267,6 +265,63 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                 });
             });
         }
+
+        self.runAction = function (obj, evt) {
+            var record = formutils.collectFormFields(evt.target.form);
+        
+            var data = JSON.stringify({
+                action: "custom",
+                args: [
+                    record.host_target.value,
+                    record.command.value
+                ]
+            });
+
+            $.ajax({
+                url: self.selectedStack().action,
+                type: 'POST',
+                data: data,
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                success: function (response) {
+                    getActions(self.selectedStack());
+                },
+                error: function (request, status, error) {
+                    alerts.showMessage('#error', 'Unable to run command', true, 7000);
+                }
+            });
+            formutils.clearForm('action-form');
+        };
+
+        self.refreshActions = function () {
+            getActions(self.selectedStack());
+        };
+
+        self.goToAction = function (action) {
+            $galaxy.transport({
+                location: 'stack.action.detail',
+                payload: {
+                    stack: self.selectedStack().id,
+                    action: action.id
+                }
+            });
+        };
+
+        self.getStatusType = function(status) {
+            switch(status) {
+                case 'waiting':
+                    return 'info';
+                case 'running':
+                    return 'warning';
+                case 'finished':
+                    return 'success';
+                default:
+                    return 'default';
+            }
+	};
 
         self.updateStack = function (obj, evt) {
             var record = formutils.collectFormFields(evt.target.form);

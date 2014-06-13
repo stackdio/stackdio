@@ -46,6 +46,9 @@ define(function () {
     var StackHost = function () {};
     StackHost.prototype = new Model();
 
+    var StackAction = function () {};
+    StackAction.prototype = new Model();
+
     var BlueprintHostVolume = function () {};
     BlueprintHostVolume.prototype = new Model();
 
@@ -76,6 +79,7 @@ define(function () {
         
         Stack: Stack,
         StackHost: StackHost,
+        StackAction: StackAction,
 
         Blueprint: Blueprint,
         BlueprintHost: BlueprintHost,

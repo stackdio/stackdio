@@ -17,6 +17,10 @@ urlpatterns = patterns(
         api.StackActionDetailAPIView.as_view(),
         name='stackaction-detail'),
 
+    url(r'^actions/(?P<pk>[0-9]+)/zip/$',
+        'stack_action_zip',
+        name='stackaction-zip'),
+
     url(r'^stacks/$',
         api.StackListAPIView.as_view(),
         name='stack-list'),

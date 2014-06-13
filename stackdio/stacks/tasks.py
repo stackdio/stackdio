@@ -6,6 +6,7 @@ from datetime import datetime
 import envoy
 import celery
 import yaml
+import json
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -1581,7 +1582,14 @@ def custom_action(action_id, host_target, command):
 
     result = envoy.run(cmd)
 
-    action.std_out_storage = result.std_out
+    std_out = yaml.safe_load(result.std_out)
+
+    ret = []
+
+    for host in std_out.keys():
+        ret.append({"host":host, "output":std_out[host]})
+
+    action.std_out_storage = json.dumps(ret)
     action.std_err_storage = result.std_err
     action.status = StackAction.FINISHED
 

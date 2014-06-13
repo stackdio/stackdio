@@ -770,10 +770,13 @@ class StackAction(TimeStampedModel):
     std_err_storage = models.TextField()
 
     def std_out(self):
-        return yaml.safe_load(self.std_out_storage)
+        if self.std_out_storage != "":
+            return json.loads(self.std_out_storage)
+        else:
+            return []
 
     def std_err(self):
-        return yaml.safe_load(self.std_err_storage)
+        return self.std_err_storage
 
     def submit_time(self):
         return self.created

@@ -1,0 +1,41 @@
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('stack.list'); }">Stacks</a></li>
+            <li><a href="#" data-bind="click: goToStack, text: stackTitle"></a></li>
+            <li data-bind="text: actionTitle"></li>
+        </ol>
+        
+        <h3>Info</h3>
+        <div class="well" data-bind="with: selectedAction">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Status:</strong> <span data-bind="text: status, attr: {class: 'label label-'+$root.getStatusType(status)}"></span></p>
+                    <p><strong>Host Target:</strong> <code data-bind="text: host_target"></code></p>
+                    <p><strong>Command:</strong> <code data-bind="text: command"></code></p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Submitted:</strong> <span data-bind="text: $root.convertDate(submit_time)"></span></p>
+                    <p><strong>Started:</strong> <span data-bind="text: $root.convertDate(start_time)"></span></p>
+                    <p><strong>Finished:</strong> <span data-bind="text: $root.convertDate(finish_time)"></span></p>
+                </div>
+                <div class="col-md-4">
+                    <a class="btn btn-warning" data-bind="attr: {href: '/api/actions/'+id+'/zip/'}">Download Output</a>
+                </div>
+            </div>
+        </div>
+        <h3>Output</h3> 
+        <div class="panel-group" id="accordion" data-bind="foreach: selectedOutput">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <a data-toggle="collapse" data-parent="#accordion" data-bind="text: $data.host, attr: {href: '#'+$data.host}"></a>
+                </div>
+                <div class="panel-collapse collapse" data-bind="attr: {id: $data.host}">
+                    <div class="panel-body">
+                        <pre class="panel-body" data-bind="html: $data.output"></pre>
+                    </div>
+                </div>  
+            </div>
+        </div>
+    </div>
+</div>
