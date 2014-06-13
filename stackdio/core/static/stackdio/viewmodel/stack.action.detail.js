@@ -123,7 +123,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackActionStore, API) {
             }
         };
 
-         
     };
     return new vm();
 });

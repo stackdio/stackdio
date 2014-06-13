@@ -20,7 +20,7 @@
                     <p><strong>Finished:</strong> <span data-bind="text: $root.convertDate(finish_time)"></span></p>
                 </div>
                 <div class="col-md-4">
-                    <a class="btn btn-warning" data-bind="attr: {href: '/api/actions/'+id+'/zip/'}">Download Output</a>
+                    <a class="btn btn-warning" data-bind="visible: $root.selectedOutput().length > 0, attr: {href: '/api/actions/'+id+'/zip/'}">Download Output</a>
                 </div>
             </div>
         </div>

@@ -281,7 +281,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
     api.getAction = function (actionId) {
         var deferred = Q.defer();
-        console.log(settings);
+        
         $.ajax({
             url: '/api/actions/'+actionId.toString()+'/',
             type: 'GET',

@@ -568,14 +568,22 @@ def stack_action_zip(request, pk):
         buffer = StringIO.StringIO()
         action_zip = zipfile.ZipFile(buffer, 'w')
 
+        filename = 'action_output_'+action.submit_time().strftime('%Y%m%d_%H%M%S')
+       
+        action_zip.writestr(
+            str('{0}/__command'.format(filename)), 
+            str(action.command))
+
         for output in action.std_out():
-            action_zip.writestr(str('output/'+output['host']+'.txt'), 
-                    str(output['output']))
+            action_zip.writestr(
+                str('{0}/{1}.txt'.format(filename, output['host'])), 
+                str(output['output']))
 
         action_zip.close()
 
-        response = HttpResponse(buffer.getvalue(), content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename=output.zip'
+        response = HttpResponse(buffer.getvalue(), 
+            content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename={0}.zip'.format(filename)
         return response
     else:
         return Response({"detail": "Not found"})
