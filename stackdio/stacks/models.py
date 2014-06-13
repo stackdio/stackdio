@@ -741,7 +741,8 @@ class StackAction(TimeStampedModel):
     WAITING = 'waiting'
     RUNNING = 'running'
     FINISHED = 'finished'
-    STATUS = Choices(WAITING, RUNNING, FINISHED)
+    ERRORED = 'errored'
+    STATUS = Choices(WAITING, RUNNING, FINISHED, ERRORED)
 
     class Meta:
         verbose_name_plural = 'stack actions'

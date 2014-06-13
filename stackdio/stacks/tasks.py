@@ -1561,7 +1561,6 @@ def execute_action(stack_id, action, *args, **kwargs):
 
 @celery.task(name='stacks.custom_action')
 def custom_action(action_id, host_target, command):
-
     action = StackAction.objects.get(id=action_id)
     
     action.start = datetime.now()
@@ -1580,17 +1579,23 @@ def custom_action(action_id, host_target, command):
         command
     ]]
 
-    result = envoy.run(cmd)
+    try:
+        result = envoy.run(cmd)
 
-    std_out = yaml.safe_load(result.std_out)
+        std_out = yaml.safe_load(result.std_out)
 
-    ret = []
+        ret = []
 
-    for host in std_out.keys():
-        ret.append({"host":host, "output":std_out[host]})
+        for host in std_out.keys():
+            ret.append({"host":host, "output":std_out[host]})
 
-    action.std_out_storage = json.dumps(ret)
-    action.std_err_storage = result.std_err
-    action.status = StackAction.FINISHED
+        action.std_out_storage = json.dumps(ret)
+        action.std_err_storage = result.std_err
+        action.status = StackAction.FINISHED
 
-    action.save()
+        action.save()
+
+    except AttributeError, e:
+        action.status = StackAction.ERRORED
+        action.save()
+        raise

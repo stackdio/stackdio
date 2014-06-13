@@ -147,12 +147,14 @@ class StackActionSerializer(serializers.HyperlinkedModelSerializer):
     finish_time = serializers.Field(source='finish_time')
     std_out = serializers.Field(source='std_out')
     std_err = serializers.Field(source='std_err')
+    zip_url = serializers.HyperlinkedIdentityField(view_name='stackaction-zip')
 
     class Meta:
         model = models.StackAction
         fields = (
             'id',
             'url',
+            'zip_url',
             'submit_time',
             'start_time',
             'finish_time',
