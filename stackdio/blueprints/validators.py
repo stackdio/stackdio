@@ -143,28 +143,40 @@ class BlueprintValidator(BaseValidator):
 
     def _validate_host_template(self, host):
         e = {}
-        if 'hostname_template' not in host:
-            e['hostname_template'] = ValidationErrors.REQUIRED_FIELD
+        k = 'hostname_template'
+        if k not in host:
+            e[k] = ValidationErrors.REQUIRED_FIELD
         else:
             # check for valid hostname_template variables
             f = string.Formatter()
             v = [x[1] for x in f.parse(
-                host['hostname_template']
+                host[k]
             ) if x[1]]
             invalid_vars = [x for x in v
                             if x not in VALID_TEMPLATE_VARS]
 
             if invalid_vars:
-                e['hostname_template'] = (
+                e.setdefault(k, []).append(
                     'Invalid variables: {0}'.format(', '.join(invalid_vars))
                 )
 
             # VAR_INDEX must be present if host count is greater than
             # one
             if host.get('count', 0) > 1 and VAR_INDEX not in v:
-                e['hostname_template'] = (
+                e.setdefault(k, []).append(
                     'The variable {0} must be used when a host count is '
                     'greater than one.'.format(VAR_INDEX)
+                )
+
+            # check for underscores and hyphens on the beginning/end
+            if '_' in host[k]:
+                e.setdefault(k, []).append(
+                    'Underscores are not allowed in templates.'
+                )
+            if host[k].startswith('-') or host[k].endswith('-'):
+                e.setdefault(k, []).append(
+                    'Hyphens on the beginning or end of the '
+                    'template is not allowed.'
                 )
         return e
 
