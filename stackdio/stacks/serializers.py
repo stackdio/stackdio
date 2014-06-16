@@ -65,6 +65,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     hosts = serializers.HyperlinkedIdentityField(view_name='stack-hosts')
     fqdns = serializers.HyperlinkedIdentityField(view_name='stack-fqdns')
     action = serializers.HyperlinkedIdentityField(view_name='stack-action')
+    actions = serializers.HyperlinkedIdentityField(
+        view_name='stackaction-list')
     logs = serializers.HyperlinkedIdentityField(view_name='stack-logs')
     orchestration_errors = serializers.HyperlinkedIdentityField(
         view_name='stack-orchestration-errors')
@@ -102,6 +104,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'properties',
             'history',
             'action',
+            'actions',
             'security_groups',
             'logs',
             'orchestration_errors',
@@ -140,4 +143,29 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'is_managed',
             'active_hosts',
             'rules',
+        )
+
+class StackActionSerializer(serializers.HyperlinkedModelSerializer):
+    submit_time = serializers.Field(source='submit_time')
+    start_time = serializers.Field(source='start_time')
+    finish_time = serializers.Field(source='finish_time')
+    std_out = serializers.Field(source='std_out')
+    std_err = serializers.Field(source='std_err')
+    zip_url = serializers.HyperlinkedIdentityField(view_name='stackaction-zip')
+
+    class Meta:
+        model = models.StackAction
+        fields = (
+            'id',
+            'url',
+            'zip_url',
+            'submit_time',
+            'start_time',
+            'finish_time',
+            'status',
+            'type',
+            'host_target',
+            'command',
+            'std_out',
+            'std_err',
         )

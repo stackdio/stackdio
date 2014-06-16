@@ -37,6 +37,7 @@ class BaseCloudProvider(object):
     ACTION_LAUNCH = 'launch'
     ACTION_PROVISION = 'provision'
     ACTION_ORCHESTRATE = 'orchestrate'
+    ACTION_CUSTOM = 'custom'
 
     def __init__(self, obj=None, *args, **kwargs):
 

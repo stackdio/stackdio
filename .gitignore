@@ -23,6 +23,7 @@ salt-cloud.sh
 *.sublime-project
 *.sublime-workspace
 .codeintel
+find.sh
 
 # ldap_settings.py
 stackdio/stackdio/settings/ldap_settings.py

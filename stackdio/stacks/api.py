@@ -6,7 +6,12 @@ from os.path import join, isfile
 
 import envoy
 import yaml
+import zipfile
+import StringIO
 from django.shortcuts import get_object_or_404
+from django.conf import settings
+from django.http import HttpResponse
+from django.core.servers.basehttp import FileWrapper
 
 from rest_framework import (
     generics,
@@ -17,6 +22,7 @@ from rest_framework import (
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse
+from rest_framework.decorators import api_view
 
 from core.exceptions import BadRequest
 from core.renderers import PlainTextRenderer
@@ -392,7 +398,8 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                                      .format(host.state))
                 if (
                     action == driver.ACTION_PROVISION or
-                    action == driver.ACTION_ORCHESTRATE
+                    action == driver.ACTION_ORCHESTRATE or
+                    action == driver.ACTION_CUSTOM
                 ) and host.state not in (driver.STATE_RUNNING,):
                     raise BadRequest(
                         'Provisioning actions require all hosts to be in the '
@@ -402,6 +409,35 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # Kick off the celery task for the given action
         stack.set_status(models.Stack.EXECUTING_ACTION,
                          'Stack is executing action \'{0}\''.format(action))
+
+        if action == BaseCloudProvider.ACTION_CUSTOM:
+            if len(args) is not 2:
+                raise BadRequest('Custom actions require exactly 2 arg '
+                                 'parameters: hostname and command. '
+                                 'Received: {0}'.format(len(args)))
+ 
+            action = models.StackAction(stack=stack)
+            action.host_target = args[0]
+            action.command = args[1]
+            action.type = BaseCloudProvider.ACTION_CUSTOM
+            action.start = datetime.now()
+            action.save()
+
+            task_list = [tasks.custom_action.si(action.id, args[0], args[1])]
+
+            task_chain = reduce(or_, task_list)
+
+            task_chain()
+
+            ret = {
+                "results_url" : reverse(
+                    'stackaction-detail',
+                    kwargs={
+                        'pk': action.id,
+                    },
+                    request=request),
+            }
+            return Response(ret)
 
         # Keep track of the tasks we need to run for this execution
         task_list = []
@@ -478,6 +514,49 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         serializer = self.get_serializer(stack)
         return Response(serializer.data)
 
+class StackActionListAPIView(PublicStackMixin, generics.ListAPIView):
+    model = models.StackAction
+    serializer_class = serializers.StackActionSerializer
+
+    def get_queryset(self):
+        stack = self.get_object()
+        return models.StackAction.objects.filter(stack=stack)
+
+class StackActionDetailAPIView(generics.RetrieveDestroyAPIView):
+    model = models.StackAction
+    serializer_class = serializers.StackActionSerializer
+
+@api_view(['GET'])
+def stack_action_zip(request, pk):
+    actions = models.StackAction.objects.filter(pk=pk)
+    if len(actions) is 1:
+        action = actions[0]
+
+        if len(action.std_out()) is 0:
+            return Response({"detail": "Not found"})
+
+        buffer = StringIO.StringIO()
+        action_zip = zipfile.ZipFile(buffer, 'w')
+
+        filename = 'action_output_'+action.submit_time().strftime('%Y%m%d_%H%M%S')
+       
+        action_zip.writestr(
+            str('{0}/__command'.format(filename)), 
+            str(action.command))
+
+        for output in action.std_out():
+            action_zip.writestr(
+                str('{0}/{1}.txt'.format(filename, output['host'])), 
+                str(output['output']))
+
+        action_zip.close()
+
+        response = HttpResponse(buffer.getvalue(), 
+            content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename={0}.zip'.format(filename)
+        return response
+    else:
+        return Response({"detail": "Not found"})
 
 class StackHistoryList(generics.ListAPIView):
     model = models.StackHistory

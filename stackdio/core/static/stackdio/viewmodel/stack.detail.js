@@ -6,6 +6,7 @@ define([
     'store/Stacks',
     'store/StackHosts',
     'store/StackSecurityGroups',
+    'store/StackActions',
     'store/Profiles',
     'store/InstanceSizes',
     'store/Blueprints',
@@ -13,7 +14,7 @@ define([
     'store/BlueprintComponents',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, StackActionStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
     var vm = function () {
         var self = this;
 
@@ -40,6 +41,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
         self.StackStore = StackStore;
         self.StackHostStore = StackHostStore;
         self.StackSecurityGroupStore = StackSecurityGroupStore;
+        self.StackActionStore = StackActionStore;
         self.ProfileStore = ProfileStore;
         self.InstanceSizeStore = InstanceSizeStore;
         self.BlueprintHostStore = BlueprintHostStore;
@@ -142,6 +144,9 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                 // Get security groups 
                 getSecurityGroups(stack);
 
+                // Get actions
+                getActions(stack);
+
                 // Find the corresponding blueprint
                 blueprint = BlueprintStore.collection().filter(function (b) {
                     return b.url === stack.blueprint;
@@ -219,8 +224,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
             var record = formutils.collectFormFields(evt.target.form);
 
-            console.log(record);
-
             API.SecurityGroups.updateRule(curGroup, {
                 "action" : "revoke",
                 "protocol": record.rule_protocol.value,
@@ -244,7 +247,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
                 self.StackSecurityGroupStore.collection.removeAll();
                 self.StackSecurityGroupStore.add(groups.results);
-                self.tmpgroup = groups.results[0];
             }).then(function () {
                 self.StackSecurityGroupStore.collection.sort(function (left, right) {
                     return left.blueprint_host_definition.title < right.blueprint_host_definition.title ? -1 : 1;   
@@ -252,6 +254,113 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             });
 
         }
+
+        function getActions(stack) {
+            API.Stacks.getActions(stack).then(function (actions) {
+                self.StackActionStore.collection.removeAll();
+                self.StackActionStore.add(actions.results);
+            }).then(function () {
+                self.StackActionStore.collection.sort(function (left, right) {
+                    return left.id < right.id ? 1 : -1;
+                });
+            });
+        }
+
+        self.runActionAgain = function (action, evt) {
+
+            var data = {
+                action: "custom",
+                args: [
+                    action.host_target,
+                    action.command
+                ]
+            };
+
+            startAction(data);
+        };
+
+        self.runAction = function (obj, evt) {
+            var record = formutils.collectFormFields(evt.target.form);
+        
+            var data = {
+                action: "custom",
+                args: [
+                    record.host_target.value,
+                    record.command.value
+                ]
+            };
+
+           startAction(data);
+
+           formutils.clearForm('action-form');
+        };
+
+        self.deleteAction = function (action, evt) {
+            console.log(action);
+            $.ajax({
+                url: action.url,
+                type: 'DELETE',
+                headers: {
+                    "Accept": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken
+                },
+                success: function (response) {
+                    getActions(self.selectedStack());
+                },
+                error: function (response, status, error) {
+                    alerts.showMessage('#error', 'Unable to delete command', true, 7000);
+                }
+            });
+
+        };
+
+        function startAction(data) {
+             $.ajax({
+                url: self.selectedStack().action,
+                type: 'POST',
+                data: JSON.stringify(data),
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                success: function (response) {
+                    getActions(self.selectedStack());
+                },
+                error: function (request, status, error) {
+                    console.log(error);
+                    alerts.showMessage('#error', 'Unable to run command', true, 7000);
+                }
+            });
+
+        }
+
+        self.refreshActions = function () {
+            getActions(self.selectedStack());
+        };
+
+        self.goToAction = function (action) {
+            $galaxy.transport({
+                location: 'stack.action.detail',
+                payload: {
+                    stack: self.selectedStack().id,
+                    action: action.id
+                }
+            });
+        };
+
+        self.getStatusType = function(status) {
+            switch(status) {
+                case 'waiting':
+                    return 'info';
+                case 'running':
+                    return 'warning';
+                case 'finished':
+                    return 'success';
+                default:
+                    return 'default';
+            }
+	    };
 
         self.updateStack = function (obj, evt) {
             var record = formutils.collectFormFields(evt.target.form);

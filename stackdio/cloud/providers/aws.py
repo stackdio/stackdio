@@ -246,6 +246,7 @@ class AWSCloudProvider(BaseCloudProvider):
             self.ACTION_LAUNCH,
             self.ACTION_PROVISION,
             self.ACTION_ORCHESTRATE,
+            self.ACTION_CUSTOM,
         ]
 
     def get_private_key_path(self):
@@ -559,14 +560,14 @@ class AWSCloudProvider(BaseCloudProvider):
         kwargs['group_id'] = group_id
         ec2.revoke_security_group(**kwargs)
 
-    def revoke_all_security_groups(self, group_name):
+    def revoke_all_security_groups(self, group_id):
         '''
         Revokes ALL rules on the security group.
         '''
-        groups = self.get_security_groups(group_name)
+        groups = self.get_security_groups(group_id)
         for group_name, group in groups.iteritems():
             for rule in group['rules']:
-                self.revoke_security_group(group_name, rule)
+                self.revoke_security_group(group_id, rule)
 
     # FIXME(abe): Ignoring code complexity
     def get_security_groups(self, group_ids=[]):  # NOQA

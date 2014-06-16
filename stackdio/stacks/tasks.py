@@ -6,6 +6,7 @@ from datetime import datetime
 import envoy
 import celery
 import yaml
+import json
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -16,6 +17,7 @@ import stacks.utils
 from stacks.models import (
     Stack,
     Level,
+    StackAction,
 )
 from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
@@ -1555,4 +1557,46 @@ def execute_action(stack_id, action, *args, **kwargs):
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, err_msg)
         logger.exception(err_msg)
+        raise
+
+
+@celery.task(name='stacks.custom_action')
+def custom_action(action_id, host_target, command):
+    action = StackAction.objects.get(id=action_id)
+    
+    action.start = datetime.now()
+    action.status = StackAction.RUNNING
+    action.save()
+
+    stack_id = action.stack.id
+
+    cmd = [[
+        'salt',
+        '-C', '{0} and G@stack_id:{1}'.format(host_target, stack_id),
+        '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
+        '--out=yaml',
+        '--log-file-level', 'debug',
+        'cmd.run',
+        command
+    ]]
+
+    try:
+        result = envoy.run(cmd)
+
+        std_out = yaml.safe_load(result.std_out)
+
+        ret = []
+
+        for host in std_out.keys():
+            ret.append({"host":host, "output":std_out[host]})
+
+        action.std_out_storage = json.dumps(ret)
+        action.std_err_storage = result.std_err
+        action.status = StackAction.FINISHED
+
+        action.save()
+
+    except AttributeError, e:
+        action.status = StackAction.ERRORED
+        action.save()
         raise

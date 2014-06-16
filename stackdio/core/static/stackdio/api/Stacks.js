@@ -32,6 +32,26 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
         return deferred.promise;
     };
 
+    api.getStack = function (stackId) {
+        var deferred = Q.defer();
+        $.ajax({
+            url: settings.api.stacks.stacks+stackId.toString()+'/',
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                'Accept': 'application/json'
+            },
+            success: function (stack) {
+                deferred.resolve(stack);
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
+            }
+        });
+
+        return deferred.promise;
+    };
+
     api.getFQDNS = function (stack) {
         var deferred = Q.defer();
 
@@ -105,8 +125,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             type: 'GET',
             dataType: 'json',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': stackdio.settings.csrftoken,
                 'Accept': 'application/json'
             },
             success: function (response) {
@@ -184,8 +202,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             type: 'GET',
             dataType: 'json',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': stackdio.settings.csrftoken,
                 'Accept': 'application/json'
             },
             success: function (response) {
@@ -208,8 +224,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             type: 'GET',
             dataType: 'json',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': stackdio.settings.csrftoken,
                 'Accept': 'application/json'
             },
             success: function (properties) {
@@ -231,12 +245,52 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             type: 'GET',
             dataType: 'json',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': stackdio.settings.csrftoken,
                 'Accept': 'application/json'
             },
             success: function (securitygroups) {
                 deferred.resolve(securitygroups);
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
+            }
+        });
+
+        return deferred.promise;
+    };
+
+    api.getActions = function (stack) {
+        var deferred = Q.defer();
+        
+        $.ajax({
+            url: stack.actions,
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                'Accept': 'application/json'
+            },
+            success: function (actions) {
+                deferred.resolve(actions);
+            },
+            error: function (request, status, error) {
+                deferred.reject(new Error(error));
+            }
+        });
+
+        return deferred.promise;
+    };
+
+    api.getAction = function (actionId) {
+        var deferred = Q.defer();
+        
+        $.ajax({
+            url: '/api/actions/'+actionId.toString()+'/',
+            type: 'GET',
+            dataType: 'json',
+            headers: {
+                'Accept': 'application/json'
+            },
+            success: function (action) {
+                deferred.resolve(action);
             },
             error: function (request, status, error) {
                 deferred.reject(new Error(error));
