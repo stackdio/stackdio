@@ -4,9 +4,9 @@ from rest_framework import serializers
 
 from . import models
 from blueprints.serializers import (
-        BlueprintHostFormulaComponentSerializer, 
-        BlueprintHostDefinitionSerializer
-    )
+    BlueprintHostFormulaComponentSerializer,
+    BlueprintHostDefinitionSerializer
+)
 from blueprints.models import BlueprintHostDefinition
 from cloud.serializers import SecurityGroupSerializer
 from cloud.models import SecurityGroup
@@ -33,6 +33,8 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'url',
             'hostname',
             'provider_dns',
+            'provider_private_dns',
+            'provider_private_ip',
             'fqdn',
             'state',
             'status',
@@ -109,15 +111,17 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'provisioning_errors',
         )
 
+
 class StackBlueprintHostDefinitionSerializer(
         BlueprintHostDefinitionSerializer):
-    
+
     class Meta:
         model = BlueprintHostDefinition
         fields = (
             'title',
             'description',
         )
+
 
 class StackSecurityGroupSerializer(SecurityGroupSerializer):
     blueprint_host_definition = StackBlueprintHostDefinitionSerializer()

@@ -22,8 +22,6 @@ from model_utils import Choices
 from core.fields import DeletingFileField
 from core.utils import recursive_update
 from cloud.models import SecurityGroup
-from cloud.providers.base import BaseCloudProvider
-from volumes.models import Volume
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -135,99 +133,8 @@ class StackManager(models.Manager):
             with open(stack.props_file.path, 'w') as f:
                 f.write(props_json)
 
-        # create host records on the stack based on the host definitions in
-        # the blueprint
-        for hostdef in blueprint.host_definitions.all():
-
-            # all components defined in the host definition
-            components = hostdef.formula_components.all()
-
-            # cloud provider and driver for the host definition
-            cloud_provider = hostdef.cloud_profile.cloud_provider
-            driver = cloud_provider.get_driver()
-
-            # create the managed security group for each host definition
-            # and assign the rules to the group
-            sg_name = 'managed-{0}-{1}-stack-{2}'.format(
-                owner.username,
-                hostdef.slug,
-                stack.pk)
-            sg_description = 'stackd.io managed security group'
-            sg_id = driver.create_security_group(sg_name,
-                                                 sg_description,
-                                                 delete_if_exists=True)
-
-            for access_rule in hostdef.access_rules.all():
-                driver.authorize_security_group(sg_id, {
-                    'protocol': access_rule.protocol,
-                    'from_port': access_rule.from_port,
-                    'to_port': access_rule.to_port,
-                    'rule': access_rule.rule,
-                })
-
-            # create a security group object that we can use for tracking
-            security_group = SecurityGroup.objects.create(
-                owner=owner,
-                cloud_provider=cloud_provider,
-                name=sg_name,
-                description=sg_description,
-                group_id=sg_id,
-                is_managed=True
-            )
-
-            # iterate over the host definition count and create individual
-            # host records on the stack
-            for i in xrange(hostdef.count):
-                hostname = hostdef.hostname_template.format(
-                    namespace=stack.namespace,
-                    username=owner.username,
-                    index=i
-                )
-
-                kwargs = dict(
-                    cloud_profile=hostdef.cloud_profile,
-                    instance_size=hostdef.size,
-                    hostname=hostname,
-                    sir_price=hostdef.spot_price
-                )
-
-                if hostdef.cloud_profile.cloud_provider.vpc_enabled:
-                    kwargs['subnet_id'] = hostdef.subnet_id
-                else:
-                    kwargs['availability_zone'] = hostdef.zone
-
-                # Set blueprint host definition
-                kwargs['blueprint_host_definition_id'] = hostdef.id
-
-                host = stack.hosts.create(**kwargs)
-
-                # Add in the cloud provider default security groups as
-                # defined by an admin.
-                provider_groups = set(list(
-                    host.cloud_profile.cloud_provider.security_groups.filter(
-                        is_default=True
-                    )
-                ))
-
-                # set security groups
-                host.security_groups.add(*provider_groups)
-                host.security_groups.add(security_group)
-                
-                # add formula components
-                host.formula_components.add(*components)
-
-                for volumedef in hostdef.volumes.all():
-                    logger.debug(volumedef)
-                    logger.debug(stack)
-                    logger.debug(host)
-                    Volume.objects.create(
-                        stack=stack,
-                        host=host,
-                        snapshot=volumedef.snapshot,
-                        hostname=hostname,
-                        device=volumedef.device,
-                        mount_point=volumedef.mount_point
-                    )
+        stack.create_security_groups()
+        stack.create_hosts()
 
         # Generate configuration files for salt and salt-cloud
         # NOTE: The order is important here. pillar must be available before
@@ -334,27 +241,37 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def set_status(self, event, status, level=Level.INFO):
         self.history.create(event=event, status=status, level=level)
 
-    def get_driver_hosts_map(self):
+    def get_driver_hosts_map(self, host_ids=None):
         '''
         Stacks are comprised of multiple hosts. Each host may be
         located in different cloud providers. This method returns
         a map of the underlying driver implementation and the hosts
         that running in the provider.
+
+        @param host_ids (list); a list of primary keys for the hosts
+            we're interested in
+        @returns (dict); each key is a provider driver implementation
+            with QuerySet value for the matching host objects
         '''
-        providers = set()
-        hosts = self.hosts.all()
-        for host in hosts:
-            providers.add(host.get_provider())
+        hosts = self.get_hosts(host_ids)
+        providers = {}
+        for h in hosts:
+            providers.setdefault(h.get_provider(), []).append(h)
 
         result = {}
-        for provider in providers:
-            hosts = self.hosts.filter(cloud_profile__cloud_provider=provider)
-            result[provider.get_driver()] = hosts
+        for p, hosts in providers.iteritems():
+            result[p.get_driver()] = self.hosts.filter(
+                cloud_profile__cloud_provider=p,
+                pk__in=[h.pk for h in hosts]
+            )
         return result
 
     def get_hosts(self, host_ids=None):
         '''
         Quick way of getting all hosts or a subset for this stack.
+
+        @host_ids (list); list of primary keys of hosts in this stack
+        @returns (QuerySet);
         '''
         if not host_ids:
             return self.hosts.all()
@@ -377,6 +294,172 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         else:
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
+
+    def create_security_groups(self):
+        for hostdef in self.blueprint.host_definitions.all():
+
+            # create the managed security group for each host definition
+            # and assign the rules to the group
+            sg_name = 'managed-{0}-{1}-stack-{2}'.format(
+                self.owner.username,
+                hostdef.slug,
+                self.pk)
+            sg_description = 'stackd.io managed security group'
+
+            # cloud provider and driver for the host definition
+            cloud_provider = hostdef.cloud_profile.cloud_provider
+            driver = cloud_provider.get_driver()
+
+            sg_id = driver.create_security_group(sg_name,
+                                                 sg_description,
+                                                 delete_if_exists=True)
+            logger.debug('Created security group {0}: {1}'.format(
+                sg_name,
+                sg_id
+            ))
+
+            for access_rule in hostdef.access_rules.all():
+                driver.authorize_security_group(sg_id, {
+                    'protocol': access_rule.protocol,
+                    'from_port': access_rule.from_port,
+                    'to_port': access_rule.to_port,
+                    'rule': access_rule.rule,
+                })
+
+            # create the security group object that we can use for tracking
+            self.security_groups.create(
+                owner=self.owner,
+                cloud_provider=cloud_provider,
+                blueprint_host_definition=hostdef,
+                name=sg_name,
+                description=sg_description,
+                group_id=sg_id,
+                is_managed=True
+            )
+
+    def create_hosts(self, host_definition=None, count=None, backfill=False):
+        '''
+        Creates host objects on this Stack. If no arguments are given, then
+        all hosts available based on the Stack's blueprint host definitions
+        will be created. If args are given, then only the `count` for the
+        given `host_definition` will be created.
+
+        @param host_definition (BlueprintHostDefinition object); the host
+            definition to use for creating new hosts. If None, all host
+            definitions for the stack's blueprint will be used.
+        @param count (int); the number of hosts to create. If None, all
+            hosts will be created.
+        @param backfill (bool); If True, then hosts will be created with
+            hostnames that fill in any gaps if necessary. If False, then
+            hostnames will start at the end of the host list. This is only
+            used when `host_definition` and `count` arguments are provided.
+        '''
+
+        created_hosts = []
+
+        if host_definition is None:
+            host_definitions = self.blueprint.host_definitions.all()
+        else:
+            host_definitions = [host_definition]
+
+        for hostdef in host_definitions:
+            hosts = self.hosts.all()
+
+            if count is None:
+                start, end = 0, hostdef.count
+                indexes = xrange(start, end)
+            elif not hosts:
+                start, end = 0, count
+                indexes = xrange(start, end)
+            else:
+                if backfill:
+                    hosts = hosts.order_by('index')
+
+                    # The set of existing host indexes
+                    host_indexes = set([h.index for h in hosts])
+
+                    # The last index available
+                    last_index = sorted(host_indexes)[-1]
+
+                    # The set of expected indexes based on the last known
+                    # index
+                    expected_indexes = set(range(last_index + 1))
+
+                    # Any gaps any the expected indexes?
+                    gaps = expected_indexes - host_indexes
+
+                    indexes = []
+                    if gaps:
+                        indexes = list(gaps)
+
+                    count -= len(indexes)
+                    start = sorted(host_indexes)[-1] + 1
+                    end = start + count
+                    indexes += range(start, end)
+                else:
+                    start = hosts.order_by('-index')[0].index + 1
+                    end = start + count
+                    indexes = xrange(start, end)
+
+            # all components defined in the host definition
+            components = hostdef.formula_components.all()
+
+            # iterate over the host definition count and create individual
+            # host records on the stack
+            for i in indexes:
+                hostname = hostdef.hostname_template.format(
+                    namespace=self.namespace,
+                    username=self.owner.username,
+                    index=i
+                )
+
+                kwargs = dict(
+                    index=i,
+                    cloud_profile=hostdef.cloud_profile,
+                    blueprint_host_definition=hostdef,
+                    instance_size=hostdef.size,
+                    hostname=hostname,
+                    sir_price=hostdef.spot_price
+                )
+
+                if hostdef.cloud_profile.cloud_provider.vpc_enabled:
+                    kwargs['subnet_id'] = hostdef.subnet_id
+                else:
+                    kwargs['availability_zone'] = hostdef.zone
+
+                host = self.hosts.create(**kwargs)
+
+                # Add in the cloud provider default security groups as
+                # defined by an admin.
+                provider_groups = set(list(
+                    host.cloud_profile.cloud_provider.security_groups.filter(
+                        is_default=True
+                    )
+                ))
+                host.security_groups.add(*provider_groups)
+
+                # Add in the security group provided by this host definition
+                security_group = SecurityGroup.objects.get(
+                    stack=self,
+                    blueprint_host_definition=hostdef
+                )
+                host.security_groups.add(security_group)
+
+                # add formula components
+                host.formula_components.add(*components)
+
+                for volumedef in hostdef.volumes.all():
+                    self.volumes.create(
+                        host=host,
+                        snapshot=volumedef.snapshot,
+                        hostname=hostname,
+                        device=volumedef.device,
+                        mount_point=volumedef.mount_point
+                    )
+
+                created_hosts.append(host)
+
+        return created_hosts
 
     def _generate_map_file(self):
         # TODO: Figure out a way to make this provider agnostic
@@ -696,23 +779,29 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             raise
 
     def get_root_directory(self):
-        return os.path.dirname(self.map_file.path)
+        if self.map_file:
+            return os.path.dirname(self.map_file.path)
+        if self.props_file:
+            return os.path.dirname(self.props_file.path)
+        return None
 
     def get_log_directory(self):
-        log_dir = os.path.join(os.path.dirname(self.map_file.path), 'logs')
+        root_dir = self.get_root_directory()
+        log_dir = os.path.join(root_dir, 'logs')
         if not os.path.isdir(log_dir):
             os.makedirs(log_dir)
         return log_dir
 
     def get_security_groups(self):
-        groups = SecurityGroup.objects.filter(is_managed=True, 
+        groups = SecurityGroup.objects.filter(is_managed=True,
                                               hosts__stack=self)
         ret = []
         for group in groups:
             if group not in ret:
-                 ret.append(group)
+                ret.append(group)
 
         return ret
+
 
 class StackHistory(TimeStampedModel):
 
@@ -828,6 +917,8 @@ class Host(TimeStampedModel, StatusDetailModel):
         related_name='hosts')
 
     hostname = models.CharField(max_length=64)
+
+    index = models.IntegerField()
 
     security_groups = models.ManyToManyField('cloud.SecurityGroup',
                                              related_name='hosts')

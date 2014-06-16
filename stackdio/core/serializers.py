@@ -17,7 +17,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class UserSettingsSerializer(serializers.HyperlinkedModelSerializer):
-    user = UserSerializer()
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = UserSettings

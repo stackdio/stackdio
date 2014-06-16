@@ -2,6 +2,7 @@ import string
 
 from . import models
 from cloud.models import Snapshot
+from core.validation import ValidationErrors, BaseValidator
 
 VAR_NAMESPACE = 'namespace'
 VAR_USERNAME = 'username'
@@ -10,38 +11,7 @@ VALID_PROTOCOLS = ('tcp', 'udp', 'icmp')
 VALID_TEMPLATE_VARS = (VAR_NAMESPACE, VAR_USERNAME, VAR_INDEX)
 
 
-class ValidationErrors(object):
-    REQUIRED_FIELD = 'Required field.'
-    BOOLEAN_REQUIRED = 'Boolean type required.'
-    OBJECT_REQUIRED = 'Object type required.'
-    LIST_REQUIRED = 'List type required.'
-    INT_REQUIRED = 'Non-negative integer required.'
-    DECIMAL_REQUIRED = 'Non-negative decimal value required.'
-
-    DUP_BLUEPRINT = 'A Blueprint with this value already exists.'
-    DUP_HOST_TITLE = 'Duplicate title. Each host title must be unique.'
-    MULTIPLE_COMPONENTS = 'Multiple components found.'
-
-    STACKDIO_RESTRICTED_KEY = ('The __stackdio__ key is reserved for '
-                               'system use.')
-
-    DOES_NOT_EXIST = 'Object does not exist.'
-    INVALID_INT = 'Value could not be converted to an integer.'
-    INVALID_PROTOCOL = 'Invalid protocol. Must be one of {0}.'.format(
-        ', '.join(VALID_PROTOCOLS)
-    )
-    MIN_HOSTS = 'Must have at least one host.'
-    MIN_ONE = 'Must be greater than zero.'
-
-    UNHANDLED_ERROR = 'An unhandled error occurred.'
-
-
-class BlueprintValidator(object):
-
-    def __init__(self, request):
-        self.request = request
-        self.data = request.DATA
-        self._errors = {}
+class BlueprintValidator(BaseValidator):
 
     def validate(self):
         self._validate_title()
@@ -52,9 +22,6 @@ class BlueprintValidator(object):
         self._validate_component_ordering()
 
         return self._errors
-
-    def set_error(self, key, msg):
-        self._errors.setdefault(key, []).append(msg)
 
     def _validate_title(self):
         title = self.data.get('title', '')
@@ -117,7 +84,7 @@ class BlueprintValidator(object):
             host_errors = {}
             host_errors.update(self._validate_host_title(host))
             host_errors.update(self._validate_host_description(host))
-            host_errors.update(self._validate_host_count(host))
+            host_errors.update(self._validate_count(host))
             host_errors.update(self._validate_host_size(host))
             host_errors.update(self._validate_host_template(host))
             profile_error = self._validate_host_profile(host)
@@ -158,16 +125,6 @@ class BlueprintValidator(object):
         e = {}
         if 'description' not in host or not host['description']:
             e['description'] = ValidationErrors.REQUIRED_FIELD
-        return e
-
-    def _validate_host_count(self, host):
-        e = {}
-        if 'count' not in host:
-            e['count'] = ValidationErrors.REQUIRED_FIELD
-        elif not isinstance(host['count'], int):
-            e['count'] = ValidationErrors.INT_REQUIRED
-        elif host['count'] <= 0:
-            e['count'] = ValidationErrors.MIN_ONE
         return e
 
     def _validate_host_size(self, host):
@@ -365,7 +322,9 @@ class BlueprintValidator(object):
         if 'protocol' not in rule:
             e['protocol'] = ValidationErrors.REQUIRED_FIELD
         elif rule['protocol'] not in VALID_PROTOCOLS:
-            e['protocol'] = ValidationErrors.INVALID_PROTOCOL
+            e['protocol'] = 'Invalid protocol. Must be one of {0}.'.format(
+                ', '.join(VALID_PROTOCOLS)
+            )
         return e
 
     def _validate_access_rule_ports(self, rule):

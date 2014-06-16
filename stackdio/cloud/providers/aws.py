@@ -526,7 +526,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def authorize_security_group(self, group_id, rule):
         '''
-        @group_name: string, the group name to add the rule to
+        @group_id: string, the group id to add the rule to
         @rule: dict {
             'protocol': tcp | udp | icmp
             'from_port': [1-65535]
@@ -871,6 +871,8 @@ class AWSCloudProvider(BaseCloudProvider):
         if not hosts:
             return (True, 'No hosts defined.')
 
+        logger.debug('wait_for_state {0}'.format(hosts))
+
         try:
             instances = self._wait(
                 self._wait_for_state,
@@ -894,6 +896,7 @@ class AWSCloudProvider(BaseCloudProvider):
         required state and the second element being the list of EC2 instance
         objects. This method is suitable as a handler for the `_wait` method.
         '''
+        logger.debug('_wait_for_state {0}'.format(hosts))
         instances = self.get_ec2_instances(hosts)
         if not instances:
             raise RuntimeError('get_ec2_instances returned zero results!')
