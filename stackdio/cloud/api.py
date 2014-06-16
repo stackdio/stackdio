@@ -500,11 +500,11 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
                          'New rule: {0}'.format(rule))
 
         if request.DATA.get('action') == 'authorize':
-            driver.authorize_security_group(sg.name, request.DATA)
+            driver.authorize_security_group(sg.group_id, request.DATA)
         elif request.DATA.get('action') == 'revoke':
-            driver.revoke_security_group(sg.name, request.DATA)
+            driver.revoke_security_group(sg.group_id, request.DATA)
         elif request.DATA.get('action') == 'revoke_all':
-            driver.revoke_all_security_groups(sg.name)
+            driver.revoke_all_security_groups(sg.group_id)
         else:
             raise BadRequest('Missing or invalid `action` parameter. Must be '
                              'one of \'authorize\' or \'revoke\'')

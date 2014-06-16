@@ -524,7 +524,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 raise BadRequest(e.error_message)
             raise InternalServerError(e.error_message)
 
-    def authorize_security_group(self, group_name, rule):
+    def authorize_security_group(self, group_id, rule):
         '''
         @group_name: string, the group name to add the rule to
         @rule: dict {
@@ -537,7 +537,7 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
         ec2 = self.connect_ec2()
         kwargs = self._security_group_rule_to_kwargs(rule)
-        kwargs['group_name'] = group_name
+        kwargs['group_id'] = group_id
 
         try:
             ec2.authorize_security_group(**kwargs)
@@ -551,23 +551,23 @@ class AWSCloudProvider(BaseCloudProvider):
                 raise BadRequest(e.error_message)
             raise InternalServerError(e.error_message)
 
-    def revoke_security_group(self, group_name, rule):
+    def revoke_security_group(self, group_id, rule):
         '''
         See `authorize_security_group`
         '''
         ec2 = self.connect_ec2()
         kwargs = self._security_group_rule_to_kwargs(rule)
-        kwargs['group_name'] = group_name
+        kwargs['group_id'] = group_id
         ec2.revoke_security_group(**kwargs)
 
-    def revoke_all_security_groups(self, group_name):
+    def revoke_all_security_groups(self, group_id):
         '''
         Revokes ALL rules on the security group.
         '''
-        groups = self.get_security_groups(group_name)
+        groups = self.get_security_groups(group_id)
         for group_name, group in groups.iteritems():
             for rule in group['rules']:
-                self.revoke_security_group(group_name, rule)
+                self.revoke_security_group(group_id, rule)
 
     # FIXME(abe): Ignoring code complexity
     def get_security_groups(self, group_ids=[]):  # NOQA
