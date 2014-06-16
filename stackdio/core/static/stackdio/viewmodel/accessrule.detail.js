@@ -102,8 +102,8 @@ function (Q, ko, $galaxy, formutils, BlueprintStore, HostRuleStore, BlueprintHos
 
             var accessRule = {
                 protocol: record.rule_protocol.value,
-                from_port: record.rule_from_port.value,
-                to_port: record.rule_to_port.value,
+                from_port: parseInt(record.rule_from_port.value, 10),
+                to_port: parseInt(record.rule_to_port.value, 10),
                 rule: rule
             };
 

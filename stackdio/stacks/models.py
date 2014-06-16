@@ -313,9 +313,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             sg_id = driver.create_security_group(sg_name,
                                                  sg_description,
                                                  delete_if_exists=True)
+            logger.debug('Created security group {0}: {1}'.format(
+                sg_name,
+                sg_id
+            ))
 
             for access_rule in hostdef.access_rules.all():
-                driver.authorize_security_group(sg_name, {
+                driver.authorize_security_group(sg_id, {
                     'protocol': access_rule.protocol,
                     'from_port': access_rule.from_port,
                     'to_port': access_rule.to_port,

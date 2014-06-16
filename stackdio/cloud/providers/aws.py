@@ -523,9 +523,9 @@ class AWSCloudProvider(BaseCloudProvider):
                 raise BadRequest(e.error_message)
             raise InternalServerError(e.error_message)
 
-    def authorize_security_group(self, group_name, rule):
+    def authorize_security_group(self, group_id, rule):
         '''
-        @group_name: string, the group name to add the rule to
+        @group_id: string, the group id to add the rule to
         @rule: dict {
             'protocol': tcp | udp | icmp
             'from_port': [1-65535]
@@ -536,7 +536,7 @@ class AWSCloudProvider(BaseCloudProvider):
         '''
         ec2 = self.connect_ec2()
         kwargs = self._security_group_rule_to_kwargs(rule)
-        kwargs['group_name'] = group_name
+        kwargs['group_id'] = group_id
 
         try:
             ec2.authorize_security_group(**kwargs)
@@ -550,13 +550,13 @@ class AWSCloudProvider(BaseCloudProvider):
                 raise BadRequest(e.error_message)
             raise InternalServerError(e.error_message)
 
-    def revoke_security_group(self, group_name, rule):
+    def revoke_security_group(self, group_id, rule):
         '''
         See `authorize_security_group`
         '''
         ec2 = self.connect_ec2()
         kwargs = self._security_group_rule_to_kwargs(rule)
-        kwargs['group_name'] = group_name
+        kwargs['group_id'] = group_id
         ec2.revoke_security_group(**kwargs)
 
     def revoke_all_security_groups(self, group_name):
