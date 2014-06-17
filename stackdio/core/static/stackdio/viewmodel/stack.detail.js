@@ -271,8 +271,10 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             var data = {
                 action: "custom",
                 args: [
-                    action.host_target,
-                    action.command
+                    {
+                        host_target: action.host_target,
+                        command: action.command
+                    }
                 ]
             };
 
@@ -285,8 +287,10 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             var data = {
                 action: "custom",
                 args: [
-                    record.host_target.value,
-                    record.command.value
+                    {
+                        host_target: record.host_target.value,
+                        command: record.command.value
+                    }
                 ]
             };
 
