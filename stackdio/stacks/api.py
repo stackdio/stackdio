@@ -411,32 +411,45 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                          'Stack is executing action \'{0}\''.format(action))
 
         if action == BaseCloudProvider.ACTION_CUSTOM:
-            if len(args) is not 2:
-                raise BadRequest('Custom actions require exactly 2 arg '
-                                 'parameters: hostname and command. '
-                                 'Received: {0}'.format(len(args)))
- 
-            action = models.StackAction(stack=stack)
-            action.host_target = args[0]
-            action.command = args[1]
-            action.type = BaseCloudProvider.ACTION_CUSTOM
-            action.start = datetime.now()
-            action.save()
 
-            task_list = [tasks.custom_action.si(action.id, args[0], args[1])]
+            task_list = []
+
+            action_ids = []
+
+            for command in args:
+                action = models.StackAction(stack=stack)
+                action.host_target = command['host_target']
+                action.command = command['command']
+                action.type = BaseCloudProvider.ACTION_CUSTOM
+                action.start = datetime.now()
+                action.save()
+
+                action_ids.append(action.id)
+
+                task_list.append(tasks.custom_action.si(
+                    action.id, 
+                    command['host_target'],
+                    command['command']
+                ))
 
             task_chain = reduce(or_, task_list)
 
             task_chain()
 
             ret = {
-                "results_url" : reverse(
+                "results_urls" : [] 
+            }
+
+            for id in action_ids:
+                ret['results_urls'].append(reverse(
                     'stackaction-detail',
                     kwargs={
-                        'pk': action.id,
+                        'pk': id,
                     },
-                    request=request),
-            }
+                    request=request
+                ))
+
+
             return Response(ret)
 
         # Keep track of the tasks we need to run for this execution
