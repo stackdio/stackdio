@@ -608,10 +608,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         overstate = {}
         for order in sorted(groups.keys()):
-            overstate['group_{0}'.format(order)] = {
-                'match': _matcher(groups[order]),
-                'sls': list(groups[order]),
-            }
+            for role in groups[order]:    
+                overstate[role] = {
+                    'match': _matcher([role]),
+                    'sls': list([role]),
+                }     
+                if order != 0:
+                    names = set()
+                    for role in groups[order-1]:
+                        names.add(role)
+                    overstate[role]['require'] = list(names)
 
         yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
         if not self.overstate_file:

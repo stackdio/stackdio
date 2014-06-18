@@ -494,7 +494,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                 self.StackHostStore.add(hosts);
             }).then(function () {
                 self.StackHostStore.collection.sort(function (left, right) {
-                    return left.fqdn < right.fqdn ? -1 : 1;
+                    return left.hostname < right.hostname ? -1 : 1;
                 });
             });
         };
