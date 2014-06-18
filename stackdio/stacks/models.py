@@ -419,7 +419,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     blueprint_host_definition=hostdef,
                     instance_size=hostdef.size,
                     hostname=hostname,
-                    sir_price=hostdef.spot_price
+                    sir_price=hostdef.spot_price,
+                    state=Host.PENDING
                 )
 
                 if hostdef.cloud_profile.cloud_provider.vpc_enabled:
@@ -826,6 +827,7 @@ class StackHistory(TimeStampedModel):
         (Level.ERROR, Level.ERROR),
     ))
 
+
 class StackAction(TimeStampedModel):
     WAITING = 'waiting'
     RUNNING = 'running'
@@ -852,7 +854,7 @@ class StackAction(TimeStampedModel):
 
     # The command to be run (for custom actions)
     command = models.TextField()
-    
+
     # The output from the action
     std_out_storage = models.TextField()
 
@@ -883,10 +885,15 @@ class StackAction(TimeStampedModel):
         else:
             return ""
 
+
 class Host(TimeStampedModel, StatusDetailModel):
+    PENDING = 'pending'
     OK = 'ok'
     DELETING = 'deleting'
-    STATUS = Choices(OK, DELETING)
+    STATUS = Choices(PENDING, OK, DELETING)
+
+    class Meta:
+        ordering = ['blueprint_host_definition', '-index']
 
     # TODO: We should be using generic foreign keys here to a cloud provider
     # specific implementation of a Host object. I'm not exactly sure how this

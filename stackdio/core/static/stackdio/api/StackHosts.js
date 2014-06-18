@@ -55,6 +55,33 @@ define(['q', 'model/models'], function (Q, models) {
             });
 
             return deferred.promise;
+        },
+
+        modifyHosts: function (record) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: record.stack.hosts,
+                type: 'POST',
+                data: JSON.stringify({
+                    action: record.action,
+                    args: [{
+                        count: record.count,
+                        host_definition: record.host_definition
+                    }]
+                }),
+                dataType: 'json',
+                headers: {
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve(response);
+                }
+            });
+
+            return deferred.promise;
         }
     }
 });
