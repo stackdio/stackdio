@@ -9,9 +9,7 @@ import yaml
 import zipfile
 import StringIO
 from django.shortcuts import get_object_or_404
-from django.conf import settings
 from django.http import HttpResponse
-from django.core.servers.basehttp import FileWrapper
 
 from rest_framework import (
     generics,
@@ -415,7 +413,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                 raise BadRequest('Custom actions require exactly 2 arg '
                                  'parameters: hostname and command. '
                                  'Received: {0}'.format(len(args)))
- 
+
             action = models.StackAction(stack=stack)
             action.host_target = args[0]
             action.command = args[1]
@@ -430,7 +428,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             task_chain()
 
             ret = {
-                "results_url" : reverse(
+                "results_url": reverse(
                     'stackaction-detail',
                     kwargs={
                         'pk': action.id,
@@ -514,6 +512,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         serializer = self.get_serializer(stack)
         return Response(serializer.data)
 
+
 class StackActionListAPIView(PublicStackMixin, generics.ListAPIView):
     model = models.StackAction
     serializer_class = serializers.StackActionSerializer
@@ -522,9 +521,11 @@ class StackActionListAPIView(PublicStackMixin, generics.ListAPIView):
         stack = self.get_object()
         return models.StackAction.objects.filter(stack=stack)
 
+
 class StackActionDetailAPIView(generics.RetrieveDestroyAPIView):
     model = models.StackAction
     serializer_class = serializers.StackActionSerializer
+
 
 @api_view(['GET'])
 def stack_action_zip(request, pk):
@@ -538,25 +539,29 @@ def stack_action_zip(request, pk):
         buffer = StringIO.StringIO()
         action_zip = zipfile.ZipFile(buffer, 'w')
 
-        filename = 'action_output_'+action.submit_time().strftime('%Y%m%d_%H%M%S')
-       
+        filename = 'action_output_' + \
+            action.submit_time().strftime('%Y%m%d_%H%M%S')
+
         action_zip.writestr(
-            str('{0}/__command'.format(filename)), 
+            str('{0}/__command'.format(filename)),
             str(action.command))
 
         for output in action.std_out():
             action_zip.writestr(
-                str('{0}/{1}.txt'.format(filename, output['host'])), 
+                str('{0}/{1}.txt'.format(filename, output['host'])),
                 str(output['output']))
 
         action_zip.close()
 
-        response = HttpResponse(buffer.getvalue(), 
-            content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename={0}.zip'.format(filename)
+        response = HttpResponse(buffer.getvalue(),
+                                content_type='application/zip')
+        response['Content-Disposition'] = (
+            'attachment; filename={0}.zip'.format(filename)
+        )
         return response
     else:
         return Response({"detail": "Not found"})
+
 
 class StackHistoryList(generics.ListAPIView):
     model = models.StackHistory
@@ -683,10 +688,14 @@ class StackHostsAPIView(HostListAPIView):
         logger.debug('Hosts to remove: {0}'.format(hosts))
         host_ids = [h.pk for h in hosts]
         if host_ids:
+            models.Host.objects.filter(pk__in=host_ids).update(
+                state=models.Host.DELETING,
+                state_reason='User initiated delete.'
+            )
             workflows.DestroyHostsWorkflow(stack, host_ids).execute()
         else:
             raise BadRequest('No hosts were found to remove.')
-        return Response()
+        return Response({})
 
     def get(self, request, *args, **kwargs):
         '''
