@@ -21,8 +21,11 @@ define(function () {
                         elements[i].checked = false;
                     }
                     break;
-                case "select-one":
-                case "select-multi":
+                case 'select-one':
+                    elements[i].selectedIndex = elements[i].options.length > 0 ? 0 : -1;
+                    break;
+                case 'select-multi':
+                case 'select-multiple':
                     elements[i].selectedIndex = -1;
                     break;
                 default:

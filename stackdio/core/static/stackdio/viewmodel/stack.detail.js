@@ -24,12 +24,14 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          *  ==================================================================================
         */
         self.selectedBlueprint = ko.observable(null);
+        self.blueprintHostDefinitions = ko.observable(null);
         self.selectedStack = ko.observable(null);
         self.stackTitle = ko.observable();
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
         self.stackPropertiesStringified = ko.observable();
         self.editMode = ko.observable('create');
+        self.showModifyHosts = ko.observable(false);
 
         self.historicalLogText = ko.observable();
         self.launchLogText = ko.observable();
@@ -153,25 +155,27 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                 })[0];
 
                 // Get the hosts for the stack
-                self.StackHostStore.collection.removeAll();
-                API.StackHosts.load(stack).then(function (hosts) {
-                    self.StackHostStore.add(hosts);
-                }).then(function () {
-                    self.StackHostStore.collection.sort(function (left, right) {
-                        return left.hostname < right.hostname ? -1 : 1;
-                    });
-                });
+                //self.StackHostStore.collection.removeAll();
+                //API.StackHosts.load(stack).then(function (hosts) {
+                //    self.StackHostStore.add(hosts);
+                //}).then(function () {
+                //    self.StackHostStore.collection.sort(function (left, right) {
+                //        return left.hostname < right.hostname ? -1 : 1;
+                //    });
+                //});
 
                 // Update observables
                 self.selectedBlueprint(blueprint);
+                self.blueprintHostDefinitions(blueprint.host_definitions);
                 self.blueprintTitle(blueprint.title);
             } else {
                 self.stackTitle('New Stack');
             }
 
             self.selectedStack(stack);
+            self.loadHosts();
         };
-    
+ 
         self.addRule = function (obj, evt) {
             var curId = evt.target.form.id;
             var col = self.StackSecurityGroupStore.collection();
@@ -481,6 +485,50 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             }).catch(function (error) {
                 $('#provisioning_error_logs').text(error);
             });            
+        };
+
+        self.loadHosts = function() {
+            // Get the hosts for the stack
+            API.StackHosts.load(self.selectedStack()).then(function (hosts) {
+                self.StackHostStore.collection.removeAll();
+                self.StackHostStore.add(hosts);
+            }).then(function () {
+                self.StackHostStore.collection.sort(function (left, right) {
+                    return left.fqdn < right.fqdn ? -1 : 1;
+                });
+            });
+        };
+
+        self.toggleModifyHosts = function() {
+            self.showModifyHosts(!self.showModifyHosts());
+        };
+
+        self.addHosts = function(model, evt) {
+            var record = self._getModifyHostsRecord(evt.target.form, 'add');
+            self._modifyHosts(record);
+        };
+
+        self.removeHosts = function(model, evt) {
+            var record = self._getModifyHostsRecord(evt.target.form, 'remove');
+            self._modifyHosts(record);
+        };
+
+        self._modifyHosts = function(record) {
+            API.StackHosts.modifyHosts(record).then(function() {
+                formutils.clearForm('modify_hosts_form');
+                self.toggleModifyHosts();
+                setTimeout(self.loadHosts, 1000);
+            });
+        };
+
+        self._getModifyHostsRecord = function(form, action) {
+            var record = formutils.collectFormFields(form);
+            return {
+                action: action,
+                stack: self.selectedStack(),
+                host_definition: parseInt($('#host_definition').val(), 10),
+                count: parseInt($('#host_count').val(), 10)
+            };
         };
     };
     return new vm();

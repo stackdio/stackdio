@@ -18,6 +18,7 @@ from stacks.models import (
     Stack,
     Level,
     StackAction,
+    Host,
 )
 from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
@@ -548,8 +549,9 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
                     # udpate relevant metadata
                     host.instance_id = ''
-                    host.state = 'Absent' if is_absent else host_data['state']
                     host.sir_id = 'NA'
+
+                    host.state = 'Absent' if is_absent else host_data['state']
 
                     # if AWS gives a reason, save it with the host
                     if not is_absent:
@@ -571,7 +573,8 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                 host.provider_private_ip = host_data['privateIpAddress'] or ''
 
                 # update the state of the host as provided by ec2
-                host.state = host_data['state']
+                if host.state != Host.DELETING:
+                    host.state = host_data['state']
 
                 # update volume information
                 block_device_mappings = host_data \
@@ -1563,7 +1566,7 @@ def execute_action(stack_id, action, *args, **kwargs):
 @celery.task(name='stacks.custom_action')
 def custom_action(action_id, host_target, command):
     action = StackAction.objects.get(id=action_id)
-    
+
     action.start = datetime.now()
     action.status = StackAction.RUNNING
     action.save()
@@ -1588,7 +1591,7 @@ def custom_action(action_id, host_target, command):
         ret = []
 
         for host in std_out.keys():
-            ret.append({"host":host, "output":std_out[host]})
+            ret.append({"host": host, "output": std_out[host]})
 
         action.std_out_storage = json.dumps(ret)
         action.std_err_storage = result.std_err
@@ -1596,7 +1599,7 @@ def custom_action(action_id, host_target, command):
 
         action.save()
 
-    except AttributeError, e:
+    except AttributeError:
         action.status = StackAction.ERRORED
         action.save()
         raise
