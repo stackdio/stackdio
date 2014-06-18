@@ -154,6 +154,16 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                     return b.url === stack.blueprint;
                 })[0];
 
+                // Get the hosts for the stack
+                //self.StackHostStore.collection.removeAll();
+                //API.StackHosts.load(stack).then(function (hosts) {
+                //    self.StackHostStore.add(hosts);
+                //}).then(function () {
+                //    self.StackHostStore.collection.sort(function (left, right) {
+                //        return left.hostname < right.hostname ? -1 : 1;
+                //    });
+                //});
+
                 // Update observables
                 self.selectedBlueprint(blueprint);
                 self.blueprintHostDefinitions(blueprint.host_definitions);
@@ -265,8 +275,10 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             var data = {
                 action: "custom",
                 args: [
-                    action.host_target,
-                    action.command
+                    {
+                        host_target: action.host_target,
+                        command: action.command
+                    }
                 ]
             };
 
@@ -279,8 +291,10 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             var data = {
                 action: "custom",
                 args: [
-                    record.host_target.value,
-                    record.command.value
+                    {
+                        host_target: record.host_target.value,
+                        command: record.command.value
+                    }
                 ]
             };
 
@@ -480,7 +494,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                 self.StackHostStore.add(hosts);
             }).then(function () {
                 self.StackHostStore.collection.sort(function (left, right) {
-                    return left.fqdn < right.fqdn ? -1 : 1;
+                    return left.hostname < right.hostname ? -1 : 1;
                 });
             });
         };

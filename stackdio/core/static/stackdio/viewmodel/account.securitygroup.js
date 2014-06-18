@@ -27,6 +27,9 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
         self.stackdioGroupStore = ko.observableArray();
         self.$galaxy = $galaxy;
 
+        self.accountGroupSearchText = ko.observable("");
+        self.stackdioGroupSearchText = ko.observable("");
+
         self.ProviderTypeStore = ProviderTypeStore;
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
@@ -75,9 +78,6 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             var account = null;
             var provider_type = null;
 
-            self.DefaultGroupStore.removeAll();
-            self.stackdioGroupStore.removeAll();
-            self.AccountSecurityGroupStore.empty();
 
             if (data.hasOwnProperty('account')) {
                 account = AccountStore.collection().filter(function (a) {
@@ -88,12 +88,17 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                 self.selectedAccount(account);
 
                 API.SecurityGroups.loadByAccount(account).then(function (data) {
+                    self.AccountSecurityGroupStore.empty();
                     for (var group in data.provider_groups) {
                         var thisGroup = data.provider_groups[group];
                         thisGroup.display_name = thisGroup.name + ' (' + thisGroup.group_id + ') ' + thisGroup.description;
                         self.AccountSecurityGroupStore.add(thisGroup);
                     }
 
+                    self.AccountSecurityGroupStore.collection.sort(compareGroups);
+
+                    self.stackdioGroupStore.removeAll();
+                    self.DefaultGroupStore.removeAll();
                     data.results.forEach(function (group) {
                         group.display_name = group.name + ' (' + group.description + ')';
 
@@ -106,11 +111,36 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                         }
                     });
 
+                    self.stackdioGroupStore.sort(compareGroups);
+                    self.DefaultGroupStore.sort(compareGroups);
+
                     self.listDefaultGroups();
                 }).catch(function (error) {
                     alerts.showMessage('#error', 'Unable to load security groups for this provider. ' + error.message, false);
                 });
             }
+        };
+
+        function compareGroups(left, right) {
+            var leftLower = left.name.toLowerCase();
+            var rightLower = right.name.toLowerCase();
+            if (leftLower < rightLower)
+                return -1;
+            if (leftLower > rightLower)
+                return 1;
+            return 0;
+        }
+
+        self.accountGroups = function () {
+            return self.AccountSecurityGroupStore.collection().filter(function (ref) {
+                return ref.name.indexOf(self.accountGroupSearchText()) > -1;
+            });
+        };
+
+        self.stackdioGroups = function () {
+            return self.stackdioGroupStore().filter(function (ref) {
+                return ref.name.indexOf(self.stackdioGroupSearchText()) > -1;
+            });
         };
 
         self.cancelChanges = function (model, evt) {
@@ -166,6 +196,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             API.SecurityGroups.save(record).then(function (newGroup) {
                 self.DefaultGroupStore.push(newGroup);
                 self.resetView();
+                self.accountGroupSearchText("");
             })
             .catch(function (error) {
                 console.error(error);
@@ -180,6 +211,11 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                 return group.id === parseInt(selectedId, 10);
             })[0];
             console.log('selectedGroup',selectedGroup);
+                
+            if (self.DefaultGroupStore().indexOf(selectedGroup) > -1) {
+                console.log("Group already selected");
+                return;
+            }
 
             var record = {};
             record.name = selectedGroup.name;
@@ -189,9 +225,10 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             record.description = "";
             record.url = selectedGroup.url;
 
-            API.SecurityGroups.save(record).then(function (newGroup) {
+            API.SecurityGroups.updateDefault(record).then(function (newGroup) {
                 self.DefaultGroupStore.push(newGroup);
                 self.resetView();
+                self.stackdioGroupSearchText("");
             })
             .catch(function (error) {
                 if (error.message === 'CONFLICT') {
