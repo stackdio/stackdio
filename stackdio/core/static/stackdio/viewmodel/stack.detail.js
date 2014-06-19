@@ -31,7 +31,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
         self.blueprintProperties = ko.observable();
         self.stackPropertiesStringified = ko.observable();
         self.editMode = ko.observable('create');
-        self.showModifyHosts = ko.observable(false);
 
         self.historicalLogText = ko.observable();
         self.launchLogText = ko.observable();
@@ -499,10 +498,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             });
         };
 
-        self.toggleModifyHosts = function() {
-            self.showModifyHosts(!self.showModifyHosts());
-        };
-
         self.addHosts = function(model, evt) {
             var record = self._getModifyHostsRecord(evt.target.form, 'add');
             self._modifyHosts(record);
@@ -516,7 +511,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
         self._modifyHosts = function(record) {
             API.StackHosts.modifyHosts(record).then(function() {
                 formutils.clearForm('modify_hosts_form');
-                self.toggleModifyHosts();
                 setTimeout(self.loadHosts, 1000);
             });
         };

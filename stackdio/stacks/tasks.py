@@ -1449,6 +1449,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         # delete hosts
         if delete_hosts and hosts:
             hosts.delete()
+            stack._generate_map_file()
 
         stack.set_status(destroy_hosts.name,
                          'Finished destroying stack infrastructure.')
