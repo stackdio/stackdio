@@ -15,7 +15,7 @@
         <div class="col-sm-6 col-md-6 col-lg-6">
             <h4>Option 1. Pick an AWS security group</h4>
             <br>
-            <input type=text class="form-control" placeholder="Search" data-bind="value: accountGroupSearchText"/>
+            <input type=text class="form-control" placeholder="Search" data-bind="value: accountGroupSearchText, valueUpdate: 'input'"/>
             <br>
             <div>
                 <select id="aws_security_group" 
@@ -39,7 +39,7 @@
             <!--<div class="lead">Option 2. Pick existing stackd.io security group</div>-->
             <h4>Option 2. Pick existing stackd.io security group</h4>
             <br>
-            <input type=text class="form-control" placeholder="Search" data-bind="value: stackdioGroupSearchText" />
+            <input type=text class="form-control" placeholder="Search" data-bind="value: stackdioGroupSearchText, valueUpdate: 'input'" />
             <br>
             <div>
                 <select id="stackdio_security_group" 
