@@ -102,6 +102,12 @@ function (Q, ko, $galaxy, formutils, StackStore, StackActionStore, API) {
             });
         };
 
+        self.goToStackList = function() {
+            $galaxy.transport({
+                location: 'stack.list'
+            });
+        };
+
         self.convertDate = function(dateStr) {
             if (dateStr === "")
                 return "";
