@@ -614,10 +614,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     'sls': list([role]),
                 }     
                 if order != 0:
-                    names = set()
-                    for role in groups[order-1]:
-                        names.add(role)
-                    overstate[role]['require'] = list(names)
+                    overstate[role]['require'] = list(groups[order-1])
 
         yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
         if not self.overstate_file:
