@@ -37,6 +37,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'provider_private_ip',
             'fqdn',
             'state',
+            'state_reason',
             'status',
             'status_detail',
             'availability_zone',
@@ -144,6 +145,7 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'active_hosts',
             'rules',
         )
+
 
 class StackActionSerializer(serializers.HyperlinkedModelSerializer):
     submit_time = serializers.Field(source='submit_time')

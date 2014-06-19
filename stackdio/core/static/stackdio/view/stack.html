@@ -63,35 +63,37 @@
                 <br>
                 <div class="row">
                     <div class="col-md-12 text-right">
-                        <button type="submit" class="btn btn-primary" data-bind="click: $root.toggleModifyHosts">
-                            <span class="fa fa-edit">&nbsp;Modify</span>&nbsp;
+                        <button class="btn btn-success" data-bind="click: $root.loadHosts">
+                            <span class="fa fa-refresh">&nbsp;Refresh</span>
                         </button>
-                        <button class="btn btn-success" data-bind="click: $root.loadHosts"><span class="fa fa-refresh"></span>&nbsp;Refresh</button>
                     </div>
                 </div>
                 <br>
 
-                <div class="row well" data-bind="visible: showModifyHosts()">
-                    <div class="col-md-12 text-center">
-                        <form id="modify_hosts_form" class="form-inline">
-                            <div class="form-group">
-                                <select id="host_definition" 
-                                    data-bind="options: $root.blueprintHostDefinitions, 
-                                               optionsValue: 'id',
-                                               optionsText: 'title',
-                                               optionsCaption: 'Choose a host type...'"
-                                    data-container="body"
-                                    class="form-control selectpicker">
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <input type="text" class="form-control input-sm" id="host_count" placeholder="Number of hosts">
-                            </div>
-                            <div class="form-group">
-                                <button type="submit" class="btn btn-sm btn-primary" data-bind="click: $root.addHosts">Add Hosts</button>
-                                <button type="submit" class="btn btn-sm btn-danger" data-bind="click: $root.removeHosts">Remove Hosts</button>
-                            </div>
-                        </form>
+                <div class="row">
+                    <div class="col-md-12 ">
+                        <div class="well text-center">
+                            <form id="modify_hosts_form" class="form-inline">
+                                <div class="form-group">
+                                    <select id="host_definition" 
+                                        data-bind="options: $root.blueprintHostDefinitions, 
+                                                   optionsValue: 'id',
+                                                   optionsText: 'title',
+                                                   optionsCaption: 'Choose a host type...'"
+                                        data-container="body"
+                                        class="form-control selectpicker">
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" class="form-control input-sm" id="host_count" placeholder="Number of hosts">
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-sm btn-primary" data-bind="click: $root.addHosts">Add Hosts</button>
+                                    <button type="submit" class="btn btn-sm btn-danger" data-bind="click: $root.removeHosts">Remove Hosts</button>
+                                </div>
+                            </form>
+                            <div class="block-help">Use this form to easily add or remove hosts on your Stack.</div>
+                        </div>
                     </div>
                 </div>
 
@@ -112,7 +114,7 @@
                                     <td data-bind="text: $data.fqdn"></td>
                                     <td data-bind="text: $data.state"></td>
                                     <td data-bind="text: $data.state_reason"></td>
-                                    <td data-bind="text: $data.provider_dns"></td>
+                                    <td data-bind="text: $data.provider_dns || $data.provider_private_dns"></td>
                                     <td data-bind="text: $data.hostname"></td>
                                 </tr>     
                             </tbody>
