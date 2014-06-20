@@ -1229,6 +1229,9 @@ def orchestrate(stack_id, max_retries=0):
                             # host looking for states that had a result
                             # of false
                             for state_str, state_meta in stage_result.iteritems(): # NOQA
+                                if state_str == '__FAILHARD__':
+                                    continue
+
                                 if not is_state_error(state_meta):
                                     continue
 
