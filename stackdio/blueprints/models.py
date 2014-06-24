@@ -218,7 +218,7 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     size = models.ForeignKey('cloud.CloudInstanceSize')
 
     # The default availability zone for the host
-    zone = models.ForeignKey('cloud.CloudZone', null=True)
+    zone = models.ForeignKey('cloud.CloudZone', null=True, blank=True)
 
     # The subnet id for VPC enabled providers
     subnet_id = models.CharField(max_length=32, blank=True, default='')

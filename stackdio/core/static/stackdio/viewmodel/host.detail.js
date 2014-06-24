@@ -155,7 +155,7 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
 
         self._subnetLabel = function(subnet) {
             if(subnet.tags && subnet.tags.Name) {
-                return subnet.tags.Name + ' (' + subnet.id + ')';
+                return subnet.tags.Name + ' (' + subnet.id + ' | ' + subnet.availability_zone + ')';
             } else {
                 return subnet.id;
             }
