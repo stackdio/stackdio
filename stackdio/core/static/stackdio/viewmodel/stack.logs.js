@@ -38,6 +38,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
         self.orchestrationErrorLogText = ko.observable();
         self.provisioningLogText = ko.observable();
         self.provisioningErrorLogText = ko.observable();
+        self.historicalLogs = ko.observableArray([]);
 
         self.StackStore = StackStore;
         self.StackHostStore = StackHostStore;
@@ -109,6 +110,13 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
                 API.Stacks.getLogs(stack).then(function (logs) {
                     self.logObject = logs;
+                    self.logObject.historical.forEach(function(logrecord) {
+                        urlarr = logrecord.split('/');
+                        self.historicalLogs.push({
+                            name: urlarr[urlarr.length-1],
+                            url: logrecord
+                        });
+                    });
                     self.getLogs();
                 }).catch(function(error) {
                     console.error(error);
@@ -153,8 +161,8 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             var promises = [];
             var historical = [];
 
-            self.logObject.historical.forEach(function (url) {
-                promises[promises.length] = API.Stacks.getLog(url).then(function (log) {
+            self.logObject.historical.forEach(function (logrecord) {
+                promises[promises.length] = API.Stacks.getLog(logrecord).then(function (log) {
                     historical[historical.length] = log;
                 });
             });

@@ -26,10 +26,10 @@
                                 <li><a href="#provisioning-error" data-toggle="tab">Provisioning Error</a></li>
                                 <li><a href="#orchestration" data-toggle="tab">Orchestration</a></li>
                                 <li><a href="#orchestration-error" data-toggle="tab">Orchestration Error</a></li>
-                                <li class="disabled"><a></a></li>
+                                <li class="disabled"><a><!-- spacer --></a></li>
                                 <li class="disabled"><a>Historical</a></li>
-                                <!-- ko -->
-                                <li><a href="#historical" data-toggle="tab">Historical</a></li>
+                                <!-- ko foreach: historicalLogs -->
+                                <li><a data-toggle="tab" data-bind="text: $data.name, attr: {href: '#'+$data.name}"></a></li>
                                 <!-- /ko -->
                             </ul>
                         </div>
@@ -71,13 +71,15 @@
                                            data-bind="text: $root.orchestrationErrorLogText"
                                            placeholder="Orchestration error logs will be shown here."></textarea>
                                 </div>
-                                <div class="tab-pane" id="historical">
+                                <!-- ko foreach: historicalLogs -->
+                                <div class="tab-pane" data-bind="attr: {id: $data.name}">
                                     <textarea class="form-control"
                                            rows="20"
                                            id="historical_logs" 
                                            data-bind="text: $root.historicalLogText"
                                            placeholder="Historical logs will be shown here."></textarea>
                                 </div>
+                                <!-- /ko -->
                             </div>
                         </div>
                     </div>
