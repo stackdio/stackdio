@@ -23,9 +23,11 @@ class BlueprintHostDefinitionAdmin(admin.ModelAdmin):
         'count',
         'size',
         'zone',
+        'subnet_id',
         'formula_components_count',
     ]
-admin.site.register(models.BlueprintHostDefinition, BlueprintHostDefinitionAdmin)
+admin.site.register(models.BlueprintHostDefinition,
+                    BlueprintHostDefinitionAdmin)
 
 
 class BlueprintAccessRuleAdmin(admin.ModelAdmin):
@@ -37,4 +39,3 @@ class BlueprintAccessRuleAdmin(admin.ModelAdmin):
         'rule',
     ]
 admin.site.register(models.BlueprintAccessRule, BlueprintAccessRuleAdmin)
-
