@@ -822,7 +822,7 @@ class StackLogsAPIView(PublicStackMixin, APIView):
                             'log': log,
                         },
                         request=request)
-                for log in listdir(log_dir)
+                for log in sorted(listdir(log_dir))
 
             ]
         })
