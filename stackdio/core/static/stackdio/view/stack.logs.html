@@ -1,0 +1,84 @@
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('stack.list'); }">Stacks</a></li>
+            <li data-bind="text: stackTitle"></li>
+        </ol>
+
+        <ul id="stack-tabs" class="nav nav-tabs">
+            <li><a href="#" id="detail" class="small-heading" data-toggle="tab" data-bind="click: goToTab">Stack Details</a></li>
+            <li><a href="#" id="hosts" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Hosts</a></li>
+            <li class="active"><a href="#" class="small-heading" id="logs" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Logs</a></li>
+            <li><a href="#" class="small-heading" id="accessrules" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Access Rules</a></li>
+            <li><a href="#" class="small-heading" id="actions" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Actions</a></li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane active" data-bind="visible: editMode() === 'update'">
+                <div class="container-fluid">
+                    <br />
+                    <div class="row">
+                        <div class="col-md-2">
+
+                            <ul class="nav nav-pills nav-stacked" data-bind="visible: editMode() === 'update'">
+                                <li class="active"><a href="#historical" data-toggle="tab">Historical</a></li>
+                                <li><a href="#launch" data-toggle="tab">Launch</a></li>
+                                <li><a href="#orchestration" data-toggle="tab">Orchestration</a></li>
+                                <li><a href="#orchestration-error" data-toggle="tab">Orchestration Error</a></li>
+                                <li><a href="#provisioning" data-toggle="tab">Provisioning</a></li>
+                                <li><a href="#provisioning-error" data-toggle="tab">Provisioning Error</a></li>
+                              </ul>
+                          </div>
+                          <div class="col-md-10">
+
+                              <div class="tab-content" data-bind="visible: editMode() === 'update'">
+                                  <div class="tab-pane active" id="historical">
+                                      <textarea class="form-control"
+                                             rows="20"
+                                             id="historical_logs" 
+                                             data-bind="text: $root.historicalLogText"
+                                             placeholder="Historical logs will be shown here."></textarea>
+                                  </div>
+                                  <div class="tab-pane" id="launch">
+                                      <textarea class="form-control"
+                                             rows="20"
+                                             id="launch_logs" 
+                                             data-bind="text: $root.launchLogText"
+                                             placeholder="Launch logs will be shown here."></textarea>
+                                  </div>
+                                  <div class="tab-pane" id="orchestration">
+                                      <textarea class="form-control"
+                                             rows="20"
+                                             id="orchestration_logs" 
+                                             data-bind="text: $root.orchestrationLogText"
+                                             placeholder="Orchestration logs will be shown here."></textarea>
+                                  </div>
+                                  <div class="tab-pane" id="orchestration-error">
+                                      <textarea class="form-control"
+                                             rows="20"
+                                             id="orchestration_error_logs" 
+                                             data-bind="text: $root.orchestrationErrorLogText"
+                                             placeholder="Orchestration error logs will be shown here."></textarea>
+                                  </div>
+                                  <div class="tab-pane" id="provisioning">
+                                      <textarea class="form-control"
+                                             rows="20"
+                                             id="provisioning_logs" 
+                                             data-bind="text: $root.provisioningLogText"
+                                             placeholder="Provisioning logs will be shown here."></textarea>
+                                  </div>
+                                  <div class="tab-pane" id="provisioning-error">
+                                      <textarea class="form-control"
+                                             rows="20"
+                                             id="provisioning_error_logs" 
+                                             data-bind="text: $root.provisioningErrorLogText"
+                                             placeholder="Provisioning error logs will be shown here."></textarea>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+        </div>
+    </div>
+</div>

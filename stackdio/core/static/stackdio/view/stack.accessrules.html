@@ -1,0 +1,104 @@
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('stack.list'); }">Stacks</a></li>
+            <li data-bind="text: stackTitle"></li>
+        </ol>
+
+        <ul id="stack-tabs" class="nav nav-tabs">
+            <li><a href="#" id="detail" class="small-heading" data-toggle="tab" data-bind="click: goToTab">Stack Details</a></li>
+            <li><a href="#" id="hosts" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Hosts</a></li>
+            <li><a href="#" class="small-heading" id="logs" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Logs</a></li>
+            <li class="active"><a href="#" class="small-heading" id="accessrules" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Access Rules</a></li>
+            <li><a href="#" class="small-heading" id="actions" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Actions</a></li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane active" data-bind="visible: editMode() === 'update'">
+                <br>
+                <div class="row">
+                    <div class="col-md-12">
+                        <table id="stack-access" class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Host Type</th>
+                                    <th>Host Description</th>
+                                    <th>Current Rules</th>
+                                    <th>Add New Rule</th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="foreach: StackSecurityGroupStore.collection">
+                                <tr>
+                                    <td data-bind="text: $data.blueprint_host_definition.title"></td>
+                                    <td data-bind="text: $data.blueprint_host_definition.description"></td>
+                                    <td>
+                                        <ul class="list-group" data-bind="foreach: $data.rules">
+                                            <li class="list-group-item">  
+                                                <form role="form" data-bind="attr: { id : $data.uid }">
+                                                    <span data-bind="visible: $data.from_port == $data.to_port">
+                                                        <span data-bind="text: $data.protocol.toUpperCase()"></span> 
+                                                        port <span data-bind="text: $data.from_port"></span> 
+                                                        allows <span data-bind="text: $data.rule"></span>
+                                                    </span>
+                                                    <span data-bind="visible: $data.from_port != $data.to_port">
+                                                        <span data-bind="text: $data.protocol.toUpperCase()"></span> 
+                                                        ports <span data-bind="text: $data.from_port"></span>-<span data-bind="text: $data.to_port"></span> 
+                                                        allow <span data-bind="text: $data.rule"></span>
+                                                    </span>
+                                                    <input type="hidden" id="rule_protocol" 
+                                                           data-bind="attr: { value : $data.protocol }" />
+                                                    <input type="hidden" id="rule_from_port" 
+                                                           data-bind="attr: { value : $data.from_port }" />
+                                                    <input type="hidden" id="rule_to_port" 
+                                                           data-bind="attr: { value : $data.to_port }" />
+                                                    <input type="hidden" id="rule_rule" 
+                                                           data-bind="attr: { value : $data.rule }" />
+                                                    <button type="submit" class="btn btn-danger btn-xs pull-right" 
+                                                           data-bind="click: $root.deleteRule">Delete</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                    <td>
+                                        <form class="form-inline" data-bind="attr: { id : $data.id }" role="form">
+                                            <div class="form-group">
+                                                <label class="sr-only" for="rule_protocol">Protocol</label>
+                                                <select id="add_rule_protocol"
+                                                  data-bind="options: ['tcp','udp','icmp']",
+                                                  data-container="body"
+                                                  class="form-control selectpicker input-sm"></select>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="rule_from_port" class="sr-only">Port Range</label>
+                                                <input type="text" class="form-control input-sm" id="add_rule_port_range" placeholder="Port Range (ex 22 or 0-500)">
+                                            </div>
+
+                                            <div class="form-group"></div>
+
+                                            <div class="form-group">
+                                                <label class="sr-only" for="rule_ip_address">IP Address</label>
+                                                <input type="text" class="form-control input-sm" id="add_rule_ip_address" placeholder="IP Address">
+                                            </div>
+
+                                            <div class="form-group">
+                                                or
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label class="sr-only" for="rule_group">Group</label>
+                                                <input type="text" class="form-control input-sm" id="add_rule_group" placeholder="another group name">
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-sm btn-primary" data-bind="click: $root.addRule">Add Rule</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>      
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

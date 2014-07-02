@@ -1,0 +1,82 @@
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('stack.list'); }">Stacks</a></li>
+            <li data-bind="text: stackTitle"></li>
+        </ol>
+
+        <ul id="stack-tabs" class="nav nav-tabs">
+            <li><a href="#" id="detail" class="small-heading" data-toggle="tab" data-bind="click: goToTab">Stack Details</a></li>
+            <li class="active"><a href="#" id="hosts" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Hosts</a></li>
+            <li><a href="#" class="small-heading" id="logs" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Logs</a></li>
+            <li><a href="#" class="small-heading" id="accessrules" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Access Rules</a></li>
+            <li><a href="#" class="small-heading" id="actions" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Actions</a></li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane active"  data-bind="visible: editMode() === 'update'">
+                <br>
+                <div class="row">
+                    <div class="col-md-12 text-right">
+                        <button class="btn btn-success" data-bind="click: $root.loadHosts">
+                            <span class="fa fa-refresh">&nbsp;Refresh</span>
+                        </button>
+                    </div>
+                </div>
+                <br>
+
+                <div class="row">
+                    <div class="col-md-12 ">
+                        <div class="well text-center">
+                            <form id="modify_hosts_form" class="form-inline">
+                                <div class="form-group">
+                                    <select id="host_definition" 
+                                        data-bind="options: $root.blueprintHostDefinitions, 
+                                                   optionsValue: 'id',
+                                                   optionsText: 'title',
+                                                   optionsCaption: 'Choose a host type...'"
+                                        data-container="body"
+                                        class="form-control selectpicker">
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" class="form-control input-sm" id="host_count" placeholder="Number of hosts">
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-sm btn-primary" data-bind="click: $root.addHosts">Add Hosts</button>
+                                    <button type="submit" class="btn btn-sm btn-danger" data-bind="click: $root.removeHosts">Remove Hosts</button>
+                                </div>
+                            </form>
+                            <div class="block-help">Use this form to easily add or remove hosts on your Stack.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <table id="stack-hosts" class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>FQDN</th>
+                                    <th>State</th>
+                                    <th>State Reason</th>
+                                    <th>Provider DNS</th>
+                                    <th>Hostname</th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="foreach: StackHostStore.collection">
+                                <tr>
+                                    <td data-bind="text: $data.fqdn"></td>
+                                    <td data-bind="text: $data.state"></td>
+                                    <td data-bind="text: $data.state_reason"></td>
+                                    <td data-bind="text: $data.provider_dns || $data.provider_private_dns"></td>
+                                    <td data-bind="text: $data.hostname"></td>
+                                </tr>     
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

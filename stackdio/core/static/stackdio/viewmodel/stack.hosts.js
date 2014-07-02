@@ -55,9 +55,9 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          *   R E G I S T R A T I O N   S E C T I O N
          *  ==================================================================================
         */
-        self.id = 'stack.detail';
-        self.templatePath = 'stack.detail.html';
-        self.domBindingId = '#stack-detail';
+        self.id = 'stack.hosts';
+        self.templatePath = 'stack.hosts.html';
+        self.domBindingId = '#stack-hosts';
 
         try {
             $galaxy.join(self);
@@ -94,27 +94,9 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             // Automatically select the first tab in the view so that if the user had
             // clicked on the logs or orchestraton tab previously, it doesn't end up
             // showing a blank view
-            $('#stack-tabs a[id="detail"]').tab('show');
+            $('#stack-tabs a[id="hosts"]').tab('show');
 
             self.stackPropertiesStringified('');
-
-            // Blueprint specified, so creating a new stack
-            if (data.hasOwnProperty('blueprint')) {
-                self.editMode('create');
-
-                blueprint = BlueprintStore.collection().filter(function (p) {
-                    return p.id === parseInt(data.blueprint, 10);
-                })[0];
-
-                API.Blueprints.getProperties(blueprint).then(function (properties) {
-                    var stringify = JSON.stringify(properties, undefined, 3);
-                    self.blueprintProperties(properties);
-                    self.stackPropertiesStringified(stringify);
-                });
-
-                self.blueprintTitle(blueprint.title);
-                self.selectedBlueprint(blueprint);
-            }
 
             if (data.hasOwnProperty('stack')) {
                 self.editMode('update');
@@ -125,30 +107,12 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
                 self.stackTitle(stack.title);
 
-                // Populate the form
-                $('#stack_title').val(stack.title);
-                $('#stack_description').val(stack.description);
-                $('#stack_namespace').val(stack.namespace);
-
-                // Get stack properties
-                API.Stacks.getProperties(stack).then(function (properties) {
-                    $('#stack_properties_preview').val(JSON.stringify(properties, undefined, 3));
-                });
-
-                // Find the corresponding blueprint
-                blueprint = BlueprintStore.collection().filter(function (b) {
-                    return b.url === stack.blueprint;
-                })[0];
-
-                // Update observables
-                self.selectedBlueprint(blueprint);
-                self.blueprintHostDefinitions(blueprint.host_definitions);
-                self.blueprintTitle(blueprint.title);
             } else {
-                self.stackTitle('New Stack');
+                $galaxy.transport('stack.list');
             }
 
             self.selectedStack(stack);
+            self.loadHosts();
         };
  
         self.goToTab = function (obj, evt) {
@@ -174,74 +138,44 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             }
 	    };
 
-        self.updateStack = function (obj, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-            var stack = {};
-
-            // Create a new, complete stack representation for a PUT
-            stack.id = self.selectedStack().id;
-            stack.url = self.selectedStack().url;
-            stack.owner = self.selectedStack().owner;
-            stack.host_count = self.selectedStack().host_count;
-            stack.volume_count = self.selectedStack().volume_count;
-            stack.created = self.selectedStack().created;
-            stack.blueprint = self.selectedStack().blueprint;
-            stack.fqdns = self.selectedStack().fqdns;
-            stack.hosts = self.selectedStack().hosts;
-            stack.volumes = self.selectedStack().volumes;
-            stack.properties = self.selectedStack().properties;
-            stack.history = self.selectedStack().history;
-            stack.title = record.stack_title.value;
-            stack.description = record.stack_description.value;
-            stack.namespace = record.stack_namespace.value;
-            
-            if (record.stack_properties_preview.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview.value);
-            }
-
-            API.Stacks.update(stack).then(function (newStack) {
-                self.StackStore.remove(self.selectedStack());
-                self.StackStore.add(newStack);
-                formutils.clearForm('stack-launch-form');
-                $galaxy.transport('stack.list');
+        self.loadHosts = function() {
+            // Get the hosts for the stack
+            API.StackHosts.load(self.selectedStack()).then(function (hosts) {
+                self.StackHostStore.collection.removeAll();
+                self.StackHostStore.add(hosts);
+            }).then(function () {
+                self.StackHostStore.collection.sort(function (left, right) {
+                    return left.hostname < right.hostname ? -1 : 1;
+                });
             });
         };
 
-        self.provisionStack = function (a, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
+        self.addHosts = function(model, evt) {
+            var record = self._getModifyHostsRecord(evt.target.form, 'add');
+            self._modifyHosts(record);
+        };
 
-            var stack = {
-                title: record.stack_title.value,
-                description: record.stack_description.value,
-                blueprint: self.selectedBlueprint().id
+        self.removeHosts = function(model, evt) {
+            var record = self._getModifyHostsRecord(evt.target.form, 'remove');
+            self._modifyHosts(record);
+        };
+
+        self._modifyHosts = function(record) {
+            API.StackHosts.modifyHosts(record).then(function() {
+                formutils.clearForm('modify_hosts_form');
+                setTimeout(self.loadHosts, 1000);
+            });
+        };
+
+        self._getModifyHostsRecord = function(form, action) {
+            var record = formutils.collectFormFields(form);
+            return {
+                action: action,
+                stack: self.selectedStack(),
+                host_definition: parseInt($('#host_definition').val(), 10),
+                count: parseInt($('#host_count').val(), 10)
             };
-
-            // Only send in the namespace if user provided one
-            if(record.stack_namespace.value != '') {
-                stack.namespace = record.stack_namespace.value;
-            }
-
-            if (record.stack_properties_preview.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview.value);
-            }
-
-            API.Stacks.save(stack).then(function (newStack) {
-                self.StackStore.add(newStack);
-                
-                $('#stack_title').val('');
-                $('#stack_description').val('');
-                $('#stack_namespace').val('');
-                $('#stack_properties_preview').text('');
-
-                $galaxy.transport('stack.list');
-            });
         };
-
-        self.cancelChanges = function (a, evt) {
-            formutils.clearForm('stack-launch-form');
-            $galaxy.transport('stack.list');
-        };
-
-     };
+    };
     return new vm();
 });
