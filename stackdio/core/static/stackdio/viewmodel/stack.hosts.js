@@ -104,8 +104,15 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
                 stack = StackStore.collection().filter(function (s) {
                     return s.id === parseInt(data.stack, 10);
                 })[0];
+                
+                // Find the corresponding blueprint
+                blueprint = BlueprintStore.collection().filter(function (b) {
+                    return b.url === stack.blueprint;
+                })[0];
 
                 self.stackTitle(stack.title);
+
+                self.blueprintHostDefinitions(blueprint.host_definitions);
 
             } else {
                 $galaxy.transport('stack.list');
