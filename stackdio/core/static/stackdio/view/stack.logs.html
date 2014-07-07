@@ -20,15 +20,15 @@
                     <div class="row">
                         <div class="col-md-2">
                             <ul class="nav nav-pills nav-stacked">
-                                <li class="disabled"><a><strong>Latest</strong></a></li>
+                                <li><h4>Latest</h4></li>
                                 <!-- ko foreach: latestLogs -->
                                 <li data-bind="attr: {class: $root.selectedLog() == $data.name ? 'active' : ''}">
                                     <a data-bind="click: $root.goToLog, text: $data.name" 
                                        ></a>
                                 </li>
                                 <!-- /ko -->
-                                <li class="disabled"><a>&nbsp;<!-- spacer --></a></li>
-                                <li class="disabled"><a><strong>Historical</strong></a></li>
+                                <li>&nbsp;<!-- spacer --></li>
+                                <li><h4>Historical</h4></li>
                                 <!-- ko foreach: historicalLogs -->
                                 <li data-bind="attr: {class: $root.selectedLog() == $data.name ? 'active' : ''}">
                                     <a data-bind="click: $root.goToLog, text: $data.name"></a>
