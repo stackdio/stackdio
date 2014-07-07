@@ -57,13 +57,6 @@ function (Q, ko, $galaxy, formutils, API) {
          */
 
         self.init = function (data) {
-            var stackHosts = [];
-
-            // Automatically select the first tab in the view so that if the user had
-            // clicked on the logs or orchestraton tab previously, it doesn't end up
-            // showing a blank view
-            $('#stack-tabs a[id="logs"]').tab('show');
-
 
             if (data.hasOwnProperty('stack')) {
 

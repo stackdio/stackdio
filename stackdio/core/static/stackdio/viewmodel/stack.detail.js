@@ -59,15 +59,10 @@ function (Q, ko, $galaxy, formutils, API) {
 
         self.init = function (data) {
 
-            // Automatically select the first tab in the view so that if the user had
-            // clicked on the logs or orchestraton tab previously, it doesn't end up
-            // showing a blank view
-            $('#stack-tabs a[id="detail"]').tab('show');
-
-             $('#stack_title').val('');
-             $('#stack_description').val('');
-             $('#stack_namespace').val('');
-             $('#stack_properties_preview').val('');
+            $('#stack_title').val('');
+            $('#stack_description').val('');
+            $('#stack_namespace').val('');
+            $('#stack_properties_preview').val('');
 
             self.stackTitle('');
             self.blueprintTitle('');
