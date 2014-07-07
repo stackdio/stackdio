@@ -5,7 +5,7 @@
             <li data-bind="text: stackTitle"></li>
         </ol>
 
-        <ul id="stack-tabs" class="nav nav-tabs nav-justified">
+        <ul id="stack-tabs" class="nav nav-tabs">
             <li><a id="detail" class="small-heading" data-bind="click: goToTab">Stack Details</a></li>
             <li><a id="hosts" class="small-heading" data-bind="click: goToTab">Stack Hosts</a></li>
             <li class="active"><a id="logs" class="small-heading"  data-bind="click: goToTab">Stack Logs</a></li>
@@ -40,11 +40,15 @@
 
                             <div class="tab-content">
                                 <div class="tab-pane active">
-                                    <textarea class="form-control"
+                                    <!--textarea class="form-control"
                                            rows="25"
                                            data-bind="text: $root.selectedLogText"
                                            placeholder:"This log doesn't exist yet">
-                                    </textarea>
+                                    </textarea-->
+                                    <pre class="pre-scrollable"
+                                         style="max-height: 500px; height: 500px;"
+                                         data-bind="text: $root.selectedLogText">
+                                    </pre>
                                 </div>
                             </div>
                         </div>
