@@ -64,6 +64,14 @@ function (Q, ko, $galaxy, formutils, API) {
             // showing a blank view
             $('#stack-tabs a[id="detail"]').tab('show');
 
+             $('#stack_title').val('');
+             $('#stack_description').val('');
+             $('#stack_namespace').val('');
+             $('#stack_properties_preview').val('');
+
+            self.stackTitle('');
+            self.blueprintTitle('');
+
             self.stackPropertiesStringified('');
 
             // Blueprint specified, so creating a new stack
@@ -195,6 +203,7 @@ function (Q, ko, $galaxy, formutils, API) {
                 $('#stack_namespace').val('');
                 $('#stack_properties_preview').text('');
 
+                formutils.clearForm('stack-launch-form');
                 $galaxy.transport('stack.list');
             });
         };
