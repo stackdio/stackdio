@@ -110,6 +110,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 
                 API.Stacks.getLogs(stack).then(function (logs) {
                     self.logObject = logs;
+                    self.historicalLogs.removeAll();
                     self.logObject.historical.forEach(function(logrecord) {
                         urlarr = logrecord.split('/');
                         self.historicalLogs.push({
