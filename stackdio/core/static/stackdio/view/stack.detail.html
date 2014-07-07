@@ -5,12 +5,12 @@
             <li data-bind="text: stackTitle"></li>
         </ol>
 
-        <ul id="stack-tabs" class="nav nav-tabs nav-justified">
+        <ul id="stack-tabs" class="nav nav-tabs nav-justified" data-bind="visible: editMode() === 'update'">
             <li class="active"><a href="#" id="detail" class="small-heading" data-toggle="tab" data-bind="click: goToTab">Stack Details</a></li>
-            <li><a href="#" id="hosts" class="small-heading" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Hosts</a></li>
-            <li><a href="#" class="small-heading" id="logs" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Logs</a></li>
-            <li><a href="#" class="small-heading" id="accessrules" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Access Rules</a></li>
-            <li><a href="#" class="small-heading" id="actions" data-toggle="tab" data-bind="visible: editMode() === 'update', click: goToTab">Stack Actions</a></li>
+            <li><a href="#" id="hosts" class="small-heading" data-toggle="tab" data-bind="click: goToTab">Stack Hosts</a></li>
+            <li><a href="#" class="small-heading" id="logs" data-toggle="tab" data-bind="click: goToTab">Stack Logs</a></li>
+            <li><a href="#" class="small-heading" id="accessrules" data-toggle="tab" data-bind="click: goToTab">Stack Access Rules</a></li>
+            <li><a href="#" class="small-heading" id="actions" data-toggle="tab" data-bind="click: goToTab">Stack Actions</a></li>
         </ul>
 
         <div class="tab-content">

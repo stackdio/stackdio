@@ -2,19 +2,10 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
-    'util/form',
-    'store/Stacks',
-    'store/StackHosts',
-    'store/StackSecurityGroups',
-    'store/StackActions',
-    'store/Profiles',
-    'store/InstanceSizes',
-    'store/Blueprints',
-    'store/BlueprintHosts',
-    'store/BlueprintComponents',
+    'util/form', 
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, StackActionStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, API) {
     var vm = function () {
         var self = this;
 
@@ -23,32 +14,14 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
         */
-        self.selectedBlueprint = ko.observable(null);
-        self.blueprintHostDefinitions = ko.observable(null);
         self.selectedStack = ko.observable(null);
         self.stackTitle = ko.observable();
-        self.blueprintTitle = ko.observable();
-        self.blueprintProperties = ko.observable();
-        self.stackPropertiesStringified = ko.observable();
-        self.editMode = ko.observable('create');
 
-        self.historicalLogText = ko.observable();
-        self.launchLogText = ko.observable();
-        self.orchestrationLogText = ko.observable();
-        self.orchestrationErrorLogText = ko.observable();
-        self.provisioningLogText = ko.observable();
-        self.provisioningErrorLogText = ko.observable();
+        self.latestLogs = ko.observableArray([]);
         self.historicalLogs = ko.observableArray([]);
+        self.selectedLog = ko.observable();
+        self.selectedLogText = ko.observable('Loading...');
 
-        self.StackStore = StackStore;
-        self.StackHostStore = StackHostStore;
-        self.StackSecurityGroupStore = StackSecurityGroupStore;
-        self.StackActionStore = StackActionStore;
-        self.ProfileStore = ProfileStore;
-        self.InstanceSizeStore = InstanceSizeStore;
-        self.BlueprintHostStore = BlueprintHostStore;
-        self.BlueprintComponentStore = BlueprintComponentStore;
-        self.BlueprintStore = BlueprintStore;
         self.$galaxy = $galaxy;
 
         /*
@@ -73,11 +46,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
-            BlueprintStore.populate().then(function () {
-                return StackStore.populate();
-            }).then(function () {
-                self.init(data);
-            });
+            self.init(data);
         });
 
 
@@ -88,8 +57,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          */
 
         self.init = function (data) {
-            var blueprint = null;
-            var stack = null;
             var stackHosts = [];
 
             // Automatically select the first tab in the view so that if the user had
@@ -97,37 +64,58 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             // showing a blank view
             $('#stack-tabs a[id="logs"]').tab('show');
 
-            self.stackPropertiesStringified('');
 
             if (data.hasOwnProperty('stack')) {
-                self.editMode('update');
 
-                stack = StackStore.collection().filter(function (s) {
-                    return s.id === parseInt(data.stack, 10);
-                })[0];
+                API.Stacks.getStack(data.stack).then(function (stack) {
 
-                self.stackTitle(stack.title);
+                    self.selectedStack(stack);
 
-                API.Stacks.getLogs(stack).then(function (logs) {
-                    self.logObject = logs;
-                    self.historicalLogs.removeAll();
-                    self.logObject.historical.forEach(function(logrecord) {
-                        urlarr = logrecord.split('/');
-                        self.historicalLogs.push({
-                            name: urlarr[urlarr.length-1],
-                            url: logrecord
+                    self.stackTitle(stack.title);
+
+                    API.Stacks.getLogs(stack).then(function (logs) {
+                        self.logObject = logs;
+                        self.historicalLogs.removeAll();
+                        self.logObject.historical.forEach(function(logrecord) {
+                            urlarr = logrecord.split('/');
+                            self.historicalLogs.push({
+                                name: urlarr[urlarr.length-1],
+                                url: logrecord
+                            });
                         });
-                    });
-                    self.getLogs();
-                }).catch(function(error) {
-                    console.error(error);
-                }).done();
+                        self.latestLogs.removeAll();
+                        self.latestLogs.push({
+                            name: 'Launch',
+                            url: self.logObject.latest.launch
+                        });
+                        self.latestLogs.push({
+                            name: 'Provisioning',
+                            url: self.logObject.latest.provisioning
+                        });
+                        self.latestLogs.push({
+                            name: 'Provisioning Error',
+                            url: self.logObject.latest['provisioning-error']
+                        });
+                        self.latestLogs.push({
+                            name: 'Orchestration',
+                            url: self.logObject.latest.orchestration
+                        });
+                        self.latestLogs.push({
+                            name: 'Orchestration Error',
+                            url: self.logObject.latest['orchestration-error']
+                        });
+
+                        // Start out with the latest launch log
+                        self.goToLog(self.latestLogs()[0]);
+                    }).catch(function(error) {
+                        console.error(error);
+                    }).done();
+                });
 
             } else {
                 $galaxy.transport('stack.list');
             }
 
-            self.selectedStack(stack);
         };
  
        
@@ -156,53 +144,12 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
 	    };
 
 
-        self.getLogs = function () {
-            // Query param ?tail=20&head=20
-
-            var promises = [];
-            var historical = [];
-
-            self.logObject.historical.forEach(function (logrecord) {
-                promises[promises.length] = API.Stacks.getLog(logrecord).then(function (log) {
-                    historical[historical.length] = log;
-                });
+        self.goToLog = function(obj, evt) {
+            self.selectedLog(obj.name);
+            self.selectedLogText("Loading...");
+            API.Stacks.getLog(obj.url).then(function (log) {
+                self.selectedLogText(log);
             });
-
-            Q.all(promises).then(function () {
-                $('#historical_logs').text(historical.join(''));
-            }).catch(function (error) {
-                console.log('error', error.toString());
-            }).done();
-
-            API.Stacks.getLog(self.logObject.latest.launch).then(function (log) {
-                $('#launch_logs').text(log);
-            }).catch(function (error) {
-                $('#launch_logs').text(error);
-            });
-
-            API.Stacks.getLog(self.logObject.latest.orchestration).then(function (log) {
-                $('#orchestration_logs').text(log);
-            }).catch(function (error) {
-                $('#orchestration_logs').text(error);
-            });
-
-            API.Stacks.getLog(self.logObject.latest["orchestration-error"]).then(function (log) {
-                $('#orchestration_error_logs').text(log);
-            }).catch(function (error) {
-                $('#orchestration_error_logs').text(error);
-            });
-
-            API.Stacks.getLog(self.logObject.latest.provisioning).then(function (log) {
-                $('#provisioning_logs').text(log);
-            }).catch(function (error) {
-                $('#provisioning_logs').text(error);
-            });
-
-            API.Stacks.getLog(self.logObject.latest["provisioning-error"]).then(function (log) {
-                $('#provisioning_error_logs').text(log);
-            }).catch(function (error) {
-                $('#provisioning_error_logs').text(error);
-            });            
         };
 
     };

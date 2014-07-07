@@ -3,18 +3,10 @@ define([
     'knockout',
     'util/galaxy',
     'util/form',
-    'store/Stacks',
-    'store/StackHosts',
     'store/StackSecurityGroups',
-    'store/StackActions',
-    'store/Profiles',
-    'store/InstanceSizes',
-    'store/Blueprints',
-    'store/BlueprintHosts',
-    'store/BlueprintComponents',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, StackActionStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, StackSecurityGroupStore, API) {
     var vm = function () {
         var self = this;
 
@@ -23,31 +15,10 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
         */
-        self.selectedBlueprint = ko.observable(null);
-        self.blueprintHostDefinitions = ko.observable(null);
         self.selectedStack = ko.observable(null);
         self.stackTitle = ko.observable();
-        self.blueprintTitle = ko.observable();
-        self.blueprintProperties = ko.observable();
-        self.stackPropertiesStringified = ko.observable();
-        self.editMode = ko.observable('create');
 
-        self.historicalLogText = ko.observable();
-        self.launchLogText = ko.observable();
-        self.orchestrationLogText = ko.observable();
-        self.orchestrationErrorLogText = ko.observable();
-        self.provisioningLogText = ko.observable();
-        self.provisioningErrorLogText = ko.observable();
-
-        self.StackStore = StackStore;
-        self.StackHostStore = StackHostStore;
         self.StackSecurityGroupStore = StackSecurityGroupStore;
-        self.StackActionStore = StackActionStore;
-        self.ProfileStore = ProfileStore;
-        self.InstanceSizeStore = InstanceSizeStore;
-        self.BlueprintHostStore = BlueprintHostStore;
-        self.BlueprintComponentStore = BlueprintComponentStore;
-        self.BlueprintStore = BlueprintStore;
         self.$galaxy = $galaxy;
 
         /*
@@ -72,11 +43,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
-            BlueprintStore.populate().then(function () {
-                return StackStore.populate();
-            }).then(function () {
-                self.init(data);
-            });
+            self.init(data);
         });
 
 
@@ -87,8 +54,6 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          */
 
         self.init = function (data) {
-            var blueprint = null;
-            var stack = null;
             var stackHosts = [];
 
             // Automatically select the first tab in the view so that if the user had
@@ -96,25 +61,20 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             // showing a blank view
             $('#stack-tabs a[id="accessrules"]').tab('show');
 
-            self.stackPropertiesStringified('');
-
             if (data.hasOwnProperty('stack')) {
-                self.editMode('update');
 
-                stack = StackStore.collection().filter(function (s) {
-                    return s.id === parseInt(data.stack, 10);
-                })[0];
+                API.Stacks.getStack(data.stack).then(function (stack) {
 
-                self.stackTitle(stack.title);
+                    self.selectedStack(stack);
+                    self.stackTitle(stack.title);
 
-                // Get security groups 
-                getSecurityGroups(stack);
+                    // Get security groups 
+                    getSecurityGroups(stack);
+                });
 
             } else {
                 $galaxy.transport('stack.list');
             }
-
-            self.selectedStack(stack);
         };
 
         self.goToTab = function (obj, evt) {

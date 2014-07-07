@@ -20,66 +20,32 @@
                     <div class="row">
                         <div class="col-md-2">
                             <ul class="nav nav-pills nav-stacked">
-                                <li class="disabled"><a>Latest</a></li>
-                                <li class="active"><a href="#launch" data-toggle="tab">Launch</a></li>
-                                <li><a href="#provisioning" data-toggle="tab">Provisioning</a></li>
-                                <li><a href="#provisioning-error" data-toggle="tab">Provisioning Error</a></li>
-                                <li><a href="#orchestration" data-toggle="tab">Orchestration</a></li>
-                                <li><a href="#orchestration-error" data-toggle="tab">Orchestration Error</a></li>
-                                <li class="disabled"><a><!-- spacer --></a></li>
-                                <li class="disabled"><a>Historical</a></li>
+                                <li class="disabled"><a><strong>Latest</strong></a></li>
+                                <!-- ko foreach: latestLogs -->
+                                <li data-bind="attr: {class: $root.selectedLog() == $data.name ? 'active' : ''}">
+                                    <a data-bind="click: $root.goToLog, text: $data.name" 
+                                       ></a>
+                                </li>
+                                <!-- /ko -->
+                                <li class="disabled"><a>&nbsp;<!-- spacer --></a></li>
+                                <li class="disabled"><a><strong>Historical</strong></a></li>
                                 <!-- ko foreach: historicalLogs -->
-                                <li><a data-toggle="tab" data-bind="text: $data.name, attr: {href: '#'+$data.name}"></a></li>
+                                <li data-bind="attr: {class: $root.selectedLog() == $data.name ? 'active' : ''}">
+                                    <a data-bind="click: $root.goToLog, text: $data.name"></a>
+                                </li>
                                 <!-- /ko -->
                             </ul>
                         </div>
                         <div class="col-md-10">
 
                             <div class="tab-content">
-                                <div class="tab-pane active" id="launch">
+                                <div class="tab-pane active">
                                     <textarea class="form-control"
-                                           rows="20"
-                                           id="launch_logs" 
-                                           data-bind="text: $root.launchLogText"
-                                           placeholder="Launch logs will be shown here."></textarea>
+                                           rows="25"
+                                           data-bind="text: $root.selectedLogText"
+                                           placeholder:"This log doesn't exist yet">
+                                    </textarea>
                                 </div>
-                                <div class="tab-pane" id="provisioning">
-                                    <textarea class="form-control"
-                                           rows="20"
-                                           id="provisioning_logs" 
-                                           data-bind="text: $root.provisioningLogText"
-                                           placeholder="Provisioning logs will be shown here."></textarea>
-                                </div>
-                                <div class="tab-pane" id="provisioning-error">
-                                    <textarea class="form-control"
-                                           rows="20"
-                                           id="provisioning_error_logs" 
-                                           data-bind="text: $root.provisioningErrorLogText"
-                                           placeholder="Provisioning error logs will be shown here."></textarea>
-                                </div>
-                                <div class="tab-pane" id="orchestration">
-                                    <textarea class="form-control"
-                                           rows="20"
-                                           id="orchestration_logs" 
-                                           data-bind="text: $root.orchestrationLogText"
-                                           placeholder="Orchestration logs will be shown here."></textarea>
-                                </div>
-                                <div class="tab-pane" id="orchestration-error">
-                                    <textarea class="form-control"
-                                           rows="20"
-                                           id="orchestration_error_logs" 
-                                           data-bind="text: $root.orchestrationErrorLogText"
-                                           placeholder="Orchestration error logs will be shown here."></textarea>
-                                </div>
-                                <!-- ko foreach: historicalLogs -->
-                                <div class="tab-pane" data-bind="attr: {id: $data.name}">
-                                    <textarea class="form-control"
-                                           rows="20"
-                                           id="historical_logs" 
-                                           data-bind="text: $root.historicalLogText"
-                                           placeholder="Historical logs will be shown here."></textarea>
-                                </div>
-                                <!-- /ko -->
                             </div>
                         </div>
                     </div>

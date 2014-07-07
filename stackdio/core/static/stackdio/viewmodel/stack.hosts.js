@@ -3,18 +3,10 @@ define([
     'knockout',
     'util/galaxy',
     'util/form',
-    'store/Stacks',
     'store/StackHosts',
-    'store/StackSecurityGroups',
-    'store/StackActions',
-    'store/Profiles',
-    'store/InstanceSizes',
-    'store/Blueprints',
-    'store/BlueprintHosts',
-    'store/BlueprintComponents',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGroupStore, StackActionStore, ProfileStore, InstanceSizeStore, BlueprintStore, BlueprintHostStore, BlueprintComponentStore, API) {
+function (Q, ko, $galaxy, formutils, StackHostStore, API) {
     var vm = function () {
         var self = this;
 
@@ -29,25 +21,8 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
         self.stackTitle = ko.observable();
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
-        self.stackPropertiesStringified = ko.observable();
-        self.editMode = ko.observable('create');
 
-        self.historicalLogText = ko.observable();
-        self.launchLogText = ko.observable();
-        self.orchestrationLogText = ko.observable();
-        self.orchestrationErrorLogText = ko.observable();
-        self.provisioningLogText = ko.observable();
-        self.provisioningErrorLogText = ko.observable();
-
-        self.StackStore = StackStore;
         self.StackHostStore = StackHostStore;
-        self.StackSecurityGroupStore = StackSecurityGroupStore;
-        self.StackActionStore = StackActionStore;
-        self.ProfileStore = ProfileStore;
-        self.InstanceSizeStore = InstanceSizeStore;
-        self.BlueprintHostStore = BlueprintHostStore;
-        self.BlueprintComponentStore = BlueprintComponentStore;
-        self.BlueprintStore = BlueprintStore;
         self.$galaxy = $galaxy;
 
         /*
@@ -72,11 +47,7 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
-            BlueprintStore.populate().then(function () {
-                return StackStore.populate();
-            }).then(function () {
-                self.init(data);
-            });
+            self.init(data);
         });
 
 
@@ -96,30 +67,24 @@ function (Q, ko, $galaxy, formutils, StackStore, StackHostStore, StackSecurityGr
             // showing a blank view
             $('#stack-tabs a[id="hosts"]').tab('show');
 
-            self.stackPropertiesStringified('');
-
             if (data.hasOwnProperty('stack')) {
-                self.editMode('update');
 
-                stack = StackStore.collection().filter(function (s) {
-                    return s.id === parseInt(data.stack, 10);
-                })[0];
-                
-                // Find the corresponding blueprint
-                blueprint = BlueprintStore.collection().filter(function (b) {
-                    return b.url === stack.blueprint;
-                })[0];
+                API.Stacks.getStack(data.stack).then(function (stack) {
+                    self.selectedStack(stack);
+                    self.stackTitle(stack.title);
+                    self.loadHosts();
 
-                self.stackTitle(stack.title);
-
-                self.blueprintHostDefinitions(blueprint.host_definitions);
+                    // Find the corresponding blueprint
+                    API.Blueprints.getBlueprintFromUrl(stack.blueprint).then(function (blueprint) {
+                        self.selectedBlueprint(blueprint);
+                        self.blueprintHostDefinitions(blueprint.host_definitions);
+                    });
+                });
 
             } else {
                 $galaxy.transport('stack.list');
             }
 
-            self.selectedStack(stack);
-            self.loadHosts();
         };
  
         self.goToTab = function (obj, evt) {
