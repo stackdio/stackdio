@@ -40,12 +40,14 @@ function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
-            BlueprintStore.populate().then(function () {
-                $('span').popover('hide');
-                return StackStore.populate(true);
-            }).catch(function (err) {
+            StackStore.populate(true).catch(function (err) {
                 console.error(err);
             });
+            BlueprintStore.populate().then(function () {
+                $('span').popover('hide');
+            }).catch(function (err) {
+                console.error(err);
+            })
         });
 
         /*
