@@ -2,10 +2,9 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
-    'util/form', 
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, API) {
+function (Q, ko, $galaxy, API) {
     var vm = function () {
         var self = this;
 

@@ -2,11 +2,10 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
-    'util/form',
     'store/StackActions',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, StackActionStore, API) {
+function (Q, ko, $galaxy, StackActionStore, API) {
     var vm = function () {
         var self = this;
 
@@ -17,6 +16,9 @@ function (Q, ko, $galaxy, formutils, StackActionStore, API) {
         */
         self.selectedStack = ko.observable(null);
         self.stackTitle = ko.observable();
+
+        self.actionFormTarget = ko.observable();
+        self.actionFormCommand = ko.observable();
 
         self.StackActionStore = StackActionStore;
         self.$galaxy = $galaxy;
@@ -54,6 +56,8 @@ function (Q, ko, $galaxy, formutils, StackActionStore, API) {
          */
 
         self.init = function (data) {
+            
+            self.clearForm();
 
             if (data.hasOwnProperty('stack')) {
 
@@ -109,21 +113,19 @@ function (Q, ko, $galaxy, formutils, StackActionStore, API) {
         };
 
         self.runAction = function (obj, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-        
             var data = {
                 action: "custom",
                 args: [
                     {
-                        host_target: record.host_target.value,
-                        command: record.command.value
+                        host_target: self.actionFormTarget(),
+                        command: self.actionFormCommand()
                     }
                 ]
             };
 
-           startAction(data);
+            startAction(data);
 
-           formutils.clearForm('action-form');
+            self.clearForm();
         };
 
         self.deleteAction = function (action, evt) {
@@ -192,6 +194,11 @@ function (Q, ko, $galaxy, formutils, StackActionStore, API) {
                     return 'default';
             }
 	    };
+
+        self.clearForm = function () {
+            self.actionFormTarget('');
+            self.actionFormCommand('');
+        };
 
     };
     return new vm();
