@@ -141,6 +141,8 @@ function (Q, ko, $galaxy, API) {
             self.selectedLogText("Loading...");
             API.Stacks.getLog(obj.url).then(function (log) {
                 self.selectedLogText(log);
+            }).catch(function (error) {
+                self.selectedLogText(error);
             });
         };
 
