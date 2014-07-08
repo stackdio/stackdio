@@ -2,10 +2,9 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
-    'util/form',
     'api/api'
 ],
-function (Q, ko, $galaxy, formutils, API) {
+function (Q, ko, $galaxy, API) {
     var vm = function () {
         var self = this;
 
@@ -20,8 +19,12 @@ function (Q, ko, $galaxy, formutils, API) {
         self.stackTitle = ko.observable();
         self.blueprintTitle = ko.observable();
         self.blueprintProperties = ko.observable();
-        self.stackPropertiesStringified = ko.observable();
         self.editMode = ko.observable('create');
+
+        self.stackFormTitle = ko.observable();
+        self.stackFormDescription = ko.observable();
+        self.stackFormNamespace = ko.observable();
+        self.stackPropertiesStringified = ko.observable();
 
         self.$galaxy = $galaxy;
 
@@ -59,15 +62,14 @@ function (Q, ko, $galaxy, formutils, API) {
 
         self.init = function (data) {
 
-            $('#stack_title').val('');
-            $('#stack_description').val('');
-            $('#stack_namespace').val('');
-            $('#stack_properties_preview').val('');
+            self.stackFormTitle('');
+            self.stackFormDescription('');
+            self.stackFormNamespace('');
 
             self.stackTitle('');
             self.blueprintTitle('');
 
-            self.stackPropertiesStringified('');
+            self.stackPropertiesStringified(null);
 
             // Blueprint specified, so creating a new stack
             if (data.hasOwnProperty('blueprint')) {
@@ -95,13 +97,13 @@ function (Q, ko, $galaxy, formutils, API) {
                     self.stackTitle(stack.title);
 
                     // Populate the form
-                    $('#stack_title').val(stack.title);
-                    $('#stack_description').val(stack.description);
-                    $('#stack_namespace').val(stack.namespace);
+                    self.stackFormTitle(stack.title);
+                    self.stackFormDescription(stack.description);
+                    self.stackFormNamespace(stack.namespace);
 
                     // Get stack properties
                     API.Stacks.getProperties(stack).then(function (properties) {
-                        $('#stack_properties_preview').val(JSON.stringify(properties, undefined, 3));
+                        self.stackPropertiesStringified(JSON.stringify(properties, undefined, 3));
                     });
 
                     API.Blueprints.getBlueprintFromUrl(stack.blueprint).then(function (blueprint) {
@@ -143,7 +145,6 @@ function (Q, ko, $galaxy, formutils, API) {
 	    };
 
         self.updateStack = function (obj, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
             var stack = {};
 
             // Create a new, complete stack representation for a PUT
@@ -159,52 +160,43 @@ function (Q, ko, $galaxy, formutils, API) {
             stack.volumes = self.selectedStack().volumes;
             stack.properties = self.selectedStack().properties;
             stack.history = self.selectedStack().history;
-            stack.title = record.stack_title.value;
-            stack.description = record.stack_description.value;
-            stack.namespace = record.stack_namespace.value;
-            
-            if (record.stack_properties_preview.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview.value);
+            stack.title = self.stackFormTitle();
+            stack.description = self.stackFormDescription();
+            self.namespace = self.stackFormNamespace();
+
+            if (self.stackPropertiesStringified() != '') {
+                stack.properties = JSON.parse(self.stackPropertiesStringified());
             }
 
             API.Stacks.update(stack).then(function (newStack) {
-                formutils.clearForm('stack-launch-form');
                 $galaxy.transport('stack.list');
             });
         };
 
         self.provisionStack = function (a, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
-
             var stack = {
-                title: record.stack_title.value,
-                description: record.stack_description.value,
+                title: self.stackFormTitle(),
+                description: self.stackFormDescription(),
                 blueprint: self.selectedBlueprint().id
             };
 
             // Only send in the namespace if user provided one
-            if(record.stack_namespace.value != '') {
-                stack.namespace = record.stack_namespace.value;
+            if (self.stackFormNamespace() != '') {
+                stack.namespace = self.stackFormNamespace();
             }
 
-            if (record.stack_properties_preview.value !== '') {
-                stack.properties = JSON.parse(record.stack_properties_preview.value);
+            // Only send properties if the user provided them
+            if (self.stackPropertiesStringified() != '') {
+                stack.properties = JSON.parse(self.stackPropertiesStringified());
             }
 
+            console.log(stack);
             API.Stacks.save(stack).then(function (newStack) {
-                
-                $('#stack_title').val('');
-                $('#stack_description').val('');
-                $('#stack_namespace').val('');
-                $('#stack_properties_preview').text('');
-
-                formutils.clearForm('stack-launch-form');
                 $galaxy.transport('stack.list');
             });
         };
 
         self.cancelChanges = function (a, evt) {
-            formutils.clearForm('stack-launch-form');
             $galaxy.transport('stack.list');
         };
 
