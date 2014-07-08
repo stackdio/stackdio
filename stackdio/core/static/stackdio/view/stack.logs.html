@@ -19,7 +19,7 @@
                     <br />
                     <div class="row">
                         <div class="col-md-2">
-                            <ul class="nav nav-pills nav-stacked">
+                            <ul class="nav nav-pills nav-stacked" style="max-height: 500px; overflow-y: auto">
                                 <li><h4>Latest</h4></li>
                                 <!-- ko foreach: latestLogs -->
                                 <li data-bind="attr: {class: $root.selectedLog() == $data.name ? 'active' : ''}">
@@ -40,11 +40,6 @@
 
                             <div class="tab-content">
                                 <div class="tab-pane active">
-                                    <!--textarea class="form-control"
-                                           rows="25"
-                                           data-bind="text: $root.selectedLogText"
-                                           placeholder:"This log doesn't exist yet">
-                                    </textarea-->
                                     <pre class="pre-scrollable"
                                          style="max-height: 500px; height: 500px;"
                                          data-bind="text: $root.selectedLogText">
