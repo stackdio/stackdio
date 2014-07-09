@@ -28,6 +28,16 @@ function (Q, ko, $galaxy, API) {
 
         self.$galaxy = $galaxy;
 
+        self.submitButtonTitle = ko.computed(function () {
+            if (self.editMode() === 'create') {
+                return 'Begin Provisioning';
+            } else if (self.editMode() === 'update') {
+                return 'Save';
+            } else {
+                return '';
+            }
+        });
+
         /*
          *  ==================================================================================
          *   R E G I S T R A T I O N   S E C T I O N
@@ -143,6 +153,15 @@ function (Q, ko, $galaxy, API) {
                     return 'default';
             }
 	    };
+
+        self.submitForm = function (obj, evt) {
+            if (self.editMode() === 'create') {
+                self.provisionStack(obj, evt);
+            } else if (self.editMode() === 'update') {
+                self.updateStack(obj, evt);
+            }
+        };
+
 
         self.updateStack = function (obj, evt) {
             var stack = {};
