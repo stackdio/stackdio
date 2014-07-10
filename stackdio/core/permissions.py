@@ -9,14 +9,13 @@ class AdminOrOwnerPermission(permissions.BasePermission):
         return request.user == obj.owner or request.user.is_staff
 
 
-class AdminOrOwnerOrPublicPermission(AdminOrOwnerPermission):
+class AdminOrOwnerOrPublicPermission(permissions.BasePermission):
     """
     A permission that allows safe methods through for public objects and
     all access to owners and admins
     """
     def has_object_permission(self, request, view, obj):
-        if super(AdminOrOwnerOrPublicPermission, self) \
-                .has_object_permission(request, view, obj):
+        if request.user == obj.owner or request.user.is_staff:
             return True
 
         if not obj.public:
