@@ -24,6 +24,10 @@ from rest_framework.decorators import api_view
 
 from core.exceptions import BadRequest
 from core.renderers import PlainTextRenderer
+from core.permissions import (
+    AdminOrOwnerPermission, 
+    AdminOrOwnerOrPublicPermission,
+)
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
 from blueprints.models import Blueprint, BlueprintHostDefinition
@@ -35,31 +39,9 @@ from . import tasks, models, serializers, filters, validators, workflows
 logger = logging.getLogger(__name__)
 
 
-class OwnerOnlyPermission(permissions.BasePermission):
-    '''
-    A permission that allows safe methods through for public objects
-    and all access to owners.
-    '''
-    def has_object_permission(self, request, view, obj):
-        return request.user == obj.owner
-
-
-class OwnerOrPublicPermission(permissions.BasePermission):
-    '''
-    A permission that allows safe methods through for public objects
-    and all access to owners.
-    '''
-    def has_object_permission(self, request, view, obj):
-        if request.user == obj.owner:
-            return True
-        if not obj.public:
-            return False
-        return request.method == 'GET'
-
-
 class PublicStackMixin(object):
     permission_classes = (permissions.IsAuthenticated,
-                          OwnerOrPublicPermission,)
+                          AdminOrOwnerOrPublicPermission,)
 
     def get_object(self):
         obj = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
@@ -314,7 +296,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
     model = models.Stack
     serializer_class = serializers.StackSerializer
     permission_classes = (permissions.IsAuthenticated,
-                          OwnerOnlyPermission,)
+                          AdminOrOwnerPermission,)
 
     def get_object(self):
         obj = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
