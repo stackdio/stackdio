@@ -159,15 +159,17 @@ class FormulaPropertiesAPIView(generics.RetrieveAPIView):
 
     model = models.Formula
     serializer_class = serializers.FormulaPropertiesSerializer
+    permission_classes = (permissions.IsAuthenticated,
+                          AdminOrOwnerOrPublicPermission,)
 
-    def get_object(self):
-        '''
-        Return the formula if it's owned by the request user or
-        if it's public...else we'll raise a 404
-        '''
-        return get_object_or_404(self.model,
-                                 Q(owner=self.request.user) | Q(public=True),
-                                 pk=self.kwargs.get('pk'))
+    # def get_object(self):
+    #     '''
+    #     Return the formula if it's owned by the request user or
+    #     if it's public...else we'll raise a 404
+    #     '''
+    #     return get_object_or_404(self.model,
+    #                              Q(owner=self.request.user) | Q(public=True),
+    #                              pk=self.kwargs.get('pk'))
 
 
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -175,8 +177,10 @@ class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = models.FormulaComponent
     serializer_class = serializers.FormulaComponentSerializer
     parser_classes = (JSONParser,)
+    permission_classes = (permissions.IsAuthenticated,
+                          AdminOrOwnerOrPublicPermission,)
 
-    def get_object(self):
-        return get_object_or_404(self.model,
-                                 pk=self.kwargs.get('pk'),
-                                 formula__owner=self.request.user)
+    # def get_object(self):
+    #     return get_object_or_404(self.model,
+    #                              pk=self.kwargs.get('pk'),
+    #                              formula__owner=self.request.user)
