@@ -1,14 +1,12 @@
 from rest_framework import permissions
 
 
-class AdminOrOwnerPermission(permissions.IsAdminUser):
+class AdminOrOwnerPermission(permissions.BasePermission):
     """
     A permission that allows access to owners and admins only
     """
     def has_object_permission(self, request, view, obj):
-        return request.user == obj.owner \
-            or super(AdminOrOwnerPermission, self) \
-            .has_object_permission(request, view, obj)
+        return request.user == obj.owner or request.user.is_staff
 
 
 class AdminOrOwnerOrPublicPermission(AdminOrOwnerPermission):
