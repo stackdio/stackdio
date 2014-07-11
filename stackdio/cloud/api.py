@@ -1,15 +1,12 @@
 import logging
+
 import yaml
-
-from django.http import Http404
-
 from rest_framework import (
     generics,
     parsers,
     permissions,
     status
 )
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest, ResourceConflict
@@ -18,9 +15,9 @@ from core.permissions import (
     IsAdminOrReadOnly,
 )
 from blueprints.serializers import BlueprintSerializer
-
 from . import models
 from . import serializers
+
 
 logger = logging.getLogger(__name__)
 
@@ -267,13 +264,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                 logger.debug('Security group already exists on the '
                              'provider: {0!r}'.format(provider_group))
 
-                # only admins are allowed to use an existing security group
-                # for security purposes
-                if not owner.is_superuser:
-                    raise PermissionDenied(
-                        'Security group already exists on the cloud provider '
-                        'and only admins are allowed to import them.')
-            except (KeyError, PermissionDenied):
+            except (KeyError):
                 raise
             except Exception:
                 # doesn't exist on the provider either, we'll create it now
