@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class VolumeSerializer(serializers.HyperlinkedModelSerializer):
+    owner = serializers.Field()
     snapshot_name = serializers.Field(source='snapshot.snapshot_id')
     size_in_gb = serializers.Field(source='snapshot.size_in_gb')
 
@@ -18,6 +19,7 @@ class VolumeSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id',
             'url',
+            'owner',
             'volume_id',
             'attach_time',
             'stack',

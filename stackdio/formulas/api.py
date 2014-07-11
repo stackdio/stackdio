@@ -81,6 +81,15 @@ class FormulaPublicAPIView(generics.ListAPIView):
             .exclude(owner=self.request.user)
 
 
+class FormulaAdminListAPIView(generics.ListAPIView):
+    model = models.Formula
+    serializer_class = serializers.FormulaSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return self.model.objects.exclude(owner=self.request.user)
+
+
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     model = models.Formula

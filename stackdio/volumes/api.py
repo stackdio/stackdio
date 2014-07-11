@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import (
     generics,
+    permissions,
 )
 
 from core.permissions import AdminOrOwnerPermission
@@ -23,6 +24,15 @@ class VolumeListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         return Volume.objects.filter(stack__owner=self.request.user)
+
+
+class VolumeAdminListAPIView(generics.ListAPIView):
+    model = Volume
+    serializer_class = VolumeSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return self.model.object.exclude(owner=self.request.user)
 
 
 class VolumeDetailAPIView(generics.RetrieveAPIView):

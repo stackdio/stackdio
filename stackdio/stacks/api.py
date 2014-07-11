@@ -59,10 +59,22 @@ class StackPublicListAPIView(generics.ListAPIView):
             .exclude(owner=self.request.user)
 
 
-class StackListAPIView(generics.ListCreateAPIView):
-    '''
+class StackAdminListAPIView(generics.ListAPIView):
+    """
     TODO: Add docstring
-    '''
+    """
+    model = models.Stack
+    serializer_class = serializers.StackSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return self.model.objects.exclude(owner=self.request.user)
+
+
+class StackListAPIView(generics.ListCreateAPIView):
+    """
+    TODO: Add docstring
+    """
     model = models.Stack
     serializer_class = serializers.StackSerializer
     parser_classes = (parsers.JSONParser,)
@@ -79,11 +91,11 @@ class StackListAPIView(generics.ListCreateAPIView):
 
     # TODO: Code complexity issues are ignored for now
     def create(self, request, *args, **kwargs):  # NOQA
-        '''
+        """
         Overriding create method to build roles and metadata objects for this
         Stack as well as generating the salt-cloud map that will be used to
         launch machines
-        '''
+        """
         # make sure the user has a public key or they won't be able to SSH
         # later
         if not request.user.settings.public_key:
@@ -243,10 +255,10 @@ class StackDetailAPIView(PublicStackMixin,
     parser_classes = (parsers.JSONParser,)
 
     def destroy(self, request, *args, **kwargs):
-        '''
+        """
         Overriding the delete method to make sure the stack
         is taken offline before being deleted
-        '''
+        """
         # Update the status
         stack = self.get_object()
         msg = 'Stack will be removed upon successful termination ' \
@@ -316,14 +328,14 @@ class StackActionAPIView(generics.SingleObjectAPIView):
 
     # TODO: Code complexity issues are ignored for now
     def post(self, request, *args, **kwargs):  # NOQA
-        '''
+        """
         POST request allows RPC-like actions to be called to interact
         with the stack. Request contains JSON with an `action` parameter
         and optional `args` depending on the action being executed.
 
         Valid actions: stop, start, restart, terminate, provision,
         orchestrate
-        '''
+        """
 
         stack = self.get_object()
         driver_hosts_map = stack.get_driver_hosts_map()
@@ -579,7 +591,7 @@ class StackHostsAPIView(HostListAPIView):
         return models.Host.objects.filter(stack=stack)
 
     def post(self, request, *args, **kwargs):
-        '''
+        """
         Overriding POST for a stack to be able to add or remove
         hosts from the stack. Both actions are dependent on
         a blueprint host definition in the blueprint used to
@@ -622,7 +634,7 @@ class StackHostsAPIView(HostListAPIView):
             hostnames of the stack. For example, if your stack has a host list
             [foo-1, foo-3, foo-4] and you ask for three additional hosts, the
             resulting set of hosts is [foo-1, foo-2, foo-3, foo4, foo-5, foo-6]
-        '''
+        """
         errors = validators.StackAddRemoveHostsValidator(request).validate()
         if errors:
             raise BadRequest(errors)
@@ -693,10 +705,10 @@ class StackHostsAPIView(HostListAPIView):
         return Response({})
 
     def get(self, request, *args, **kwargs):
-        '''
+        """
         Override get method to add additional host-specific info
         to the result that is looked up via salt when user requests it
-        '''
+        """
         provider_metadata = request \
             .QUERY_PARAMS \
             .get('provider_metadata') == 'true'
@@ -730,10 +742,10 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
     serializer_class = serializers.HostSerializer
 
     def destroy(self, request, *args, **kwargs):
-        '''
+        """
         Override the delete method to first terminate the host
         before destroying the object.
-        '''
+        """
         # get the stack id for the host
         host = self.get_object()
         host.set_status(models.Host.DELETING, 'Deleting host.')

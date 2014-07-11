@@ -21,4 +21,8 @@ urlpatterns = patterns(
     url(r'^blueprints/public/$',
         api.BlueprintPublicAPIView.as_view(),
         name='blueprint-public-list'),
+
+    url(r'^blueprints/admin/$',
+        api.BlueprintAdminListAPIView.as_view(),
+        name='blueprint-admin-list'),
 )

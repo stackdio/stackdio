@@ -59,6 +59,15 @@ class BlueprintPublicAPIView(generics.ListAPIView):
             .exclude(owner=self.request.user)
 
 
+class BlueprintAdminListAPIView(generics.ListAPIView):
+    model = models.Blueprint
+    serializer_class = serializers.BlueprintSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return self.model.objects.exclude(owner=self.request.user)
+
+
 class BlueprintDetailAPIView(PublicBlueprintMixin,
                              generics.RetrieveUpdateDestroyAPIView):
     model = models.Blueprint
