@@ -87,7 +87,7 @@ class FormulaAdminListAPIView(generics.ListAPIView):
     permission_classes = (permissions.IsAdminUser,)
 
     def get_queryset(self):
-        return self.model.objects.exclude(owner=self.request.user)
+        return self.model.objects.all()
 
 
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

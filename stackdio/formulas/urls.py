@@ -26,7 +26,7 @@ urlpatterns = patterns('formulas.api',
         api.FormulaPublicAPIView.as_view(), 
         name='formula-public-list'),
 
-    url(r'^formulas/admin/$',
+    url(r'^admin/formulas/$',
         api.FormulaAdminListAPIView.as_view(),
         name='formula-admin-list'),
 )

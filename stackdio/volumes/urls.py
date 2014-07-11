@@ -16,7 +16,7 @@ urlpatterns = patterns('volumes.api',
         VolumeDetailAPIView.as_view(), 
         name='volume-detail'),
 
-    url(r'^volumes/admin/$',
+    url(r'^admin/volumes/$',
         VolumeAdminListAPIView.as_view(),
         name='volume-admin-list'),
 )

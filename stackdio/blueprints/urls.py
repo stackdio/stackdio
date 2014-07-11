@@ -22,7 +22,7 @@ urlpatterns = patterns(
         api.BlueprintPublicAPIView.as_view(),
         name='blueprint-public-list'),
 
-    url(r'^blueprints/admin/$',
+    url(r'^admin/blueprints/$',
         api.BlueprintAdminListAPIView.as_view(),
         name='blueprint-admin-list'),
 )

@@ -25,7 +25,7 @@ urlpatterns = patterns(
         api.StackListAPIView.as_view(),
         name='stack-list'),
 
-    url(r'^stacks/admin/$',
+    url(r'^admin/stacks/$',
         api.StackAdminListAPIView.as_view(),
         name='stack-admin-list'),
 
