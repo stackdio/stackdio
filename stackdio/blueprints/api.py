@@ -6,33 +6,19 @@ from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 
 from core.exceptions import BadRequest
-
+from core.permissions import AdminOrOwnerOrPublicPermission
 from . import serializers
 from . import models
 from . import filters
 from . import validators
-
 from stacks.serializers import StackSerializer
 
 logger = logging.getLogger(__name__)
 
 
-class OwnerOrPublicPermission(permissions.BasePermission):
-    '''
-    A permission that allows safe methods through for public objects
-    and all access to owners.
-    '''
-    def has_object_permission(self, request, view, obj):
-        if request.user == obj.owner:
-            return True
-        if not obj.public:
-            return False
-        return request.method == 'GET'
-
-
 class PublicBlueprintMixin(object):
     permission_classes = (permissions.IsAuthenticated,
-                          OwnerOrPublicPermission,)
+                          AdminOrOwnerOrPublicPermission,)
 
     def get_object(self):
         obj = get_object_or_404(models.Blueprint, id=self.kwargs.get('pk'))
@@ -96,11 +82,11 @@ class BlueprintDetailAPIView(PublicBlueprintMixin,
                                                           **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        '''
+        """
         Override the delete method to check for ownership and prevent
         blueprints from being removed if other resources are using
         them.
-        '''
+        """
         blueprint = self.get_object()
 
         # Check ownership
