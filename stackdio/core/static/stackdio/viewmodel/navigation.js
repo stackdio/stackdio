@@ -25,7 +25,7 @@ function (Q, settings, ko, $galaxy, search, welcome) {
             console.log(ex);            
         }
 
-        self.sections = [
+        self.sections = ko.observableArray([
             {
                 id:'Welcome',
                 view: 'welcome',
@@ -68,12 +68,23 @@ function (Q, settings, ko, $galaxy, search, welcome) {
                 icon: 'glyphicon glyphicon-camera',
                 visible: true
             }
-        ];
-        self.currentSection = ko.observable(self.sections[0]);
+        ]);
+        self.currentSection = ko.observable(self.sections()[0]);
+
+
+        if (settings.superuser) {
+            self.sections.push({
+                id:'Admin',
+                view: 'admin',
+                icon: 'glyphicon glyphicon-list-alt',
+                visible: true
+            });
+        }
+
 
         self.changeView = function (section) {
             if (!section.hasOwnProperty('id')) {
-                section = _.findWhere(self.sections, {view: section});
+                section = _.findWhere(self.sections(), {view: section});
             }
             $galaxy.transport(section.view);
         };

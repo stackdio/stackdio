@@ -160,6 +160,13 @@ class SnapshotListAPIView(generics.ListCreateAPIView):
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
+class SnapshotAdminListAPIView(generics.ListAPIView):
+    model = models.Snapshot
+    serializer_class = serializers.SnapshotSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    queryset = model.objects.all()
+
+
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = models.Snapshot
     serializer_class = serializers.SnapshotSerializer

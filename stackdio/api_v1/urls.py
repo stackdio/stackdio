@@ -85,7 +85,9 @@ def api_root(request, format=None):
     }
 
     if request.user.is_staff:
-        api['core']['users'] = reverse('user-list', request=request, format=format)
+        api['core']['users'] = reverse('user-list',
+                                       request=request,
+                                       format=format)
 
         api['admin'] = {
             'stacks': reverse('stack-admin-list',
@@ -100,6 +102,9 @@ def api_root(request, format=None):
             'volumes': reverse('volume-admin-list',
                                request=request,
                                format=format),
+            'snapshots': reverse('snapshot-admin-list',
+                                 request=request,
+                                 format=format),
         }
 
     return Response(api)

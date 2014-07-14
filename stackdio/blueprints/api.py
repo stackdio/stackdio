@@ -99,8 +99,8 @@ class BlueprintDetailAPIView(PublicBlueprintMixin,
         blueprint = self.get_object()
 
         # Check ownership
-        if blueprint.owner != request.user:
-            raise BadRequest('Only the owner of a blueprint may delete it.')
+        # if blueprint.owner != request.user:
+        #     raise BadRequest('Only the owner of a blueprint may delete it.')
 
         # Check usage
         stacks = blueprint.stacks.all()

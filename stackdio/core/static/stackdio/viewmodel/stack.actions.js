@@ -129,7 +129,6 @@ function (Q, ko, $galaxy, StackActionStore, API) {
         };
 
         self.deleteAction = function (action, evt) {
-            console.log(action);
             $.ajax({
                 url: action.url,
                 type: 'DELETE',
