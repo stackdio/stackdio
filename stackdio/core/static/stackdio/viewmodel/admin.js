@@ -102,7 +102,7 @@ function (Q, settings, ko, bootbox, alerts, $galaxy) {
                     self.tableData(response.results);
                 },
                 error: function (response, status, error) {
-                    alerts.showMessage('#error', 'Unable to delete command', true, 7000);
+                    alerts.showMessage('#error', response.responseJSON.detail, true, 7000);
                 }
             });
         };

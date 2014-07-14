@@ -32,7 +32,7 @@ class VolumeAdminListAPIView(generics.ListAPIView):
     permission_classes = (permissions.IsAdminUser,)
 
     def get_queryset(self):
-        return self.model.object.all()
+        return self.model.objects.all()
 
 
 class VolumeDetailAPIView(generics.RetrieveAPIView):
