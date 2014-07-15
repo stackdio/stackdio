@@ -5,8 +5,10 @@ define([
     'bootbox',
     'util/alerts',
     'util/galaxy',
+    'api/api',
+    'model/models',
 ],
-function (Q, settings, ko, bootbox, alerts, $galaxy) {
+function (Q, settings, ko, bootbox, alerts, $galaxy, API, models) {
     var vm = function () {
         if (!settings.superuser) {
             $galaxy.transport('welcome');
@@ -24,7 +26,7 @@ function (Q, settings, ko, bootbox, alerts, $galaxy) {
                 url: settings.api.admin.stacks,
                 view_name: 'stack.detail',
                 param_name: 'stack',
-                fields: ['host_count'],
+                fields: ['Host Count'],
                 actions: ['Stop', 'Terminate', 'Start', 'Launch', 'Delete', 'Provision']
             },
             {
@@ -99,7 +101,23 @@ function (Q, settings, ko, bootbox, alerts, $galaxy) {
                     "Accept": "application/json",
                 },
                 success: function (response) {
-                    self.tableData(response.results);
+                    if (obj.title === 'Stacks') {
+                        var historyPromises = [];
+                        var stacks = [];
+
+                        response.results.forEach(function (stack) {
+                            historyPromises[historyPromises.length] = API.Stacks.getHistory(stack).then(function (stackWithHistory) {
+                                stacks[stacks.length] = new models.Stack().create(stackWithHistory);
+                                stacks[stacks.length-1]['Host Count'] = stacks[stacks.length-1].host_count;
+                            });
+                        });
+
+                        Q.all(historyPromises).then(function () {
+                            self.tableData(stacks);
+                        }).done();
+                    } else {
+                        self.tableData(response.results);
+                    }
                 },
                 error: function (response, status, error) {
                     alerts.showMessage('#error', response.responseJSON.detail, true, 7000);
@@ -187,8 +205,49 @@ function (Q, settings, ko, bootbox, alerts, $galaxy) {
             self.switchTab(self.selectedTab());
         };
 
+        // This builds the HTML for the stack history popover element
+        self.popoverBuilder = function (stack) {
+            return stack.fullHistory.map(function (h) {
+                var content = [];
+
+                content.push("<div class=\'dotted-border xxsmall-padding\'>");
+                content.push("<div");
+                if (h.level === 'ERROR') {
+                    content.push(" class='btn-danger'");
+
+                }
+                content.push('>');
+                content.push(h.status);
+                content.push('</div>');
+                content.push("<div class='grey'>");
+                content.push(moment(h.created).fromNow());
+                content.push('</div>');
+                content.push('</div>');
+
+                return content.join('');
+
+            }).join('');
+        };
+
         self.switchTab(self.tabs()[0]);
 
+    };
+
+    /*
+     *  ==================================================================================
+     *  C U S T O M   B I N D I N G S
+     *  ==================================================================================
+     */
+    ko.bindingHandlers.bootstrapPopover = {
+        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+            var options = valueAccessor();
+            var defaultOptions = {};
+            options = $.extend(true, {}, defaultOptions, options);
+            options.trigger = "click";
+            options.placement = "bottom";
+            options.html = true;
+            $(element).popover(options);
+        }
     };
 
     return new vm();

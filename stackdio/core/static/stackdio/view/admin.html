@@ -42,6 +42,9 @@
                                         <!-- ko foreach: selectedFields -->
                                         <th data-bind="text: $data"></th>
                                         <!-- /ko -->
+                                        <!-- ko if: $root.selectedTab().title === 'Stacks' -->
+                                        <th>Stack History</th>
+                                        <!-- /ko -->
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -51,7 +54,17 @@
                                         <td data-bind="text: title, click: $root.goToDetail"></td>
                                         <td data-bind="text: description, click: $root.goToDetail"></td>
                                         <!-- ko foreach: $root.selectedFields -->
-                                        <td data-bind="text: $parent[$data], click: $root.goToDetail"></td>
+                                        <td data-bind="text: $parent[$data]"></td>
+                                        <!-- /ko -->
+                                        <!-- ko if: $root.selectedTab().title === 'Stacks' -->
+                                        <td>
+                                            <span style="cursor: pointer; text-decoration:underline; color: #428bca;"
+                                                    data-bind="bootstrapPopover: {
+                                                        content: $root.popoverBuilder($data),
+                                                        title: 'Stack History'
+                                                    },
+                                                text: 'View (' + $data.fullHistory.length + ') messages'"></span>
+                                        </td>
                                         <!-- /ko -->
                                         <td>
                                             <div class="btn-group">
