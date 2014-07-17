@@ -267,7 +267,6 @@ def update_formula(formula_id):
         for component in changed_components:
             validate_component(formula, repodir, component)
 
-
         # Add the new components
         for component in added_components:
             title = component['title']

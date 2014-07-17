@@ -36,6 +36,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     owner = serializers.Field()
     components = FormulaComponentSerializer(many=True)
     properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
+    action = serializers.HyperlinkedIdentityField(view_name='formula-action')
 
     class Meta:
         model = models.Formula 
@@ -54,5 +55,6 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'modified',
             'status',
             'status_detail',
+            'action',
         )
 

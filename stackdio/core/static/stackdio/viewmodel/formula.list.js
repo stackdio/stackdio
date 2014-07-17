@@ -69,6 +69,15 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
                 })
         };
 
+        self.updateFormula = function (formula) {
+            API.Formulas.updateFromRepo(formula).then(function () {
+                alerts.showMessage('#success', 'Formula successfully updated from repository.', true);
+                FormulaStore.populate(true).then(function () {}).catch(function (err) { console.error(err); } ).done();
+            }).catch(function (error) {
+                alerts.showMessage('#error', 'There was an error while updating your formula. ' + error, true, 4000);
+            }).done();
+        };
+
         self.share = function (formula) {
             API.Formulas.update(formula).then(function () {
                 alerts.showMessage('#success', 'Formula successfully updated.', true);

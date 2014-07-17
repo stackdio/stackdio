@@ -116,6 +116,28 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             });
 
             return deferred.promise;
+        },
+        updateFromRepo: function (formula) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: formula.action,
+                type: 'POST',
+                data: JSON.stringify({action: 'update'}),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': stackdio.settings.csrftoken,
+                    'Accept': 'application/json'
+                },
+                success: function (data, status, response) {
+                    deferred.resolve();
+                },
+                error: function (request, status, error) {
+                    deferred.reject(JSON.parse(request.responseText).detail);
+                }
+            });
+
+            return deferred.promise;
         }
     }
 });
