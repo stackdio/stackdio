@@ -219,6 +219,7 @@ def update_formula(formula_id):
         # Check for added or changed components
         added_components = []
         changed_components = []
+        removed_components = []
 
         for component in components:
 
@@ -247,11 +248,7 @@ def update_formula(formula_id):
                     break
 
             if not exists:
-                formula.set_status(
-                    Formula.COMPLETE,
-                    'Formula could not be updated: a component was removed.  '
-                    'Your formula was not changed.')
-                return False
+                removed_components.append(old_component)
 
         # Everything was validated, update the database
         formula.title = formula_title
@@ -266,6 +263,19 @@ def update_formula(formula_id):
         # validate changed components
         for component in changed_components:
             validate_component(formula, repodir, component)
+
+        # Check to see if the removed components are used
+        for component in removed_components:
+            blueprint_hosts = component.blueprinthostformulacomponent_set.all()
+            if len(blueprint_hosts) is 0:
+                component.delete()
+            else:
+                formula.set_status(
+                    Formula.COMPLETE,
+                    'Formula could not be updated: a component that '
+                    'is used in a blueprint was removed.  '
+                    'Your formula was left unchanged.')
+                return False
 
         # Add the new components
         for component in added_components:
