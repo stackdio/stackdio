@@ -1,22 +1,23 @@
 import logging
+
 import yaml
-
-from django.http import Http404
-
 from rest_framework import (
     generics,
     parsers,
     permissions,
     status
 )
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest, ResourceConflict
+from core.permissions import (
+    AdminOrOwnerPermission,
+    IsAdminOrReadOnly,
+)
 from blueprints.serializers import BlueprintSerializer
-
 from . import models
 from . import serializers
+
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +160,13 @@ class SnapshotListAPIView(generics.ListCreateAPIView):
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
+class SnapshotAdminListAPIView(generics.ListAPIView):
+    model = models.Snapshot
+    serializer_class = serializers.SnapshotSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    queryset = model.objects.all()
+
+
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = models.Snapshot
     serializer_class = serializers.SnapshotSerializer
@@ -176,7 +184,7 @@ class CloudZoneDetailAPIView(generics.RetrieveAPIView):
 
 
 class SecurityGroupListAPIView(generics.ListCreateAPIView):
-    '''
+    """
     Lists and creates new security groups.
 
     ### GET
@@ -206,11 +214,16 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                     provider, is set to automatically be added
                     to all hosts launched on the provider. **NOTE**
                     this property may only be set by an admin.
-    '''
+    """
 
     model = models.SecurityGroup
     serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
+
+    # Only admins may create security groups directly. Regular users
+    # are restricted to using automatically managed security groups
+    # on stacks
+    permission_classes = (IsAdminOrReadOnly,)
 
     def get_queryset(self):
         # if admin, get them all
@@ -223,12 +236,6 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
     # TODO: Ignore code complexity issues
     def create(self, request, *args, **kwargs):  # NOQA
-        # Only admins may create security groups directly. Regular users
-        # are restricted to using automatically managed security groups
-        # on stacks
-        if not request.user.is_superuser:
-            raise PermissionDenied()
-
         name = request.DATA.get('name')
         group_id = request.DATA.get('group_id')
         description = request.DATA.get('description')
@@ -264,13 +271,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                 logger.debug('Security group already exists on the '
                              'provider: {0!r}'.format(provider_group))
 
-                # only admins are allowed to use an existing security group
-                # for security purposes
-                if not owner.is_superuser:
-                    raise PermissionDenied(
-                        'Security group already exists on the cloud provider '
-                        'and only admins are allowed to import them.')
-            except (KeyError, PermissionDenied):
+            except (KeyError):
                 raise
             except Exception:
                 # doesn't exist on the provider either, we'll create it now
@@ -308,7 +309,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
 
 class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    '''
+    """
     Shows the detail for a security group and allows for the is_default
     flag to be modified (for admins only.)
 
@@ -331,29 +332,20 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     group is currently being used, then it can not be removed. You
     must first terminate all machines depending on the security group
     and then delete it.
-    '''
+    """
 
     model = models.SecurityGroup
     serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
-
-    def get_object(self):
-        kwargs = {'pk': self.kwargs[self.lookup_field]}
-        if not self.request.user.is_superuser:
-            kwargs['owner'] = self.request.user
-
-        try:
-            return self.model.objects.get(**kwargs)
-        except self.model.DoesNotExist:
-            raise Http404()
+    # Only admins are allowed write access
+    permission_classes = (permissions.IsAuthenticated,
+                          IsAdminOrReadOnly,
+                          AdminOrOwnerPermission,)
 
     def update(self, request, *args, **kwargs):
-        '''
+        """
         Allow admins to update the is_default field on security groups.
-        '''
-        if not request.user.is_superuser:
-            raise PermissionDenied('Only admins are allowed to update '
-                                   'security groups.')
+        """
 
         if 'is_default' not in request.DATA:
             raise BadRequest('is_default is the only field allowed to be '
@@ -378,11 +370,6 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
-        # Only admins may delete security groups directly. Regular users
-        # are restricted to using automatically managed security groups
-        # on stacks
-        if not request.user.is_superuser:
-            raise PermissionDenied()
 
         sg = self.get_object()
 
@@ -410,7 +397,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
-    '''
+    """
     ### PUT
 
     Authorizes or revokes a rule for the security group. The rule
@@ -452,11 +439,13 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
     To revoke either of the rules above, you would just change the `action`
     field's value to be "revoke"
-    '''
+    """
 
     model = models.SecurityGroup
     serializer_class = serializers.SecurityGroupRuleSerializer
     parser_classes = (parsers.JSONParser,)
+    permission_classes = (permissions.IsAuthenticated,
+                          AdminOrOwnerPermission,)
 
     def retrieve(self, request, *args, **kwargs):
         sg = self.get_object()
@@ -514,7 +503,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
 
 class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
-    '''
+    """
     Like the standard, top-level Security Group List API, this API will allow
     you to create and pull security groups. The only significant difference is
     that GET requests will only return security groups associated with the
@@ -529,7 +518,7 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
     as "default" groups to be attached to all hosts started using this provider
 
     See the standard, top-level Security Group API for further information.
-    '''
+    """
 
     def get_provider(self):
         pk = self.kwargs[self.lookup_field]
@@ -577,8 +566,8 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
 
 
 class CloudProviderVPCSubnetListAPIView(generics.ListAPIView):
-    '''
-    '''
+    """
+    """
 
     def get_provider(self):
         pk = self.kwargs[self.lookup_field]

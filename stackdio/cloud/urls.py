@@ -53,6 +53,10 @@ urlpatterns = patterns(
         api.SnapshotDetailAPIView.as_view(),
         name='snapshot-detail'),
 
+    url(r'admin/snapshots/$',
+        api.SnapshotAdminListAPIView.as_view(),
+        name='snapshot-admin-list'),
+
     url(r'^zones/$',
         api.CloudZoneListAPIView.as_view(),
         name='cloudzone-list'),

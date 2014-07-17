@@ -1,14 +1,12 @@
 import logging
 
-from django.db.models import Q
-from django.shortcuts import get_object_or_404
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 
 from core.exceptions import BadRequest
+from core.permissions import AdminOrOwnerOrPublicPermission
 from blueprints.serializers import BlueprintSerializer
-
 from . import tasks
 from . import serializers
 from . import models
@@ -83,30 +81,28 @@ class FormulaPublicAPIView(generics.ListAPIView):
             .exclude(owner=self.request.user)
 
 
+class FormulaAdminListAPIView(generics.ListAPIView):
+    model = models.Formula
+    serializer_class = serializers.FormulaSerializer
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_queryset(self):
+        return self.model.objects.all()
+
+
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
-
-    def get_object(self):
-        '''
-        Return the formula if it's owned by the request user or
-        if it's public...else we'll raise a 404
-        '''
-        return get_object_or_404(self.model,
-                                 Q(owner=self.request.user) | Q(public=True),
-                                 pk=self.kwargs.get('pk'))
+    permission_classes = (permissions.IsAuthenticated,
+                          AdminOrOwnerOrPublicPermission,)
 
     def update(self, request, *args, **kwargs):
-        '''
+        """
         Override PUT requests to only allow the public field to be changed.
-        '''
+        """
         formula = self.get_object()
-
-        # Only the owner can submit PUT/PATCH requests
-        if formula.owner != request.user:
-            raise BadRequest('Only the owner of a formula may modify it.')
 
         public = request.DATA.get('public', None)
         if public is None or len(request.DATA) > 1:
@@ -123,20 +119,17 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return Response(self.get_serializer(formula).data)
 
     def delete(self, request, *args, **kwargs):
-        '''
+        """
         Override the delete method to check for ownership and prvent
         delete if other resources depend on this formula or one
         of its components.
-        '''
+        """
         formula = self.get_object()
-        if formula.owner != request.user:
-            raise BadRequest('Only the owner of a formula may delete it.')
 
         # Check for Blueprints depending on this formula
         blueprints = set()
         for c in formula.components.all():
-            blueprints.update([i.host.blueprint
-                               for i in c.blueprinthostformulacomponent_set.all()])
+            blueprints.update([i.host.blueprint for i in c.blueprinthostformulacomponent_set.all()])
 
         if blueprints:
             blueprints = BlueprintSerializer(blueprints,
@@ -156,15 +149,8 @@ class FormulaPropertiesAPIView(generics.RetrieveAPIView):
 
     model = models.Formula
     serializer_class = serializers.FormulaPropertiesSerializer
-
-    def get_object(self):
-        '''
-        Return the formula if it's owned by the request user or
-        if it's public...else we'll raise a 404
-        '''
-        return get_object_or_404(self.model,
-                                 Q(owner=self.request.user) | Q(public=True),
-                                 pk=self.kwargs.get('pk'))
+    permission_classes = (permissions.IsAuthenticated,
+                          AdminOrOwnerOrPublicPermission,)
 
 
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -172,8 +158,5 @@ class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     model = models.FormulaComponent
     serializer_class = serializers.FormulaComponentSerializer
     parser_classes = (JSONParser,)
-
-    def get_object(self):
-        return get_object_or_404(self.model,
-                                 pk=self.kwargs.get('pk'),
-                                 formula__owner=self.request.user)
+    permission_classes = (permissions.IsAuthenticated,
+                          AdminOrOwnerOrPublicPermission,)

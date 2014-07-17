@@ -75,15 +75,36 @@ def api_root(request, format=None):
             'formulas': reverse('formula-list',
                                 request=request,
                                 format=format),
+            'public_formulas': reverse('formula-public-list',
+                                       request=request,
+                                       format=format)
         },
         'search': reverse('search',
                           request=request,
                           format=format),
     }
 
-    if request.user.is_superuser:
-        api['core'] = {
-            'users': reverse('user-list', request=request, format=format),
+    if request.user.is_staff:
+        api['core']['users'] = reverse('user-list',
+                                       request=request,
+                                       format=format)
+
+        api['admin'] = {
+            'stacks': reverse('stack-admin-list',
+                              request=request,
+                              format=format),
+            'blueprints': reverse('blueprint-admin-list',
+                                  request=request,
+                                  format=format),
+            'formulas': reverse('formula-admin-list',
+                                request=request,
+                                format=format),
+            'volumes': reverse('volume-admin-list',
+                               request=request,
+                               format=format),
+            'snapshots': reverse('snapshot-admin-list',
+                                 request=request,
+                                 format=format),
         }
 
     return Response(api)

@@ -1,0 +1,66 @@
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('stack.list'); }">Stacks</a></li>
+            <li data-bind="text: stackTitle"></li>
+        </ol>
+
+        <ul id="stack-tabs" class="nav nav-tabs">
+            <li><a id="detail" class="small-heading" data-bind="click: goToTab">Stack Details</a></li>
+            <li><a id="hosts" class="small-heading" data-bind="click: goToTab">Stack Hosts</a></li>
+            <li><a id="accessrules" class="small-heading" data-bind="click: goToTab">Stack Access Rules</a></li>
+            <li class="active"><a id="actions" class="small-heading" data-bind="click: goToTab">Stack Actions</a></li>
+            <li><a id="logs" class="small-heading"  data-bind="click: goToTab">Stack Logs</a></li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane active">
+                <br>
+                <form class="form-inline" id="action-form" role="form" data-bind="submit: $root.runAction">
+                    <div class="row">
+                        <div class="form-group col-md-2">
+                            <label class="sr-only" for="host_target">Host Target</label>
+                            <input type="text" class="form-control" id="host_target" placeholder="Host Target" data-bind="value: $root.actionFormTarget, valueUpdate: 'keyup'">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label class="sr-only" for="command">Command</label>
+                            <input type="text" class="form-control" id="command" placeholder="Command" data-bind="value: $root.actionFormCommand, valueUpdate: 'keyup'">
+                        </div>
+                        <div class="col-md-4">
+                          <button type="submit" class="btn btn-info"><span class="fa fa-play"></span>&nbsp;&nbsp;Run</button>
+                          <button class="btn btn-success" data-bind="click: $root.refreshActions"><span class="fa fa-refresh"></span>&nbsp;&nbsp;Refresh</button>
+                      </div>
+                    </div>
+                </form>
+                <br>
+                <div class="row">
+                    <div class="col-md-12">
+                        <table id="stack-access" class="table table-condensed table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Host Target</th>
+                                    <th>Command</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody data-bind="foreach: StackActionStore.collection">
+                                <tr>
+                                    <td data-bind="text: $data.host_target, click: $root.goToAction"></td>
+                                    <td data-bind="text: $data.command, click: $root.goToAction"></td>
+                                    <td>
+                                        <span data-bind="text:status, attr: {class: 'label label-'+$root.getStatusType(status)}, click: $root.goToAction"></span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-xs btn-info" data-bind="click: $root.runActionAgain">Run Again</button>
+                                        <button class="btn btn-xs btn-danger" data-bind="click: $root.deleteAction">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

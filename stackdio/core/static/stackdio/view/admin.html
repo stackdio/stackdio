@@ -1,0 +1,90 @@
+<div id="admin-binding-target">
+    <div class="view">
+
+        <div class="row bottom-separation">
+            <div class="col-xs-4 col-sm-4 col-md-4 large-heading">Admin</div>
+            <div class="col-xs-4 col-sm-4 col-md-4 col-md-offset-4 col-sm-offset-4 col-xs-offset-4">
+                <div class="small-top-separation pull-right">
+                    <button class="btn btn-success" data-bind="click: refresh">
+                      <span class="fa fa-refresh">&nbsp;</span>
+                      Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                This is the admin page.  From here, you can manage the resources of all users.
+            </div>
+        </div>
+
+        <br />
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-2">
+                    <ul class="nav nav-pills nav-stacked" data-bind="foreach: tabs">
+                        <li data-bind="attr: {class: $root.selectedTab() === $data ? 'active' : ''}">
+                            <a data-bind="text: title, click: $root.switchTab"></a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-10">
+
+                    <div class="tab-content">
+                        <div class="tab-pane active">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Owner</th>
+                                        <th>Title</th>
+                                        <th>Description</th>
+                                        <!-- ko foreach: selectedFields -->
+                                        <th data-bind="text: $data"></th>
+                                        <!-- /ko -->
+                                        <!-- ko if: $root.selectedTab().title === 'Stacks' -->
+                                        <th>Stack History</th>
+                                        <!-- /ko -->
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody data-bind="foreach: tableData">
+                                    <tr>
+                                        <td data-bind="text: owner, click: $root.goToDetail"></td>
+                                        <td data-bind="text: title, click: $root.goToDetail"></td>
+                                        <td data-bind="text: description, click: $root.goToDetail"></td>
+                                        <!-- ko foreach: $root.selectedFields -->
+                                        <td data-bind="text: $parent[$data]"></td>
+                                        <!-- /ko -->
+                                        <!-- ko if: $root.selectedTab().title === 'Stacks' -->
+                                        <td>
+                                            <span style="cursor: pointer; text-decoration:underline; color: #428bca;"
+                                                    data-bind="bootstrapPopover: {
+                                                        content: $root.popoverBuilder($data),
+                                                        title: 'Stack History'
+                                                    },
+                                                text: 'View (' + $data.fullHistory.length + ') messages'"></span>
+                                        </td>
+                                        <!-- /ko -->
+                                        <td>
+                                            <div class="btn-group">
+                                                <a class="btn btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+                                                    Action <span class="caret"></span>
+                                                </a>
+                                                <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: $root.actions">
+                                                    <li>
+                                                        <a href="#" data-bind="text:$data, click: function (data, event) { $root.doAction(data, event, $parent) }"></a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

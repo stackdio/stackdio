@@ -3,6 +3,7 @@ from django.conf.urls import patterns, include, url
 from .api import (
     VolumeListAPIView, 
     VolumeDetailAPIView,
+    VolumeAdminListAPIView,
 )
 
 urlpatterns = patterns('volumes.api',
@@ -15,6 +16,9 @@ urlpatterns = patterns('volumes.api',
         VolumeDetailAPIView.as_view(), 
         name='volume-detail'),
 
+    url(r'^admin/volumes/$',
+        VolumeAdminListAPIView.as_view(),
+        name='volume-admin-list'),
 )
 
 

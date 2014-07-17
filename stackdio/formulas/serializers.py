@@ -33,6 +33,7 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
 
 class FormulaSerializer(serializers.HyperlinkedModelSerializer):
 
+    owner = serializers.Field()
     components = FormulaComponentSerializer(many=True)
     properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
 
@@ -43,6 +44,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'url',
             'title',
             'description',
+            'owner',
             'public',
             'uri',
             'root_path',

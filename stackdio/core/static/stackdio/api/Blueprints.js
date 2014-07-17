@@ -22,6 +22,47 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise;
         },
+        getBlueprint: function (blueprintId) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: settings.api.blueprints.blueprints+blueprintId.toString()+'/',
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                success: function (blueprint) {
+                    deferred.resolve(blueprint);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
+                }
+            });
+
+            return deferred.promise;
+        },
+        getBlueprintFromUrl: function (blueprintUrl) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: blueprintUrl,
+                type: 'GET',
+                dataType: 'json',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                success: function (blueprint) {
+                    deferred.resolve(blueprint);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
+                }
+            });
+
+            return deferred.promise;
+
+        },
         getProperties: function (blueprint) {
             var deferred = Q.defer();
 

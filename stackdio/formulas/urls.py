@@ -24,7 +24,11 @@ urlpatterns = patterns('formulas.api',
     # List of publicly available formulas
     url(r'^formulas/public/$',
         api.FormulaPublicAPIView.as_view(), 
-        name='formula-public'),
+        name='formula-public-list'),
+
+    url(r'^admin/formulas/$',
+        api.FormulaAdminListAPIView.as_view(),
+        name='formula-admin-list'),
 )
 
 

@@ -33,3 +33,4 @@ stackdio/static
 
 # OSX
 .DS_Store
+.idea
