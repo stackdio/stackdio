@@ -17,6 +17,10 @@ urlpatterns = patterns('formulas.api',
         api.FormulaPropertiesAPIView.as_view(), 
         name='formula-properties'),
 
+    url(r'^formulas/(?P<pk>[0-9]+)/action/$',
+        api.FormulaActionAPIView.as_view(),
+        name='formula-action'),
+
     url(r'^formula_components/(?P<pk>[0-9]+)/$', 
         api.FormulaComponentDetailAPIView.as_view(), 
         name='formulacomponent-detail'),

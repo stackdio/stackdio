@@ -160,3 +160,36 @@ class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     parser_classes = (JSONParser,)
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission,)
+
+
+class FormulaActionAPIView(generics.SingleObjectAPIView):
+    model = models.Formula
+    serializer_class = serializers.FormulaSerializer
+    permission_classes = (permissions.IsAuthenticated,
+                          AdminOrOwnerOrPublicPermission)
+
+    AVAILABLE_ACTIONS = [
+        'update'
+    ]
+
+    def get(self, request, *args, **kwargs):
+        return Response({
+            'available_actions': self.AVAILABLE_ACTIONS
+        })
+
+    def post(self, request, *args, **kwargs):
+        formula = self.get_object()
+        action = request.DATA.get('action', None)
+
+        if not action:
+            raise BadRequest('action is a required parameter')
+
+        if action not in self.AVAILABLE_ACTIONS:
+            raise BadRequest('{0} is not an available action'.format(action))
+
+        if action == 'update':
+            formula.set_status(models.Formula.IMPORTING, 'Importing formula...this could take a while.')
+            tasks.update_formula.si(formula.id)()
+
+        return Response(self.get_serializer(formula).data)
+
