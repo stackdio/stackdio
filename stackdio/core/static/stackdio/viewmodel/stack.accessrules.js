@@ -17,6 +17,7 @@ function (Q, ko, $galaxy, formutils, StackSecurityGroupStore, API) {
         */
         self.selectedStack = ko.observable(null);
         self.stackTitle = ko.observable();
+        self.myIP = ko.observable();
 
         self.StackSecurityGroupStore = StackSecurityGroupStore;
         self.$galaxy = $galaxy;
@@ -56,6 +57,17 @@ function (Q, ko, $galaxy, formutils, StackSecurityGroupStore, API) {
         self.init = function (data) {
 
             if (data.hasOwnProperty('stack')) {
+                // Get IP addr
+                $.ajax({
+                    url: 'http://ipinfo.io/json',
+                    type: 'GET',
+                    success: function (info) {
+                        self.myIP(info.ip);
+                    },
+                    error: function (response, status, error) {
+                        console.log('Unable to get IP');
+                    }
+                });
 
                 API.Stacks.getStack(data.stack).then(function (stack) {
 
@@ -79,6 +91,10 @@ function (Q, ko, $galaxy, formutils, StackSecurityGroupStore, API) {
                     stack: self.selectedStack().id
                 }
             });
+        };
+
+        self.setMyIP = function (obj, evt) {
+            evt.target.parentNode[2].value = self.myIP()+'/32';
         };
  
         self.addRule = function (obj, evt) {
