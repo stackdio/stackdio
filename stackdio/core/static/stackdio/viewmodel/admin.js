@@ -90,9 +90,9 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, API, models) {
         */
 
         self.switchTab = function(obj, evt) {
-            self.selectedTab(obj);
-
+            
             self.tableData.removeAll();
+            self.selectedTab(obj);
 
             $.ajax({
                 url: obj.url,
@@ -113,10 +113,16 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, API, models) {
                         });
 
                         Q.all(historyPromises).then(function () {
-                            self.tableData(stacks);
+                            // Make sure the user hasn't clicked away from the current tab
+                            if (self.selectedTab() === obj) {
+                                self.tableData(stacks);
+                            }
                         }).done();
                     } else {
-                        self.tableData(response.results);
+                        // Make sure the user hasn't clicked away from the current tab
+                        if (self.selectedTab() === obj) {
+                            self.tableData(response.results);
+                        }
                     }
                 },
                 error: function (response, status, error) {
