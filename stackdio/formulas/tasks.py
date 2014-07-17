@@ -265,17 +265,22 @@ def update_formula(formula_id):
             validate_component(formula, repodir, component)
 
         # Check to see if the removed components are used
+        removal_errors = []
         for component in removed_components:
             blueprint_hosts = component.blueprinthostformulacomponent_set.all()
             if len(blueprint_hosts) is 0:
                 component.delete()
             else:
-                formula.set_status(
-                    Formula.COMPLETE,
-                    'Formula could not be updated: a component that '
-                    'is used in a blueprint was removed.  '
-                    'Your formula was left unchanged.')
-                return False
+                removal_errors.append(component.sls_path)
+
+        if len(removal_errors) is not 0:
+            errors = ', '.join(removal_errors)
+            formula.set_status(
+                Formula.COMPLETE,
+                'Formula could not be updated.  The following components '
+                'are used in blueprints: {0}.   '
+                'Your formula was left unchanged.'.format(errors))
+            return False
 
         # Add the new components
         for component in added_components:
