@@ -9,6 +9,9 @@ log_level: {{ salt_master_log_level }}
 fileserver_backend:
   - stackdio
   - roots
+  - minion
+
+file_recv: True
 
 file_roots:
   base:
