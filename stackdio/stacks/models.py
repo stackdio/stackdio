@@ -489,8 +489,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             ])
             volumes = host.volumes.all()
 
-            fqdn = '{0}.{1}'.format(host.hostname,
-                                    cloud_provider_yaml['append_domain'])
+            domain = cloud_provider_yaml['append_domain']
+            fqdn = '{0}.{1}'.format(host.hostname, domain)
 
             # The volumes will be defined on the map as well as in the grains.
             # Those in the map are used by salt-cloud to create and attach
@@ -533,6 +533,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                             'roles': roles,
                             'stack_id': int(self.pk),
                             'fqdn': fqdn,
+                            'domain': domain,
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
                             'volumes': map_volumes,
@@ -608,7 +609,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         overstate = {}
         for order in sorted(groups.keys()):
-            for role in groups[order]:    
+            for role in groups[order]:
                 overstate[role] = {
                     'match': _matcher([role]),
                     'sls': list([role]),
