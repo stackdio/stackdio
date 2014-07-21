@@ -6,16 +6,6 @@ set_hostname:
     - name: "hostname {{ grains['fqdn'] }}"
     - unless: "hostname | grep {{ grains['fqdn'] }}"
 
-# Add a mapping to FQDN from local IP address
-append_fqdn_etc_hosts:
-  file:
-    - append
-    - order: 1
-    - name: /etc/hosts
-    - text: "{{ grains['ip_interfaces']['eth0'][0] }} {{ grains['fqdn'] }}"
-  require:
-    - cmd: set_hostname
-
 {% if grains['os_family'] == 'Debian' %}
 /etc/hostname:
   file:
