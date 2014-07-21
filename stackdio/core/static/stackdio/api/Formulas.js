@@ -24,13 +24,17 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise;
         },
-        import: function (uri) {
+        import: function (uri, git_username, git_password) {
             var deferred = Q.defer();
 
             $.ajax({
                 url: settings.api.formulas.formulas,
                 type: 'POST',
-                data: JSON.stringify({uri: uri}),
+                data: JSON.stringify({
+                    uri: uri,
+                    git_username: git_username,
+                    git_password: git_password
+                }),
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': stackdio.settings.csrftoken,
@@ -123,7 +127,10 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             $.ajax({
                 url: formula.action,
                 type: 'POST',
-                data: JSON.stringify({action: 'update'}),
+                data: JSON.stringify({
+                    action: 'update',
+                    git_password: formula.git_password
+                }),
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': stackdio.settings.csrftoken,

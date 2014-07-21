@@ -56,6 +56,7 @@ define(function () {
                             break;
                         case 'hidden':
                         case 'text':
+                        case 'password':
                             if (item.files === null) {
                                 form[id].text = item.text;
                                 form[id].value = item.value;

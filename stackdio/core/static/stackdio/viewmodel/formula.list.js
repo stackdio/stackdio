@@ -70,6 +70,34 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
         };
 
         self.updateFormula = function (formula) {
+            if (formula.private_git_repo) {
+                bootbox.dialog({
+                    title: "Enter your git password",
+                    message: '<form class="bootbox-form"><input class="bootbox-input bootbox-input-text form-control" autocomplete="off" type="password" id="git_password"></form>',
+                    buttons: {
+                        cancel: {
+                            label: "Cancel",
+                            className: "btn-default",
+                            callback: function () {
+                                // Do nothing
+                            }
+                        },
+                        success: {
+                            label: "OK",
+                            className: "btn-primary",
+                            callback: function () {
+                                formula.git_password = $('#git_password').val();
+                                self.doUpdate(formula);
+                            }
+                        }
+                    }
+                });
+            } else {
+                self.doUpdate(formula);
+            }
+        };
+
+        self.doUpdate = function (formula) {
             API.Formulas.updateFromRepo(formula).then(function () {
                 alerts.showMessage('#success', 'Formula successfully updated from repository.', true);
                 FormulaStore.populate(true).then(function () {}).catch(function (err) { console.error(err); } ).done();
