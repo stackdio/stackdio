@@ -1,4 +1,5 @@
 import logging
+from urlparse import urlsplit, urlunsplit
 
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
@@ -11,6 +12,7 @@ from . import tasks
 from . import serializers
 from . import models
 from . import filters
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,8 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         uri = request.DATA.get('uri', '')
         formulas = request.DATA.get('formulas', [])
         public = request.DATA.get('public', False)
+        git_username = request.DATA.get('git_username', '')
+        git_password = request.DATA.get('git_password', '')
 
         if not uri and not formulas:
             raise BadRequest('A uri field or a list of URIs in the formulas '
@@ -56,15 +60,29 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         # create the object in the database and kick off a task
         formula_objs = []
         for uri in formulas:
+            if git_username != '':
+                # Add the git username to the uri if necessary
+                parse_res = urlsplit(uri)
+                if '@' not in parse_res.netloc:
+                    new_netloc = '{0}@{1}'.format(git_username, parse_res.netloc)
+                    uri = urlunsplit((
+                        parse_res.scheme,
+                        new_netloc,
+                        parse_res.path,
+                        parse_res.query,
+                        parse_res.fragment
+                    ))
+
             formula_obj = self.model.objects.create(
                 owner=request.user,
                 public=public,
                 uri=uri,
+                git_username=git_username,
                 status=self.model.IMPORTING,
                 status_detail='Importing formula...this could take a while.')
 
             # Import using asynchronous task
-            tasks.import_formula.si(formula_obj.id)()
+            tasks.import_formula.si(formula_obj.id, git_password)()
             formula_objs.append(formula_obj)
 
         return Response(self.get_serializer(formula_objs, many=True).data)
@@ -180,6 +198,7 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
     def post(self, request, *args, **kwargs):
         formula = self.get_object()
         action = request.DATA.get('action', None)
+        git_password = request.DATA.get('git_password', '')
 
         if not action:
             raise BadRequest('action is a required parameter')
@@ -187,9 +206,12 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
         if action not in self.AVAILABLE_ACTIONS:
             raise BadRequest('{0} is not an available action'.format(action))
 
+        if formula.private_git_repo and git_password == '':
+            raise BadRequest('Your git password is required to update from a private repository.')
+
         if action == 'update':
             formula.set_status(models.Formula.IMPORTING, 'Importing formula...this could take a while.')
-            tasks.update_formula.si(formula.id)()
+            tasks.update_formula.si(formula.id, git_password)()
 
         return Response(self.get_serializer(formula).data)
 

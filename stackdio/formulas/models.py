@@ -120,6 +120,8 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     # root path of where this formula exists
     root_path = models.CharField(max_length=64)
 
+    git_username = models.CharField(max_length=64, blank=True)
+
     def __unicode__(self):
         return '{0} ({1})'.format(self.title, self.owner.username)
 
@@ -130,6 +132,10 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     def get_repo_name(self):
         return splitext(split(self.uri)[-1])[0]
+
+    @property
+    def private_git_repo(self):
+        return self.git_username != ''
 
     @property
     def properties(self):

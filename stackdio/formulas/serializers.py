@@ -37,6 +37,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     components = FormulaComponentSerializer(many=True)
     properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
     action = serializers.HyperlinkedIdentityField(view_name='formula-action')
+    private_git_repo = serializers.Field()
 
     class Meta:
         model = models.Formula 
@@ -47,6 +48,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'owner',
             'public',
+            'private_git_repo',
             'uri',
             'root_path',
             'properties',
