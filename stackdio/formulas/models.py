@@ -4,7 +4,7 @@ from os.path import join, isdir, split, splitext
 from shutil import rmtree
 
 import yaml
-
+import keyring
 from django.conf import settings
 from django.db import models
 from django.db import transaction
@@ -120,6 +120,8 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     # root path of where this formula exists
     root_path = models.CharField(max_length=64)
 
+    git_username = models.CharField(max_length=64, blank=True)
+
     def __unicode__(self):
         return '{0} ({1})'.format(self.title, self.owner.username)
 
@@ -130,6 +132,22 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     def get_repo_name(self):
         return splitext(split(self.uri)[-1])[0]
+
+    @property
+    def private_git_repo(self):
+        return self.git_username != ''
+
+    @property
+    def git_password_stored(self):
+        if keyring.get_password(self.uri, self.git_username) is not None:
+            return True
+        else:
+            return False
+
+    def remove_password(self):
+        if self.git_password_stored:
+            # Remove the password from the keyring if it's there
+            keyring.delete_password(self.uri, self.git_username)
 
     @property
     def properties(self):
@@ -167,6 +185,9 @@ def cleanup_formula(sender, instance, **kwargs):
     Utility method to clean up the cloned formula repository when
     the formula is deleted.
     '''
+
+    instance.remove_password()
+
     repo_dir = instance.get_repo_dir()
     logger.debug('cleanup_formula called. Path to remove: {0}'.format(repo_dir))
     if isdir(repo_dir):

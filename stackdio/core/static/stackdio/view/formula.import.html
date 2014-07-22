@@ -16,9 +16,35 @@
                 <div class="form-group">
                     <input type="text" class="form-control" id="formula_url" placeholder="Enter repository URL...">
                 </div>
+
+                <label>Git username/password required for private repositories only.&nbsp;&nbsp;Your password will NOT be stored unless you would like it to be.</label>
+                <div class="row">
+                    <div class="col-md-5 col-lg-3">
+                        <div class="form-group">
+                            <label for="git_username" class="sr-only">Git username required for private repositories only</label>
+                            <input type="text" class="form-control" id="git_username" placeholder="Git username">
+                        </div>
+                    </div>
+                    <div class="col-md-5 col-lg-3">
+                        <div class="form-group">
+                            <label for="git_password" class="sr-only">Git password required for private repositories only</label>
+                            <input type="password" class="form-control" id="git_password" placeholder="Git password">
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-lg-3">
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" id="save_git_password">Save password?
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="section-synopsis">
+                    <p>Tip: If using GitHub, you can generate a personal access token in your user settings and use it as the username with a blank password.&nbsp;&nbsp;Be sure to check the save password box when using this option.</p>
+                </div>
             </div>
 
-            <div class="modal-footer" style="margin-top: 40px;">
+            <div class="section-synopsis" style="margin-top: 40px;">
                 <button class="btn btn-danger" data-bind="click: $root.cancelChanges">Cancel</button>
                 <button class="btn btn-primary" data-bind="click: $root.importFormula">Import</button>
             </div>

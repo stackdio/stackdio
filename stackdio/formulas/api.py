@@ -1,8 +1,10 @@
 import logging
+from urlparse import urlsplit, urlunsplit
 
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
+import keyring
 
 from core.exceptions import BadRequest
 from core.permissions import AdminOrOwnerOrPublicPermission
@@ -11,6 +13,7 @@ from . import tasks
 from . import serializers
 from . import models
 from . import filters
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +34,9 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         uri = request.DATA.get('uri', '')
         formulas = request.DATA.get('formulas', [])
         public = request.DATA.get('public', False)
+        git_username = request.DATA.get('git_username', '')
+        git_password = request.DATA.get('git_password', '')
+        save_git_password = request.DATA.get('save_git_password', False)
 
         if not uri and not formulas:
             raise BadRequest('A uri field or a list of URIs in the formulas '
@@ -56,15 +62,39 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         # create the object in the database and kick off a task
         formula_objs = []
         for uri in formulas:
+            if git_username != '':
+                # Add the git username to the uri if necessary
+                parse_res = urlsplit(uri)
+                if '@' not in parse_res.netloc:
+                    new_netloc = '{0}@{1}'.format(git_username, parse_res.netloc)
+                    uri = urlunsplit((
+                        parse_res.scheme,
+                        new_netloc,
+                        parse_res.path,
+                        parse_res.query,
+                        parse_res.fragment
+                    ))
+
+                # Store the password in the keyring if the user wishes
+                #   Use the uri as the service in case there are two accounts
+                #   with the same username and different passwords
+                #   (i.e.) github and bitbucket with the same username,
+                #       different pass
+                if save_git_password:
+                    keyring.set_password(uri,
+                                         git_username,
+                                         git_password)
+
             formula_obj = self.model.objects.create(
                 owner=request.user,
                 public=public,
                 uri=uri,
+                git_username=git_username,
                 status=self.model.IMPORTING,
                 status_detail='Importing formula...this could take a while.')
 
             # Import using asynchronous task
-            tasks.import_formula.si(formula_obj.id)()
+            tasks.import_formula.si(formula_obj.id, git_password)()
             formula_objs.append(formula_obj)
 
         return Response(self.get_serializer(formula_objs, many=True).data)
@@ -120,7 +150,7 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         """
-        Override the delete method to check for ownership and prvent
+        Override the delete method to check for ownership and prevent
         delete if other resources depend on this formula or one
         of its components.
         """
@@ -160,3 +190,53 @@ class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     parser_classes = (JSONParser,)
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission,)
+
+
+class FormulaActionAPIView(generics.SingleObjectAPIView):
+    model = models.Formula
+    serializer_class = serializers.FormulaSerializer
+    permission_classes = (permissions.IsAuthenticated,
+                          AdminOrOwnerOrPublicPermission)
+
+    AVAILABLE_ACTIONS = [
+        'update',
+        'remove_password',
+    ]
+
+    def get(self, request, *args, **kwargs):
+        return Response({
+            'available_actions': self.AVAILABLE_ACTIONS
+        })
+
+    def post(self, request, *args, **kwargs):
+        formula = self.get_object()
+        action = request.DATA.get('action', None)
+
+        if not action:
+            raise BadRequest('action is a required parameter')
+
+        if action not in self.AVAILABLE_ACTIONS:
+            raise BadRequest('{0} is not an available action'.format(action))
+
+        if action == 'update':
+            
+            git_password = request.DATA.get('git_password', '')
+            if formula.private_git_repo:
+                if not formula.git_password_stored:
+                    if git_password == '':
+                        # No password is stored and user didn't provide a password
+                        raise BadRequest('Your git password is required to '
+                                         'update from a private repository.')
+                else:
+                    git_password = keyring.get_password(formula.uri,
+                                                        formula.git_username)
+
+            formula.set_status(models.Formula.IMPORTING,
+                               'Importing formula...this could take a while.')
+            tasks.update_formula.si(formula.id, git_password)()
+
+        elif action == 'remove_password':
+            formula.remove_password()
+
+        return Response(self.get_serializer(formula).data)
+

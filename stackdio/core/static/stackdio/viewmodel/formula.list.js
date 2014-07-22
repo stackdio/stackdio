@@ -69,6 +69,43 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
                 })
         };
 
+        self.updateFormula = function (formula) {
+            if (formula.private_git_repo && !formula.git_password_stored) {
+                bootbox.dialog({
+                    title: "Enter your git password:",
+                    message: '<form class="bootbox-form"><input class="bootbox-input bootbox-input-text form-control" autocomplete="off" type="password" id="git_password"></form>',
+                    buttons: {
+                        cancel: {
+                            label: "Cancel",
+                            className: "btn-default",
+                            callback: function () {
+                                // Do nothing
+                            }
+                        },
+                        success: {
+                            label: "OK",
+                            className: "btn-primary",
+                            callback: function () {
+                                git_password = $('#git_password').val();
+                                self.doUpdate(formula, git_password);
+                            }
+                        }
+                    }
+                });
+            } else {
+                self.doUpdate(formula, '');
+            }
+        };
+
+        self.doUpdate = function (formula, git_password) {
+            API.Formulas.updateFromRepo(formula, git_password).then(function () {
+                alerts.showMessage('#success', 'Formula successfully updated from repository.', true);
+                FormulaStore.populate(true).then(function () {}).catch(function (err) { console.error(err); } ).done();
+            }).catch(function (error) {
+                alerts.showMessage('#error', 'There was an error while updating your formula. ' + error, true, 4000);
+            }).done();
+        };
+
         self.share = function (formula) {
             API.Formulas.update(formula).then(function () {
                 alerts.showMessage('#success', 'Formula successfully updated.', true);
@@ -109,6 +146,19 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
                 }
             });
         };
+
+        self.remove_password = function (formula) {
+            bootbox.confirm("Please confirm that you want to remove the password from this formula.", function (result) {
+                if (result) {
+                    API.Formulas.removePassword(formula).then(function () {
+                        alerts.showMessage('#success', 'Git password successfully removed.', true);
+                        self.loadFormula();
+                    }).catch(function (error) {
+                        alerts.showMessage('#error', 'Could not delete the password. ' + error, true, 4000);
+                    }).done()
+                }
+            });
+        }
 
         self.loadFormula = function () {
             FormulaStore.populate(true);
