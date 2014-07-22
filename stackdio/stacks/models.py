@@ -615,7 +615,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 }
                 depend = order - 1
                 while depend >= 0:
-                    if groups.has_key(depend):
+                    if depend in groups.keys():
                         overstate[role]['require'] = list(groups[depend])
                         break
                     depend -= 1

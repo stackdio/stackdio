@@ -199,7 +199,8 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
                           AdminOrOwnerOrPublicPermission)
 
     AVAILABLE_ACTIONS = [
-        'update'
+        'update',
+        'remove_password',
     ]
 
     def get(self, request, *args, **kwargs):
@@ -210,7 +211,6 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
     def post(self, request, *args, **kwargs):
         formula = self.get_object()
         action = request.DATA.get('action', None)
-        git_password = request.DATA.get('git_password', '')
 
         if not action:
             raise BadRequest('action is a required parameter')
@@ -218,16 +218,25 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
         if action not in self.AVAILABLE_ACTIONS:
             raise BadRequest('{0} is not an available action'.format(action))
 
-        if formula.private_git_repo:
-            if not formula.git_password_stored and git_password == '':
-                # No password is stored and user didn't provide a password
-                raise BadRequest('Your git password is required to update from a private repository.')
-            else:
-                git_password = keyring.get_password(formula.uri, formula.git_username)
-
         if action == 'update':
-            formula.set_status(models.Formula.IMPORTING, 'Importing formula...this could take a while.')
+            
+            git_password = request.DATA.get('git_password', '')
+            if formula.private_git_repo:
+                if not formula.git_password_stored:
+                    if git_password == '':
+                        # No password is stored and user didn't provide a password
+                        raise BadRequest('Your git password is required to '
+                                         'update from a private repository.')
+                else:
+                    git_password = keyring.get_password(formula.uri,
+                                                        formula.git_username)
+
+            formula.set_status(models.Formula.IMPORTING,
+                               'Importing formula...this could take a while.')
             tasks.update_formula.si(formula.id, git_password)()
+
+        elif action == 'remove_password':
+            formula.remove_password()
 
         return Response(self.get_serializer(formula).data)
 

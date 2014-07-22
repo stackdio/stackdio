@@ -327,9 +327,9 @@ def update_formula(formula_id, git_password):
 
         root_dir = formula.get_repo_dir()
 
-
         # Remove the old formula
-        shutil.rmtree(root_dir)
+        if os.path.isdir(root_dir):
+            shutil.rmtree(root_dir)
 
         # move the cloned formula repository to a location known by salt
         # so we can start using the states in this formula

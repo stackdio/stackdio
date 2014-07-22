@@ -144,6 +144,11 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         else:
             return False
 
+    def remove_password(self):
+        if self.git_password_stored:
+            # Remove the password from the keyring if it's there
+            keyring.delete_password(self.uri, self.git_username)
+
     @property
     def properties(self):
         with open(join(self.get_repo_dir(), 'SPECFILE')) as f:
@@ -180,9 +185,8 @@ def cleanup_formula(sender, instance, **kwargs):
     Utility method to clean up the cloned formula repository when
     the formula is deleted.
     '''
-    if instance.git_password_stored:
-        # Remove the password from the keyring if it's there
-        keyring.delete_password(instance.uri, instance.git_username)
+
+    instance.remove_password()
 
     repo_dir = instance.get_repo_dir()
     logger.debug('cleanup_formula called. Path to remove: {0}'.format(repo_dir))
