@@ -180,6 +180,10 @@ def cleanup_formula(sender, instance, **kwargs):
     Utility method to clean up the cloned formula repository when
     the formula is deleted.
     '''
+    if instance.git_password_stored:
+        # Remove the password from the keyring if it's there
+        keyring.delete_password(instance.uri, instance.git_username)
+
     repo_dir = instance.get_repo_dir()
     logger.debug('cleanup_formula called. Path to remove: {0}'.format(repo_dir))
     if isdir(repo_dir):
