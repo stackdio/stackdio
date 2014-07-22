@@ -3,14 +3,13 @@ from datetime import datetime
 from operator import or_
 from os import listdir
 from os.path import join, isfile
+import zipfile
+import StringIO
 
 import envoy
 import yaml
-import zipfile
-import StringIO
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
-
 from rest_framework import (
     generics,
     parsers,
@@ -21,11 +20,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 from rest_framework.decorators import api_view
+from django.conf import settings
 
 from core.exceptions import BadRequest
 from core.renderers import PlainTextRenderer
 from core.permissions import (
-    AdminOrOwnerPermission, 
+    AdminOrOwnerPermission,
     AdminOrOwnerOrPublicPermission,
 )
 from volumes.api import VolumeListAPIView
@@ -33,8 +33,8 @@ from volumes.models import Volume
 from blueprints.models import Blueprint, BlueprintHostDefinition
 from cloud.providers.base import BaseCloudProvider
 from cloud.models import SecurityGroup
-
 from . import tasks, models, serializers, filters, validators, workflows
+
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +214,45 @@ class StackListAPIView(generics.ListCreateAPIView):
                 errors.setdefault('duplicate_hostnames', []).extend(
                     [h.hostname for h in hosts]
                 )
+
+            # if errors:
+            #     raise BadRequest(errors)
+            #
+            # # query salt-cloud for duplicate hostnames on the provider
+            # cmd_args = [
+            #     'salt-cloud',
+            #     '--assume-yes',
+            #     '--log-level=quiet',        # no logging on console
+            #     # '--log-file={0}',           # where to log
+            #     # '--log-file-level=debug',   # full logging
+            #     '--config-dir={0}',         # salt config dir
+            #     '--out=yaml',               # return YAML formatted results
+            #     '-Q',
+            # ]
+            #
+            # cmd = ' '.join(cmd_args).format(
+            #     settings.STACKDIO_CONFIG.salt_config_root)
+            #
+            # logger.debug('Querying salt-cloud to find duplicate hosts')
+            # query_result = envoy.run(str(cmd))
+            #
+            # query_yaml = yaml.safe_load(query_result.std_out)
+            #
+            # # Since a blueprint can have multiple providers
+            # providers = set()
+            # for bhd in blueprint.host_definitions.all():
+            #     providers.add(bhd.cloud_profile.cloud_provider)
+            #
+            # # Check to find duplicates
+            # dups = []
+            # for provider in providers:
+            #     provider_type = provider.provider_type.type_name
+            #     for instance in query_yaml[provider.title][provider_type]:
+            #         if instance in hostnames:
+            #             dups.append(instance)
+            #
+            # if dups:
+            #     errors.setdefault('duplicate_hostnames', dups)
 
         if errors:
             raise BadRequest(errors)
