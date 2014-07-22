@@ -215,44 +215,44 @@ class StackListAPIView(generics.ListCreateAPIView):
                     [h.hostname for h in hosts]
                 )
 
-            # if errors:
-            #     raise BadRequest(errors)
-            #
-            # # query salt-cloud for duplicate hostnames on the provider
-            # cmd_args = [
-            #     'salt-cloud',
-            #     '--assume-yes',
-            #     '--log-level=quiet',        # no logging on console
-            #     # '--log-file={0}',           # where to log
-            #     # '--log-file-level=debug',   # full logging
-            #     '--config-dir={0}',         # salt config dir
-            #     '--out=yaml',               # return YAML formatted results
-            #     '-Q',
-            # ]
-            #
-            # cmd = ' '.join(cmd_args).format(
-            #     settings.STACKDIO_CONFIG.salt_config_root)
-            #
-            # logger.debug('Querying salt-cloud to find duplicate hosts')
-            # query_result = envoy.run(str(cmd))
-            #
-            # query_yaml = yaml.safe_load(query_result.std_out)
-            #
-            # # Since a blueprint can have multiple providers
-            # providers = set()
-            # for bhd in blueprint.host_definitions.all():
-            #     providers.add(bhd.cloud_profile.cloud_provider)
-            #
-            # # Check to find duplicates
-            # dups = []
-            # for provider in providers:
-            #     provider_type = provider.provider_type.type_name
-            #     for instance in query_yaml[provider.title][provider_type]:
-            #         if instance in hostnames:
-            #             dups.append(instance)
-            #
-            # if dups:
-            #     errors.setdefault('duplicate_hostnames', dups)
+            if errors:
+                raise BadRequest(errors)
+
+            # query salt-cloud for duplicate hostnames on the provider
+            cmd_args = [
+                'salt-cloud',
+                '--assume-yes',
+                '--log-level=quiet',        # no logging on console
+                # '--log-file={0}',           # where to log
+                # '--log-file-level=debug',   # full logging
+                '--config-dir={0}',         # salt config dir
+                '--out=yaml',               # return YAML formatted results
+                '-Q',
+            ]
+
+            cmd = ' '.join(cmd_args).format(
+                settings.STACKDIO_CONFIG.salt_config_root)
+
+            logger.debug('Querying salt-cloud to find duplicate hosts')
+            query_result = envoy.run(str(cmd))
+
+            query_yaml = yaml.safe_load(query_result.std_out)
+
+            # Since a blueprint can have multiple providers
+            providers = set()
+            for bhd in blueprint.host_definitions.all():
+                providers.add(bhd.cloud_profile.cloud_provider)
+
+            # Check to find duplicates
+            dups = []
+            for provider in providers:
+                provider_type = provider.provider_type.type_name
+                for instance in query_yaml[provider.title][provider_type]:
+                    if instance in hostnames:
+                        dups.append(instance)
+
+            if dups:
+                errors.setdefault('duplicate_hostnames', dups)
 
         if errors:
             raise BadRequest(errors)
