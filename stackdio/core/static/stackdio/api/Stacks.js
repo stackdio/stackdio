@@ -187,7 +187,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 });
             },
             error: function (request, status, error) {
-                deferred.reject(new Error(error));
+                deferred.reject(JSON.parse(request.responseText).detail);
             }
         });
 

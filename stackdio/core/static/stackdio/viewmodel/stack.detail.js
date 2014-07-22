@@ -2,9 +2,10 @@ define([
     'q', 
     'knockout',
     'util/galaxy',
+    'util/alerts',
     'api/api'
 ],
-function (Q, ko, $galaxy, API) {
+function (Q, ko, $galaxy, alerts, API) {
     var vm = function () {
         var self = this;
 
@@ -209,10 +210,14 @@ function (Q, ko, $galaxy, API) {
                 stack.properties = JSON.parse(self.stackPropertiesStringified());
             }
 
-            console.log(stack);
+            //console.log(stack);
             API.Stacks.save(stack).then(function (newStack) {
+                alerts.showMessage('#success', 'Stack creation started.', true);
                 $galaxy.transport('stack.list');
-            });
+            }).catch(function (error) {
+                console.log(error);
+                alerts.showMessage('#error', 'Error creating stack: ' + error, true, 4000);
+            }).done()
         };
 
         self.cancelChanges = function (a, evt) {

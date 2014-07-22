@@ -227,7 +227,7 @@ class StackListAPIView(generics.ListCreateAPIView):
                 # '--log-file-level=debug',   # full logging
                 '--config-dir={0}',         # salt config dir
                 '--out=yaml',               # return YAML formatted results
-                '-Q',
+                '-Q',                       # Query for information
             ]
 
             cmd = ' '.join(cmd_args).format(
