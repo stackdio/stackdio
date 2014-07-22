@@ -4,7 +4,7 @@ from os.path import join, isdir, split, splitext
 from shutil import rmtree
 
 import yaml
-
+import keyring
 from django.conf import settings
 from django.db import models
 from django.db import transaction
@@ -136,6 +136,13 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     @property
     def private_git_repo(self):
         return self.git_username != ''
+
+    @property
+    def git_password_stored(self):
+        if keyring.get_password(self.uri, self.git_username) is not None:
+            return True
+        else:
+            return False
 
     @property
     def properties(self):

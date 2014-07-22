@@ -24,7 +24,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise;
         },
-        import: function (uri, git_username, git_password) {
+        import: function (uri, git_username, git_password, save_git_password) {
             var deferred = Q.defer();
 
             $.ajax({
@@ -33,7 +33,8 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 data: JSON.stringify({
                     uri: uri,
                     git_username: git_username,
-                    git_password: git_password
+                    git_password: git_password,
+                    save_git_password: save_git_password
                 }),
                 headers: {
                     'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise;
         },
-        updateFromRepo: function (formula) {
+        updateFromRepo: function (formula, git_password) {
             var deferred = Q.defer();
 
             $.ajax({
@@ -129,7 +130,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 type: 'POST',
                 data: JSON.stringify({
                     action: 'update',
-                    git_password: formula.git_password
+                    git_password: git_password
                 }),
                 headers: {
                     'Content-Type': 'application/json',
