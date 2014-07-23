@@ -99,8 +99,8 @@ class StackManager(models.Manager):
 
     @transaction.commit_on_success
     def create_stack(self, owner, blueprint, **data):
-        '''
-        '''
+        """
+        """
         title = data.get('title', '')
         description = data.get('description', '')
         public = data.get('public', False)
@@ -168,6 +168,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
     class Meta:
         unique_together = ('owner', 'title')
+        ordering = ('title',)
 
     # The "owner" of the stack and all of its infrastructure
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
@@ -242,7 +243,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         self.history.create(event=event, status=status, level=level)
 
     def get_driver_hosts_map(self, host_ids=None):
-        '''
+        """
         Stacks are comprised of multiple hosts. Each host may be
         located in different cloud providers. This method returns
         a map of the underlying driver implementation and the hosts
@@ -252,7 +253,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             we're interested in
         @returns (dict); each key is a provider driver implementation
             with QuerySet value for the matching host objects
-        '''
+        """
         hosts = self.get_hosts(host_ids)
         providers = {}
         for h in hosts:
@@ -267,12 +268,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return result
 
     def get_hosts(self, host_ids=None):
-        '''
+        """
         Quick way of getting all hosts or a subset for this stack.
 
         @host_ids (list); list of primary keys of hosts in this stack
         @returns (QuerySet);
-        '''
+        """
         if not host_ids:
             return self.hosts.all()
         return self.hosts.filter(id__in=host_ids)
@@ -338,7 +339,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             )
 
     def create_hosts(self, host_definition=None, count=None, backfill=False):
-        '''
+        """
         Creates host objects on this Stack. If no arguments are given, then
         all hosts available based on the Stack's blueprint host definitions
         will be created. If args are given, then only the `count` for the
@@ -353,7 +354,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             hostnames that fill in any gaps if necessary. If False, then
             hostnames will start at the end of the host list. This is only
             used when `host_definition` and `count` arguments are provided.
-        '''
+        """
 
         created_hosts = []
 
@@ -644,7 +645,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # the overstate dict
         groups = {}
         for c in components:
-            '''
+            """
             {
                 order_0: {
                     host_0: [sls, sls, ...],
@@ -656,7 +657,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 }
                 ...
             }
-            '''
+            """
             groups.setdefault(
                 c.order, {}
             ).setdefault(
@@ -733,9 +734,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 f.write(pillar_file_yaml)
 
     def query_hosts(self):
-        '''
+        """
         Uses salt-cloud to query all the hosts for the given stack id.
-        '''
+        """
         try:
             if not self.map_file:
                 return {}
