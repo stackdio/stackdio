@@ -210,15 +210,17 @@ class StackListAPIView(generics.ListCreateAPIView):
                 username=request.user.username,
                 namespace=namespace)
 
-            # # query for existing host names
-            # hosts = models.Host.objects.filter(hostname__in=hostnames)
-            # if hosts.count():
-            #     errors.setdefault('duplicate_hostnames', []).extend(
-            #         [h.hostname for h in hosts]
-            #     )
-            #
-            # if errors:
-            #     raise BadRequest(errors)
+            # query for existing host names
+            # Leave this in so that we catch errors faster if they are local,
+            #    Only hit up salt cloud if there are no duplicates locally
+            hosts = models.Host.objects.filter(hostname__in=hostnames)
+            if hosts.count():
+                errors.setdefault('duplicate_hostnames', []).extend(
+                    [h.hostname for h in hosts]
+                )
+
+            if errors:
+                raise BadRequest(errors)
 
             # query salt-cloud for duplicate hostnames on the provider
             salt_cloud = cloud.CloudClient(
