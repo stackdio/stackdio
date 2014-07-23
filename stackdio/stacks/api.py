@@ -5,8 +5,8 @@ from os import listdir
 from os.path import join, isfile
 import zipfile
 import StringIO
-from salt import cloud
 
+from salt import cloud
 import envoy
 import yaml
 from django.shortcuts import get_object_or_404
@@ -338,7 +338,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerPermission,)
 
-    def get_object(self):
+    def get_object(self, queryset=None):
         obj = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
@@ -457,18 +457,17 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             task_chain()
 
             ret = {
-                "results_urls" : [] 
+                "results_urls": []
             }
 
-            for id in action_ids:
+            for action_id in action_ids:
                 ret['results_urls'].append(reverse(
                     'stackaction-detail',
                     kwargs={
-                        'pk': id,
+                        'pk': action_id,
                     },
                     request=request
                 ))
-
 
             return Response(ret)
 
@@ -571,8 +570,8 @@ def stack_action_zip(request, pk):
         if len(action.std_out()) is 0:
             return Response({"detail": "Not found"})
 
-        buffer = StringIO.StringIO()
-        action_zip = zipfile.ZipFile(buffer, 'w')
+        file_buffer = StringIO.StringIO()
+        action_zip = zipfile.ZipFile(file_buffer, 'w')
 
         filename = 'action_output_' + \
             action.submit_time().strftime('%Y%m%d_%H%M%S')
@@ -588,7 +587,7 @@ def stack_action_zip(request, pk):
 
         action_zip.close()
 
-        response = HttpResponse(buffer.getvalue(),
+        response = HttpResponse(file_buffer.getvalue(),
                                 content_type='application/zip')
         response['Content-Disposition'] = (
             'attachment; filename={0}.zip'.format(filename)
