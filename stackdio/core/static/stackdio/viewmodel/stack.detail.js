@@ -215,9 +215,16 @@ function (Q, ko, $galaxy, alerts, API) {
                 alerts.showMessage('#success', 'Stack creation started.', true);
                 $galaxy.transport('stack.list');
             }).catch(function (error) {
-                console.log(error);
-                alerts.showMessage('#error', 'Error creating stack: ' + error, true, 4000);
+                var detail = '';
+                for (var key in error) {
+                    detail += self.toTitleCase(key.replace('_', ' ')) + ': ' + error[key].join(', ') + '<br>';
+                }
+                alerts.showMessage('#error', detail, true, 4000);
             }).done()
+        };
+
+        self.toTitleCase = function (str) {
+            return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
         };
 
         self.cancelChanges = function (a, evt) {

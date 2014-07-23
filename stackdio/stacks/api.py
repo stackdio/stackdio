@@ -5,6 +5,7 @@ from os import listdir
 from os.path import join, isfile
 import zipfile
 import StringIO
+from salt import cloud
 
 import envoy
 import yaml
@@ -96,6 +97,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         Stack as well as generating the salt-cloud map that will be used to
         launch machines
         """
+        logger.debug(request.DATA)
         # make sure the user has a public key or they won't be able to SSH
         # later
         if not request.user.settings.public_key:
@@ -208,46 +210,31 @@ class StackListAPIView(generics.ListCreateAPIView):
                 username=request.user.username,
                 namespace=namespace)
 
-            # query for existing host names
-            hosts = models.Host.objects.filter(hostname__in=hostnames)
-            if hosts.count():
-                errors.setdefault('duplicate_hostnames', []).extend(
-                    [h.hostname for h in hosts]
-                )
-
-            if errors:
-                raise BadRequest(errors)
+            # # query for existing host names
+            # hosts = models.Host.objects.filter(hostname__in=hostnames)
+            # if hosts.count():
+            #     errors.setdefault('duplicate_hostnames', []).extend(
+            #         [h.hostname for h in hosts]
+            #     )
+            #
+            # if errors:
+            #     raise BadRequest(errors)
 
             # query salt-cloud for duplicate hostnames on the provider
-            cmd_args = [
-                'salt-cloud',
-                '--assume-yes',
-                '--log-level=quiet',        # no logging on console
-                # '--log-file={0}',           # where to log
-                # '--log-file-level=debug',   # full logging
-                '--config-dir={0}',         # salt config dir
-                '--out=yaml',               # return YAML formatted results
-                '-Q',                       # Query for information
-            ]
-
-            cmd = ' '.join(cmd_args).format(
-                settings.STACKDIO_CONFIG.salt_config_root)
-
-            logger.debug('Querying salt-cloud to find duplicate hosts')
-            query_result = envoy.run(str(cmd))
-
-            query_yaml = yaml.safe_load(query_result.std_out)
+            salt_cloud = cloud.CloudClient(
+                join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
+            query = salt_cloud.query()
 
             # Since a blueprint can have multiple providers
             providers = set()
-            for bhd in blueprint.host_definitions.all():
+            for bhd in hostdefs:
                 providers.add(bhd.cloud_profile.cloud_provider)
 
             # Check to find duplicates
             dups = []
             for provider in providers:
                 provider_type = provider.provider_type.type_name
-                for instance in query_yaml[provider.title][provider_type]:
+                for instance in query[provider.title][provider_type]:
                     if instance in hostnames:
                         dups.append(instance)
 
