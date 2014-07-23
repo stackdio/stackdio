@@ -3,9 +3,10 @@ define([
     'knockout',
     'util/galaxy',
     'util/alerts',
+    'util/ladda',
     'api/api'
 ],
-function (Q, ko, $galaxy, alerts, API) {
+function (Q, ko, $galaxy, alerts, Ladda, API) {
     var vm = function () {
         var self = this;
 
@@ -209,10 +210,12 @@ function (Q, ko, $galaxy, alerts, API) {
             if (self.stackPropertiesStringified() != '') {
                 stack.properties = JSON.parse(self.stackPropertiesStringified());
             }
-
-            //console.log(stack);
+            evt.preventDefault();
+            var l = Ladda.create(evt.currentTarget);
+            l.start();
             API.Stacks.save(stack).then(function (newStack) {
                 alerts.showMessage('#success', 'Stack creation started.', true);
+                l.stop();
                 $galaxy.transport('stack.list');
             }).catch(function (error) {
                 var detail = '';
@@ -220,7 +223,8 @@ function (Q, ko, $galaxy, alerts, API) {
                     detail += self.toTitleCase(key.replace('_', ' ')) + ': ' + error[key].join(', ') + '<br>';
                 }
                 alerts.showMessage('#error', detail, true, 4000);
-            }).done()
+                l.stop();
+            }).done();
         };
 
         self.toTitleCase = function (str) {
