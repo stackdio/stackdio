@@ -6,7 +6,7 @@ from os.path import join, isfile
 import zipfile
 import StringIO
 
-from salt import cloud
+import salt.cloud
 import envoy
 import yaml
 from django.shortcuts import get_object_or_404
@@ -222,8 +222,7 @@ class StackListAPIView(generics.ListCreateAPIView):
             if errors:
                 raise BadRequest(errors)
 
-            # query salt-cloud for duplicate hostnames on the provider
-            salt_cloud = cloud.CloudClient(
+            salt_cloud = salt.cloud.CloudClient(
                 join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
             query = salt_cloud.query()
 
