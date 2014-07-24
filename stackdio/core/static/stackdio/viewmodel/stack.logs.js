@@ -19,7 +19,7 @@ function (Q, ko, $galaxy, API) {
         self.latestLogs = ko.observableArray([]);
         self.historicalLogs = ko.observableArray([]);
         self.selectedLog = ko.observable();
-        self.selectedLogText = ko.observable('Loading...');
+        self.selectedLogText = ko.observable();
 
         self.$galaxy = $galaxy;
 
@@ -58,6 +58,8 @@ function (Q, ko, $galaxy, API) {
         self.init = function (data) {
 
             if (data.hasOwnProperty('stack')) {
+
+                self.selectedLogText('Loading...');
 
                 API.Stacks.getStack(data.stack).then(function (stack) {
 

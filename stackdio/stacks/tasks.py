@@ -12,6 +12,8 @@ from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
 import salt.client
+import salt.config
+import salt.runner
 
 from volumes.models import Volume
 import stacks.utils
@@ -907,6 +909,7 @@ def highstate(stack_id, max_retries=0):
     """
     try:
         stack = Stack.objects.get(id=stack_id)
+        num_hosts = len(stack.get_hosts())
         logger.info('Running core provisioning for stack: {0!r}'.format(stack))
 
         # Set up logging for this task
@@ -962,35 +965,16 @@ def highstate(stack_id, max_retries=0):
                 'stack_id:{0}'.format(stack_id),
                 'state.top',
                 [stack.top_file.name],
-                timeout=10,
                 expr_form='grain',
-                kwarg={
-                    'log-file': log_file,
-                    'log-file-level': 'debug',
-                }
             )
-
-            if result == {}:
-                # Try one more time first
-                result = salt_client.cmd(
-                    'stack_id:{0}'.format(stack_id),
-                    'state.top',
-                    [stack.top_file.name],
-                    timeout=10,
-                    expr_form='grain',
-                    kwarg={
-                        'log-file': log_file,
-                        'log-file-level': 'debug',
-                    }
-                )
 
             salt_logger.removeHandler(file_log_handler)
 
-            if result == {}:
-                logger.debug('salt returned an empty dict')
+            if len(result) != num_hosts:
+                logger.debug('salt did not provision all hosts')
                 if current_try <= max_retries:
                     continue
-                err_msg = result.std_err if result.std_err else result.std_out
+                err_msg = 'Salt errored and did not provision all the hosts'
                 stack.set_status(highstate.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error executing core provisioning: '
                                          '{0!r}'.format(err_msg))
@@ -1220,114 +1204,76 @@ def orchestrate(stack_id, max_retries=0):
             symlink(log_file, log_symlink)
             symlink(err_file, err_symlink)
 
-            ##
-            # Execute custom orchestration runner
-            ##
-            cmd = ' '.join([
-                'salt-run',
-                '--config-dir={0}'.format(
-                    settings.STACKDIO_CONFIG.salt_config_root),
-                '-lquiet',                  # quiet stdout
-                '--log-file {0}',           # where to log
-                '--log-file-level info',    # full logging
-                'stackdio.orchestrate',     # custom overstate execution
-                stack.owner.username,       # username is the environment to
-                                            # execute in
-                stack.overstate_file.path
-            ]).format(
-                log_file
+
+
+
+
+
+
+
+
+            ####################### python API
+
+            # Set up logging
+            file_log_handler = logging.FileHandler(log_file)
+            file_log_handler.setFormatter(salt_formatter)
+            salt_logger.addHandler(file_log_handler)
+
+            opts = salt.config.client_config(os.path.join(
+                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+
+            salt_runner = salt.runner.RunnerClient(opts)
+
+            result = salt_runner.cmd(
+                'stackdio.orchestrate',
+                [
+                    stack.owner.username,
+                    stack.overstate_file.path
+                ]
             )
 
-            # Execute
-            logger.debug('Executing command: {0}'.format(cmd))
+            # Stop logging
+            salt_logger.removeHandler(file_log_handler)
 
-            try:
-                result = envoy.run(str(cmd))
-            except AttributeError, e:
-                # Unrecoverable error, no retrying possible
-                err_msg = 'Error running command: \'{0}\''.format(cmd)
-                logger.exception(err_msg)
-                stack.set_status(orchestrate.name, err_msg, Level.ERROR)
-                raise StackTaskException(err_msg)
-
-            if result is None:
-                # What does it mean for envoy to return a result of None?
-                # Is it even possible? If so, is it a recoverable error?
-                if current_try <= max_retries:
-                    continue
-                msg = 'Orchestration command returned None. Status, stdout ' \
-                    'and stderr unknown.'
-                logger.warn(msg)
-                stack.set_status(msg)
-            elif result.status_code > 0:
-                logger.debug('envoy returned non-zero status code')
-                logger.debug('envoy status_code: {0}'.format(
-                    result.status_code))
-                logger.debug('envoy std_out: {0}'.format(result.std_out))
-                logger.debug('envoy std_err: {0}'.format(result.std_err))
+            if len(result) != len(stack.get_role_list()):
+                logger.debug('salt did not orchestrate all hosts')
 
                 if current_try <= max_retries:
                     continue
 
-                err_msg = result.std_err \
-                    if result.std_err else result.std_out
+                err_msg = 'Salt errored and did not orchestrate all the hosts'
                 stack.set_status(orchestrate.name, err_msg, Level.ERROR)
                 raise StackTaskException('Error executing orchestration: '
                                          '{0!r}'.format(err_msg))
             else:
                 with open(log_file, 'a') as f:
-                    f.write(result.std_out)
-
-                # load JSON so we can attempt to catch provisioning errors
-
-                # Sometimes orchestration likes to output a string before
-                # dumping the yaml, so check for this before loading the
-                # yaml object and strip off the unnecessary strings
-                output = result.std_out
-                stripped = ''
-                while True:
-                    newline = output.find('\n')
-                    if newline < 0:
-                        break
-                    if isinstance(yaml.safe_load(output[:newline]),
-                                  basestring):
-                        # strip off the line and keep going, keeping
-                        # the stripped off portion in case there is
-                        # no yaml to decode
-                        stripped += output[:newline + 1]
-                        output = output[newline + 1:]
-                        continue
-                    break
-
-                # if output still contains data, then it should be a
-                # decodable yaml object/list; else, the stdout was
-                # one big string and is probably an error message
-                if len(output) > 0:
-                    output = yaml.safe_load(output)
-
-                    # Log out the stripped off portion
-                    logger.info('Stripped orchestration output: {0}'.format(
-                        stripped
-                    ))
-                else:
-                    output = stripped
+                    f.write(yaml.safe_dump(result))
 
                 errors = {}
-                if isinstance(output, basestring):
-                    errors['general'] = [output]
 
-                # each key in the dict is a host, and the value of the host
+                # each key in the dict is a role, and the value of the role is
+                # a dict with keys being hosts.  The value of the hosts
                 # is either a list or dict. Those that are lists we can
                 # assume to be a list of errors
-                elif output is not None:
-                    for host, stage_results in output.iteritems():
-                        # check for orchestration stage errors first
-                        if host == '__stage__error__':
-                            continue
+                if result is not None:
+                    for role, role_results in result.items():
+                        for host, stage_result in role_results.items():
 
-                        for stage_result in stage_results:
+                            if 'success' in stage_result \
+                                    and not stage_result['success']:
+                                errors.setdefault(host, []).append({
+                                    'error': stage_result['ret']
+                                })
+                                continue
 
-                            if isinstance(stage_result, list):
+                            if 'retcode' in stage_result \
+                                    and stage_result['retcode'] != 0:
+                                errors.setdefault(host, []).append({
+                                    'error': stage_result['ret']
+                                })
+                                continue
+
+                            if isinstance(stage_result['ret'], list):
                                 for err in stage_result:
                                     errors.setdefault(host, []) \
                                         .append({
@@ -1338,7 +1284,7 @@ def orchestrate(stack_id, max_retries=0):
                             # iterate over the individual states in the
                             # host looking for states that had a result
                             # of false
-                            for state_str, state_meta in stage_result.iteritems(): # NOQA
+                            for state_str, state_meta in stage_result['ret'].items(): # NOQA
                                 if state_str == '__FAILHARD__':
                                     continue
 
@@ -1373,6 +1319,170 @@ def orchestrate(stack_id, max_retries=0):
 
                     # Everything worked?
                     break
+
+
+            ##########################
+
+
+
+
+
+
+
+
+            # ##
+            # # Execute custom orchestration runner
+            # ##
+            # cmd = ' '.join([
+            #     'salt-run',
+            #     '--config-dir={0}'.format(
+            #         settings.STACKDIO_CONFIG.salt_config_root),
+            #     '-lquiet',                  # quiet stdout
+            #     '--log-file {0}',           # where to log
+            #     '--log-file-level info',    # full logging
+            #     'stackdio.orchestrate',     # custom overstate execution
+            #     stack.owner.username,       # username is the environment to
+            #                                 # execute in
+            #     stack.overstate_file.path
+            # ]).format(
+            #     log_file
+            # )
+            #
+            # # Execute
+            # logger.debug('Executing command: {0}'.format(cmd))
+            #
+            # try:
+            #     result = envoy.run(str(cmd))
+            # except AttributeError, e:
+            #     # Unrecoverable error, no retrying possible
+            #     err_msg = 'Error running command: \'{0}\''.format(cmd)
+            #     logger.exception(err_msg)
+            #     stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+            #     raise StackTaskException(err_msg)
+            #
+            # if result is None:
+            #     # What does it mean for envoy to return a result of None?
+            #     # Is it even possible? If so, is it a recoverable error?
+            #     if current_try <= max_retries:
+            #         continue
+            #     msg = 'Orchestration command returned None. Status, stdout ' \
+            #         'and stderr unknown.'
+            #     logger.warn(msg)
+            #     stack.set_status(msg)
+            # elif result.status_code > 0:
+            #     logger.debug('envoy returned non-zero status code')
+            #     logger.debug('envoy status_code: {0}'.format(
+            #         result.status_code))
+            #     logger.debug('envoy std_out: {0}'.format(result.std_out))
+            #     logger.debug('envoy std_err: {0}'.format(result.std_err))
+            #
+            #     if current_try <= max_retries:
+            #         continue
+            #
+            #     err_msg = result.std_err \
+            #         if result.std_err else result.std_out
+            #     stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+            #     raise StackTaskException('Error executing orchestration: '
+            #                              '{0!r}'.format(err_msg))
+            # else:
+            #     with open(log_file, 'a') as f:
+            #         f.write(result.std_out)
+            #
+            #     # load JSON so we can attempt to catch provisioning errors
+            #
+            #     # Sometimes orchestration likes to output a string before
+            #     # dumping the yaml, so check for this before loading the
+            #     # yaml object and strip off the unnecessary strings
+            #     output = result.std_out
+            #     stripped = ''
+            #     while True:
+            #         newline = output.find('\n')
+            #         if newline < 0:
+            #             break
+            #         if isinstance(yaml.safe_load(output[:newline]),
+            #                       basestring):
+            #             # strip off the line and keep going, keeping
+            #             # the stripped off portion in case there is
+            #             # no yaml to decode
+            #             stripped += output[:newline + 1]
+            #             output = output[newline + 1:]
+            #             continue
+            #         break
+            #
+            #     # if output still contains data, then it should be a
+            #     # decodable yaml object/list; else, the stdout was
+            #     # one big string and is probably an error message
+            #     if len(output) > 0:
+            #         output = yaml.safe_load(output)
+            #
+            #         # Log out the stripped off portion
+            #         logger.info('Stripped orchestration output: {0}'.format(
+            #             stripped
+            #         ))
+            #     else:
+            #         output = stripped
+            #
+            #     errors = {}
+            #     if isinstance(output, basestring):
+            #         errors['general'] = [output]
+            #
+            #     # each key in the dict is a host, and the value of the host
+            #     # is either a list or dict. Those that are lists we can
+            #     # assume to be a list of errors
+            #     elif output is not None:
+            #         for host, stage_results in output.iteritems():
+            #             # check for orchestration stage errors first
+            #             if host == '__stage__error__':
+            #                 continue
+            #
+            #             for stage_result in stage_results:
+            #
+            #                 if isinstance(stage_result, list):
+            #                     for err in stage_result:
+            #                         errors.setdefault(host, []) \
+            #                             .append({
+            #                                 'error': err
+            #                             })
+            #                     continue
+            #
+            #                 # iterate over the individual states in the
+            #                 # host looking for states that had a result
+            #                 # of false
+            #                 for state_str, state_meta in stage_result.iteritems(): # NOQA
+            #                     if state_str == '__FAILHARD__':
+            #                         continue
+            #
+            #                     if not is_state_error(state_meta):
+            #                         continue
+            #
+            #                     if not is_requisite_error(state_meta):
+            #                         err, recoverable = state_error(state_str,
+            #                                                        state_meta)
+            #                         if not recoverable:
+            #                             unrecoverable_error = True
+            #                         errors.setdefault(host, []).append(err)
+            #
+            #         if errors:
+            #             # write the errors to the err_file
+            #             with open(err_file, 'a') as f:
+            #                 f.write(yaml.safe_dump(errors))
+            #
+            #             if not unrecoverable_error and current_try <= max_retries: # NOQA
+            #                 continue
+            #
+            #             err_msg = 'Orchestration errors on hosts: ' \
+            #                 '{0}. Please see the orchestration errors ' \
+            #                 'API or the orchestration log file for more ' \
+            #                 'details: {1}'.format(
+            #                     ', '.join(errors.keys()),
+            #                     os.path.basename(log_file))
+            #             stack.set_status(highstate.name,
+            #                              err_msg,
+            #                              Level.ERROR)
+            #             raise StackTaskException(err_msg)
+            #
+            #         # Everything worked?
+            #         break
 
         stack.set_status(orchestrate.name,
                          'Finished executing orchestration all hosts.')

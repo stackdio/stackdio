@@ -812,6 +812,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return ret
 
+    def get_role_list(self):
+        roles = set()
+        for bhd in self.blueprint.host_definitions.all():
+            for formula_component in bhd.formula_components.all():
+                roles.add(formula_component.component.sls_path)
+        return list(roles)
+
 
 class StackHistory(TimeStampedModel):
 
