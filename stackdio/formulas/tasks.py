@@ -224,7 +224,32 @@ def update_formula(formula_id, git_password):
 
         current_commit = repo.head.commit
 
+        origin = repo.remotes.origin.name
+
+        # Add the password for a private repo
+        if formula.private_git_repo:
+            parsed = urlsplit(formula.uri)
+            hostname = parsed.netloc.split('@')[1]
+            uri = urlunsplit((
+                parsed.scheme,
+                '{0}:{1}@{2}'.format(
+                    formula.git_username, git_password, hostname),
+                parsed.path,
+                parsed.query,
+                parsed.fragment
+            ))
+
+            # add the password to the config
+            repo.git.remote('set-url', origin, uri)
+
         repo.remotes.origin.pull()
+
+        if formula.private_git_repo:
+            # remove the password from the config
+            repo.git.remote('set-url', origin, formula.uri)
+
+            # Remove the logs which also store the password
+            shutil.rmtree(os.path.join(repodir, '.git', 'logs'))
 
         formula_title, formula_description, root_path, components = validate_specfile(formula, repodir)
 
