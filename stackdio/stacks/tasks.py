@@ -961,14 +961,23 @@ def highstate(stack_id, max_retries=0):
             salt_client = salt.client.LocalClient(os.path.join(
                 settings.STACKDIO_CONFIG.salt_config_root, 'master'))
 
-            result = salt_client.cmd(
+            ret = salt_client.cmd_batch(
                 'stack_id:{0}'.format(stack_id),
                 'state.top',
                 [stack.top_file.name],
                 expr_form='grain',
+                batch=str(salt_client.opts['worker_threads'])
             )
 
+            result = {}
+            for i in ret:
+                for k, v in i.items():
+                    result[k] = v
+
             salt_logger.removeHandler(file_log_handler)
+
+            with open(log_file, 'a') as f:
+                f.write(yaml.safe_dump(result))
 
             if len(result) != num_hosts:
                 logger.debug('salt did not provision all hosts')
@@ -980,8 +989,6 @@ def highstate(stack_id, max_retries=0):
                                          '{0!r}'.format(err_msg))
 
             else:
-                with open(log_file, 'a') as f:
-                    f.write(yaml.safe_dump(result))
 
                 # each key in the dict is a host, and the value of the host
                 # is either a list or dict. Those that are lists we can
