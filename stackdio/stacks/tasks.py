@@ -989,7 +989,6 @@ def highstate(stack_id, max_retries=0):
                                          '{0!r}'.format(err_msg))
 
             else:
-
                 # each key in the dict is a host, and the value of the host
                 # is either a list or dict. Those that are lists we can
                 # assume to be a list of errors
