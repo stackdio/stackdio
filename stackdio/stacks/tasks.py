@@ -961,6 +961,12 @@ def highstate(stack_id, max_retries=0):
             salt_client = salt.client.LocalClient(os.path.join(
                 settings.STACKDIO_CONFIG.salt_config_root, 'master'))
 
+            old_handler = None
+            for handler in salt_logger.handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    old_handler = handler
+                    salt_logger.removeHandler(handler)
+
             ret = salt_client.cmd_batch(
                 'stack_id:{0}'.format(stack_id),
                 'state.top',
@@ -975,6 +981,8 @@ def highstate(stack_id, max_retries=0):
                     result[k] = v
 
             salt_logger.removeHandler(file_log_handler)
+            if old_handler:
+                salt_logger.addHandler(old_handler)
 
             with open(log_file, 'a') as f:
                 f.write(yaml.safe_dump(result))
