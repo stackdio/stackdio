@@ -1,4 +1,4 @@
-define(function() {
+define(['util/galaxy'], function($galaxy) {
     return {
         getStatusType: function(status) {
             switch(status) {
@@ -53,5 +53,72 @@ define(function() {
 
             }).join('');
         },
+        showStackDetails: function (stack) {
+            $galaxy.transport({
+                location: 'stack.detail',
+                payload: {
+                    stack: stack.id
+                }
+            });
+        },
+        doStackAction: function (action, evt, stack) {
+            var data = JSON.stringify({
+                action: action.toLowerCase()
+            });
+
+            /*
+             *  Unless the user wants to delete the stack permanently (see below)
+             *  then just PUT to the API with the appropriate action.
+             */
+            if (action !== 'Delete') {
+                bootbox.confirm("Please confirm that you want to perform this action on the stack.", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: stack.action,
+                            type: 'POST',
+                            data: data,
+                            headers: {
+                                "X-CSRFToken": stackdio.settings.csrftoken,
+                                "Accept": "application/json",
+                                "Content-Type": "application/json"
+                            },
+                            success: function (response) {
+                                alerts.showMessage('#success', 'Stack ' + action.toLowerCase() + ' has been initiated.', true);
+                                StackStore.populate(true);
+                            },
+                            error: function (request, status, error) {
+                                alerts.showMessage('#error', 'Unable to perform ' + action.toLowerCase() + ' action on that stack. ' + JSON.parse(request.responseText).detail, true, 7000);
+                            }
+                        });
+                    }
+                });
+
+            /*
+             *  Using the DELETE verb is truly destructive. Terminates all hosts, terminates all
+             *  EBS volumes, and deletes stack/host details from the stackd.io database.
+             */
+            } else {
+                bootbox.confirm("Please confirm that you want to delete this stack. Be advised that this is a completely destructive act that will stop, terminate, and delete all hosts, as well as the definition of this stack.", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: stack.url,
+                            type: 'DELETE',
+                            headers: {
+                                "X-CSRFToken": stackdio.settings.csrftoken,
+                                "Accept": "application/json",
+                                "Content-Type": "application/json"
+                            },
+                            success: function (response) {
+                                alerts.showMessage('#success', 'Stack is currently being torn down and will be deleted once all hosts are terminated.', true, 5000);
+                                StackStore.populate(true);
+                            },
+                            error: function (request, status, error) {
+                                alerts.showMessage('#error', request.responseJSON.detail, true, 2000);
+                            }
+                        });
+                    }
+                });
+            }
+        }
     };
 });

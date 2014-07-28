@@ -43,6 +43,7 @@
                                         <th data-bind="text: $data"></th>
                                         <!-- /ko -->
                                         <!-- ko if: $root.selectedTab().title === 'Stacks' -->
+                                        <th>Status</th>
                                         <th>Stack History</th>
                                         <!-- /ko -->
                                         <th>Actions</th>
@@ -57,6 +58,9 @@
                                         <td data-bind="text: $parent[$data]"></td>
                                         <!-- /ko -->
                                         <!-- ko if: $root.selectedTab().title === 'Stacks' -->
+                                        <td>
+                                            <span data-bind="text:$data.status, attr: {class: 'label label-'+$root.getStatusType(status)}"></span>
+                                        </td>
                                         <td>
                                             <span style="cursor: pointer; text-decoration:underline; color: #428bca;"
                                                     data-bind="bootstrapPopover: {
