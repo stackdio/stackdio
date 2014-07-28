@@ -60,8 +60,8 @@ def clone_to_temp(formula, git_password):
         # Remove the password from the config
         repo.git.remote('set-url', origin, formula.uri)
 
-         # Remove the logs which also store the password
-        shutil.rmtree(os.path.join(repodir, '.git', 'logs'))
+        # Remove the logs which also store the password
+        shutil.rmtree(os.path.join(tmpdir, '.git', 'logs'))
 
     except git.GitCommandError:
         raise FormulaTaskException(
