@@ -61,7 +61,9 @@ def clone_to_temp(formula, git_password):
         repo.git.remote('set-url', origin, formula.uri)
 
         # Remove the logs which also store the password
-        shutil.rmtree(os.path.join(repodir, '.git', 'logs'))
+        log_dir = os.path.join(repodir, '.git', 'logs')
+        # if os.path.isdir(log_dir):
+        shutil.rmtree(log_dir)
 
     except git.GitCommandError:
         raise FormulaTaskException(
@@ -212,11 +214,11 @@ def import_formula(formula_id, git_password):
 # TODO: Ignoring complexity issues
 @celery.task(name='formulas.update_formula')  # NOQA
 def update_formula(formula_id, git_password):
+    repo = None
+    current_commit = None
     try:
         formula = Formula.objects.get(pk=formula_id)
         formula.set_status(Formula.IMPORTING, 'Updating formula.')
-
-        # repodir = clone_to_temp(formula, git_password)
 
         repodir = formula.get_repo_dir()
 
@@ -242,14 +244,20 @@ def update_formula(formula_id, git_password):
             # add the password to the config
             repo.git.remote('set-url', origin, uri)
 
-        repo.remotes.origin.pull()
+        result = repo.remotes.origin.pull()
+        if len(result) == 1 and result[0].commit == current_commit:
+            formula.set_status(Formula.COMPLETE,
+                               'There were no changes to the repository.')
+            return True
 
         if formula.private_git_repo:
             # remove the password from the config
             repo.git.remote('set-url', origin, formula.uri)
 
             # Remove the logs which also store the password
-            shutil.rmtree(os.path.join(repodir, '.git', 'logs'))
+            log_dir = os.path.join(repodir, '.git', 'logs')
+            if os.path.isdir(log_dir):
+                shutil.rmtree(log_dir)
 
         formula_title, formula_description, root_path, components = validate_specfile(formula, repodir)
 
@@ -340,35 +348,20 @@ def update_formula(formula_id, git_password):
             to_change.description = component.get('description', '')
             to_change.save()
 
-
-        ### DONT NEED THIS ANYMORE, LEAVING IT IN CASE OF ERRORS
-        # root_dir = formula.get_repo_dir()
-        #
-        # # Remove the old formula
-        # if os.path.isdir(root_dir):
-        #     shutil.rmtree(root_dir)
-        #
-        # # move the cloned formula repository to a location known by salt
-        # # so we can start using the states in this formula
-        # shutil.move(repodir, root_dir)
-        #
-        # tmpdir = os.path.dirname(repodir)
-        #
-        # # remove tmpdir now that we're finished
-        # if os.path.isdir(tmpdir):
-        #     shutil.rmtree(tmpdir)
-
         formula.set_status(Formula.COMPLETE,
                            'Import complete. Formula is now ready to be used.')
 
         return True
 
     except Exception, e:
-        if isinstance(e, FormulaTaskException):
-            raise
-        logger.exception(e)
         # Roll back the pull
-        repo.git.reset('--hard', current_commit)
+        if repo is not None and current_commit is not None:
+            repo.git.reset('--hard', current_commit)
+        if isinstance(e, FormulaTaskException):
+            raise FormulaTaskException(
+                formula,
+                e.message + ' Your formula was not changed.')
+        logger.exception(e)
         raise FormulaTaskException(
             formula,
             'An unhandled exception occurred.  Your formula was not changed')
