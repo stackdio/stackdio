@@ -148,23 +148,44 @@ class StackManager(models.Manager):
         return stack
 
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel):
-    OK = 'ok'
-    ERROR = 'error'
+class Stack(TimeStampedModel, TitleSlugDescriptionModel,
+            model_utils.models.StatusModel):
+
+    # Launch workflow:
     PENDING = 'pending'
-    SYNCING = 'syncing'
-    STARTING = 'starting'
     LAUNCHING = 'launching'
-    FINALIZING = 'finalizing'
     CONFIGURING = 'configuring'
+    SYNCING = 'syncing'
     PROVISIONING = 'provisioning'
-    EXECUTING_ACTION = 'executing_action'
-    TERMINATING = 'terminating'
-    DESTROYING = 'destroying'
-    REBOOTING = 'rebooting'
+    ORCHESTRATING = 'orchestrating'
+    FINALIZING = 'finalizing'
     FINISHED = 'finished'
+
+    # Delete workflow:
+    # PENDING
+    DESTROYING = 'destroying'
+    # FINISHED
+
+    # Other actions
+    # LAUNCHING
+    STARTING = 'starting'
     STOPPING = 'stopping'
+    TERMINATING = 'terminating'
+    EXECUTING_ACTION = 'executing_action'
+
+    # Errors
+    ERROR = 'error'
+
+    SAFE_DELETE_STATES = (FINISHED, ERROR)
+
+    # Not sure?
+    OK = 'ok'
     RUNNING = 'running'
+    REBOOTING = 'rebooting'
+
+    STATUS = Choices(PENDING, LAUNCHING, CONFIGURING, SYNCING, PROVISIONING,
+                     ORCHESTRATING, FINALIZING, DESTROYING, FINISHED,
+                     STARTING, STOPPING, TERMINATING, EXECUTING_ACTION, ERROR)
 
     class Meta:
         unique_together = ('owner', 'title')
@@ -239,8 +260,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.pk)
 
-    def set_status(self, event, status, level=Level.INFO):
-        self.history.create(event=event, status=status, level=level)
+    def set_status(self, event, status, detail, level=Level.INFO):
+        self.status = status
+        self.save()
+        self.history.create(event=event, status=status,
+                            status_detail=detail, level=level)
 
     def get_driver_hosts_map(self, host_ids=None):
         """
@@ -820,11 +844,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return list(roles)
 
 
-class StackHistory(TimeStampedModel):
+class StackHistory(TimeStampedModel, StatusDetailModel):
 
     class Meta:
         verbose_name_plural = 'stack history'
         ordering = ['-created', '-id']
+
+    STATUS = Stack.STATUS
 
     stack = models.ForeignKey('Stack', related_name='history')
 
@@ -833,7 +859,7 @@ class StackHistory(TimeStampedModel):
     event = models.CharField(max_length=128)
 
     # The human-readable description of the event
-    status = models.TextField(blank=True)
+    # status = models.TextField(blank=True)
 
     # Optional: level (DEBUG, INFO, WARNING, ERROR, etc)
     level = models.CharField(max_length=16, choices=(
@@ -844,12 +870,12 @@ class StackHistory(TimeStampedModel):
     ))
 
 
-class StackAction(TimeStampedModel):
+class StackAction(TimeStampedModel, model_utils.models.StatusModel):
     WAITING = 'waiting'
     RUNNING = 'running'
     FINISHED = 'finished'
-    ERRORED = 'errored'
-    STATUS = Choices(WAITING, RUNNING, FINISHED, ERRORED)
+    ERROR = 'error'
+    STATUS = Choices(WAITING, RUNNING, FINISHED, ERROR)
 
     class Meta:
         verbose_name_plural = 'stack actions'
@@ -858,9 +884,6 @@ class StackAction(TimeStampedModel):
 
     # The started executing
     start = models.DateTimeField()
-
-    # The status of the action
-    status = models.CharField(max_length=8, choices=STATUS, default=WAITING)
 
     # Type of action (custom, launch, etc)
     type = models.CharField(max_length=50)

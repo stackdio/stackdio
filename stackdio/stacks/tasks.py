@@ -193,6 +193,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
 
             stack.set_status(
                 launch_hosts.name,
+                Stack.LAUNCHING,
                 '{0} being launched. Try {1} of {2}. '
                 'This may take a while.'.format(
                     label,
@@ -288,6 +289,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
                             logger.debug(err_msg)
                             stack.set_status(
                                 launch_hosts.name,
+                                Stack.ERROR,
                                 err_msg,
                                 Level.WARN)
 
@@ -326,6 +328,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
 
                     if current_try <= max_retries:
                         stack.set_status(launch_hosts.name,
+                                         Stack.ERROR,
                                          '{0} failed to launch and '
                                          'will be retried.'.format(label),
                                          Level.WARN)
@@ -337,6 +340,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
                                    'maximum number of tries have been '
                                    'reached.'.format(label))
                         stack.set_status(launch_hosts.name,
+                                         Stack.ERROR,
                                          err_msg,
                                          Level.ERROR)
                         raise StackTaskException(err_msg)
@@ -380,6 +384,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
 
                     for err_msg in errors:
                         stack.set_status(launch_hosts.name,
+                                         Stack.ERROR,
                                          err_msg,
                                          Level.ERROR)
                     raise StackTaskException('Error(s) while launching stack '
@@ -405,7 +410,8 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
                         err_msg = launch_result.std_err
                     else:
                         err_msg = launch_result.std_out
-                    stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+                    stack.set_status(launch_hosts.name, Stack.ERROR,
+                                     err_msg, Level.ERROR)
                     raise StackTaskException('Error launching stack {0} with '
                                              'salt-cloud: {1!r}'.format(
                                                  stack_id,
@@ -413,7 +419,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
 
             # Seems good...let's set the status and allow other tasks to
             # go through
-            stack.set_status(launch_hosts.name, 'Finished launching hosts.')
+            stack.set_status(launch_hosts.name, Stack.FINISHED, 'Finished launching hosts.')
 
     except Stack.DoesNotExist, e:
         err_msg = 'Unknown stack id {0}'.format(stack_id)
@@ -423,7 +429,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+        stack.set_status(launch_hosts.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -469,6 +475,7 @@ def cure_zombies(stack_id, max_retries=2):
                 # them again, up to the max retries
                 stack.set_status(
                     launch_hosts.name,
+                    Stack.ERROR,
                     '{0} detected. Attempting try {1} of {2} to '
                     'bootstrap. This may take a while.'
                     ''.format(
@@ -489,6 +496,7 @@ def cure_zombies(stack_id, max_retries=2):
                 )
                 stack.set_status(
                     launch_hosts.name,
+                    Stack.ERROR,
                     err_msg,
                     Level.ERROR
                 )
@@ -501,7 +509,7 @@ def cure_zombies(stack_id, max_retries=2):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(cure_zombies.name, err_msg, Level.ERROR)
+        stack.set_status(cure_zombies.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -519,6 +527,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
         # Update status
         stack.set_status(update_metadata.name,
+                         Stack.CONFIGURING,
                          'Collecting host metadata from cloud provider.')
 
         # Use salt-cloud to look up host information we need now that
@@ -644,7 +653,8 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(update_metadata.name, err_msg, Level.ERROR)
+        stack.set_status(update_metadata.name, Stack.ERROR,
+                         err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -665,7 +675,7 @@ def tag_infrastructure(stack_id, host_ids=None):
         logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(tag_infrastructure.name,
+        stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
                          'Tagging stack infrastructure.')
 
         # for each set of hosts on a provider, use the driver implementation
@@ -676,7 +686,7 @@ def tag_infrastructure(stack_id, host_ids=None):
             volumes = stack.volumes.filter(host__in=hosts)
             driver.tag_resources(stack, hosts, volumes)
 
-        stack.set_status(tag_infrastructure.name,
+        stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
                          'Finished tagging stack infrastructure.')
 
     except Stack.DoesNotExist:
@@ -686,7 +696,8 @@ def tag_infrastructure(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(tag_infrastructure.name, err_msg, Level.ERROR)
+        stack.set_status(tag_infrastructure.name, Stack.ERROR,
+                         err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -701,7 +712,7 @@ def register_dns(stack_id, host_ids=None):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Registering DNS for stack: {0!r}'.format(stack))
 
-        stack.set_status(register_dns.name,
+        stack.set_status(register_dns.name, Stack.CONFIGURING,
                          'Registering hosts with DNS provider.')
 
         # Use the provider implementation to register a set of hosts
@@ -710,7 +721,7 @@ def register_dns(stack_id, host_ids=None):
         for driver, hosts in driver_hosts.iteritems():
             driver.register_dns(hosts)
 
-        stack.set_status(register_dns.name,
+        stack.set_status(register_dns.name, Stack.CONFIGURING,
                          'Finished registering hosts with DNS provider.')
 
     except Stack.DoesNotExist:
@@ -720,7 +731,7 @@ def register_dns(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(register_dns.name, err_msg, Level.ERROR)
+        stack.set_status(register_dns.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -746,6 +757,7 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
         stack = Stack.objects.get(id=stack_id)
         required_hosts = set([h.hostname for h in stack.get_hosts()])
         stack.set_status(ping.name,
+                         Stack.CONFIGURING,
                          'Attempting to ping all hosts.',
                          Level.INFO)
 
@@ -801,13 +813,13 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
                     duration // 60,
                     duration % 60,
                 )
-                stack.set_status(ping.name, err_msg, Level.ERROR)
+                stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
                 raise StackTaskException(err_msg)
 
             if failures > max_failures:
                 err_msg = 'Max failures ({0}) reached while pinging ' \
                           'hosts.'.format(max_failures)
-                stack.set_status(ping.name, err_msg, Level.ERROR)
+                stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
                 raise StackTaskException(err_msg)
 
             time.sleep(interval)
@@ -821,10 +833,10 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
 
         if false_hosts:
             err_msg = 'Unable to ping hosts: {0}'.format(','.join(false_hosts))
-            stack.set_status(ping.name, err_msg, Level.ERROR)
+            stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
             raise StackTaskException(err_msg)
 
-        stack.set_status(ping.name,
+        stack.set_status(ping.name, Stack.CONFIGURING,
                          'All hosts pinged successfully.',
                          Level.INFO)
 
@@ -835,7 +847,7 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(ping.name, err_msg, Level.ERROR)
+        stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -847,7 +859,7 @@ def sync_all(stack_id):
         logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(sync_all.name,
+        stack.set_status(sync_all.name, Stack.SYNCING,
                          'Synchronizing salt systems on all hosts.')
 
         # build up the command for salt
@@ -871,13 +883,13 @@ def sync_all(stack_id):
 
         if result.status_code > 0:
             err_msg = result.std_err if result.std_err else result.std_out
-            stack.set_status(sync_all.name, err_msg, Level.ERROR)
+            stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
             raise StackTaskException('Error syncing salt data on stack {0}: '
                                      '{1!r}'.format(
                                          stack_id,
                                          err_msg))
 
-        stack.set_status(sync_all.name,
+        stack.set_status(sync_all.name, Stack.CONFIGURING,
                          'Finished synchronizing salt systems on all hosts.')
 
     except Stack.DoesNotExist:
@@ -887,7 +899,7 @@ def sync_all(stack_id):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(sync_all.name, err_msg, Level.ERROR)
+        stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -926,7 +938,7 @@ def highstate(stack_id, max_retries=0):
                 stack))
 
             # Update status
-            stack.set_status(highstate.name,
+            stack.set_status(highstate.name, Stack.PROVISIONING,
                              'Executing core provisioning try {0} of {1}. '
                              'This may take a while.'.format(
                                  current_try,
@@ -992,7 +1004,8 @@ def highstate(stack_id, max_retries=0):
                 if current_try <= max_retries:
                     continue
                 err_msg = 'Salt errored and did not provision all the hosts'
-                stack.set_status(highstate.name, err_msg, Level.ERROR)
+                stack.set_status(highstate.name, Stack.ERROR,
+                                 err_msg, Level.ERROR)
                 raise StackTaskException('Error executing core provisioning: '
                                          '{0!r}'.format(err_msg))
 
@@ -1033,6 +1046,7 @@ def highstate(stack_id, max_retries=0):
                             ', '.join(errors.keys()),
                             os.path.basename(log_file))
                     stack.set_status(highstate.name,
+                                     Stack.ERROR,
                                      err_msg,
                                      Level.ERROR)
                     raise StackTaskException(err_msg)
@@ -1151,7 +1165,7 @@ def highstate(stack_id, max_retries=0):
             #         # Everything worked?
             #         break
 
-        stack.set_status(highstate.name,
+        stack.set_status(highstate.name, Stack.PROVISIONING,
                          'Finished core provisioning all hosts.')
 
     except Stack.DoesNotExist:
@@ -1161,7 +1175,7 @@ def highstate(stack_id, max_retries=0):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(highstate.name, err_msg, Level.ERROR)
+        stack.set_status(highstate.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -1199,7 +1213,7 @@ def orchestrate(stack_id, max_retries=0):
                 stack))
 
             # Update status
-            stack.set_status(orchestrate.name,
+            stack.set_status(orchestrate.name, Stack.ORCHESTRATING,
                              'Executing orchestration try {0} of {1}. This '
                              'may take a while.'.format(current_try,
                                                         max_retries + 1))
@@ -1256,7 +1270,8 @@ def orchestrate(stack_id, max_retries=0):
                     continue
 
                 err_msg = 'Salt errored and did not orchestrate all the hosts'
-                stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+                stack.set_status(orchestrate.name, Stack.ERROR,
+                                 err_msg, Level.ERROR)
                 raise StackTaskException('Error executing orchestration: '
                                          '{0!r}'.format(err_msg))
             else:
@@ -1327,6 +1342,7 @@ def orchestrate(stack_id, max_retries=0):
                                 ', '.join(errors.keys()),
                                 os.path.basename(log_file))
                         stack.set_status(highstate.name,
+                                         Stack.ERROR,
                                          err_msg,
                                          Level.ERROR)
                         raise StackTaskException(err_msg)
@@ -1498,7 +1514,7 @@ def orchestrate(stack_id, max_retries=0):
             #         # Everything worked?
             #         break
 
-        stack.set_status(orchestrate.name,
+        stack.set_status(orchestrate.name, Stack.FINALIZING,
                          'Finished executing orchestration all hosts.')
 
     except Stack.DoesNotExist:
@@ -1508,7 +1524,7 @@ def orchestrate(stack_id, max_retries=0):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+        stack.set_status(orchestrate.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -1520,13 +1536,14 @@ def finish_stack(stack_id):
         logger.info('Finishing stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(finish_stack.name,
+        stack.set_status(finish_stack.name, Stack.FINALIZING,
                          'Performing final updates to Stack.')
 
         # TODO: Are there any last minute updates and checks?
 
         # Update status
-        stack.set_status(finish_stack.name, 'Finished executing tasks.')
+        stack.set_status(finish_stack.name, Stack.FINISHED,
+                         'Finished executing tasks.')
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -1535,7 +1552,7 @@ def finish_stack(stack_id):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(finish_stack.name, err_msg, Level.ERROR)
+        stack.set_status(finish_stack.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -1549,7 +1566,7 @@ def register_volume_delete(stack_id, host_ids=None):
     """
     try:
         stack = Stack.objects.get(id=stack_id)
-        stack.set_status(finish_stack.name,
+        stack.set_status(finish_stack.name, Stack.DESTROYING,
                          'Registering volumes for deletion.')
 
         # use the stack driver to register all volumes on the hosts to
@@ -1559,7 +1576,7 @@ def register_volume_delete(stack_id, host_ids=None):
             logger.debug('Deleting volumes for hosts {0}'.format(hosts))
             driver.register_volumes_for_delete(hosts)
 
-        stack.set_status(finish_stack.name,
+        stack.set_status(finish_stack.name, Stack.DESTROYING,
                          'Finished registering volumes for deletion.')
 
     except Stack.DoesNotExist, e:
@@ -1569,7 +1586,7 @@ def register_volume_delete(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(Stack.ERROR, err_msg)
+        stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
         raise
 
@@ -1585,7 +1602,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
     """
     try:
         stack = Stack.objects.get(id=stack_id)
-        stack.set_status(destroy_hosts.name,
+        stack.set_status(destroy_hosts.name, Stack.TERMINATING,
                          'Destroying stack infrastructure. This may '
                          'take a while.')
         hosts = stack.get_hosts(host_ids)
@@ -1642,7 +1659,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
 
             if result.status_code > 0:
                 err_msg = result.std_err if result.std_err else result.std_out
-                stack.set_status(destroy_hosts.name, err_msg, Stack.ERROR)
+                stack.set_status(destroy_hosts.name, Stack.ERROR,
+                                 err_msg, Stack.ERROR)
                 raise StackTaskException(
                     'Error destroying hosts on stack {0}: {1!r}'.format(
                         stack_id,
@@ -1665,7 +1683,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                                                    driver.STATE_TERMINATED,
                                                    timeout=10 * 60)
                 if not ok:
-                    stack.set_status(destroy_hosts.name, result, Stack.ERROR)
+                    stack.set_status(destroy_hosts.name, Stack.ERROR,
+                                     result, Stack.ERROR)
                     raise StackTaskException(result)
                 known_hosts.update(instance_id='', state='terminated')
 
@@ -1688,7 +1707,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
             hosts.delete()
             stack._generate_map_file()
 
-        stack.set_status(destroy_hosts.name,
+        stack.set_status(destroy_hosts.name, Stack.FINALIZING,
                          'Finished destroying stack infrastructure.')
 
     except Stack.DoesNotExist:
@@ -1698,7 +1717,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(destroy_hosts.name, err_msg, level=Stack.ERROR)
+        stack.set_status(destroy_hosts.name, Stack.ERROR,
+                         err_msg, level=Stack.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -1709,12 +1729,12 @@ def destroy_stack(stack_id):
     """
     try:
         stack = Stack.objects.get(id=stack_id)
-        stack.set_status(destroy_stack.name,
+        stack.set_status(destroy_stack.name, Stack.DESTROYING,
                          'Performing final cleanup of stack.')
         hosts = stack.get_hosts()
 
         if hosts.count() > 0:
-            stack.set_status(destroy_stack.name,
+            stack.set_status(destroy_stack.name, Stack.DESTROYING,
                              'Stack appears to have hosts attached and '
                              'can\'t be completely destroyed.',
                              level=Stack.ERROR)
@@ -1730,7 +1750,7 @@ def destroy_stack(stack_id):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(Stack.ERROR, err_msg)
+        stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
         raise
 
@@ -1746,7 +1766,7 @@ def unregister_dns(stack_id, host_ids=None):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
 
-        stack.set_status(Stack.CONFIGURING,
+        stack.set_status(Stack.CONFIGURING, Stack.CONFIGURING,
                          'Unregistering hosts with DNS provider.')
 
         # Use the provider implementation to register a set of hosts
@@ -1756,7 +1776,7 @@ def unregister_dns(stack_id, host_ids=None):
             logger.debug('Unregistering DNS for hosts: {0}'.format(hosts))
             driver.unregister_dns(hosts)
 
-        stack.set_status(Stack.CONFIGURING,
+        stack.set_status(Stack.CONFIGURING, Stack.DESTROYING,
                          'Finished unregistering hosts with DNS provider.')
 
     except Stack.DoesNotExist:
@@ -1766,7 +1786,7 @@ def unregister_dns(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(Stack.ERROR, err_msg)
+        stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
         raise
 
@@ -1796,7 +1816,7 @@ def execute_action(stack_id, action, *args, **kwargs):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(Stack.ERROR, err_msg)
+        stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
         raise
 
@@ -1837,11 +1857,11 @@ def custom_action(action_id, host_target, command):
         action.save()
 
     except salt.client.SaltInvocationError:
-        action.status = StackAction.ERRORED
+        action.status = StackAction.ERROR
         action.save()
 
     except salt.client.SaltReqTimeoutError:
-        action.status = StackAction.ERRORED
+        action.status = StackAction.ERROR
         action.save()
 
     # cmd = [[
@@ -1871,6 +1891,6 @@ def custom_action(action_id, host_target, command):
     #     action.save()
     #
     # except AttributeError:
-    #     action.status = StackAction.ERRORED
+    #     action.status = StackAction.ERROR
     #     action.save()
     #     raise

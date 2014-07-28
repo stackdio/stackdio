@@ -203,12 +203,16 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # check for hostname collisions if namespace is provided
         namespace = request.DATA.get('namespace')
+
+        hostdefs = blueprint.host_definitions.all()
+        hostnames = models.get_hostnames_from_hostdefs(
+            hostdefs,
+            username=request.user.username,
+            namespace=namespace)
+
         if namespace:
-            hostdefs = blueprint.host_definitions.all()
-            hostnames = models.get_hostnames_from_hostdefs(
-                hostdefs,
-                username=request.user.username,
-                namespace=namespace)
+            # If the namespace was not provided, then there is no chance
+            # of collision within the database
 
             # query for existing host names
             # Leave this in so that we catch errors faster if they are local,
@@ -222,25 +226,25 @@ class StackListAPIView(generics.ListCreateAPIView):
             if errors:
                 raise BadRequest(errors)
 
-            salt_cloud = salt.cloud.CloudClient(
-                join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
-            query = salt_cloud.query()
+        salt_cloud = salt.cloud.CloudClient(
+            join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
+        query = salt_cloud.query()
 
-            # Since a blueprint can have multiple providers
-            providers = set()
-            for bhd in hostdefs:
-                providers.add(bhd.cloud_profile.cloud_provider)
+        # Since a blueprint can have multiple providers
+        providers = set()
+        for bhd in hostdefs:
+            providers.add(bhd.cloud_profile.cloud_provider)
 
-            # Check to find duplicates
-            dups = []
-            for provider in providers:
-                provider_type = provider.provider_type.type_name
-                for instance in query[provider.title][provider_type]:
-                    if instance in hostnames:
-                        dups.append(instance)
+        # Check to find duplicates
+        dups = []
+        for provider in providers:
+            provider_type = provider.provider_type.type_name
+            for instance in query[provider.title][provider_type]:
+                if instance in hostnames:
+                    dups.append(instance)
 
-            if dups:
-                errors.setdefault('duplicate_hostnames', dups)
+        if dups:
+            errors.setdefault('duplicate_hostnames', dups)
 
         if errors:
             raise BadRequest(errors)
@@ -265,7 +269,7 @@ class StackListAPIView(generics.ListCreateAPIView):
             workflow.opts.failure_percent = failure_percent
             workflow.execute()
 
-            stack.set_status('queued',
+            stack.set_status('queued', models.Stack.PENDING,
                              'Stack has been submitted to launch queue.')
 
         # return serialized stack object
@@ -288,9 +292,15 @@ class StackDetailAPIView(PublicStackMixin,
         """
         # Update the status
         stack = self.get_object()
+        if stack.status not in models.Stack.SAFE_DELETE_STATES:
+            raise BadRequest('You may not delete this stack in its '
+                             'current state.  Please wait until it is finished '
+                             'with the current action.')
+
         msg = 'Stack will be removed upon successful termination ' \
               'of all machines'
-        stack.set_status(models.Stack.DESTROYING, msg)
+        stack.set_status(models.Stack.DESTROYING,
+                         models.Stack.DESTROYING, msg)
         parallel = request.DATA.get('parallel', True)
 
         # Execute the workflow
@@ -427,6 +437,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
 
         # Kick off the celery task for the given action
         stack.set_status(models.Stack.EXECUTING_ACTION,
+                         models.Stack.PENDING,
                          'Stack is executing action \'{0}\''.format(action))
 
         if action == BaseCloudProvider.ACTION_CUSTOM:

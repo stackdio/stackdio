@@ -13,6 +13,8 @@ import boto
 import yaml
 from boto.route53.record import ResourceRecordSets
 
+from boto.exception import EC2ResponseError
+
 from cloud.providers.base import (
     BaseCloudProvider,
     TimeoutException,
@@ -469,8 +471,8 @@ class AWSCloudProvider(BaseCloudProvider):
                 logger.warn('create_security_group has deleted existing group '
                             '{0} prior to creating it.'.format(
                                 security_group_name))
-            except:
-                pass
+            except BadRequest:
+                logger.debug('security group did not already exist')
 
         # create the group in the VPC or classic
         kwargs = {}

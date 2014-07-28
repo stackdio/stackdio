@@ -223,7 +223,7 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, API, models) {
 
                 }
                 content.push('>');
-                content.push(h.status);
+                content.push(h.status_detail);
                 content.push('</div>');
                 content.push("<div class='grey'>");
                 content.push(moment(h.created).fromNow());

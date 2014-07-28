@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'store/Blueprints', 'store/Stacks', 'api/api'],
-function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
+define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'util/stacks', 'store/Blueprints', 'store/Stacks', 'api/api'],
+function (Q, ko, bootbox, $galaxy, alerts, stackutils, BlueprintStore, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -56,29 +56,7 @@ function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
          *  ==================================================================================
         */
 
-        // This builds the HTML for the stack history popover element
-        self.popoverBuilder = function (stack) {
-            return stack.fullHistory.map(function (h) {
-                var content = [];
-
-                content.push("<div class=\'dotted-border xxsmall-padding\'>");
-                content.push("<div");
-                if (h.level === 'ERROR') {
-                    content.push(" class='btn-danger'");
-                
-                }
-                content.push('>');
-                content.push(h.status);
-                content.push('</div>');
-                content.push("<div class='grey'>");
-                content.push(moment(h.created).fromNow());
-                content.push('</div>');
-                content.push('</div>');
-
-                return content.join('');
-
-            }).join('');
-        };
+        self.popoverBuilder = stackutils.popoverBuilder;
 
         self.doStackAction = function (action, evt, stack) {
             var data = JSON.stringify({
@@ -132,7 +110,7 @@ function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
                                 StackStore.populate(true);
                             },
                             error: function (request, status, error) {
-                                alerts.showMessage('#error', 'Unable to delete this stack.', true, 2000);
+                                alerts.showMessage('#error', request.responseJSON.detail, true, 2000);
                             }
                         });
                     }
@@ -180,6 +158,8 @@ function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
                 }
             });
         };
+
+        self.getStatusType = stackutils.getStatusType;
 
         self.refresh = function() {
             StackStore.populate(true);

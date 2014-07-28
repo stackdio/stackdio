@@ -4,7 +4,6 @@ import os
 
 import djcelery
 import dj_database_url
-from kombu import Queue
 
 from core.config import StackdioConfig
 
