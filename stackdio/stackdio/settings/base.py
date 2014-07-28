@@ -1,9 +1,13 @@
 # Django settings for stackdio project.
 
+import os
+
 import djcelery
 import dj_database_url
-import os
+from kombu import Queue
+
 from core.config import StackdioConfig
+
 
 djcelery.setup_loader()
 
@@ -306,6 +310,28 @@ CLOUD_PROVIDERS = [
 ##
 BROKER_URL = 'amqp://guest:guest@localhost:5672/'
 CELERY_REDIRECT_STDOUTS = False
+CELERY_DEFAULT_QUEUE = 'default'
+CELERY_ROUTES = {
+    'formulas.import_formula': {'queue': 'formulas'},
+    'formulas.update_formula': {'queue': 'formulas'},
+    'stacks.cure_zombies': {'queue': 'stacks'},
+    'stacks.custom_action': {'queue': 'stacks'},
+    'stacks.destroy_hosts': {'queue': 'stacks'},
+    'stacks.destroy_stack': {'queue': 'stacks'},
+    'stacks.execute_action': {'queue': 'stacks'},
+    'stacks.finish_stack': {'queue': 'stacks'},
+    'stacks.handle_error': {'queue': 'stacks'},
+    'stacks.highstate': {'queue': 'stacks'},
+    'stacks.launch_hosts': {'queue': 'stacks'},
+    'stacks.orchestrate': {'queue': 'stacks'},
+    'stacks.ping': {'queue': 'stacks'},
+    'stacks.register_dns': {'queue': 'stacks'},
+    'stacks.register_volume_delete': {'queue': 'stacks'},
+    'stacks.sync_all': {'queue': 'stacks'},
+    'stacks.tag_infrastructure': {'queue': 'stacks'},
+    'stacks.unregister_dns': {'queue': 'stacks'},
+    'stacks.update_metadata': {'queue': 'stacks'},
+}
 
 ##
 # LDAP configuration. To enable this, you should copy ldap_settings.py.template
