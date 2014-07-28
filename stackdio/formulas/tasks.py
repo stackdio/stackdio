@@ -53,7 +53,7 @@ def clone_to_temp(formula, git_password):
 
     try:
         # Clone the repo into a temp dir
-        repo = git.Repo.clone_from(uri, tmpdir)
+        repo = git.Repo.clone_from(uri, repodir)
 
         origin = repo.remotes.origin.name
 
@@ -61,7 +61,7 @@ def clone_to_temp(formula, git_password):
         repo.git.remote('set-url', origin, formula.uri)
 
         # Remove the logs which also store the password
-        shutil.rmtree(os.path.join(tmpdir, '.git', 'logs'))
+        shutil.rmtree(os.path.join(repodir, '.git', 'logs'))
 
     except git.GitCommandError:
         raise FormulaTaskException(
