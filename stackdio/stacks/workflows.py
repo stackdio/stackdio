@@ -31,6 +31,7 @@ class BaseWorkflow(object):
 class LaunchWorkflowOptions(WorkflowOptions):
     def __init__(self):
         super(LaunchWorkflowOptions, self).__init__()
+        self.provision = True
         self.max_retries = 2
         self.parallel = True
         self.simulate_launch_failures = False
@@ -51,7 +52,7 @@ class LaunchWorkflow(BaseWorkflow):
         host_ids = self.host_ids
         opts = self.opts
 
-        return [
+        l = [
             tasks.launch_hosts.si(
                 stack_id,
                 parallel=opts.parallel,
@@ -67,10 +68,13 @@ class LaunchWorkflow(BaseWorkflow):
             tasks.register_dns.si(stack_id, host_ids=self.host_ids),
             tasks.ping.si(stack_id),
             tasks.sync_all.si(stack_id),
-            tasks.highstate.si(stack_id, max_retries=opts.max_retries),
-            tasks.orchestrate.si(stack_id, max_retries=opts.max_retries),
-            tasks.finish_stack.si(stack_id),
+            tasks.highstate.si(stack_id, max_retries=opts.max_retries)
         ]
+        if opts.provision:
+            l.append(tasks.orchestrate.si(stack_id,
+                                          max_retries=opts.max_retries))
+        l.append(tasks.finish_stack.si(stack_id))
+        return l
 
 
 class DestroyWorkflowOptions(WorkflowOptions):
