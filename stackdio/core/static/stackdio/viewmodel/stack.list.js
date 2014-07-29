@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'util/stack', 'store/Blueprints', 'store/Stacks', 'api/api'],
-function (Q, ko, bootbox, $galaxy, alerts, stackutils, BlueprintStore, StackStore, API) {
+define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'util/stack', 'util/ladda', 'store/Blueprints', 'store/Stacks', 'api/api'],
+function (Q, ko, bootbox, $galaxy, alerts, stackutils, Ladda, BlueprintStore, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -47,7 +47,7 @@ function (Q, ko, bootbox, $galaxy, alerts, stackutils, BlueprintStore, StackStor
                 $('span').popover('hide');
             }).catch(function (err) {
                 console.error(err);
-            })
+            }).done();
         });
 
         /*
@@ -79,8 +79,17 @@ function (Q, ko, bootbox, $galaxy, alerts, stackutils, BlueprintStore, StackStor
 
         self.getStatusType = stackutils.getStatusType;
 
-        self.refresh = function() {
-            StackStore.populate(true);
+        self.refresh = function(obj, evt) {
+            evt.preventDefault();
+            var l = Ladda.create(evt.currentTarget);
+            l.start();
+            StackStore.populate(true).then(function() {
+                l.stop();
+            }).catch(function (err) {
+                console.error(err);
+                alerts.showMessage('#error', err, true, 4000);
+                l.stop();
+            }).done();
         };
 
     };
