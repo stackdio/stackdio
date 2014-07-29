@@ -988,6 +988,8 @@ def highstate(stack_id, max_retries=0):
             )
 
             result = {}
+            # cmd_batch returns a generator that blocks until jobs finish, so
+            # we want to loop through it until the jobs are done
             for i in ret:
                 for k, v in i.items():
                     result[k] = v

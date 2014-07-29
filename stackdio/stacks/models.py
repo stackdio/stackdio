@@ -4,14 +4,14 @@ import re
 import logging
 import socket
 
+import salt.config
+import envoy
+import yaml
+
 from django.conf import settings
 from django.db import models, transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-
-import envoy
-import yaml
-
 from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
@@ -22,6 +22,7 @@ from model_utils import Choices
 from core.fields import DeletingFileField
 from core.utils import recursive_update
 from cloud.models import SecurityGroup
+
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -176,7 +177,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
     # Errors
     ERROR = 'error'
 
-    SAFE_DELETE_STATES = (FINISHED, ERROR)
+    SAFE_STATES = [FINISHED, ERROR]
 
     # Not sure?
     OK = 'ok'

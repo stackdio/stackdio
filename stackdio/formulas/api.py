@@ -22,7 +22,9 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
-    filter_class = filters.FormulaFilter
+
+    # This is causing a 'maximum recursion depth exceeded issue'
+    # filter_class = filters.FormulaFilter
 
     def get_queryset(self):
         return self.request.user.formulas.all()

@@ -292,7 +292,7 @@ class StackDetailAPIView(PublicStackMixin,
         """
         # Update the status
         stack = self.get_object()
-        if stack.status not in models.Stack.SAFE_DELETE_STATES:
+        if stack.status not in models.Stack.SAFE_STATES:
             raise BadRequest('You may not delete this stack in its '
                              'current state.  Please wait until it is finished '
                              'with the current action.')
@@ -375,6 +375,11 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         """
 
         stack = self.get_object()
+
+        if stack.status not in models.Stack.SAFE_STATES:
+            raise BadRequest('You may not perform an action while the '
+                             'stack is in its current state.')
+
         driver_hosts_map = stack.get_driver_hosts_map()
         total_host_count = len(stack.get_hosts().exclude(instance_id=''))
         action = request.DATA.get('action', None)

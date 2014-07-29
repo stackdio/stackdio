@@ -142,9 +142,13 @@ function (Q, ko, $galaxy, API) {
             self.selectedLog(obj.name);
             self.selectedLogText("Loading...");
             API.Stacks.getLog(obj.url).then(function (log) {
-                self.selectedLogText(log);
+                if (obj.name === self.selectedLog()) {
+                    self.selectedLogText(log);
+                }
             }).catch(function (error) {
-                self.selectedLogText(error);
+                if (obj.name === self.selectedLog()) {
+                    self.selectedLogText(error);
+                }
             });
         };
 

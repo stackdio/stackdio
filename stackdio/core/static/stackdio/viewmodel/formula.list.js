@@ -4,10 +4,11 @@ define([
     'bootbox',
     'util/galaxy',
     'util/alerts',
+    'util/ladda',
     'store/Formulas',
     'api/api'
 ],
-function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
+function (Q, ko, bootbox, $galaxy, alerts, Ladda, FormulaStore, API) {
     var vm = function () {
         var self = this;
 
@@ -160,8 +161,17 @@ function (Q, ko, bootbox, $galaxy, alerts, FormulaStore, API) {
             });
         }
 
-        self.loadFormula = function () {
-            FormulaStore.populate(true);
+        self.loadFormula = function (obj, evt) {
+            evt.preventDefault();
+            var l = Ladda.create(evt.currentTarget);
+            l.start();
+
+            FormulaStore.populate(true).then(function() {
+                l.stop();
+            }).catch(function (err) {
+                console.error(err);
+                l.stop();
+            }).done();
         };
 
         self.showImportForm = function () {
