@@ -115,6 +115,8 @@ function (Q, ko, $galaxy, API) {
        
         self.goToTab = function (obj, evt) {
             var tab=evt.target.id;
+            // Clear out current log data so the UI isn't slow
+            self.selectedLogText("Loading...");
             $galaxy.transport({
                 location: 'stack.'+tab,
                 payload: {
