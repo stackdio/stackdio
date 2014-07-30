@@ -6,10 +6,11 @@ define([
     'util/alerts',
     'util/galaxy',
     'util/stack',
+    'util/ladda',
     'api/api',
     'model/models',
 ],
-function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, API, models) {
+function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, models) {
     var vm = function () {
         if (!settings.superuser) {
             $galaxy.transport('welcome');

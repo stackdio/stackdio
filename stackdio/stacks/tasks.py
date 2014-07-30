@@ -289,7 +289,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
                             logger.debug(err_msg)
                             stack.set_status(
                                 launch_hosts.name,
-                                Stack.ERROR,
+                                Stack.LAUNCHING,
                                 err_msg,
                                 Level.WARN)
 
@@ -328,7 +328,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=0,
 
                     if current_try <= max_retries:
                         stack.set_status(launch_hosts.name,
-                                         Stack.ERROR,
+                                         Stack.LAUNCHING,
                                          '{0} failed to launch and '
                                          'will be retried.'.format(label),
                                          Level.WARN)
@@ -1838,7 +1838,7 @@ def custom_action(action_id, host_target, command):
         salt_client = salt.client.LocalClient(os.path.join(
             settings.STACKDIO_CONFIG.salt_config_root, 'master'))
 
-        result = salt_client.cmd(
+        res = salt_client.cmd_iter(
             '{0} and G@stack_id:{1}'.format(host_target, stack_id),
             'cmd.run',
             [command],
@@ -1847,6 +1847,10 @@ def custom_action(action_id, host_target, command):
                 'log-file': '/home/stackdio/test.log',
                 'log-file-level': 'debug'
             })
+
+        result = {}
+        for k, v in res.items():
+            result[k] = v
 
         # Convert to an easier format for javascript
         ret = []

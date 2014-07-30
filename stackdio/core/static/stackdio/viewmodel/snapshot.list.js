@@ -4,13 +4,14 @@ define([
     'bootbox',
     'util/galaxy',
     'util/alerts',
+    'util/ladda',
     'store/ProviderTypes',
     'store/Accounts',
     'store/Profiles',
     'store/Snapshots',
     'api/api'
 ],
-function (Q, ko, bootbox, $galaxy, alerts, ProviderTypeStore, AccountStore, ProfileStore, SnapshotStore, API) {
+function (Q, ko, bootbox, $galaxy, alerts, Ladda, ProviderTypeStore, AccountStore, ProfileStore, SnapshotStore, API) {
     var vm = function () {
         var self = this;
 
@@ -133,8 +134,17 @@ function (Q, ko, bootbox, $galaxy, alerts, ProviderTypeStore, AccountStore, Prof
             });
         };
 
-        self.refresh = function() {
-            SnapshotStore.populate(true);
+        self.refresh = function(obj, evt) {
+            evt.preventDefault();
+            var l = Ladda.create(evt.currentTarget);
+            l.start();
+
+            SnapshotStore.populate(true).then(function() {
+                l.stop();
+            }).catch(function (err) {
+                console.error(err);
+                l.stop();
+            }).done();
         };
 
     };
