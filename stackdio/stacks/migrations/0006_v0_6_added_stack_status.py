@@ -60,7 +60,7 @@ class Migration(SchemaMigration):
     def backwards(self, orm):
         db.delete_column(u'stacks_stackaction', 'status_changed')
 
-        db.alter_column(u'stacks_stackaction', 'status', 
+        db.alter_column(u'stacks_stackaction', 'status',
                         self.gf('django.db.models.fields.CharField')(default='waiting', max_length=8))
 
         # Deleting model 'StackAction'

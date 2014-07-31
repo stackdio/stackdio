@@ -1327,14 +1327,6 @@ def orchestrate(stack_id, max_retries=2):
                                         })
                                 continue
 
-                        if len(role_results) != role_host_nums[role]:
-                            errors.setdefault(role, []).append({
-                                'error': 'Only {0} out of {1} hosts were orchestrated'.format(
-                                    len(role_results),
-                                    role_host_nums[role]
-                                )
-                            })
-
                             # iterate over the individual states in the
                             # host looking for states that had a result
                             # of false
@@ -1351,6 +1343,14 @@ def orchestrate(stack_id, max_retries=2):
                                     if not recoverable:
                                         unrecoverable_error = True
                                     errors.setdefault(host, []).append(err)
+
+                        if len(role_results) != role_host_nums[role]:
+                            errors.setdefault(role, []).append({
+                                'error': 'Only {0} out of {1} hosts were orchestrated'.format(
+                                    len(role_results),
+                                    role_host_nums[role]
+                                )
+                            })
 
                     if errors:
                         # write the errors to the err_file
