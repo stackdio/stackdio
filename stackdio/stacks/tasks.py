@@ -132,7 +132,7 @@ def handle_error(stack_id, task_id):
 
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.launch_hosts')  # NOQA
-def launch_hosts(stack_id, parallel=True, max_retries=0,
+def launch_hosts(stack_id, parallel=True, max_retries=2,
                  simulate_launch_failures=False, simulate_zombies=False,
                  simulate_ssh_failures=False, failure_percent=0.3):
     """
@@ -906,7 +906,7 @@ def sync_all(stack_id):
 
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.highstate')  # NOQA
-def highstate(stack_id, max_retries=0):
+def highstate(stack_id, max_retries=2):
     """
     Executes the state.top function using the custom top file generated via
     the stacks.models._generate_top_file. This will only target the 'base'
@@ -1184,7 +1184,7 @@ def highstate(stack_id, max_retries=0):
 
 # TODO: Ignoring code complexity issues
 @celery.task(name='stacks.orchestrate') # NOQA
-def orchestrate(stack_id, max_retries=0):
+def orchestrate(stack_id, max_retries=2):
     """
     Executes the runners.state.over function with the custom overstate
     file  generated via the stacks.models._generate_overstate_file. This

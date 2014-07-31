@@ -128,6 +128,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         # UNDOCUMENTED PARAMS
         # Skips launching if set to False
         launch_stack = request.DATA.get('auto_launch', True)
+        provision_stack = request.DATA.get('auto_provision', True)
 
         # Launches in parallel mode if set to True
         parallel = request.DATA.get('parallel', True)
@@ -261,6 +262,7 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         if launch_stack:
             workflow = workflows.LaunchWorkflow(stack)
+            workflow.opts.provision = provision_stack
             workflow.opts.parallel = parallel
             workflow.opts.max_retries = max_retries
             workflow.opts.simulate_launch_failures = simulate_launch_failures
@@ -462,7 +464,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                 action_ids.append(action.id)
 
                 task_list.append(tasks.custom_action.si(
-                    action.id, 
+                    action.id,
                     command['host_target'],
                     command['command']
                 ))
@@ -498,6 +500,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # Launch is slightly different than other actions
         if action == BaseCloudProvider.ACTION_LAUNCH:
             task_list.append(tasks.launch_hosts.si(stack.id))
+            task_list.append(tasks.update_metadata.si(stack.id))
             task_list.append(tasks.cure_zombies.si(stack.id))
 
         # Terminate should leverage salt-cloud or salt gets confused about
@@ -540,9 +543,11 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             task_list.append(tasks.ping.si(stack.id))
             task_list.append(tasks.sync_all.si(stack.id))
 
-        if action == BaseCloudProvider.ACTION_PROVISION:
-            task_list.append(tasks.highstate.si(stack.id, 2))
-            task_list.append(tasks.orchestrate.si(stack.id, 2))
+        if action in (BaseCloudProvider.ACTION_START,
+                      BaseCloudProvider.ACTION_LAUNCH,
+                      BaseCloudProvider.ACTION_PROVISION):
+            task_list.append(tasks.highstate.si(stack.id))
+            task_list.append(tasks.orchestrate.si(stack.id))
 
         if action == BaseCloudProvider.ACTION_ORCHESTRATE:
             task_list.append(tasks.orchestrate.si(stack.id, 2))
