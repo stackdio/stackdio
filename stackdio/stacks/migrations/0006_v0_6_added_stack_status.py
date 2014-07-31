@@ -8,22 +8,30 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Fix table
+        db.add_column(u'stacks_stackaction', 'status_changed',
+                      self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status'),
+                      keep_default=False)
+
+        db.alter_column(u'stacks_stackaction', 'status',
+                        self.gf('model_utils.fields.StatusField')(default='waiting', max_length=100, no_check_for_status=True))
+
         # Adding model 'StackAction'
-        db.create_table(u'stacks_stackaction', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('status', self.gf('model_utils.fields.StatusField')(default='waiting', max_length=100, no_check_for_status=True)),
-            ('status_changed', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status')),
-            ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
-            ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='actions', to=orm['stacks.Stack'])),
-            ('start', self.gf('django.db.models.fields.DateTimeField')()),
-            ('type', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('host_target', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('command', self.gf('django.db.models.fields.TextField')()),
-            ('std_out_storage', self.gf('django.db.models.fields.TextField')()),
-            ('std_err_storage', self.gf('django.db.models.fields.TextField')()),
-        ))
-        db.send_create_signal(u'stacks', ['StackAction'])
+        # db.create_table(u'stacks_stackaction', (
+        #     (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+        #     ('status', self.gf('model_utils.fields.StatusField')(default='waiting', max_length=100, no_check_for_status=True)),
+        #     ('status_changed', self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status')),
+        #     ('created', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+        #     ('modified', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+        #     ('stack', self.gf('django.db.models.fields.related.ForeignKey')(related_name='actions', to=orm['stacks.Stack'])),
+        #     ('start', self.gf('django.db.models.fields.DateTimeField')()),
+        #     ('type', self.gf('django.db.models.fields.CharField')(max_length=50)),
+        #     ('host_target', self.gf('django.db.models.fields.CharField')(max_length=255)),
+        #     ('command', self.gf('django.db.models.fields.TextField')()),
+        #     ('std_out_storage', self.gf('django.db.models.fields.TextField')()),
+        #     ('std_err_storage', self.gf('django.db.models.fields.TextField')()),
+        # ))
+        # db.send_create_signal(u'stacks', ['StackAction'])
 
         # Adding field 'StackHistory.status_changed'
         db.add_column(u'stacks_stackhistory', 'status_changed',
@@ -50,8 +58,13 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
+        db.delete_column(u'stacks_stackaction', 'status_changed')
+
+        db.alter_column(u'stacks_stackaction', 'status', 
+                        self.gf('django.db.models.fields.CharField')(default='waiting', max_length=8))
+
         # Deleting model 'StackAction'
-        db.delete_table(u'stacks_stackaction')
+        # db.delete_table(u'stacks_stackaction')
 
         # Deleting field 'StackHistory.status_changed'
         db.delete_column(u'stacks_stackhistory', 'status_changed')
