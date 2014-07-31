@@ -239,7 +239,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         dups = []
         for provider in providers:
             provider_type = provider.provider_type.type_name
-            for instance in query[provider.title][provider_type]:
+            for instance in query[provider.slug][provider_type]:
                 if instance in hostnames:
                     dups.append(instance)
 
@@ -541,11 +541,11 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             task_list.append(tasks.sync_all.si(stack.id))
 
         if action == BaseCloudProvider.ACTION_PROVISION:
-            task_list.append(tasks.highstate.si(stack.id))
-            task_list.append(tasks.orchestrate.si(stack.id))
+            task_list.append(tasks.highstate.si(stack.id, 2))
+            task_list.append(tasks.orchestrate.si(stack.id, 2))
 
         if action == BaseCloudProvider.ACTION_ORCHESTRATE:
-            task_list.append(tasks.orchestrate.si(stack.id))
+            task_list.append(tasks.orchestrate.si(stack.id, 2))
 
         task_list.append(tasks.finish_stack.si(stack.id))
 

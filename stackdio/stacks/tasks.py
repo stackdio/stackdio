@@ -1205,6 +1205,13 @@ def orchestrate(stack_id, max_retries=0):
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
 
+        role_host_nums = {}
+        # Get the number of hosts for each role
+        for bhd in stack.blueprint.host_definitions.all():
+            for fc in bhd.formula_components.all():
+                role_host_nums.setdefault(fc.component.sls_path, 0)
+                role_host_nums[fc.component.sls_path] += bhd.count
+
         # we'll break out of the loop based on the given number of retries
         current_try, unrecoverable_error = 0, False
         while True:
@@ -1289,6 +1296,14 @@ def orchestrate(stack_id, max_retries=0):
                 if result is not None:
                     for role, role_results in result.items():
                         for host, stage_result in role_results.items():
+                            if host == 'req_|-fail_|-fail_|-None':
+                                # Requisite error for the whole role
+                                errors.setdefault(
+                                    '{0} failed'.format(role),
+                                    []).append({
+                                        'error': stage_result['ret']
+                                    })
+                                continue
 
                             if 'success' in stage_result \
                                     and not stage_result['success']:
@@ -1311,6 +1326,14 @@ def orchestrate(stack_id, max_retries=0):
                                             'error': err
                                         })
                                 continue
+
+                        if len(role_results) != role_host_nums[role]:
+                            errors.setdefault(role, []).append({
+                                'error': 'Only {0} out of {1} hosts were orchestrated'.format(
+                                    len(role_results),
+                                    role_host_nums[role]
+                                )
+                            })
 
                             # iterate over the individual states in the
                             # host looking for states that had a result
