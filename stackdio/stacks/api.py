@@ -457,6 +457,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         # Launch is slightly different than other actions
         if action == BaseCloudProvider.ACTION_LAUNCH:
             task_list.append(tasks.launch_hosts.si(stack.id))
+            task_list.append(tasks.update_metadata.si(stack.id))
             task_list.append(tasks.cure_zombies.si(stack.id))
 
         # Terminate should leverage salt-cloud or salt gets confused about
@@ -499,7 +500,9 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             task_list.append(tasks.ping.si(stack.id))
             task_list.append(tasks.sync_all.si(stack.id))
 
-        if action == BaseCloudProvider.ACTION_PROVISION:
+        if action in (BaseCloudProvider.ACTION_START,
+                      BaseCloudProvider.ACTION_LAUNCH,
+                      BaseCloudProvider.ACTION_PROVISION):
             task_list.append(tasks.highstate.si(stack.id))
             task_list.append(tasks.orchestrate.si(stack.id))
 
