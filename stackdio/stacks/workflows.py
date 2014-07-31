@@ -62,6 +62,7 @@ class LaunchWorkflow(BaseWorkflow):
                 simulate_zombies=opts.simulate_zombies,
                 failure_percent=opts.failure_percent
             ),
+            tasks.update_metadata.si(stack_id, host_ids=host_ids),
             tasks.cure_zombies.si(stack_id, max_retries=opts.max_retries),
             tasks.update_metadata.si(stack_id, host_ids=host_ids),
             tasks.tag_infrastructure.si(stack_id, host_ids=self.host_ids),
