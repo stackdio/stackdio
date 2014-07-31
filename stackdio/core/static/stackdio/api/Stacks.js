@@ -12,11 +12,11 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             },
             success: function (response) {
                 var historyPromises = [],
-                    stacks = [];
+                stacks = [];
 
-                response.results.forEach(function (stack) {
+                response.results.forEach(function (stack, index) {
                     historyPromises[historyPromises.length] = api.getHistory(stack).then(function (stackWithHistory) {
-                        stacks[stacks.length] = new models.Stack().create(stackWithHistory);
+                        stacks[index] = new models.Stack().create(stackWithHistory);
                     });
                 });
 
@@ -187,7 +187,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 });
             },
             error: function (request, status, error) {
-                deferred.reject(new Error(error));
+                deferred.reject(JSON.parse(request.responseText).detail);
             }
         });
 

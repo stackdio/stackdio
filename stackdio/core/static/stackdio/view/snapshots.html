@@ -12,9 +12,11 @@
                             <a href="#" data-bind="text: title, click: $root.createSnapshot"></a>
                         </li>
                     </ul>
-                    <button class="btn btn-success" data-bind="click: $root.refresh">
-                      <span class="fa fa-refresh">&nbsp;</span>
-                      Refresh
+                    <button class="btn btn-success ladda-button" data-style="slide-right" data-bind="click: $root.refresh">
+                        <span class="ladda-label">
+                            <span class="fa fa-refresh">&nbsp;</span>
+                            Refresh
+                        </span>
                     </button>
                 </div>
             </div>

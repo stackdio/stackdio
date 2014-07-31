@@ -5,10 +5,12 @@ define([
     'bootbox',
     'util/alerts',
     'util/galaxy',
+    'util/stack',
+    'util/ladda',
     'api/api',
     'model/models',
 ],
-function (Q, settings, ko, bootbox, alerts, $galaxy, API, models) {
+function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, models) {
     var vm = function () {
         if (!settings.superuser) {
             $galaxy.transport('welcome');
@@ -105,10 +107,10 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, API, models) {
                         var historyPromises = [];
                         var stacks = [];
 
-                        response.results.forEach(function (stack) {
+                        response.results.forEach(function (stack, index) {
                             historyPromises[historyPromises.length] = API.Stacks.getHistory(stack).then(function (stackWithHistory) {
-                                stacks[stacks.length] = new models.Stack().create(stackWithHistory);
-                                stacks[stacks.length-1]['Host Count'] = stacks[stacks.length-1].host_count;
+                                stacks[index] = new models.Stack().create(stackWithHistory);
+                                stacks[index]['Host Count'] = stacks[index].host_count;
                             });
                         });
 
@@ -212,30 +214,9 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, API, models) {
         };
 
         // This builds the HTML for the stack history popover element
-        self.popoverBuilder = function (stack) {
-            return stack.fullHistory.map(function (h) {
-                var content = [];
+        self.popoverBuilder = stackutils.popoverBuilder;
 
-                content.push("<div class=\'dotted-border xxsmall-padding\'>");
-                content.push("<div");
-                if (h.level === 'ERROR') {
-                    content.push(" class='btn-danger'");
-
-                }
-                content.push('>');
-                content.push(h.status);
-                content.push('</div>');
-                content.push("<div class='grey'>");
-                content.push(moment(h.created).fromNow());
-                content.push('</div>');
-                content.push('</div>');
-
-                return content.join('');
-
-            }).join('');
-        };
-
-        self.switchTab(self.tabs()[0]);
+        self.getStatusType = stackutils.getStatusType;
 
     };
 

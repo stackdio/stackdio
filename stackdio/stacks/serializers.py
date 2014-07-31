@@ -56,6 +56,7 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'event',
             'status',
+            'status_detail',
             'level',
             'created'
         )
@@ -91,6 +92,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'id',
             'title',
             'description',
+            'status',
             'public',
             'url',
             'owner',

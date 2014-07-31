@@ -3,14 +3,14 @@ from datetime import datetime
 from operator import or_
 from os import listdir
 from os.path import join, isfile
-
-import envoy
-import yaml
 import zipfile
 import StringIO
+
+import salt.cloud
+import envoy
+import yaml
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
-
 from rest_framework import (
     generics,
     parsers,
@@ -21,6 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 from rest_framework.decorators import api_view
+from django.conf import settings
 
 from core.exceptions import BadRequest
 from core.renderers import PlainTextRenderer
@@ -33,8 +34,8 @@ from volumes.models import Volume
 from blueprints.models import Blueprint, BlueprintHostDefinition
 from cloud.providers.base import BaseCloudProvider
 from cloud.models import SecurityGroup
-
 from . import tasks, models, serializers, filters, validators, workflows
+
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,7 @@ class StackListAPIView(generics.ListCreateAPIView):
         Stack as well as generating the salt-cloud map that will be used to
         launch machines
         """
+        logger.debug(request.DATA)
         # make sure the user has a public key or they won't be able to SSH
         # later
         if not request.user.settings.public_key:
@@ -202,19 +204,48 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         # check for hostname collisions if namespace is provided
         namespace = request.DATA.get('namespace')
+
+        hostdefs = blueprint.host_definitions.all()
+        hostnames = models.get_hostnames_from_hostdefs(
+            hostdefs,
+            username=request.user.username,
+            namespace=namespace)
+
         if namespace:
-            hostdefs = blueprint.host_definitions.all()
-            hostnames = models.get_hostnames_from_hostdefs(
-                hostdefs,
-                username=request.user.username,
-                namespace=namespace)
+            # If the namespace was not provided, then there is no chance
+            # of collision within the database
 
             # query for existing host names
+            # Leave this in so that we catch errors faster if they are local,
+            #    Only hit up salt cloud if there are no duplicates locally
             hosts = models.Host.objects.filter(hostname__in=hostnames)
             if hosts.count():
                 errors.setdefault('duplicate_hostnames', []).extend(
                     [h.hostname for h in hosts]
                 )
+
+            if errors:
+                raise BadRequest(errors)
+
+        salt_cloud = salt.cloud.CloudClient(
+            join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
+        query = salt_cloud.query()
+
+        # Since a blueprint can have multiple providers
+        providers = set()
+        for bhd in hostdefs:
+            providers.add(bhd.cloud_profile.cloud_provider)
+
+        # Check to find duplicates
+        dups = []
+        for provider in providers:
+            provider_type = provider.provider_type.type_name
+            for instance in query[provider.slug][provider_type]:
+                if instance in hostnames:
+                    dups.append(instance)
+
+        if dups:
+            errors.setdefault('duplicate_hostnames', dups)
 
         if errors:
             raise BadRequest(errors)
@@ -240,7 +271,7 @@ class StackListAPIView(generics.ListCreateAPIView):
             workflow.opts.failure_percent = failure_percent
             workflow.execute()
 
-            stack.set_status('queued',
+            stack.set_status('queued', models.Stack.PENDING,
                              'Stack has been submitted to launch queue.')
 
         # return serialized stack object
@@ -263,9 +294,15 @@ class StackDetailAPIView(PublicStackMixin,
         """
         # Update the status
         stack = self.get_object()
+        if stack.status not in models.Stack.SAFE_STATES:
+            raise BadRequest('You may not delete this stack in its '
+                             'current state.  Please wait until it is finished '
+                             'with the current action.')
+
         msg = 'Stack will be removed upon successful termination ' \
               'of all machines'
-        stack.set_status(models.Stack.DESTROYING, msg)
+        stack.set_status(models.Stack.DESTROYING,
+                         models.Stack.DESTROYING, msg)
         parallel = request.DATA.get('parallel', True)
 
         # Execute the workflow
@@ -312,7 +349,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerPermission,)
 
-    def get_object(self):
+    def get_object(self, queryset=None):
         obj = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
@@ -340,6 +377,11 @@ class StackActionAPIView(generics.SingleObjectAPIView):
         """
 
         stack = self.get_object()
+
+        if stack.status not in models.Stack.SAFE_STATES:
+            raise BadRequest('You may not perform an action while the '
+                             'stack is in its current state.')
+
         driver_hosts_map = stack.get_driver_hosts_map()
         total_host_count = len(stack.get_hosts().exclude(instance_id=''))
         action = request.DATA.get('action', None)
@@ -402,6 +444,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
 
         # Kick off the celery task for the given action
         stack.set_status(models.Stack.EXECUTING_ACTION,
+                         models.Stack.PENDING,
                          'Stack is executing action \'{0}\''.format(action))
 
         if action == BaseCloudProvider.ACTION_CUSTOM:
@@ -434,11 +477,11 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                 "results_urls": []
             }
 
-            for id in action_ids:
+            for action_id in action_ids:
                 ret['results_urls'].append(reverse(
                     'stackaction-detail',
                     kwargs={
-                        'pk': id,
+                        'pk': action_id,
                     },
                     request=request
                 ))
@@ -507,7 +550,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             task_list.append(tasks.orchestrate.si(stack.id))
 
         if action == BaseCloudProvider.ACTION_ORCHESTRATE:
-            task_list.append(tasks.orchestrate.si(stack.id))
+            task_list.append(tasks.orchestrate.si(stack.id, 2))
 
         task_list.append(tasks.finish_stack.si(stack.id))
 
@@ -547,8 +590,8 @@ def stack_action_zip(request, pk):
         if len(action.std_out()) is 0:
             return Response({"detail": "Not found"})
 
-        buffer = StringIO.StringIO()
-        action_zip = zipfile.ZipFile(buffer, 'w')
+        file_buffer = StringIO.StringIO()
+        action_zip = zipfile.ZipFile(file_buffer, 'w')
 
         filename = 'action_output_' + \
             action.submit_time().strftime('%Y%m%d_%H%M%S')
@@ -564,7 +607,7 @@ def stack_action_zip(request, pk):
 
         action_zip.close()
 
-        response = HttpResponse(buffer.getvalue(),
+        response = HttpResponse(file_buffer.getvalue(),
                                 content_type='application/zip')
         response['Content-Disposition'] = (
             'attachment; filename={0}.zip'.format(filename)

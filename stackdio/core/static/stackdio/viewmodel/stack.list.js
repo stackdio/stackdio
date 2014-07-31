@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'store/Blueprints', 'store/Stacks', 'api/api'],
-function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
+define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'util/stack', 'util/ladda', 'store/Blueprints', 'store/Stacks', 'api/api'],
+function (Q, ko, bootbox, $galaxy, alerts, stackutils, Ladda, BlueprintStore, StackStore, API) {
     var vm = function () {
         var self = this;
 
@@ -47,7 +47,7 @@ function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
                 $('span').popover('hide');
             }).catch(function (err) {
                 console.error(err);
-            })
+            }).done();
         });
 
         /*
@@ -56,115 +56,11 @@ function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
          *  ==================================================================================
         */
 
-        // This builds the HTML for the stack history popover element
-        self.popoverBuilder = function (stack) {
-            return stack.fullHistory.map(function (h) {
-                var content = [];
+        self.popoverBuilder = stackutils.popoverBuilder;
 
-                content.push("<div class=\'dotted-border xxsmall-padding\'>");
-                content.push("<div");
-                if (h.level === 'ERROR') {
-                    content.push(" class='btn-danger'");
-                
-                }
-                content.push('>');
-                content.push(h.status);
-                content.push('</div>');
-                content.push("<div class='grey'>");
-                content.push(moment(h.created).fromNow());
-                content.push('</div>');
-                content.push('</div>');
+        self.doStackAction = stackutils.doStackAction;
 
-                return content.join('');
-
-            }).join('');
-        };
-
-        self.doStackAction = function (action, evt, stack) {
-            var data = JSON.stringify({
-                action: action.toLowerCase()
-            });
-
-            /* 
-             *  Unless the user wants to delete the stack permanently (see below)
-             *  then just PUT to the API with the appropriate action.
-             */
-            if (action !== 'Delete') {
-                bootbox.confirm("Please confirm that you want to perform this action on the stack.", function (result) {
-                    if (result) {
-                        $.ajax({
-                            url: stack.action,
-                            type: 'POST',
-                            data: data,
-                            headers: {
-                                "X-CSRFToken": stackdio.settings.csrftoken,
-                                "Accept": "application/json",
-                                "Content-Type": "application/json"
-                            },
-                            success: function (response) {
-                                alerts.showMessage('#success', 'Stack ' + action.toLowerCase() + ' has been initiated.', true);
-                                StackStore.populate(true);
-                            },
-                            error: function (request, status, error) {
-                                alerts.showMessage('#error', 'Unable to perform ' + action.toLowerCase() + ' action on that stack. ' + JSON.parse(request.responseText).detail, true, 7000);
-                            }
-                        });
-                    }
-                });
-
-            /*
-             *  Using the DELETE verb is truly destructive. Terminates all hosts, terminates all 
-             *  EBS volumes, and deletes stack/host details from the stackd.io database.
-             */
-            } else {
-                bootbox.confirm("Please confirm that you want to delete this stack. Be advised that this is a completely destructive act that will stop, terminate, and delete all hosts, as well as the definition of this stack.", function (result) {
-                    if (result) {
-                        $.ajax({
-                            url: stack.url,
-                            type: 'DELETE',
-                            headers: {
-                                "X-CSRFToken": stackdio.settings.csrftoken,
-                                "Accept": "application/json",
-                                "Content-Type": "application/json"
-                            },
-                            success: function (response) {
-                                alerts.showMessage('#success', 'Stack is currently being torn down and will be deleted once all hosts are terminated.', true, 5000);
-                                StackStore.populate(true);
-                            },
-                            error: function (request, status, error) {
-                                alerts.showMessage('#error', 'Unable to delete this stack.', true, 2000);
-                            }
-                        });
-                    }
-                });
-            }
-        };
-
-        self.showStackDetails = function (stack) {
-            self.selectedStack(stack);
-
-            API.Stacks.getProperties(stack).then(function (properties) {
-                $('#stack_properties_preview_edit').val(JSON.stringify(properties, undefined, 3));
-            }).done();
-
-            $('#stack_title_edit').val(stack.title);
-            $('#stack_description_edit').val(stack.description);
-            $('#stack_namespace_edit').val(stack.id);
-
-            
-            API.StackHosts.load(stack).then(function (response) {
-                $("#stack-edit-container").dialog("open");
-            });
-        };
-
-        self.showStackDetails = function (stack) {
-            $galaxy.transport({
-                location: 'stack.detail',
-                payload: {
-                    stack: stack.id
-                }
-            });
-        };
+        self.showStackDetails = stackutils.showStackDetails;
 
         self.createNewStack = function (blueprint) {
             API.Users.load().then(function (public_key) {
@@ -181,8 +77,19 @@ function (Q, ko, bootbox, $galaxy, alerts, BlueprintStore, StackStore, API) {
             });
         };
 
-        self.refresh = function() {
-            StackStore.populate(true);
+        self.getStatusType = stackutils.getStatusType;
+
+        self.refresh = function(obj, evt) {
+            evt.preventDefault();
+            var l = Ladda.create(evt.currentTarget);
+            l.start();
+            StackStore.populate(true).then(function() {
+                l.stop();
+            }).catch(function (err) {
+                console.error(err);
+                alerts.showMessage('#error', err, true, 4000);
+                l.stop();
+            }).done();
         };
 
     };

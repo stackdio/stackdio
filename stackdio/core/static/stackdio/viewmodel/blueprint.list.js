@@ -1,5 +1,5 @@
-define(['q', 'knockout', 'bootbox', 'util/galaxy', 'api/api', 'store/BlueprintComponents', 'store/BlueprintHosts', 'store/Blueprints'],
-function (Q, ko, bootbox, $galaxy, API, BlueprintComponentStore, BlueprintHostStore, BlueprintStore) {
+define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/ladda', 'api/api', 'store/BlueprintComponents', 'store/BlueprintHosts', 'store/Blueprints'],
+function (Q, ko, bootbox, $galaxy, Ladda, API, BlueprintComponentStore, BlueprintHostStore, BlueprintStore) {
     var vm = function () {
         /*
          *  ==================================================================================
@@ -82,8 +82,17 @@ function (Q, ko, bootbox, $galaxy, API, BlueprintComponentStore, BlueprintHostSt
             if (autohide) setTimeout(function () { $(id).addClass('hide'); $(id+'-content').empty(); }, timeout);
         };
 
-        self.refresh = function() {
-            BlueprintStore.populate(true);
+        self.refresh = function(obj, evt) {
+            evt.preventDefault();
+            var l = Ladda.create(evt.currentTarget);
+            l.start();
+
+            BlueprintStore.populate(true).then(function() {
+                l.stop();
+            }).catch(function (err) {
+                console.error(err);
+                l.stop();
+            }).done();
         };
     };
     return new vm();

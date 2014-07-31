@@ -3,6 +3,7 @@
         <tr>
             <th>Title</th>
             <th>Description</th>
+            <th>Status</th>
             <th>Hosts</th>
             <th>History</th>
             <th style="width:10%"></th>
@@ -12,6 +13,9 @@
         <tr>
             <td><a href="#" data-bind="text: $data.title, click: $root.showStackDetails"></a></td>
             <td data-bind="text: description"></td>
+            <td>
+                <span data-bind="text:$data.status, attr: {class: 'label label-'+$root.getStatusType(status)}"></span>
+            </td>
             <td data-bind="text: host_count"></td>
             <td>
                 <span style="cursor: pointer; text-decoration:underline; color: #428bca;"

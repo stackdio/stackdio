@@ -16,9 +16,11 @@
                             </li>
                         </ul>
                     </div>
-                    <button class="btn btn-success" data-bind="click: $root.refresh">
-                      <span class="fa fa-refresh">&nbsp;</span>
-                      Refresh
+                    <button class="btn btn-success ladda-button" data-style="slide-right" data-bind="click: $root.refresh">
+                        <span class="ladda-label">
+                            <span class="fa fa-refresh">&nbsp;</span>
+                            Refresh
+                        </span>
                     </button>
                 </div>
             </div>
@@ -34,7 +36,8 @@
             <thead>
                 <tr>
                     <th style="width:20%">Title</th>
-                    <th style="width:50%">Description</th>
+                    <th style="width:40%">Description</th>
+                    <th style="width:10%">Status</th>
                     <th style="width:20%">Status History</th>
                     <th style="width:50px"></th>
                 </tr>
@@ -43,6 +46,9 @@
                 <tr>
                     <td><a href="#" data-bind="text: $data.title, click: $root.showStackDetails"></a></td>
                     <td data-bind="text: $data.description"></td>
+                    <td>
+                        <span data-bind="text:$data.status, attr: {class: 'label label-'+$root.getStatusType(status)}"></span>
+                    </td>
                     <td>
                         <span style="cursor: pointer; text-decoration:underline; color: #428bca;"
                            data-bind="bootstrapPopover: {

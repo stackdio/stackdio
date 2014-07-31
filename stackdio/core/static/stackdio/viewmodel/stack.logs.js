@@ -19,7 +19,7 @@ function (Q, ko, $galaxy, API) {
         self.latestLogs = ko.observableArray([]);
         self.historicalLogs = ko.observableArray([]);
         self.selectedLog = ko.observable();
-        self.selectedLogText = ko.observable('Loading...');
+        self.selectedLogText = ko.observable();
 
         self.$galaxy = $galaxy;
 
@@ -58,6 +58,8 @@ function (Q, ko, $galaxy, API) {
         self.init = function (data) {
 
             if (data.hasOwnProperty('stack')) {
+
+                self.selectedLogText('Loading...');
 
                 API.Stacks.getStack(data.stack).then(function (stack) {
 
@@ -113,6 +115,8 @@ function (Q, ko, $galaxy, API) {
        
         self.goToTab = function (obj, evt) {
             var tab=evt.target.id;
+            // Clear out current log data so the UI isn't slow
+            self.selectedLogText("Loading...");
             $galaxy.transport({
                 location: 'stack.'+tab,
                 payload: {
@@ -140,9 +144,13 @@ function (Q, ko, $galaxy, API) {
             self.selectedLog(obj.name);
             self.selectedLogText("Loading...");
             API.Stacks.getLog(obj.url).then(function (log) {
-                self.selectedLogText(log);
+                if (obj.name === self.selectedLog()) {
+                    self.selectedLogText(log);
+                }
             }).catch(function (error) {
-                self.selectedLogText(error);
+                if (obj.name === self.selectedLog()) {
+                    self.selectedLogText(error);
+                }
             });
         };
 

@@ -7,8 +7,8 @@ from tempfile import mkdtemp
 from urlparse import urlsplit, urlunsplit
 
 import celery
-import envoy
 import yaml
+import git
 
 from formulas.models import Formula
 
@@ -51,43 +51,26 @@ def clone_to_temp(formula, git_password):
             parsed.fragment
         ))
 
-    # Clone the repository to the temp directory
-    # Only get the most recent changeset for speed
-    cmd = ' '.join([
-        'git',
-        'clone',
-        '--depth=1',
-        uri,
-        repodir
-    ])
+    try:
+        # Clone the repo into a temp dir
+        repo = git.Repo.clone_from(uri, repodir)
 
-    logger.debug('Executing command: git clone --depth=1 {0} {1}'.format(formula.uri, repodir))
-    result = envoy.run(str(cmd))
-    logger.debug('status_code: {0}'.format(result.status_code))
+        origin = repo.remotes.origin.name
 
-    if result.status_code != 0:
-        logger.debug('std_out: {0}'.format(result.std_out))
-        logger.debug('std_err: {0}'.format(result.std_err))
+        # Remove the password from the config
+        repo.git.remote('set-url', origin, formula.uri)
 
-        if result.status_code == 128:
-            raise FormulaTaskException(
-                formula,
-                'Unable to clone provided URI. This is either not '
-                'a git repository, or you don\'t have permission to clone it.  '
-                'Note that private repositories require the https protocol.')
+        # Remove the logs which also store the password
+        log_dir = os.path.join(repodir, '.git', 'logs')
+        # if os.path.isdir(log_dir):
+        shutil.rmtree(log_dir)
 
+    except git.GitCommandError:
         raise FormulaTaskException(
             formula,
-            'An error occurred while importing formula.')
-
-    # Change the uri in the git config to remove the password
-    replace_all(
-        os.path.join(repodir, '.git', 'config'),
-        'url = '+uri,
-        'url = '+formula.uri)
-
-    # Remove the logs which also store the password
-    shutil.rmtree(os.path.join(repodir, '.git', 'logs'))
+            'Unable to clone provided URI. This is either not '
+            'a git repository, or you don\'t have permission to clone it.  '
+            'Note that private repositories require the https protocol.')
 
     # return the path where the repo is
     return repodir
@@ -231,11 +214,50 @@ def import_formula(formula_id, git_password):
 # TODO: Ignoring complexity issues
 @celery.task(name='formulas.update_formula')  # NOQA
 def update_formula(formula_id, git_password):
+    repo = None
+    current_commit = None
     try:
         formula = Formula.objects.get(pk=formula_id)
         formula.set_status(Formula.IMPORTING, 'Updating formula.')
 
-        repodir = clone_to_temp(formula, git_password)
+        repodir = formula.get_repo_dir()
+
+        repo = git.Repo(repodir)
+
+        current_commit = repo.head.commit
+
+        origin = repo.remotes.origin.name
+
+        # Add the password for a private repo
+        if formula.private_git_repo:
+            parsed = urlsplit(formula.uri)
+            hostname = parsed.netloc.split('@')[1]
+            uri = urlunsplit((
+                parsed.scheme,
+                '{0}:{1}@{2}'.format(
+                    formula.git_username, git_password, hostname),
+                parsed.path,
+                parsed.query,
+                parsed.fragment
+            ))
+
+            # add the password to the config
+            repo.git.remote('set-url', origin, uri)
+
+        result = repo.remotes.origin.pull()
+        if len(result) == 1 and result[0].commit == current_commit:
+            formula.set_status(Formula.COMPLETE,
+                               'There were no changes to the repository.')
+            return True
+
+        if formula.private_git_repo:
+            # remove the password from the config
+            repo.git.remote('set-url', origin, formula.uri)
+
+            # Remove the logs which also store the password
+            log_dir = os.path.join(repodir, '.git', 'logs')
+            if os.path.isdir(log_dir):
+                shutil.rmtree(log_dir)
 
         formula_title, formula_description, root_path, components = validate_specfile(formula, repodir)
 
@@ -298,13 +320,15 @@ def update_formula(formula_id, git_password):
             else:
                 removal_errors.append(component.sls_path)
 
-        if len(removal_errors) is not 0:
+        if len(removal_errors) != 0:
             errors = ', '.join(removal_errors)
             formula.set_status(
                 Formula.COMPLETE,
                 'Formula could not be updated.  The following components '
                 'are used in blueprints: {0}.   '
                 'Your formula was left unchanged.'.format(errors))
+            # Roll back the pull
+            repo.git.reset('--hard', current_commit)
             return False
 
         # Add the new components
@@ -324,31 +348,19 @@ def update_formula(formula_id, git_password):
             to_change.description = component.get('description', '')
             to_change.save()
 
-
-        root_dir = formula.get_repo_dir()
-
-        # Remove the old formula
-        if os.path.isdir(root_dir):
-            shutil.rmtree(root_dir)
-
-        # move the cloned formula repository to a location known by salt
-        # so we can start using the states in this formula
-        shutil.move(repodir, root_dir)
-
-        tmpdir = os.path.dirname(repodir)
-
-        # remove tmpdir now that we're finished
-        if os.path.isdir(tmpdir):
-            shutil.rmtree(tmpdir)
-
         formula.set_status(Formula.COMPLETE,
                            'Import complete. Formula is now ready to be used.')
 
         return True
 
     except Exception, e:
+        # Roll back the pull
+        if repo is not None and current_commit is not None:
+            repo.git.reset('--hard', current_commit)
         if isinstance(e, FormulaTaskException):
-            raise
+            raise FormulaTaskException(
+                formula,
+                e.message + ' Your formula was not changed.')
         logger.exception(e)
         raise FormulaTaskException(
             formula,

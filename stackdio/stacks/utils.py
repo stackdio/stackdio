@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 def get_salt_cloud_log_file(stack, suffix):
-    '''
+    """
     suffix is a string (e.g, launch, overstate, highstate, error, etc)
-    '''
+    """
     # Set up logging for this launch
     root_dir = stack.get_root_directory()
     log_dir = stack.get_log_directory()
@@ -148,13 +148,13 @@ def regenerate_minion_keys(host, vm_, __opts__):
 
 
 def ping_stack_hosts(stack):
-    '''
+    """
     Returns a set of hostnames in the stack that were reachable via
     a ping request.
 
     NOTE: This specifically targets the hosts in a stack instead of
     pinging all available hosts that salt is managing.
-    '''
+    """
     client = salt.client.LocalClient(
         settings.STACKDIO_CONFIG.salt_master_config
     )
@@ -166,10 +166,10 @@ def ping_stack_hosts(stack):
 
 
 def find_zombie_hosts(stack):
-    '''
+    """
     Returns a QuerySet of host objects in the given stack that were not
     reachable via a ping request.
-    '''
+    """
     pinged_hosts = ping_stack_hosts(stack)
     hostnames = set([h[0] for h in stack.hosts.all().values_list('hostname')])
     zombies = hostnames - pinged_hosts
@@ -179,14 +179,14 @@ def find_zombie_hosts(stack):
 
 
 def check_for_ssh(stack, hosts):
-    '''
+    """
     Attempts to SSH to the given hosts.
 
     @param (stacks.models.Stack) - the stack the hosts belong to
     @param (list[stacks.models.Host]) - hosts to check for SSH
     @returns (list) - list of tuples (bool, Host) where the bool value is
     True if we could connect to Host over SSH, False otherwise
-    '''
+    """
     opts = get_salt_cloud_opts()
     vms = get_stack_vm_map(stack)
     mapper = get_stack_mapper(stack)
@@ -238,12 +238,12 @@ def check_for_ssh(stack, hosts):
 
 
 def terminate_hosts(stack, hosts):
-    '''
+    """
     Uses salt-cloud to terminate the given list of hosts.
 
     @param (list[stacks.models.Host]) - the hosts to terminate.
     @returns None
-    '''
+    """
 
     opts = get_salt_cloud_opts()
     opts.update({
@@ -256,7 +256,7 @@ def terminate_hosts(stack, hosts):
 
 
 def bootstrap_hosts(stack, hosts, parallel=True):
-    '''
+    """
     Iterates over the given `hosts` and executes the bootstrapping process
     via salt cloud.
 
@@ -270,7 +270,7 @@ def bootstrap_hosts(stack, hosts, parallel=True):
     WARNING: This is not parallelized. My only hope is that the list is
     relatively small (e.g, only bootstrap hosts that were unsuccessful...see
     the `find_zombie_hosts` method)
-    '''
+    """
     __opts__ = get_salt_cloud_opts()
     dmap = get_stack_map_data(stack)
 
@@ -320,7 +320,7 @@ def bootstrap_hosts(stack, hosts, parallel=True):
 
 
 def deploy_vm(params):
-    '''
+    """
     Basically duplicating the deploy logic from `salt.cloud.clouds.ec2::create`
     so we can bootstrap minions whenever needed. Ideally, this would be handled
     in salt-cloud directly, but for now it's easier to handle this on our end.
@@ -332,7 +332,7 @@ def deploy_vm(params):
     @params[vm_] (dict) - the vm data structure that salt likes to use
     @params[__opts__] (dict) - the big config object that salt passes
         around to all of its modules. See `get_salt_cloud_opts`
-    '''
+    """
 
     host_obj = params['host_obj']
     vm_ = params['vm_']
@@ -449,10 +449,10 @@ def write_map_file(stack, data):
 
 
 def mod_hosts_map(stack, n, **kwargs):
-    '''
+    """
     Selects n random hosts for the given stack and modifies/adds
     the map entry for thoses hosts with the kwargs.
-    '''
+    """
     map_yaml = load_map_file(stack)
 
     population = []
@@ -470,9 +470,9 @@ def mod_hosts_map(stack, n, **kwargs):
 
 
 def unmod_hosts_map(stack, *args):
-    '''
+    """
     For debug method purpose only
-    '''
+    """
     map_yaml = load_map_file(stack)
 
     population = []
@@ -489,14 +489,14 @@ def unmod_hosts_map(stack, *args):
 
 
 def create_zombies(stack, n):
-    '''
+    """
     For the given stack, will randomly select `n` hosts and kill the
     salt-minion service that should already be running on the host.
 
     @param (stacks.models.Stack) stack - the stack we're targeting
     @param (int) n - the number of randomly selected hosts to zombify
     @returns (None)
-    '''
+    """
 
     # Random sampling of n hosts
     hosts = random.sample(stack.hosts.all(), n)

@@ -54,8 +54,10 @@ scripts.  To restart any of the supervisor processes use `supervisorctl`. For
 example to restart Django:
 
     > supervisorctl
-    celery                           RUNNING    pid 28642, uptime 0:00:02
+    celery-main                      RUNNING    pid 28642, uptime 0:00:02
+    celery-formulas                  RUNNUNG    pid 28644, uptime 0:00:02
     gunicorn-django                  RUNNING    pid 28643, uptime 0:00:01
+    salt-master                      RUNNING    pid 28645, uptime 0:00:04
     supervisor> restart gunicorn-django
 
 

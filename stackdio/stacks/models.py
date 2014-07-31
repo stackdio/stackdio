@@ -4,14 +4,14 @@ import re
 import logging
 import socket
 
+import salt.config
+import envoy
+import yaml
+
 from django.conf import settings
 from django.db import models, transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-
-import envoy
-import yaml
-
 from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
@@ -22,6 +22,7 @@ from model_utils import Choices
 from core.fields import DeletingFileField
 from core.utils import recursive_update
 from cloud.models import SecurityGroup
+
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -99,8 +100,8 @@ class StackManager(models.Manager):
 
     @transaction.commit_on_success
     def create_stack(self, owner, blueprint, **data):
-        '''
-        '''
+        """
+        """
         title = data.get('title', '')
         description = data.get('description', '')
         public = data.get('public', False)
@@ -148,26 +149,48 @@ class StackManager(models.Manager):
         return stack
 
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel):
-    OK = 'ok'
-    ERROR = 'error'
+class Stack(TimeStampedModel, TitleSlugDescriptionModel,
+            model_utils.models.StatusModel):
+
+    # Launch workflow:
     PENDING = 'pending'
-    SYNCING = 'syncing'
-    STARTING = 'starting'
     LAUNCHING = 'launching'
-    FINALIZING = 'finalizing'
     CONFIGURING = 'configuring'
+    SYNCING = 'syncing'
     PROVISIONING = 'provisioning'
-    EXECUTING_ACTION = 'executing_action'
-    TERMINATING = 'terminating'
-    DESTROYING = 'destroying'
-    REBOOTING = 'rebooting'
+    ORCHESTRATING = 'orchestrating'
+    FINALIZING = 'finalizing'
     FINISHED = 'finished'
+
+    # Delete workflow:
+    # PENDING
+    DESTROYING = 'destroying'
+    # FINISHED
+
+    # Other actions
+    # LAUNCHING
+    STARTING = 'starting'
     STOPPING = 'stopping'
+    TERMINATING = 'terminating'
+    EXECUTING_ACTION = 'executing_action'
+
+    # Errors
+    ERROR = 'error'
+
+    SAFE_STATES = [FINISHED, ERROR]
+
+    # Not sure?
+    OK = 'ok'
     RUNNING = 'running'
+    REBOOTING = 'rebooting'
+
+    STATUS = Choices(PENDING, LAUNCHING, CONFIGURING, SYNCING, PROVISIONING,
+                     ORCHESTRATING, FINALIZING, DESTROYING, FINISHED,
+                     STARTING, STOPPING, TERMINATING, EXECUTING_ACTION, ERROR)
 
     class Meta:
         unique_together = ('owner', 'title')
+        ordering = ('title',)
 
     # The "owner" of the stack and all of its infrastructure
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
@@ -238,11 +261,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.pk)
 
-    def set_status(self, event, status, level=Level.INFO):
-        self.history.create(event=event, status=status, level=level)
+    def set_status(self, event, status, detail, level=Level.INFO):
+        self.status = status
+        self.save()
+        self.history.create(event=event, status=status,
+                            status_detail=detail, level=level)
 
     def get_driver_hosts_map(self, host_ids=None):
-        '''
+        """
         Stacks are comprised of multiple hosts. Each host may be
         located in different cloud providers. This method returns
         a map of the underlying driver implementation and the hosts
@@ -252,7 +278,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             we're interested in
         @returns (dict); each key is a provider driver implementation
             with QuerySet value for the matching host objects
-        '''
+        """
         hosts = self.get_hosts(host_ids)
         providers = {}
         for h in hosts:
@@ -267,12 +293,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return result
 
     def get_hosts(self, host_ids=None):
-        '''
+        """
         Quick way of getting all hosts or a subset for this stack.
 
         @host_ids (list); list of primary keys of hosts in this stack
         @returns (QuerySet);
-        '''
+        """
         if not host_ids:
             return self.hosts.all()
         return self.hosts.filter(id__in=host_ids)
@@ -338,7 +364,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             )
 
     def create_hosts(self, host_definition=None, count=None, backfill=False):
-        '''
+        """
         Creates host objects on this Stack. If no arguments are given, then
         all hosts available based on the Stack's blueprint host definitions
         will be created. If args are given, then only the `count` for the
@@ -353,7 +379,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             hostnames that fill in any gaps if necessary. If False, then
             hostnames will start at the end of the host list. This is only
             used when `host_definition` and `count` arguments are provided.
-        '''
+        """
 
         created_hosts = []
 
@@ -644,7 +670,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # the overstate dict
         groups = {}
         for c in components:
-            '''
+            """
             {
                 order_0: {
                     host_0: [sls, sls, ...],
@@ -656,7 +682,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 }
                 ...
             }
-            '''
+            """
             groups.setdefault(
                 c.order, {}
             ).setdefault(
@@ -733,9 +759,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 f.write(pillar_file_yaml)
 
     def query_hosts(self):
-        '''
+        """
         Uses salt-cloud to query all the hosts for the given stack id.
-        '''
+        """
         try:
             if not self.map_file:
                 return {}
@@ -811,12 +837,21 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return ret
 
+    def get_role_list(self):
+        roles = set()
+        for bhd in self.blueprint.host_definitions.all():
+            for formula_component in bhd.formula_components.all():
+                roles.add(formula_component.component.sls_path)
+        return list(roles)
 
-class StackHistory(TimeStampedModel):
+
+class StackHistory(TimeStampedModel, StatusDetailModel):
 
     class Meta:
         verbose_name_plural = 'stack history'
         ordering = ['-created', '-id']
+
+    STATUS = Stack.STATUS
 
     stack = models.ForeignKey('Stack', related_name='history')
 
@@ -825,7 +860,7 @@ class StackHistory(TimeStampedModel):
     event = models.CharField(max_length=128)
 
     # The human-readable description of the event
-    status = models.TextField(blank=True)
+    # status = models.TextField(blank=True)
 
     # Optional: level (DEBUG, INFO, WARNING, ERROR, etc)
     level = models.CharField(max_length=16, choices=(
@@ -836,12 +871,12 @@ class StackHistory(TimeStampedModel):
     ))
 
 
-class StackAction(TimeStampedModel):
+class StackAction(TimeStampedModel, model_utils.models.StatusModel):
     WAITING = 'waiting'
     RUNNING = 'running'
     FINISHED = 'finished'
-    ERRORED = 'errored'
-    STATUS = Choices(WAITING, RUNNING, FINISHED, ERRORED)
+    ERROR = 'error'
+    STATUS = Choices(WAITING, RUNNING, FINISHED, ERROR)
 
     class Meta:
         verbose_name_plural = 'stack actions'
@@ -850,9 +885,6 @@ class StackAction(TimeStampedModel):
 
     # The started executing
     start = models.DateTimeField()
-
-    # The status of the action
-    status = models.CharField(max_length=8, choices=STATUS, default=WAITING)
 
     # Type of action (custom, launch, etc)
     type = models.CharField(max_length=50)

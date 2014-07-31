@@ -2,17 +2,20 @@ import time
 import os
 import shutil
 from datetime import datetime
+import json
+import logging
 
 import envoy
 import celery
 import yaml
-import json
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
+import salt.client
+import salt.config
+import salt.runner
 
 from volumes.models import Volume
-
 import stacks.utils
 from stacks.models import (
     Stack,
@@ -23,7 +26,10 @@ from stacks.models import (
 from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
 
+
 logger = get_task_logger(__name__)
+salt_logger = logging.getLogger('salt')
+salt_formatter = logging.Formatter('%(asctime)s [%(name)17s] [%(levelname)8s] %(message)s')
 
 ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
 ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found ' \
@@ -37,30 +43,30 @@ class StackTaskException(Exception):
 
 
 def symlink(source, target):
-    '''
+    """
     Symlink the given source to the given target
-    '''
+    """
     if os.path.isfile(target):
         os.remove(target)
     os.symlink(source, target)
 
 
 def is_state_error(state_meta):
-    '''
+    """
     Determines if the state resulted in an error.
-    '''
+    """
     return not state_meta['result']
 
 
 def is_requisite_error(state_meta):
-    '''
+    """
     Is the state error because of a requisite state failure?
-    '''
+    """
     return state_meta['comment'] == ERROR_REQUISITE
 
 
 def state_to_dict(state_string):
-    '''
+    """
     Takes the state string and transforms it into a dict of key/value
     pairs that are a bit easier to handle.
 
@@ -72,31 +78,31 @@ def state_to_dict(state_string):
         'name': 'abe',
         'declaration_id': 'stackdio_group'
     }
-    '''
+    """
     state_labels = settings.STATE_EXECUTION_FIELDS
     state_fields = state_string.split(settings.STATE_EXECUTION_DELIMITER)
     return dict(zip(state_labels, state_fields))
 
 
 def is_recoverable(err):
-    '''
+    """
     Checks the provided error against a blacklist of errors
     determined to be unrecoverable. This should be used to
     prevent retrying of provisioning or orchestration because
     the error will continue to occur.
-    '''
+    """
     # TODO: determine the blacklist of errors that
     # will trigger a return of False here
     return True
 
 
 def state_error(state_str, state_meta):
-    '''
+    """
     Takes the given state result string and the metadata
     of the state execution result and returns a consistent
     dict for the error along with whether or not the error
     is recoverable.
-    '''
+    """
     state = state_to_dict(state_str)
     func = '{module}.{func}'.format(**state)
     decl_id = state['declaration_id']
@@ -129,7 +135,7 @@ def handle_error(stack_id, task_id):
 def launch_hosts(stack_id, parallel=True, max_retries=2,
                  simulate_launch_failures=False, simulate_zombies=False,
                  simulate_ssh_failures=False, failure_percent=0.3):
-    '''
+    """
     Uses salt cloud to launch machines using the given Stack's map_file
     that was generated when the Stack was created. Salt cloud will
     handle launching machines, provisioning them as salt minions,
@@ -160,7 +166,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         flagged to fail during launch or become zombie hosts. This param
         is ignored if all of the above failure flags are set to False.
         Defaults to 0.3 (30%).
-    '''
+    """
 
     try:
         stack = Stack.objects.get(id=stack_id)
@@ -187,6 +193,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
             stack.set_status(
                 launch_hosts.name,
+                Stack.LAUNCHING,
                 '{0} being launched. Try {1} of {2}. '
                 'This may take a while.'.format(
                     label,
@@ -282,6 +289,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                             logger.debug(err_msg)
                             stack.set_status(
                                 launch_hosts.name,
+                                Stack.LAUNCHING,
                                 err_msg,
                                 Level.WARN)
 
@@ -320,6 +328,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
                     if current_try <= max_retries:
                         stack.set_status(launch_hosts.name,
+                                         Stack.LAUNCHING,
                                          '{0} failed to launch and '
                                          'will be retried.'.format(label),
                                          Level.WARN)
@@ -331,6 +340,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                                    'maximum number of tries have been '
                                    'reached.'.format(label))
                         stack.set_status(launch_hosts.name,
+                                         Stack.ERROR,
                                          err_msg,
                                          Level.ERROR)
                         raise StackTaskException(err_msg)
@@ -374,6 +384,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
                     for err_msg in errors:
                         stack.set_status(launch_hosts.name,
+                                         Stack.ERROR,
                                          err_msg,
                                          Level.ERROR)
                     raise StackTaskException('Error(s) while launching stack '
@@ -399,7 +410,8 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                         err_msg = launch_result.std_err
                     else:
                         err_msg = launch_result.std_out
-                    stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+                    stack.set_status(launch_hosts.name, Stack.ERROR,
+                                     err_msg, Level.ERROR)
                     raise StackTaskException('Error launching stack {0} with '
                                              'salt-cloud: {1!r}'.format(
                                                  stack_id,
@@ -407,7 +419,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
             # Seems good...let's set the status and allow other tasks to
             # go through
-            stack.set_status(launch_hosts.name, 'Finished launching hosts.')
+            stack.set_status(launch_hosts.name, Stack.FINISHED, 'Finished launching hosts.')
 
     except Stack.DoesNotExist, e:
         err_msg = 'Unknown stack id {0}'.format(stack_id)
@@ -417,7 +429,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(launch_hosts.name, err_msg, Level.ERROR)
+        stack.set_status(launch_hosts.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -425,7 +437,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.cure_zombies')  # NOQA
 def cure_zombies(stack_id, max_retries=2):
-    '''
+    """
     Attempts to detect zombie hosts, or those hosts in the stack that are
     up and running but are failing to be pinged. This usually means that
     the bootstrapping process failed or went wrong. To fix this, we will
@@ -434,7 +446,7 @@ def cure_zombies(stack_id, max_retries=2):
 
     @ param stack_id (int) -
     @ param max_retries (int) -
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
 
@@ -463,6 +475,7 @@ def cure_zombies(stack_id, max_retries=2):
                 # them again, up to the max retries
                 stack.set_status(
                     launch_hosts.name,
+                    Stack.ERROR,
                     '{0} detected. Attempting try {1} of {2} to '
                     'bootstrap. This may take a while.'
                     ''.format(
@@ -483,6 +496,7 @@ def cure_zombies(stack_id, max_retries=2):
                 )
                 stack.set_status(
                     launch_hosts.name,
+                    Stack.ERROR,
                     err_msg,
                     Level.ERROR
                 )
@@ -495,7 +509,7 @@ def cure_zombies(stack_id, max_retries=2):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(cure_zombies.name, err_msg, Level.ERROR)
+        stack.set_status(cure_zombies.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -513,6 +527,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
         # Update status
         stack.set_status(update_metadata.name,
+                         Stack.CONFIGURING,
                          'Collecting host metadata from cloud provider.')
 
         # Use salt-cloud to look up host information we need now that
@@ -638,28 +653,29 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(update_metadata.name, err_msg, Level.ERROR)
+        stack.set_status(update_metadata.name, Stack.ERROR,
+                         err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
 
 @celery.task(name='stacks.tag_infrastructure')
 def tag_infrastructure(stack_id, host_ids=None):
-    '''
+    """
     Tags hosts and volumes with certain metadata that should prove useful
     to anyone using the AWS console.
 
     ORDER MATTERS! Make sure that tagging only comes after you've executed
     the `update_metadata` task as that task actually pulls in information
     we need to use the tagging API effectively.
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
 
         logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(tag_infrastructure.name,
+        stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
                          'Tagging stack infrastructure.')
 
         # for each set of hosts on a provider, use the driver implementation
@@ -670,7 +686,7 @@ def tag_infrastructure(stack_id, host_ids=None):
             volumes = stack.volumes.filter(host__in=hosts)
             driver.tag_resources(stack, hosts, volumes)
 
-        stack.set_status(tag_infrastructure.name,
+        stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
                          'Finished tagging stack infrastructure.')
 
     except Stack.DoesNotExist:
@@ -680,22 +696,23 @@ def tag_infrastructure(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(tag_infrastructure.name, err_msg, Level.ERROR)
+        stack.set_status(tag_infrastructure.name, Stack.ERROR,
+                         err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
 
 @celery.task(name='stacks.register_dns')
 def register_dns(stack_id, host_ids=None):
-    '''
+    """
     Must be ran after a Stack is up and running and all host information has
     been pulled and stored in the database.
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Registering DNS for stack: {0!r}'.format(stack))
 
-        stack.set_status(register_dns.name,
+        stack.set_status(register_dns.name, Stack.CONFIGURING,
                          'Registering hosts with DNS provider.')
 
         # Use the provider implementation to register a set of hosts
@@ -704,7 +721,7 @@ def register_dns(stack_id, host_ids=None):
         for driver, hosts in driver_hosts.iteritems():
             driver.register_dns(hosts)
 
-        stack.set_status(register_dns.name,
+        stack.set_status(register_dns.name, Stack.CONFIGURING,
                          'Finished registering hosts with DNS provider.')
 
     except Stack.DoesNotExist:
@@ -714,7 +731,7 @@ def register_dns(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(register_dns.name, err_msg, Level.ERROR)
+        stack.set_status(register_dns.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -722,7 +739,7 @@ def register_dns(stack_id, host_ids=None):
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.ping')  # NOQA
 def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
-    '''
+    """
     Attempts to use salt's test.ping module to ping the entire stack
     and confirm that all hosts are reachable by salt.
 
@@ -735,11 +752,12 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
     @max_failures: Number of ping failures before giving up completely.
                    The timeout does not affect this parameter.
     @raises StackTaskException
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
         required_hosts = set([h.hostname for h in stack.get_hosts()])
         stack.set_status(ping.name,
+                         Stack.CONFIGURING,
                          'Attempting to ping all hosts.',
                          Level.INFO)
 
@@ -795,13 +813,13 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
                     duration // 60,
                     duration % 60,
                 )
-                stack.set_status(ping.name, err_msg, Level.ERROR)
+                stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
                 raise StackTaskException(err_msg)
 
             if failures > max_failures:
                 err_msg = 'Max failures ({0}) reached while pinging ' \
                           'hosts.'.format(max_failures)
-                stack.set_status(ping.name, err_msg, Level.ERROR)
+                stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
                 raise StackTaskException(err_msg)
 
             time.sleep(interval)
@@ -815,10 +833,10 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
 
         if false_hosts:
             err_msg = 'Unable to ping hosts: {0}'.format(','.join(false_hosts))
-            stack.set_status(ping.name, err_msg, Level.ERROR)
+            stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
             raise StackTaskException(err_msg)
 
-        stack.set_status(ping.name,
+        stack.set_status(ping.name, Stack.CONFIGURING,
                          'All hosts pinged successfully.',
                          Level.INFO)
 
@@ -829,7 +847,7 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(ping.name, err_msg, Level.ERROR)
+        stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -841,7 +859,7 @@ def sync_all(stack_id):
         logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(sync_all.name,
+        stack.set_status(sync_all.name, Stack.SYNCING,
                          'Synchronizing salt systems on all hosts.')
 
         # build up the command for salt
@@ -865,13 +883,13 @@ def sync_all(stack_id):
 
         if result.status_code > 0:
             err_msg = result.std_err if result.std_err else result.std_out
-            stack.set_status(sync_all.name, err_msg, Level.ERROR)
+            stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
             raise StackTaskException('Error syncing salt data on stack {0}: '
                                      '{1!r}'.format(
                                          stack_id,
                                          err_msg))
 
-        stack.set_status(sync_all.name,
+        stack.set_status(sync_all.name, Stack.CONFIGURING,
                          'Finished synchronizing salt systems on all hosts.')
 
     except Stack.DoesNotExist:
@@ -881,7 +899,7 @@ def sync_all(stack_id):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(sync_all.name, err_msg, Level.ERROR)
+        stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -889,7 +907,7 @@ def sync_all(stack_id):
 # TODO: Ignoring code complexity issues for now
 @celery.task(name='stacks.highstate')  # NOQA
 def highstate(stack_id, max_retries=2):
-    '''
+    """
     Executes the state.top function using the custom top file generated via
     the stacks.models._generate_top_file. This will only target the 'base'
     environment and core.* states for the stack. These core states are
@@ -900,9 +918,10 @@ def highstate(stack_id, max_retries=2):
     stacks.orchestrate task.) They are all executed in the order defined
     by the SLS. I don't see this as a problem right now, but something we
     might have to tackle in the future if someone were to need that.
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
+        num_hosts = len(stack.get_hosts())
         logger.info('Running core provisioning for stack: {0!r}'.format(stack))
 
         # Set up logging for this task
@@ -919,7 +938,7 @@ def highstate(stack_id, max_retries=2):
                 stack))
 
             # Update status
-            stack.set_status(highstate.name,
+            stack.set_status(highstate.name, Stack.PROVISIONING,
                              'Executing core provisioning try {0} of {1}. '
                              'This may take a while.'.format(
                                  current_try,
@@ -940,110 +959,215 @@ def highstate(stack_id, max_retries=2):
             symlink(log_file, log_symlink)
             symlink(err_file, err_symlink)
 
-            ##
-            # Execute state.top with custom top file
-            ##
-            cmd = ' '.join([
-                'salt',
-                '--config-dir={0}'.format(
-                    settings.STACKDIO_CONFIG.salt_config_root),
-                '--out=yaml',              # yaml formatted output
-                '-G stack_id:{0}',         # target only the vms in this stack
-                '--log-file {1}',          # where to log
-                '--log-file-level debug',  # full logging
-                'state.top',               # run this stack's top file
-                stack.top_file.name
-            ]).format(
-                stack_id,
-                log_file
+
+
+
+
+
+            ############################### salt python test
+
+            file_log_handler = logging.FileHandler(log_file)
+            file_log_handler.setFormatter(salt_formatter)
+            salt_logger.addHandler(file_log_handler)
+
+            salt_client = salt.client.LocalClient(os.path.join(
+                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+
+            old_handler = None
+            for handler in salt_logger.handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    old_handler = handler
+                    salt_logger.removeHandler(handler)
+
+            ret = salt_client.cmd_batch(
+                'stack_id:{0}'.format(stack_id),
+                'state.top',
+                [stack.top_file.name],
+                expr_form='grain',
+                batch=str(salt_client.opts['worker_threads'])
             )
 
-            try:
-                # Execute
-                logger.debug('Executing command: {0}'.format(cmd))
-                result = envoy.run(str(cmd))
-            except AttributeError, e:
-                # Unrecoverable error, no retrying possible
-                err_msg = 'Error running command: \'{0}\''.format(cmd)
-                logger.exception(err_msg)
-                stack.set_status(highstate.name, err_msg, Level.ERROR)
-                raise StackTaskException(err_msg)
+            result = {}
+            # cmd_batch returns a generator that blocks until jobs finish, so
+            # we want to loop through it until the jobs are done
+            for i in ret:
+                for k, v in i.items():
+                    result[k] = v
 
-            if result is None:
-                # What does it mean for envoy to return a result of None?
-                # Is it even possible? If so, is it a recoverable error?
+            salt_logger.removeHandler(file_log_handler)
+            if old_handler:
+                salt_logger.addHandler(old_handler)
+
+            with open(log_file, 'a') as f:
+                f.write(yaml.safe_dump(result))
+
+            if len(result) != num_hosts:
+                logger.debug('salt did not provision all hosts')
                 if current_try <= max_retries:
                     continue
-                msg = 'Core provisioning command returned None. Status, ' \
-                      'stdout and stderr unknown.'
-                logger.warn(msg)
-                stack.set_status(msg)
-            elif result.status_code > 0:
-                logger.debug('envoy returned non-zero status code')
-                logger.debug('envoy status_code: {0}'.format(
-                    result.status_code))
-                logger.debug('envoy std_out: {0}'.format(result.std_out))
-                logger.debug('envoy std_err: {0}'.format(result.std_err))
-
-                if current_try <= max_retries:
-                    continue
-                err_msg = result.std_err if result.std_err else result.std_out
-                stack.set_status(highstate.name, err_msg, Level.ERROR)
+                err_msg = 'Salt errored and did not provision all the hosts'
+                stack.set_status(highstate.name, Stack.ERROR,
+                                 err_msg, Level.ERROR)
                 raise StackTaskException('Error executing core provisioning: '
                                          '{0!r}'.format(err_msg))
+
             else:
-                # dump the output to the log file
-                with open(log_file, 'a') as f:
-                    f.write(result.std_out)
-
-                # load JSON so we can attempt to catch provisioning errors
-                output = yaml.safe_load(result.std_out)
-
                 # each key in the dict is a host, and the value of the host
                 # is either a list or dict. Those that are lists we can
                 # assume to be a list of errors
-                if output is not None:
-                    errors = {}
-                    for host, states in output.iteritems():
-                        if type(states) is list:
-                            errors[host] = states
+                errors = {}
+                for host, states in result.iteritems():
+                    if type(states) is list:
+                        errors[host] = states
+                        continue
+
+                    # iterate over the individual states in the host
+                    # looking for state failures
+                    for state_str, state_meta in states.iteritems():
+                        if not is_state_error(state_meta):
                             continue
 
-                        # iterate over the individual states in the host
-                        # looking for state failures
-                        for state_str, state_meta in states.iteritems():
-                            if not is_state_error(state_meta):
-                                continue
+                        if not is_requisite_error(state_meta):
+                            err, recoverable = state_error(state_str,
+                                                           state_meta)
+                            if not recoverable:
+                                unrecoverable_error = True
+                            errors.setdefault(host, []).append(err)
 
-                            if not is_requisite_error(state_meta):
-                                err, recoverable = state_error(state_str,
-                                                               state_meta)
-                                if not recoverable:
-                                    unrecoverable_error = True
-                                errors.setdefault(host, []).append(err)
+                if errors:
+                    # write the errors to the err_file
+                    with open(err_file, 'a') as f:
+                        f.write(yaml.safe_dump(errors))
 
-                    if errors:
-                        # write the errors to the err_file
-                        with open(err_file, 'a') as f:
-                            f.write(yaml.safe_dump(errors))
+                    if not unrecoverable_error and current_try <= max_retries: # NOQA
+                        continue
 
-                        if not unrecoverable_error and current_try <= max_retries: # NOQA
-                            continue
+                    err_msg = 'Core provisioning errors on hosts: ' \
+                        '{0}. Please see the provisioning errors API ' \
+                        'or the log file for more details: {1}'.format(
+                            ', '.join(errors.keys()),
+                            os.path.basename(log_file))
+                    stack.set_status(highstate.name,
+                                     Stack.ERROR,
+                                     err_msg,
+                                     Level.ERROR)
+                    raise StackTaskException(err_msg)
 
-                        err_msg = 'Core provisioning errors on hosts: ' \
-                            '{0}. Please see the provisioning errors API ' \
-                            'or the log file for more details: {1}'.format(
-                                ', '.join(errors.keys()),
-                                os.path.basename(log_file))
-                        stack.set_status(highstate.name,
-                                         err_msg,
-                                         Level.ERROR)
-                        raise StackTaskException(err_msg)
+                # Everything worked?
+                break
 
-                    # Everything worked?
-                    break
+            ####################################
 
-        stack.set_status(highstate.name,
+
+
+
+
+
+
+            # ##
+            # # Execute state.top with custom top file
+            # ##
+            # cmd = ' '.join([
+            #     'salt',
+            #     '--config-dir={0}'.format(
+            #         settings.STACKDIO_CONFIG.salt_config_root),
+            #     '--out=yaml',              # yaml formatted output
+            #     '-G stack_id:{0}',         # target only the vms in this stack
+            #     '--log-file {1}',          # where to log
+            #     '--log-file-level debug',  # full logging
+            #     'state.top',               # run this stack's top file
+            #     stack.top_file.name
+            # ]).format(
+            #     stack_id,
+            #     log_file
+            # )
+            #
+            # try:
+            #     # Execute
+            #     logger.debug('Executing command: {0}'.format(cmd))
+            #     result = envoy.run(str(cmd))
+            # except AttributeError, e:
+            #     # Unrecoverable error, no retrying possible
+            #     err_msg = 'Error running command: \'{0}\''.format(cmd)
+            #     logger.exception(err_msg)
+            #     stack.set_status(highstate.name, err_msg, Level.ERROR)
+            #     raise StackTaskException(err_msg)
+            #
+            # if result is None:
+            #     # What does it mean for envoy to return a result of None?
+            #     # Is it even possible? If so, is it a recoverable error?
+            #     if current_try <= max_retries:
+            #         continue
+            #     msg = 'Core provisioning command returned None. Status, ' \
+            #           'stdout and stderr unknown.'
+            #     logger.warn(msg)
+            #     stack.set_status(msg)
+            # elif result.status_code > 0:
+            #     logger.debug('envoy returned non-zero status code')
+            #     logger.debug('envoy status_code: {0}'.format(
+            #         result.status_code))
+            #     logger.debug('envoy std_out: {0}'.format(result.std_out))
+            #     logger.debug('envoy std_err: {0}'.format(result.std_err))
+            #
+            #     if current_try <= max_retries:
+            #         continue
+            #     err_msg = result.std_err if result.std_err else result.std_out
+            #     stack.set_status(highstate.name, err_msg, Level.ERROR)
+            #     raise StackTaskException('Error executing core provisioning: '
+            #                              '{0!r}'.format(err_msg))
+            # else:
+            #     # dump the output to the log file
+            #     with open(log_file, 'a') as f:
+            #         f.write(result.std_out)
+            #
+            #     # load JSON so we can attempt to catch provisioning errors
+            #     output = yaml.safe_load(result.std_out)
+            #
+            #     # each key in the dict is a host, and the value of the host
+            #     # is either a list or dict. Those that are lists we can
+            #     # assume to be a list of errors
+            #     if output is not None:
+            #         errors = {}
+            #         for host, states in output.iteritems():
+            #             if type(states) is list:
+            #                 errors[host] = states
+            #                 continue
+            #
+            #             # iterate over the individual states in the host
+            #             # looking for state failures
+            #             for state_str, state_meta in states.iteritems():
+            #                 if not is_state_error(state_meta):
+            #                     continue
+            #
+            #                 if not is_requisite_error(state_meta):
+            #                     err, recoverable = state_error(state_str,
+            #                                                    state_meta)
+            #                     if not recoverable:
+            #                         unrecoverable_error = True
+            #                     errors.setdefault(host, []).append(err)
+            #
+            #         if errors:
+            #             # write the errors to the err_file
+            #             with open(err_file, 'a') as f:
+            #                 f.write(yaml.safe_dump(errors))
+            #
+            #             if not unrecoverable_error and current_try <= max_retries: # NOQA
+            #                 continue
+            #
+            #             err_msg = 'Core provisioning errors on hosts: ' \
+            #                 '{0}. Please see the provisioning errors API ' \
+            #                 'or the log file for more details: {1}'.format(
+            #                     ', '.join(errors.keys()),
+            #                     os.path.basename(log_file))
+            #             stack.set_status(highstate.name,
+            #                              err_msg,
+            #                              Level.ERROR)
+            #             raise StackTaskException(err_msg)
+            #
+            #         # Everything worked?
+            #         break
+
+        stack.set_status(highstate.name, Stack.PROVISIONING,
                          'Finished core provisioning all hosts.')
 
     except Stack.DoesNotExist:
@@ -1053,7 +1177,7 @@ def highstate(stack_id, max_retries=2):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(highstate.name, err_msg, Level.ERROR)
+        stack.set_status(highstate.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -1061,7 +1185,7 @@ def highstate(stack_id, max_retries=2):
 # TODO: Ignoring code complexity issues
 @celery.task(name='stacks.orchestrate') # NOQA
 def orchestrate(stack_id, max_retries=2):
-    '''
+    """
     Executes the runners.state.over function with the custom overstate
     file  generated via the stacks.models._generate_overstate_file. This
     will only target the user's environment and provision the hosts with
@@ -1072,7 +1196,7 @@ def orchestrate(stack_id, max_retries=2):
     forcing them to clone those formulas into their own account, we
     will need to support executing multiple overstate files in different
     environments.
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing orchestration for stack: {0!r}'.format(stack))
@@ -1080,6 +1204,13 @@ def orchestrate(stack_id, max_retries=2):
         # Set up logging for this task
         root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
+
+        role_host_nums = {}
+        # Get the number of hosts for each role
+        for bhd in stack.blueprint.host_definitions.all():
+            for fc in bhd.formula_components.all():
+                role_host_nums.setdefault(fc.component.sls_path, 0)
+                role_host_nums[fc.component.sls_path] += bhd.count
 
         # we'll break out of the loop based on the given number of retries
         current_try, unrecoverable_error = 0, False
@@ -1091,7 +1222,7 @@ def orchestrate(stack_id, max_retries=2):
                 stack))
 
             # Update status
-            stack.set_status(orchestrate.name,
+            stack.set_status(orchestrate.name, Stack.ORCHESTRATING,
                              'Executing orchestration try {0} of {1}. This '
                              'may take a while.'.format(current_try,
                                                         max_retries + 1))
@@ -1110,114 +1241,85 @@ def orchestrate(stack_id, max_retries=2):
             symlink(log_file, log_symlink)
             symlink(err_file, err_symlink)
 
-            ##
-            # Execute custom orchestration runner
-            ##
-            cmd = ' '.join([
-                'salt-run',
-                '--config-dir={0}'.format(
-                    settings.STACKDIO_CONFIG.salt_config_root),
-                '-lquiet',                  # quiet stdout
-                '--log-file {0}',           # where to log
-                '--log-file-level info',    # full logging
-                'stackdio.orchestrate',     # custom overstate execution
-                stack.owner.username,       # username is the environment to
-                                            # execute in
-                stack.overstate_file.path
-            ]).format(
-                log_file
+
+
+
+
+
+
+
+
+            ####################### python API
+
+            # Set up logging
+            file_log_handler = logging.FileHandler(log_file)
+            file_log_handler.setFormatter(salt_formatter)
+            salt_logger.addHandler(file_log_handler)
+
+            opts = salt.config.client_config(os.path.join(
+                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+
+            salt_runner = salt.runner.RunnerClient(opts)
+
+            result = salt_runner.cmd(
+                'stackdio.orchestrate',
+                [
+                    stack.owner.username,
+                    stack.overstate_file.path
+                ]
             )
 
-            # Execute
-            logger.debug('Executing command: {0}'.format(cmd))
+            # Stop logging
+            salt_logger.removeHandler(file_log_handler)
 
-            try:
-                result = envoy.run(str(cmd))
-            except AttributeError, e:
-                # Unrecoverable error, no retrying possible
-                err_msg = 'Error running command: \'{0}\''.format(cmd)
-                logger.exception(err_msg)
-                stack.set_status(orchestrate.name, err_msg, Level.ERROR)
-                raise StackTaskException(err_msg)
-
-            if result is None:
-                # What does it mean for envoy to return a result of None?
-                # Is it even possible? If so, is it a recoverable error?
-                if current_try <= max_retries:
-                    continue
-                msg = 'Orchestration command returned None. Status, stdout ' \
-                    'and stderr unknown.'
-                logger.warn(msg)
-                stack.set_status(msg)
-            elif result.status_code > 0:
-                logger.debug('envoy returned non-zero status code')
-                logger.debug('envoy status_code: {0}'.format(
-                    result.status_code))
-                logger.debug('envoy std_out: {0}'.format(result.std_out))
-                logger.debug('envoy std_err: {0}'.format(result.std_err))
+            if len(result) != len(stack.get_role_list()):
+                logger.debug('salt did not orchestrate all hosts')
 
                 if current_try <= max_retries:
                     continue
 
-                err_msg = result.std_err \
-                    if result.std_err else result.std_out
-                stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+                err_msg = 'Salt errored and did not orchestrate all the hosts'
+                stack.set_status(orchestrate.name, Stack.ERROR,
+                                 err_msg, Level.ERROR)
                 raise StackTaskException('Error executing orchestration: '
                                          '{0!r}'.format(err_msg))
             else:
                 with open(log_file, 'a') as f:
-                    f.write(result.std_out)
-
-                # load JSON so we can attempt to catch provisioning errors
-
-                # Sometimes orchestration likes to output a string before
-                # dumping the yaml, so check for this before loading the
-                # yaml object and strip off the unnecessary strings
-                output = result.std_out
-                stripped = ''
-                while True:
-                    newline = output.find('\n')
-                    if newline < 0:
-                        break
-                    if isinstance(yaml.safe_load(output[:newline]),
-                                  basestring):
-                        # strip off the line and keep going, keeping
-                        # the stripped off portion in case there is
-                        # no yaml to decode
-                        stripped += output[:newline + 1]
-                        output = output[newline + 1:]
-                        continue
-                    break
-
-                # if output still contains data, then it should be a
-                # decodable yaml object/list; else, the stdout was
-                # one big string and is probably an error message
-                if len(output) > 0:
-                    output = yaml.safe_load(output)
-
-                    # Log out the stripped off portion
-                    logger.info('Stripped orchestration output: {0}'.format(
-                        stripped
-                    ))
-                else:
-                    output = stripped
+                    f.write(yaml.safe_dump(result))
 
                 errors = {}
-                if isinstance(output, basestring):
-                    errors['general'] = [output]
 
-                # each key in the dict is a host, and the value of the host
+                # each key in the dict is a role, and the value of the role is
+                # a dict with keys being hosts.  The value of the hosts
                 # is either a list or dict. Those that are lists we can
                 # assume to be a list of errors
-                elif output is not None:
-                    for host, stage_results in output.iteritems():
-                        # check for orchestration stage errors first
-                        if host == '__stage__error__':
-                            continue
+                if result is not None:
+                    for role, role_results in result.items():
+                        for host, stage_result in role_results.items():
+                            if host == 'req_|-fail_|-fail_|-None':
+                                # Requisite error for the whole role
+                                errors.setdefault(
+                                    '{0} failed'.format(role),
+                                    []).append({
+                                        'error': stage_result['ret']
+                                    })
+                                continue
 
-                        for stage_result in stage_results:
+                            if 'success' in stage_result \
+                                    and not stage_result['success']:
+                                errors.setdefault(host, []).append({
+                                    'error': stage_result['ret']
+                                })
+                                continue
 
-                            if isinstance(stage_result, list):
+                            if 'retcode' in stage_result \
+                                    and stage_result['retcode'] != 0:
+                                errors.setdefault(host, []).append({
+                                    'error': stage_result['ret']
+                                })
+                                continue
+
+                            if isinstance(stage_result['ret'], list):
                                 for err in stage_result:
                                     errors.setdefault(host, []) \
                                         .append({
@@ -1225,10 +1327,18 @@ def orchestrate(stack_id, max_retries=2):
                                         })
                                 continue
 
+                        if len(role_results) != role_host_nums[role]:
+                            errors.setdefault(role, []).append({
+                                'error': 'Only {0} out of {1} hosts were orchestrated'.format(
+                                    len(role_results),
+                                    role_host_nums[role]
+                                )
+                            })
+
                             # iterate over the individual states in the
                             # host looking for states that had a result
                             # of false
-                            for state_str, state_meta in stage_result.iteritems(): # NOQA
+                            for state_str, state_meta in stage_result['ret'].items(): # NOQA
                                 if state_str == '__FAILHARD__':
                                     continue
 
@@ -1257,6 +1367,7 @@ def orchestrate(stack_id, max_retries=2):
                                 ', '.join(errors.keys()),
                                 os.path.basename(log_file))
                         stack.set_status(highstate.name,
+                                         Stack.ERROR,
                                          err_msg,
                                          Level.ERROR)
                         raise StackTaskException(err_msg)
@@ -1264,7 +1375,171 @@ def orchestrate(stack_id, max_retries=2):
                     # Everything worked?
                     break
 
-        stack.set_status(orchestrate.name,
+
+            ##########################
+
+
+
+
+
+
+
+
+            # ##
+            # # Execute custom orchestration runner
+            # ##
+            # cmd = ' '.join([
+            #     'salt-run',
+            #     '--config-dir={0}'.format(
+            #         settings.STACKDIO_CONFIG.salt_config_root),
+            #     '-lquiet',                  # quiet stdout
+            #     '--log-file {0}',           # where to log
+            #     '--log-file-level info',    # full logging
+            #     'stackdio.orchestrate',     # custom overstate execution
+            #     stack.owner.username,       # username is the environment to
+            #                                 # execute in
+            #     stack.overstate_file.path
+            # ]).format(
+            #     log_file
+            # )
+            #
+            # # Execute
+            # logger.debug('Executing command: {0}'.format(cmd))
+            #
+            # try:
+            #     result = envoy.run(str(cmd))
+            # except AttributeError, e:
+            #     # Unrecoverable error, no retrying possible
+            #     err_msg = 'Error running command: \'{0}\''.format(cmd)
+            #     logger.exception(err_msg)
+            #     stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+            #     raise StackTaskException(err_msg)
+            #
+            # if result is None:
+            #     # What does it mean for envoy to return a result of None?
+            #     # Is it even possible? If so, is it a recoverable error?
+            #     if current_try <= max_retries:
+            #         continue
+            #     msg = 'Orchestration command returned None. Status, stdout ' \
+            #         'and stderr unknown.'
+            #     logger.warn(msg)
+            #     stack.set_status(msg)
+            # elif result.status_code > 0:
+            #     logger.debug('envoy returned non-zero status code')
+            #     logger.debug('envoy status_code: {0}'.format(
+            #         result.status_code))
+            #     logger.debug('envoy std_out: {0}'.format(result.std_out))
+            #     logger.debug('envoy std_err: {0}'.format(result.std_err))
+            #
+            #     if current_try <= max_retries:
+            #         continue
+            #
+            #     err_msg = result.std_err \
+            #         if result.std_err else result.std_out
+            #     stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+            #     raise StackTaskException('Error executing orchestration: '
+            #                              '{0!r}'.format(err_msg))
+            # else:
+            #     with open(log_file, 'a') as f:
+            #         f.write(result.std_out)
+            #
+            #     # load JSON so we can attempt to catch provisioning errors
+            #
+            #     # Sometimes orchestration likes to output a string before
+            #     # dumping the yaml, so check for this before loading the
+            #     # yaml object and strip off the unnecessary strings
+            #     output = result.std_out
+            #     stripped = ''
+            #     while True:
+            #         newline = output.find('\n')
+            #         if newline < 0:
+            #             break
+            #         if isinstance(yaml.safe_load(output[:newline]),
+            #                       basestring):
+            #             # strip off the line and keep going, keeping
+            #             # the stripped off portion in case there is
+            #             # no yaml to decode
+            #             stripped += output[:newline + 1]
+            #             output = output[newline + 1:]
+            #             continue
+            #         break
+            #
+            #     # if output still contains data, then it should be a
+            #     # decodable yaml object/list; else, the stdout was
+            #     # one big string and is probably an error message
+            #     if len(output) > 0:
+            #         output = yaml.safe_load(output)
+            #
+            #         # Log out the stripped off portion
+            #         logger.info('Stripped orchestration output: {0}'.format(
+            #             stripped
+            #         ))
+            #     else:
+            #         output = stripped
+            #
+            #     errors = {}
+            #     if isinstance(output, basestring):
+            #         errors['general'] = [output]
+            #
+            #     # each key in the dict is a host, and the value of the host
+            #     # is either a list or dict. Those that are lists we can
+            #     # assume to be a list of errors
+            #     elif output is not None:
+            #         for host, stage_results in output.iteritems():
+            #             # check for orchestration stage errors first
+            #             if host == '__stage__error__':
+            #                 continue
+            #
+            #             for stage_result in stage_results:
+            #
+            #                 if isinstance(stage_result, list):
+            #                     for err in stage_result:
+            #                         errors.setdefault(host, []) \
+            #                             .append({
+            #                                 'error': err
+            #                             })
+            #                     continue
+            #
+            #                 # iterate over the individual states in the
+            #                 # host looking for states that had a result
+            #                 # of false
+            #                 for state_str, state_meta in stage_result.iteritems(): # NOQA
+            #                     if state_str == '__FAILHARD__':
+            #                         continue
+            #
+            #                     if not is_state_error(state_meta):
+            #                         continue
+            #
+            #                     if not is_requisite_error(state_meta):
+            #                         err, recoverable = state_error(state_str,
+            #                                                        state_meta)
+            #                         if not recoverable:
+            #                             unrecoverable_error = True
+            #                         errors.setdefault(host, []).append(err)
+            #
+            #         if errors:
+            #             # write the errors to the err_file
+            #             with open(err_file, 'a') as f:
+            #                 f.write(yaml.safe_dump(errors))
+            #
+            #             if not unrecoverable_error and current_try <= max_retries: # NOQA
+            #                 continue
+            #
+            #             err_msg = 'Orchestration errors on hosts: ' \
+            #                 '{0}. Please see the orchestration errors ' \
+            #                 'API or the orchestration log file for more ' \
+            #                 'details: {1}'.format(
+            #                     ', '.join(errors.keys()),
+            #                     os.path.basename(log_file))
+            #             stack.set_status(highstate.name,
+            #                              err_msg,
+            #                              Level.ERROR)
+            #             raise StackTaskException(err_msg)
+            #
+            #         # Everything worked?
+            #         break
+
+        stack.set_status(orchestrate.name, Stack.FINALIZING,
                          'Finished executing orchestration all hosts.')
 
     except Stack.DoesNotExist:
@@ -1274,7 +1549,7 @@ def orchestrate(stack_id, max_retries=2):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(orchestrate.name, err_msg, Level.ERROR)
+        stack.set_status(orchestrate.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
@@ -1286,13 +1561,14 @@ def finish_stack(stack_id):
         logger.info('Finishing stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(finish_stack.name,
+        stack.set_status(finish_stack.name, Stack.FINALIZING,
                          'Performing final updates to Stack.')
 
         # TODO: Are there any last minute updates and checks?
 
         # Update status
-        stack.set_status(finish_stack.name, 'Finished executing tasks.')
+        stack.set_status(finish_stack.name, Stack.FINISHED,
+                         'Finished executing tasks.')
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -1301,21 +1577,21 @@ def finish_stack(stack_id):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(finish_stack.name, err_msg, Level.ERROR)
+        stack.set_status(finish_stack.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
 
 
 @celery.task(name='stacks.register_volume_delete')
 def register_volume_delete(stack_id, host_ids=None):
-    '''
+    """
     Modifies the instance attributes for the volumes in a stack (or host_ids)
     that will automatically delete the volumes when the machines are
     terminated.
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
-        stack.set_status(finish_stack.name,
+        stack.set_status(finish_stack.name, Stack.DESTROYING,
                          'Registering volumes for deletion.')
 
         # use the stack driver to register all volumes on the hosts to
@@ -1325,7 +1601,7 @@ def register_volume_delete(stack_id, host_ids=None):
             logger.debug('Deleting volumes for hosts {0}'.format(hosts))
             driver.register_volumes_for_delete(hosts)
 
-        stack.set_status(finish_stack.name,
+        stack.set_status(finish_stack.name, Stack.DESTROYING,
                          'Finished registering volumes for deletion.')
 
     except Stack.DoesNotExist, e:
@@ -1335,7 +1611,7 @@ def register_volume_delete(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(Stack.ERROR, err_msg)
+        stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
         raise
 
@@ -1344,14 +1620,14 @@ def register_volume_delete(stack_id, host_ids=None):
 @celery.task(name='stacks.destroy_hosts') # NOQA
 def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                   delete_security_groups=True, parallel=True):
-    '''
+    """
     Destroy the given stack id or a subset of the stack if host_ids
     is set. After all hosts have been destroyed we must also clean
     up any managed security groups on the stack.
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
-        stack.set_status(destroy_hosts.name,
+        stack.set_status(destroy_hosts.name, Stack.TERMINATING,
                          'Destroying stack infrastructure. This may '
                          'take a while.')
         hosts = stack.get_hosts(host_ids)
@@ -1408,7 +1684,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
 
             if result.status_code > 0:
                 err_msg = result.std_err if result.std_err else result.std_out
-                stack.set_status(destroy_hosts.name, err_msg, Stack.ERROR)
+                stack.set_status(destroy_hosts.name, Stack.ERROR,
+                                 err_msg, Stack.ERROR)
                 raise StackTaskException(
                     'Error destroying hosts on stack {0}: {1!r}'.format(
                         stack_id,
@@ -1431,7 +1708,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                                                    driver.STATE_TERMINATED,
                                                    timeout=10 * 60)
                 if not ok:
-                    stack.set_status(destroy_hosts.name, result, Stack.ERROR)
+                    stack.set_status(destroy_hosts.name, Stack.ERROR,
+                                     result, Stack.ERROR)
                     raise StackTaskException(result)
                 known_hosts.update(instance_id='', state='terminated')
 
@@ -1454,7 +1732,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
             hosts.delete()
             stack._generate_map_file()
 
-        stack.set_status(destroy_hosts.name,
+        stack.set_status(destroy_hosts.name, Stack.FINALIZING,
                          'Finished destroying stack infrastructure.')
 
     except Stack.DoesNotExist:
@@ -1464,23 +1742,24 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(destroy_hosts.name, err_msg, level=Stack.ERROR)
+        stack.set_status(destroy_hosts.name, Stack.ERROR,
+                         err_msg, level=Stack.ERROR)
         logger.exception(err_msg)
         raise
 
 
 @celery.task(name='stacks.destroy_stack')
 def destroy_stack(stack_id):
-    '''
-    '''
+    """
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
-        stack.set_status(destroy_stack.name,
+        stack.set_status(destroy_stack.name, Stack.DESTROYING,
                          'Performing final cleanup of stack.')
         hosts = stack.get_hosts()
 
         if hosts.count() > 0:
-            stack.set_status(destroy_stack.name,
+            stack.set_status(destroy_stack.name, Stack.DESTROYING,
                              'Stack appears to have hosts attached and '
                              'can\'t be completely destroyed.',
                              level=Stack.ERROR)
@@ -1496,23 +1775,23 @@ def destroy_stack(stack_id):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(Stack.ERROR, err_msg)
+        stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
         raise
 
 
 @celery.task(name='stacks.unregister_dns')
 def unregister_dns(stack_id, host_ids=None):
-    '''
+    """
     Removes all host information from DNS. Intended to be used just before a
     stack is terminated or stopped or put into some state where DNS no longer
     applies.
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
 
-        stack.set_status(Stack.CONFIGURING,
+        stack.set_status(Stack.CONFIGURING, Stack.CONFIGURING,
                          'Unregistering hosts with DNS provider.')
 
         # Use the provider implementation to register a set of hosts
@@ -1522,7 +1801,7 @@ def unregister_dns(stack_id, host_ids=None):
             logger.debug('Unregistering DNS for hosts: {0}'.format(hosts))
             driver.unregister_dns(hosts)
 
-        stack.set_status(Stack.CONFIGURING,
+        stack.set_status(Stack.CONFIGURING, Stack.DESTROYING,
                          'Finished unregistering hosts with DNS provider.')
 
     except Stack.DoesNotExist:
@@ -1532,17 +1811,17 @@ def unregister_dns(stack_id, host_ids=None):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(Stack.ERROR, err_msg)
+        stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
         raise
 
 
 @celery.task(name='stacks.execute_action')
 def execute_action(stack_id, action, *args, **kwargs):
-    '''
+    """
     Executes a defined action using the stack's cloud provider implementation.
     Actions are defined on the implementation class (e.g, _action_{action})
-    '''
+    """
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing action \'{0}\' on stack: {1!r}'.format(
@@ -1562,7 +1841,7 @@ def execute_action(stack_id, action, *args, **kwargs):
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
-        stack.set_status(Stack.ERROR, err_msg)
+        stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
         raise
 
@@ -1577,33 +1856,70 @@ def custom_action(action_id, host_target, command):
 
     stack_id = action.stack.id
 
-    cmd = [[
-        'salt',
-        '-C', '{0} and G@stack_id:{1}'.format(host_target, stack_id),
-        '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
-        '--out=yaml',
-        '--log-file-level', 'debug',
-        'cmd.run',
-        command
-    ]]
-
     try:
-        result = envoy.run(cmd)
 
-        std_out = yaml.safe_load(result.std_out)
+        salt_client = salt.client.LocalClient(os.path.join(
+            settings.STACKDIO_CONFIG.salt_config_root, 'master'))
 
+        res = salt_client.cmd_iter(
+            '{0} and G@stack_id:{1}'.format(host_target, stack_id),
+            'cmd.run',
+            [command],
+            expr_form='compound',
+            kwarg={
+                'log-file': '/home/stackdio/test.log',
+                'log-file-level': 'debug'
+            })
+
+        result = {}
+        for k, v in res.items():
+            result[k] = v
+
+        # Convert to an easier format for javascript
         ret = []
-
-        for host in std_out.keys():
-            ret.append({"host": host, "output": std_out[host]})
+        for host, output in result.items():
+            ret.append({'host': host, 'output': output})
 
         action.std_out_storage = json.dumps(ret)
-        action.std_err_storage = result.std_err
         action.status = StackAction.FINISHED
 
         action.save()
 
-    except AttributeError:
-        action.status = StackAction.ERRORED
+    except salt.client.SaltInvocationError:
+        action.status = StackAction.ERROR
         action.save()
-        raise
+
+    except salt.client.SaltReqTimeoutError:
+        action.status = StackAction.ERROR
+        action.save()
+
+    # cmd = [[
+    #     'salt',
+    #     '-C', '{0} and G@stack_id:{1}'.format(host_target, stack_id),
+    #     '--config-dir={0}'.format(settings.STACKDIO_CONFIG.salt_config_root),
+    #     '--out=yaml',
+    #     '--log-file-level', 'debug',
+    #     'cmd.run',
+    #     command
+    # ]]
+    #
+    # try:
+    #     result = envoy.run(cmd)
+    #
+    #     std_out = yaml.safe_load(result.std_out)
+    #
+    #     ret = []
+    #
+    #     for host in std_out.keys():
+    #         ret.append({"host": host, "output": std_out[host]})
+    #
+    #     action.std_out_storage = json.dumps(ret)
+    #     action.std_err_storage = result.std_err
+    #     action.status = StackAction.FINISHED
+    #
+    #     action.save()
+    #
+    # except AttributeError:
+    #     action.status = StackAction.ERROR
+    #     action.save()
+    #     raise
