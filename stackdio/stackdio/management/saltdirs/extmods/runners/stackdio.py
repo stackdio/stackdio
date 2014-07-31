@@ -31,17 +31,18 @@ def orchestrate(saltenv='base', os_fn=None):
         raise SaltInvocationError(
             '{0}: {1!r}'.format(exc.strerror, exc.filename)
         )
-    ret = {}
+    # ret = {}
     for stage in overstate.stages_iter():
         if isinstance(stage, dict):
             # This is highstate data
-            for host, result in stage.items():
-                if '_|-' in host:
-                    ret.setdefault('__stage__error__', []).append(result)
-                else:
-                    ret.setdefault(host, []).append(result)
+            yield stage
+            # for host, result in stage.items():
+            #     if '_|-' in host:
+            #         ret.setdefault('__stage__error__', []).append(result)
+            #     else:
+            #         ret.setdefault(host, []).append(result)
         elif isinstance(stage, list):
             # we don't care about output from stage executions
             continue
-    salt.output.display_output(ret, 'yaml', opts=__opts__)
-    return overstate.over_run
+    # salt.output.display_output(ret, 'yaml', opts=__opts__)
+    # return overstate.over_run

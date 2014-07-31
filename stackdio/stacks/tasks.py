@@ -1298,9 +1298,7 @@ def orchestrate(stack_id, max_retries=2):
                         for host, stage_result in role_results.items():
                             if host == 'req_|-fail_|-fail_|-None':
                                 # Requisite error for the whole role
-                                errors.setdefault(
-                                    '{0} failed'.format(role),
-                                    []).append({
+                                errors.setdefault(role, []).append({
                                         'error': stage_result['ret']
                                     })
                                 continue
@@ -1344,7 +1342,8 @@ def orchestrate(stack_id, max_retries=2):
                                         unrecoverable_error = True
                                     errors.setdefault(host, []).append(err)
 
-                        if len(role_results) != role_host_nums[role]:
+                        if role not in errors and \
+                                len(role_results) != role_host_nums[role]:
                             errors.setdefault(role, []).append({
                                 'error': 'Only {0} out of {1} hosts were orchestrated'.format(
                                     len(role_results),
