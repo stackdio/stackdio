@@ -336,9 +336,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
             cloud_provider = hostdef.cloud_profile.cloud_provider
             driver = cloud_provider.get_driver()
 
-            sg_id = driver.create_security_group(sg_name,
-                                                 sg_description,
-                                                 delete_if_exists=True)
+            try:
+
+                sg_id = driver.create_security_group(sg_name,
+                                                     sg_description,
+                                                     delete_if_exists=True)
+            except Exception, e:
+                err_msg = 'Error creating security group: {0}'.format(str(e))
+                self.set_status('create_security_groups', self.ERROR,
+                                err_msg, Level.ERROR)
+                raise
+
             logger.debug('Created security group {0}: {1}'.format(
                 sg_name,
                 sg_id
@@ -463,6 +471,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                         is_default=True
                     )
                 ))
+
                 host.security_groups.add(*provider_groups)
 
                 # Add in the security group provided by this host definition

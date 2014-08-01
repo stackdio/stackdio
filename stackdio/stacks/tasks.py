@@ -426,6 +426,8 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         logger.exception(err_msg)
         raise StackTaskException(err_msg)
     except StackTaskException, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(launch_hosts.name, stack.ERROR, err_msg, Level.ERROR)
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1306,6 +1308,7 @@ def orchestrate(stack_id, max_retries=2):
             # Stop logging
             salt_logger.removeHandler(file_log_handler)
 
+            # Write the log file
             with open(log_file, 'a') as f:
                 f.write(yaml.safe_dump(to_print))
 
