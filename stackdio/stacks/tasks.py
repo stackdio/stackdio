@@ -1274,6 +1274,8 @@ def orchestrate(stack_id, max_retries=2):
             errors = {}
             to_print = {}
             for ret in result:
+                with open(err_file, 'a') as f:
+                    f.write('{0}\n\n'.format(len(ret)))
                 for host, stage_result in ret.items():
                     to_print.setdefault(host, []).append(stage_result)
                     if isinstance(stage_result, list):
@@ -1303,7 +1305,7 @@ def orchestrate(stack_id, max_retries=2):
 
                 if errors:
                     with open(err_file, 'a') as f:
-                        f.write('Found error - stopping orchestration NOW to retry.')
+                        f.write('Found error - stopping orchestration NOW to retry\n\n')
                     # Stop orchestration hard if there were errors
                     break
 
