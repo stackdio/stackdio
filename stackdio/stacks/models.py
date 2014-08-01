@@ -4,10 +4,10 @@ import re
 import logging
 import socket
 
-import salt.config
+
 import envoy
 import yaml
-
+from core.exceptions import BadRequest
 from django.conf import settings
 from django.db import models, transaction
 from django.core.files.base import ContentFile
@@ -345,7 +345,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                 err_msg = 'Error creating security group: {0}'.format(str(e))
                 self.set_status('create_security_groups', self.ERROR,
                                 err_msg, Level.ERROR)
-                raise
 
             logger.debug('Created security group {0}: {1}'.format(
                 sg_name,

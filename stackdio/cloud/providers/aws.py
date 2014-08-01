@@ -473,7 +473,6 @@ class AWSCloudProvider(BaseCloudProvider):
                                 security_group_name))
             except BadRequest:
                 logger.debug('security group did not already exist')
-                raise
 
         # create the group in the VPC or classic
         kwargs = {}
