@@ -1270,9 +1270,10 @@ def orchestrate(stack_id, max_retries=2):
             )
 
             errors = {}
+            to_print = {}
             for ret in result:
                 for host, stage_result in ret.items():
-
+                    to_print.setdefault(host, []).append(stage_result)
                     if isinstance(stage_result, list):
                         for err in stage_result:
                             errors.setdefault(host, []) \
@@ -1306,7 +1307,7 @@ def orchestrate(stack_id, max_retries=2):
             salt_logger.removeHandler(file_log_handler)
 
             with open(log_file, 'a') as f:
-                f.write(yaml.safe_dump(result))
+                f.write(yaml.safe_dump(to_print))
 
             if errors:
                 with open(err_file, 'a') as f:
