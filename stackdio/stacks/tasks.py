@@ -1252,9 +1252,9 @@ def orchestrate(stack_id, max_retries=2):
             ####################### python API
 
             # Set up logging
-            # file_log_handler = logging.FileHandler(log_file)
-            # file_log_handler.setFormatter(salt_formatter)
-            # salt_logger.addHandler(file_log_handler)
+            file_log_handler = logging.FileHandler(log_file)
+            file_log_handler.setFormatter(salt_formatter)
+            salt_logger.addHandler(file_log_handler)
 
             opts = salt.config.client_config(os.path.join(
                 settings.STACKDIO_CONFIG.salt_config_root, 'master'))
@@ -1270,7 +1270,6 @@ def orchestrate(stack_id, max_retries=2):
             )
 
             errors = {}
-            error_happened = False
             for ret in result:
                 for host, stage_result in ret.items():
 
@@ -1300,12 +1299,19 @@ def orchestrate(stack_id, max_retries=2):
                             errors.setdefault(host, []).append(err)
 
                 if errors:
-                    error_happened = True
-                    with open(err_file, 'a') as f:
-                        f.write(yaml.safe_dump(errors))
+                    # Stop orchestration hard if there were errors
                     break
 
-            if error_happened:
+            # Stop logging
+            salt_logger.removeHandler(file_log_handler)
+
+            with open(log_file, 'a') as f:
+                f.write(yaml.safe_dump(result))
+
+            if errors:
+                with open(err_file, 'a') as f:
+                    f.write(yaml.safe_dump(errors))
+
                 if not unrecoverable_error and current_try <= max_retries: # NOQA
                     continue
 
@@ -1324,8 +1330,7 @@ def orchestrate(stack_id, max_retries=2):
             # it worked?
             break
 
-            # Stop logging
-            # salt_logger.removeHandler(file_log_handler)
+
 
             # if len(result) != len(stack.get_role_list()):
             #     logger.debug('salt did not orchestrate all hosts')
