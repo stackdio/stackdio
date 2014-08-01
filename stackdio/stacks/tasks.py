@@ -1302,6 +1302,8 @@ def orchestrate(stack_id, max_retries=2):
                             errors.setdefault(host, []).append(err)
 
                 if errors:
+                    with open(err_file, 'a') as f:
+                        f.write('Found error - stopping orchestration NOW to retry.')
                     # Stop orchestration hard if there were errors
                     break
 

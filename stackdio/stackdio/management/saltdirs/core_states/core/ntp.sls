@@ -14,7 +14,7 @@ install-ntpd:
 
 sync-ntpd:
   cmd.run:
-    - name: 'ntpdate 0.centos.pool.ntp.org 1.centos.pool.ntp.org 2.centos.pool.ntp.org 3.centos.pool.ntp.org'
+    - name: 'ntpdate 0.pool.ntp.org 1.pool.ntp.org 2.pool.ntp.org 3.pool.ntp.org'
     - unless: 'service {{ ntp_name }} status'
     - require:
       - pkg: install-ntpd
