@@ -97,8 +97,8 @@ class StackdioOverState(salt.overstate.OverState):
                 'arg': arg,
                 'expr_form': 'compound',
                 'raw': True,
-                'batch': self.opts['worker_threads']}
-            
+                'batch': str(self.opts['worker_threads'])}
+
             for minion in self.local.cmd_batch(**cmd_kwargs):
                 if all(key not in minion for key in ('id', 'return', 'fun')):
                     continue
