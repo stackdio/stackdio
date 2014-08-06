@@ -721,9 +721,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
     def _generate_pillar_file(self):
         from blueprints.models import BlueprintHostFormulaComponent
 
+        # pull the ssh_user property from the stackd.io config file and
+        # if the username value is $USERNAME, we'll substitute the stack
+        # owner's username instead
+        username = settings.STACKDIO_CONFIG.ssh_user
+        if username == '$USERNAME':
+            username = self.owner.username
+
         pillar_props = {
             '__stackdio__': {
-                'username': self.owner.username,
+                'username': username,
                 'publickey': self.owner.settings.public_key,
             }
         }
