@@ -511,7 +511,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 sg = self.obj.security_groups.get(name=group_name)
                 kwargs = {'group_id': sg.group_id}
             except ObjectDoesNotExist:
-                pass
+                return
         else:
             kwargs = {'name': group_name}
 

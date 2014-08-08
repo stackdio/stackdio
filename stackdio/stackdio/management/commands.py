@@ -258,6 +258,19 @@ class InitCommand(WizardCommand):
                       'running, the database must already exist, and the user '
                       'must have access to it.'),
         'default': 'mysql://stackdio:password@localhost:3306/stackdio',
+    }, {
+        'attr': 'ssh_user',
+        'short_desc': ('What SSH user should be created on stackd.io managed '
+                       'machines?'),
+        'long_desc': ('When machines are launched and provisioned with core '
+                      'functionality, stackd.io will create a user on the '
+                      'machine and add the authenticated stackd.io user\'s '
+                      'public RSA key so they may SSH in to their machines. '
+                      'This setting lets you control what the default '
+                      'username should be. Note that by default, this user '
+                      'is the actual username of the authenticated stackd.io '
+                      'user (signified by $USERNAME).'),
+        'default': '$USERNAME',
     }]
 
     def pre_run(self):
