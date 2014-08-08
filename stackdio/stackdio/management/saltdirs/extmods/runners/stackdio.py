@@ -53,19 +53,20 @@ class StackdioOverState(salt.overstate.OverState):
             elif req not in self.names:
                 # Req does not exist
                 tag_name = 'No_|-Req_|-fail_|-None'
-                failure = {tag_name: {
-                    'ret': {
-                        'result': False,
-                        'comment': 'Requisite {0} not found'.format(req),
-                        'name': 'Requisite Failure',
-                        'changes': {},
-                        '__run_num__': 0,
-                            },
+                failure = {
+                    tag_name: {
+                        'ret': {
+                            'result': False,
+                            'comment': 'Requisite {0} not found'.format(req),
+                            'name': 'Requisite Failure',
+                            'changes': {},
+                            '__run_num__': 0,
+                        },
                         'retcode': 253,
                         'success': False,
                         'fun': 'req.fail',
-                        }
-                        }
+                    }
+                }
                 self.over_run[name] = failure
                 req_fail[name].update(failure)
 
@@ -97,19 +98,20 @@ class StackdioOverState(salt.overstate.OverState):
                 'arg': arg,
                 'expr_form': 'compound',
                 'raw': True,
-                'batch': str(self.opts['worker_threads'])}
+                # 'batch': '10'  # str(self.local.opts['worker_threads'])
+            }
 
-            for minion in self.local.cmd_batch(**cmd_kwargs):
+            for minion in self.local.cmd_iter(**cmd_kwargs):
                 if all(key not in minion for key in ('id', 'return', 'fun')):
                     continue
-                ret.update({minion['id']:
-                        {
+                ret.update({
+                    minion['id']: {
                         'ret': minion['return'],
                         'fun': minion['fun'],
                         'retcode': minion.get('retcode', 0),
                         'success': minion.get('success', True),
-                        }
-                    })
+                    }
+                })
             self.over_run[name] = ret
             yield {name: ret}
 
