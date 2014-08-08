@@ -74,7 +74,7 @@ function (Q, ko, bootbox, $galaxy, alerts, Ladda, FormulaStore, API) {
             if (formula.private_git_repo && !formula.git_password_stored) {
                 bootbox.dialog({
                     title: "Enter your git password:",
-                    message: '<form class="bootbox-form"><input class="bootbox-input bootbox-input-text form-control" autocomplete="off" type="password" id="git_password"></form>',
+                    message: '<form class="bootbox-form"><input class="bootbox-input bootbox-input-text form-control" autocomplete="off" type="password" id="git_password_for_update"></form>',
                     buttons: {
                         cancel: {
                             label: "Cancel",
@@ -87,7 +87,7 @@ function (Q, ko, bootbox, $galaxy, alerts, Ladda, FormulaStore, API) {
                             label: "OK",
                             className: "btn-primary",
                             callback: function () {
-                                git_password = $('#git_password').val();
+                                git_password = $('#git_password_for_update').val();
                                 self.doUpdate(formula, git_password);
                             }
                         }
