@@ -8,6 +8,7 @@ from rest_framework import (
     status
 )
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
 from core.exceptions import BadRequest, ResourceConflict
 from core.permissions import (
@@ -102,6 +103,28 @@ class CloudInstanceSizeListAPIView(generics.ListAPIView):
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
     model = models.CloudInstanceSize
     serializer_class = serializers.CloudInstanceSizeSerializer
+
+
+class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
+
+    def get_provider(self):
+        obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_queryset(self):
+        return self.get_provider().global_formula_components.all()
+
+    def pre_save(self, obj):
+        obj.provider = self.get_provider()
+
+
+class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveDestroyAPIView):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
+    model = models.GlobalOrchestrationFormulaComponent
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):

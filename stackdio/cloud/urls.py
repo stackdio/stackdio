@@ -29,6 +29,14 @@ urlpatterns = patterns(
         api.CloudProviderVPCSubnetListAPIView.as_view(),
         name='cloudprovider-vpcsubnet-list'),
 
+    url(r'^providers/(?P<pk>[0-9]+)/global_orchestration_components/$',
+        api.GlobalOrchestrationComponentListAPIView.as_view(),
+        name='cloudprovider-global-orchestration-list'),
+
+    url(r'^global_orchestration_components/(?P<pk>[0-9]+)/$',
+        api.GlobalOrchestrationComponentDetailAPIView.as_view(),
+        name='globalorchestrationformulacomponent-detail'),
+
     url(r'^instance_sizes/$',
         api.CloudInstanceSizeListAPIView.as_view(),
         name='cloudinstancesize-list'),

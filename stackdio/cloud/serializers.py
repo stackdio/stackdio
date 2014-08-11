@@ -2,10 +2,12 @@ import logging
 
 from rest_framework import serializers
 
+from formulas.serializers import FormulaComponentSerializer
 from core.mixins import SuperuserFieldsMixin
-
 from . import models
 from .utils import get_provider_type_and_class
+
+from rest_framework import permissions
 
 logger = logging.getLogger(__name__)
 
@@ -52,13 +54,15 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
         )
         superuser_fields = ('owner', 'is_default', 'is_managed')
 
+
 class SecurityGroupRuleSerializer(serializers.Serializer):
     action = serializers.CharField(max_length=15)
     protocol = serializers.CharField(max_length=4)
     from_port = serializers.IntegerField()
     to_port = serializers.IntegerField()
     rule = serializers.CharField(max_length=255)
-    
+
+
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
@@ -166,6 +170,30 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'provider_type',
             'instance_id',
+        )
+
+
+class GlobalOrchestrationFormulaComponentSerializer(
+        serializers.HyperlinkedModelSerializer):
+
+    def __init__(self, *args, **kwargs):
+        super(GlobalOrchestrationFormulaComponentSerializer, self) \
+            .__init__(*args, **kwargs)
+
+        # If read request, put in the component object, otherwise just pk
+        context = kwargs.get('context')
+        if context:
+            request = context.get('request')
+            if request and request.method in permissions.SAFE_METHODS:
+                self.fields['component'] = FormulaComponentSerializer()
+
+    class Meta:
+        model = models.GlobalOrchestrationFormulaComponent
+        fields = (
+            'id',
+            'url',
+            'order',
+            'component',
         )
 
 
