@@ -1,8 +1,5 @@
 import logging
 
-from django.conf import settings
-from django.contrib.auth import get_user_model
-
 from rest_framework import serializers
 
 from . import models
@@ -38,7 +35,6 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
     action = serializers.HyperlinkedIdentityField(view_name='formula-action')
     private_git_repo = serializers.Field()
-    git_password_stored = serializers.Field()
 
     class Meta:
         model = models.Formula 
@@ -50,7 +46,6 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'owner',
             'public',
             'private_git_repo',
-            'git_password_stored',
             'uri',
             'root_path',
             'properties',

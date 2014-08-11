@@ -71,7 +71,7 @@ function (Q, ko, bootbox, $galaxy, alerts, Ladda, FormulaStore, API) {
         };
 
         self.updateFormula = function (formula) {
-            if (formula.private_git_repo && !formula.git_password_stored) {
+            if (formula.private_git_repo) {
                 bootbox.dialog({
                     title: "Enter your git password:",
                     message: '<form class="bootbox-form"><input class="bootbox-input bootbox-input-text form-control" autocomplete="off" type="password" id="git_password_for_update"></form>',
