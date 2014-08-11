@@ -148,19 +148,6 @@ function (Q, ko, bootbox, $galaxy, alerts, Ladda, FormulaStore, API) {
             });
         };
 
-        self.remove_password = function (formula) {
-            bootbox.confirm("Please confirm that you want to remove the password from this formula.", function (result) {
-                if (result) {
-                    API.Formulas.removePassword(formula).then(function () {
-                        alerts.showMessage('#success', 'Git password successfully removed.', true);
-                        self.loadFormula();
-                    }).catch(function (error) {
-                        alerts.showMessage('#error', 'Could not delete the password. ' + error, true, 4000);
-                    }).done()
-                }
-            });
-        }
-
         self.loadFormula = function (obj, evt) {
             evt.preventDefault();
             var l = Ladda.create(evt.currentTarget);
