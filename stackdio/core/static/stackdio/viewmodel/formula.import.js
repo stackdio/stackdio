@@ -46,7 +46,7 @@ function (Q, ko, bootbox, $galaxy, alerts, formutils, API) {
         self.importFormula = function (model, evt) {
             var record = formutils.collectFormFields(evt.target.form);
 
-            API.Formulas.import(record.formula_url.value, record.git_username.value, record.git_password.value, record.save_git_password.value)
+            API.Formulas.import(record.formula_url.value, record.git_username.value, record.git_password.value)
                 .then(function () {
                     alerts.showMessage('#success', 'Formula has been submitted for import. Depending on the size of the formula repository it may take some time to complete.', true);
 

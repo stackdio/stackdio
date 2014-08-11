@@ -24,7 +24,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise;
         },
-        import: function (uri, git_username, git_password, save_git_password) {
+        import: function (uri, git_username, git_password) {
             var deferred = Q.defer();
 
             $.ajax({
@@ -33,8 +33,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 data: JSON.stringify({
                     uri: uri,
                     git_username: git_username,
-                    git_password: git_password,
-                    save_git_password: save_git_password
+                    git_password: git_password
                 }),
                 headers: {
                     'Content-Type': 'application/json',
@@ -131,30 +130,6 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
                 data: JSON.stringify({
                     action: 'update',
                     git_password: git_password
-                }),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': stackdio.settings.csrftoken,
-                    'Accept': 'application/json'
-                },
-                success: function (data, status, response) {
-                    deferred.resolve();
-                },
-                error: function (request, status, error) {
-                    deferred.reject(JSON.parse(request.responseText).detail);
-                }
-            });
-
-            return deferred.promise;
-        },
-        removePassword: function (formula) {
-            var deferred = Q.defer();
-
-            $.ajax({
-                url: formula.action,
-                type: 'POST',
-                data: JSON.stringify({
-                    action: 'remove_password'
                 }),
                 headers: {
                     'Content-Type': 'application/json',
