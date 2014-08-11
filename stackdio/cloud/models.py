@@ -1,20 +1,20 @@
 import logging
-import yaml
 
+import yaml
 from django.conf import settings
 from django.db import models
 from django.core.files.storage import FileSystemStorage
 from django.core.files.base import ContentFile
-
 from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
-from core.queryset_transform import TransformManager, TransformQuerySet
 
+from core.queryset_transform import TransformManager, TransformQuerySet
 from core.fields import DeletingFileField
 from cloud.utils import get_provider_type_and_class
 from .utils import get_cloud_provider_choices
+
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +127,35 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     def __unicode__(self):
 
         return '{0} ({1})'.format(self.title, self.instance_id)
+
+
+class GlobalOrchestrationFormulaComponent(TimeStampedModel):
+    '''
+    An extension of an existing FormulaComponent to add additional metadata
+    for those components based on this provider. In particular, this is how
+    we track the order in which the formula should be provisioned during
+    global orchestration.
+    '''
+
+    class Meta:
+        verbose_name_plural = 'global orchestration formula components'
+        ordering = ['order']
+
+    # The formula component we're extending
+    component = models.ForeignKey('formulas.FormulaComponent')
+
+    # The cloud this extended formula component applies to
+    provider = models.ForeignKey('cloud.CloudProvider',
+                                 related_name='global_formula_components')
+
+    # The order in which the component should be provisioned
+    order = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return u'{0}:{1}'.format(
+            self.component,
+            self.provider
+        )
 
 
 class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):

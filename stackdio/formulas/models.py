@@ -1,22 +1,16 @@
 import logging
-import json
 from os.path import join, isdir, split, splitext
 from shutil import rmtree
 
 import yaml
-import keyring
 from django.conf import settings
 from django.db import models
-from django.db import transaction
 from django.dispatch import receiver
-from django.core.files.base import ContentFile
-from django.core.files.storage import FileSystemStorage
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
-
 from model_utils import Choices
 
-from core.fields import DeletingFileField
 from stacks.models import StatusDetailModel
+
 
 logger = logging.getLogger(__name__)
 
@@ -136,18 +130,6 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     @property
     def private_git_repo(self):
         return self.git_username != ''
-
-    @property
-    def git_password_stored(self):
-        if keyring.get_password(self.uri, self.git_username) is not None:
-            return True
-        else:
-            return False
-
-    def remove_password(self):
-        if self.git_password_stored:
-            # Remove the password from the keyring if it's there
-            keyring.delete_password(self.uri, self.git_username)
 
     @property
     def properties(self):
