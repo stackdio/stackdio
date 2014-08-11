@@ -4,7 +4,6 @@ from urlparse import urlsplit, urlunsplit
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
-import keyring
 
 from core.exceptions import BadRequest
 from core.permissions import AdminOrOwnerOrPublicPermission
@@ -38,7 +37,6 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         public = request.DATA.get('public', False)
         git_username = request.DATA.get('git_username', '')
         git_password = request.DATA.get('git_password', '')
-        save_git_password = request.DATA.get('save_git_password', False)
 
         if not uri and not formulas:
             raise BadRequest('A uri field or a list of URIs in the formulas '
@@ -76,16 +74,6 @@ class FormulaListAPIView(generics.ListCreateAPIView):
                         parse_res.query,
                         parse_res.fragment
                     ))
-
-                # Store the password in the keyring if the user wishes
-                #   Use the uri as the service in case there are two accounts
-                #   with the same username and different passwords
-                #   (i.e.) github and bitbucket with the same username,
-                #       different pass
-                if save_git_password:
-                    keyring.set_password(uri,
-                                         git_username,
-                                         git_password)
 
             formula_obj = self.model.objects.create(
                 owner=request.user,
@@ -202,7 +190,6 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
 
     AVAILABLE_ACTIONS = [
         'update',
-        'remove_password',
     ]
 
     def get(self, request, *args, **kwargs):
@@ -224,21 +211,14 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
             
             git_password = request.DATA.get('git_password', '')
             if formula.private_git_repo:
-                if not formula.git_password_stored:
-                    if git_password == '':
-                        # No password is stored and user didn't provide a password
-                        raise BadRequest('Your git password is required to '
-                                         'update from a private repository.')
-                else:
-                    git_password = keyring.get_password(formula.uri,
-                                                        formula.git_username)
+                if git_password == '':
+                    # User didn't provide a password
+                    raise BadRequest('Your git password is required to '
+                                     'update from a private repository.')
 
             formula.set_status(models.Formula.IMPORTING,
                                'Importing formula...this could take a while.')
             tasks.update_formula.si(formula.id, git_password)()
-
-        elif action == 'remove_password':
-            formula.remove_password()
 
         return Response(self.get_serializer(formula).data)
 

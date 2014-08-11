@@ -14,13 +14,27 @@ if '__opts__' not in globals():
 
 class StackdioOverState(salt.overstate.OverState):
 
+    def _stage_list(self, match):
+        """
+        Return a list of ids cleared for a given stage
+        Use cmd_iter instead of cmd so that large clusters don't have timeout issues
+        """
+        if isinstance(match, list):
+            match = ' or '.join(match)
+        raw = self.local.cmd_iter(match, 'test.ping', expr_form='compound')
+        fret = []
+        for ret in raw:
+            for minion in ret:
+                fret.append(minion)
+        return sorted(fret)
+
     def call_stage(self, name, stage):
-        '''
+        """
         Check if a stage has any requisites and run them first
 
         Re write this to have the stage just get matched directly rather than
         using test.ping
-        '''
+        """
         fun = 'state.highstate'
         arg = ()
         req_fail = {name: {}}
@@ -53,19 +67,20 @@ class StackdioOverState(salt.overstate.OverState):
             elif req not in self.names:
                 # Req does not exist
                 tag_name = 'No_|-Req_|-fail_|-None'
-                failure = {tag_name: {
-                    'ret': {
-                        'result': False,
-                        'comment': 'Requisite {0} not found'.format(req),
-                        'name': 'Requisite Failure',
-                        'changes': {},
-                        '__run_num__': 0,
-                            },
+                failure = {
+                    tag_name: {
+                        'ret': {
+                            'result': False,
+                            'comment': 'Requisite {0} not found'.format(req),
+                            'name': 'Requisite Failure',
+                            'changes': {},
+                            '__run_num__': 0,
+                        },
                         'retcode': 253,
                         'success': False,
                         'fun': 'req.fail',
-                        }
-                        }
+                    }
+                }
                 self.over_run[name] = failure
                 req_fail[name].update(failure)
 
@@ -97,36 +112,36 @@ class StackdioOverState(salt.overstate.OverState):
                 'arg': arg,
                 'expr_form': 'compound',
                 'raw': True,
-                'batch': str(self.opts['worker_threads'])}
+                # 'batch': str(self.opts['worker_threads'])
+            }
 
-            for minion in self.local.cmd_batch(**cmd_kwargs):
+            for minion in self.local.cmd_iter(**cmd_kwargs):
                 if all(key not in minion for key in ('id', 'return', 'fun')):
                     continue
-                ret.update({minion['id']:
-                        {
+                ret.update({
+                    minion['id']: {
                         'ret': minion['return'],
                         'fun': minion['fun'],
                         'retcode': minion.get('retcode', 0),
                         'success': minion.get('success', True),
-                        }
-                    })
+                    }
+                })
             self.over_run[name] = ret
             yield {name: ret}
 
 
 def orchestrate(saltenv='base', os_fn=None):
-    '''
-    Borrowed and adpated from slat.runners.state::over()
+    """
+    Borrowed and adpated from salt.runners.state::over()
 
-    Modifying this to provide output more suitable to automating our
-    orchestration in stackd.io
+    Modifying this to return a generator instead of all the data at once
 
     CLI Examples:
 
     .. code-block:: bash
 
         salt-run stackdio.orchestrate <env> </path/to/orchestration.file>
-    '''
+    """
     try:
         overstate = StackdioOverState(__opts__, saltenv, os_fn)
     except IOError as exc:
