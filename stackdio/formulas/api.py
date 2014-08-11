@@ -17,6 +17,14 @@ from . import filters
 logger = logging.getLogger(__name__)
 
 
+class PasswordStr(unicode):
+    """
+    Used so that passwords aren't logged in the celery task log
+    """
+    def __repr__(self):
+        return '*'*len(self)
+
+
 class FormulaListAPIView(generics.ListCreateAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
@@ -84,7 +92,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
                 status_detail='Importing formula...this could take a while.')
 
             # Import using asynchronous task
-            tasks.import_formula.si(formula_obj.id, git_password)()
+            tasks.import_formula.si(formula_obj.id, PasswordStr(git_password))()
             formula_objs.append(formula_obj)
 
         return Response(self.get_serializer(formula_objs, many=True).data)
@@ -218,7 +226,7 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
 
             formula.set_status(models.Formula.IMPORTING,
                                'Importing formula...this could take a while.')
-            tasks.update_formula.si(formula.id, git_password)()
+            tasks.update_formula.si(formula.id, PasswordStr(git_password))()
 
         return Response(self.get_serializer(formula).data)
 
