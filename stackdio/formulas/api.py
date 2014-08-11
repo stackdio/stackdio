@@ -4,6 +4,7 @@ from urlparse import urlsplit, urlunsplit
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
+from django.contrib.auth.models import User
 
 from core.exceptions import BadRequest
 from core.permissions import AdminOrOwnerOrPublicPermission
@@ -11,10 +12,11 @@ from blueprints.serializers import BlueprintSerializer
 from . import tasks
 from . import serializers
 from . import models
-from . import filters
 
 
 logger = logging.getLogger(__name__)
+
+GLOBAL_ORCHESTRATION_USER = '__stackdio__'
 
 
 class PasswordStr(unicode):
@@ -34,10 +36,13 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     # filter_class = filters.FormulaFilter
 
     def get_queryset(self):
-        return self.request.user.formulas.all()
+        return self.get_user().formulas.all()
 
     def pre_save(self, obj):
-        obj.owner = self.request.user
+        obj.owner = self.get_user()
+
+    def get_user(self):
+        return self.request.user
 
     def create(self, request, *args, **kwargs):
         uri = request.DATA.get('uri', '')
@@ -59,7 +64,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         errors = []
         for uri in formulas:
             try:
-                self.model.objects.get(uri=uri, owner=request.user)
+                self.model.objects.get(uri=uri, owner=self.get_user())
                 errors.append('Duplicate formula detected: {0}'.format(uri))
             except self.model.DoesNotExist:
                 pass
@@ -83,19 +88,32 @@ class FormulaListAPIView(generics.ListCreateAPIView):
                         parse_res.fragment
                     ))
 
-            formula_obj = self.model.objects.create(
-                owner=request.user,
+            formula_obj = self.model(
                 public=public,
                 uri=uri,
                 git_username=git_username,
                 status=self.model.IMPORTING,
                 status_detail='Importing formula...this could take a while.')
 
+            self.pre_save(formula_obj)
+            formula_obj.save()
+
             # Import using asynchronous task
             tasks.import_formula.si(formula_obj.id, PasswordStr(git_password))()
             formula_objs.append(formula_obj)
 
         return Response(self.get_serializer(formula_objs, many=True).data)
+
+
+class GlobalOrchestrationFormulaListAPIView(FormulaListAPIView):
+
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get_user(self):
+        try:
+            return User.objects.get(username=GLOBAL_ORCHESTRATION_USER)
+        except User.DoesNotExist:
+            return User.objects.create(username=GLOBAL_ORCHESTRATION_USER, is_active=False)
 
 
 class FormulaPublicAPIView(generics.ListAPIView):
@@ -115,7 +133,8 @@ class FormulaAdminListAPIView(generics.ListAPIView):
     permission_classes = (permissions.IsAdminUser,)
 
     def get_queryset(self):
-        return self.model.objects.all()
+        # Return all formulas except the ones for global orchestration
+        return self.model.objects.exclude(owner__username=GLOBAL_ORCHESTRATION_USER)
 
 
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

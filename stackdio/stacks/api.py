@@ -547,6 +547,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                       BaseCloudProvider.ACTION_LAUNCH,
                       BaseCloudProvider.ACTION_PROVISION):
             task_list.append(tasks.highstate.si(stack.id))
+            task_list.append(tasks.global_orchestrate.si(stack.id))
             task_list.append(tasks.orchestrate.si(stack.id))
 
         if action == BaseCloudProvider.ACTION_ORCHESTRATE:
@@ -842,6 +843,18 @@ class StackLogsAPIView(PublicStackMixin, APIView):
                     kwargs={
                         'pk': stack.pk,
                         'log': 'provisioning.err.latest'},
+                    request=request),
+                'global_orchestration': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': 'global_orchestration.log.latest'},
+                    request=request),
+                'global_orchestration-error': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': 'global_orchestration.err.latest'},
                     request=request),
                 'orchestration': reverse(
                     'stack-logs-detail',

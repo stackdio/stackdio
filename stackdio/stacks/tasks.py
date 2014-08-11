@@ -1185,6 +1185,160 @@ def highstate(stack_id, max_retries=2):
 
 
 # TODO: Ignoring code complexity issues
+@celery.task(name='stacks.global_orchestrate') # NOQA
+def global_orchestrate(stack_id, max_retries=2):
+    """
+    Executes the runners.state.over function with the custom overstate
+    file  generated via the stacks.models._generate_global_overstate_file. This
+    will target the __stackdio__ user's environment and provision the hosts with
+    the formulas defined in the global orchestration.
+    """
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Executing global orchestration for stack: {0!r}'.format(stack))
+
+        # Set up logging for this task
+        root_dir = stack.get_root_directory()
+        log_dir = stack.get_log_directory()
+
+        role_host_nums = {}
+        # Get the number of hosts for each role
+        for bhd in stack.blueprint.host_definitions.all():
+            for fc in bhd.formula_components.all():
+                role_host_nums.setdefault(fc.component.sls_path, 0)
+                role_host_nums[fc.component.sls_path] += bhd.count
+
+        # we'll break out of the loop based on the given number of retries
+        current_try, unrecoverable_error = 0, False
+        while True:
+            current_try += 1
+            logger.info('Task {0} try #{1} for stack {2!r}'.format(
+                global_orchestrate.name,
+                current_try,
+                stack))
+
+            # Update status
+            stack.set_status(orchestrate.name, Stack.ORCHESTRATING,
+                             'Executing global orchestration try {0} of {1}. This '
+                             'may take a while.'.format(current_try,
+                                                        max_retries + 1))
+
+            now = datetime.now().strftime('%Y%m%d-%H%M%S')
+            log_file = os.path.join(log_dir,
+                                    '{0}.global_orchestration.log'.format(now))
+            err_file = os.path.join(log_dir,
+                                    '{0}.global_orchestration.err'.format(now))
+            log_symlink = os.path.join(root_dir, 'global_orchestration.log.latest')
+            err_symlink = os.path.join(root_dir, 'global_orchestration.err.latest')
+
+            for l in (log_file, err_file):
+                with open(l, 'w') as f:
+                    pass
+            symlink(log_file, log_symlink)
+            symlink(err_file, err_symlink)
+
+            # Set up logging
+            file_log_handler = logging.FileHandler(log_file)
+            file_log_handler.setFormatter(salt_formatter)
+            salt_logger.addHandler(file_log_handler)
+
+            opts = salt.config.client_config(os.path.join(
+                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+
+            salt_runner = salt.runner.RunnerClient(opts)
+
+            result = salt_runner.cmd(
+                'stackdio.orchestrate',
+                [
+                    '__stackdio__',
+                    stack.global_overstate_file.path
+                ]
+            )
+
+            errors = {}
+            to_print = {}
+            for ret in result:
+                with open(err_file, 'a') as f:
+                    f.write('{0}\n\n'.format(len(ret)))
+                for host, stage_result in ret.items():
+                    to_print.setdefault(host, []).append(stage_result)
+                    if isinstance(stage_result, list):
+                        for err in stage_result:
+                            errors.setdefault(host, []) \
+                                .append({
+                                    'error': err
+                                })
+                        continue
+
+                    # iterate over the individual states in the
+                    # host looking for states that had a result
+                    # of false
+                    for state_str, state_meta in stage_result.items(): # NOQA
+                        if state_str == '__FAILHARD__':
+                            continue
+
+                        if not is_state_error(state_meta):
+                            continue
+
+                        if not is_requisite_error(state_meta):
+                            err, recoverable = state_error(state_str,
+                                                           state_meta)
+                            if not recoverable:
+                                unrecoverable_error = True
+                            errors.setdefault(host, []).append(err)
+
+                if errors:
+                    with open(err_file, 'a') as f:
+                        f.write('Found error - stopping global orchestration NOW to retry\n\n')
+                    # Stop orchestration hard if there were errors
+                    break
+
+            # Stop logging
+            salt_logger.removeHandler(file_log_handler)
+
+            # Write the log file
+            with open(log_file, 'a') as f:
+                f.write(yaml.safe_dump(to_print))
+
+            if errors:
+                with open(err_file, 'a') as f:
+                    f.write(yaml.safe_dump(errors))
+
+                if not unrecoverable_error and current_try <= max_retries: # NOQA
+                    continue
+
+                err_msg = 'Global Orchestration errors on hosts: ' \
+                    '{0}. Please see the global orchestration errors ' \
+                    'API or the global orchestration log file for more ' \
+                    'details: {1}'.format(
+                        ', '.join(errors.keys()),
+                        os.path.basename(log_file))
+                stack.set_status(global_orchestrate.name,
+                                 Stack.ERROR,
+                                 err_msg,
+                                 Level.ERROR)
+                raise StackTaskException(err_msg)
+
+            # it worked?
+            break
+
+
+        stack.set_status(global_orchestrate.name, Stack.FINALIZING,
+                         'Finished executing global orchestration all hosts.')
+
+    except Stack.DoesNotExist:
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
+        raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
+    except Exception, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(global_orchestrate.name, Stack.ERROR, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
+
+
+# TODO: Ignoring code complexity issues
 @celery.task(name='stacks.orchestrate') # NOQA
 def orchestrate(stack_id, max_retries=2):
     """
@@ -1329,7 +1483,7 @@ def orchestrate(stack_id, max_retries=2):
                     'details: {1}'.format(
                         ', '.join(errors.keys()),
                         os.path.basename(log_file))
-                stack.set_status(highstate.name,
+                stack.set_status(orchestrate.name,
                                  Stack.ERROR,
                                  err_msg,
                                  Level.ERROR)

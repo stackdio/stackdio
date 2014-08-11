@@ -71,6 +71,10 @@ def get_overstate_file_path(obj, filename):
     return "stack_{0}_overstate.sls".format(obj.id)
 
 
+def get_global_overstate_file_path(obj, filename):
+    return "stack_{0}_global_overstate.sls".format(obj.id)
+
+
 class StackCreationException(Exception):
     def __init__(self, errors, *args, **kwargs):
         self.errors = errors
@@ -144,6 +148,7 @@ class StackManager(models.Manager):
         stack._generate_pillar_file()
         stack._generate_top_file()
         stack._generate_overstate_file()
+        stack._generate_global_overstate_file()
         stack._generate_map_file()
 
         return stack
@@ -230,6 +235,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
     overstate_file = DeletingFileField(
         max_length=255,
         upload_to=get_overstate_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(
+            location=settings.STACKDIO_CONFIG.salt_core_states))
+
+    # Where on disk is the global overstate file stored
+    global_overstate_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_global_overstate_file_path,
         null=True,
         blank=True,
         default=None,
@@ -724,6 +739,46 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                 ContentFile(yaml_data))
         else:
             with open(self.overstate_file.path, 'w') as f:
+                f.write(yaml_data)
+
+    def _generate_global_overstate_file(self):
+        providers_map = {}
+        for host in self.hosts.all():
+            providers_map.setdefault(host.cloud_profile.cloud_provider, []).append(host.hostname)
+
+        overstate = {}
+
+        for provider, hosts in providers_map.items():
+
+            target = ' or '.join(hosts)
+
+            groups = {}
+            for c in provider.global_formula_components.all():
+                groups.setdefault(
+                    c.order, set()
+                ).add(c.component.sls_path)
+
+            for order in sorted(groups.keys()):
+                for role in groups[order]:
+                    state_title = '{0}_{1}'.format(provider.slug, role)
+                    overstate[state_title] = {
+                        'match': target,
+                        'sls': list([role]),
+                    }
+                    depend = order - 1
+                    while depend >= 0:
+                        if depend in groups.keys():
+                            overstate[role]['require'] = list(groups[depend])
+                            break
+                        depend -= 1
+
+        yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
+        if not self.global_overstate_file:
+            self.global_overstate_file.save(
+                get_global_overstate_file_path(self, None),
+                ContentFile(yaml_data))
+        else:
+            with open(self.global_overstate_file.path, 'w') as f:
                 f.write(yaml_data)
 
     def _generate_pillar_file(self):
