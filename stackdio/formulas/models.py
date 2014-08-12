@@ -168,8 +168,6 @@ def cleanup_formula(sender, instance, **kwargs):
     the formula is deleted.
     '''
 
-    instance.remove_password()
-
     repo_dir = instance.get_repo_dir()
     logger.debug('cleanup_formula called. Path to remove: {0}'.format(repo_dir))
     if isdir(repo_dir):
