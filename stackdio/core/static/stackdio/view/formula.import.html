@@ -36,6 +36,12 @@
                     <p><strong>Tip:</strong> If using GitHub, you can generate a personal access token in your user settings and use it as the username with a blank password.<br>
                        If you have GitHub two-factor authentication enabled, you <strong>MUST</strong> use a personal access token as your username.</p>
                 </div>
+                <div class="checkbox" data-bind="visible: $root.superuser()">
+                    <br />
+                    <label>
+                        <input type="checkbox" id="global_orch"> Also import for global orchestration use
+                    </label>
+                </div>
             </div>
 
             <div class="section-synopsis" style="margin-top: 40px;">

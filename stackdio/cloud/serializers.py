@@ -182,6 +182,8 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
 class GlobalOrchestrationFormulaComponentSerializer(
         serializers.HyperlinkedModelSerializer):
 
+    component = serializers.PrimaryKeyRelatedField()
+
     def __init__(self, *args, **kwargs):
         super(GlobalOrchestrationFormulaComponentSerializer, self) \
             .__init__(*args, **kwargs)
