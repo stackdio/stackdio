@@ -1,4 +1,5 @@
 import logging
+import json
 
 import yaml
 from django.conf import settings
@@ -29,6 +30,10 @@ FILESYSTEM_CHOICES = (
 
 def get_config_file_path(obj, filename):
     return obj.slug + '.conf'
+
+
+def get_global_orch_props_file_path(obj, filename):
+    return "cloud/{0}/global_orch.props".format(obj.slug)
 
 
 class CloudProviderType(models.Model):
@@ -74,6 +79,15 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     # Are we using VPC?
     vpc_id = models.CharField(max_length=64, blank=True)
 
+    # storage for properties file
+    global_orch_props_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_global_orch_props_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
     def __unicode__(self):
         return self.title
 
@@ -108,6 +122,24 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
             with open(self.config_file.path, 'w') as f:
                 # update the yaml to include updated security group information
                 f.write(self.yaml)
+
+    @property
+    def global_orchestration_properties(self):
+        if not self.global_orch_props_file:
+            return {}
+        with open(self.global_orch_props_file.path) as f:
+            return json.loads(f.read())
+
+    @global_orchestration_properties.setter
+    def global_orchestration_properties(self, props):
+        props_json = json.dumps(props, indent=4)
+        if not self.global_orch_props_file:
+            self.global_orch_props_file.save(
+                get_global_orch_props_file_path(self, None),
+                ContentFile(props_json))
+        else:
+            with open(self.global_orch_props_file.path, 'w') as f:
+                f.write(props_json)
 
 
 class CloudInstanceSize(TitleSlugDescriptionModel):

@@ -1426,12 +1426,14 @@ def orchestrate(stack_id, max_retries=2):
             )
 
             errors = {}
-            to_print = {}
+            # to_print = {}
             for ret in result:
+                with open(log_file, 'a') as f:
+                    f.write(yaml.safe_dump(ret))
                 with open(err_file, 'a') as f:
                     f.write('{0}\n\n'.format(len(ret)))
                 for host, stage_result in ret.items():
-                    to_print.setdefault(host, []).append(stage_result)
+                    # to_print.setdefault(host, []).append(stage_result)
                     if isinstance(stage_result, list):
                         for err in stage_result:
                             errors.setdefault(host, []) \
@@ -1467,8 +1469,8 @@ def orchestrate(stack_id, max_retries=2):
             salt_logger.removeHandler(file_log_handler)
 
             # Write the log file
-            with open(log_file, 'a') as f:
-                f.write(yaml.safe_dump(to_print))
+            # with open(log_file, 'a') as f:
+            #     f.write(yaml.safe_dump(to_print))
 
             if errors:
                 with open(err_file, 'a') as f:
@@ -1491,111 +1493,6 @@ def orchestrate(stack_id, max_retries=2):
 
             # it worked?
             break
-
-
-
-            # if len(result) != len(stack.get_role_list()):
-            #     logger.debug('salt did not orchestrate all hosts')
-            #
-            #     if current_try <= max_retries:
-            #         continue
-            #
-            #     err_msg = 'Salt errored and did not orchestrate all the hosts'
-            #     stack.set_status(orchestrate.name, Stack.ERROR,
-            #                      err_msg, Level.ERROR)
-            #     raise StackTaskException('Error executing orchestration: '
-            #                              '{0!r}'.format(err_msg))
-            # else:
-            #     with open(log_file, 'a') as f:
-            #         f.write(yaml.safe_dump(result))
-
-                # errors = {}
-                #
-                # each key in the dict is a role, and the value of the role is
-                # a dict with keys being hosts.  The value of the hosts
-                # is either a list or dict. Those that are lists we can
-                # assume to be a list of errors
-                # if result is not None:
-                #     for role, role_results in result.items():
-                #         for host, stage_result in role_results.items():
-                #             if host == 'req_|-fail_|-fail_|-None':
-                #                 # Requisite error for the whole role
-                #                 errors.setdefault(role, []).append({
-                #                         'error': stage_result['ret']
-                #                     })
-                #                 continue
-                #
-                #             if 'success' in stage_result \
-                #                     and not stage_result['success']:
-                #                 errors.setdefault(host, []).append({
-                #                     'error': stage_result['ret']
-                #                 })
-                #                 continue
-                #
-                #             if 'retcode' in stage_result \
-                #                     and stage_result['retcode'] != 0:
-                #                 errors.setdefault(host, []).append({
-                #                     'error': stage_result['ret']
-                #                 })
-                #                 continue
-                #
-                #             if isinstance(stage_result['ret'], list):
-                #                 for err in stage_result:
-                #                     errors.setdefault(host, []) \
-                #                         .append({
-                #                             'error': err
-                #                         })
-                #                 continue
-                #
-                #             # iterate over the individual states in the
-                #             # host looking for states that had a result
-                #             # of false
-                #             for state_str, state_meta in stage_result['ret'].items(): # NOQA
-                #                 if state_str == '__FAILHARD__':
-                #                     continue
-                #
-                #                 if not is_state_error(state_meta):
-                #                     continue
-                #
-                #                 if not is_requisite_error(state_meta):
-                #                     err, recoverable = state_error(state_str,
-                #                                                    state_meta)
-                #                     if not recoverable:
-                #                         unrecoverable_error = True
-                #                     errors.setdefault(host, []).append(err)
-                #
-                #         if role not in errors and \
-                #                 len(role_results) != role_host_nums[role]:
-                #             errors.setdefault(role, []).append({
-                #                 'error': 'Only {0} out of {1} hosts were orchestrated'.format(
-                #                     len(role_results),
-                #                     role_host_nums[role]
-                #                 )
-                #             })
-
-                    # if errors:
-                    #     # write the errors to the err_file
-                    #     with open(err_file, 'a') as f:
-                    #         f.write(yaml.safe_dump(errors))
-                    #
-                    #     if not unrecoverable_error and current_try <= max_retries: # NOQA
-                    #         continue
-                    #
-                    #     err_msg = 'Orchestration errors on hosts: ' \
-                    #         '{0}. Please see the orchestration errors ' \
-                    #         'API or the orchestration log file for more ' \
-                    #         'details: {1}'.format(
-                    #             ', '.join(errors.keys()),
-                    #             os.path.basename(log_file))
-                    #     stack.set_status(highstate.name,
-                    #                      Stack.ERROR,
-                    #                      err_msg,
-                    #                      Level.ERROR)
-                    #     raise StackTaskException(err_msg)
-                    #
-                    # # Everything worked?
-                    # break
-
 
             ##########################
 
@@ -2076,6 +1973,7 @@ def custom_action(action_id, host_target, command):
     action.save()
 
     stack_id = action.stack.id
+    stack = Stack.objects.get(id=stack_id)
 
     try:
 
@@ -2086,33 +1984,42 @@ def custom_action(action_id, host_target, command):
             '{0} and G@stack_id:{1}'.format(host_target, stack_id),
             'cmd.run',
             [command],
-            expr_form='compound',
-            kwarg={
-                'log-file': '/home/stackdio/test.log',
-                'log-file-level': 'debug'
-            })
+            expr_form='compound')
 
         result = {}
-        for k, v in res.items():
-            result[k] = v
+        for ret in res:
+            for k, v in ret.items():
+                result[k] = v
 
         # Convert to an easier format for javascript
         ret = []
         for host, output in result.items():
-            ret.append({'host': host, 'output': output})
+            ret.append({'host': host, 'output': output['ret']})
 
         action.std_out_storage = json.dumps(ret)
         action.status = StackAction.FINISHED
 
         action.save()
 
+        stack.set_status(custom_action.name, Stack.FINISHED,
+                         'Finished running custom action: {0}'.format(command))
+
     except salt.client.SaltInvocationError:
         action.status = StackAction.ERROR
         action.save()
+        stack.set_status(custom_action.name, Stack.FINISHED, 'Salt error')
 
     except salt.client.SaltReqTimeoutError:
         action.status = StackAction.ERROR
         action.save()
+        stack.set_status(custom_action.name, Stack.FINISHED, 'Salt error')
+
+    except Exception:
+        action.status = StackAction.ERROR
+        action.save()
+        stack.set_status(custom_action.name, Stack.FINISHED, 'Unhandled exception')
+        raise
+
 
     # cmd = [[
     #     'salt',

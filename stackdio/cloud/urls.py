@@ -33,6 +33,10 @@ urlpatterns = patterns(
         api.GlobalOrchestrationComponentListAPIView.as_view(),
         name='cloudprovider-global-orchestration-list'),
 
+    url(r'^providers/(?P<pk>[0-9]+)/global_orchestration_properties/$',
+        api.GlobalOrchestrationPropertiesAPIView.as_view(),
+        name='cloudprovider-global-orchestration-properties'),
+
     url(r'^global_orchestration_components/(?P<pk>[0-9]+)/$',
         api.GlobalOrchestrationComponentDetailAPIView.as_view(),
         name='globalorchestrationformulacomponent-detail'),

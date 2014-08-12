@@ -18,6 +18,7 @@ from core.permissions import (
 from blueprints.serializers import BlueprintSerializer
 from . import models
 from . import serializers
+from core.utils import recursive_update
 
 
 logger = logging.getLogger(__name__)
@@ -121,10 +122,48 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
         obj.provider = self.get_provider()
 
 
-class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveDestroyAPIView):
+class GlobalOrchestrationComponentDetailAPIView(
+        generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
     model = models.GlobalOrchestrationFormulaComponent
+
+
+class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = serializers.serializers.Serializer
+
+    def get_provider(self):
+        obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def retrieve(self, request, *args, **kwargs):
+        return Response(self.get_provider().global_orchestration_properties)
+
+    def update(self, request, *args, **kwargs):
+        """
+        PUT request - overwrite all the props
+        """
+        if not isinstance(request.DATA, dict):
+            raise BadRequest('Request data but be a JSON object, not an array')
+        provider = self.get_provider()
+        provider.global_orchestration_properties = request.DATA
+        provider.save()
+        return Response(provider.global_orchestration_properties)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH request - merge the these new props in, overwrite old with new
+        if there are conflicts
+        """
+        if not isinstance(request.DATA, dict):
+            raise BadRequest('Request data but be a JSON object, not an array')
+        provider = self.get_provider()
+        provider.global_orchestration_properties = recursive_update(
+            provider.global_orchestration_properties, request.DATA)
+        provider.save()
+        return Response(provider.global_orchestration_properties)
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):

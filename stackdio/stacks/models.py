@@ -814,9 +814,28 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         for formula in formulas:
             recursive_update(pillar_props, formula.properties)
 
+        # Find all of the globally used formulas for the stack
+        providers = set(
+            [host.cloud_profile.cloud_provider for
+                host in self.hosts.all()]
+        )
+        global_formulas = []
+        for provider in providers:
+            for gfc in provider.global_formula_components.all():
+                global_formulas.append(gfc.component.formula)
+
+        # Add the global formulas into the props
+        for formula in set(global_formulas):
+            recursive_update(pillar_props, formula.properties)
+
         # Add in properties that were supplied via the blueprint and during
         # stack creation
         recursive_update(pillar_props, self.properties)
+
+        # Add in the provider properties
+        for provider in providers:
+            recursive_update(pillar_props,
+                             provider.global_orchestration_properties)
 
         pillar_file_yaml = yaml.safe_dump(pillar_props,
                                           default_flow_style=False)
