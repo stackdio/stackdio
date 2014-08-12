@@ -58,6 +58,11 @@ def get_pillar_file_path(obj, filename):
     return "stacks/{0}/{1}/stack.pillar".format(obj.owner.username, obj.slug)
 
 
+def get_global_pillar_file_path(obj, filename):
+    return "stacks/{0}/{1}/stack.global_pillar".format(obj.owner.username,
+                                                       obj.slug)
+
+
 def get_props_file_path(obj, filename):
     return "stacks/{0}/{1}/stack.props".format(obj.owner.username, obj.slug)
 
@@ -146,6 +151,7 @@ class StackManager(models.Manager):
         # the map file is rendered or else we'll miss important grains that
         # need to be set at launch time
         stack._generate_pillar_file()
+        stack._generate_global_pillar_file()
         stack._generate_top_file()
         stack._generate_overstate_file()
         stack._generate_global_overstate_file()
@@ -256,6 +262,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
     pillar_file = DeletingFileField(
         max_length=255,
         upload_to=get_pillar_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
+    # Where on disk is the custom pillar file for custom configuration for
+    # all salt states used by the top file
+    global_pillar_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_global_pillar_file_path,
         null=True,
         blank=True,
         default=None,
@@ -586,6 +602,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
                             'volumes': map_volumes,
+                            'cloud_provider': host.cloud_profile.cloud_provider.slug,
+                            'cloud_profile': host.cloud_profile.slug,
                         },
                     },
 
@@ -742,15 +760,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                 f.write(yaml_data)
 
     def _generate_global_overstate_file(self):
-        providers_map = {}
-        for host in self.hosts.all():
-            providers_map.setdefault(host.cloud_profile.cloud_provider, []).append(host.hostname)
+        providers = set(
+            [host.cloud_profile.cloud_provider for
+                host in self.hosts.all()])
 
         overstate = {}
 
-        for provider, hosts in providers_map.items():
-
-            target = ' or '.join(hosts)
+        for provider in providers:
+            # Target the stack_id and cloud provider
+            target = 'G@stack_id:{0} and G@cloud_provider:{1}'.format(
+                self.id,
+                provider.slug)
 
             groups = {}
             for c in provider.global_formula_components.all():
@@ -814,6 +834,24 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         for formula in formulas:
             recursive_update(pillar_props, formula.properties)
 
+        # Add in properties that were supplied via the blueprint and during
+        # stack creation
+        recursive_update(pillar_props, self.properties)
+
+        pillar_file_yaml = yaml.safe_dump(pillar_props,
+                                          default_flow_style=False)
+
+        if not self.pillar_file:
+            self.pillar_file.save('{0}.pillar'.format(self.slug),
+                                  ContentFile(pillar_file_yaml))
+        else:
+            with open(self.pillar_file.path, 'w') as f:
+                f.write(pillar_file_yaml)
+
+    def _generate_global_pillar_file(self):
+
+        pillar_props = {}
+
         # Find all of the globally used formulas for the stack
         providers = set(
             [host.cloud_profile.cloud_provider for
@@ -828,11 +866,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         for formula in set(global_formulas):
             recursive_update(pillar_props, formula.properties)
 
-        # Add in properties that were supplied via the blueprint and during
-        # stack creation
-        recursive_update(pillar_props, self.properties)
-
-        # Add in the provider properties
+        # Add in the provider properties AFTER the stack properties
         for provider in providers:
             recursive_update(pillar_props,
                              provider.global_orchestration_properties)
@@ -840,11 +874,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         pillar_file_yaml = yaml.safe_dump(pillar_props,
                                           default_flow_style=False)
 
-        if not self.pillar_file:
-            self.pillar_file.save('{0}.pillar'.format(self.slug),
-                                  ContentFile(pillar_file_yaml))
+        if not self.global_pillar_file:
+            self.global_pillar_file.save(
+                get_global_pillar_file_path(self, None),
+                ContentFile(pillar_file_yaml))
         else:
-            with open(self.pillar_file.path, 'w') as f:
+            with open(self.global_pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
 
     def query_hosts(self):

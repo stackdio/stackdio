@@ -1184,6 +1184,28 @@ def highstate(stack_id, max_retries=2):
         raise
 
 
+def change_pillar(stack_id, new_pillar_file):
+    salt_client = salt.client.LocalClient(os.path.join(
+        settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+
+    # From the testing I've done, this also automatically refreshes the pillar
+    ret = salt_client.cmd_iter(
+        'stack_id:{0}'.format(stack_id),
+        'grains.setval',
+        [
+            'stack_pillar_file',
+            new_pillar_file
+        ],
+        expr_form='grain',
+    )
+
+    for res in ret:
+        for minion, state_ret in res.items():
+            # Want to do error checking, but don't know what errors look
+            # like in this case
+            pass
+
+
 # TODO: Ignoring code complexity issues
 @celery.task(name='stacks.global_orchestrate') # NOQA
 def global_orchestrate(stack_id, max_retries=2):
@@ -1196,6 +1218,9 @@ def global_orchestrate(stack_id, max_retries=2):
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing global orchestration for stack: {0!r}'.format(stack))
+
+        # Set the pillar file to the global pillar data file
+        change_pillar(stack_id, stack.global_pillar_file.path)
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
@@ -1356,6 +1381,9 @@ def orchestrate(stack_id, max_retries=2):
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing orchestration for stack: {0!r}'.format(stack))
+
+        # Set the pillar file back to the regular pillar
+        change_pillar(stack_id, stack.pillar_file.path)
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
