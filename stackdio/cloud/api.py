@@ -121,6 +121,18 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
     def pre_save(self, obj):
         obj.provider = self.get_provider()
 
+    def create(self, request, *args, **kwargs):
+        component_id = request.DATA.get('component')
+        try:
+            # Delete an existing component if there is one
+            component = self.get_queryset().get(component__id=component_id)
+            component.delete()
+        except models.GlobalOrchestrationFormulaComponent.DoesNotExist:
+            pass
+
+        return super(GlobalOrchestrationComponentListAPIView, self) \
+            .create(request, *args, **kwargs)
+
 
 class GlobalOrchestrationComponentDetailAPIView(
         generics.RetrieveUpdateDestroyAPIView):
