@@ -12,6 +12,7 @@ from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
 import salt.client
+import salt.cloud
 import salt.config
 import salt.runner
 
@@ -176,6 +177,31 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
         logger.info('Log file: {0}'.format(log_file))
+
+
+        salt_cloud = salt.cloud.CloudClient(
+            os.path.join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
+        query = salt_cloud.query()
+
+        hostnames = [host.hostname for host in hosts]
+
+        # Since a blueprint can have multiple providers
+        providers = set()
+        for host in hosts:
+            providers.add(host.cloud_profile.cloud_provider)
+
+        for provider in providers:
+            provider_type = provider.provider_type.type_name
+            for instance, details in query[provider.slug][provider_type].items():
+                if instance in hostnames:
+                    if details['state'] in ('shutting-down', 'terminated'):
+                        salt_cloud.action(
+                            'set_tags',
+                            names=[instance],
+                            kwargs={
+                                'Name': '{0}-DEL_BY_STACKDIO'.format(instance)
+                            }
+                        )
 
         current_try, unrecoverable_error = 0, False
         while True:

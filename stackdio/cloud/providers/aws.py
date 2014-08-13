@@ -78,8 +78,13 @@ class Route53Domain(object):
         '''
         if not force and self.rr_sets is not None:
             return self.rr_sets
-        self.rr_sets = set([rr.name
-                            for rr in self.conn.get_all_rrsets(self.zone_id)])
+        self.rr_sets = {}
+        for rr in self.conn.get_all_rrsets(self.zone_id):
+            self.rr_sets[rr.name] = {
+                'type': rr.type,
+                'ttl': rr.ttl,
+                'value': rr.to_print(),
+            }
         return self.rr_sets
 
     def start_rr_transaction(self):
@@ -142,9 +147,13 @@ class Route53Domain(object):
         rr_names = self.get_rrnames_set()
         if record_name in rr_names:
             self._delete_rr_record(record_name,
-                                   [record_value],
-                                   record_type,
-                                   ttl=ttl)
+                                   [rr_names[record_name]['value']],
+                                   rr_names[record_name]['type'],
+                                   ttl=rr_names[record_name]['ttl'])
+            # self._delete_rr_record(record_name,
+            #                        [record_value],
+            #                        record_type,
+            #                        ttl=ttl)
 
         self._add_rr_record(record_name, [record_value], record_type, ttl=ttl)
 
@@ -164,9 +173,13 @@ class Route53Domain(object):
         rr_names = self.get_rrnames_set()
         if record_name in rr_names:
             self._delete_rr_record(record_name,
-                                   [record_value],
-                                   record_type,
-                                   ttl=ttl)
+                                   [rr_names[record_name]['value']],
+                                   rr_names[record_name]['type'],
+                                   ttl=rr_names[record_name]['ttl'])
+            # self._delete_rr_record(record_name,
+            #                        [record_value],
+            #                        record_type,
+            #                        ttl=ttl)
             return True
         return False
 
