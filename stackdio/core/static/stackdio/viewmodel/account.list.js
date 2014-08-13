@@ -112,6 +112,10 @@ function (Q, ko, bootbox, $galaxy, alerts, ProviderTypeStore, AccountStore, Prof
             $galaxy.transport({ location: 'account.securitygroup', payload: { account: account.id } });
         };
 
+        self.editGlobalOrchestration = function (account) {
+            $galaxy.transport({ location: 'account.globalorchestration', payload: { account: account.id } });
+        };
+
         self.refresh = function() {
             AccountStore.populate(true);
         };

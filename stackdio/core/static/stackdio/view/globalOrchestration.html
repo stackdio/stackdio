@@ -1,0 +1,94 @@
+<div class="view">
+    <ol class="breadcrumb">
+        <li><a href="#" data-bind="click: function () { $galaxy.transport('account.list'); }">Providers</a></li>
+        <li data-bind="text: accountTitle"></li>
+        <li>Global Orchestration</li>
+    </ol>
+
+    <div class="row bottom-separation">
+        <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Global Orchestration</div>
+    </div>
+
+    <div class="row bottom-separation">
+        <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+            In global orchestration, you can define formula components that should be run on all stacks that are created on this stackd.io instance.
+            In order to use this feature, you must first import formulas to be used for global orchestration by checking that option when importing a formula.
+        </div>
+    </div>
+
+    <form id="default-globalorchestration-form" class="form-horizontal" role="form">
+
+        <div class="row">
+            <div class="col-sm-6 col-md-6 col-lg-6">
+                <h4>1. Choose components</h4>
+                <br />
+                <div>
+                    <select id="global_components"
+                            class="form-control"
+                            data-bind="options: componentOptions(),
+                                       optionsValue: 'id',
+                                       optionsText: function (item) { return item.formula.title + ' - ' + item.title}"
+                            data-size="12"
+                            size="9"
+                            data-container="body">
+                    </select>
+                </div>
+                <br>
+                <div class="text-center">
+                    <button class="btn btn-success glyphicon glyphicon-plus"
+                        data-bind="click: addComponent"> Add</button>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-6 col-lg-6">
+                <h4>2. Set properties</h4>
+                <br>
+                <div>
+                    <textarea
+                           class="form-control"
+                           rows="12"
+                           id="global_properties"
+                           data-bind="value: globalProperties, valueUpdate: 'input'"
+                           placeholder="If you select a formula that has default properties, they will be shown here">
+                    </textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12 col-md-12 col-lg-12">
+                <h4>3. Ordering</h4>
+                <br />
+                <table id="component_list" class="table table-bordered table-condensed">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Path</th>
+                            <th style="width:100px;">Order</th>
+                            <th style="width:100px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody data-bind="foreach: addedComponents">
+                        <tr>
+                            <td data-bind="text: title"></td>
+                            <td data-bind="text: sls_path"></td>
+                            <td>
+                                <input type="text" class="form-control" data-bind="attr: { id: 'component_order_' + id }, value: order">
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" data-bind="click: remove">Remove</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row">
+            <hr>
+            <div class="col-md-12 text-center">
+                <button class="btn btn-primary" data-bind="click: save">Save</button>
+            </div>
+        </div>
+    </form>
+</div>
