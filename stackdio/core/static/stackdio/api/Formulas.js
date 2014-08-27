@@ -133,6 +133,25 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
 
             return deferred.promise;
         },
+        getFormula: function (formulaId) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: settings.api.formulas.formulas + formulaId + '/',
+                type: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                success: function (response) {
+                    deferred.resolve(new models.Formula().create(response));
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
+                }
+            });
+
+            return deferred.promise;
+        },
         getProperties: function (formula) {
             var deferred = Q.defer();
             var self = this;
