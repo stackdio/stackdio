@@ -233,7 +233,7 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
 
             components.map(function (component) {
                 return component.order;
-            }).sort().reduce(function (prev, curr) {
+            }).sort(function(a, b){return a-b;}).reduce(function (prev, curr) {
                 if (curr !== prev + 1 && curr !== prev) {
                     ordered = false;
                 }
