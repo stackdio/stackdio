@@ -72,6 +72,15 @@ def main():
     config_parser.set_defaults(command=commands.ConfigCommand)
     config_parser.set_defaults(raw_args=False)
 
+    upgrade_salt_parser = subparsers.add_parser(
+        'upgrade-salt',
+        help='upgrade your salt version')
+    upgrade_salt_parser.add_argument('version',
+                                     help=('The version of salt you would like '
+                                           'to upgrade to'))
+    upgrade_salt_parser.set_defaults(command=commands.UpgradeSaltCommand)
+    upgrade_salt_parser.set_defaults(raw_args=False)
+
     # Runs the development Django server for stackdio API/UI
     managepy_parser = subparsers.add_parser(
         'manage.py',
