@@ -43,12 +43,11 @@ class Migration(SchemaMigration):
 
         # Adding field 'StackHistory.status_detail'
         db.alter_column(u'stacks_stackhistory', 'status_detail',
-                        self.gf('django.db.models.fields.TextField')(default='', blank=True),
-                        keep_default=False)
+                        self.gf('django.db.models.fields.TextField')(default='', blank=True))
 
 
         # Changing field 'StackHistory.status'
-        db.add_column(u'stacks_stackhistory', 'status', self.gf('model_utils.fields.StatusField')(max_length=100, no_check_for_status=True))
+        db.add_column(u'stacks_stackhistory', 'status', self.gf('model_utils.fields.StatusField')(max_length=100, no_check_for_status=True), keep_default=False)
         # Adding field 'Stack.status'
         db.add_column(u'stacks_stack', 'status',
                       self.gf('model_utils.fields.StatusField')(default='pending', max_length=100, no_check_for_status=True),
