@@ -38,14 +38,17 @@ class Migration(SchemaMigration):
                       self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status'),
                       keep_default=False)
 
+        # Rename status column
+        db.rename_column(u'stacks_stackhistory', 'status', 'status_detail')
+
         # Adding field 'StackHistory.status_detail'
-        db.add_column(u'stacks_stackhistory', 'status_detail',
-                      self.gf('django.db.models.fields.TextField')(default='', blank=True),
-                      keep_default=False)
+        db.alter_column(u'stacks_stackhistory', 'status_detail',
+                        self.gf('django.db.models.fields.TextField')(default='', blank=True),
+                        keep_default=False)
 
 
         # Changing field 'StackHistory.status'
-        db.alter_column(u'stacks_stackhistory', 'status', self.gf('model_utils.fields.StatusField')(max_length=100, no_check_for_status=True))
+        db.add_column(u'stacks_stackhistory', 'status', self.gf('model_utils.fields.StatusField')(max_length=100, no_check_for_status=True))
         # Adding field 'Stack.status'
         db.add_column(u'stacks_stack', 'status',
                       self.gf('model_utils.fields.StatusField')(default='pending', max_length=100, no_check_for_status=True),
@@ -69,12 +72,15 @@ class Migration(SchemaMigration):
         # Deleting field 'StackHistory.status_changed'
         db.delete_column(u'stacks_stackhistory', 'status_changed')
 
-        # Deleting field 'StackHistory.status_detail'
-        db.delete_column(u'stacks_stackhistory', 'status_detail')
+        # delete status field 'StackHistory.status'
+        db.delete_column(u'stacks_stackhistory', 'status')
 
+        # renaming field 'StackHistory.status_detail' back to status
+        db.rename_column(u'stacks_stackhistory', 'status_detail', 'status')
 
-        # Changing field 'StackHistory.status'
+        # Altering the status field
         db.alter_column(u'stacks_stackhistory', 'status', self.gf('django.db.models.fields.TextField')())
+
         # Deleting field 'Stack.status'
         db.delete_column(u'stacks_stack', 'status')
 
