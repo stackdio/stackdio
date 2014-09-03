@@ -3,7 +3,6 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
-from stacks.models import Stack
 
 
 class Migration(SchemaMigration):
@@ -58,13 +57,6 @@ class Migration(SchemaMigration):
         db.add_column(u'stacks_stack', 'status_changed',
                       self.gf('model_utils.fields.MonitorField')(default=datetime.datetime.now, monitor='status'),
                       keep_default=False)
-
-        # Add in stack status for exisiting stacks.
-        # We don't want to change the default value though, since other code
-        # depends on the default value being 'pending'
-        for stack in Stack.objects.all():
-            stack.status = Stack.FINISHED
-            stack.save()
 
 
     def backwards(self, orm):
