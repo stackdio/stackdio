@@ -10,7 +10,7 @@ if float("%d.%d" % sys.version_info[:2]) < 2.6:
     sys.exit(1)
 
 # Grab the current version from our stackdio package
-VERSION = __import__('stackdio.server').get_version()
+VERSION = __import__('stackdio').get_version()
 
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
