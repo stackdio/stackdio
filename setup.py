@@ -10,7 +10,7 @@ if float("%d.%d" % sys.version_info[:2]) < 2.6:
     sys.exit(1)
 
 # Grab the current version from our stackdio package
-VERSION = __import__('stackdio').get_version()
+VERSION = __import__('stackdio.server').get_version()
 
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     # Call the setup method from setuptools that does all the heavy lifting
     # of packaging stackdio
     setup(
-        name='stackdio',
+        name='stackdio-server',
         version=VERSION,
         url='http://stackd.io',
         author='Digital Reasoning Systems, Inc.',
@@ -68,6 +68,6 @@ if __name__ == "__main__":
             'Topic :: System :: Distributed Computing',
         ],
         entry_points={'console_scripts': [
-            'stackdio = stackdio.stackdio.management:main'
+            'stackdio = stackdio.server.stackdio.management:main'
         ]}
     )

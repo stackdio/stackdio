@@ -6,7 +6,7 @@ import shutil
 import sys
 import textwrap
 
-from stackdio.core.config import StackdioConfig
+from stackdio.server.core.config import StackdioConfig
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
@@ -101,7 +101,7 @@ class BaseCommand(object):
             self.out('Aborting.', Colors.ERROR)
             sys.exit(1)
 
-    def load_resource(self, rp=None, package='stackdio'):
+    def load_resource(self, rp=None, package='stackdio.server'):
         '''
         Takes a relative path `rp`, and attempts to pull the full resource
         path using pkg_resources.
