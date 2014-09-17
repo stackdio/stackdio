@@ -71,7 +71,7 @@ define(['util/galaxy', 'util/alerts', 'bootbox'], function($galaxy, alerts, boot
              *  then just PUT to the API with the appropriate action.
              */
             if (action !== 'Delete') {
-                bootbox.confirm("Please confirm that you want to perform this action on the stack.", function (result) {
+                bootbox.confirm("<h4>"+action+" stack '"+stack.title+"'</h4><br />Please confirm that you want to perform this action on the stack.", function (result) {
                     if (result) {
                         $.ajax({
                             url: stack.action,
@@ -98,7 +98,7 @@ define(['util/galaxy', 'util/alerts', 'bootbox'], function($galaxy, alerts, boot
              *  EBS volumes, and deletes stack/host details from the stackd.io database.
              */
             } else {
-                bootbox.confirm("Please confirm that you want to delete this stack. Be advised that this is a completely destructive act that will stop, terminate, and delete all hosts, as well as the definition of this stack.", function (result) {
+                bootbox.confirm("<h4>Delete stack '"+stack.title+"'</h4><br />Please confirm that you want to delete this stack. Be advised that this is a completely destructive act that will stop, terminate, and delete all hosts, as well as the definition of this stack.", function (result) {
                     if (result) {
                         $.ajax({
                             url: stack.url,
