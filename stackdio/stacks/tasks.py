@@ -1893,8 +1893,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                     logger.debug('Managed security group {0} '
                                  'deleted...'.format(security_group.name))
                 except BadRequest, e:
-                    if 'does not exist' in e.message:
-                        logger.warn(e.message)
+                    if 'does not exist' in e.detail:
+                        logger.warn(e.detail)
                     else:
                         raise
                 security_group.delete()

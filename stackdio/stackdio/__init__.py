@@ -1,4 +1,4 @@
-VERSION = (0, 5, 0, 'alpha', 1)
+VERSION = (0, 5, 1, 'beta', 0)
 
 
 # Borrowed from django.utils.version
