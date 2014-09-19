@@ -240,9 +240,10 @@ class StackListAPIView(generics.ListCreateAPIView):
         dups = []
         for provider in providers:
             provider_type = provider.provider_type.type_name
-            for instance in query[provider.slug][provider_type]:
+            for instance, details in query[provider.slug][provider_type].items():
                 if instance in hostnames:
-                    dups.append(instance)
+                    if details['state'] not in ('shutting-down', 'terminated'):
+                        dups.append(instance)
 
         if dups:
             errors.setdefault('duplicate_hostnames', dups)
@@ -547,6 +548,7 @@ class StackActionAPIView(generics.SingleObjectAPIView):
                       BaseCloudProvider.ACTION_LAUNCH,
                       BaseCloudProvider.ACTION_PROVISION):
             task_list.append(tasks.highstate.si(stack.id))
+            task_list.append(tasks.global_orchestrate.si(stack.id))
             task_list.append(tasks.orchestrate.si(stack.id))
 
         if action == BaseCloudProvider.ACTION_ORCHESTRATE:
@@ -842,6 +844,18 @@ class StackLogsAPIView(PublicStackMixin, APIView):
                     kwargs={
                         'pk': stack.pk,
                         'log': 'provisioning.err.latest'},
+                    request=request),
+                'global_orchestration': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': 'global_orchestration.log.latest'},
+                    request=request),
+                'global_orchestration-error': reverse(
+                    'stack-logs-detail',
+                    kwargs={
+                        'pk': stack.pk,
+                        'log': 'global_orchestration.err.latest'},
                     request=request),
                 'orchestration': reverse(
                     'stack-logs-detail',

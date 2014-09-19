@@ -4,10 +4,10 @@ import re
 import logging
 import socket
 
-import salt.config
+
 import envoy
 import yaml
-
+from core.exceptions import BadRequest
 from django.conf import settings
 from django.db import models, transaction
 from django.core.files.base import ContentFile
@@ -58,6 +58,11 @@ def get_pillar_file_path(obj, filename):
     return "stacks/{0}/{1}/stack.pillar".format(obj.owner.username, obj.slug)
 
 
+def get_global_pillar_file_path(obj, filename):
+    return "stacks/{0}/{1}/stack.global_pillar".format(obj.owner.username,
+                                                       obj.slug)
+
+
 def get_props_file_path(obj, filename):
     return "stacks/{0}/{1}/stack.props".format(obj.owner.username, obj.slug)
 
@@ -69,6 +74,10 @@ def get_top_file_path(obj, filename):
 
 def get_overstate_file_path(obj, filename):
     return "stack_{0}_overstate.sls".format(obj.id)
+
+
+def get_global_overstate_file_path(obj, filename):
+    return "stack_{0}_global_overstate.sls".format(obj.id)
 
 
 class StackCreationException(Exception):
@@ -142,8 +151,10 @@ class StackManager(models.Manager):
         # the map file is rendered or else we'll miss important grains that
         # need to be set at launch time
         stack._generate_pillar_file()
+        stack._generate_global_pillar_file()
         stack._generate_top_file()
         stack._generate_overstate_file()
+        stack._generate_global_overstate_file()
         stack._generate_map_file()
 
         return stack
@@ -236,11 +247,31 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         storage=FileSystemStorage(
             location=settings.STACKDIO_CONFIG.salt_core_states))
 
+    # Where on disk is the global overstate file stored
+    global_overstate_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_global_overstate_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(
+            location=settings.STACKDIO_CONFIG.salt_core_states))
+
     # Where on disk is the custom pillar file for custom configuration for
     # all salt states used by the top file
     pillar_file = DeletingFileField(
         max_length=255,
         upload_to=get_pillar_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
+    # Where on disk is the custom pillar file for custom configuration for
+    # all salt states used by the top file
+    global_pillar_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_global_pillar_file_path,
         null=True,
         blank=True,
         default=None,
@@ -336,9 +367,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
             cloud_provider = hostdef.cloud_profile.cloud_provider
             driver = cloud_provider.get_driver()
 
-            sg_id = driver.create_security_group(sg_name,
-                                                 sg_description,
-                                                 delete_if_exists=True)
+            try:
+
+                sg_id = driver.create_security_group(sg_name,
+                                                     sg_description,
+                                                     delete_if_exists=True)
+            except Exception, e:
+                err_msg = 'Error creating security group: {0}'.format(str(e))
+                self.set_status('create_security_groups', self.ERROR,
+                                err_msg, Level.ERROR)
+
             logger.debug('Created security group {0}: {1}'.format(
                 sg_name,
                 sg_id
@@ -463,6 +501,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                         is_default=True
                     )
                 ))
+
                 host.security_groups.add(*provider_groups)
 
                 # Add in the security group provided by this host definition
@@ -563,6 +602,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
                             'volumes': map_volumes,
+                            'cloud_provider': host.cloud_profile.cloud_provider.slug,
+                            'cloud_profile': host.cloud_profile.slug,
                         },
                     },
 
@@ -718,12 +759,61 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
             with open(self.overstate_file.path, 'w') as f:
                 f.write(yaml_data)
 
+    def _generate_global_overstate_file(self):
+        providers = set(
+            [host.cloud_profile.cloud_provider for
+                host in self.hosts.all()])
+
+        overstate = {}
+
+        for provider in providers:
+            # Target the stack_id and cloud provider
+            target = 'G@stack_id:{0} and G@cloud_provider:{1}'.format(
+                self.id,
+                provider.slug)
+
+            groups = {}
+            for c in provider.global_formula_components.all():
+                groups.setdefault(
+                    c.order, set()
+                ).add(c.component.sls_path)
+
+            for order in sorted(groups.keys()):
+                for role in groups[order]:
+                    state_title = '{0}_{1}'.format(provider.slug, role)
+                    overstate[state_title] = {
+                        'match': target,
+                        'sls': list([role]),
+                    }
+                    depend = order - 1
+                    while depend >= 0:
+                        if depend in groups.keys():
+                            overstate[role]['require'] = list(groups[depend])
+                            break
+                        depend -= 1
+
+        yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
+        if not self.global_overstate_file:
+            self.global_overstate_file.save(
+                get_global_overstate_file_path(self, None),
+                ContentFile(yaml_data))
+        else:
+            with open(self.global_overstate_file.path, 'w') as f:
+                f.write(yaml_data)
+
     def _generate_pillar_file(self):
         from blueprints.models import BlueprintHostFormulaComponent
 
+        # pull the ssh_user property from the stackd.io config file and
+        # if the username value is $USERNAME, we'll substitute the stack
+        # owner's username instead
+        username = settings.STACKDIO_CONFIG.ssh_user
+        if username == '$USERNAME':
+            username = self.owner.username
+
         pillar_props = {
             '__stackdio__': {
-                'username': self.owner.username,
+                'username': username,
                 'publickey': self.owner.settings.public_key,
             }
         }
@@ -756,6 +846,40 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                                   ContentFile(pillar_file_yaml))
         else:
             with open(self.pillar_file.path, 'w') as f:
+                f.write(pillar_file_yaml)
+
+    def _generate_global_pillar_file(self):
+
+        pillar_props = {}
+
+        # Find all of the globally used formulas for the stack
+        providers = set(
+            [host.cloud_profile.cloud_provider for
+                host in self.hosts.all()]
+        )
+        global_formulas = []
+        for provider in providers:
+            for gfc in provider.global_formula_components.all():
+                global_formulas.append(gfc.component.formula)
+
+        # Add the global formulas into the props
+        for formula in set(global_formulas):
+            recursive_update(pillar_props, formula.properties)
+
+        # Add in the provider properties AFTER the stack properties
+        for provider in providers:
+            recursive_update(pillar_props,
+                             provider.global_orchestration_properties)
+
+        pillar_file_yaml = yaml.safe_dump(pillar_props,
+                                          default_flow_style=False)
+
+        if not self.global_pillar_file:
+            self.global_pillar_file.save(
+                get_global_pillar_file_path(self, None),
+                ContentFile(pillar_file_yaml))
+        else:
+            with open(self.global_pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
 
     def query_hosts(self):

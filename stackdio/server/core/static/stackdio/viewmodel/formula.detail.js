@@ -40,16 +40,10 @@ function (Q, ko, $galaxy, alerts, FormulaStore, API) {
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
-            FormulaStore.populate().then(function () {
-                var formulas = FormulaStore.collection().filter(function (formula) {
-                    return formula.id === parseInt(data.formula, 10);
-                });
-                if(formulas.length == 1) {
-                    self.formulaComponents(formulas[0].components);
-                }
-            }).catch(function (err) {
-                console.error(err);
-            }).done();
+            self.formulaComponents([]);
+            API.Formulas.getFormula(data.formula).then(function (formula) {
+                self.formulaComponents(formula.components);
+            });
         });
 
 

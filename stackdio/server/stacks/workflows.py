@@ -69,7 +69,9 @@ class LaunchWorkflow(BaseWorkflow):
             tasks.register_dns.si(stack_id, host_ids=self.host_ids),
             tasks.ping.si(stack_id),
             tasks.sync_all.si(stack_id),
-            tasks.highstate.si(stack_id, max_retries=opts.max_retries)
+            tasks.highstate.si(stack_id, max_retries=opts.max_retries),
+            tasks.global_orchestrate.si(stack_id,
+                                        max_retries=opts.max_retries)
         ]
         if opts.provision:
             l.append(tasks.orchestrate.si(stack_id,

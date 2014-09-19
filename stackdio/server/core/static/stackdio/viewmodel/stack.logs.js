@@ -91,6 +91,14 @@ function (Q, ko, $galaxy, API) {
                             url: self.logObject.latest['provisioning-error']
                         });
                         self.latestLogs.push({
+                            name: 'Global Orchestration',
+                            url: self.logObject.latest.global_orchestration
+                        });
+                        self.latestLogs.push({
+                            name: 'Global Orchestration Error',
+                            url: self.logObject.latest['global_orchestration-error']
+                        });
+                        self.latestLogs.push({
                             name: 'Orchestration',
                             url: self.logObject.latest.orchestration
                         });

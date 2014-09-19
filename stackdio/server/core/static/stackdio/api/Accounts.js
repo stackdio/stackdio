@@ -157,6 +157,112 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             });
             
             return deferred.promise;
+        },
+        getGlobalComponents: function (account) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: account.global_orchestration_components,
+                type: 'GET',
+                headers: {
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve(response.results);
+                },
+                error: function (response, status, error) {
+                    deferred.reject(JSON.parse(response.responseText).detail);
+                }
+            });
+
+            return deferred.promise;
+        },
+        addGlobalComponent: function (account, component) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: account.global_orchestration_components,
+                type: 'POST',
+                data: JSON.stringify({
+                    order: component.order,
+                    component: component.id
+                }),
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve(response);
+                },
+                error: function (response, status, error) {
+                    deferred.reject(JSON.parse(response.responseText).detail);
+                }
+            });
+
+            return deferred.promise;
+        },
+        deleteGlobalComponent: function (componentId) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: '/api/global_orchestration_components/'+componentId+'/',
+                type: 'DELETE',
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve(response);
+                },
+                error: function (response, status, error) {
+                    deferred.reject(JSON.parse(response.responseText).detail);
+                }
+            });
+
+            return deferred.promise;
+        },
+        getGlobalProperties: function (account) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: account.global_orchestration_properties,
+                type: 'GET',
+                headers: {
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve(response);
+                },
+                error: function (response, status, error) {
+                    deferred.reject(JSON.parse(response.responseText).detail);
+                }
+            });
+
+            return deferred.promise;
+        },
+        setGlobalProperties: function (account, properties) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: account.global_orchestration_properties,
+                type: 'PUT',
+                data: properties,
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": stackdio.settings.csrftoken,
+                    "Accept": "application/json"
+                },
+                success: function (response) {
+                    deferred.resolve(response);
+                },
+                error: function (response, status, error) {
+                    deferred.reject(JSON.parse(response.responseText).detail);
+                }
+            });
+
+            return deferred.promise;
         }
     }
 });

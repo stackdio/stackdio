@@ -88,6 +88,15 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, mod
         }
 
         /*
+         *  ==================================================================================
+         *   E V E N T   S U B S C R I P T I O N S
+         *  ==================================================================================
+         */
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
+            self.switchTab(self.tabs()[0], null);
+        });
+
+        /*
             F U N C T I O N S
         */
 
@@ -123,6 +132,11 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, mod
                     } else {
                         // Make sure the user hasn't clicked away from the current tab
                         if (self.selectedTab() === obj) {
+                            response.results.forEach(function (obj) {
+                                if (obj.owner === '__stackdio__') {
+                                    obj.owner = 'Global Orchestration';
+                                }
+                            });
                             self.tableData(response.results);
                         }
                     }

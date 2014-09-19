@@ -33,6 +33,10 @@ urlpatterns = patterns('formulas.api',
     url(r'^admin/formulas/$',
         api.FormulaAdminListAPIView.as_view(),
         name='formula-admin-list'),
+
+    url(r'^admin/global_orchestration/formulas/$',
+        api.GlobalOrchestrationFormulaListAPIView.as_view(),
+        name='formula-global-orchestration-list')
 )
 
 

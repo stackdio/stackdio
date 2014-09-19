@@ -1,17 +1,28 @@
 from __future__ import print_function
 import getpass
-import jinja2
 import os
 import shutil
 import sys
 import textwrap
+import yaml
+import envoy
+import jinja2
 
-from stackdio.server.core.config import StackdioConfig
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
 
+from stackdio.server.core.config import StackdioConfig
+
 SALT_COLORS = get_colors()
+
+
+def get_salt_version():
+    import envoy
+    result = envoy.run('pip freeze | grep salt')
+    if result.status_code != 0:
+        raise Exception('Cannot determine salt version')
+    return result.std_out.strip().split('==')[1]
 
 
 class Colors(object):
@@ -143,6 +154,8 @@ class WizardCommand(BaseCommand):
     This method will receive the current question
     '''
 
+    QUESTIONS = []
+
     def __init__(self, *args, **kwargs):
         super(WizardCommand, self).__init__(*args, **kwargs)
 
@@ -219,46 +232,69 @@ class InitCommand(WizardCommand):
     # Default config file
     CONFIG_FILE = os.path.join(CONFIG_DIR, 'config')
 
-    QUESTIONS = [{
-        'attr': 'user',
-        'short_desc': 'Which user will stackdio and salt run as?',
-        'long_desc': ('This user will own services, files, etc related to '
-                      'stackdio.'),
-        'default': getpass.getuser(),
-    }, {
-        'attr': 'storage_root',
-        'short_desc': 'Where should stackdio and salt store their data?',
-        'long_desc': ('Root directory for stackdio to store its files, logs, '
-                      'salt configuration, etc. We will attempt to create '
-                      'this path if it does not already exist.'),
-        'default': '/home/{user}/.stackdio',
-    }, {
-        'attr': 'salt_bootstrap_script',
-        'short_desc': ('Which bootstrap script should salt-cloud use when '
-                       'launching VMs?'),
-        'long_desc': ('When launching and bootstrapping machines using '
-                      'salt-cloud, what bootstrap script should be used? '
-                      'Typically, this should be left alone.'),
-        'default': 'bootstrap-salt',
-    }, {
-        'attr': 'salt_bootstrap_args',
-        'short_desc': 'Any special arguments for the bootstrap script?',
-        'long_desc': ('What arguments to pass to the bootstrap script above? '
-                      'For our purposes, we are enabling debug output for '
-                      'tracking down issues that may crop up during the '
-                      'bootstrap process. Override the defaults here. See '
-                      'http://bootstrap.saltstack.org for more info.'),
-        'default': '-K -D',
-    }, {
-        'attr': 'db_dsn',
-        'short_desc': ('What database DSN should stackdio use to connect to '
-                       'the DB?'),
-        'long_desc': ('The database DSN the stackdio Django application will '
-                      'use to acccess the database server. The server must be '
-                      'running, the database must already exist, and the user '
-                      'must have access to it.'),
-        'default': 'mysql://stackdio:password@localhost:3306/stackdio',
-    }]
+    def __init__(self, *args, **kwargs):
+        super(InitCommand, self).__init__(*args, **kwargs)
+
+        # TODO - why doesn't this work just putting it down with everything
+        # else?
+        # https://docs.python.org/2/library/threading.html#importing-in-threaded-code
+
+        self.QUESTIONS = [{
+            'attr': 'user',
+            'short_desc': 'Which user will stackdio and salt run as?',
+            'long_desc': ('This user will own services, files, etc related to '
+                          'stackdio.'),
+            'default': getpass.getuser(),
+        }, {
+            'attr': 'storage_root',
+            'short_desc': 'Where should stackdio and salt store their data?',
+            'long_desc': ('Root directory for stackdio to store its files, logs, '
+                          'salt configuration, etc. We will attempt to create '
+                          'this path if it does not already exist.'),
+            'default': '/home/{user}/.stackdio',
+        }, {
+            'attr': 'salt_bootstrap_script',
+            'short_desc': ('Which bootstrap script should salt-cloud use when '
+                           'launching VMs?'),
+            'long_desc': ('When launching and bootstrapping machines using '
+                          'salt-cloud, what bootstrap script should be used? '
+                          'Typically, this should be left alone.'),
+            'default': 'bootstrap-salt',
+        }, {
+            'attr': 'salt_bootstrap_args',
+            'short_desc': 'Any special arguments for the bootstrap script?',
+            'long_desc': ('What arguments to pass to the bootstrap script above? '
+                          'For our purposes, we are enabling debug output for '
+                          'tracking down issues that may crop up during the '
+                          'bootstrap process. Override the defaults here. See '
+                          'http://bootstrap.saltstack.org for more info. '
+                          'It is highly advised that you pass in a version also. '
+                          'The default args are set to include the current '
+                          'version of the salt master.'),
+            'default': '-K -D git v{0}'.format(get_salt_version())
+        }, {
+            'attr': 'db_dsn',
+            'short_desc': ('What database DSN should stackdio use to connect to '
+                           'the DB?'),
+            'long_desc': ('The database DSN the stackdio Django application will '
+                          'use to acccess the database server. The server must be '
+                          'running, the database must already exist, and the user '
+                          'must have access to it.'),
+            'default': 'mysql://stackdio:password@localhost:3306/stackdio',
+        }, {
+            'attr': 'ssh_user',
+            'short_desc': ('What SSH user should be created on stackd.io managed '
+                           'machines?'),
+            'long_desc': ('When machines are launched and provisioned with core '
+                          'functionality, stackd.io will create a user on the '
+                          'machine and add the authenticated stackd.io user\'s '
+                          'public RSA key so they may SSH in to their machines. '
+                          'This setting lets you control what the default '
+                          'username should be. Note that by default, this user '
+                          'is the actual username of the authenticated stackd.io '
+                          'user (signified by $USERNAME).'),
+            'default': '$USERNAME',
+        }]
 
     def pre_run(self):
         try:
@@ -468,6 +504,87 @@ class ConfigCommand(BaseCommand):
             return
 
         print(self.render_template(tmpl, context=context))
+
+
+class UpgradeSaltCommand(BaseCommand):
+
+    # Default directory holding the stackdio configuration
+    CONFIG_DIR = os.path.expanduser('~/.stackdio')
+
+    # Default config file
+    CONFIG_FILE = os.path.join(CONFIG_DIR, 'config')
+
+    def run(self):
+        self.out('NOTE: This command will upgrade your version of salt-master '
+                 'in addition to changing your bootstrap args so that all '
+                 'minions match the master version. You are highly advised NOT '
+                 'to upgrade your salt version while you have running stacks, '
+                 'as this may cause minion-master compatibility issues.  This '
+                 'command will NOT stop you from upgrading while you have '
+                 'running stacks, so proceed with caution.', Colors.WARN)
+
+        val = self.prompt('Are you sure you would like to do this? (y|n) ')
+
+        if val not in ('y', 'Y'):
+            self.out('Aborting.  Your salt version was not upgraded.',
+                     Colors.ERROR)
+            return
+
+        current_version = get_salt_version()
+
+        new_version = self.args.version
+
+        if current_version == new_version:
+            self.out('Salt version {0} is already installed.'.format(new_version))
+            return
+
+        self.out('Upgrading salt master...', nl=0)
+        sys.stdout.flush()
+
+        result = envoy.run('pip install -U \'salt=={0}\''.format(new_version))
+
+        if result.status_code != 0:
+            self.out('Error upgrading salt:', Colors.ERROR)
+            self.out(result.std_out, Colors.ERROR)
+            return
+
+        self.out('Done!')
+
+        installed_version = get_salt_version()
+
+        if installed_version != new_version:
+            self.out('WARNING: salt version {0} was actually installed'.format(
+                installed_version), Colors.WARN)
+
+        self.out('Updating config files...', nl=0)
+        sys.stdout.flush()
+
+        config = StackdioConfig()
+        bootstrap_args = config.salt_bootstrap_args
+
+        config.salt_bootstrap_args = bootstrap_args.replace(
+            current_version,
+            installed_version)
+
+        self.render_template('stackdio/management/templates/config.jinja2',
+                             self.CONFIG_FILE,
+                             context=config)
+
+        for profile_config in os.listdir(config.salt_profiles_dir):
+            slug = '.'.join(profile_config.split('.')[:-1])
+
+            prof_file = os.path.join(config.salt_profiles_dir, profile_config)
+            with open(prof_file, 'r') as f:
+                profile_yaml = yaml.safe_load(f)
+
+            profile_yaml[slug]['script_args'] = profile_yaml[slug]['script_args'].replace(
+                current_version,
+                installed_version)
+
+            with open(prof_file, 'w') as f:
+                yaml.safe_dump(profile_yaml, f, default_flow_style=False)
+
+        self.out('Done!')
 
 
 class SaltWrapperCommand(BaseCommand):

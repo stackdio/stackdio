@@ -71,10 +71,10 @@ function (Q, ko, bootbox, $galaxy, alerts, Ladda, FormulaStore, API) {
         };
 
         self.updateFormula = function (formula) {
-            if (formula.private_git_repo && !formula.git_password_stored) {
+            if (formula.private_git_repo) {
                 bootbox.dialog({
                     title: "Enter your git password:",
-                    message: '<form class="bootbox-form"><input class="bootbox-input bootbox-input-text form-control" autocomplete="off" type="password" id="git_password"></form>',
+                    message: '<form class="bootbox-form"><input class="bootbox-input bootbox-input-text form-control" autocomplete="off" type="password" id="git_password_for_update"></form>',
                     buttons: {
                         cancel: {
                             label: "Cancel",
@@ -87,7 +87,7 @@ function (Q, ko, bootbox, $galaxy, alerts, Ladda, FormulaStore, API) {
                             label: "OK",
                             className: "btn-primary",
                             callback: function () {
-                                git_password = $('#git_password').val();
+                                git_password = $('#git_password_for_update').val();
                                 self.doUpdate(formula, git_password);
                             }
                         }
@@ -147,19 +147,6 @@ function (Q, ko, bootbox, $galaxy, alerts, Ladda, FormulaStore, API) {
                 }
             });
         };
-
-        self.remove_password = function (formula) {
-            bootbox.confirm("Please confirm that you want to remove the password from this formula.", function (result) {
-                if (result) {
-                    API.Formulas.removePassword(formula).then(function () {
-                        alerts.showMessage('#success', 'Git password successfully removed.', true);
-                        self.loadFormula();
-                    }).catch(function (error) {
-                        alerts.showMessage('#error', 'Could not delete the password. ' + error, true, 4000);
-                    }).done()
-                }
-            });
-        }
 
         self.loadFormula = function (obj, evt) {
             evt.preventDefault();

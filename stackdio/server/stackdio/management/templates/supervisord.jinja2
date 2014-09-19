@@ -46,7 +46,7 @@ autorestart=true
 ;;
 ;; celery
 [program:celery-main]
-command=stackdio manage.py celery worker -l info -Q default,stacks,formulas -n main.`hostname`
+command=stackdio manage.py celery worker -l info -c 4 -Q default,stacks,formulas -n main.`hostname`
 directory={{ stackdio_root }}
 autorestart=true
 

@@ -8,6 +8,7 @@ from rest_framework import (
     status
 )
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
 from core.exceptions import BadRequest, ResourceConflict
 from core.permissions import (
@@ -17,6 +18,7 @@ from core.permissions import (
 from blueprints.serializers import BlueprintSerializer
 from . import models
 from . import serializers
+from core.utils import recursive_update
 
 
 logger = logging.getLogger(__name__)
@@ -102,6 +104,78 @@ class CloudInstanceSizeListAPIView(generics.ListAPIView):
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
     model = models.CloudInstanceSize
     serializer_class = serializers.CloudInstanceSizeSerializer
+
+
+class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
+
+    def get_provider(self):
+        obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_queryset(self):
+        return self.get_provider().global_formula_components.all()
+
+    def pre_save(self, obj):
+        obj.provider = self.get_provider()
+
+    def create(self, request, *args, **kwargs):
+        component_id = request.DATA.get('component')
+        try:
+            # Delete an existing component if there is one
+            component = self.get_queryset().get(component__id=component_id)
+            component.delete()
+        except models.GlobalOrchestrationFormulaComponent.DoesNotExist:
+            pass
+
+        return super(GlobalOrchestrationComponentListAPIView, self) \
+            .create(request, *args, **kwargs)
+
+
+class GlobalOrchestrationComponentDetailAPIView(
+        generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
+    model = models.GlobalOrchestrationFormulaComponent
+
+
+class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = serializers.serializers.Serializer
+
+    def get_provider(self):
+        obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def retrieve(self, request, *args, **kwargs):
+        return Response(self.get_provider().global_orchestration_properties)
+
+    def update(self, request, *args, **kwargs):
+        """
+        PUT request - overwrite all the props
+        """
+        if not isinstance(request.DATA, dict):
+            raise BadRequest('Request data but be a JSON object, not an array')
+        provider = self.get_provider()
+        provider.global_orchestration_properties = request.DATA
+        provider.save()
+        return Response(provider.global_orchestration_properties)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH request - merge the these new props in, overwrite old with new
+        if there are conflicts
+        """
+        if not isinstance(request.DATA, dict):
+            raise BadRequest('Request data but be a JSON object, not an array')
+        provider = self.get_provider()
+        provider.global_orchestration_properties = recursive_update(
+            provider.global_orchestration_properties, request.DATA)
+        provider.save()
+        return Response(provider.global_orchestration_properties)
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):

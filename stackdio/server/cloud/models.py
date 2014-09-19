@@ -1,20 +1,21 @@
 import logging
-import yaml
+import json
 
+import yaml
 from django.conf import settings
 from django.db import models
 from django.core.files.storage import FileSystemStorage
 from django.core.files.base import ContentFile
-
 from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
-from core.queryset_transform import TransformManager, TransformQuerySet
 
+from core.queryset_transform import TransformManager, TransformQuerySet
 from core.fields import DeletingFileField
 from cloud.utils import get_provider_type_and_class
 from .utils import get_cloud_provider_choices
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,10 @@ FILESYSTEM_CHOICES = (
 
 def get_config_file_path(obj, filename):
     return obj.slug + '.conf'
+
+
+def get_global_orch_props_file_path(obj, filename):
+    return "cloud/{0}/global_orch.props".format(obj.slug)
 
 
 class CloudProviderType(models.Model):
@@ -74,6 +79,15 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     # Are we using VPC?
     vpc_id = models.CharField(max_length=64, blank=True)
 
+    # storage for properties file
+    global_orch_props_file = DeletingFileField(
+        max_length=255,
+        upload_to=get_global_orch_props_file_path,
+        null=True,
+        blank=True,
+        default=None,
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
     def __unicode__(self):
         return self.title
 
@@ -109,6 +123,24 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
                 # update the yaml to include updated security group information
                 f.write(self.yaml)
 
+    @property
+    def global_orchestration_properties(self):
+        if not self.global_orch_props_file:
+            return {}
+        with open(self.global_orch_props_file.path) as f:
+            return json.loads(f.read())
+
+    @global_orchestration_properties.setter
+    def global_orchestration_properties(self, props):
+        props_json = json.dumps(props, indent=4)
+        if not self.global_orch_props_file:
+            self.global_orch_props_file.save(
+                get_global_orch_props_file_path(self, None),
+                ContentFile(props_json))
+        else:
+            with open(self.global_orch_props_file.path, 'w') as f:
+                f.write(props_json)
+
 
 class CloudInstanceSize(TitleSlugDescriptionModel):
     class Meta:
@@ -127,6 +159,35 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     def __unicode__(self):
 
         return '{0} ({1})'.format(self.title, self.instance_id)
+
+
+class GlobalOrchestrationFormulaComponent(TimeStampedModel):
+    '''
+    An extension of an existing FormulaComponent to add additional metadata
+    for those components based on this provider. In particular, this is how
+    we track the order in which the formula should be provisioned during
+    global orchestration.
+    '''
+
+    class Meta:
+        verbose_name_plural = 'global orchestration formula components'
+        ordering = ['order']
+
+    # The formula component we're extending
+    component = models.ForeignKey('formulas.FormulaComponent')
+
+    # The cloud this extended formula component applies to
+    provider = models.ForeignKey('cloud.CloudProvider',
+                                 related_name='global_formula_components')
+
+    # The order in which the component should be provisioned
+    order = models.IntegerField(default=0)
+
+    def __unicode__(self):
+        return u'{0}:{1}'.format(
+            self.component,
+            self.provider
+        )
 
 
 class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):

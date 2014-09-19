@@ -12,6 +12,7 @@ from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
 import salt.client
+import salt.cloud
 import salt.config
 import salt.runner
 
@@ -176,6 +177,31 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
         logger.info('Log file: {0}'.format(log_file))
+
+
+        salt_cloud = salt.cloud.CloudClient(
+            os.path.join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
+        query = salt_cloud.query()
+
+        hostnames = [host.hostname for host in hosts]
+
+        # Since a blueprint can have multiple providers
+        providers = set()
+        for host in hosts:
+            providers.add(host.cloud_profile.cloud_provider)
+
+        for provider in providers:
+            provider_type = provider.provider_type.type_name
+            for instance, details in query[provider.slug][provider_type].items():
+                if instance in hostnames:
+                    if details['state'] in ('shutting-down', 'terminated'):
+                        salt_cloud.action(
+                            'set_tags',
+                            names=[instance],
+                            kwargs={
+                                'Name': '{0}-DEL_BY_STACKDIO'.format(instance)
+                            }
+                        )
 
         current_try, unrecoverable_error = 0, False
         while True:
@@ -426,6 +452,8 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         logger.exception(err_msg)
         raise StackTaskException(err_msg)
     except StackTaskException, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(launch_hosts.name, stack.ERROR, err_msg, Level.ERROR)
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1182,6 +1210,185 @@ def highstate(stack_id, max_retries=2):
         raise
 
 
+def change_pillar(stack_id, new_pillar_file):
+    salt_client = salt.client.LocalClient(os.path.join(
+        settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+
+    # From the testing I've done, this also automatically refreshes the pillar
+    ret = salt_client.cmd_iter(
+        'stack_id:{0}'.format(stack_id),
+        'grains.setval',
+        [
+            'stack_pillar_file',
+            new_pillar_file
+        ],
+        expr_form='grain',
+    )
+
+    for res in ret:
+        for minion, state_ret in res.items():
+            # Want to do error checking, but don't know what errors look
+            # like in this case
+            pass
+
+
+# TODO: Ignoring code complexity issues
+@celery.task(name='stacks.global_orchestrate') # NOQA
+def global_orchestrate(stack_id, max_retries=2):
+    """
+    Executes the runners.state.over function with the custom overstate
+    file  generated via the stacks.models._generate_global_overstate_file. This
+    will target the __stackdio__ user's environment and provision the hosts with
+    the formulas defined in the global orchestration.
+    """
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        logger.info('Executing global orchestration for stack: {0!r}'.format(stack))
+
+        # Set the pillar file to the global pillar data file
+        change_pillar(stack_id, stack.global_pillar_file.path)
+
+        # Set up logging for this task
+        root_dir = stack.get_root_directory()
+        log_dir = stack.get_log_directory()
+
+        role_host_nums = {}
+        # Get the number of hosts for each role
+        for bhd in stack.blueprint.host_definitions.all():
+            for fc in bhd.formula_components.all():
+                role_host_nums.setdefault(fc.component.sls_path, 0)
+                role_host_nums[fc.component.sls_path] += bhd.count
+
+        # we'll break out of the loop based on the given number of retries
+        current_try, unrecoverable_error = 0, False
+        while True:
+            current_try += 1
+            logger.info('Task {0} try #{1} for stack {2!r}'.format(
+                global_orchestrate.name,
+                current_try,
+                stack))
+
+            # Update status
+            stack.set_status(orchestrate.name, Stack.ORCHESTRATING,
+                             'Executing global orchestration try {0} of {1}. This '
+                             'may take a while.'.format(current_try,
+                                                        max_retries + 1))
+
+            now = datetime.now().strftime('%Y%m%d-%H%M%S')
+            log_file = os.path.join(log_dir,
+                                    '{0}.global_orchestration.log'.format(now))
+            err_file = os.path.join(log_dir,
+                                    '{0}.global_orchestration.err'.format(now))
+            log_symlink = os.path.join(root_dir, 'global_orchestration.log.latest')
+            err_symlink = os.path.join(root_dir, 'global_orchestration.err.latest')
+
+            for l in (log_file, err_file):
+                with open(l, 'w') as f:
+                    pass
+            symlink(log_file, log_symlink)
+            symlink(err_file, err_symlink)
+
+            # Set up logging
+            file_log_handler = logging.FileHandler(log_file)
+            file_log_handler.setFormatter(salt_formatter)
+            salt_logger.addHandler(file_log_handler)
+
+            opts = salt.config.client_config(os.path.join(
+                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+
+            salt_runner = salt.runner.RunnerClient(opts)
+
+            result = salt_runner.cmd(
+                'stackdio.orchestrate',
+                [
+                    '__stackdio__',
+                    stack.global_overstate_file.path
+                ]
+            )
+
+            errors = {}
+            to_print = {}
+            for ret in result:
+                with open(err_file, 'a') as f:
+                    f.write('{0}\n\n'.format(len(ret)))
+                for host, stage_result in ret.items():
+                    to_print.setdefault(host, []).append(stage_result)
+                    if isinstance(stage_result, list):
+                        for err in stage_result:
+                            errors.setdefault(host, []) \
+                                .append({
+                                    'error': err
+                                })
+                        continue
+
+                    # iterate over the individual states in the
+                    # host looking for states that had a result
+                    # of false
+                    for state_str, state_meta in stage_result.items(): # NOQA
+                        if state_str == '__FAILHARD__':
+                            continue
+
+                        if not is_state_error(state_meta):
+                            continue
+
+                        if not is_requisite_error(state_meta):
+                            err, recoverable = state_error(state_str,
+                                                           state_meta)
+                            if not recoverable:
+                                unrecoverable_error = True
+                            errors.setdefault(host, []).append(err)
+
+                if errors:
+                    with open(err_file, 'a') as f:
+                        f.write('Found error - stopping global orchestration NOW to retry\n\n')
+                    # Stop orchestration hard if there were errors
+                    break
+
+            # Stop logging
+            salt_logger.removeHandler(file_log_handler)
+
+            # Write the log file
+            with open(log_file, 'a') as f:
+                f.write(yaml.safe_dump(to_print))
+
+            if errors:
+                with open(err_file, 'a') as f:
+                    f.write(yaml.safe_dump(errors))
+
+                if not unrecoverable_error and current_try <= max_retries: # NOQA
+                    continue
+
+                err_msg = 'Global Orchestration errors on hosts: ' \
+                    '{0}. Please see the global orchestration errors ' \
+                    'API or the global orchestration log file for more ' \
+                    'details: {1}'.format(
+                        ', '.join(errors.keys()),
+                        os.path.basename(log_file))
+                stack.set_status(global_orchestrate.name,
+                                 Stack.ERROR,
+                                 err_msg,
+                                 Level.ERROR)
+                raise StackTaskException(err_msg)
+
+            # it worked?
+            break
+
+
+        stack.set_status(global_orchestrate.name, Stack.FINALIZING,
+                         'Finished executing global orchestration all hosts.')
+
+    except Stack.DoesNotExist:
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
+        raise StackTaskException(err_msg)
+    except StackTaskException, e:
+        raise
+    except Exception, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(global_orchestrate.name, Stack.ERROR, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
+
+
 # TODO: Ignoring code complexity issues
 @celery.task(name='stacks.orchestrate') # NOQA
 def orchestrate(stack_id, max_retries=2):
@@ -1200,6 +1407,9 @@ def orchestrate(stack_id, max_retries=2):
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing orchestration for stack: {0!r}'.format(stack))
+
+        # Set the pillar file back to the regular pillar
+        change_pillar(stack_id, stack.pillar_file.path)
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
@@ -1269,112 +1479,74 @@ def orchestrate(stack_id, max_retries=2):
                 ]
             )
 
+            errors = {}
+            # to_print = {}
+            for ret in result:
+                with open(log_file, 'a') as f:
+                    f.write(yaml.safe_dump(ret))
+                with open(err_file, 'a') as f:
+                    f.write('{0}\n\n'.format(len(ret)))
+                for host, stage_result in ret.items():
+                    # to_print.setdefault(host, []).append(stage_result)
+                    if isinstance(stage_result, list):
+                        for err in stage_result:
+                            errors.setdefault(host, []) \
+                                .append({
+                                    'error': err
+                                })
+                        continue
+
+                    # iterate over the individual states in the
+                    # host looking for states that had a result
+                    # of false
+                    for state_str, state_meta in stage_result.items(): # NOQA
+                        if state_str == '__FAILHARD__':
+                            continue
+
+                        if not is_state_error(state_meta):
+                            continue
+
+                        if not is_requisite_error(state_meta):
+                            err, recoverable = state_error(state_str,
+                                                           state_meta)
+                            if not recoverable:
+                                unrecoverable_error = True
+                            errors.setdefault(host, []).append(err)
+
+                if errors:
+                    with open(err_file, 'a') as f:
+                        f.write('Found error - stopping orchestration NOW to retry\n\n')
+                    # Stop orchestration hard if there were errors
+                    break
+
             # Stop logging
             salt_logger.removeHandler(file_log_handler)
 
-            if len(result) != len(stack.get_role_list()):
-                logger.debug('salt did not orchestrate all hosts')
+            # Write the log file
+            # with open(log_file, 'a') as f:
+            #     f.write(yaml.safe_dump(to_print))
 
-                if current_try <= max_retries:
+            if errors:
+                with open(err_file, 'a') as f:
+                    f.write(yaml.safe_dump(errors))
+
+                if not unrecoverable_error and current_try <= max_retries: # NOQA
                     continue
 
-                err_msg = 'Salt errored and did not orchestrate all the hosts'
-                stack.set_status(orchestrate.name, Stack.ERROR,
-                                 err_msg, Level.ERROR)
-                raise StackTaskException('Error executing orchestration: '
-                                         '{0!r}'.format(err_msg))
-            else:
-                with open(log_file, 'a') as f:
-                    f.write(yaml.safe_dump(result))
+                err_msg = 'Orchestration errors on hosts: ' \
+                    '{0}. Please see the orchestration errors ' \
+                    'API or the orchestration log file for more ' \
+                    'details: {1}'.format(
+                        ', '.join(errors.keys()),
+                        os.path.basename(log_file))
+                stack.set_status(orchestrate.name,
+                                 Stack.ERROR,
+                                 err_msg,
+                                 Level.ERROR)
+                raise StackTaskException(err_msg)
 
-                errors = {}
-
-                # each key in the dict is a role, and the value of the role is
-                # a dict with keys being hosts.  The value of the hosts
-                # is either a list or dict. Those that are lists we can
-                # assume to be a list of errors
-                if result is not None:
-                    for role, role_results in result.items():
-                        for host, stage_result in role_results.items():
-                            if host == 'req_|-fail_|-fail_|-None':
-                                # Requisite error for the whole role
-                                errors.setdefault(
-                                    '{0} failed'.format(role),
-                                    []).append({
-                                        'error': stage_result['ret']
-                                    })
-                                continue
-
-                            if 'success' in stage_result \
-                                    and not stage_result['success']:
-                                errors.setdefault(host, []).append({
-                                    'error': stage_result['ret']
-                                })
-                                continue
-
-                            if 'retcode' in stage_result \
-                                    and stage_result['retcode'] != 0:
-                                errors.setdefault(host, []).append({
-                                    'error': stage_result['ret']
-                                })
-                                continue
-
-                            if isinstance(stage_result['ret'], list):
-                                for err in stage_result:
-                                    errors.setdefault(host, []) \
-                                        .append({
-                                            'error': err
-                                        })
-                                continue
-
-                            # iterate over the individual states in the
-                            # host looking for states that had a result
-                            # of false
-                            for state_str, state_meta in stage_result['ret'].items(): # NOQA
-                                if state_str == '__FAILHARD__':
-                                    continue
-
-                                if not is_state_error(state_meta):
-                                    continue
-
-                                if not is_requisite_error(state_meta):
-                                    err, recoverable = state_error(state_str,
-                                                                   state_meta)
-                                    if not recoverable:
-                                        unrecoverable_error = True
-                                    errors.setdefault(host, []).append(err)
-
-                        if len(role_results) != role_host_nums[role]:
-                            errors.setdefault(role, []).append({
-                                'error': 'Only {0} out of {1} hosts were orchestrated'.format(
-                                    len(role_results),
-                                    role_host_nums[role]
-                                )
-                            })
-
-                    if errors:
-                        # write the errors to the err_file
-                        with open(err_file, 'a') as f:
-                            f.write(yaml.safe_dump(errors))
-
-                        if not unrecoverable_error and current_try <= max_retries: # NOQA
-                            continue
-
-                        err_msg = 'Orchestration errors on hosts: ' \
-                            '{0}. Please see the orchestration errors ' \
-                            'API or the orchestration log file for more ' \
-                            'details: {1}'.format(
-                                ', '.join(errors.keys()),
-                                os.path.basename(log_file))
-                        stack.set_status(highstate.name,
-                                         Stack.ERROR,
-                                         err_msg,
-                                         Level.ERROR)
-                        raise StackTaskException(err_msg)
-
-                    # Everything worked?
-                    break
-
+            # it worked?
+            break
 
             ##########################
 
@@ -1721,8 +1893,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                     logger.debug('Managed security group {0} '
                                  'deleted...'.format(security_group.name))
                 except BadRequest, e:
-                    if 'does not exist' in e.message:
-                        logger.warn(e.message)
+                    if 'does not exist' in e.detail:
+                        logger.warn(e.detail)
                     else:
                         raise
                 security_group.delete()
@@ -1855,6 +2027,7 @@ def custom_action(action_id, host_target, command):
     action.save()
 
     stack_id = action.stack.id
+    stack = Stack.objects.get(id=stack_id)
 
     try:
 
@@ -1865,33 +2038,42 @@ def custom_action(action_id, host_target, command):
             '{0} and G@stack_id:{1}'.format(host_target, stack_id),
             'cmd.run',
             [command],
-            expr_form='compound',
-            kwarg={
-                'log-file': '/home/stackdio/test.log',
-                'log-file-level': 'debug'
-            })
+            expr_form='compound')
 
         result = {}
-        for k, v in res.items():
-            result[k] = v
+        for ret in res:
+            for k, v in ret.items():
+                result[k] = v
 
         # Convert to an easier format for javascript
         ret = []
         for host, output in result.items():
-            ret.append({'host': host, 'output': output})
+            ret.append({'host': host, 'output': output['ret']})
 
         action.std_out_storage = json.dumps(ret)
         action.status = StackAction.FINISHED
 
         action.save()
 
+        stack.set_status(custom_action.name, Stack.FINISHED,
+                         'Finished running custom action: {0}'.format(command))
+
     except salt.client.SaltInvocationError:
         action.status = StackAction.ERROR
         action.save()
+        stack.set_status(custom_action.name, Stack.FINISHED, 'Salt error')
 
     except salt.client.SaltReqTimeoutError:
         action.status = StackAction.ERROR
         action.save()
+        stack.set_status(custom_action.name, Stack.FINISHED, 'Salt error')
+
+    except Exception:
+        action.status = StackAction.ERROR
+        action.save()
+        stack.set_status(custom_action.name, Stack.FINISHED, 'Unhandled exception')
+        raise
+
 
     # cmd = [[
     #     'salt',
