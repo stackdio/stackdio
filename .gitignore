@@ -13,7 +13,7 @@ stackdio/server/storage
 
 # build stuff
 build/
-#dist/
+dist/
 stackdio.egg*/
 
 # abe's development stuff
