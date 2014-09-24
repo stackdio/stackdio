@@ -172,7 +172,7 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, mod
             var title = self.selectedTab().title;
             title = title.substring(0, title.length-1);
             if (action !== 'Delete') {
-                bootbox.confirm("Please confirm that you want to perform this action on the stack.", function (result) {
+                bootbox.confirm("<h4>"+action+" "+title.toLowerCase()+" '"+parent.title+"'</h4><br />Please confirm that you want to perform this action on the stack.", function (result) {
                     if (result) {
                         $.ajax({
                             url: parent.action,
@@ -199,7 +199,7 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, mod
              *  EBS volumes, and deletes stack/host details from the stackd.io database.
              */
             } else {
-                bootbox.confirm("Please confirm that you want to delete this "+title.toLowerCase()+". Be advised that this is a completely destructive act.", function (result) {
+                bootbox.confirm("<h4>Delete "+title.toLowerCase()+" '"+parent.title+"'</h4><br />Please confirm that you want to delete this "+title.toLowerCase()+". Be advised that this is a completely destructive act.", function (result) {
                     if (result) {
                         $.ajax({
                             url: parent.url,
