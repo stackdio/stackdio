@@ -138,7 +138,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             account.provider_type = record.account_provider.value;
             account.title = record.account_title.value;
             account.description = record.account_description.value;
-            account.region = record.region;
+            account.region = record.region.value;
             account.account_id = record.account_id.value;
             account.access_key_id = record.access_key_id.value;
             account.secret_access_key = record.secret_access_key.value;
@@ -170,7 +170,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             account.provider_type = record.account_provider.value;
             account.title = record.account_title.value;
             account.description = record.account_description.value;
-            account.region = record.region;
+            account.region = record.region.value;
 
             // PATCH the update, and on success, replace the current item in the store with new one
             API.Accounts.update(account).then(function () {
