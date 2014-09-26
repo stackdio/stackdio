@@ -9,12 +9,12 @@ import logging
 from uuid import uuid4
 from time import sleep
 
+import requests
 import boto
 import boto.ec2
 import boto.vpc
 import yaml
 from boto.route53.record import ResourceRecordSets
-
 from boto.exception import EC2ResponseError
 
 from cloud.providers.base import (
@@ -22,7 +22,6 @@ from cloud.providers.base import (
     TimeoutException,
     MaxFailuresException,
 )
-
 from core.exceptions import BadRequest, InternalServerError
 
 
@@ -301,12 +300,20 @@ class AWSCloudProvider(BaseCloudProvider):
             'append_domain': data[self.ROUTE53_DOMAIN],
             'location': data[self.REGION],
 
-            'ssh_interface': 'public_ips',
             'ssh_connect_timeout': 300,
             'wait_for_passwd_timeout': 5,
             'rename_on_destroy': True,
             'delvol_on_destroy': True,
         }
+
+        r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
+
+        master_region = r.json()['region']
+
+        if master_region == data[self.REGION]:
+            config_data['ssh_interface'] = 'private_ips'
+        else:
+            config_data['ssh_interface'] = 'public_ips'
 
         # Add in the default availability zone to be set in the configuration
         # file
@@ -335,8 +342,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # check authentication credentials
         try:
-            ec2 = boto.connect_ec2(data[self.ACCESS_KEY],
-                                   data[self.SECRET_KEY])
+            ec2 = boto.ec2.connect_to_region(
+                data[self.REGION],
+                aws_access_key_id=data[self.ACCESS_KEY],
+                aws_secret_access_key=data[self.SECRET_KEY])
             ec2.get_all_zones()
         except boto.exception.EC2ResponseError, e:
             err_msg = 'Unable to authenticate to AWS with the provided keys.'
@@ -386,8 +395,10 @@ class AWSCloudProvider(BaseCloudProvider):
             vpc_id = data[self.VPC_ID]
 
             try:
-                vpc = boto.connect_vpc(data[self.ACCESS_KEY],
-                                       data[self.SECRET_KEY])
+                vpc = boto.vpc.connect_to_region(
+                    data[self.REGION],
+                    aws_access_key_id=data[self.ACCESS_KEY],
+                    aws_secret_access_key=data[self.SECRET_KEY])
             except boto.exception.EC2ResponseError, e:
                 err_msg = ('Unable to authenticate to AWS VPC with the '
                            'provided keys.')

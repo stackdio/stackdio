@@ -2,6 +2,7 @@ import json
 import os
 import re
 import logging
+import requests
 import socket
 
 
@@ -532,7 +533,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
         # TODO: Should we store this somewhere instead of assuming
         # the master will always be this box?
-        master = socket.getfqdn()
+        # master = socket.getfqdn()
+
+        r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
+
+        master_region = r.json()['region']
+
+        master = r.text
 
         profiles = {}
 
@@ -575,6 +582,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                     v['snapshot'] = vol.snapshot.snapshot_id
 
                 map_volumes.append(v)
+
+            if master_region == host.cloud_profile.cloud_provider.region.slug:
+                # We're in the same region - use private IP
+                master = r.json()['privateIp']
+            else:
+                # Different regions - need the public ip
+                master = requests.get('http://169.254.169.254/latest/meta-data/public-hostname').text
 
             host_metadata = {
                 host.hostname: {
