@@ -16,8 +16,8 @@ define(function () {
     var SecurityGroupRule = function () {};
     SecurityGroupRule.prototype = new Model();
 
-    var Zone = function () {};
-    Zone.prototype = new Model();
+    var Region = function () {};
+    Region.prototype = new Model();
 
     var Stack = function () {};
     Stack.prototype = new Model();
@@ -72,7 +72,7 @@ define(function () {
         ProviderType: ProviderType,
         Account: Account,
         Profile: Profile,
-        Zone: Zone,
+        Region: Region,
         InstanceSize: InstanceSize,
         
         Snapshot: Snapshot,

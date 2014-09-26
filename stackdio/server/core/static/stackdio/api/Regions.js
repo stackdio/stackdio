@@ -4,16 +4,16 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: settings.api.cloud.zones,
+                url: settings.api.cloud.regions,
                 type: 'GET',
                 headers: {
                     'Accept': 'application/json'
                 },
                 success: function (response) {
-                    var zones = response.results.map(function (zone) {
-                        return new models.Zone().create(zone);
+                    var regions = response.results.map(function (region) {
+                        return new models.Region().create(region);
                     });
-                    deferred.resolve(zones);
+                    deferred.resolve(regions);
                 },
                 error: function (request, status, error) {
                     deferred.reject(new Error(error));

@@ -7,10 +7,10 @@ define([
     'store/ProviderTypes',
     'store/Accounts',
     'store/Profiles',
-    'store/Zones',
+    'store/Regions',
     'api/api'
 ],
-function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, ProfileStore, ZoneStore, API) {
+function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, ProfileStore, RegionStore, API) {
     var vm = function () {
         var self = this;
 
@@ -29,7 +29,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
         self.ProviderTypeStore = ProviderTypeStore;
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
-        self.ZoneStore = ZoneStore;
+        self.RegionStore = RegionStore;
 
 
         /*
@@ -54,7 +54,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
-            ZoneStore.populate();
+            RegionStore.populate();
 
             ProviderTypeStore.populate().then(function () {
                 return AccountStore.populate();

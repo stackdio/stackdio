@@ -68,12 +68,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="default_availability_zone" class="control-label">Default Zone</label>
-                        <select id="default_availability_zone" 
-                            data-bind="options: ZoneStore.collection(), 
+                    <label for="region" class="control-label">Region</label>
+                        <select id="region"
+                            data-bind="options: RegionStore.collection(),
                                        optionsText: 'title', 
                                        optionsValue: 'id', 
-                                       optionsCaption: 'Choose default zone...',
+                                       optionsCaption: 'Choose region...',
                                        disable: vpcId"
                             data-container="body"
                             class="form-control selectpicker"></select>
