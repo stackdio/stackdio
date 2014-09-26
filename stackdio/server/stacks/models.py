@@ -584,10 +584,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                 map_volumes.append(v)
 
             if master_region == host.cloud_profile.cloud_provider.region.slug:
-                # We're in the same region - use private IP
-                master = r.json()['privateIp']
+                # We're in the same region - use private hostname
+                master = requests.get('http://169.254.169.254/latest/meta-data/local-hostname').text
             else:
-                # Different regions - need the public ip
+                # Different regions - need the public hostname
                 master = requests.get('http://169.254.169.254/latest/meta-data/public-hostname').text
 
             host_metadata = {
