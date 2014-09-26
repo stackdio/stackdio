@@ -7,12 +7,12 @@ import textwrap
 import yaml
 import envoy
 import jinja2
+
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
 
-from stackdio.core.config import StackdioConfig
-
+from stackdio.server.core.config import StackdioConfig
 
 SALT_COLORS = get_colors()
 
@@ -112,7 +112,7 @@ class BaseCommand(object):
             self.out('Aborting.', Colors.ERROR)
             sys.exit(1)
 
-    def load_resource(self, rp=None, package='stackdio'):
+    def load_resource(self, rp=None, package='stackdio.server'):
         '''
         Takes a relative path `rp`, and attempts to pull the full resource
         path using pkg_resources.
@@ -624,5 +624,5 @@ class DjangoManageWrapperCommand(BaseCommand):
         stackdio_root = self.load_resource()
         sys.path.insert(0, stackdio_root)
         from django.core.management import execute_from_command_line
-        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.stackdio.settings.__installed' # NOQA
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.server.stackdio.settings.__installed' # NOQA
         execute_from_command_line(self.args)

@@ -936,7 +936,7 @@ class AWSCloudProvider(BaseCloudProvider):
         Generic function to handle most all states accordingly. If you need
         custom logic in the state handling, do so in the _action* methods.
         '''
-        stack.set_status(status,
+        stack.set_status(status, status,
                          '%s all hosts in this stack.' % status.capitalize())
 
         hosts = stack.get_hosts()
