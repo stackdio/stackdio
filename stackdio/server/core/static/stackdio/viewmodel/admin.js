@@ -6,11 +6,12 @@ define([
     'util/alerts',
     'util/galaxy',
     'util/stack',
+    'util/formula',
     'util/ladda',
     'api/api',
     'model/models',
 ],
-function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, models) {
+function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, formulautils, Ladda, API, models) {
     var vm = function () {
         if (!settings.superuser) {
             $galaxy.transport('welcome');
@@ -44,8 +45,8 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, mod
                 url: settings.api.admin.formulas,
                 view_name: 'formula.detail',
                 param_name: 'formula',
-                fields: [],
-                actions: ['Delete']
+                fields: ['Status'],
+                actions: ['Update From Repo', 'Delete']
             },
             {
                 title: 'Snapshots',
@@ -132,9 +133,12 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, mod
                     } else {
                         // Make sure the user hasn't clicked away from the current tab
                         if (self.selectedTab() === obj) {
-                            response.results.forEach(function (obj) {
-                                if (obj.owner === '__stackdio__') {
-                                    obj.owner = 'Global Orchestration';
+                            response.results.forEach(function (object) {
+                                if (object.owner === '__stackdio__') {
+                                    object.owner = 'Global Orchestration';
+                                }
+                                if (obj.title === 'Formulas') {
+                                    object.Status = object.status_detail;
                                 }
                             });
                             self.tableData(response.results);
@@ -171,7 +175,9 @@ function (Q, settings, ko, bootbox, alerts, $galaxy, stackutils, Ladda, API, mod
 
             var title = self.selectedTab().title;
             title = title.substring(0, title.length-1);
-            if (action !== 'Delete') {
+            if (action === 'Update From Repo') {
+                formulautils.updateFormula(parent);
+            } else if (action !== 'Delete') {
                 bootbox.confirm("<h4>"+action+" "+title.toLowerCase()+" '"+parent.title+"'</h4><br />Please confirm that you want to perform this action on the stack.", function (result) {
                     if (result) {
                         $.ajax({
