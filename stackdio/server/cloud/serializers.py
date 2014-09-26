@@ -138,6 +138,12 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             #         ]
             #         raise serializers.ValidationError({'errors': errors})
 
+            try:
+                region = models.CloudRegion.objects.get(id=request.DATA['region']).slug
+                request.DATA['region'] = region
+            except models.CloudRegion.DoesNotExist:
+                raise serializers.ValidationError('Invalid region')
+
             provider = provider_class()
             errors = provider.validate_provider_data(request.DATA,
                                                      request.FILES)

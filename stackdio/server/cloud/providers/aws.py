@@ -223,8 +223,8 @@ class AWSCloudProvider(BaseCloudProvider):
     # SECURITY_GROUPS = 'security_groups'
 
     # The default availablity zone to use
-    DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
-    DEFAULT_AVAILABILITY_ZONE_NAME = 'default_availability_zone_name'
+    # DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
+    # DEFAULT_AVAILABILITY_ZONE_NAME = 'default_availability_zone_name'
 
     # The path to the private key for SSH
     PRIVATE_KEY = 'private_key'
@@ -415,18 +415,19 @@ class AWSCloudProvider(BaseCloudProvider):
                     )
 
         # Check availability zone
-        else:
-            try:
-                ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
-            except boto.exception.EC2ResponseError, e:
-                errors.setdefault(
-                    self.DEFAULT_AVAILABILITY_ZONE_NAME,
-                    []
-                ).append(
-                    'The availability zone \'{0}\' does not exist in '
-                    'this account.'.format(
-                        data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
-                )
+        # TODO need to replace this?  maybe?
+        # else:
+        #     try:
+        #         ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
+        #     except boto.exception.EC2ResponseError, e:
+        #         errors.setdefault(
+        #             self.DEFAULT_AVAILABILITY_ZONE_NAME,
+        #             []
+        #         ).append(
+        #             'The availability zone \'{0}\' does not exist in '
+        #             'this account.'.format(
+        #                 data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
+        #         )
 
             '''
             subnets = data.get(self.VPC_SUBNETS)
