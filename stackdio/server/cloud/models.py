@@ -59,9 +59,12 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
 
     # The default availability zone for this account, may be overridden
     # by the user at stack creation time
-    default_availability_zone = models.ForeignKey('CloudZone',
-                                                  related_name='default_zone',
-                                                  null=True)
+    # default_availability_zone = models.ForeignKey('CloudZone',
+    #                                               related_name='default_zone',
+    #                                               null=True)
+
+    # The region for this provider
+    region = models.ForeignKey('CloudRegion')
 
     # the account/owner id of the provider
     account_id = models.CharField(max_length=64)
@@ -280,13 +283,25 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
                                        choices=FILESYSTEM_CHOICES)
 
 
-class CloudZone(TitleSlugDescriptionModel):
-
+class CloudRegion(TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'provider_type')
 
-    # link to the type of provider for this zone
     provider_type = models.ForeignKey('cloud.CloudProviderType')
+
+    def __unicode__(self):
+        return self.title
+
+
+class CloudZone(TitleSlugDescriptionModel):
+
+    class Meta:
+        unique_together = ('title', 'region')
+
+    region = models.ForeignKey('cloud.CloudRegion', related_name='zones')
+
+    # link to the type of provider for this zone
+    # provider_type = models.ForeignKey('cloud.CloudProviderType')
 
     def __unicode__(self):
         return self.title

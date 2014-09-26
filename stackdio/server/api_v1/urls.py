@@ -30,7 +30,7 @@ def api_root(request, format=None):
             'instance_sizes': reverse('cloudinstancesize-list',
                                       request=request,
                                       format=format),
-            'zones': reverse('cloudzone-list',
+            'regions': reverse('cloudregion-list',
                              request=request,
                              format=format),
             'profiles': reverse('cloudprofile-list',

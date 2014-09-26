@@ -69,9 +69,17 @@ urlpatterns = patterns(
         api.SnapshotAdminListAPIView.as_view(),
         name='snapshot-admin-list'),
 
-    url(r'^zones/$',
+    url(r'^regions/$',
+        api.CloudRegionListAPIView.as_view(),
+        name='cloudregion-list'),
+
+    url(r'^regions/(?P<pk>[0-9]+)/$',
+        api.CloudRegionDetailAPIView.as_view(),
+        name='cloudregion-detail'),
+
+    url(r'^regions/(?P<pk>[0-9]+)/zones/$',
         api.CloudZoneListAPIView.as_view(),
-        name='cloudzone-list'),
+        name='cloudregion-zones'),
 
     url(r'^zones/(?P<pk>[0-9]+)/$',
         api.CloudZoneDetailAPIView.as_view(),

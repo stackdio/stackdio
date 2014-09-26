@@ -10,6 +10,8 @@ from uuid import uuid4
 from time import sleep
 
 import boto
+import boto.ec2
+import boto.vpc
 import yaml
 from boto.route53.record import ResourceRecordSets
 
@@ -235,6 +237,8 @@ class AWSCloudProvider(BaseCloudProvider):
     # The route53 zone to use for managing DNS
     ROUTE53_DOMAIN = 'route53_domain'
 
+    REGION = 'region'
+
     STATE_STOPPED = 'stopped'
     STATE_RUNNING = 'running'
     STATE_SHUTTING_DOWN = 'shutting-down'
@@ -277,7 +281,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def get_credentials(self):
         config_data = self.get_config()
-        return (config_data['id'], config_data['key'])
+        return config_data['location'], config_data['id'], config_data['key']
 
     def get_provider_data(self, data, files=None):
         # write the private key to the proper location
@@ -295,8 +299,9 @@ class AWSCloudProvider(BaseCloudProvider):
             'keyname': data[self.KEYPAIR],
             'private_key': private_key_path,
             'append_domain': data[self.ROUTE53_DOMAIN],
+            'location': data[self.REGION],
 
-            'ssh_interface': 'private_ips',
+            'ssh_interface': 'public_ips',
             'ssh_connect_timeout': 300,
             'wait_for_passwd_timeout': 5,
             'rename_on_destroy': True,
@@ -305,9 +310,12 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # Add in the default availability zone to be set in the configuration
         # file
-        if not self.obj.vpc_enabled:
-            config_data['availability_zone'] = \
-                self.obj.default_availability_zone.title
+
+        # TODO get rid of this for now, maybe add it back later
+
+        # if not self.obj.vpc_enabled:
+        #     config_data['availability_zone'] = \
+        #         self.obj.default_availability_zone.title
 
         # Save the data out to a file that can be reused by this provider
         # later if necessary
@@ -452,14 +460,22 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def connect_ec2(self):
         if not hasattr(self, '_ec2_connection'):
-            credentials = self.get_credentials()
-            self._ec2_connection = boto.connect_ec2(*credentials)
+            region, access_key, secret_key = self.get_credentials()
+            self._ec2_connection = boto.ec2.connect_to_region(
+                region,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key)
+
         return self._ec2_connection
 
     def connect_vpc(self):
         if not hasattr(self, '_vpc_connection'):
-            credentials = self.get_credentials()
-            self._vpc_connection = boto.connect_vpc(*credentials)
+            region, access_key, secret_key = self.get_credentials()
+            self._vpc_connection = boto.vpc.connect_to_region(
+                region,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key)
+
         return self._vpc_connection
 
     def is_cidr_rule(self, rule):
