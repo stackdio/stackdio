@@ -586,6 +586,10 @@ class UpgradeSaltCommand(BaseCommand):
 
         self.out('Done!')
 
+        self.out('WARNING: You MUST manually restart the salt master in order '
+                 'for this change to take effect.  Do this now to avoid later '
+                 'issues.', Colors.WARN)
+
 
 class SaltWrapperCommand(BaseCommand):
 
