@@ -21,6 +21,26 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             });
 
             return deferred.promise;
+        },
+        getZones : function (region) {
+            var deferred = Q.defer();
+
+            $.ajax({
+                url: region.zones,
+                type: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                success: function (response) {
+                    console.log(response);
+                    deferred.resolve(response.results);
+                },
+                error: function (request, status, error) {
+                    deferred.reject(new Error(error));
+                }
+            });
+
+            return deferred.promise;
         }
     }
 });

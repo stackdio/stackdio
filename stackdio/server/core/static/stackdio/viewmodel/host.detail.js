@@ -8,7 +8,7 @@ define([
     'store/Formulas',
     'store/InstanceSizes',
     'store/Blueprints',
-    'store/Zones',
+    'store/Regions',
     'store/Snapshots',
     'store/HostAccessRules',
     'store/HostVolumes',
@@ -18,7 +18,7 @@ define([
     'api/api',
     'model/models'
 ],
-function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, InstanceSizeStore, BlueprintStore, ZoneStore, SnapshotStore,
+function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, InstanceSizeStore, BlueprintStore, RegionStore, SnapshotStore,
           HostRuleStore, HostVolumeStore, BlueprintHostStore, FormulaComponentStore, BlueprintComponentStore, API, models) {
     var vm = function () {
         var self = this;
@@ -36,13 +36,16 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
         self.hostIsSpotInstance = ko.observable(false);
         self.vpcEnabled = ko.observable(false);
         self.subnets = ko.observable([]);
+
+        self.zones = ko.observableArray();
+
         self.$galaxy = $galaxy;
 
         self.ProfileStore = ProfileStore;
         self.FormulaStore = FormulaStore;
         self.InstanceSizeStore = InstanceSizeStore;
         self.BlueprintStore = BlueprintStore;
-        self.ZoneStore = ZoneStore;
+        self.RegionStore = RegionStore;
         self.SnapshotStore = SnapshotStore;
         self.HostRuleStore = HostRuleStore;
         self.HostVolumeStore = HostVolumeStore;
@@ -88,7 +91,7 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
             }).then(function () {
                 return InstanceSizeStore.populate();
             }).then(function () {
-                return ZoneStore.populate(); 
+                return RegionStore.populate();
             }).then(function () {
                 self.init(data);
             });
@@ -143,7 +146,17 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
                     self.subnets(subnets);
                 });
 
-                $('#availability_zone').val(profileAccount.default_availability_zone);
+                var region = RegionStore.collection().filter(function (region) {
+                    return region.id === profileAccount.region;
+                })[0];
+
+                API.Regions.getZones(region).then(function (zones) {
+                    zones.forEach(function (zone) {
+                        self.zones.push(zone);
+                    });
+                });
+
+                $('#availability_zone').val();
 
             }
 
