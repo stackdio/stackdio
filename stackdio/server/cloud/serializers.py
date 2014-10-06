@@ -124,20 +124,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             provider_type, provider_class = get_provider_type_and_class(
                 request.DATA.get('provider_type'))
 
-            # Get rid of this for now
-            # pull the availability zone name
-            # zone = request.DATA.get('default_availability_zone')
-            # if zone:
-            #     try:
-            #         zone = models.CloudZone.objects.get(pk=zone)
-            #         request.DATA['default_availability_zone_name'] = zone.slug
-            #     except models.CloudZone.DoesNotExist:
-            #         errors = [
-            #             'Could not look up availability zone. Did you give '
-            #             'a valid id?'
-            #         ]
-            #         raise serializers.ValidationError({'errors': errors})
-
+            # Grab the region name from the database
             try:
                 region = models.CloudRegion.objects.get(id=request.DATA['region']).slug
                 request.DATA['region'] = region

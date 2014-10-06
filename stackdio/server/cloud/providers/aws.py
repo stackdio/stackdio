@@ -222,10 +222,6 @@ class AWSCloudProvider(BaseCloudProvider):
     # The AWS security groups
     # SECURITY_GROUPS = 'security_groups'
 
-    # The default availablity zone to use
-    # DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
-    # DEFAULT_AVAILABILITY_ZONE_NAME = 'default_availability_zone_name'
-
     # The path to the private key for SSH
     PRIVATE_KEY = 'private_key'
 
@@ -314,15 +310,6 @@ class AWSCloudProvider(BaseCloudProvider):
             config_data['ssh_interface'] = 'private_ips'
         else:
             config_data['ssh_interface'] = 'public_ips'
-
-        # Add in the default availability zone to be set in the configuration
-        # file
-
-        # TODO get rid of this for now, maybe add it back later
-
-        # if not self.obj.vpc_enabled:
-        #     config_data['availability_zone'] = \
-        #         self.obj.default_availability_zone.title
 
         # Save the data out to a file that can be reused by this provider
         # later if necessary
@@ -413,39 +400,6 @@ class AWSCloudProvider(BaseCloudProvider):
                         'The VPC \'{0}\' does not exist in this account.'
                         .format(vpc_id)
                     )
-
-        # Check availability zone
-        # TODO need to replace this?  maybe?
-        # else:
-        #     try:
-        #         ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
-        #     except boto.exception.EC2ResponseError, e:
-        #         errors.setdefault(
-        #             self.DEFAULT_AVAILABILITY_ZONE_NAME,
-        #             []
-        #         ).append(
-        #             'The availability zone \'{0}\' does not exist in '
-        #             'this account.'.format(
-        #                 data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
-        #         )
-
-            '''
-            subnets = data.get(self.VPC_SUBNETS)
-            if not isinstance(subnets, list) or not subnets:
-                errors.setdefault(self.VPC_SUBNETS, []).append(
-                    'Must be a list of subnets.'
-                )
-            elif not errors:
-                # check account for subnets
-                try:
-                    for subnet in subnets:
-                        vpc.get_all_subnets([subnet])
-                except boto.exception.EC2ResponseError, e:
-                    errors.setdefault(self.VPC_SUBNETS, []).append(
-                        'The subnet id \'{0}\' does not exist in this '
-                        'account.'.format(subnet)
-                    )
-            '''
 
         return errors
 

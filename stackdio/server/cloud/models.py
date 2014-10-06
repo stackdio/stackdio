@@ -57,12 +57,6 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     # to disk in settings.STACKDIO_CONFIG.salt_providers_dir
     yaml = models.TextField()
 
-    # The default availability zone for this account, may be overridden
-    # by the user at stack creation time
-    # default_availability_zone = models.ForeignKey('CloudZone',
-    #                                               related_name='default_zone',
-    #                                               null=True)
-
     # The region for this provider
     region = models.ForeignKey('CloudRegion')
 
@@ -287,6 +281,7 @@ class CloudRegion(TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'provider_type')
 
+    # link to the type of provider for this zone
     provider_type = models.ForeignKey('cloud.CloudProviderType')
 
     def __unicode__(self):
@@ -298,10 +293,8 @@ class CloudZone(TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'region')
 
+    # link to the region this AZ is in
     region = models.ForeignKey('cloud.CloudRegion', related_name='zones')
-
-    # link to the type of provider for this zone
-    # provider_type = models.ForeignKey('cloud.CloudProviderType')
 
     def __unicode__(self):
         return self.title
