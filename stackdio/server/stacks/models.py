@@ -532,14 +532,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         # TODO: Figure out a way to make this provider agnostic
 
         # TODO: Should we store this somewhere instead of assuming
-        # the master will always be this box?
-        # master = socket.getfqdn()
 
+        # Get the region of the stackdio instance from AWS
+        # TODO: (PROBLEM: AWS SPECIFIC)
         r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
 
         master_region = r.json()['region']
-
-        master = r.text
 
         profiles = {}
 
