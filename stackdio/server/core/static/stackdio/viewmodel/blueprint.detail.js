@@ -340,7 +340,7 @@ function (Q, ko, $galaxy, alerts, formutils, HostVolumeStore, SnapshotStore, Hos
                 Identify the orchestration fields in the form and match any entered value up 
                 to the corresponding formula component in the host
             */
-            var fields = $('input[id^="component_order_"');
+            var fields = $('input[id^="component_order_"]');
             for (var i=0,length=fields.length; i < length; i += 1) {
                 var component = {};
                 component.id = parseInt(fields[i].id.split('_')[2], 10);
