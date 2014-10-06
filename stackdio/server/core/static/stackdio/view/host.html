@@ -1,0 +1,144 @@
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('blueprint.list'); }">Blueprints</a></li>
+            <li data-bind="text: blueprintTitle"></li>
+            <li>New Host</li>
+        </ol>
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Host Detail</div>
+        </div>
+
+        <form id="blueprint-host-form" role="form" class="form-horizontal">
+            <div class="form-group">
+                <label for="host_title" class="col-sm-2 control-label">Title</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="host_title" placeholder="">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="host_description" class="col-sm-2 control-label">Description</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="host_description" placeholder="">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="formula_components" class="col-sm-2 control-label">Component(s)</label>
+                <div class="col-sm-10">
+                    <select id="formula_components" 
+                            data-bind="foreach: { data: $root.FormulaStore.collection(), as: 'formula' }, 
+                                       optionsCaption: 'Choose what to install...'"
+                            data-size="12"
+                            data-container="body"
+                            size=7
+                            multiple
+                            class="form-control selectpicker">
+                        <optgroup data-bind="attr: {label: title}, foreach: components">
+                            <option data-bind="text: title, value: $parent.id + '|' + id"></option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="host_instance_size" class="col-sm-2 control-label">Instance size</label>
+                <div class="col-sm-10">
+                    <select id="host_instance_size" 
+                            data-bind="options: $root.InstanceSizeStore.collection(), 
+                                       optionsValue: 'id',
+                                       optionsText: 'title',
+                                       optionsCaption: 'Choose size...'"
+                            data-size="12"
+                            data-container="body"
+                            class="form-control selectpicker"></select>
+                </div>
+            </div>
+
+            <div class="form-group" data-bind="visible: vpcEnabled">
+                <label for="subnet_id" class="col-sm-2 control-label">Subnet</label>
+                <div class="col-sm-10">
+                    <select id="subnet_id" 
+                            data-bind="options: subnets, 
+                                       optionsValue: 'id',
+                                       optionsText: $root._subnetLabel,
+                                       optionsCaption: 'Choose a subnet...'"
+                            data-container="body"
+                            class="form-control selectpicker"></select>
+                </div>
+            </div>
+
+            <div class="form-group" data-bind="visible: !vpcEnabled()">
+                <label for="availability_zone" class="col-sm-2 control-label">Zone</label>
+                <div class="col-sm-10">
+                    <select id="availability_zone" 
+                            data-bind="options: $root.zones,
+                                       optionsValue: 'id',
+                                       optionsText: 'title',
+                                       optionsCaption: 'Choose a zone...'"
+                            data-container="body"
+                            class="form-control selectpicker"></select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="host_count" class="col-sm-2 control-label">Count</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="host_count" placeholder="">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="host_hostname" class="col-sm-2 control-label">Host pattern</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="host_hostname" placeholder="e.g. dn-{namespace}-{username}-{index}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="host_access_rules" class="col-sm-2 control-label">Access rules</label>
+                <div class="col-sm-10 form-link-valign">
+                    <a style="margin-right: 30px;"
+                       data-bind="text: HostRuleStore.collection().length + ' rules',
+                                  click: $root.openRulesList"></a>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="host_volumes" class="col-sm-2 control-label">Volumes</label>
+                <div class="col-sm-10 form-link-valign">
+                    <a style="margin-right: 30px;"
+                       data-bind="text: HostVolumeStore.collection().length + ' volumes',
+                                  click: $root.showVolumeList"></a>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="spot_instance" class="col-sm-2 control-label"></label>
+                <div class="col-sm-10">
+                    <input type="checkbox" id="spot_instance"> Request spot instances
+                </div>
+            </div>
+
+            <div class="form-group" data-bind="visible: hostIsSpotInstance">
+                <label for="spot_instance_price" class="col-sm-2 control-label"></label>
+                <div class="col-sm-10">
+                    <input type="text" id="spot_instance_price" class="form-control" placeholder="Bid price for instances">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-5 col-md-offset-7 pull-right">
+                    <button class="btn" data-bind="click: $root.cancelHostCreation">Cancel</button>
+                    <button class="btn btn-info" data-bind="click: $root.addAccessRule">Add Access Rule</button>
+                    <button class="btn btn-info" data-bind="click: $root.addVolume">Add Volume</button>
+                    <button class="btn btn-primary" data-bind="click: $root.createHost">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
