@@ -10,6 +10,7 @@ from uuid import uuid4
 from time import sleep
 
 import requests
+from requests.exceptions import ConnectionError
 import boto
 import boto.ec2
 import boto.vpc
@@ -810,6 +811,22 @@ class AWSCloudProvider(BaseCloudProvider):
         return [i
                 for r in ec2.get_all_instances(instance_ids)
                 for i in r.instances]
+
+    @classmethod
+    def get_current_instance_data(cls):
+        # Get most of the instance data (region, size, etc)
+        r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
+
+        if r.status_code != 200:
+            raise ConnectionError()
+
+        ret = r.json()
+
+        # Grab the hostnames
+        ret['private-hostname'] = requests.get('http://169.254.169.254/latest/meta-data/local-hostname').text
+        ret['public-hostname'] = requests.get('http://169.254.169.254/latest/meta-data/public-hostname').text
+
+        return ret
 
     def _wait(self,
               fun,

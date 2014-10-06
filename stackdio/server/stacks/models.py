@@ -2,13 +2,10 @@ import json
 import os
 import re
 import logging
-import requests
 import socket
-
 
 import envoy
 import yaml
-from core.exceptions import BadRequest
 from django.conf import settings
 from django.db import models, transaction
 from django.core.files.base import ContentFile
@@ -23,6 +20,7 @@ from model_utils import Choices
 from core.fields import DeletingFileField
 from core.utils import recursive_update
 from cloud.models import SecurityGroup
+from cloud.providers.base import BaseCloudProvider
 
 
 PROTOCOL_CHOICES = [
@@ -533,11 +531,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
         # TODO: Should we store this somewhere instead of assuming
 
-        # Get the region of the stackdio instance from AWS
-        # TODO: (PROBLEM: AWS SPECIFIC)
-        r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
+        # Get the region of the stackdio instance from the driver
 
-        master_region = r.json()['region']
+        # TODO: This might work (unless the stackdio instance isn't on
+        # AWS or anything else)
+
+        info = BaseCloudProvider.get_current_instance_data()
+
+        if type(info) == dict:
+            master_region = info['region']
+        else:
+            master_region = None
 
         profiles = {}
 
@@ -580,13 +584,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                     v['snapshot'] = vol.snapshot.snapshot_id
 
                 map_volumes.append(v)
-
-            if master_region == host.cloud_profile.cloud_provider.region.slug:
-                # We're in the same region - use private hostname
-                master = requests.get('http://169.254.169.254/latest/meta-data/local-hostname').text
+            if master_region:
+                if master_region == host.cloud_profile.cloud_provider.region.slug:
+                    # We're in the same region - use private hostname
+                    master = info.get('private-hostname', socket.getfqdn())
+                else:
+                    # Different regions - need the public hostname
+                    master = info.get('public-hostname', socket.getfqdn())
             else:
-                # Different regions - need the public hostname
-                master = requests.get('http://169.254.169.254/latest/meta-data/public-hostname').text
+                # Could not determine the region, just use what we have
+                # (should be a str since it wasn't a dict)
+                master = info
 
             host_metadata = {
                 host.hostname: {
