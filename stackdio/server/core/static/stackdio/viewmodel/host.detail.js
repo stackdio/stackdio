@@ -151,6 +151,7 @@ function (Q, ko, $galaxy, formutils, AccountStore, ProfileStore, FormulaStore, I
                 })[0];
 
                 API.Regions.getZones(region).then(function (zones) {
+                    self.zones.removeAll();
                     zones.forEach(function (zone) {
                         self.zones.push(zone);
                     });
