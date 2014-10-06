@@ -240,7 +240,8 @@ class StackListAPIView(generics.ListCreateAPIView):
         dups = []
         for provider in providers:
             provider_type = provider.provider_type.type_name
-            for instance, details in query[provider.slug][provider_type].items():
+            for instance, details in query.get(provider.slug, {}) \
+                    .get(provider_type, {}).items():
                 if instance in hostnames:
                     if details['state'] not in ('shutting-down', 'terminated'):
                         dups.append(instance)

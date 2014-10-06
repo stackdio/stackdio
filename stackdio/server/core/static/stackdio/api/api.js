@@ -1,7 +1,7 @@
 define([
         "api/SecurityGroups", 
         "api/Users", 
-        "api/Zones", 
+        "api/Regions",
         "api/InstanceSizes", 
         "api/Profiles", 
         "api/Accounts", 
@@ -13,12 +13,12 @@ define([
         "api/Search",
         "api/Blueprints"
         ], 
-    function (SecurityGroups, Users, Zones, InstanceSizes, Profiles, Accounts, ProviderTypes, Snapshots, StackHosts, Formulas, Stacks, Search, Blueprints) {
+    function (SecurityGroups, Users, Regions, InstanceSizes, Profiles, Accounts, ProviderTypes, Snapshots, StackHosts, Formulas, Stacks, Search, Blueprints) {
 
     return {
         SecurityGroups: SecurityGroups,
         Users: Users,
-        Zones: Zones,
+        Regions: Regions,
         InstanceSizes: InstanceSizes,
         Profiles:      Profiles,
         Accounts:      Accounts,

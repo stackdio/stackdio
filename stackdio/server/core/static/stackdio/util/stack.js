@@ -1,4 +1,4 @@
-define(['util/galaxy', 'util/alerts', 'bootbox'], function($galaxy, alerts, bootbox) {
+define(['util/galaxy', 'util/alerts', 'store/Stacks', 'bootbox'], function($galaxy, alerts, StackStore, bootbox) {
     return {
         getStatusType: function(status) {
             switch(status) {

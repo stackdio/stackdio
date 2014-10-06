@@ -7,10 +7,10 @@ define([
     'store/ProviderTypes',
     'store/Accounts',
     'store/Profiles',
-    'store/Zones',
+    'store/Regions',
     'api/api'
 ],
-function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, ProfileStore, ZoneStore, API) {
+function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, ProfileStore, RegionStore, API) {
     var vm = function () {
         var self = this;
 
@@ -29,7 +29,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
         self.ProviderTypeStore = ProviderTypeStore;
         self.AccountStore = AccountStore;
         self.ProfileStore = ProfileStore;
-        self.ZoneStore = ZoneStore;
+        self.RegionStore = RegionStore;
 
 
         /*
@@ -54,7 +54,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
          *  ==================================================================================
          */
         $galaxy.network.subscribe(self.id + '.docked', function (data) {
-            ZoneStore.populate();
+            RegionStore.populate();
 
             ProviderTypeStore.populate().then(function () {
                 return AccountStore.populate();
@@ -92,7 +92,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                 $('#access_key_id').val('');
                 $('#secret_access_key').val('');
                 $('#keypair').val('');
-                $('#default_availability_zone').val('');
+                $('#region').val('');
                 $('#route53_domain').val('');
                 $('#private_key_file').val('');
                 self.vpcId(null);
@@ -111,7 +111,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
                 $('#account_title').val(account.title);
                 $('#account_description').val(account.description);
                 $('#account_id').val(account.account_id);
-                $('#default_availability_zone').val(account.default_availability_zone);
+                $('#region').val(account.region);
                 $('#private_key_file').val(account.yaml);
                 $('#private_key_file').attr('disabled', 'disabled');
                 self.vpcId(account.vpc_id);
@@ -138,7 +138,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             account.provider_type = record.account_provider.value;
             account.title = record.account_title.value;
             account.description = record.account_description.value;
-            account.default_availability_zone = record.default_availability_zone.value;
+            account.region = record.region.value;
             account.account_id = record.account_id.value;
             account.access_key_id = record.access_key_id.value;
             account.secret_access_key = record.secret_access_key.value;
@@ -170,7 +170,7 @@ function (Q, ko, $galaxy, alerts, formutils, ProviderTypeStore, AccountStore, Pr
             account.provider_type = record.account_provider.value;
             account.title = record.account_title.value;
             account.description = record.account_description.value;
-            account.default_availability_zone = record.default_availability_zone.value;
+            account.region = record.region.value;
 
             // PATCH the update, and on success, replace the current item in the store with new one
             API.Accounts.update(account).then(function () {

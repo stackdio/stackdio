@@ -9,10 +9,13 @@ import logging
 from uuid import uuid4
 from time import sleep
 
+import requests
+from requests.exceptions import ConnectionError
 import boto
+import boto.ec2
+import boto.vpc
 import yaml
 from boto.route53.record import ResourceRecordSets
-
 from boto.exception import EC2ResponseError
 
 from cloud.providers.base import (
@@ -20,7 +23,6 @@ from cloud.providers.base import (
     TimeoutException,
     MaxFailuresException,
 )
-
 from core.exceptions import BadRequest, InternalServerError
 
 
@@ -221,10 +223,6 @@ class AWSCloudProvider(BaseCloudProvider):
     # The AWS security groups
     # SECURITY_GROUPS = 'security_groups'
 
-    # The default availablity zone to use
-    DEFAULT_AVAILABILITY_ZONE = 'default_availability_zone'
-    DEFAULT_AVAILABILITY_ZONE_NAME = 'default_availability_zone_name'
-
     # The path to the private key for SSH
     PRIVATE_KEY = 'private_key'
 
@@ -234,6 +232,8 @@ class AWSCloudProvider(BaseCloudProvider):
 
     # The route53 zone to use for managing DNS
     ROUTE53_DOMAIN = 'route53_domain'
+
+    REGION = 'region'
 
     STATE_STOPPED = 'stopped'
     STATE_RUNNING = 'running'
@@ -277,7 +277,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def get_credentials(self):
         config_data = self.get_config()
-        return (config_data['id'], config_data['key'])
+        return config_data['location'], config_data['id'], config_data['key']
 
     def get_provider_data(self, data, files=None):
         # write the private key to the proper location
@@ -295,19 +295,22 @@ class AWSCloudProvider(BaseCloudProvider):
             'keyname': data[self.KEYPAIR],
             'private_key': private_key_path,
             'append_domain': data[self.ROUTE53_DOMAIN],
+            'location': data[self.REGION],
 
-            'ssh_interface': 'private_ips',
             'ssh_connect_timeout': 300,
             'wait_for_passwd_timeout': 5,
             'rename_on_destroy': True,
             'delvol_on_destroy': True,
         }
 
-        # Add in the default availability zone to be set in the configuration
-        # file
-        if not self.obj.vpc_enabled:
-            config_data['availability_zone'] = \
-                self.obj.default_availability_zone.title
+        r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
+
+        master_region = r.json()['region']
+
+        if master_region == data[self.REGION]:
+            config_data['ssh_interface'] = 'private_ips'
+        else:
+            config_data['ssh_interface'] = 'public_ips'
 
         # Save the data out to a file that can be reused by this provider
         # later if necessary
@@ -327,8 +330,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # check authentication credentials
         try:
-            ec2 = boto.connect_ec2(data[self.ACCESS_KEY],
-                                   data[self.SECRET_KEY])
+            ec2 = boto.ec2.connect_to_region(
+                data[self.REGION],
+                aws_access_key_id=data[self.ACCESS_KEY],
+                aws_secret_access_key=data[self.SECRET_KEY])
             ec2.get_all_zones()
         except boto.exception.EC2ResponseError, e:
             err_msg = 'Unable to authenticate to AWS with the provided keys.'
@@ -378,8 +383,10 @@ class AWSCloudProvider(BaseCloudProvider):
             vpc_id = data[self.VPC_ID]
 
             try:
-                vpc = boto.connect_vpc(data[self.ACCESS_KEY],
-                                       data[self.SECRET_KEY])
+                vpc = boto.vpc.connect_to_region(
+                    data[self.REGION],
+                    aws_access_key_id=data[self.ACCESS_KEY],
+                    aws_secret_access_key=data[self.SECRET_KEY])
             except boto.exception.EC2ResponseError, e:
                 err_msg = ('Unable to authenticate to AWS VPC with the '
                            'provided keys.')
@@ -394,38 +401,6 @@ class AWSCloudProvider(BaseCloudProvider):
                         'The VPC \'{0}\' does not exist in this account.'
                         .format(vpc_id)
                     )
-
-        # Check availability zone
-        else:
-            try:
-                ec2.get_all_zones(data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
-            except boto.exception.EC2ResponseError, e:
-                errors.setdefault(
-                    self.DEFAULT_AVAILABILITY_ZONE_NAME,
-                    []
-                ).append(
-                    'The availability zone \'{0}\' does not exist in '
-                    'this account.'.format(
-                        data[self.DEFAULT_AVAILABILITY_ZONE_NAME])
-                )
-
-            '''
-            subnets = data.get(self.VPC_SUBNETS)
-            if not isinstance(subnets, list) or not subnets:
-                errors.setdefault(self.VPC_SUBNETS, []).append(
-                    'Must be a list of subnets.'
-                )
-            elif not errors:
-                # check account for subnets
-                try:
-                    for subnet in subnets:
-                        vpc.get_all_subnets([subnet])
-                except boto.exception.EC2ResponseError, e:
-                    errors.setdefault(self.VPC_SUBNETS, []).append(
-                        'The subnet id \'{0}\' does not exist in this '
-                        'account.'.format(subnet)
-                    )
-            '''
 
         return errors
 
@@ -452,14 +427,22 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def connect_ec2(self):
         if not hasattr(self, '_ec2_connection'):
-            credentials = self.get_credentials()
-            self._ec2_connection = boto.connect_ec2(*credentials)
+            region, access_key, secret_key = self.get_credentials()
+            self._ec2_connection = boto.ec2.connect_to_region(
+                region,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key)
+
         return self._ec2_connection
 
     def connect_vpc(self):
         if not hasattr(self, '_vpc_connection'):
-            credentials = self.get_credentials()
-            self._vpc_connection = boto.connect_vpc(*credentials)
+            region, access_key, secret_key = self.get_credentials()
+            self._vpc_connection = boto.vpc.connect_to_region(
+                region,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key)
+
         return self._vpc_connection
 
     def is_cidr_rule(self, rule):
@@ -828,6 +811,22 @@ class AWSCloudProvider(BaseCloudProvider):
         return [i
                 for r in ec2.get_all_instances(instance_ids)
                 for i in r.instances]
+
+    @classmethod
+    def get_current_instance_data(cls):
+        # Get most of the instance data (region, size, etc)
+        r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
+
+        if r.status_code != 200:
+            raise ConnectionError()
+
+        ret = r.json()
+
+        # Grab the hostnames
+        ret['private-hostname'] = requests.get('http://169.254.169.254/latest/meta-data/local-hostname').text
+        ret['public-hostname'] = requests.get('http://169.254.169.254/latest/meta-data/public-hostname').text
+
+        return ret
 
     def _wait(self,
               fun,

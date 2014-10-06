@@ -247,9 +247,22 @@ class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
+class CloudRegionListAPIView(generics.ListAPIView):
+    model = models.CloudRegion
+    serializer_class = serializers.CloudRegionSerializer
+
+
+class CloudRegionDetailAPIView(generics.RetrieveAPIView):
+    model = models.CloudRegion
+    serializer_class = serializers.CloudRegionSerializer
+
+
 class CloudZoneListAPIView(generics.ListAPIView):
     model = models.CloudZone
     serializer_class = serializers.CloudZoneSerializer
+
+    def get_queryset(self):
+        return self.model.objects.filter(region__id=self.kwargs['pk'])
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):

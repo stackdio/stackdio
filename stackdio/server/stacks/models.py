@@ -4,10 +4,8 @@ import re
 import logging
 import socket
 
-
 import envoy
 import yaml
-from core.exceptions import BadRequest
 from django.conf import settings
 from django.db import models, transaction
 from django.core.files.base import ContentFile
@@ -22,6 +20,7 @@ from model_utils import Choices
 from core.fields import DeletingFileField
 from core.utils import recursive_update
 from cloud.models import SecurityGroup
+from cloud.providers.base import BaseCloudProvider
 
 
 PROTOCOL_CHOICES = [
@@ -531,8 +530,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         # TODO: Figure out a way to make this provider agnostic
 
         # TODO: Should we store this somewhere instead of assuming
-        # the master will always be this box?
-        master = socket.getfqdn()
+
+        # Get the region of the stackdio instance from the driver
+
+        # TODO: This might work (unless the stackdio instance isn't on
+        # AWS or anything else)
+
+        info = BaseCloudProvider.get_current_instance_data()
+
+        if type(info) == dict:
+            master_region = info['region']
+        else:
+            master_region = None
 
         profiles = {}
 
@@ -575,6 +584,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                     v['snapshot'] = vol.snapshot.snapshot_id
 
                 map_volumes.append(v)
+            if master_region:
+                if master_region == host.cloud_profile.cloud_provider.region.slug:
+                    # We're in the same region - use private hostname
+                    master = info.get('private-hostname', socket.getfqdn())
+                else:
+                    # Different regions - need the public hostname
+                    master = info.get('public-hostname', socket.getfqdn())
+            else:
+                # Could not determine the region, just use what we have
+                # (should be a str since it wasn't a dict)
+                master = info
 
             host_metadata = {
                 host.hostname: {

@@ -98,7 +98,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var patchAccount = {
                 title: account.title,
                 description: account.description,
-                default_availability_zone: account.default_availability_zone
+                region: account.region
             };
 
             $.ajax({

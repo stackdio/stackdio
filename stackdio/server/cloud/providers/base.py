@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+import socket
 
 from django.conf import settings
 
@@ -162,3 +163,21 @@ class BaseCloudProvider(object):
         for the given cloud provider (e.g., Route53 on AWS)
         '''
         raise NotImplementedError()
+
+    @classmethod
+    def get_current_instance_data(cls):
+        '''
+        Get the instance data for the current instance (usually the stackdio
+        instance & salt master
+        '''
+
+        # Since there's not a good way to get the provider type of the current
+        # instance, just try them all until one works
+        for subclass in BaseCloudProvider.__subclasses__():
+            try:
+                return subclass.get_current_instance_data()
+            except Exception:
+                continue
+
+        # Nothing worked, so just do the last resort method
+        return socket.getfqdn()

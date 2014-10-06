@@ -192,7 +192,9 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
         for provider in providers:
             provider_type = provider.provider_type.type_name
-            for instance, details in query[provider.slug][provider_type].items():
+
+            for instance, details in query.get(provider.slug, {}) \
+                    .get(provider_type, {}).items():
                 if instance in hostnames:
                     if details['state'] in ('shutting-down', 'terminated'):
                         salt_cloud.action(

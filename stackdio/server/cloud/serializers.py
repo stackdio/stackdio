@@ -67,8 +67,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
     provider_type = serializers.PrimaryKeyRelatedField()
-    default_availability_zone = serializers.PrimaryKeyRelatedField(
-        required=False)
+    region = serializers.PrimaryKeyRelatedField()
     provider_type_name = serializers.Field(source='provider_type.type_name')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-securitygroup-list')
@@ -90,7 +89,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'provider_type',
             'provider_type_name',
             'account_id',
-            'default_availability_zone',
+            'region',
             'yaml',
             'vpc_id',
             'security_groups',
@@ -108,8 +107,8 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         # patch requests only accept a few things for modification
         if request.method == 'PATCH':
             fields_available = ('title',
-                                'description',
-                                'default_availability_zone')
+                                'description')
+            # TODO removed default AZ for now, might add in region later
 
             errors = {}
             for k in request.DATA:
@@ -125,18 +124,12 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             provider_type, provider_class = get_provider_type_and_class(
                 request.DATA.get('provider_type'))
 
-            # pull the availability zone name
-            zone = request.DATA.get('default_availability_zone')
-            if zone:
-                try:
-                    zone = models.CloudZone.objects.get(pk=zone)
-                    request.DATA['default_availability_zone_name'] = zone.slug
-                except models.CloudZone.DoesNotExist:
-                    errors = [
-                        'Could not look up availability zone. Did you give '
-                        'a valid id?'
-                    ]
-                    raise serializers.ValidationError({'errors': errors})
+            # Grab the region name from the database
+            try:
+                region = models.CloudRegion.objects.get(id=request.DATA['region']).slug
+                request.DATA['region'] = region
+            except models.CloudRegion.DoesNotExist:
+                raise serializers.ValidationError('Invalid region')
 
             provider = provider_class()
             errors = provider.validate_provider_data(request.DATA,
@@ -302,6 +295,20 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
         return attrs
 
 
+class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
+    provider_type = serializers.PrimaryKeyRelatedField()
+    zones = serializers.HyperlinkedIdentityField(view_name='cloudregion-zones')
+
+    class Meta:
+        model = models.CloudRegion
+        fields = (
+            'id',
+            'title',
+            'provider_type',
+            'zones',
+        )
+
+
 class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
     provider_type = serializers.PrimaryKeyRelatedField()
 
@@ -310,7 +317,7 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id',
             'title',
-            'provider_type',
+            'region',
         )
 
 
