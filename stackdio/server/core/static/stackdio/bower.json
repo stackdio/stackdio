@@ -1,6 +1,6 @@
 {
   "name": "stackd.io",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "dependencies": {
     "jquery": "~2.0.3",
     "bootstrap": "~3.0.1",
@@ -12,7 +12,9 @@
     "postal.js": "~0.8.11",
     "requirejs": "~2.1.11",
     "underscore": "~1.6.0",
-    "bootbox": "~4.2.0"
+    "bootbox": "~4.2.0",
+	"ladda": "~0.9.4",
+	"spin.js": "~2.0.1"
   },
   "resolutions": {
     "jquery": "~2.0.3"

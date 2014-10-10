@@ -16,7 +16,7 @@ Since we're using Github, the recommended workflow for fixing bugs, adding featu
 In a nutshell, we'll need you to:
 
 * fork the stackd.io project into your personal account [[Tutorial](https://help.github.com/articles/fork-a-repo)]
-* make the necessary changes to the code/docs and issue a pull request. [[Tutorial](https://help.github.com/articles/fork-a-repo#pull-requests)]
+* make the necessary changes to the code/docs and issue a pull request. [[Tutorial](https://help.github.com/articles/using-pull-requests/)]
 * keep your local fork in sync with the parent stackd.io repository to minimize the chance of merge conflicts. [[Tutorial](https://help.github.com/articles/syncing-a-fork)]
 * and, if you're working on multiple things or your changes are going to be somewhat large, it's generally recommended to create a branch for each piece of work you're doing. [[Tutorial](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository)]
 
