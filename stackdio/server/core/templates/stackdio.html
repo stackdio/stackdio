@@ -1,0 +1,89 @@
+<!DOCTYPE HTML>
+<!--
+	Copyright 2014,  Digital Reasoning
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+	
+-->
+
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>stackd.io</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link href='//fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
+        <link href="/static/stackdio/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/static/stackdio/bower_components/bootstrap-select/bootstrap-select.css" rel="stylesheet">
+        <link href="/static/css/stackdio.css" rel="stylesheet">
+        <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+    </head>
+
+    <body class="bootstrap-admin-with-small-navbar">
+        <div id="navigation"></div>
+
+
+        <div id="success" class="alert alert-success alert-dismissable hide view">
+            <button id="clearSuccess" type="button" class="close" aria-hidden="true">&times;</button>
+            <strong>Success!</strong>
+            <div id="success-content"></div>
+        </div>
+        
+        <div id="error" class="alert alert-danger alert-dismissable hide view">
+            <button id="clearError" type="button" class="close" aria-hidden="true">&times;</button>
+            <strong>Error!</strong>
+            <div id="error-content"></div>
+        </div>
+
+        <div id="welcome"></div>
+
+        <div id="user-profile"></div>
+        <div id="user-password"></div>
+
+        <div id="account-list"></div>
+        <div id="account-detail"></div>
+        <div id="account-securitygroup"></div>
+        <div id="account-globalorchestration"></div>
+        
+        <div id="profile-list"></div>
+        <div id="profile-detail"></div>
+
+        <div id="blueprint-list"></div>
+        <div id="blueprint-detail"></div>
+        <div id="host-detail"></div>
+        <div id="accessrule-detail"></div>
+        <div id="volume-detail"></div>
+
+        <div id="formula-list"></div>
+        <div id="formula-detail"></div>
+        <div id="formula-import"></div>
+
+        <div id="stack-list"></div>
+        <div id="stack-detail"></div>
+        <div id="stack-hosts"></div>
+        <div id="stack-logs"></div>
+        <div id="stack-accessrules"></div>
+        <div id="stack-actions"></div>
+        <div id="stack-action-detail"></div>
+
+        <div id="snapshot-list"></div>
+        <div id="snapshot-detail"></div>
+
+        <div id="admin"></div>
+
+    </body>
+
+    <script>window.stackdio = {}; window.stackdio.user = {}; window.stackdio.user.username = "{{ user.username }}"; window.stackdio.user.first_name = "{{ user.first_name }}"; window.stackdio.user.last_name = "{{ user.last_name }}"; window.stackdio.user.admin = "{{ user.is_superuser }}";</script>
+    <script data-main="/static/stackdio/application" src="/static/stackdio/bower_components/requirejs/require.js"></script>
+
+</html>

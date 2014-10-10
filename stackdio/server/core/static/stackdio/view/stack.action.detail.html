@@ -1,0 +1,58 @@
+<!--
+	Copyright 2014,  Digital Reasoning
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+	
+-->
+
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: goToStackList">Stacks</a></li>
+            <li><a href="#" data-bind="click: goToStack, text: stackTitle"></a></li>
+            <li data-bind="text: actionTitle"></li>
+        </ol>
+        
+        <h3>Details</h3>
+        <div class="well" data-bind="with: selectedAction">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Status:</strong> <span data-bind="text: status, attr: {class: 'label label-'+$root.getStatusType(status)}"></span></p>
+                    <p><strong>Host Target:</strong> <code data-bind="text: host_target"></code></p>
+                    <p><strong>Command:</strong> <code data-bind="text: command"></code></p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Submitted:</strong> <span data-bind="text: $root.convertDate(submit_time)"></span></p>
+                    <p><strong>Started:</strong> <span data-bind="text: $root.convertDate(start_time)"></span></p>
+                    <p><strong>Finished:</strong> <span data-bind="text: $root.convertDate(finish_time)"></span></p>
+                </div>
+                <div class="col-md-4">
+                    <a class="btn btn-warning" data-bind="visible: $root.selectedOutput().length > 0, attr: {href: '/api/actions/'+id+'/zip/'}">Download Output</a>
+                </div>
+            </div>
+        </div>
+        <h3>Output</h3> 
+        <div class="panel-group" id="accordion" data-bind="foreach: selectedOutput">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <a data-toggle="collapse" data-parent="#accordion" data-bind="text: $data.host, attr: {href: '#'+$data.host}"></a>
+                </div>
+                <div class="panel-collapse collapse" data-bind="attr: {id: $data.host}">
+                    <div class="panel-body">
+                        <pre class="panel-body pre-scrollable" data-bind="html: $data.output"></pre>
+                    </div>
+                </div>  
+            </div>
+        </div>
+    </div>
+</div>

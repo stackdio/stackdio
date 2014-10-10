@@ -1,0 +1,58 @@
+<!--
+	Copyright 2014,  Digital Reasoning
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+	
+-->
+
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('blueprint.list'); }">Blueprints</a></li>
+            <li data-bind="text: blueprintTitle"></li>
+            <li data-bind="text: hostTitle"></li>
+            <li>New Volume</li>
+        </ol>
+
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Host Volume</div>
+        </div>
+
+        <form id="host-access-rule-form" role="form">
+            <div class="form-group">
+                <label for="volume_snapshot" class=" control-label">Snapshot</label>
+                <select id="volume_snapshot" class="form-control" data-bind="options: $root.SnapshotStore.collection(), optionsValue: 'id', optionsText: 'title'"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="volume_device" class="control-label">Device ID</label>
+                <div>These are some standard device ids for mounted EBS volumes</div>
+                <select id="volume_device" class="form-control" data-bind="options: $root.volumeIds, optionsValue: $data, optionsText: $data"></select>
+            </div>
+
+            <div class="form-group">
+                <label for="volume_mount_point" class="control-label">Mount point</label>
+                <div>This is the location on disk where your device will be mounted</div>
+                <input type="text" class="form-control" id="volume_mount_point" placeholder="e.g. /mnt/device1 or /mnt/logs or /mnt/backup">
+            </div>
+
+            <div class="row">
+                 <div class="col-md-3 col-md-offset-9  pull-right">
+                    <button class="btn" data-bind="click: cancelChanges">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: addVolume">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

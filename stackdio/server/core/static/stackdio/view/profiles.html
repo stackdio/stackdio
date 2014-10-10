@@ -1,0 +1,91 @@
+<!--
+	Copyright 2014,  Digital Reasoning
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+	
+-->
+
+<div id="profile-binding-target">
+    <div class="view">
+        <div class="row bottom-separation">
+            <div class="col-xs-6 col-sm-6 col-md-6 large-heading">Provider Profiles</div>
+            <div class="col-xs-3 col-sm-3 col-md-3 col-md-offset-3 col-sm-offset-3 col-xs-offset-3">
+              <div class="pull-right bottom-separation" data-bind="visible: isSuperUser">
+                <div class="btn-group">
+                  <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown" href="#">
+                    New Profile
+                    <span class="caret"></span>
+                  </a>
+                  <ul class="dropdown-menu original-dropdown-menu" data-bind="foreach: AccountStore.collection()">
+                    <li>
+                      <a href="#" data-bind="text: title, click: $root.createProfile"></a>
+                    </li>
+                  </ul>
+                </div>
+                <button class="btn btn-success" data-bind="click: $root.refresh">
+                  <span class="fa fa-refresh">&nbsp;</span>
+                  Refresh
+                </button>
+              </div>
+                <!-- <div class="btn-group pull-right" data-bind="visible: $root.isSuperUser">
+                    <button class="btn btn-primary" data-bind="click: $root.newProfile">New Profile</button>
+                </div> -->
+            </div>
+        </div>
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 section-synopsis">
+                Profiles are specific types of instances that you want to use for each Provider. You can specify the instance type, the default log in, the the size of instance to use.
+            </div>
+        </div>
+
+        <table id="profiles" class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Image ID</th>
+                    <th>Provider</th>
+                    <th style="width:5%"></th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: EnhancedProfileStore">
+                <tr>
+                    <td>
+                        <!-- ko if: $root.isSuperUser -->
+                        <a href="#" data-bind="text:title, click: $root.viewProfile"></a>
+                        <!-- /ko -->
+                        <!-- ko ifnot: $root.isSuperUser -->
+                        <span data-bind="text: title"></span>
+                        <!-- /ko -->
+                    </td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: image_id"></td>
+                    <td data-bind="text: account.title"></td>
+                    <td>
+                        <div class="btn-group" data-bind="visible: $root.isSuperUser">
+                            <a class="btn btn-info dropdown-toggle btn-sm" data-toggle="dropdown" href="#">
+                                Action <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu original-dropdown-menu">
+                                <li>
+                                    <a href="#" data-bind="text:'Delete', click: $root.deleteProfile"></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>     
+            </tbody>
+        </table>
+    </div>
+</div>
