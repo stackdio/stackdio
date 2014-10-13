@@ -21,20 +21,22 @@ requirejs.config({
         'bootstrap': 'bower_components/bootstrap/dist/js/bootstrap.min',
         'bootstrap-select': 'bower_components/bootstrap-select/bootstrap-select.min',
         'bootstrap-typeahead': 'bower_components/typeahead.js/dist/typeahead.min',
-        'bootbox': 'bower_components/bootbox/',
+        'bootbox': 'bower_components/bootbox/bootbox',
         'ladda': 'bower_components/ladda/js/ladda',
         'knockout': 'bower_components/knockout.js/knockout',
         'q': 'bower_components/q/q.min',
         'underscore': 'bower_components/underscore/underscore',
         'postal': 'bower_components/postal.js/lib/postal.min',
-        'moment': 'bower_components/moment/min/moment.min'
+        'moment': 'bower_components/moment/min/moment.min',
+        'spin': 'bower_components/spin.js/spin'
     },
 
     shim: {
         'bootstrap': ['jquery'],
         'bootstrap-select': ['bootstrap'],
         'bootbox': ['bootstrap'],
-        'bootstrap-typeahead': ['bootstrap']
+        'bootstrap-typeahead': ['bootstrap'],
+        'ladda': ['spin']
     }
 });
 
