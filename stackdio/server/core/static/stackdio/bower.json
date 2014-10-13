@@ -7,7 +7,7 @@
     "bootstrap-select": "~1.4.3",
     "typeahead.js": "~0.9.3",
     "moment": "~2.4.0",
-    "q": "0.9.6",
+    "q": "~0.9.7",
     "r.js": "~2.1",
     "knockout.js": "~3.0.0",
     "postal.js": "~0.8.11",
