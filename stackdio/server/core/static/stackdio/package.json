@@ -1,6 +1,6 @@
 {
   "name": "stackd.io",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "Cloud infrastructure management API and application",
   "main": "Gruntfile.js",
   "dependencies": {
@@ -19,7 +19,7 @@
     "url": "https://github.com/stackdio/stackdio"
   },
   "author": "Steve Brownlee",
-  "license": "MIT",
+  "license": "Apache 2",
   "bugs": {
     "url": "https://github.com/stackdio/stackdio/issues"
   },
