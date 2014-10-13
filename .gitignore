@@ -31,6 +31,11 @@ stackdio/server/stackdio/settings/ldap_settings.py
 # collectstatic junk
 stackdio/server/static
 
+# bower stuff
+.bowerrc
+bower_components/
+node_modules/
+
 # OSX
 .DS_Store
 .idea
