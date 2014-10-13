@@ -5,6 +5,7 @@ dev.db
 *.swp
 *.un~
 stackdio/server/core/static/stackdio-built.js
+stackdio/server/core/static/stackdio/bower_components
 stackdio/server/core/static/stackdio/node_modules
 stackdio/server/salt/user_states
 stackdio/server/salt/core_states
@@ -30,11 +31,6 @@ stackdio/server/stackdio/settings/ldap_settings.py
 
 # collectstatic junk
 stackdio/server/static
-
-# bower stuff
-.bowerrc
-bower_components/
-node_modules/
 
 # OSX
 .DS_Store
