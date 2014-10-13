@@ -14,11 +14,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-
-from stackdio.server import (  # noqa
-    __copyright__,
-    __license__,
-    __maintainer__,
-    __version__
-)
