@@ -21,3 +21,19 @@ In a nutshell, we'll need you to:
 * and, if you're working on multiple things or your changes are going to be somewhat large, it's generally recommended to create a branch for each piece of work you're doing. [[Tutorial](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository)]
 
 > NOTE: SaltStack has a [great guide](http://docs.saltstack.com/topics/development/hacking.html) on how to work within their project and it mostly applies to stackd.io as well
+
+# Pull request guidelines
+
+## Branch name
+
+The branch name that the pull request originates from should start with either `feature/` or `bugfix/`, depending on its contents. The rest of the branch name should describe the contents of the patch, preferably by being an Issue#. Issue#'s are required for `bugfix/` branches.
+
+## Code style and quality
+
+### PEP8 compatibility
+
+All pull requests must meet PEP8 compatibility
+
+## Tests
+
+Pull requests will be easier to review and understand if they contain automated tests for the functionality changed. As such, pull requests with tests are more likely to be accepted more quickly.
