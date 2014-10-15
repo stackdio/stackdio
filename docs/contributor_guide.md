@@ -24,6 +24,10 @@ In a nutshell, we'll need you to:
 
 # Pull request guidelines
 
+## CLA
+
+Contribution to stackd.io requires a CLA before pull requests will be merged. This is currently handled manually by the repo admins, but may be handled by a bot in the future.
+
 ## Branch name
 
 The branch name that the pull request originates from should start with either `feature/` or `bugfix/`, depending on its contents. The rest of the branch name should describe the contents of the patch, preferably by being an Issue#. Issue#'s are required for `bugfix/` branches.
