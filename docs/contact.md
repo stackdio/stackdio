@@ -34,3 +34,15 @@ If you think you've found a bug, here's what we ask of you:
 4. Be patient :)
 
 5. Optionally, it would be fantastic if you could help us out and fix the problem yourself...if you're brave enough, see the [Countributor Guide](contributor_guide.md) on contributing to the project.
+
+
+### Usage Questions
+
+Usage questions are best handled in one of the following ways:
+
+* Asking a question on the IRC channel
+* Emailing the contributors, especially those who have been recently active on the project.
+
+### Long term development comments
+
+Long term development tasks will usually have a branch opened on the main repository, along with a pull request back into develop. This is the place to make comments on the development cycle for that feature.
