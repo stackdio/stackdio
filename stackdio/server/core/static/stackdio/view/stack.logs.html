@@ -1,0 +1,72 @@
+<!--
+	Copyright 2014,  Digital Reasoning
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+	
+-->
+
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('stack.list'); }">Stacks</a></li>
+            <li data-bind="text: stackTitle"></li>
+        </ol>
+
+        <ul id="stack-tabs" class="nav nav-tabs">
+            <li><a id="detail" class="small-heading" data-bind="click: goToTab">Stack Details</a></li>
+            <li><a id="hosts" class="small-heading" data-bind="click: goToTab">Stack Hosts</a></li>
+            <li><a id="accessrules" class="small-heading" data-bind="click: goToTab">Stack Access Rules</a></li>
+            <li><a id="actions" class="small-heading" data-bind="click: goToTab">Stack Actions</a></li>
+            <li class="active"><a id="logs" class="small-heading"  data-bind="click: goToTab">Stack Logs</a></li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane active">
+                <div class="container-fluid">
+                    <br />
+                    <div class="row">
+                        <div class="col-md-2">
+                            <ul class="nav nav-pills nav-stacked" style="max-height: 500px; overflow-y: auto">
+                                <li><h4>Latest</h4></li>
+                                <!-- ko foreach: latestLogs -->
+                                <li data-bind="attr: {class: $root.selectedLog() == $data.name ? 'active' : ''}">
+                                    <a data-bind="click: $root.goToLog, text: $data.name" 
+                                       ></a>
+                                </li>
+                                <!-- /ko -->
+                                <li>&nbsp;<!-- spacer --></li>
+                                <li><h4>Historical</h4></li>
+                                <!-- ko foreach: historicalLogs -->
+                                <li data-bind="attr: {class: $root.selectedLog() == $data.name ? 'active' : ''}">
+                                    <a data-bind="click: $root.goToLog, text: $data.name"></a>
+                                </li>
+                                <!-- /ko -->
+                            </ul>
+                        </div>
+                        <div class="col-md-10">
+
+                            <div class="tab-content">
+                                <div class="tab-pane active">
+                                    <pre class="pre-scrollable"
+                                         style="max-height: 500px; height: 500px;"
+                                         data-bind="text: $root.selectedLogText">
+                                    </pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

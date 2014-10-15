@@ -1,0 +1,75 @@
+<!--
+	Copyright 2014,  Digital Reasoning
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+	
+-->
+
+<div>
+    <div class="view">
+        <ol class="breadcrumb">
+            <li><a href="#" data-bind="click: function () { $galaxy.transport('blueprint.list'); }">Blueprints</a></li>
+            <li data-bind="text: blueprintTitle"></li>
+            <li data-bind="text: hostTitle"></li>
+            <li>New Access Rule</li>
+        </ol>
+
+
+        <div class="row bottom-separation">
+            <div class="col-xs-12 col-sm-12 col-md-12 large-heading">Access Rule</div>
+        </div>
+
+        <form id="host-access-rule-form" role="form">
+            <div class="form-group">
+                <label for="rule_protocol" class="control-label">Protocol</label>
+                <select id="rule_protocol" 
+                        data-bind="options: ['tcp','udp','icmp']",
+                        data-container="body"
+                        class="form-control selectpicker"></select> 
+            </div>
+
+            <div class="form-group">
+                <label for="rule_from_port" class=" control-label">From port</label>
+                <input type="text" class="form-control" id="rule_from_port" placeholder="22" autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="rule_to_port" class=" control-label">To port</label>
+                <input type="text" class="form-control" id="rule_to_port" placeholder="22">
+            </div>
+
+            <div class="well">
+                <div class="form-group">
+                    <label class="control-label" for="rule_ip_address">IP Address</label>
+                    <input type="text" class="form-control" id="rule_ip_address" placeholder="0.0.0.0/32">
+                </div>
+
+                <div class="form-group">
+                    or
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label" for="rule_group">Group</label>
+                    <input type="text" class="form-control" id="rule_group" placeholder="another group name">
+                </div>
+            </div>
+
+            <div class="row">
+                 <div class="col-md-3 col-md-offset-9  pull-right">
+                    <button class="btn" data-bind="click: cancelChanges">Cancel</button>
+                    <button class="btn btn-primary" data-bind="click: addRule">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

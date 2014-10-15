@@ -41,7 +41,7 @@ sudo su - stackdio
 # OS-specific preparation
 
 > :warning:       **WARNING**       :warning:
-> 
+>
 > You must follow the steps in one of the following prep guides for the OS you're installing stackd.io in.
 
 Follow one of the individual guides below to prepare your particular environment for stackd.io. Once you finish, come back here and continue on.
@@ -110,7 +110,7 @@ stackd.io can easily integrate with an LDAP server. See our [LDAP guide](ldap_gu
 
 ### Non-LDAP admin user
 
-Admin users in stackd.io have less restriction to various pieces of the platform. For example, only admin users are allowed to create and modify cloud providers and profiles that other users can use to spin up their stacks. 
+Admin users in stackd.io have less restriction to various pieces of the platform. For example, only admin users are allowed to create and modify cloud providers and profiles that other users can use to spin up their stacks.
 
 > NOTE: You will need at least one admin user to configure some key areas of the system.
 
@@ -153,7 +153,9 @@ sudo ln -s /etc/nginx/sites-available/stackdio /etc/nginx/sites-enabled
 sudo rm /etc/nginx/sites-enabled/default
 ```
 
-generate the static content we'll need to serve:
+Before moving forward, take a minute to reference the [Javascript SPA ReadMe](../stackdio/server/core/static/stackdio/README.md) to make sure that you do all the necessary steps to install the needed JS libraries.
+
+After this, generate the static content we'll need to serve:
 
 ```bash
 stackdio manage.py collectstatic --noinput

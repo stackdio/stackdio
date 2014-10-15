@@ -4,12 +4,13 @@ dev.db
 *.pyc
 *.swp
 *.un~
-stackdio/core/static/stackdio-built.js
-stackdio/core/static/stackdio/node_modules
-stackdio/salt/user_states
-stackdio/salt/core_states
-stackdio/salt/config
-stackdio/storage
+stackdio/server/core/static/stackdio-built.js
+stackdio/server/core/static/stackdio/bower_components
+stackdio/server/core/static/stackdio/node_modules
+stackdio/server/salt/user_states
+stackdio/server/salt/core_states
+stackdio/server/salt/config
+stackdio/server/storage
 
 # build stuff
 build/
@@ -26,10 +27,10 @@ salt-cloud.sh
 find.sh
 
 # ldap_settings.py
-stackdio/stackdio/settings/ldap_settings.py
+stackdio/server/stackdio/settings/ldap_settings.py
 
 # collectstatic junk
-stackdio/static
+stackdio/server/static
 
 # OSX
 .DS_Store
