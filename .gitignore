@@ -5,6 +5,7 @@ dev.db
 *.swp
 *.un~
 stackdio/server/core/static/stackdio-built.js
+stackdio/server/core/static/stackdio/bower_components
 stackdio/server/core/static/stackdio/node_modules
 stackdio/server/salt/user_states
 stackdio/server/salt/core_states

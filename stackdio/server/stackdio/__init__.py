@@ -1,29 +1,16 @@
-VERSION = (0, 5, 1, 'beta', 0)
+# -*- coding: utf-8 -*-
 
-
-# Borrowed from django.utils.version
-def get_version():
-    "Returns a PEP 386-compliant version number from VERSION."
-    version = VERSION
-    assert len(version) == 5
-    assert version[3] in ('alpha', 'beta', 'rc', 'final')
-
-    # Now build the two parts of the version number:
-    # main = X.Y[.Z]
-    # sub = .devN - for pre-alpha releases
-    #     | {a|b|c}N - for alpha, beta and rc releases
-
-    parts = 2 if version[2] == 0 else 3
-    main = '.'.join(str(x) for x in version[:parts])
-
-    sub = ''
-    if version[3] == 'alpha' and version[4] == 0:
-        git_changeset = get_git_changeset()
-        if git_changeset:
-            sub = '.dev%s' % git_changeset
-
-    elif version[3] != 'final':
-        mapping = {'alpha': 'a', 'beta': 'b', 'rc': 'c'}
-        sub = mapping[version[3]] + str(version[4])
-
-    return str(main + sub)
+# Copyright 2014,  Digital Reasoning
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
