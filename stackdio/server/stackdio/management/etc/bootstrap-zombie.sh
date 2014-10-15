@@ -1,21 +1,24 @@
 #!/bin/sh -
-#======================================================================================================================
-# vim: softtabstop=4 shiftwidth=4 expandtab fenc=utf-8 spell spelllang=en cc=120
-#======================================================================================================================
+# -*- coding: utf-8 -*-
+
+# Copyright 2014,  Digital Reasoning
 #
-#          FILE: bootstrap-salt.sh
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#   DESCRIPTION: Bootstrap salt installation for various systems/distributions
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-#          BUGS: https://github.com/saltstack/salt-bootstrap/issues
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 #
-#     COPYRIGHT: (c) 2012-2014 by the SaltStack Team, see AUTHORS.rst for more
-#                details.
 #
-#       LICENSE: Apache 2.0
-#  ORGANIZATION: SaltStack (saltstack.org)
-#       CREATED: 10/15/2012 09:49:37 PM WEST
-#======================================================================================================================
+# File contents based off of: https://github.com/saltstack/salt-bootstrap/blob/v2014.04.16/bootstrap-salt.sh
+#
+
 set -o nounset                              # Treat unset variables as an error
 __ScriptVersion="2014.04.16"
 __ScriptName="bootstrap-salt.sh"
