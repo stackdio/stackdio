@@ -43,7 +43,7 @@ define(['q', 'settings', 'model/models'], function (Q, settings, models) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: region.zones,
+                url: '/api/regions/'+region.id+'/zones/',
                 type: 'GET',
                 headers: {
                     'Accept': 'application/json'
