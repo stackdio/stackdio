@@ -96,8 +96,12 @@ urlpatterns = patterns(
         name='cloudregion-detail'),
 
     url(r'^regions/(?P<pk>[0-9]+)/zones/$',
-        api.CloudZoneListAPIView.as_view(),
+        api.CloudRegionZoneListAPIView.as_view(),
         name='cloudregion-zones'),
+
+    url(r'^zones/$',
+        api.CloudZoneListAPIView.as_view(),
+        name='cloudzone-list'),
 
     url(r'^zones/(?P<pk>[0-9]+)/$',
         api.CloudZoneDetailAPIView.as_view(),

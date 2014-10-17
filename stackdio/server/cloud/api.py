@@ -275,12 +275,17 @@ class CloudRegionDetailAPIView(generics.RetrieveAPIView):
     serializer_class = serializers.CloudRegionSerializer
 
 
-class CloudZoneListAPIView(generics.ListAPIView):
+class CloudRegionZoneListAPIView(generics.ListAPIView):
     model = models.CloudZone
     serializer_class = serializers.CloudZoneSerializer
 
     def get_queryset(self):
         return self.model.objects.filter(region__id=self.kwargs['pk'])
+
+
+class CloudZoneListAPIView(generics.ListAPIView):
+    model = models.CloudZone
+    serializer_class = serializers.CloudZoneSerializer
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):
