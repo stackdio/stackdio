@@ -27,7 +27,7 @@ persistent=yes
 
 # List of plugins (as comma separated values of python modules names) to load,
 # usually to register additional checkers.
-load-plugins=salttesting.pylintplugins.pep8,salttesting.pylintplugins.pep263,salttesting.pylintplugins.strings
+#load-plugins=
 
 
 [MESSAGES CONTROL]
@@ -186,7 +186,7 @@ dummy-variables-rgx=_|dummy
 
 # List of additional names supposed to be defined in builtins. Remember that
 # you should avoid to define new builtins when possible.
-additional-builtins=__opts__,__salt__,__pillar__,__grains__,__context__,__ret__,__env__,__low__,__states__,__lowstate__,__running__,__active_provider_name__,__master_opts__
+#additional-builtins=
 
 
 [SIMILARITIES]
@@ -249,12 +249,10 @@ max-locals=40
 max-returns=6
 
 # Maximum number of branch for function / method body
-# We create a lot of branches in salt, 4x the default value
-max-branchs=48
+max-branchs=4
 
 # Maximum number of statements in function / method body
-# Again, we have LOTS in salt. Double default
-max-statements=100
+max-statements=50
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7
