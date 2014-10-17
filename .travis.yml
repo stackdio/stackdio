@@ -12,3 +12,13 @@ before_install:
   - pip install --allow-external http://dl.dropbox.com/u/174789/m2crypto-0.20.1.tar.gz
   - pip install --upgrade pep8 'pylint<=1.2.0'
   - pip install --upgrade coveralls
+  - "if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2 ordereddict; fi"
+
+before_script:
+  - "/home/travis/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pylint --rcfile=.testing.pylintrc stackdio/server/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'"
+  - "/home/travis/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pep8 --ignore=E501,E12 salt/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'"
+
+script: "sudo -E /home/travis/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/python setup.py test --runtests-opts='--run-destructive --sysinfo -v --coverage'"
+
+after_success:
+  - coveralls
