@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 from ._version import __version__, __version_info__  # noqa
 __copyright__ = "Copyright 2014, Digital Reasoning"
 __license__ = "Apache License Version 2.0, January 2004"
