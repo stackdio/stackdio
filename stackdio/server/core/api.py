@@ -110,7 +110,7 @@ class VersionAPIView(views.APIView):
     '''
 
     def get(self, request, *args, **kwargs):
-        from stackdio import get_version
+        from _version import __version__
         return Response({
-            'version': get_version(),
+            'version': __version__,
         })
