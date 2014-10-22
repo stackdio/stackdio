@@ -633,7 +633,8 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                 # is used later when we tie the machine to DNS
                 host.provider_dns = host_data['dnsName'] or ''
                 host.provider_private_dns = host_data['privateDnsName'] or ''
-                host.provider_private_ip = host_data['privateIpAddress'] or ''
+                private_ips = host_data['private_ips']
+                host.provider_private_ip = private_ips[0] if len(private_ips) > 0 else ''
 
                 # update the state of the host as provided by ec2
                 if host.state != Host.DELETING:
