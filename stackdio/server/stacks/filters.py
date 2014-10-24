@@ -19,8 +19,13 @@
 import django_filters
 from .models import Stack
 
+
 class StackFilter(django_filters.FilterSet):
+    title = django_filters.CharFilter(lookup_type='icontains')
+
     class Meta:
         model = Stack
-        fields = ('title',)
+        fields = (
+            'title',
+        )
 

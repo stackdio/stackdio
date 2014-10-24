@@ -18,8 +18,6 @@
 
 import logging
 
-from django.shortcuts import get_object_or_404
-
 from rest_framework import (
     generics,
     permissions,
@@ -32,6 +30,7 @@ from .models import (
 from .serializers import (
     VolumeSerializer,
 )
+from . import filters
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +38,7 @@ logger = logging.getLogger(__name__)
 class VolumeListAPIView(generics.ListAPIView):
     model = Volume
     serializer_class = VolumeSerializer
+    filter_class = filters.VolumeFilter
 
     def get_queryset(self):
         return Volume.objects.filter(stack__owner=self.request.user)
@@ -48,6 +48,7 @@ class VolumeAdminListAPIView(generics.ListAPIView):
     model = Volume
     serializer_class = VolumeSerializer
     permission_classes = (permissions.IsAdminUser,)
+    filter_class = filters.VolumeFilter
 
     def get_queryset(self):
         return self.model.objects.all()
