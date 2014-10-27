@@ -642,6 +642,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                             'volumes': map_volumes,
                             'cloud_provider': host.cloud_profile.cloud_provider.slug,
                             'cloud_profile': host.cloud_profile.slug,
+                            'namespace': self.namespace,
                         },
                     },
 

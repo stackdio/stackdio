@@ -17,25 +17,20 @@
 
 
 import logging
-import yaml
-import os
 import re
-import boto.ec2
-from collections import defaultdict
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import importlib
 
 from core import exceptions as core_exceptions
-
 import models
+
 
 logger = logging.getLogger(__name__)
 
 
 def get_provider_type_and_class(provider_type_id):
-
     try:
         provider_type = models.CloudProviderType.objects.get(id=provider_type_id)
     except models.CloudProviderType.DoesNotExist:
@@ -50,13 +45,12 @@ def get_provider_type_and_class(provider_type_id):
 
 
 def check_cloud_provider_settings():
-
     if not hasattr(settings, 'CLOUD_PROVIDERS'):
-        raise ImproperlyConfigured('settings.CLOUD_PROVIDERS must set with a list of supported cloud providers.')
+        raise ImproperlyConfigured(
+            'settings.CLOUD_PROVIDERS must set with a list of supported cloud providers.')
 
 
 def get_cloud_provider_choices():
-
     check_cloud_provider_settings()
 
     choices = []
@@ -67,7 +61,6 @@ def get_cloud_provider_choices():
 
 
 def get_cloud_providers():
-
     check_cloud_provider_settings()
 
     providers = []
