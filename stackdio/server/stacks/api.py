@@ -85,6 +85,7 @@ class StackAdminListAPIView(generics.ListAPIView):
     model = models.Stack
     serializer_class = serializers.StackSerializer
     permission_classes = (permissions.IsAdminUser,)
+    filter_class = filters.StackFilter
 
     def get_queryset(self):
         return self.model.objects.all()

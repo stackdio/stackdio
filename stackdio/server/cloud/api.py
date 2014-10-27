@@ -36,6 +36,7 @@ from core.permissions import (
 from blueprints.serializers import BlueprintSerializer
 from . import models
 from . import serializers
+from . import filters
 from core.utils import recursive_update
 
 
@@ -56,6 +57,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
     model = models.CloudProvider
     serializer_class = serializers.CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
+    filter_class = filters.CloudProviderFilter
 
     def post_save(self, provider_obj, created=False):
 
@@ -117,6 +119,7 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
     model = models.CloudInstanceSize
     serializer_class = serializers.CloudInstanceSizeSerializer
+    filter_class = filters.CloudInstanceSizeFilter
 
 
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
@@ -200,6 +203,7 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
     model = models.CloudProfile
     serializer_class = serializers.CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
+    filter_class = filters.CloudProfileFilter
 
     def post_save(self, profile_obj, created=False):
         profile_obj.update_config()
@@ -268,6 +272,7 @@ class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class CloudRegionListAPIView(generics.ListAPIView):
     model = models.CloudRegion
     serializer_class = serializers.CloudRegionSerializer
+    filter_class = filters.CloudRegionFilter
 
 
 class CloudRegionDetailAPIView(generics.RetrieveAPIView):
@@ -278,6 +283,7 @@ class CloudRegionDetailAPIView(generics.RetrieveAPIView):
 class CloudRegionZoneListAPIView(generics.ListAPIView):
     model = models.CloudZone
     serializer_class = serializers.CloudZoneSerializer
+    filter_class = filters.CloudZoneFilter
 
     def get_queryset(self):
         return self.model.objects.filter(region__id=self.kwargs['pk'])
@@ -286,6 +292,7 @@ class CloudRegionZoneListAPIView(generics.ListAPIView):
 class CloudZoneListAPIView(generics.ListAPIView):
     model = models.CloudZone
     serializer_class = serializers.CloudZoneSerializer
+    filter_class = filters.CloudZoneFilter
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):
@@ -329,6 +336,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     model = models.SecurityGroup
     serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
+    filter_class = filters.SecurityGroupFilter
 
     # Only admins may create security groups directly. Regular users
     # are restricted to using automatically managed security groups
@@ -671,6 +679,13 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
         for group in provider.security_groups.all():
             if group.name in provider_groups:
                 del provider_groups[group.name]
+
+        # Filter these too
+        query_name = request.QUERY_PARAMS.get('name', '')
+        for name, data in provider_groups.items():
+            if query_name.lower() not in name.lower():
+                del provider_groups[name]
+
         response.data['provider_groups'] = provider_groups
         return response
 

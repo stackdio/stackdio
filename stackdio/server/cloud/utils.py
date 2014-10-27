@@ -33,6 +33,7 @@ import models
 
 logger = logging.getLogger(__name__)
 
+
 def get_provider_type_and_class(provider_type_id):
 
     try:
@@ -47,10 +48,12 @@ def get_provider_type_and_class(provider_type_id):
 
     return None, None
 
+
 def check_cloud_provider_settings():
 
     if not hasattr(settings, 'CLOUD_PROVIDERS'):
         raise ImproperlyConfigured('settings.CLOUD_PROVIDERS must set with a list of supported cloud providers.')
+
 
 def get_cloud_provider_choices():
 
@@ -62,10 +65,11 @@ def get_cloud_provider_choices():
 
     return choices
 
+
 def get_cloud_providers():
 
     check_cloud_provider_settings()
-    
+
     providers = []
     try:
         for class_path in settings.CLOUD_PROVIDERS:
@@ -80,6 +84,7 @@ def get_cloud_providers():
         raise
 
     return providers
+
 
 def findRoles(filename, pattern):
     with open(filename) as file:

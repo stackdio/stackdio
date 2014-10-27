@@ -31,6 +31,7 @@ from cloud.serializers import CloudProviderSerializer
 from . import tasks
 from . import serializers
 from . import models
+from . import filters
 
 
 logger = logging.getLogger(__name__)
@@ -50,9 +51,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
-
-    # This is causing a 'maximum recursion depth exceeded issue'
-    # filter_class = filters.FormulaFilter
+    filter_class = filters.FormulaFilter
 
     def get_queryset(self):
         return self.get_user().formulas.all()
@@ -125,8 +124,8 @@ class FormulaListAPIView(generics.ListCreateAPIView):
 
 
 class GlobalOrchestrationFormulaListAPIView(FormulaListAPIView):
-
     permission_classes = (permissions.IsAdminUser,)
+    filter_class = filters.FormulaFilter
 
     def get_user(self):
         try:
@@ -139,6 +138,7 @@ class FormulaPublicAPIView(generics.ListAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
+    filter_class = filters.FormulaFilter
 
     def get_queryset(self):
         return self.model.objects \
@@ -150,6 +150,7 @@ class FormulaAdminListAPIView(generics.ListAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     permission_classes = (permissions.IsAdminUser,)
+    filter_class = filters.FormulaFilter
 
     def get_queryset(self):
         # Return all formulas except the ones for global orchestration

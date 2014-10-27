@@ -631,9 +631,13 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
                 # Get the host's public IP/host set by the cloud provider. This
                 # is used later when we tie the machine to DNS
-                host.provider_dns = host_data['dnsName'] or ''
-                host.provider_private_dns = host_data['privateDnsName'] or ''
-                host.provider_private_ip = host_data['privateIpAddress'] or ''
+                host.provider_dns = host_data.get('dnsName', '') or ''
+                host.provider_private_dns = host_data.get('privateDnsName', '') or ''
+
+                # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
+                # throws an exception if we don't use host_data.get().  I changed the above two
+                # keys to do the same for robustness
+                host.provider_private_ip = host_data.get('privateIpAddress', '') or ''
 
                 # update the state of the host as provided by ec2
                 if host.state != Host.DELETING:
