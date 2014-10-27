@@ -679,6 +679,13 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
         for group in provider.security_groups.all():
             if group.name in provider_groups:
                 del provider_groups[group.name]
+
+        # Filter these too
+        query_name = request.QUERY_PARAMS.get('name', '')
+        for name, data in provider_groups.items():
+            if query_name.lower() not in name.lower():
+                del provider_groups[name]
+
         response.data['provider_groups'] = provider_groups
         return response
 
