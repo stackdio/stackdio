@@ -101,7 +101,7 @@ class BlueprintDetailAPIView(PublicBlueprintMixin,
 
         # rebuild properties list
         properties = request.DATA.pop('properties', None)
-        if properties and not isinstance(properties, str):
+        if properties and isinstance(properties, dict):
             blueprint.properties = properties
 
         return super(BlueprintDetailAPIView, self).update(request,
