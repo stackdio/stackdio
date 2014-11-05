@@ -64,6 +64,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'owner',
             'public',
             'private_git_repo',
+            'access_token',
             'uri',
             'root_path',
             'properties',

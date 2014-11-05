@@ -31,32 +31,37 @@
         <form id="formula-form">
             <div class="modal-body large-modal-body">
                 <div class="form-group">
-                    <input type="text" class="form-control" id="formula_url" placeholder="Enter repository URL...">
+                    <input data-bind="value: uri" type="text" class="form-control" placeholder="Enter repository URL...">
                 </div>
 
-                <label>Git username/password required for private repositories only.&nbsp;&nbsp;Your password will NOT be stored.</label>
+                <label>Git authentication required for private repositories only.&nbsp;&nbsp;Your password will NOT be stored.</label>
                 <div class="row">
                     <div class="col-md-5 col-lg-3">
                         <div class="form-group">
                             <label for="git_username" class="sr-only">Git username required for private repositories only</label>
-                            <input type="text" class="form-control" id="git_username" placeholder="Git username">
+                            <input data-bind="value: username, attr: {placeholder: $root.usernameText}" class="form-control" type="text">
                         </div>
                     </div>
-                    <div class="col-md-5 col-lg-3">
+                    <div class="col-md-5 col-lg-3" data-bind="visible: !accessToken()">
                         <div class="form-group">
                             <label for="git_password" class="sr-only">Git password required for private repositories only</label>
-                            <input type="password" class="form-control" id="git_password" placeholder="Git password">
+                            <input data-bind="value: password" type="password" class="form-control" placeholder="Git password">
                         </div>
+                    </div>
+                    <div class="col-md-2 col-lg-2 checkbox">
+                        <label>
+                            <input type="checkbox" id="access_token" data-bind="checked: accessToken"> Use access token
+                        </label>
                     </div>
                 </div>
                 <div class="section-synopsis">
-                    <p><strong>Tip:</strong> If using GitHub, you can generate a personal access token in your user settings and use it as the username with a blank password.<br>
-                       If you have GitHub two-factor authentication enabled, you <strong>MUST</strong> use a personal access token as your username.</p>
+                    <p><strong>Tip:</strong> If using GitHub, you can generate a personal access token in your user settings and use it here by checking the 'Use access token' box.<br>
+                       If you have GitHub two-factor authentication enabled, you <strong>MUST</strong> use a personal access token.</p>
                 </div>
                 <div class="checkbox" data-bind="visible: $root.superuser()">
                     <br />
                     <label>
-                        <input type="checkbox" id="global_orch"> Also import for global orchestration use
+                        <input data-bind="checked: globalOrch" type="checkbox"> Also import for global orchestration use
                     </label>
                 </div>
             </div>
