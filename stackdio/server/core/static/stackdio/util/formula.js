@@ -20,7 +20,7 @@ define(['util/galaxy', 'util/alerts', 'bootbox', 'store/Formulas', 'api/api'], f
         updateFormula: function (formula) {
             if (formula.private_git_repo && !formula.access_token) {
                 bootbox.dialog({
-                    title: "Enter your git password:",
+                    title: "Enter the git password for user " + formula.git_username + ":",
                     message: '<form class="bootbox-form"><input class="bootbox-input bootbox-input-text form-control" autocomplete="off" type="password" id="git_password_for_update"></form>',
                     buttons: {
                         cancel: {
