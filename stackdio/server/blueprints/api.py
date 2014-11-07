@@ -103,6 +103,9 @@ class BlueprintDetailAPIView(PublicBlueprintMixin,
         properties = request.DATA.pop('properties', None)
         if properties and isinstance(properties, dict):
             blueprint.properties = properties
+        else:
+            logger.warning('Invalid properties for blueprint {0}: {1}'.format(blueprint.title,
+                                                                              properties))
 
         return super(BlueprintDetailAPIView, self).update(request,
                                                           *args,

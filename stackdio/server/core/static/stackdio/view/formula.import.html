@@ -64,6 +64,11 @@
                         <input data-bind="checked: globalOrch" type="checkbox"> Also import for global orchestration use
                     </label>
                 </div>
+                <div class="section-synopsis" data-bind="visible: $root.superuser()">
+                    <p><strong>Note:</strong> Checking 'Also import for global orchestration use' is not enough to have your formula components run on all stacks.<br>
+                        You must also go to the <strong>Providers</strong> page and click <strong>Action > Edit Global Orchestration</strong> to set up the component ordering.
+                        These components are run on a provider specific basis.</p>
+                </div>
             </div>
 
             <div class="section-synopsis" style="margin-top: 40px;">
