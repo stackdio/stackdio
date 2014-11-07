@@ -52,6 +52,7 @@ from volumes.models import Volume
 from blueprints.models import Blueprint, BlueprintHostDefinition
 from cloud.providers.base import BaseCloudProvider
 from cloud.models import SecurityGroup
+from cloud.filters import SecurityGroupFilter
 from . import tasks, models, serializers, filters, validators, workflows
 
 
@@ -71,6 +72,7 @@ class PublicStackMixin(object):
 class StackPublicListAPIView(generics.ListAPIView):
     model = models.Stack
     serializer_class = serializers.StackSerializer
+    filter_class = filters.StackFilter
 
     def get_queryset(self):
         return self.model.objects \
@@ -980,6 +982,7 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 class StackSecurityGroupsAPIView(PublicStackMixin, generics.ListAPIView):
     model = SecurityGroup
     serializer_class = serializers.StackSecurityGroupSerializer
+    filter_class = SecurityGroupFilter
 
     def get_queryset(self):
         stack = self.get_object()

@@ -31,6 +31,9 @@ class ResourceConflict(APIException):
         logger.debug('ResourceConflict: %s' % self.detail)
         super(ResourceConflict, self).__init__(self.detail)
 
+    def __str__(self):
+        return 'Resource Conflict: {0}'.format(self.detail)
+
 
 class BadRequest(APIException):
     def __init__(self, detail):
@@ -38,6 +41,9 @@ class BadRequest(APIException):
         self.detail = detail
         logger.debug('BadRequest: %s' % self.detail)
         super(BadRequest, self).__init__(self.detail)
+
+    def __str__(self):
+        return 'Bad Request: {0}'.format(self.detail)
 
 
 class NotImplemented(APIException):
@@ -47,6 +53,9 @@ class NotImplemented(APIException):
         logger.debug('NotImplemented: %s' % self.detail)
         super(BadRequest, self).__init__(self.detail)
 
+    def __str__(self):
+        return 'Not Implemented: {0}'.format(self.detail)
+
 
 class InternalServerError(APIException):
     def __init__(self, detail):
@@ -54,3 +63,6 @@ class InternalServerError(APIException):
         self.detail = detail
         logger.debug('InternalServerError: %s' % self.detail)
         super(InternalServerError, self).__init__(self.detail)
+
+    def __str__(self):
+        return 'Internal Server Error: {0}'.format(self.detail)

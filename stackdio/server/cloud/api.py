@@ -637,6 +637,7 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
 
     See the standard, top-level Security Group API for further information.
     """
+    filter_class = filters.SecurityGroupFilter
 
     def get_provider(self):
         pk = self.kwargs[self.lookup_field]

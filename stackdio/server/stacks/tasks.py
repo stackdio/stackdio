@@ -1934,7 +1934,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
