@@ -16,7 +16,7 @@
 #
 
 import django_filters
-from . import models
+from cloud import models
 
 
 class CloudProviderFilter(django_filters.FilterSet):
