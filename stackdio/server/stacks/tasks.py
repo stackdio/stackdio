@@ -1520,6 +1520,12 @@ def orchestrate(stack_id, max_retries=2):
                                 })
                         continue
 
+                    if 'result' in stage_result and not stage_result['result']:
+                        errors.setdefault(host, []).append({
+                            'error': stage_result['comment']
+                        })
+                        continue
+
                     # iterate over the individual states in the
                     # host looking for states that had a result
                     # of false
