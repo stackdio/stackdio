@@ -538,7 +538,7 @@ class UpgradeSaltCommand(BaseCommand):
     def run(self):
 
         # Check to see if the master is running
-        for proc in psutil.get_process_list():
+        for proc in psutil.process_iter():
             if 'salt-master' in proc.cmdline():
                 # It's running
                 self.out('ERROR: Your salt-master is running.  Please shut it down before you '
