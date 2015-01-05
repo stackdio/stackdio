@@ -1925,6 +1925,16 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                 except BadRequest, e:
                     if 'does not exist' in e.detail:
                         logger.warn(e.detail)
+                    elif 'InvalidGroup.InUse' in e.detail:
+                        instances = driver.get_instances_for_group(security_group.group_id)
+                        err_msg = 'There are active instances using security group \'{0}\': {1}.  ' \
+                                  'Please remove these instances before attempting to delete this ' \
+                                  'stack again.'.format(security_group.name,
+                                                        ', '.join([i.id for i in instances]))
+
+                        stack.set_status(destroy_hosts.name, Stack.ERROR,
+                                         err_msg, level='ERROR')
+                        logger.error(err_msg)
                     else:
                         raise
                 security_group.delete()
@@ -1945,7 +1955,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(destroy_hosts.name, Stack.ERROR,
-                         err_msg, level=Stack.ERROR)
+                         err_msg, level='ERROR')
         logger.exception(err_msg)
         raise
 

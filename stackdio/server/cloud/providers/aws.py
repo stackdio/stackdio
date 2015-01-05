@@ -634,6 +634,22 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return result
 
+    def get_instances_for_group(self, group_id):
+        ec2 = self.connect_ec2()
+
+        reservations = ec2.get_all_instances(filters={'group-id': group_id})
+
+        result = []
+        for r in reservations:
+            for instance in r.instances:
+                result.append({
+                    'id': instance.id,
+                    'dns': instance.dns_name,
+                    'name': instance.tags.get('Name', '')
+                })
+
+        return result
+
     def get_vpc_subnets(self, subnet_ids=[]):
         try:
             vpc = self.connect_vpc()
