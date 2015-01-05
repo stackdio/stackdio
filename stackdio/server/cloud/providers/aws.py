@@ -642,7 +642,7 @@ class AWSCloudProvider(BaseCloudProvider):
         result = []
         for r in reservations:
             for instance in r.instances:
-                if instance.state == 'running':
+                if instance.state != 'terminated':
                     result.append({
                         'id': instance.id,
                         'dns': instance.dns_name,
