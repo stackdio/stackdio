@@ -1925,7 +1925,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                 except BadRequest, e:
                     if 'does not exist' in e.detail:
                         logger.warn(e.detail)
-                    elif 'InvalidGroup.InUse' in e.detail:
+                    elif 'instances using security group' in e.detail:
                         instances = driver.get_instances_for_group(security_group.group_id)
                         err_msg = 'There are active instances using security group \'{0}\': {1}.  ' \
                                   'Please remove these instances before attempting to delete this ' \
