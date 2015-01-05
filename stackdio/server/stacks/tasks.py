@@ -1930,7 +1930,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                         err_msg = 'There are active instances using security group \'{0}\': {1}.  ' \
                                   'Please remove these instances before attempting to delete this ' \
                                   'stack again.'.format(security_group.name,
-                                                        ', '.join([i.id for i in instances]))
+                                                        ', '.join([i['id'] for i in instances]))
 
                         stack.set_status(destroy_hosts.name, Stack.ERROR,
                                          err_msg, level='ERROR')
