@@ -1924,8 +1924,10 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                                  'deleted...'.format(security_group.name))
                 except BadRequest, e:
                     if 'does not exist' in e.detail:
+                        # The group didn't exist in the first place - just throw out a warning
                         logger.warn(e.detail)
                     elif 'instances using security group' in e.detail:
+                        # The group has running instances in it - we can't delete it
                         instances = driver.get_instances_for_group(security_group.group_id)
                         err_msg = 'There are active instances using security group \'{0}\': {1}.  ' \
                                   'Please remove these instances before attempting to delete this ' \
@@ -1935,6 +1937,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                         stack.set_status(destroy_hosts.name, Stack.ERROR,
                                          err_msg, level='ERROR')
                         logger.error(err_msg)
+
+                        raise StackTaskException(err_msg)
                     else:
                         raise
                 security_group.delete()
