@@ -642,11 +642,12 @@ class AWSCloudProvider(BaseCloudProvider):
         result = []
         for r in reservations:
             for instance in r.instances:
-                result.append({
-                    'id': instance.id,
-                    'dns': instance.dns_name,
-                    'name': instance.tags.get('Name', '')
-                })
+                if instance.state == 'running':
+                    result.append({
+                        'id': instance.id,
+                        'dns': instance.dns_name,
+                        'name': instance.tags.get('Name', '')
+                    })
 
         return result
 
