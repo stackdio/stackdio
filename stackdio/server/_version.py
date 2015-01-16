@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-__version_info__ = (0, 6, 0, 'beta', 0)
+__version_info__ = (0, 6, 1, 'beta', 0)
 
 
 def get_version(version=None):
