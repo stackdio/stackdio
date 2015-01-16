@@ -22,7 +22,6 @@ def get_version(version=None):
     """Returns a PEP 386-compliant version number from VERSION.
 
     Created by modifying django.utils.version.get_version"""
-    version = get_complete_version(version)
 
     # Now build the two parts of the version number:
     # major = X.Y[.Z]
@@ -46,19 +45,6 @@ def get_major_version(version=None):
     parts = 2 if version[2] == 0 else 3
     major = '.'.join(str(x) for x in version[:parts])
     return major
-
-
-def get_complete_version(version=None):
-    """Returns a tuple of the django version. If version argument is non-empty,
-    then checks for correctness of the tuple provided.
-    """
-    if version is None:
-        from django import VERSION as version
-    else:
-        assert len(version) == 5
-        assert version[3] in ('alpha', 'beta', 'rc', 'final')
-
-    return version
 
 
 __version__ = get_version(__version_info__)
