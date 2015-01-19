@@ -12,7 +12,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "setup": "npm run clean && npm install && npm run && npm run build-deps",
+    "setup": "npm run clean && npm install && npm run grunt && npm run build-deps",
     "grunt": "grunt install",
     "build-deps": "cd bower_components/q && npm install",
     "clean": "rm -rf bower_components && rm -rf node_modules"

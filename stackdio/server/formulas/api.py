@@ -31,6 +31,7 @@ from cloud.serializers import CloudProviderSerializer
 from . import tasks
 from . import serializers
 from . import models
+from . import filters
 
 
 logger = logging.getLogger(__name__)
@@ -50,9 +51,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
-
-    # This is causing a 'maximum recursion depth exceeded issue'
-    # filter_class = filters.FormulaFilter
+    filter_class = filters.FormulaFilter
 
     def get_queryset(self):
         return self.get_user().formulas.all()
@@ -65,23 +64,24 @@ class FormulaListAPIView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         uri = request.DATA.get('uri', '')
-        formulas = request.DATA.get('formulas', [])
+        uris = request.DATA.get('uris', [])
         public = request.DATA.get('public', False)
         git_username = request.DATA.get('git_username', '')
         git_password = request.DATA.get('git_password', '')
+        access_token = request.DATA.get('access_token', False)
 
-        if not uri and not formulas:
-            raise BadRequest('A uri field or a list of URIs in the formulas '
+        if not uri and not uris:
+            raise BadRequest('A uri field or a list of URIs in the uris '
                              'field is required.')
-        if uri and formulas:
-            raise BadRequest('uri and formulas fields can not be used '
+        if uri and uris:
+            raise BadRequest('uri and uris fields can not be used '
                              'together.')
-        if uri and not formulas:
-            formulas = [uri]
+        if uri and not uris:
+            uris = [uri]
 
         # check for duplicate uris
         errors = []
-        for uri in formulas:
+        for uri in uris:
             try:
                 self.model.objects.get(uri=uri, owner=self.get_user())
                 errors.append('Duplicate formula detected: {0}'.format(uri))
@@ -93,8 +93,15 @@ class FormulaListAPIView(generics.ListCreateAPIView):
 
         # create the object in the database and kick off a task
         formula_objs = []
-        for uri in formulas:
+        for uri in uris:
             if git_username != '':
+                if not access_token and not git_password:
+                    raise BadRequest('Your git password is required if you\'re not using an '
+                                     'access token.')
+                if access_token and git_password:
+                    raise BadRequest('If you are using an access token, you may not provide a '
+                                     'password.')
+
                 # Add the git username to the uri if necessary
                 parse_res = urlsplit(uri)
                 if '@' not in parse_res.netloc:
@@ -111,6 +118,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
                 public=public,
                 uri=uri,
                 git_username=git_username,
+                access_token=access_token,
                 status=self.model.IMPORTING,
                 status_detail='Importing formula...this could take a while.')
 
@@ -125,8 +133,8 @@ class FormulaListAPIView(generics.ListCreateAPIView):
 
 
 class GlobalOrchestrationFormulaListAPIView(FormulaListAPIView):
-
     permission_classes = (permissions.IsAdminUser,)
+    filter_class = filters.FormulaFilter
 
     def get_user(self):
         try:
@@ -139,6 +147,7 @@ class FormulaPublicAPIView(generics.ListAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     parser_classes = (JSONParser,)
+    filter_class = filters.FormulaFilter
 
     def get_queryset(self):
         return self.model.objects \
@@ -150,6 +159,7 @@ class FormulaAdminListAPIView(generics.ListAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     permission_classes = (permissions.IsAdminUser,)
+    filter_class = filters.FormulaFilter
 
     def get_queryset(self):
         # Return all formulas except the ones for global orchestration
@@ -272,7 +282,7 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
         if action == 'update':
             
             git_password = request.DATA.get('git_password', '')
-            if formula.private_git_repo:
+            if formula.private_git_repo and not formula.access_token:
                 if git_password == '':
                     # User didn't provide a password
                     raise BadRequest('Your git password is required to '

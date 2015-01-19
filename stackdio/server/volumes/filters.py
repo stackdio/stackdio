@@ -17,18 +17,14 @@
 
 
 import django_filters
-from .models import Formula
+from . import models
 
 
-class FormulaFilter(django_filters.FilterSet):
-    title = django_filters.CharFilter(lookup_type='icontains')
-    component = django_filters.CharFilter(name='components__sls_path')
+class VolumeFilter(django_filters.FilterSet):
+    stack = django_filters.CharFilter(name='stack__title', lookup_type='icontains')
 
     class Meta:
-        model = Formula
+        model = models.Volume
         fields = (
-            'title',
-            'uri',
-            'root_path',
-            'component',
+            'stack',
         )

@@ -631,9 +631,13 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
                 # Get the host's public IP/host set by the cloud provider. This
                 # is used later when we tie the machine to DNS
-                host.provider_dns = host_data['dnsName'] or ''
-                host.provider_private_dns = host_data['privateDnsName'] or ''
-                host.provider_private_ip = host_data['privateIpAddress'] or ''
+                host.provider_dns = host_data.get('dnsName', '') or ''
+                host.provider_private_dns = host_data.get('privateDnsName', '') or ''
+
+                # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
+                # throws an exception if we don't use host_data.get().  I changed the above two
+                # keys to do the same for robustness
+                host.provider_private_ip = host_data.get('privateIpAddress', '') or ''
 
                 # update the state of the host as provided by ec2
                 if host.state != Host.DELETING:
@@ -1516,6 +1520,12 @@ def orchestrate(stack_id, max_retries=2):
                                 })
                         continue
 
+                    if 'result' in stage_result and not stage_result['result']:
+                        errors.setdefault(host, []).append({
+                            'error': stage_result['comment']
+                        })
+                        continue
+
                     # iterate over the individual states in the
                     # host looking for states that had a result
                     # of false
@@ -1914,7 +1924,21 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                                  'deleted...'.format(security_group.name))
                 except BadRequest, e:
                     if 'does not exist' in e.detail:
+                        # The group didn't exist in the first place - just throw out a warning
                         logger.warn(e.detail)
+                    elif 'instances using security group' in e.detail:
+                        # The group has running instances in it - we can't delete it
+                        instances = driver.get_instances_for_group(security_group.group_id)
+                        err_msg = 'There are active instances using security group \'{0}\': {1}.  ' \
+                                  'Please remove these instances before attempting to delete this ' \
+                                  'stack again.'.format(security_group.name,
+                                                        ', '.join([i['id'] for i in instances]))
+
+                        stack.set_status(destroy_hosts.name, Stack.ERROR,
+                                         err_msg, level='ERROR')
+                        logger.error(err_msg)
+
+                        raise StackTaskException(err_msg)
                     else:
                         raise
                 security_group.delete()
@@ -1930,12 +1954,12 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(destroy_hosts.name, Stack.ERROR,
-                         err_msg, level=Stack.ERROR)
+                         err_msg, level='ERROR')
         logger.exception(err_msg)
         raise
 

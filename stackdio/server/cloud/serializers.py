@@ -315,7 +315,8 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
 
 class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
     provider_type = serializers.PrimaryKeyRelatedField()
-    zones = serializers.HyperlinkedIdentityField(view_name='cloudregion-zones')
+    zones = serializers.HyperlinkedRelatedField(many=True, read_only=True,
+                                                view_name='cloudzone-detail')
 
     class Meta:
         model = models.CloudRegion
