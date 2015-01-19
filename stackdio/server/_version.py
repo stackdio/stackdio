@@ -39,9 +39,8 @@ def get_version(version=None):
     return str(major + sub)
 
 
-def get_major_version(version=None):
+def get_major_version(version):
     "Returns major version from VERSION."
-    version = get_complete_version(version)
     parts = 2 if version[2] == 0 else 3
     major = '.'.join(str(x) for x in version[:parts])
     return major
