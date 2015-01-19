@@ -354,6 +354,10 @@ class StackPropertiesAPIView(PublicStackMixin, generics.RetrieveUpdateAPIView):
 
         # update the stack properties
         stack.properties = request.DATA
+
+        # Re-generate the pillar file too
+        stack._generate_pillar_file()
+
         return Response(stack.properties)
 
 

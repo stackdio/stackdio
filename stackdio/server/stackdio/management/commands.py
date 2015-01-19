@@ -22,15 +22,18 @@ import os
 import shutil
 import sys
 import textwrap
+
 import yaml
 import envoy
 import jinja2
-
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
 
+import psutil
+
 from stackdio.server.core.config import StackdioConfig
+
 
 SALT_COLORS = get_colors()
 
@@ -533,6 +536,15 @@ class UpgradeSaltCommand(BaseCommand):
     CONFIG_FILE = os.path.join(CONFIG_DIR, 'config')
 
     def run(self):
+
+        # Check to see if the master is running
+        for proc in psutil.process_iter():
+            if 'salt-master' in proc.cmdline():
+                # It's running
+                self.out('ERROR: Your salt-master is running.  Please shut it down before you '
+                         'attempt to upgrade salt.', Colors.ERROR)
+                return
+
         self.out('NOTE: This command will upgrade your version of salt-master '
                  'in addition to changing your bootstrap args so that all '
                  'minions match the master version. You are highly advised NOT '
@@ -580,9 +592,22 @@ class UpgradeSaltCommand(BaseCommand):
         config = StackdioConfig()
         bootstrap_args = config.salt_bootstrap_args
 
-        config.salt_bootstrap_args = bootstrap_args.replace(
-            current_version,
-            installed_version)
+        # Change the config to the new version - don't just do a replace, parse the config and be
+        # smart about it
+        spl = bootstrap_args.split(' ')
+
+        idx = spl.index('git')
+
+        if idx == -1:
+            # Add to the config
+            self.out('WARNING: salt version was not previously in the config file')
+            spl.append('git')
+            spl.append('v{0}'.format(installed_version))
+        else:
+            # Change the config
+            spl[idx + 1] = 'v{0}'.format(installed_version)
+
+        config.salt_bootstrap_args = ' '.join(spl)
 
         self.render_template('stackdio/management/templates/config.jinja2',
                              self.CONFIG_FILE,
@@ -595,9 +620,21 @@ class UpgradeSaltCommand(BaseCommand):
             with open(prof_file, 'r') as f:
                 profile_yaml = yaml.safe_load(f)
 
-            profile_yaml[slug]['script_args'] = profile_yaml[slug]['script_args'].replace(
-                current_version,
-                installed_version)
+            # same thing here as above - parse the config and smartly replace the salt version
+            spl = profile_yaml[slug]['script_args'].split(' ')
+
+            idx = spl.index('git')
+
+            if idx == -1:
+                # Add to the config
+                self.out('WARNING: salt version was not previously in the config file')
+                spl.append('git')
+                spl.append('v{0}'.format(installed_version))
+            else:
+                # Change the config
+                spl[idx + 1] = 'v{0}'.format(installed_version)
+
+            profile_yaml[slug]['script_args'] = ' '.join(spl)
 
             with open(prof_file, 'w') as f:
                 yaml.safe_dump(profile_yaml, f, default_flow_style=False)
