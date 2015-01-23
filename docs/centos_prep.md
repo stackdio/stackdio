@@ -16,9 +16,9 @@ sudo service iptables stop
 
 ### SELinux
 
-Getting things working using SELinux could be an entirely separate guide. For our purposes, it's completley out of scope, so we're going to disable it. 
+Getting things working using SELinux could be an entirely separate guide. For our purposes, it's completely out of scope, so we're going to disable it. 
 
-> **NOTE**: You will be rquired to restart the machine during this step.
+> **NOTE**: You will be required to restart the machine during this step.
 
 ```bash
 # Edit /etc/sysconfig/selinux and make sure the line beginning
