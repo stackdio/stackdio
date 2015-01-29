@@ -130,7 +130,6 @@ class StackdioOverState(salt.overstate.OverState):
                 'arg': arg,
                 'expr_form': 'compound',
                 'raw': True,
-                # 'batch': str(self.opts['worker_threads'])
             }
 
             for minion in self.local.cmd_iter(**cmd_kwargs):
@@ -150,7 +149,7 @@ class StackdioOverState(salt.overstate.OverState):
 
 def orchestrate(saltenv='base', os_fn=None):
     """
-    Borrowed and adpated from salt.runners.state::over()
+    Borrowed and adapted from salt.runners.state::over()
 
     Modifying this to return a generator instead of all the data at once
 
@@ -176,8 +175,7 @@ def orchestrate(saltenv='base', os_fn=None):
             #         ret.setdefault('__stage__error__', []).append(result)
             #     else:
             #         ret.setdefault(host, []).append(result)
-        elif isinstance(stage, list):
-            # we don't care about output from stage executions
-            continue
+
+        # We don't care about anything but the highstate data
     # salt.output.display_output(ret, 'yaml', opts=__opts__)
     # return overstate.over_run
