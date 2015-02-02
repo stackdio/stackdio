@@ -45,7 +45,6 @@ class PublicBlueprintMixin(object):
 
 
 class BlueprintListAPIView(generics.ListCreateAPIView):
-
     model = models.Blueprint
     serializer_class = serializers.BlueprintSerializer
     parser_classes = (JSONParser,)
@@ -67,9 +66,9 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
 
 
 class BlueprintPublicAPIView(generics.ListAPIView):
-
     model = models.Blueprint
     serializer_class = serializers.BlueprintSerializer
+    filter_class = filters.BlueprintFilter
 
     def get_queryset(self):
         return self.model.objects \
@@ -81,6 +80,7 @@ class BlueprintAdminListAPIView(generics.ListAPIView):
     model = models.Blueprint
     serializer_class = serializers.BlueprintSerializer
     permission_classes = (permissions.IsAdminUser,)
+    filter_class = filters.BlueprintFilter
 
     def get_queryset(self):
         return self.model.objects.all()
@@ -101,8 +101,11 @@ class BlueprintDetailAPIView(PublicBlueprintMixin,
 
         # rebuild properties list
         properties = request.DATA.pop('properties', None)
-        if properties:
+        if properties and isinstance(properties, dict):
             blueprint.properties = properties
+        else:
+            logger.warning('Invalid properties for blueprint {0}: {1}'.format(blueprint.title,
+                                                                              properties))
 
         return super(BlueprintDetailAPIView, self).update(request,
                                                           *args,

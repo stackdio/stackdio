@@ -642,6 +642,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                             'volumes': map_volumes,
                             'cloud_provider': host.cloud_profile.cloud_provider.slug,
                             'cloud_profile': host.cloud_profile.slug,
+                            'namespace': self.namespace,
                         },
                     },
 
@@ -990,14 +991,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         return log_dir
 
     def get_security_groups(self):
-        groups = SecurityGroup.objects.filter(is_managed=True,
-                                              hosts__stack=self)
-        ret = []
-        for group in groups:
-            if group not in ret:
-                ret.append(group)
-
-        return ret
+        return SecurityGroup.objects.filter(is_managed=True,
+                                            hosts__stack=self).distinct()
 
     def get_role_list(self):
         roles = set()

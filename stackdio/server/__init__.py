@@ -15,12 +15,7 @@
 # limitations under the License.
 #
 
-
-"""
-This is a test docstring
-"""
-from django.utils.version import get_version
-__version__ = get_version((0, 6, 0, 'beta', 0))
+from ._version import __version__, __version_info__  # noqa
 __copyright__ = "Copyright 2014, Digital Reasoning"
 __license__ = "Apache License Version 2.0, January 2004"
 __maintainer__ = "https://github.com/stackdio/stackdio"

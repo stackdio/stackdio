@@ -19,8 +19,13 @@
 import django_filters
 from .models import Blueprint
 
+
 class BlueprintFilter(django_filters.FilterSet):
+    title = django_filters.CharFilter(lookup_type='icontains')
+
     class Meta:
         model = Blueprint
-        fields = ('title',)
+        fields = (
+            'title',
+        )
 

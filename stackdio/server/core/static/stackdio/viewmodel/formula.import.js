@@ -22,10 +22,9 @@ define([
     'bootbox',
     'util/galaxy',
     'util/alerts',
-    'util/form',
     'api/api'
 ],
-function (Q, settings, ko, bootbox, $galaxy, alerts, formutils, API) {
+function (Q, settings, ko, bootbox, $galaxy, alerts, API) {
     var vm = function () {
         var self = this;
 
@@ -34,6 +33,12 @@ function (Q, settings, ko, bootbox, $galaxy, alerts, formutils, API) {
          *   V I E W   V A R I A B L E S
          *  ==================================================================================
         */
+
+        self.accessToken = ko.observable();
+        self.uri = ko.observable();
+        self.username = ko.observable();
+        self.password = ko.observable();
+        self.globalOrch = ko.observable();
 
         /*
          *  ==================================================================================
@@ -50,26 +55,43 @@ function (Q, settings, ko, bootbox, $galaxy, alerts, formutils, API) {
             console.log(ex);            
         }
 
+        $galaxy.network.subscribe(self.id + '.docked', function (data) {
+            self.init(data);
+        });
+
         /*
          *  ==================================================================================
          *   V I E W   M E T H O D S
          *  ==================================================================================
         */
 
+        self.init = function(data) {
+            self.accessToken(false);
+            self.uri('');
+            self.username('');
+            self.password('');
+            self.globalOrch(false);
+        };
+
         self.cancelChanges = function() {
-            formutils.clearForm('formula-form');
             $galaxy.transport('formula.list');
         };
 
+        self.usernameText = ko.computed(function() {
+            if (self.accessToken()) {
+                return 'Access token';
+            } else {
+                return 'Git username';
+            }
+        });
+
         self.superuser = function() {
-            console.log('superuser: '+settings.superuser);
             return settings.superuser;
         };
 
         self.importFormula = function (model, evt) {
-            var record = formutils.collectFormFields(evt.target.form);
 
-            API.Formulas.import(record.formula_url.value, record.git_username.value, record.git_password.value)
+            API.Formulas.import(self.uri(), self.username(), self.password(), self.accessToken())
                 .then(function () {
                     alerts.showMessage('#success', 'Formula has been submitted for import. Depending on the size of the formula repository it may take some time to complete.', true);
 
@@ -78,10 +100,10 @@ function (Q, settings, ko, bootbox, $galaxy, alerts, formutils, API) {
                 })
                 .catch(function (error) {
                     self.showError(error, 15000);
-                })
+                });
 
-            if (record.global_orch.value) {
-                API.Formulas.import_global(record.formula_url.value, record.git_username.value, record.git_password.value)
+            if (self.globalOrch()) {
+                API.Formulas.import_global(self.uri(), self.username(), self.password(), self.accessToken())
                 .then(function () {
                     alerts.showMessage('#success', 'Formula has been submitted for import into the global orchestration space. Depending on the size of the formula repository it may take some time to complete.', true);
 
@@ -90,7 +112,7 @@ function (Q, settings, ko, bootbox, $galaxy, alerts, formutils, API) {
                 })
                 .catch(function (error) {
                     self.showError(error, 15000);
-                })
+                });
             }
         };
 

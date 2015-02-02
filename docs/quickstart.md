@@ -72,13 +72,13 @@ workon stackdio
 > **NOTE** Double-check that your virtualenv is activated or else this will probably complain that you don't have permissions to install (because it's trying to install into the global python site-packages directory which we don't want!)
 
 ```bash
-pip install https://github.com/digitalreasoning/stackdio.git
+pip install https://github.com/stackdio/stackdio.git
 
 # The above should install directly from github, but if
 # you'd rather install manually:
 
 cd /tmp
-git clone git@github.com:digitalreasoning/stackdio.git
+git clone git@github.com:stackdio/stackdio.git
 cd stackdio
 pip install .
 ```
@@ -204,7 +204,3 @@ The superuser we created earlier will give us admin access to stackd.io, however
 * optionally provide first name, last name, and email address of the user and click save
 
 The newly created users will now have access to stackd.io. Test this by logging out and signing in with one of the non-admin users.
-
-# Next steps
-
-This concludes the quick start. At this point you should have a running stackd.io install, but you may need a bit more help in using the system. You can read through the [stackd.io tutorial](tutorial.md) or watch the [stackd.io screencast](http://stackd.io/tour) to learn a bit more about using the system to manage your cloud infrastructure.
