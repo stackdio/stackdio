@@ -246,6 +246,7 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
         if request.method in ('PATCH', 'PUT'):
             fields_available = ('title',
                                 'description',
+                                'image_id',
                                 'default_instance_size',
                                 'ssh_user',)
 
