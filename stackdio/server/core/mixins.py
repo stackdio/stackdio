@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class SuperuserFieldsMixin(object):
     '''
     Filters out the serialized fields found in `superuser_fields` if
-    the authenticated user is *not* a superuser. For example, with 
+    the authenticated user is *not* a superuser. For example, with
     the following Meta definition, the 'foo' field would be removed
     from serialization if the user is not a superuser.
 

@@ -20,7 +20,7 @@
 ##########
 #
 # This script follows very closely with the Quick Start code located at
-# https://github.com/digitalreasoning/stackdio.git. The intent is to
+# https://github.com/stackdio/stackdio.git. The intent is to
 # plop this on a server and run it to quickly get a functional stackd.io
 # environment. Feel free to make tweaks to suit your needs.
 #
@@ -98,7 +98,7 @@ mkvirtualenv stackdio
 workon stackdio
 
 # Install directly from GitHub
-pip install git+ssh://git@github.com/digitalreasoning/stackdio.git
+pip install git+ssh://git@github.com/stackdio/stackdio.git
 
 # Run through stackdio init to create ~/.stackdio/confg
 stackdio init
