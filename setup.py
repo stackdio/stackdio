@@ -20,6 +20,7 @@ import os
 import sys
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
+from pip.download import PipSession
 
 if float("%d.%d" % sys.version_info[:2]) < 2.6:
     print('Your Python version {0}.{1}.{2} is not supported.'.format(
@@ -44,7 +45,7 @@ if os.path.isfile('README.md'):
 
 def load_pip_requirements(fp):
     reqs, deps = [], []
-    for r in parse_requirements(fp):
+    for r in parse_requirements(fp, session=PipSession()):
         if r.url is not None:
             deps.append(str(r.url))
         reqs.append(str(r.req))
