@@ -78,11 +78,11 @@ class BaseCloudProvider(object):
             os.makedirs(self.provider_storage)
 
     def destroy(self):
-        '''
+        """
         Cleans up the provider storage. Overrides should call
         this method to make sure files and directories are
         properly removed.
-        '''
+        """
         if not self.provider_storage:
             return
 
@@ -95,11 +95,11 @@ class BaseCloudProvider(object):
 
     @classmethod
     def get_provider_choice(self):
-        '''
+        """
         Should return a two-element tuple of the short and long name of the
         provider type. This should be what the choices attribute on a
         model field is expected (e.g., ('db_value', 'Label') )
-        '''
+        """
 
         if not hasattr(self, 'SHORT_NAME') or not self.SHORT_NAME:
             raise AttributeError('SHORT_NAME must exist and be a string.')
@@ -111,15 +111,15 @@ class BaseCloudProvider(object):
 
     @classmethod
     def get_required_fields(self):
-        '''
+        """
         Return the fields required in the data dictionary for
         `get_provider_data` and `validate_provider_data`
-        '''
+        """
         raise NotImplementedError()
 
     @classmethod
     def get_provider_data(self, data, files=None):
-        '''
+        """
         Takes a dict of values provided by the user (most likely from the
         request data) and returns a new dict of info that's specific to
         the provider type you're implementing. The returned dict will be
@@ -132,17 +132,17 @@ class BaseCloudProvider(object):
 
         See Salt Cloud documentation for more info on what needs to be in
         this return dict for each provider.
-        '''
+        """
         raise NotImplementedError()
 
     @classmethod
     def validate_provider_data(self, data, files=None):
-        '''
+        """
         Checks that the keys defined in `get_required_fields` are in the
         given `data` dict. This merely checks that they are there and the
         values aren't empty. Override for any additional validation
         required.
-        '''
+        """
         errors = {}
         for key in self.get_required_fields():
             if not data.get(key):
@@ -154,40 +154,40 @@ class BaseCloudProvider(object):
 
     @classmethod
     def validate_image_id(self, image_id):
-        '''
+        """
         Given an image_id, check that it exists and you have
         permissions to use it. It should a tuple:
             (boolean, string)
         where True means the image_id is available, and False
         means it does not. The string is the underlying error
         string if provided.
-        '''
+        """
         raise NotImplementedError()
 
     @classmethod
     def register_dns(self, hosts):
-        '''
+        """
         Given a list of 'stacks.Host' objects, this method's
         implementation should handle the registration of DNS
         for the given cloud provider (e.g., Route53 on AWS)
-        '''
+        """
         raise NotImplementedError()
 
     @classmethod
     def unregister_dns(self, hosts):
-        '''
+        """
         Given a list of 'stacks.Host' objects, this method's
         implementation should handle the de-registration of DNS
         for the given cloud provider (e.g., Route53 on AWS)
-        '''
+        """
         raise NotImplementedError()
 
     @classmethod
     def get_current_instance_data(cls):
-        '''
+        """
         Get the instance data for the current instance (usually the stackdio
         instance & salt master
-        '''
+        """
 
         # Since there's not a good way to get the provider type of the current
         # instance, just try them all until one works

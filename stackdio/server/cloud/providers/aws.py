@@ -57,14 +57,14 @@ DEFAULT_ROUTE53_TTL = 30
 
 class Route53Domain(object):
     def __init__(self, access_key, secret_key, domain):
-        '''
+        """
         `access_key`
             The AWS access key id
         `secret_key`
             The AWS secret access key
         `domain`
             An existing Route53 domain to manage
-        '''
+        """
         self.access_key = access_key
         self.secret_key = secret_key
         self.domain = domain
@@ -79,11 +79,11 @@ class Route53Domain(object):
         self._load_domain()
 
     def _load_domain(self):
-        '''
+        """
         Attempts to look up a Route53 hosted zone given a domain name (they're
         much easier to remember than a zone id). Once loaded, pulls out the
         zone id and stores it in `zone_id`
-        '''
+        """
         # look up the hosted zone based on the domain
         response = self.conn.get_hosted_zone_by_name(self.domain)
         self.hosted_zone = response['GetHostedZoneResponse']['HostedZone']
@@ -92,10 +92,10 @@ class Route53Domain(object):
         self.zone_id = self.hosted_zone['Id'][len('/hostedzone/'):]
 
     def get_rrnames_set(self, force=False):
-        '''
+        """
         Returns a cached set of resource record names for our zone id, and
         builds the cached set if we haven't already.
-        '''
+        """
         if not force and self.rr_sets is not None:
             return self.rr_sets
         self.rr_sets = {}
@@ -108,7 +108,7 @@ class Route53Domain(object):
         return self.rr_sets
 
     def start_rr_transaction(self):
-        '''
+        """
         Creates a new Route53 ResourceRecordSets object that is used
         internally like a transaction of sorts. You may add or delete
         many resource records using a single set by calling the
@@ -118,29 +118,29 @@ class Route53Domain(object):
         NOTE: Calling this method again before finishing will not finish
         an existing transaction or delete it. To cancel an existing
         transaction use the `cancel_rr_transaction`.
-        '''
+        """
 
         if not hasattr(self, '_rr_txn') or self._rr_txn is None:
             # Return a new ResourceRecordSets "transaction"
             self._rr_txn = ResourceRecordSets(self.conn, self.zone_id)
 
     def finish_rr_transaction(self):
-        '''
+        """
         If a transaction exists, commit the changes to Route53
-        '''
+        """
         if self._rr_txn is not None:
             self._rr_txn.commit()
             self._rr_txn = None
 
     def cancel_rr_transaction(self):
-        '''
+        """
         Basically deletes the existing transaction.
-        '''
+        """
         self._rr_txn = None
 
     def add_record(self, record_name, record_value, record_type,
                    ttl=DEFAULT_ROUTE53_TTL):
-        '''
+        """
         NOTE: This method must be called after `start_rr_transaction`.
 
         Adds a new record to the existing resource record transaction.
@@ -157,7 +157,7 @@ class Route53Domain(object):
 
         `ttl`
             The TTL for the record in seconds, default is 30 seconds
-        '''
+        """
         # Update the record name to be fully qualified with the domain
         # for this instance. The period on the end is required.
         record_name += '.{0}.'.format(self.domain)
@@ -179,12 +179,12 @@ class Route53Domain(object):
 
     def delete_record(self, record_name, record_value, record_type,
                       ttl=DEFAULT_ROUTE53_TTL):
-        '''
+        """
         Almost the same as `add_record` but it deletes an existing record
 
         NOTE: The name, value, and ttl must all match an existing record
         or Route53 will not allow it to be removed.
-        '''
+        """
         # Update the record name to be fully qualified with the domain
         # for this instance. The period on the end is required.
         record_name += '.{0}.'.format(self.domain)
@@ -464,18 +464,18 @@ class AWSCloudProvider(BaseCloudProvider):
         return self._vpc_connection
 
     def is_cidr_rule(self, rule):
-        '''
+        """
         Determines if the rule string conforms to the CIDR pattern.
-        '''
+        """
         return CIDR_PATTERN.match(rule)
 
     def create_security_group(self,
                               security_group_name,
                               description,
                               delete_if_exists=False):
-        '''
+        """
         Returns the identifier of the group.
-        '''
+        """
         if not description:
             description = 'Default description provided by stackd.io'
 
@@ -541,7 +541,7 @@ class AWSCloudProvider(BaseCloudProvider):
             raise InternalServerError(e.error_message)
 
     def authorize_security_group(self, group_id, rule):
-        '''
+        """
         @group_id: string, the group id to add the rule to
         @rule: dict {
             'protocol': tcp | udp | icmp
@@ -550,7 +550,7 @@ class AWSCloudProvider(BaseCloudProvider):
             'rule': string (ex. \
                 19.38.48.12/32, 0.0.0.0/0, 4328737383:stackdio-group)
         }
-        '''
+        """
         ec2 = self.connect_ec2()
         kwargs = self._security_group_rule_to_kwargs(rule)
         kwargs['group_id'] = group_id
@@ -568,18 +568,18 @@ class AWSCloudProvider(BaseCloudProvider):
             raise InternalServerError(e.error_message)
 
     def revoke_security_group(self, group_id, rule):
-        '''
+        """
         See `authorize_security_group`
-        '''
+        """
         ec2 = self.connect_ec2()
         kwargs = self._security_group_rule_to_kwargs(rule)
         kwargs['group_id'] = group_id
         ec2.revoke_security_group(**kwargs)
 
     def revoke_all_security_groups(self, group_id):
-        '''
+        """
         Revokes ALL rules on the security group.
-        '''
+        """
         groups = self.get_security_groups(group_id)
         for group_name, group in groups.iteritems():
             for rule in group['rules']:
@@ -663,9 +663,9 @@ class AWSCloudProvider(BaseCloudProvider):
             return None
 
     def has_image(self, image_id):
-        '''
+        """
         Checks to see if the given ami is available in the account
-        '''
+        """
         ec2 = self.connect_ec2()
         try:
             ec2.get_all_images(image_id)
@@ -675,9 +675,9 @@ class AWSCloudProvider(BaseCloudProvider):
                           'account.'.format(image_id)
 
     def has_snapshot(self, snapshot_id):
-        '''
+        """
         Checks to see if the given snapshot is available in the account
-        '''
+        """
         ec2 = self.connect_ec2()
         try:
             ec2.get_all_snapshots(snapshot_id)
@@ -687,11 +687,11 @@ class AWSCloudProvider(BaseCloudProvider):
                           'account.'.format(snapshot_id)
 
     def register_dns(self, hosts):
-        '''
+        """
         Given a list of 'stacks.Host' objects, this method's
         implementation should handle the registration of DNS
         for the given cloud provider (e.g., Route53 on AWS)
-        '''
+        """
         # Start a resource record "transaction"
         r53_domain = self.connect_route53()
         r53_domain.start_rr_transaction()
@@ -724,11 +724,11 @@ class AWSCloudProvider(BaseCloudProvider):
             host.save()
 
     def unregister_dns(self, hosts):
-        '''
+        """
         Given a list of 'stacks.Host' objects, this method's
         implementation should handle the de-registration of DNS
         for the given cloud provider (e.g., Route53 on AWS)
-        '''
+        """
 
         # Start a resource record "transaction"
         r53_domain = self.connect_route53()
@@ -873,7 +873,7 @@ class AWSCloudProvider(BaseCloudProvider):
               timeout=5 * 60,
               interval=5,
               max_failures=5):
-        '''
+        """
         Generic function that will call the given function `fun` with
         `fun_args` and `fun_kwargs` until the function returns a valid result
         or the `timeout` or `max_failures` is reached. A valid result is a
@@ -882,7 +882,7 @@ class AWSCloudProvider(BaseCloudProvider):
         tuple it will *not* be considered a failure and the loop will continue
         waiting for a valid result. All exceptions from `fun` will be
         considered failures.
-        '''
+        """
 
         if fun_args is None:
             fun_args = ()
@@ -942,12 +942,12 @@ class AWSCloudProvider(BaseCloudProvider):
         return (False, err_msg)
 
     def _wait_for_state(self, hosts, state):
-        '''
+        """
         Checks if all hosts are in the given state. Returns a 2-element tuple
         with the first element a boolean representing if all hosts are in the
         required state and the second element being the list of EC2 instance
         objects. This method is suitable as a handler for the `_wait` method.
-        '''
+        """
         logger.debug('_wait_for_state {0}'.format(hosts))
         instances = self.get_ec2_instances(hosts)
         if not instances:
@@ -969,10 +969,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def _execute_action(self, stack, status, success_state, state_fun,
                         *args, **kwargs):
-        '''
+        """
         Generic function to handle most all states accordingly. If you need
         custom logic in the state handling, do so in the _action* methods.
-        '''
+        """
         stack.set_status(status, status,
                          '%s all hosts in this stack.' % status.capitalize())
 
@@ -995,9 +995,9 @@ class AWSCloudProvider(BaseCloudProvider):
         return False
 
     def _action_stop(self, stack, *args, **kwargs):
-        '''
+        """
         Stop all of the hosts on the given stack.
-        '''
+        """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
                                     stack.STOPPING,
@@ -1007,9 +1007,9 @@ class AWSCloudProvider(BaseCloudProvider):
                                     **kwargs)
 
     def _action_start(self, stack, *args, **kwargs):
-        '''
+        """
         Starts all of the hosts on the given stack.
-        '''
+        """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
                                     stack.STARTING,
@@ -1019,9 +1019,9 @@ class AWSCloudProvider(BaseCloudProvider):
                                     **kwargs)
 
     def _action_terminate(self, stack, *args, **kwargs):
-        '''
+        """
         Terminates all of the hosts on the given stack.
-        '''
+        """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
                                     stack.TERMINATING,
