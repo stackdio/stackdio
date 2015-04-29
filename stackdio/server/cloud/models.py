@@ -118,9 +118,9 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         return pclass(self)
 
     def update_config(self):
-        '''
+        """
         Writes the yaml configuration file for the given provider object.
-        '''
+        """
         # update the provider object's security group information
         security_groups = [sg.group_id for sg in self.security_groups.filter(
             is_default=True
@@ -177,12 +177,12 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
 
 
 class GlobalOrchestrationFormulaComponent(TimeStampedModel):
-    '''
+    """
     An extension of an existing FormulaComponent to add additional metadata
     for those components based on this provider. In particular, this is how
     we track the order in which the formula should be provisioned during
     global orchestration.
-    '''
+    """
 
     class Meta:
         verbose_name_plural = 'global orchestration formula components'
@@ -239,9 +239,9 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
         return self.title
 
     def update_config(self):
-        '''
+        """
         Writes the salt-cloud profile configuration file
-        '''
+        """
 
         profile_yaml = {}
         profile_yaml[self.slug] = {
@@ -325,10 +325,10 @@ class SecurityGroupQuerySet(TransformQuerySet):
         return self.transform(self._inject_rules)
 
     def _inject_rules(self, queryset):
-        '''
+        """
         Pull all the security group rules using the cloud provider's
         implementation.
-        '''
+        """
         by_provider = {}
         for group in queryset:
             by_provider.setdefault(group.cloud_provider, []).append(group)
@@ -405,9 +405,9 @@ class SecurityGroup(TimeStampedModel, models.Model):
         return self.hosts.count()
 
     def rules(self):
-        '''
+        """
         Pulls the security groups using the cloud provider
-        '''
+        """
         logger.debug('SecurityGroup::rules called...')
         driver = self.cloud_provider.get_driver()
         try:

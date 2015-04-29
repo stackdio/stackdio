@@ -35,10 +35,10 @@ class SearchSerializer(serializers.Serializer):
 
 
 class SearchResultTypeField(serializers.Field):
-    '''
+    """
     Tricks a read-only field into returning the value we want
     it to return instead of leveraging a value on the model.
-    '''
+    """
     def __init__(self, result_type):
         self.result_type = result_type
         super(SearchResultTypeField, self).__init__(source='pk')

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
-    '''
+    """
     The intention here is to be able to install an entire formula along
     with identifying the individual components that may be installed
     with the formula. For example, a simple formula like EPEL may
@@ -110,7 +110,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         description: The RegionServer component of the CDH4 formula.
         sls_path: cdh4.hbase.regionserver
 
-    '''
+    """
     ERROR       = 'error'
     COMPLETE    = 'complete'
     IMPORTING   = 'importing'
@@ -159,9 +159,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
 
 class FormulaComponent(TitleSlugDescriptionModel):
-    '''
+    """
     Mapping of individual components of a formula
-    '''
+    """
 
     class Meta:
         ordering = ['pk']
@@ -183,10 +183,10 @@ class FormulaComponent(TitleSlugDescriptionModel):
 
 @receiver(models.signals.post_delete, sender=Formula)
 def cleanup_formula(sender, instance, **kwargs):
-    '''
+    """
     Utility method to clean up the cloned formula repository when
     the formula is deleted.
-    '''
+    """
 
     repo_dir = instance.get_repo_dir()
     logger.debug('cleanup_formula called. Path to remove: {0}'.format(repo_dir))

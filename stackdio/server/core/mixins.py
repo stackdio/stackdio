@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class SuperuserFieldsMixin(object):
-    '''
+    """
     Filters out the serialized fields found in `superuser_fields` if
     the authenticated user is *not* a superuser. For example, with
     the following Meta definition, the 'foo' field would be removed
@@ -31,7 +31,7 @@ class SuperuserFieldsMixin(object):
         fields = ('foo', 'bar', baz')
         superuser_fields = ('foo',)
 
-    '''
+    """
     def get_fields(self, *args, **kwargs):
         # Get the current set of fields as defined in the Meta class
         fields = super(SuperuserFieldsMixin, self).get_fields(*args, **kwargs)
