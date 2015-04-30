@@ -52,9 +52,8 @@ def find_ebs_device(device):
         return device
 
     if device.startswith('/dev/sd'):
-        new_device = '/dev/xvd' + device[device.rfind('/')+3:]
+        new_device = '/dev/xvd' + device[device.rfind('/') + 3:]
         if os.path.exists(new_device):
             return new_device
 
     return None
-

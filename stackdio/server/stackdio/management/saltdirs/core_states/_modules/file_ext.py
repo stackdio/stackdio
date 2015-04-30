@@ -17,10 +17,10 @@
 
 
 """
-Extension of the built-in file module to support an arbitrary `exists` method 
+Extension of the built-in file module to support an arbitrary `exists` method
 for knowing if a file, directory, device, symlink, etc exists or not. The
-existing methods `file_exists` and `directory_exists` only look at those 
-types, so there's not a convenient way of checking if /dev/xvdj exists for 
+existing methods `file_exists` and `directory_exists` only look at those
+types, so there's not a convenient way of checking if /dev/xvdj exists for
 example.
 """
 

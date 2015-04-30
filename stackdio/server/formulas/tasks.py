@@ -205,7 +205,6 @@ def import_formula(formula_id, git_password):
                                       sls_path=sls_path,
                                       description=description)
 
-
         root_dir = formula.get_repo_dir()
 
         # move the cloned formula repository to a location known by salt
@@ -383,4 +382,3 @@ def update_formula(formula_id, git_password):
         raise FormulaTaskException(
             formula,
             'An unhandled exception occurred.  Your formula was not changed')
-

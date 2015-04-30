@@ -28,4 +28,3 @@ class BlueprintFilter(django_filters.FilterSet):
         fields = (
             'title',
         )
-

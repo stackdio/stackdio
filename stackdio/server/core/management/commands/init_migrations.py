@@ -59,7 +59,7 @@ class Command(BaseCommand):
                 os.remove(fp)
 
             # Initialize migrations
-            logger.info('Executing manage.py schemamigration {0} ' \
+            logger.info('Executing manage.py schemamigration {0} '
                         '--initial'.format(app_name))
             call_command('schemamigration', app_name, initial=True)
 

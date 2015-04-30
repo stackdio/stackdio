@@ -40,4 +40,4 @@ MIDDLEWARE_CLASSES += (
 ##
 # Add in additional applications
 ##
-#INSTALLED_APPS += ('',)
+# INSTALLED_APPS += ('',)

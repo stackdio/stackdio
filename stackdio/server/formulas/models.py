@@ -111,10 +111,10 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         sls_path: cdh4.hbase.regionserver
 
     """
-    ERROR       = 'error'
-    COMPLETE    = 'complete'
-    IMPORTING   = 'importing'
-    STATUS      = Choices(ERROR, COMPLETE, IMPORTING)
+    ERROR = 'error'
+    COMPLETE = 'complete'
+    IMPORTING = 'importing'
+    STATUS = Choices(ERROR, COMPLETE, IMPORTING)
 
     class Meta:
         ordering = ['pk']
@@ -192,4 +192,3 @@ def cleanup_formula(sender, instance, **kwargs):
     logger.debug('cleanup_formula called. Path to remove: {0}'.format(repo_dir))
     if isdir(repo_dir):
         rmtree(repo_dir)
-

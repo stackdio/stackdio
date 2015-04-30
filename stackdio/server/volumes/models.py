@@ -61,4 +61,3 @@ class Volume(TimeStampedModel):
 
     def __unicode__(self):
         return '{0}'.format(self.volume_id)
-

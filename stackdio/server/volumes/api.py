@@ -63,4 +63,3 @@ class VolumeDetailAPIView(generics.RetrieveAPIView):
     #     return get_object_or_404(Volume,
     #                              pk=self.kwargs.get('pk'),
     #                              stack__owner=self.request.user)
-

@@ -27,7 +27,7 @@ class StackAdmin(admin.ModelAdmin):
         'slug',
         'owner',
         'blueprint',
-        #'cloud_provider',
+        # 'cloud_provider',
         'created',
         'modified',
     ]
@@ -54,4 +54,3 @@ class HostAdmin(admin.ModelAdmin):
         'fqdn',
     ]
 admin.site.register(models.Host, HostAdmin)
-

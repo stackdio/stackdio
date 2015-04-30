@@ -23,8 +23,6 @@ from . import api
 urlpatterns = patterns('search.api',
 
     url(r'^search/$',
-        api.SearchAPIView.as_view(), 
+        api.SearchAPIView.as_view(),
         name='search'),
 )
-
-

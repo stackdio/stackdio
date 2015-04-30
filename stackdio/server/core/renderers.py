@@ -19,6 +19,7 @@
 from django.utils.encoding import smart_unicode
 from rest_framework import renderers
 
+
 class PlainTextRenderer(renderers.BaseRenderer):
     """
     Your basic text/plain renderer.
@@ -31,6 +32,7 @@ class PlainTextRenderer(renderers.BaseRenderer):
             return data
         return smart_unicode(data)
 
+
 class XMLRenderer(PlainTextRenderer):
     """
     Subclass PlainTextRenderer, but switch to XML content-type. DRF has a built-in
@@ -38,6 +40,7 @@ class XMLRenderer(PlainTextRenderer):
     """
     media_type = 'application/xml'
     format = 'xml'
+
 
 class JSONRenderer(PlainTextRenderer):
     """

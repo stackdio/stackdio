@@ -94,7 +94,7 @@ urlpatterns = patterns(
     url(r'^stacks/(?P<pk>[0-9]+)/action/$',
         api.StackActionAPIView.as_view(),
         name='stack-action'),
-    
+
     url(r'^stacks/(?P<pk>[0-9]+)/actions/$',
         api.StackActionListAPIView.as_view(),
         name='stackaction-list'),

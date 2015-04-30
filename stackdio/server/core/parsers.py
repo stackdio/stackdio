@@ -18,14 +18,17 @@
 
 from rest_framework.parsers import BaseParser
 
+
 class PlainTextParser(BaseParser):
     media_type = 'text/plain'
 
     def parse(self, stream, media_type, parser_context):
         return stream.read()
 
+
 class CSVParser(PlainTextParser):
     media_type = 'application/csv'
+
 
 class XMLParser(PlainTextParser):
     media_type = 'application/xml'

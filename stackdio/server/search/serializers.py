@@ -49,6 +49,7 @@ class SearchResultTypeField(serializers.Field):
 
 class BlueprintSearchSerializer(serializers.HyperlinkedModelSerializer):
     result_type = SearchResultTypeField('blueprint')
+
     class Meta:
         model = Blueprint
         fields = ('id', 'url', 'title', 'description', 'result_type')
@@ -56,6 +57,7 @@ class BlueprintSearchSerializer(serializers.HyperlinkedModelSerializer):
 
 class FormulaSearchSerializer(serializers.HyperlinkedModelSerializer):
     result_type = SearchResultTypeField('formula')
+
     class Meta:
         model = Formula
         fields = ('id', 'url', 'title', 'description', 'result_type')
@@ -63,7 +65,7 @@ class FormulaSearchSerializer(serializers.HyperlinkedModelSerializer):
 
 class StackSearchSerializer(serializers.HyperlinkedModelSerializer):
     result_type = SearchResultTypeField('stack')
+
     class Meta:
         model = Stack
         fields = ('id', 'url', 'title', 'description', 'result_type')
-
