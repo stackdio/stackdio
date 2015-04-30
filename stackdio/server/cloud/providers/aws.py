@@ -859,7 +859,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # Grab the hostnames
         ret['private-hostname'] = requests.get('http://169.254.169.254/latest/meta-data/local-hostname').text
-        ret['public-hostname'] = requests.get('http://169.254.169.254/latest/meta-data/public-hostname').text
+
+        public_hostname = requests.get('http://169.254.169.254/latest/meta-data/public-hostname')
+        if r.status_code == 200:
+            ret['public-hostname'] = public_hostname.text
 
         return ret
 
