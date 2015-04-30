@@ -27,6 +27,7 @@ from django.core.management.base import BaseCommand, CommandError
 import logging
 logger = logging.getLogger('core')
 
+
 class Command(BaseCommand):
     args = 'app-name, app-name, ...'
     help = 'Deletes all migrations for the given app and re-initializes them.'
@@ -61,7 +62,6 @@ class Command(BaseCommand):
             logger.info('Executing manage.py schemamigration {0} ' \
                         '--initial'.format(app_name))
             call_command('schemamigration', app_name, initial=True)
-            
 
     def error(self, msg=''):
         logger.error(msg)
