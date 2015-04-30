@@ -24,7 +24,7 @@ requirejs.config({
         'bootbox': 'bower_components/bootbox/bootbox',
         'ladda': 'bower_components/ladda/js/ladda',
         'knockout': 'bower_components/knockout.js/knockout',
-        'q': 'bower_components/q/q.min',
+        'q': 'bower_components/q/q',
         'underscore': 'bower_components/underscore/underscore',
         'postal': 'bower_components/postal.js/lib/postal.min',
         'moment': 'bower_components/moment/min/moment.min',
