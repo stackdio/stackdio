@@ -64,8 +64,9 @@ class BlueprintManager(models.Manager):
 
     # TODO: ignoring code complexity issues
     @transaction.commit_on_success  # NOQA
-    def create(self, owner, data):
+    def create(self, owner, data, **kwargs):
         """
+        Custom blueprint creation
         """
 
         ##
