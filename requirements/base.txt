@@ -6,7 +6,7 @@ PyYAML==3.10
 argparse==1.2.1
 boto==2.9.5
 celery>=3.1
-dj-database-url==0.2.2
+dj-database-url>=0.3
 django-cors-headers==0.12
 django-extensions>=1.5
 django-filter==0.6
