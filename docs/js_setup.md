@@ -5,14 +5,15 @@
 ### Node.js
 You need to have [Node.js](http://nodejs.org/) and [npm](https://npmjs.org/) installed on your system.
 
-On Ubuntu, both Node and npm can be installed from apt-get
+On Ubuntu, both Node and npm can be installed from apt-get.  You will also need to symlink nodejs to node, because bower requires a node executable to be on the path.
 
 ```bash
 # Ubuntu
-sudo apt-get install nodejs
+sudo apt-get install nodejs npm
+sudo ln -s /usr/bin/nodejs /usr/bin/node
 ```
 
-On CentOS, you have to install them separately
+Same applies to centos, except the executable is already called node, so there is no need for the symlink.
 ```bash
 sudo yum install nodejs npm
 ```
