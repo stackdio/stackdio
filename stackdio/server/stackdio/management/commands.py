@@ -472,7 +472,11 @@ class InitCommand(WizardCommand):
 
         db = parse(dsn)
         db['OPTIONS'] = {'connect_timeout': 3}
+
+        # These are django defaults - there seems to be a bug in dj-database-url that causes an
+        # exception if these keys are missing
         db['CONN_MAX_AGE'] = 0
+        db['AUTOCOMMIT'] = True
 
         try:
             engine = load_backend(db['ENGINE']).DatabaseWrapper(db)
