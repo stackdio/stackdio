@@ -472,6 +472,7 @@ class InitCommand(WizardCommand):
 
         db = parse(dsn)
         db['OPTIONS'] = {'connect_timeout': 3}
+        db['CONN_MAX_AGE'] = 0
 
         try:
             engine = load_backend(db['ENGINE']).DatabaseWrapper(db)
