@@ -72,7 +72,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
-ALLOWED_HOSTS = []
+# Hosts/domain names that are valid for this site; required if DEBUG is False
+# See https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = ['*']
+
 
 SECRET_KEY = STACKDIO_CONFIG['django_secret_key']
 
