@@ -24,7 +24,7 @@ import json
 import logging
 
 import envoy
-import celery
+from celery import shared_task
 import yaml
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
@@ -139,7 +139,7 @@ def state_error(state_str, state_meta):
     return err, is_recoverable(err)
 
 
-@celery.task(name='stacks.handle_error')
+@shared_task(name='stacks.handle_error')
 def handle_error(stack_id, task_id):
     logger.debug('stack_id: {0}'.format(stack_id))
     logger.debug('task_id: {0}'.format(task_id))
@@ -150,7 +150,7 @@ def handle_error(stack_id, task_id):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.launch_hosts')  # NOQA
+@shared_task(name='stacks.launch_hosts')  # NOQA
 def launch_hosts(stack_id, parallel=True, max_retries=2,
                  simulate_launch_failures=False, simulate_zombies=False,
                  simulate_ssh_failures=False, failure_percent=0.3):
@@ -482,7 +482,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.cure_zombies')  # NOQA
+@shared_task(name='stacks.cure_zombies')  # NOQA
 def cure_zombies(stack_id, max_retries=2):
     """
     Attempts to detect zombie hosts, or those hosts in the stack that are
@@ -562,7 +562,7 @@ def cure_zombies(stack_id, max_retries=2):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.update_metadata')  # NOQA
+@shared_task(name='stacks.update_metadata')  # NOQA
 def update_metadata(stack_id, host_ids=None, remove_absent=True):
     try:
 
@@ -710,7 +710,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         raise
 
 
-@celery.task(name='stacks.tag_infrastructure')
+@shared_task(name='stacks.tag_infrastructure')
 def tag_infrastructure(stack_id, host_ids=None):
     """
     Tags hosts and volumes with certain metadata that should prove useful
@@ -753,7 +753,7 @@ def tag_infrastructure(stack_id, host_ids=None):
         raise
 
 
-@celery.task(name='stacks.register_dns')
+@shared_task(name='stacks.register_dns')
 def register_dns(stack_id, host_ids=None):
     """
     Must be ran after a Stack is up and running and all host information has
@@ -788,7 +788,7 @@ def register_dns(stack_id, host_ids=None):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.ping')  # NOQA
+@shared_task(name='stacks.ping')  # NOQA
 def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
     """
     Attempts to use salt's test.ping module to ping the entire stack
@@ -903,7 +903,7 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
         raise
 
 
-@celery.task(name='stacks.sync_all')
+@shared_task(name='stacks.sync_all')
 def sync_all(stack_id):
     try:
         stack = Stack.objects.get(id=stack_id)
@@ -956,7 +956,7 @@ def sync_all(stack_id):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.highstate')  # NOQA
+@shared_task(name='stacks.highstate')  # NOQA
 def highstate(stack_id, max_retries=2):
     """
     Executes the state.top function using the custom top file generated via
@@ -1138,7 +1138,7 @@ def change_pillar(stack_id, new_pillar_file):
 
 
 # TODO: Ignoring code complexity issues
-@celery.task(name='stacks.global_orchestrate')  # NOQA
+@shared_task(name='stacks.global_orchestrate')  # NOQA
 def global_orchestrate(stack_id, max_retries=2):
     """
     Executes the runners.state.over function with the custom overstate
@@ -1294,7 +1294,7 @@ def global_orchestrate(stack_id, max_retries=2):
 
 
 # TODO: Ignoring code complexity issues
-@celery.task(name='stacks.orchestrate')  # NOQA
+@shared_task(name='stacks.orchestrate')  # NOQA
 def orchestrate(stack_id, max_retries=2):
     """
     Executes the runners.state.over function with the custom overstate
@@ -1463,7 +1463,7 @@ def orchestrate(stack_id, max_retries=2):
         raise
 
 
-@celery.task(name='stacks.finish_stack')
+@shared_task(name='stacks.finish_stack')
 def finish_stack(stack_id):
     try:
         stack = Stack.objects.get(id=stack_id)
@@ -1491,7 +1491,7 @@ def finish_stack(stack_id):
         raise
 
 
-@celery.task(name='stacks.register_volume_delete')
+@shared_task(name='stacks.register_volume_delete')
 def register_volume_delete(stack_id, host_ids=None):
     """
     Modifies the instance attributes for the volumes in a stack (or host_ids)
@@ -1526,7 +1526,7 @@ def register_volume_delete(stack_id, host_ids=None):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.destroy_hosts')  # NOQA
+@shared_task(name='stacks.destroy_hosts')  # NOQA
 def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                   delete_security_groups=True, parallel=True):
     """
@@ -1671,7 +1671,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         raise
 
 
-@celery.task(name='stacks.destroy_stack')
+@shared_task(name='stacks.destroy_stack')
 def destroy_stack(stack_id):
     """
     """
@@ -1703,7 +1703,7 @@ def destroy_stack(stack_id):
         raise
 
 
-@celery.task(name='stacks.unregister_dns')
+@shared_task(name='stacks.unregister_dns')
 def unregister_dns(stack_id, host_ids=None):
     """
     Removes all host information from DNS. Intended to be used just before a
@@ -1739,7 +1739,7 @@ def unregister_dns(stack_id, host_ids=None):
         raise
 
 
-@celery.task(name='stacks.execute_action')
+@shared_task(name='stacks.execute_action')
 def execute_action(stack_id, action, *args, **kwargs):
     """
     Executes a defined action using the stack's cloud provider implementation.
@@ -1769,7 +1769,7 @@ def execute_action(stack_id, action, *args, **kwargs):
         raise
 
 
-@celery.task(name='stacks.custom_action')
+@shared_task(name='stacks.custom_action')
 def custom_action(action_id, host_target, command):
     action = StackAction.objects.get(id=action_id)
 

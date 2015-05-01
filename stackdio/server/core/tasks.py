@@ -16,11 +16,12 @@
 #
 
 
-import celery
 import time
 
+from celery import shared_task
 
-@celery.task(name='core.sleep')
+
+@shared_task(name='core.sleep')
 def sleep(seconds=10):
     time.sleep(seconds)
     return True

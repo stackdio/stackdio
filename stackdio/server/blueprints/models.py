@@ -63,7 +63,7 @@ def get_props_file_path(obj, filename):
 class BlueprintManager(models.Manager):
 
     # TODO: ignoring code complexity issues
-    @transaction.commit_on_success  # NOQA
+    @transaction.atomic  # NOQA
     def create(self, owner, data, **kwargs):
         """
         Custom blueprint creation

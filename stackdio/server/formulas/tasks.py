@@ -24,7 +24,8 @@ import sys
 from tempfile import mkdtemp
 from urlparse import urlsplit, urlunsplit
 
-import celery
+from celery import shared_task
+
 import yaml
 import git
 
@@ -167,7 +168,7 @@ def validate_component(formula, repodir, component):
 
 
 # TODO: Ignoring complexity issues
-@celery.task(name='formulas.import_formula')  # NOQA
+@shared_task(name='formulas.import_formula')  # NOQA
 def import_formula(formula_id, git_password):
     try:
         formula = Formula.objects.get(pk=formula_id)
@@ -229,7 +230,7 @@ def import_formula(formula_id, git_password):
 
 
 # TODO: Ignoring complexity issues
-@celery.task(name='formulas.update_formula')  # NOQA
+@shared_task(name='formulas.update_formula')  # NOQA
 def update_formula(formula_id, git_password):
     repo = None
     current_commit = None

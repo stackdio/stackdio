@@ -28,13 +28,10 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
-import djcelery
 import dj_database_url
 
 from core.config import StackdioConfig
 
-
-djcelery.setup_loader()
 
 STACKDIO_CONFIG = StackdioConfig()
 
@@ -90,9 +87,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'django_nose',
-    'south',
-    'djcelery',
+    # 'django_nose',
     'core',
     'cloud',
     'stacks',
@@ -144,7 +139,7 @@ ADMINS = (
 )
 MANAGERS = ADMINS
 
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+# TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 ##
 # Database
@@ -254,11 +249,6 @@ LOGGING = {
             'propagate': False,
         },
         'boto': {
-            'handlers': ['null'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'south': {
             'handlers': ['null'],
             'level': 'DEBUG',
             'propagate': False,

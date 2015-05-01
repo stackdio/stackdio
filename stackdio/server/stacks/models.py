@@ -124,7 +124,7 @@ class StatusDetailModel(model_utils.models.StatusModel):
 
 class StackManager(models.Manager):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def create_stack(self, owner, blueprint, **data):
         """
         """
@@ -523,8 +523,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
                 # Add in the security group provided by this host definition
                 security_group = SecurityGroup.objects.get(
-                    stack=self,
-                    blueprint_host_definition=hostdef
+                    hosts__in=host,
+                    # blueprint_host_definition=hostdef
                 )
                 host.security_groups.add(security_group)
 
