@@ -19,6 +19,9 @@
 # Grab the base settings
 from .base import *  # NOQA
 
+DEBUG = True
+TEMPLATE_DEBUG = True
+
 ##
 # Add in additional middleware
 ##

@@ -21,6 +21,7 @@ from .base import *  # NOQA
 
 DEBUG = False
 TEMPLATE_DEBUG = False
+
 WSGI_APPLICATION = 'stackdio.server.stackdio.wsgi.application'
 
 try:
