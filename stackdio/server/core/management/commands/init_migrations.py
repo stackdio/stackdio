@@ -19,12 +19,12 @@
 import os
 import sys
 import glob
+import logging
 
 from django.conf import settings
 from django.core.management import call_command
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
-import logging
 logger = logging.getLogger('core')
 
 
@@ -38,7 +38,7 @@ class Command(BaseCommand):
 
         for app_name in args:
             migration_dir = os.path.join(
-                settings.SITE_ROOT,
+                settings.BASE_DIR,
                 app_name,
                 'migrations'
             )
