@@ -1,2 +1,2 @@
-# Load the base requirements
 -r base.txt
+ipython>=2.0
