@@ -370,7 +370,7 @@ class StackHistoryAPIView(PublicStackMixin, generics.ListAPIView):
         return stack.history.all()
 
 
-class StackActionAPIView(generics.SingleObjectAPIView):
+class StackActionAPIView(generics.GenericAPIView):
     model = models.Stack
     serializer_class = serializers.StackSerializer
     permission_classes = (permissions.IsAuthenticated,

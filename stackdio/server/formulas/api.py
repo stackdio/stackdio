@@ -254,7 +254,7 @@ class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                           AdminOrOwnerOrPublicPermission,)
 
 
-class FormulaActionAPIView(generics.SingleObjectAPIView):
+class FormulaActionAPIView(generics.GenericAPIView):
     model = models.Formula
     serializer_class = serializers.FormulaSerializer
     permission_classes = (permissions.IsAuthenticated,

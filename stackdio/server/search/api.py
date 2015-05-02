@@ -40,7 +40,7 @@ from stacks.models import Stack
 logger = logging.getLogger(__name__)
 
 
-class SearchAPIView(generics.SingleObjectAPIView):
+class SearchAPIView(generics.GenericAPIView):
     # Don't accept any form of parseable input
     parser_classes = ()
 
