@@ -19,18 +19,9 @@
 import logging
 
 from django.conf import settings
-from django.core.paginator import Paginator
-from django.db import transaction
 from django.db.models import Q
-from django.http import Http404
-from django.shortcuts import get_object_or_404
-from rest_framework import settings as rest_settings
 from rest_framework import generics
 from rest_framework.response import Response
-from rest_framework.parsers import JSONParser
-from rest_framework.pagination import PaginationSerializer
-
-from core.exceptions import BadRequest, ResourceConflict
 
 from . import serializers
 from blueprints.models import Blueprint
