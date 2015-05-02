@@ -87,7 +87,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    # 'django_nose',
+    'django_filters',
     'core',
     'cloud',
     'stacks',
@@ -138,8 +138,6 @@ ADMINS = (
     ('Clark Perkins', 'clark.perkins@digitalreasoning.com'),
 )
 MANAGERS = ADMINS
-
-# TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 ##
 # Database
