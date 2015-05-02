@@ -51,7 +51,7 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     provider_id = serializers.Field(source='cloud_provider.id')
 
     rules_url = serializers.HyperlinkedIdentityField(
-            view_name='securitygroup-rules')
+        view_name='securitygroup-rules')
 
     class Meta:
         model = models.SecurityGroup
@@ -84,8 +84,8 @@ class SecurityGroupRuleSerializer(serializers.Serializer):
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     yaml = serializers.Field()
-    provider_type = serializers.PrimaryKeyRelatedField()
-    region = serializers.PrimaryKeyRelatedField()
+    provider_type = serializers.PrimaryKeyRelatedField(read_only=True)
+    region = serializers.PrimaryKeyRelatedField(read_only=True)
     provider_type_name = serializers.Field(source='provider_type.type_name')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-securitygroup-list')
@@ -193,7 +193,7 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
 class GlobalOrchestrationFormulaComponentSerializer(
         serializers.HyperlinkedModelSerializer):
 
-    component = serializers.PrimaryKeyRelatedField()
+    component = serializers.PrimaryKeyRelatedField(read_only=True)
 
     def __init__(self, *args, **kwargs):
         super(GlobalOrchestrationFormulaComponentSerializer, self) \
@@ -218,8 +218,8 @@ class GlobalOrchestrationFormulaComponentSerializer(
 
 class CloudProfileSerializer(SuperuserFieldsMixin,
                              serializers.HyperlinkedModelSerializer):
-    cloud_provider = serializers.PrimaryKeyRelatedField()
-    default_instance_size = serializers.PrimaryKeyRelatedField()
+    cloud_provider = serializers.PrimaryKeyRelatedField(read_only=True)
+    default_instance_size = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = models.CloudProfile
@@ -283,8 +283,8 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
 
 
 class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
-    cloud_provider = serializers.PrimaryKeyRelatedField()
-    default_instance_size = serializers.PrimaryKeyRelatedField()
+    cloud_provider = serializers.PrimaryKeyRelatedField(read_only=True)
+    default_instance_size = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = models.Snapshot
@@ -315,7 +315,7 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
-    provider_type = serializers.PrimaryKeyRelatedField()
+    provider_type = serializers.PrimaryKeyRelatedField(read_only=True)
     zones = serializers.HyperlinkedRelatedField(many=True, read_only=True,
                                                 view_name='cloudzone-detail')
 
@@ -330,7 +330,7 @@ class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
-    provider_type = serializers.PrimaryKeyRelatedField()
+    provider_type = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = models.CloudZone

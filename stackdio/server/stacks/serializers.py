@@ -40,7 +40,7 @@ class StackPropertiesSerializer(serializers.Serializer):
 
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
-    availability_zone = serializers.PrimaryKeyRelatedField()
+    availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
     subnet_id = serializers.Field()
     formula_components = BlueprintHostFormulaComponentSerializer(many=True)
 
