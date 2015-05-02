@@ -44,17 +44,17 @@ logger = logging.getLogger(__name__)
 
 
 class CloudProviderTypeListAPIView(generics.ListAPIView):
-    model = models.CloudProviderType
+    queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
-    model = models.CloudProviderType
+    queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
 
 
 class CloudProviderListAPIView(generics.ListCreateAPIView):
-    model = models.CloudProvider
+    queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
     filter_class = filters.CloudProviderFilter
@@ -90,7 +90,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
 
 
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = models.CloudProvider
+    queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
@@ -117,13 +117,13 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
-    model = models.CloudInstanceSize
+    queryset = models.CloudInstanceSize.objects.all()
     serializer_class = serializers.CloudInstanceSizeSerializer
     filter_class = filters.CloudInstanceSizeFilter
 
 
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
-    model = models.CloudInstanceSize
+    queryset = models.CloudInstanceSize.objects.all()
     serializer_class = serializers.CloudInstanceSizeSerializer
 
 
@@ -159,7 +159,7 @@ class GlobalOrchestrationComponentDetailAPIView(
         generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
-    model = models.GlobalOrchestrationFormulaComponent
+    queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
 
 
 class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
@@ -200,7 +200,7 @@ class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):
-    model = models.CloudProfile
+    queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
     filter_class = filters.CloudProfileFilter
@@ -210,7 +210,7 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
 
 
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = models.CloudProfile
+    queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
@@ -251,52 +251,50 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
-    model = models.Snapshot
+    queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class SnapshotAdminListAPIView(generics.ListAPIView):
-    model = models.Snapshot
+    queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (permissions.IsAdminUser,)
-    queryset = model.objects.all()
 
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = models.Snapshot
+    queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class CloudRegionListAPIView(generics.ListAPIView):
-    model = models.CloudRegion
+    queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
     filter_class = filters.CloudRegionFilter
 
 
 class CloudRegionDetailAPIView(generics.RetrieveAPIView):
-    model = models.CloudRegion
+    queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
 
 
 class CloudRegionZoneListAPIView(generics.ListAPIView):
-    model = models.CloudZone
     serializer_class = serializers.CloudZoneSerializer
     filter_class = filters.CloudZoneFilter
 
     def get_queryset(self):
-        return self.model.objects.filter(region__id=self.kwargs['pk'])
+        return models.CloudZone.objects.filter(region__id=self.kwargs['pk'])
 
 
 class CloudZoneListAPIView(generics.ListAPIView):
-    model = models.CloudZone
+    queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
     filter_class = filters.CloudZoneFilter
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):
-    model = models.CloudZone
+    queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
 
 
@@ -333,7 +331,6 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                     this property may only be set by an admin.
     """
 
-    model = models.SecurityGroup
     serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
     filter_class = filters.SecurityGroupFilter
@@ -346,7 +343,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         # if admin, get them all
         if self.request.user.is_superuser:
-            return self.model.objects.all().with_rules()
+            return models.SecurityGroup.objects.all().with_rules()
 
         # if user, only get what they own
         else:
@@ -452,7 +449,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     and then delete it.
     """
 
-    model = models.SecurityGroup
+    queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
     # Only admins are allowed write access
@@ -559,7 +556,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
     field's value to be "revoke"
     """
 
-    model = models.SecurityGroup
+    queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupRuleSerializer
     parser_classes = (parsers.JSONParser,)
     permission_classes = (permissions.IsAuthenticated,
