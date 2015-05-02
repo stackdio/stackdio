@@ -18,10 +18,10 @@
 
 import logging
 import re
+import importlib
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import importlib
 
 from core import exceptions as core_exceptions
 import models
@@ -79,7 +79,7 @@ def get_cloud_providers():
     return providers
 
 
-def findRoles(filename, pattern):
+def find_roles(filename, pattern):
     with open(filename) as file:
         recording = False
         for line in file:
