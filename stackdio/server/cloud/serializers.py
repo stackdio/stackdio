@@ -175,7 +175,6 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
-    provider_type = serializers.Field(source='provider_type')
 
     class Meta:
         model = models.CloudInstanceSize
