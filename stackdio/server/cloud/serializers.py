@@ -217,7 +217,7 @@ class GlobalOrchestrationFormulaComponentSerializer(
 
 class CloudProfileSerializer(SuperuserFieldsMixin,
                              serializers.HyperlinkedModelSerializer):
-    cloud_provider = serializers.PrimaryKeyRelatedField(read_only=True)
+    cloud_provider = serializers.PrimaryKeyRelatedField(queryset=models.CloudProvider.objects.all())
     default_instance_size = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
