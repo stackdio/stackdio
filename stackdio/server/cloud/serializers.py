@@ -83,10 +83,10 @@ class SecurityGroupRuleSerializer(serializers.Serializer):
 
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
-    yaml = serializers.Field()
-    provider_type = serializers.PrimaryKeyRelatedField(read_only=True)
-    region = serializers.PrimaryKeyRelatedField(read_only=True)
-    provider_type_name = serializers.Field(source='provider_type.type_name')
+    yaml = serializers.ReadOnlyField()
+    provider_type = serializers.PrimaryKeyRelatedField(queryset=models.CloudProvider.objects.all())
+    region = serializers.PrimaryKeyRelatedField(queryset=models.CloudRegion.objects.all())
+    provider_type_name = serializers.ReadOnlyField(source='provider_type.type_name')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-securitygroup-list')
     vpc_subnets = serializers.HyperlinkedIdentityField(
