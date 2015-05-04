@@ -31,8 +31,7 @@ from django_extensions.db.models import (
 
 from core.queryset_transform import TransformManager, TransformQuerySet
 from core.fields import DeletingFileField
-from cloud.utils import get_provider_type_and_class
-from .utils import get_cloud_provider_choices
+from .utils import get_cloud_provider_choices, get_provider_type_and_class
 
 
 logger = logging.getLogger(__name__)
@@ -56,9 +55,11 @@ def get_global_orch_props_file_path(obj, filename):
 
 class CloudProviderType(models.Model):
     PROVIDER_CHOICES = get_cloud_provider_choices()
-    type_name = models.CharField(max_length=32,
-                                 choices=PROVIDER_CHOICES,
-                                 unique=True)
+    type_name = models.CharField(
+        'Type Name',
+        max_length=32,
+        choices=PROVIDER_CHOICES,
+        unique=True)
 
     def __unicode__(self):
         return self.type_name
@@ -67,19 +68,25 @@ class CloudProviderType(models.Model):
 class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'provider_type')
+        ordering = ('provider_type', 'title')
 
     # What is the type of provider (e.g., AWS, Rackspace, etc)
-    provider_type = models.ForeignKey('CloudProviderType')
+    provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
 
     # Used to store the provider-specifc YAML that will be written
     # to disk in settings.STACKDIO_CONFIG.salt_providers_dir
     yaml = models.TextField()
 
     # The region for this provider
-    region = models.ForeignKey('CloudRegion')
+    # FOR EC2 CLASSIC
+    region = models.ForeignKey('CloudRegion', verbose_name='Region')
+
+    # Are we using VPC?
+    # FOR EC2 VPC
+    vpc_id = models.CharField('VPC ID', max_length=64, blank=True)
 
     # the account/owner id of the provider
-    account_id = models.CharField(max_length=64)
+    account_id = models.CharField('Account ID', max_length=64)
 
     # salt-cloud provider configuration file
     config_file = DeletingFileField(
@@ -90,9 +97,6 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         default=None,
         storage=FileSystemStorage(
             location=settings.STACKDIO_CONFIG.salt_providers_dir))
-
-    # Are we using VPC?
-    vpc_id = models.CharField(max_length=64, blank=True)
 
     # storage for properties file
     global_orch_props_file = DeletingFileField(
@@ -159,21 +163,20 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
 
 class CloudInstanceSize(TitleSlugDescriptionModel):
     class Meta:
-        ordering = ['id']
+        ordering = ('id',)
 
     # `title` field will be the type used by salt-cloud for the `size`
     # parameter in the providers yaml file (e.g., 'Micro Instance' or
     # '512MB Standard Instance'
 
     # link to the type of provider for this instance size
-    provider_type = models.ForeignKey('CloudProviderType')
+    provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
 
     # The underlying size ID of the instance (e.g., t1.micro)
-    instance_id = models.CharField(max_length=64)
+    instance_id = models.CharField('Instance ID', max_length=64)
 
     def __unicode__(self):
-
-        return '{0} ({1})'.format(self.title, self.instance_id)
+        return '{0} ({1})'.format(self.description, self.instance_id)
 
 
 class GlobalOrchestrationFormulaComponent(TimeStampedModel):
@@ -186,7 +189,7 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
 
     class Meta:
         verbose_name_plural = 'global orchestration formula components'
-        ordering = ['order']
+        ordering = ('order',)
 
     # The formula component we're extending
     component = models.ForeignKey('formulas.FormulaComponent')
@@ -210,20 +213,20 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
         unique_together = ('title', 'cloud_provider')
 
     # What cloud provider is this under?
-    cloud_provider = models.ForeignKey('CloudProvider',
-                                       related_name='profiles')
+    cloud_provider = models.ForeignKey('CloudProvider', related_name='profiles')
 
     # The underlying image id of this profile (e.g., ami-38df83a')
-    image_id = models.CharField(max_length=64)
+    image_id = models.CharField('Image ID', max_length=64)
 
     # The default instance size of this profile, may be overridden
     # by the user at creation time
-    default_instance_size = models.ForeignKey('CloudInstanceSize')
+    default_instance_size = models.ForeignKey('CloudInstanceSize',
+                                              verbose_name='Default Instance Size')
 
     # The SSH user that will have default access to the box. Salt-cloud
     # needs this to provision the box as a salt-minion and connect it
     # up to the salt-master automatically.
-    ssh_user = models.CharField(max_length=64)
+    ssh_user = models.CharField('SSH User', max_length=64)
 
     # salt-cloud profile configuration file
     config_file = DeletingFileField(
@@ -233,7 +236,9 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
         blank=True,
         default=None,
         storage=FileSystemStorage(
-            location=settings.STACKDIO_CONFIG.salt_profiles_dir))
+            location=settings.STACKDIO_CONFIG.salt_profiles_dir
+        )
+    )
 
     def __unicode__(self):
         return self.title
@@ -242,21 +247,21 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
         """
         Writes the salt-cloud profile configuration file
         """
-
-        profile_yaml = {}
-        profile_yaml[self.slug] = {
-            'provider': self.cloud_provider.slug,
-            'image': self.image_id,
-            'size': self.default_instance_size.title,
-            'ssh_username': self.ssh_user,
-            'script': settings.STACKDIO_CONFIG.get('salt_bootstrap_script',
-                                                   'bootstrap-salt'),
-            'script_args': settings.STACKDIO_CONFIG.get('salt_bootstrap_args',
-                                                        ''),
-            'sync_after_install': 'all',
-            # PI-44: Need to add an empty minion config until salt-cloud/701
-            # is fixed.
-            'minion': {},
+        profile_yaml = {
+            self.slug: {
+                'provider': self.cloud_provider.slug,
+                'image': self.image_id,
+                'size': self.default_instance_size.title,
+                'ssh_username': self.ssh_user,
+                'script': settings.STACKDIO_CONFIG.get('salt_bootstrap_script',
+                                                       'bootstrap-salt'),
+                'script_args': settings.STACKDIO_CONFIG.get('salt_bootstrap_args',
+                                                            ''),
+                'sync_after_install': 'all',
+                # PI-44: Need to add an empty minion config until salt-cloud/701
+                # is fixed.
+                'minion': {},
+            }
         }
         profile_yaml = yaml.safe_dump(profile_yaml,
                                       default_flow_style=False)
@@ -274,12 +279,11 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
 
 
 class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
-
     class Meta:
         unique_together = ('snapshot_id', 'cloud_provider')
 
     # The cloud provider that has access to this snapshot
-    cloud_provider = models.ForeignKey('cloud.CloudProvider',
+    cloud_provider = models.ForeignKey('CloudProvider',
                                        related_name='snapshots')
 
     # The snapshot id. Must exist already, be preformatted, and available
@@ -298,28 +302,28 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 class CloudRegion(TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'provider_type')
+        ordering = ('provider_type', 'title')
 
     # link to the type of provider for this zone
-    provider_type = models.ForeignKey('cloud.CloudProviderType')
+    provider_type = models.ForeignKey('CloudProviderType')
 
     def __unicode__(self):
         return self.title
 
 
 class CloudZone(TitleSlugDescriptionModel):
-
     class Meta:
         unique_together = ('title', 'region')
+        ordering = ('region', 'title')
 
     # link to the region this AZ is in
-    region = models.ForeignKey('cloud.CloudRegion', related_name='zones')
+    region = models.ForeignKey('CloudRegion', related_name='zones')
 
     def __unicode__(self):
         return self.title
 
 
 class SecurityGroupQuerySet(TransformQuerySet):
-
     def with_rules(self):
         logger.debug('SecurityGroupQuerySet::with_rules called...')
         return self.transform(self._inject_rules)
@@ -344,15 +348,14 @@ class SecurityGroupQuerySet(TransformQuerySet):
 
 
 class SecurityGroupManager(TransformManager):
-
-    def get_query_set(self):
+    def get_queryset(self):
         return SecurityGroupQuerySet(self.model)
 
 
 class SecurityGroup(TimeStampedModel, models.Model):
-
     class Meta:
         unique_together = ('name', 'cloud_provider')
+
     objects = SecurityGroupManager()
 
     # Name of the security group (REQUIRED)
@@ -367,7 +370,7 @@ class SecurityGroup(TimeStampedModel, models.Model):
     group_id = models.CharField(max_length=16, blank=True)
 
     # blueprint_host_definition = models.ForeignKey(
-    #     'blueprints.BlueprintHostDefinition',
+    # 'blueprints.BlueprintHostDefinition',
     #     null=True,
     #     default=None,
     #     related_name='security_groups')

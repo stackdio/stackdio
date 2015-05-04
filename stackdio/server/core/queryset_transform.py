@@ -48,10 +48,11 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from django.db import models
+from django.db.models import Manager
+from django.db.models.query import QuerySet
 
 
-class TransformQuerySet(models.query.QuerySet):
+class TransformQuerySet(QuerySet):
     def __init__(self, *args, **kwargs):
         super(TransformQuerySet, self).__init__(*args, **kwargs)
         self._transform_fns = []
@@ -76,7 +77,6 @@ class TransformQuerySet(models.query.QuerySet):
         return result_iter
 
 
-class TransformManager(models.Manager):
-
-    def get_query_set(self):
+class TransformManager(Manager):
+    def get_queryset(self):
         return TransformQuerySet(self.model)

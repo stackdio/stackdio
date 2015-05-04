@@ -59,32 +59,33 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
     permission_classes = (permissions.DjangoModelPermissions,)
     filter_class = filters.CloudProviderFilter
 
-    def post_save(self, provider_obj, created=False):
+    def perform_create(self, serializer):
 
         data = self.request.DATA
         files = self.request.FILES
 
         # Lookup provider type
         try:
-            driver = provider_obj.get_driver()
+            obj = serializer.save()
+            driver = obj.get_driver()
 
-            # Levarage the driver to generate its required data that
+            # Leverage the driver to generate its required data that
             # will be serialized down to yaml and stored in both the database
             # and the salt cloud providers file
             provider_data = driver.get_provider_data(data, files)
 
             # Generate the yaml and store in the database
-            yaml_data = {}
-            yaml_data[provider_obj.slug] = provider_data
-            provider_obj.yaml = yaml.safe_dump(yaml_data,
-                                               default_flow_style=False)
-            provider_obj.save()
+            yaml_data = {
+                obj.slug: provider_data
+            }
+            obj.yaml = yaml.safe_dump(yaml_data, default_flow_style=False)
+            obj.save()
 
             # Update the salt cloud providers file
-            provider_obj.update_config()
+            obj.update_config()
 
         except models.CloudProviderType.DoesNotExist:
-            err_msg = 'Provider types does not exist.'
+            err_msg = 'Given provider type does not exist.'
             logger.exception(err_msg)
             raise BadRequest(err_msg)
 
@@ -155,8 +156,7 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
             .create(request, *args, **kwargs)
 
 
-class GlobalOrchestrationComponentDetailAPIView(
-        generics.RetrieveUpdateDestroyAPIView):
+class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
     queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
@@ -205,8 +205,9 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
     permission_classes = (permissions.DjangoModelPermissions,)
     filter_class = filters.CloudProfileFilter
 
-    def post_save(self, profile_obj, created=False):
-        profile_obj.update_config()
+    def perform_create(self, serializer):
+        obj = serializer.save()
+        obj.update_config()
 
 
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -386,9 +387,9 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                 logger.debug('Security group already exists on the '
                              'provider: {0!r}'.format(provider_group))
 
-            except (KeyError):
+            except KeyError:
                 raise
-            except Exception:
+            except:
                 # doesn't exist on the provider either, we'll create it now
                 provider_group = None
 
@@ -702,5 +703,5 @@ class CloudProviderVPCSubnetListAPIView(generics.ListAPIView):
 
         subnets = driver.get_vpc_subnets()
         return Response({
-            'results': serializers.VPCSubnetSerializer(subnets).data
+            'results': serializers.VPCSubnetSerializer(subnets, many=True).data
         })
