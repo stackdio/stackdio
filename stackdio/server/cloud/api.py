@@ -140,8 +140,8 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         return self.get_provider().global_formula_components.all()
 
-    def pre_save(self, obj):
-        obj.provider = self.get_provider()
+    def perform_create(self, serializer):
+        serializer.save(provider=self.get_provider())
 
     def create(self, request, *args, **kwargs):
         component_id = request.DATA.get('component')
