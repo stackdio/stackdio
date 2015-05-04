@@ -16,18 +16,17 @@
 #
 
 
+import fileinput
 import logging
 import os
 import shutil
-import fileinput
 import sys
 from tempfile import mkdtemp
 from urlparse import urlsplit, urlunsplit
 
 from celery import shared_task
-
-import yaml
 import git
+import yaml
 
 from formulas.models import Formula
 
@@ -49,7 +48,6 @@ def replace_all(file, searchExp, replaceExp):
 
 
 def clone_to_temp(formula, git_password):
-
     # temporary directory to clone into so we can read the
     # SPECFILE and do some initial validation
     tmpdir = mkdtemp(prefix='stackdio-')
@@ -96,7 +94,6 @@ def clone_to_temp(formula, git_password):
 
 
 def validate_specfile(formula, repodir):
-
     specfile_path = os.path.join(repodir, 'SPECFILE')
     if not os.path.isfile(specfile_path):
         raise FormulaTaskException(
@@ -164,7 +161,7 @@ def validate_component(formula, repodir, component):
             formula,
             'Could not locate an SLS file for component \'{0}\'. '
             'Expected to find either \'{1}\' or \'{2}\'.'
-            .format(component_title, init_file, sls_file))
+                .format(component_title, init_file, sls_file))
 
 
 # TODO: Ignoring complexity issues
@@ -183,7 +180,8 @@ def import_formula(formula_id, git_password):
                 formula,
                 'Formula root path already exists.')
 
-        formula_title, formula_description, root_path, components = validate_specfile(formula, repodir)
+        formula_title, formula_description, root_path, components = validate_specfile(formula,
+                                                                                      repodir)
 
         # update the formula title and description
         formula.title = formula_title
@@ -277,7 +275,8 @@ def update_formula(formula_id, git_password):
             if os.path.isdir(log_dir):
                 shutil.rmtree(log_dir)
 
-        formula_title, formula_description, root_path, components = validate_specfile(formula, repodir)
+        formula_title, formula_description, root_path, components = validate_specfile(formula,
+                                                                                      repodir)
 
         old_components = formula.components.all()
 
