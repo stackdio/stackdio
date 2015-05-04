@@ -68,7 +68,6 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
-
     class Meta:
         model = models.StackHistory
         fields = (
@@ -81,20 +80,29 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
 
 
 class StackSerializer(serializers.HyperlinkedModelSerializer):
-    owner = serializers.Field()
-    hosts = serializers.HyperlinkedIdentityField(view_name='stack-hosts')
-    fqdns = serializers.HyperlinkedIdentityField(view_name='stack-fqdns')
-    action = serializers.HyperlinkedIdentityField(view_name='stack-action')
+    # Read only fields
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+    host_count = serializers.ReadOnlyField(source='hosts.count')
+    volume_count = serializers.ReadOnlyField(source='volumes.count')
+    status = serializers.ReadOnlyField()
+
+    # Identity links
+    hosts = serializers.HyperlinkedIdentityField(
+        view_name='stack-hosts')
+    fqdns = serializers.HyperlinkedIdentityField(
+        view_name='stack-fqdns')
+    action = serializers.HyperlinkedIdentityField(
+        view_name='stack-action')
     actions = serializers.HyperlinkedIdentityField(
         view_name='stackaction-list')
-    logs = serializers.HyperlinkedIdentityField(view_name='stack-logs')
+    logs = serializers.HyperlinkedIdentityField(
+        view_name='stack-logs')
     orchestration_errors = serializers.HyperlinkedIdentityField(
         view_name='stack-orchestration-errors')
     provisioning_errors = serializers.HyperlinkedIdentityField(
         view_name='stack-provisioning-errors')
-    host_count = serializers.Field(source='hosts.count')
-    volumes = serializers.HyperlinkedIdentityField(view_name='stack-volumes')
-    volume_count = serializers.Field(source='volumes.count')
+    volumes = serializers.HyperlinkedIdentityField(
+        view_name='stack-volumes')
     properties = serializers.HyperlinkedIdentityField(
         view_name='stack-properties')
     history = serializers.HyperlinkedIdentityField(
@@ -126,6 +134,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'history',
             'action',
             'actions',
+            'access_rules',
             'security_groups',
             'logs',
             'orchestration_errors',
@@ -133,9 +142,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class StackBlueprintHostDefinitionSerializer(
-        BlueprintHostDefinitionSerializer):
-
+class StackBlueprintHostDefinitionSerializer(BlueprintHostDefinitionSerializer):
     class Meta:
         model = BlueprintHostDefinition
         fields = (
