@@ -302,7 +302,14 @@ CLOUD_PROVIDERS = [
 BROKER_URL = 'amqp://guest:guest@stackd.dev.digitalreasoning.com:5672/'
 CELERY_REDIRECT_STDOUTS = False
 CELERY_DEFAULT_QUEUE = 'default'
+
+# Serializer settings
+# We'll use json since pickle can sometimes be insecure
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml']
+
+# Configure queues
 CELERY_ROUTES = {
     'formulas.import_formula': {'queue': 'formulas'},
     'formulas.update_formula': {'queue': 'formulas'},
