@@ -25,10 +25,10 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255, verbose_name='title')),
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from=b'title', verbose_name='slug', editable=False, blank=True)),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
-                ('instance_id', models.CharField(max_length=64)),
+                ('instance_id', models.CharField(max_length=64, verbose_name=b'Instance ID')),
             ],
             options={
-                'ordering': ['id'],
+                'ordering': ('id',),
             },
         ),
         migrations.CreateModel(
@@ -40,8 +40,8 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255, verbose_name='title')),
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from=b'title', verbose_name='slug', editable=False, blank=True)),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
-                ('image_id', models.CharField(max_length=64)),
-                ('ssh_user', models.CharField(max_length=64)),
+                ('image_id', models.CharField(max_length=64, verbose_name=b'Image ID')),
+                ('ssh_user', models.CharField(max_length=64, verbose_name=b'SSH User')),
                 ('config_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/Users/cperkins/.stackdio/etc/salt/cloud.profiles.d'), max_length=255, blank=True, null=True)),
             ],
         ),
@@ -55,17 +55,20 @@ class Migration(migrations.Migration):
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from=b'title', verbose_name='slug', editable=False, blank=True)),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('yaml', models.TextField()),
-                ('account_id', models.CharField(max_length=64)),
+                ('vpc_id', models.CharField(max_length=64, verbose_name=b'VPC ID', blank=True)),
+                ('account_id', models.CharField(max_length=64, verbose_name=b'Account ID')),
                 ('config_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/Users/cperkins/.stackdio/etc/salt/cloud.providers.d'), max_length=255, blank=True, null=True)),
-                ('vpc_id', models.CharField(max_length=64, blank=True)),
                 ('global_orch_props_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_global_orch_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/Users/cperkins/.stackdio/storage'), max_length=255, blank=True, null=True)),
             ],
+            options={
+                'ordering': ('provider_type', 'title'),
+            },
         ),
         migrations.CreateModel(
             name='CloudProviderType',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('type_name', models.CharField(unique=True, max_length=32, choices=[(b'ec2', b'Amazon Web Services')])),
+                ('type_name', models.CharField(unique=True, max_length=32, verbose_name=b'Type Name', choices=[(b'ec2', b'Amazon Web Services')])),
             ],
         ),
         migrations.CreateModel(
@@ -77,6 +80,9 @@ class Migration(migrations.Migration):
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('provider_type', models.ForeignKey(to='cloud.CloudProviderType')),
             ],
+            options={
+                'ordering': ('provider_type', 'title'),
+            },
         ),
         migrations.CreateModel(
             name='CloudZone',
@@ -87,6 +93,9 @@ class Migration(migrations.Migration):
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('region', models.ForeignKey(related_name='zones', to='cloud.CloudRegion')),
             ],
+            options={
+                'ordering': ('region', 'title'),
+            },
         ),
         migrations.CreateModel(
             name='GlobalOrchestrationFormulaComponent',
@@ -99,7 +108,7 @@ class Migration(migrations.Migration):
                 ('provider', models.ForeignKey(related_name='global_formula_components', to='cloud.CloudProvider')),
             ],
             options={
-                'ordering': ['order'],
+                'ordering': ('order',),
                 'verbose_name_plural': 'global orchestration formula components',
             },
         ),
@@ -136,12 +145,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cloudprovider',
             name='provider_type',
-            field=models.ForeignKey(to='cloud.CloudProviderType'),
+            field=models.ForeignKey(verbose_name=b'Provider Type', to='cloud.CloudProviderType'),
         ),
         migrations.AddField(
             model_name='cloudprovider',
             name='region',
-            field=models.ForeignKey(to='cloud.CloudRegion'),
+            field=models.ForeignKey(verbose_name=b'Region', to='cloud.CloudRegion'),
         ),
         migrations.AddField(
             model_name='cloudprofile',
@@ -151,12 +160,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cloudprofile',
             name='default_instance_size',
-            field=models.ForeignKey(to='cloud.CloudInstanceSize'),
+            field=models.ForeignKey(verbose_name=b'Default Instance Size', to='cloud.CloudInstanceSize'),
         ),
         migrations.AddField(
             model_name='cloudinstancesize',
             name='provider_type',
-            field=models.ForeignKey(to='cloud.CloudProviderType'),
+            field=models.ForeignKey(verbose_name=b'Provider Type', to='cloud.CloudProviderType'),
         ),
         migrations.AlterUniqueTogether(
             name='snapshot',
