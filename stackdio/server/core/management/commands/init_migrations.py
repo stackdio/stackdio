@@ -59,9 +59,8 @@ class Command(BaseCommand):
                 os.remove(fp)
 
             # Initialize migrations
-            logger.info('Executing manage.py schemamigration {0} '
-                        '--initial'.format(app_name))
-            call_command('schemamigration', app_name, initial=True)
+            logger.info('Executing manage.py makemigrations {0}'.format(app_name))
+            call_command('makemigrations', app_name)
 
     def error(self, msg=''):
         logger.error(msg)
