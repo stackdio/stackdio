@@ -20,23 +20,33 @@ import logging
 
 from rest_framework import serializers
 
-from . import models
+from blueprints.models import BlueprintHostDefinition
 from blueprints.serializers import (
     BlueprintHostFormulaComponentSerializer,
     BlueprintHostDefinitionSerializer
 )
-from blueprints.models import BlueprintHostDefinition
 from cloud.serializers import SecurityGroupSerializer
 from cloud.models import SecurityGroup
+from core.utils import recursive_update
+from . import models
 
 logger = logging.getLogger(__name__)
 
 
 class StackPropertiesSerializer(serializers.Serializer):
-    def to_native(self, obj):
+    def to_representation(self, obj):
         if obj is not None:
             return obj.properties
         return {}
+
+    def to_internal_value(self, data):
+        return data
+
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        return recursive_update(instance, validated_data)
 
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
@@ -107,8 +117,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         view_name='stack-properties')
     history = serializers.HyperlinkedIdentityField(
         view_name='stack-history')
-    access_rules = serializers.HyperlinkedIdentityField(
-        view_name='stack-access-rules')
+    # access_rules = serializers.HyperlinkedIdentityField(
+    #     view_name='stack-access-rules')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='stack-security-groups')
 
@@ -134,7 +144,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'history',
             'action',
             'actions',
-            'access_rules',
+            # 'access_rules',
             'security_groups',
             'logs',
             'orchestration_errors',

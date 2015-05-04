@@ -38,7 +38,6 @@ from rest_framework.views import APIView
 
 from blueprints.models import Blueprint, BlueprintHostDefinition
 from cloud.filters import SecurityGroupFilter
-from cloud.models import SecurityGroup
 from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
 from core.permissions import AdminOrOwnerPermission, AdminOrOwnerOrPublicPermission
@@ -145,6 +144,8 @@ class StackListAPIView(generics.ListCreateAPIView):
                                                  False)
         simulate_zombies = request.DATA.get('simulate_zombies', False)
         failure_percent = request.DATA.get('failure_percent', 0.3)
+
+        blueprint = None
 
         # check for required blueprint
         if not blueprint_id:
@@ -420,30 +421,27 @@ class StackActionAPIView(generics.GenericAPIView):
             # happen unless the hosts are in the stopped state.)
             # XXX: Assuming that host metadata is accurate here
             for host in hosts:
-                if action == driver.ACTION_START and \
-                                host.state != driver.STATE_STOPPED:
+                if action == driver.ACTION_START and host.state != driver.STATE_STOPPED:
                     raise BadRequest('Start action requires all hosts to be '
                                      'in the stopped state first. At least '
                                      'one host is reporting an invalid state: '
                                      '{0}'.format(host.state))
-                if action == driver.ACTION_STOP and \
-                                host.state != driver.STATE_RUNNING:
+                if action == driver.ACTION_STOP and host.state != driver.STATE_RUNNING:
                     raise BadRequest('Stop action requires all hosts to be in '
                                      'the running state first. At least one '
                                      'host is reporting an invalid state: '
                                      '{0}'.format(host.state))
-                if action == driver.ACTION_TERMINATE and \
-                                host.state not in (driver.STATE_RUNNING,
-                                                   driver.STATE_STOPPED):
+                if action == driver.ACTION_TERMINATE and host.state not in (driver.STATE_RUNNING,
+                                                                            driver.STATE_STOPPED):
                     raise BadRequest('Terminate action requires all hosts to '
                                      'be in the either the running or stopped '
                                      'state first. At least one host is '
                                      'reporting an invalid state: {0}'
                                      .format(host.state))
                 if (
-                                    action == driver.ACTION_PROVISION or
-                                    action == driver.ACTION_ORCHESTRATE or
-                                action == driver.ACTION_CUSTOM
+                    action == driver.ACTION_PROVISION or
+                    action == driver.ACTION_ORCHESTRATE or
+                    action == driver.ACTION_CUSTOM
                 ) and host.state not in (driver.STATE_RUNNING,):
                     raise BadRequest(
                         'Provisioning actions require all hosts to be in the '
@@ -616,7 +614,7 @@ def stack_action_zip(request, pk):
         action_zip.close()
 
         response = HttpResponse(file_buffer.getvalue(),
-            content_type='application/zip')
+                                content_type='application/zip')
         response['Content-Disposition'] = (
             'attachment; filename={0}.zip'.format(filename)
         )
@@ -736,8 +734,7 @@ class StackHostsAPIView(HostListAPIView):
             logger.debug(hostdef)
 
             hosts.extend(
-                stack.hosts.filter(blueprint_host_definition=hostdef)
-                    .order_by('-index')[:count]
+                stack.hosts.filter(blueprint_host_definition=hostdef).order_by('-index')[:count]
             )
 
         logger.debug('Hosts to remove: {0}'.format(hosts))
@@ -757,9 +754,7 @@ class StackHostsAPIView(HostListAPIView):
         Override get method to add additional host-specific info
         to the result that is looked up via salt when user requests it
         """
-        provider_metadata = request \
-                                .QUERY_PARAMS \
-                                .get('provider_metadata') == 'true'
+        provider_metadata = request.QUERY_PARAMS.get('provider_metadata') == 'true'
         result = super(StackHostsAPIView, self).get(request, *args, **kwargs)
 
         if not provider_metadata or not result.data['results']:
@@ -923,12 +918,12 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 
         try:
             tail = int(request.QUERY_PARAMS.get('tail', 0))
-        except:
+        except ValueError:
             tail = None
 
         try:
             head = int(request.QUERY_PARAMS.get('head', 0))
-        except:
+        except ValueError:
             head = None
 
         if head and tail:
