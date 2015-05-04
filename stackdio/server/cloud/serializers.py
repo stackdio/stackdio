@@ -311,18 +311,18 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     # Read-only fields.
     ##
     group_id = serializers.ReadOnlyField()
-    owner = serializers.ReadOnlyField()
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
 
     # Field for showing the number of active hosts using this security
     # group. It is pulled automatically from the model instance method.
-    active_hosts = serializers.Field(source='get_active_hosts')
+    active_hosts = serializers.ReadOnlyField(source='get_active_hosts')
 
     # Rules are defined in two places depending on the object we're dealing
     # with. If it's a QuerySet the rules are pulled in one query to the
     # cloud provider using the SecurityGroupQuerySet::with_rules method.
     # For single, detail objects we use the rules instance method on the
     # SecurityGroup object
-    provider_id = serializers.Field(source='cloud_provider.id')
+    provider_id = serializers.ReadOnlyField(source='cloud_provider.id')
 
     rules_url = serializers.HyperlinkedIdentityField(
         view_name='securitygroup-rules')
