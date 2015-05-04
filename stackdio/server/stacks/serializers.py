@@ -50,9 +50,10 @@ class StackPropertiesSerializer(serializers.Serializer):
 
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
+    # Read only fields
+    subnet_id = serializers.ReadOnlyField()
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
-    subnet_id = serializers.Field()
-    formula_components = BlueprintHostFormulaComponentSerializer(many=True)
+    formula_components = BlueprintHostFormulaComponentSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.Host
@@ -185,11 +186,6 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
 
 
 class StackActionSerializer(serializers.HyperlinkedModelSerializer):
-    submit_time = serializers.Field(source='submit_time')
-    start_time = serializers.Field(source='start_time')
-    finish_time = serializers.Field(source='finish_time')
-    std_out = serializers.Field(source='std_out')
-    std_err = serializers.Field(source='std_err')
     zip_url = serializers.HyperlinkedIdentityField(view_name='stackaction-zip')
 
     class Meta:
