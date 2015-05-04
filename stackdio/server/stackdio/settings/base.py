@@ -65,8 +65,8 @@ if not os.path.isdir(LOG_DIRECTORY):
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Set DEBUG things to False here, override to True in the development.py settings
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
