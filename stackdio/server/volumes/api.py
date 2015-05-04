@@ -18,48 +18,31 @@
 
 import logging
 
-from rest_framework import (
-    generics,
-    permissions,
-)
+from rest_framework import generics, permissions
 
 from core.permissions import AdminOrOwnerPermission
-from .models import (
-    Volume,
-)
-from .serializers import (
-    VolumeSerializer,
-)
-from . import filters
+from . import filters, models, serializers
 
 logger = logging.getLogger(__name__)
 
 
 class VolumeListAPIView(generics.ListAPIView):
-    model = Volume
-    serializer_class = VolumeSerializer
+    queryset = models.Volume.objects.all()
+    serializer_class = serializers.VolumeSerializer
     filter_class = filters.VolumeFilter
 
     def get_queryset(self):
-        return Volume.objects.filter(stack__owner=self.request.user)
+        return models.Volume.objects.filter(stack__owner=self.request.user)
 
 
 class VolumeAdminListAPIView(generics.ListAPIView):
-    model = Volume
-    serializer_class = VolumeSerializer
+    queryset = models.Volume.objects.all()
+    serializer_class = serializers.VolumeSerializer
     permission_classes = (permissions.IsAdminUser,)
     filter_class = filters.VolumeFilter
 
-    def get_queryset(self):
-        return self.model.objects.all()
-
 
 class VolumeDetailAPIView(generics.RetrieveAPIView):
-    model = Volume
-    serializer_class = VolumeSerializer
+    queryset = models.Volume.objects.all()
+    serializer_class = serializers.VolumeSerializer
     permission_classes = (AdminOrOwnerPermission,)
-
-    # def get_object(self):
-    #     return get_object_or_404(Volume,
-    #                              pk=self.kwargs.get('pk'),
-    #                              stack__owner=self.request.user)
