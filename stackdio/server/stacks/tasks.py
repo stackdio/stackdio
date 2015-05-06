@@ -602,9 +602,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                 is_absent = host_data == 'Absent'
 
                 # Check for terminated host state
-                if is_absent or ('state' in host_data
-                                 and host_data['state'] in bad_states):
-
+                if is_absent or ('state' in host_data and host_data['state'] in bad_states):
                     if is_absent and remove_absent:
                         hosts_to_remove.append(host)
                         continue
