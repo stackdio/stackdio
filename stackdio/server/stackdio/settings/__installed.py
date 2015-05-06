@@ -17,13 +17,13 @@
 
 import imp
 
+import stackdio
+
 # Grab the base settings
 from .base import *  # NOQA
 
 
 WSGI_APPLICATION = 'stackdio.server.stackdio.wsgi.application'
-
-import stackdio
 
 try:
     # If stackdio.urls exists, just set the URLCONF directly
