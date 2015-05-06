@@ -31,12 +31,6 @@ adapted to work in the manner described above.
 import logging
 import os
 
-# Import salt libs
-import salt.fileserver
-import salt.utils
-from salt.utils.event import tagify
-
-
 if '__opts__' not in globals():
     __opts__ = {}
 
@@ -46,6 +40,11 @@ try:
 except ImportError:
     # fcntl is not available on windows
     HAS_FCNTL = False
+
+# Import salt libs
+import salt.fileserver  # NOQA
+import salt.utils  # NOQA
+from salt.utils.event import tagify  # NOQA
 
 log = logging.getLogger(__name__)
 
