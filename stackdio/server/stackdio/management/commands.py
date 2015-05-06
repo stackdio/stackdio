@@ -688,5 +688,5 @@ class DjangoManageWrapperCommand(BaseCommand):
         stackdio_root = self.load_resource()
         sys.path.insert(0, stackdio_root)
         from django.core.management import execute_from_command_line
-        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.server.stackdio.settings.__installed'  # NOQA
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.server.stackdio.settings.__installed'
         execute_from_command_line(self.args)

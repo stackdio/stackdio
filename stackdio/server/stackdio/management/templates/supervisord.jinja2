@@ -48,11 +48,13 @@ autorestart=true
 [program:celery-main]
 command=celery worker -A stackdio -l info -c 4 -Q default,stacks,formulas -n main.`hostname`
 directory={{ stackdio_root }}
+environment=PYTHONOPTIMIZE="1"
 autorestart=true
 
 [program:celery-formulas]
 command=celery worker -A stackdio -l info -c 1 -Q formulas -n formulas.`hostname`
 directory={{ stackdio_root }}
+environment=PYTHONOPTIMIZE="1"
 autorestart=true
 {% endif %}
 
