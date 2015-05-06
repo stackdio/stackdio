@@ -18,9 +18,6 @@
 
 from django.conf.urls import patterns, include, url
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.urlpatterns import format_suffix_patterns
 
 # Enable admin interface
