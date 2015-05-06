@@ -338,4 +338,3 @@ CELERY_ROUTES = {
 ##
 if os.path.isfile(os.path.join(BASE_DIR, 'stackdio', 'settings', 'ldap_settings.py')):
     from ldap_settings import *  # NOQA
-
