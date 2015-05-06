@@ -121,20 +121,21 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     # owner of the formula
     owner = models.ForeignKey(settings.AUTH_USER_MODEL,
-                              related_name='formulas')
+                              related_name='formulas',
+                              verbose_name='Owner')
 
     # publicly available to other users?
-    public = models.BooleanField(default=False)
+    public = models.BooleanField('Public', default=False)
 
     # uri to the repository for this formula
-    uri = models.CharField(max_length=255)
+    uri = models.CharField('Repository URI', max_length=255)
 
     # root path of where this formula exists
-    root_path = models.CharField(max_length=64)
+    root_path = models.CharField('Root Path', max_length=64)
 
-    git_username = models.CharField(max_length=64, blank=True)
+    git_username = models.CharField('Git Username (for private repos)', max_length=64, blank=True)
 
-    access_token = models.BooleanField(default=False)
+    access_token = models.BooleanField('Access Token', default=False)
 
     def __unicode__(self):
         return '{0} ({1})'.format(self.title, self.owner.username)

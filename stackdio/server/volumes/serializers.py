@@ -20,20 +20,18 @@ import logging
 
 from rest_framework import serializers
 
-from .models import (
-    Volume,
-)
+from . import models
 
 logger = logging.getLogger(__name__)
 
 
 class VolumeSerializer(serializers.HyperlinkedModelSerializer):
-    owner = serializers.Field()
-    snapshot_name = serializers.Field(source='snapshot.snapshot_id')
-    size_in_gb = serializers.Field(source='snapshot.size_in_gb')
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+    snapshot_name = serializers.ReadOnlyField(source='snapshot.snapshot_id')
+    size_in_gb = serializers.ReadOnlyField(source='snapshot.size_in_gb')
 
     class Meta:
-        model = Volume
+        model = models.Volume
         fields = (
             'id',
             'url',

@@ -18,75 +18,42 @@
 
 import logging
 
+from rest_framework import permissions
 from rest_framework import serializers
 
-from formulas.serializers import FormulaComponentSerializer
 from core.mixins import SuperuserFieldsMixin
+from formulas.serializers import FormulaComponentSerializer
 from . import models
 from .utils import get_provider_type_and_class
-
-from rest_framework import permissions
 
 logger = logging.getLogger(__name__)
 
 
-class SecurityGroupSerializer(SuperuserFieldsMixin,
-                              serializers.HyperlinkedModelSerializer):
-    ##
-    # Read-only fields.
-    ##
-    group_id = serializers.Field()
-    owner = serializers.Field()
-
-    # Field for showing the number of active hosts using this security
-    # group. It is pulled automatically from the model instance method.
-    active_hosts = serializers.Field(source='get_active_hosts')
-
-    # Rules are defined in two places depending on the object we're dealing
-    # with. If it's a QuerySet the rules are pulled in one query to the
-    # cloud provider using the SecurityGroupQuerySet::with_rules method.
-    # For single, detail objects we use the rules instance method on the
-    # SecurityGroup object
-    rules = serializers.Field(source='rules')
-    provider_id = serializers.Field(source='cloud_provider.id')
-
-    rules_url = serializers.HyperlinkedIdentityField(
-            view_name='securitygroup-rules')
+class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
+    title = serializers.ReadOnlyField(source='get_type_name_display')
 
     class Meta:
-        model = models.SecurityGroup
+        model = models.CloudProviderType
         fields = (
             'id',
             'url',
-            'name',
-            'description',
-            'rules_url',
-            'group_id',
-            'cloud_provider',
-            'provider_id',
-            'owner',
-            'is_default',
-            'is_managed',
-            'active_hosts',
-            'rules',
+            'title',
+            'type_name',
         )
-        superuser_fields = ('owner', 'is_default', 'is_managed')
-
-
-class SecurityGroupRuleSerializer(serializers.Serializer):
-    action = serializers.CharField(max_length=15)
-    protocol = serializers.CharField(max_length=4)
-    from_port = serializers.IntegerField()
-    to_port = serializers.IntegerField()
-    rule = serializers.CharField(max_length=255)
 
 
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
-    yaml = serializers.Field()
-    provider_type = serializers.PrimaryKeyRelatedField()
-    region = serializers.PrimaryKeyRelatedField()
-    provider_type_name = serializers.Field(source='provider_type.type_name')
+    # Read only fields
+    provider_type_name = serializers.ReadOnlyField(source='provider_type.type_name')
+
+    # Foreign Key Relations
+    provider_type = serializers.PrimaryKeyRelatedField(
+        queryset=models.CloudProviderType.objects.all())
+    region = serializers.PrimaryKeyRelatedField(
+        queryset=models.CloudRegion.objects.all())
+
+    # Hyperlinks
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-securitygroup-list')
     vpc_subnets = serializers.HyperlinkedIdentityField(
@@ -107,16 +74,13 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'provider_type',
             'provider_type_name',
             'account_id',
-            'region',
-            'yaml',
             'vpc_id',
+            'region',
             'security_groups',
             'vpc_subnets',
             'global_orchestration_components',
             'global_orchestration_properties',
         )
-
-        superuser_fields = ('yaml',)
 
     def validate(self, attrs):
         # validate provider specific request data
@@ -161,22 +125,15 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         return attrs
 
 
-class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
-    title = serializers.Field(source='get_type_name_display')
-
-    class Meta:
-        model = models.CloudProviderType
-        fields = (
-            'id',
-            'url',
-            'title',
-            'type_name',
-        )
+class VPCSubnetSerializer(serializers.Serializer):
+    vpc_id = serializers.ReadOnlyField()
+    id = serializers.ReadOnlyField()
+    availability_zone = serializers.ReadOnlyField()
+    cidr_block = serializers.ReadOnlyField()
+    tags = serializers.ReadOnlyField()
 
 
 class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
-    provider_type = serializers.Field(source='provider_type')
-
     class Meta:
         model = models.CloudInstanceSize
         fields = (
@@ -190,14 +147,11 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class GlobalOrchestrationFormulaComponentSerializer(
-        serializers.HyperlinkedModelSerializer):
-
-    component = serializers.PrimaryKeyRelatedField()
+class GlobalOrchestrationFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+    component = serializers.PrimaryKeyRelatedField(read_only=True)
 
     def __init__(self, *args, **kwargs):
-        super(GlobalOrchestrationFormulaComponentSerializer, self) \
-            .__init__(*args, **kwargs)
+        super(GlobalOrchestrationFormulaComponentSerializer, self).__init__(*args, **kwargs)
 
         # If read request, put in the component object, otherwise just pk
         context = kwargs.get('context')
@@ -218,8 +172,12 @@ class GlobalOrchestrationFormulaComponentSerializer(
 
 class CloudProfileSerializer(SuperuserFieldsMixin,
                              serializers.HyperlinkedModelSerializer):
-    cloud_provider = serializers.PrimaryKeyRelatedField()
-    default_instance_size = serializers.PrimaryKeyRelatedField()
+    cloud_provider = serializers.PrimaryKeyRelatedField(
+        queryset=models.CloudProvider.objects.all()
+    )
+    default_instance_size = serializers.PrimaryKeyRelatedField(
+        queryset=models.CloudInstanceSize.objects.all()
+    )
 
     class Meta:
         model = models.CloudProfile
@@ -283,8 +241,9 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
 
 
 class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
-    cloud_provider = serializers.PrimaryKeyRelatedField()
-    default_instance_size = serializers.PrimaryKeyRelatedField()
+    cloud_provider = serializers.PrimaryKeyRelatedField(
+        queryset=models.CloudProvider.objects.all()
+    )
 
     class Meta:
         model = models.Snapshot
@@ -315,9 +274,9 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
-    provider_type = serializers.PrimaryKeyRelatedField()
-    zones = serializers.HyperlinkedRelatedField(many=True, read_only=True,
-                                                view_name='cloudzone-detail')
+    provider_type = serializers.PrimaryKeyRelatedField(read_only=True)
+    zones = serializers.StringRelatedField(many=True, read_only=True)
+    zones_url = serializers.HyperlinkedIdentityField(view_name='cloudregion-zones')
 
     class Meta:
         model = models.CloudRegion
@@ -326,24 +285,71 @@ class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'provider_type',
             'zones',
+            'zones_url',
         )
 
 
 class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
-    provider_type = serializers.PrimaryKeyRelatedField()
+    provider_type = serializers.PrimaryKeyRelatedField(
+        source='region.provider_type',
+        queryset=models.CloudProviderType.objects.all()
+    )
 
     class Meta:
         model = models.CloudZone
         fields = (
             'id',
             'title',
+            'provider_type',
             'region',
         )
 
 
-class VPCSubnetSerializer(serializers.Serializer):
-    vpc_id = serializers.Field()
-    id = serializers.Field()
-    availability_zone = serializers.Field()
-    cidr_block = serializers.Field()
-    tags = serializers.Field()
+class SecurityGroupSerializer(SuperuserFieldsMixin,
+                              serializers.HyperlinkedModelSerializer):
+    ##
+    # Read-only fields.
+    ##
+    group_id = serializers.ReadOnlyField()
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    # Field for showing the number of active hosts using this security
+    # group. It is pulled automatically from the model instance method.
+    active_hosts = serializers.ReadOnlyField(source='get_active_hosts')
+
+    # Rules are defined in two places depending on the object we're dealing
+    # with. If it's a QuerySet the rules are pulled in one query to the
+    # cloud provider using the SecurityGroupQuerySet::with_rules method.
+    # For single, detail objects we use the rules instance method on the
+    # SecurityGroup object
+    provider_id = serializers.ReadOnlyField(source='cloud_provider.id')
+
+    rules_url = serializers.HyperlinkedIdentityField(
+        view_name='securitygroup-rules')
+
+    class Meta:
+        model = models.SecurityGroup
+        fields = (
+            'id',
+            'url',
+            'name',
+            'description',
+            'rules_url',
+            'group_id',
+            'cloud_provider',
+            'provider_id',
+            'owner',
+            'is_default',
+            'is_managed',
+            'active_hosts',
+            'rules',
+        )
+        superuser_fields = ('owner', 'is_default', 'is_managed')
+
+
+class SecurityGroupRuleSerializer(serializers.Serializer):
+    action = serializers.CharField(max_length=15)
+    protocol = serializers.CharField(max_length=4)
+    from_port = serializers.IntegerField()
+    to_port = serializers.IntegerField()
+    rule = serializers.CharField(max_length=255)

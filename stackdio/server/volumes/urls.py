@@ -18,23 +18,20 @@
 
 from django.conf.urls import patterns, url
 
-from .api import (
-    VolumeListAPIView,
-    VolumeDetailAPIView,
-    VolumeAdminListAPIView,
-)
+from . import api
 
-urlpatterns = patterns('volumes.api',
+urlpatterns = patterns(
+    'volumes.api',
 
     url(r'^volumes/$',
-        VolumeListAPIView.as_view(),
+        api.VolumeListAPIView.as_view(),
         name='volume-list'),
 
     url(r'^volumes/(?P<pk>[0-9]+)/$',
-        VolumeDetailAPIView.as_view(),
+        api.VolumeDetailAPIView.as_view(),
         name='volume-detail'),
 
     url(r'^admin/volumes/$',
-        VolumeAdminListAPIView.as_view(),
+        api.VolumeAdminListAPIView.as_view(),
         name='volume-admin-list'),
 )

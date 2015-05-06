@@ -48,6 +48,15 @@ class CloudInstanceSizeAdmin(admin.ModelAdmin):
 admin.site.register(models.CloudInstanceSize, CloudInstanceSizeAdmin)
 
 
+class GlobalOrchestrationFormulaComponentAdmin(admin.ModelAdmin):
+    list_display = [
+        'component',
+        'provider',
+        'order',
+    ]
+admin.site.register(models.GlobalOrchestrationFormulaComponent, GlobalOrchestrationFormulaComponentAdmin)
+
+
 class CloudProfileAdmin(admin.ModelAdmin):
     list_display = [
         'title',
@@ -69,6 +78,26 @@ class SnapshotAdmin(admin.ModelAdmin):
         'filesystem_type',
     ]
 admin.site.register(models.Snapshot, SnapshotAdmin)
+
+
+class CloudRegionAdmin(admin.ModelAdmin):
+    list_display = [
+        'title',
+        'slug',
+        'description',
+        'provider_type',
+    ]
+admin.site.register(models.CloudRegion, CloudRegionAdmin)
+
+
+class CloudZoneAdmin(admin.ModelAdmin):
+    list_display = [
+        'title',
+        'slug',
+        'description',
+        'region',
+    ]
+admin.site.register(models.CloudZone, CloudZoneAdmin)
 
 
 class SecurityGroupAdmin(admin.ModelAdmin):

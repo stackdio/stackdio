@@ -20,29 +20,40 @@ import logging
 
 from rest_framework import serializers
 
-from . import models
+from blueprints.models import BlueprintHostDefinition
 from blueprints.serializers import (
     BlueprintHostFormulaComponentSerializer,
     BlueprintHostDefinitionSerializer
 )
-from blueprints.models import BlueprintHostDefinition
 from cloud.serializers import SecurityGroupSerializer
 from cloud.models import SecurityGroup
+from core.utils import recursive_update
+from . import models
 
 logger = logging.getLogger(__name__)
 
 
 class StackPropertiesSerializer(serializers.Serializer):
-    def to_native(self, obj):
+    def to_representation(self, obj):
         if obj is not None:
             return obj.properties
         return {}
 
+    def to_internal_value(self, data):
+        return data
+
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        return recursive_update(instance, validated_data)
+
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
-    availability_zone = serializers.PrimaryKeyRelatedField()
-    subnet_id = serializers.Field()
-    formula_components = BlueprintHostFormulaComponentSerializer(many=True)
+    # Read only fields
+    subnet_id = serializers.ReadOnlyField()
+    availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
+    formula_components = BlueprintHostFormulaComponentSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.Host
@@ -68,7 +79,6 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
-
     class Meta:
         model = models.StackHistory
         fields = (
@@ -81,26 +91,35 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
 
 
 class StackSerializer(serializers.HyperlinkedModelSerializer):
-    owner = serializers.Field()
-    hosts = serializers.HyperlinkedIdentityField(view_name='stack-hosts')
-    fqdns = serializers.HyperlinkedIdentityField(view_name='stack-fqdns')
-    action = serializers.HyperlinkedIdentityField(view_name='stack-action')
+    # Read only fields
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+    host_count = serializers.ReadOnlyField(source='hosts.count')
+    volume_count = serializers.ReadOnlyField(source='volumes.count')
+    status = serializers.ReadOnlyField()
+
+    # Identity links
+    hosts = serializers.HyperlinkedIdentityField(
+        view_name='stack-hosts')
+    fqdns = serializers.HyperlinkedIdentityField(
+        view_name='stack-fqdns')
+    action = serializers.HyperlinkedIdentityField(
+        view_name='stack-action')
     actions = serializers.HyperlinkedIdentityField(
         view_name='stackaction-list')
-    logs = serializers.HyperlinkedIdentityField(view_name='stack-logs')
+    logs = serializers.HyperlinkedIdentityField(
+        view_name='stack-logs')
     orchestration_errors = serializers.HyperlinkedIdentityField(
         view_name='stack-orchestration-errors')
     provisioning_errors = serializers.HyperlinkedIdentityField(
         view_name='stack-provisioning-errors')
-    host_count = serializers.Field(source='hosts.count')
-    volumes = serializers.HyperlinkedIdentityField(view_name='stack-volumes')
-    volume_count = serializers.Field(source='volumes.count')
+    volumes = serializers.HyperlinkedIdentityField(
+        view_name='stack-volumes')
     properties = serializers.HyperlinkedIdentityField(
         view_name='stack-properties')
     history = serializers.HyperlinkedIdentityField(
         view_name='stack-history')
-    access_rules = serializers.HyperlinkedIdentityField(
-        view_name='stack-access-rules')
+    # access_rules = serializers.HyperlinkedIdentityField(
+    #     view_name='stack-access-rules')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='stack-security-groups')
 
@@ -126,6 +145,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'history',
             'action',
             'actions',
+            # 'access_rules',
             'security_groups',
             'logs',
             'orchestration_errors',
@@ -133,9 +153,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class StackBlueprintHostDefinitionSerializer(
-        BlueprintHostDefinitionSerializer):
-
+class StackBlueprintHostDefinitionSerializer(BlueprintHostDefinitionSerializer):
     class Meta:
         model = BlueprintHostDefinition
         fields = (
@@ -168,11 +186,6 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
 
 
 class StackActionSerializer(serializers.HyperlinkedModelSerializer):
-    submit_time = serializers.Field(source='submit_time')
-    start_time = serializers.Field(source='start_time')
-    finish_time = serializers.Field(source='finish_time')
-    std_out = serializers.Field(source='std_out')
-    std_err = serializers.Field(source='std_err')
     zip_url = serializers.HyperlinkedIdentityField(view_name='stackaction-zip')
 
     class Meta:

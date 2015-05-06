@@ -473,6 +473,11 @@ class InitCommand(WizardCommand):
         db = parse(dsn)
         db['OPTIONS'] = {'connect_timeout': 3}
 
+        # These are django defaults - there seems to be a bug in dj-database-url that causes an
+        # exception if these keys are missing
+        db['CONN_MAX_AGE'] = 0
+        db['AUTOCOMMIT'] = True
+
         try:
             engine = load_backend(db['ENGINE']).DatabaseWrapper(db)
             engine.cursor()
@@ -683,5 +688,5 @@ class DjangoManageWrapperCommand(BaseCommand):
         stackdio_root = self.load_resource()
         sys.path.insert(0, stackdio_root)
         from django.core.management import execute_from_command_line
-        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.server.stackdio.settings.__installed'  # NOQA
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.server.stackdio.settings.__installed'
         execute_from_command_line(self.args)

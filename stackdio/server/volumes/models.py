@@ -18,9 +18,7 @@
 
 from django.db import models
 
-from django_extensions.db.models import (
-    TimeStampedModel,
-)
+from django_extensions.db.models import TimeStampedModel
 
 
 class Volume(TimeStampedModel):
@@ -29,7 +27,7 @@ class Volume(TimeStampedModel):
 
     # The hostname is used to match up volumes to hosts as they
     # come online.
-    hostname = models.CharField(max_length=64)
+    hostname = models.CharField('Hostname', max_length=64)
 
     # The host is the actual host this volume is attached to, but
     # it can only be assigned after the host is up and the volume is
@@ -42,11 +40,11 @@ class Volume(TimeStampedModel):
     # the volume id as provided by the cloud provider. This can only
     # be populated after the volume has been created, thus allowing
     # blank values
-    volume_id = models.CharField(max_length=32, blank=True)
+    volume_id = models.CharField('Volume ID', max_length=32, blank=True)
 
     # when the last attach time for the volume was. This is also set
     # after the volume has been created
-    attach_time = models.DateTimeField(default=None, null=True, blank=True)
+    attach_time = models.DateTimeField('Attach Time', default=None, null=True, blank=True)
 
     # the snapshot used when this volume is created. The size of the volume
     # is determined by the snapshot
@@ -54,10 +52,10 @@ class Volume(TimeStampedModel):
 
     # the device id (e.g, /dev/sdj or /dev/sdk) the volume will assume when
     # it's attached to its host
-    device = models.CharField(max_length=32)
+    device = models.CharField('Device', max_length=32)
 
     # where on the machine should this volume be mounted?
-    mount_point = models.CharField(max_length=255)
+    mount_point = models.CharField('Mount Point', max_length=255)
 
     def __unicode__(self):
         return '{0}'.format(self.volume_id)

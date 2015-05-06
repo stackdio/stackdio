@@ -25,16 +25,7 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
-class FormulaPropertiesSerializer(serializers.Serializer):
-    properties = serializers.Field('properties')
-
-    class Meta:
-        model = models.Formula
-        fields = ('properties',)
-
-
 class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
-
     class Meta:
         model = models.FormulaComponent
         fields = (
@@ -47,12 +38,21 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class FormulaSerializer(serializers.HyperlinkedModelSerializer):
+    # Plain read only fields
+    title = serializers.ReadOnlyField()
+    description = serializers.ReadOnlyField()
+    private_git_repo = serializers.ReadOnlyField()
+    root_path = serializers.ReadOnlyField()
+    status = serializers.ReadOnlyField()
+    status_detail = serializers.ReadOnlyField()
 
-    owner = serializers.Field()
-    components = FormulaComponentSerializer(many=True)
+    # Special read only fields
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+    components = FormulaComponentSerializer(many=True, read_only=True)
+
+    # Other fields
     properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
     action = serializers.HyperlinkedIdentityField(view_name='formula-action')
-    private_git_repo = serializers.Field()
 
     class Meta:
         model = models.Formula
@@ -62,17 +62,25 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'description',
             'owner',
+            'uri',
             'public',
             'git_username',
             'private_git_repo',
             'access_token',
-            'uri',
             'root_path',
-            'properties',
-            'components',
             'created',
             'modified',
             'status',
             'status_detail',
             'action',
+            'properties',
+            'components',
+        )
+
+
+class FormulaPropertiesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Formula
+        fields = (
+            'properties',
         )
