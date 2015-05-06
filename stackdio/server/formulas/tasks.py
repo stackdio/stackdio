@@ -24,9 +24,9 @@ import sys
 from tempfile import mkdtemp
 from urlparse import urlsplit, urlunsplit
 
-from celery import shared_task
 import git
 import yaml
+from celery import shared_task
 
 from formulas.models import Formula
 
@@ -40,10 +40,10 @@ class FormulaTaskException(Exception):
         super(FormulaTaskException, self).__init__(error)
 
 
-def replace_all(file, searchExp, replaceExp):
-    for line in fileinput.input(file, inplace=True):
-        if searchExp in line:
-            line = line.replace(searchExp, replaceExp)
+def replace_all(rep_file, search_exp, replace_exp):
+    for line in fileinput.input(rep_file, inplace=True):
+        if search_exp in line:
+            line = line.replace(search_exp, replace_exp)
         sys.stdout.write(line)
 
 
@@ -160,13 +160,16 @@ def validate_component(formula, repodir, component):
         raise FormulaTaskException(
             formula,
             'Could not locate an SLS file for component \'{0}\'. '
-            'Expected to find either \'{1}\' or \'{2}\'.'
-                .format(component_title, init_file, sls_file))
+            'Expected to find either \'{1}\' or \'{2}\'.'.format(component_title,
+                                                                 init_file,
+                                                                 sls_file)
+        )
 
 
 # TODO: Ignoring complexity issues
-@shared_task(name='formulas.import_formula')  # NOQA
+@shared_task(name='formulas.import_formula')
 def import_formula(formula_id, git_password):
+    formula = None
     try:
         formula = Formula.objects.get(pk=formula_id)
         formula.set_status(Formula.IMPORTING, 'Cloning and importing formula.')
@@ -228,10 +231,11 @@ def import_formula(formula_id, git_password):
 
 
 # TODO: Ignoring complexity issues
-@shared_task(name='formulas.update_formula')  # NOQA
+@shared_task(name='formulas.update_formula')
 def update_formula(formula_id, git_password):
     repo = None
     current_commit = None
+    formula = None
     try:
         formula = Formula.objects.get(pk=formula_id)
         formula.set_status(Formula.IMPORTING, 'Updating formula.')

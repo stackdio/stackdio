@@ -122,7 +122,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
             formula_obj.save()
 
             # Import using asynchronous task
-            tasks.import_formula.si(formula_obj.id, PasswordStr(git_password))()
+            tasks.import_formula.si(formula_obj.id, PasswordStr(git_password)).apply_async()
             formula_objs.append(formula_obj)
 
         return Response(self.get_serializer(formula_objs, many=True).data)
@@ -149,13 +149,10 @@ class FormulaPublicAPIView(generics.ListAPIView):
 
 
 class FormulaAdminListAPIView(generics.ListAPIView):
+    queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
     permission_classes = (permissions.IsAdminUser,)
     filter_class = filters.FormulaFilter
-
-    def get_queryset(self):
-        # Return all formulas except the ones for global orchestration
-        return models.Formula.objects.all()
 
 
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -244,6 +241,7 @@ class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class FormulaActionAPIView(generics.GenericAPIView):
+    queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission)
@@ -251,9 +249,6 @@ class FormulaActionAPIView(generics.GenericAPIView):
     AVAILABLE_ACTIONS = [
         'update',
     ]
-
-    def get_queryset(self):
-        return models.Formula.objects.all()
 
     def get(self, request, *args, **kwargs):
         return Response({
@@ -280,6 +275,6 @@ class FormulaActionAPIView(generics.GenericAPIView):
 
             formula.set_status(models.Formula.IMPORTING,
                                'Importing formula...this could take a while.')
-            tasks.update_formula.si(formula.id, PasswordStr(git_password))()
+            tasks.update_formula.si(formula.id, PasswordStr(git_password)).apply_async()
 
         return Response(self.get_serializer(formula).data)
