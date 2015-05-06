@@ -16,7 +16,7 @@
 #
 
 
-'''
+"""
 Copyright (c) 2010, Simon Willison.
 All rights reserved.
 
@@ -46,9 +46,10 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
 ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 
 from django.db import models
+
 
 class TransformQuerySet(models.query.QuerySet):
     def __init__(self, *args, **kwargs):
@@ -73,6 +74,7 @@ class TransformQuerySet(models.query.QuerySet):
                 fn(results)
             return iter(results)
         return result_iter
+
 
 class TransformManager(models.Manager):
 

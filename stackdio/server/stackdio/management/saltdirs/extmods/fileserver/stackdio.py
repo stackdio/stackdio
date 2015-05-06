@@ -16,7 +16,7 @@
 #
 
 
-'''
+"""
 Custom fileserver backend for stackd.io that allows looks for states
 from cloned formulas using the user directory as an environment. This
 allows individual users to clone the same formulas or formulas with
@@ -25,7 +25,7 @@ users.
 
 NOTE: Most of this was taken from salt's fileserver.roots module and
 adapted to work in the manner described above.
-'''
+"""
 
 if '__opts__' not in globals():
     __opts__ = {}
@@ -50,8 +50,8 @@ log = logging.getLogger(__name__)
 
 
 def __virtual__():
-    '''
-    '''
+    """
+    """
     envs_dir = get_envs_dir()
 
     if envs_dir is None:
@@ -107,9 +107,9 @@ def envs():
 
 
 def find_file(path, saltenv='base', env=None, **kwargs):
-    '''
+    """
     Search the environment for the relative path
-    '''
+    """
     if env is not None:
         salt.utils.warn_until(
             'Boron',
@@ -141,9 +141,9 @@ def find_file(path, saltenv='base', env=None, **kwargs):
 
 
 def serve_file(load, fnd):
-    '''
+    """
     Return a chunk from a file based on the data received
-    '''
+    """
     if 'env' in load:
         salt.utils.warn_until(
             'Boron',
@@ -172,9 +172,9 @@ def serve_file(load, fnd):
 
 
 def update():
-    '''
+    """
     When we are asked to update (regular interval) lets reap the cache
-    '''
+    """
     try:
         salt.fileserver.reap_fileserver_cache_dir(
             os.path.join(__opts__['cachedir'], 'stackdio/hash'),
@@ -229,9 +229,9 @@ def update():
 
 # Ignoring code complexity issues
 def file_hash(load, fnd):  # NOQA
-    '''
+    """
     Return a file hash, the hash type is set in the master config file
-    '''
+    """
     if 'env' in load:
         salt.utils.warn_until(
             'Boron',
@@ -319,10 +319,10 @@ def file_hash(load, fnd):  # NOQA
 
 # Ignoring code complexity issues
 def _file_lists(load, form):  # NOQA
-    '''
+    """
     Return a dict containing the file lists for files, dirs, emtydirs and
     symlinks
-    '''
+    """
     if 'env' in load:
         salt.utils.warn_until(
             'Boron',
@@ -400,32 +400,32 @@ def _file_lists(load, form):  # NOQA
 
 
 def file_list(load):  # NOQA
-    '''
+    """
     Return a list of all files on the file server in a specified
     environment
-    '''
+    """
     return _file_lists(load, 'files')
 
 
 def file_list_emptydirs(load):
-    '''
+    """
     Return a list of all empty directories on the master
-    '''
+    """
     return _file_lists(load, 'empty_dirs')
 
 
 def dir_list(load):
-    '''
+    """
     Return a list of all directories on the master
-    '''
+    """
     return _file_lists(load, 'dirs')
 
 
 # Ignoring code complexity issues
 def symlink_list(load):  # NOQA
-    '''
+    """
     Return a dict of all symlinks based on a given path on the Master
-    '''
+    """
     if 'env' in load:
         salt.utils.warn_until(
             'Boron',

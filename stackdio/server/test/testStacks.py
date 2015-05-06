@@ -20,6 +20,7 @@ from nose.tools import raises
 import requests
 import json
 
+
 class Test:
     def setup(self):
         print "setting up"

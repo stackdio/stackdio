@@ -16,7 +16,7 @@ before_install:
 
 before_script:
   - "/home/travis/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pylint --rcfile=.testing.pylintrc stackdio/server/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'"
-  - "/home/travis/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pep8 --ignore=E501,E12 --exclude='stackdio/server/*/migrations/*' stackdio/server/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'"
+  - "/home/travis/virtualenv/python${TRAVIS_PYTHON_VERSION}/bin/pep8 --ignore=E501,E12 --exclude='stackdio/server/*/migrations/*,*/bower_components/*' stackdio/server/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'"
 
 script: "exit 0;"
 

@@ -55,7 +55,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     private_git_repo = serializers.Field()
 
     class Meta:
-        model = models.Formula 
+        model = models.Formula
         fields = (
             'id',
             'url',
@@ -76,4 +76,3 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'status_detail',
             'action',
         )
-

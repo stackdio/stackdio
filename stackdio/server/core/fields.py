@@ -20,6 +20,7 @@ from django.db import models
 
 from south.modelsinspector import add_introspection_rules
 
+
 class DeletingFileField(models.FileField):
     """
     Borrowed from: https://gist.github.com/889692

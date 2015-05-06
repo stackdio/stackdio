@@ -44,7 +44,7 @@ class PasswordStr(unicode):
     Used so that passwords aren't logged in the celery task log
     """
     def __repr__(self):
-        return '*'*len(self)
+        return '*' * len(self)
 
 
 class FormulaListAPIView(generics.ListCreateAPIView):
@@ -280,7 +280,6 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
             raise BadRequest('{0} is not an available action'.format(action))
 
         if action == 'update':
-            
             git_password = request.DATA.get('git_password', '')
             if formula.private_git_repo and not formula.access_token:
                 if git_password == '':
@@ -293,4 +292,3 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
             tasks.update_formula.si(formula.id, PasswordStr(git_password))()
 
         return Response(self.get_serializer(formula).data)
-

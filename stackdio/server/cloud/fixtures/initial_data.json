@@ -320,55 +320,55 @@
         "pk": 1,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "m1.large",
-            "description": "Large Instance",
-            "provider_type": 1,
-            "slug": "large-instance",
-            "title": "Large Instance"
+            "instance_id": "t1.micro",
+            "slug": "t1.micro",
+            "title": "t1.micro",
+            "description": "T1 Micro Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 2,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "m3.2xlarge",
-            "description": "Double Extra Large Instance",
-            "provider_type": 1,
-            "slug": "double-extra-large-instance",
-            "title": "Double Extra Large Instance"
+            "instance_id": "m1.small",
+            "slug": "m1.small",
+            "title": "m1.small",
+            "description": "General Purpose M1 Small Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 3,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "m2.4xlarge",
-            "description": "High-Memory Quadruple Extra Large Instance",
-            "provider_type": 1,
-            "slug": "high-memory-quadruple-extra-large-instance",
-            "title": "High-Memory Quadruple Extra Large Instance"
+            "instance_id": "m1.medium",
+            "slug": "m1.medium",
+            "title": "m1.medium",
+            "description": "General Purpose M1 Medium Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 4,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "m2.2xlarge",
-            "description": "High-Memory Double Extra Large Instance",
-            "provider_type": 1,
-            "slug": "high-memory-double-extra-large-instance",
-            "title": "High-Memory Double Extra Large Instance"
+            "instance_id": "m1.large",
+            "slug": "m1.large",
+            "title": "m1.large",
+            "description": "General Purpose M1 Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 5,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "c1.medium",
-            "description": "High-CPU Medium Instance",
-            "provider_type": 1,
-            "slug": "high-cpu-medium-instance",
-            "title": "High-CPU Medium Instance"
+            "instance_id": "m1.xlarge",
+            "slug": "m1.xlarge",
+            "title": "m1.xlarge",
+            "description": "General Purpose M1 Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
@@ -376,120 +376,461 @@
         "model": "cloud.cloudinstancesize",
         "fields": {
             "instance_id": "m2.xlarge",
-            "description": "High-Memory Extra Large Instance",
-            "provider_type": 1,
-            "slug": "high-memory-extra-large-instance",
-            "title": "High-Memory Extra Large Instance"
+            "slug": "m2.xlarge",
+            "title": "m2.xlarge",
+            "description": "Memory Optimized M2 Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 7,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "m1.medium",
-            "description": "Medium Instance",
-            "provider_type": 1,
-            "slug": "medium-instance",
-            "title": "Medium Instance"
+            "instance_id": "m2.2xlarge",
+            "slug": "m2.2xlarge",
+            "title": "m2.2xlarge",
+            "description": "Memory Optimized M2 Double Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 8,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "cc1.4xlarge",
-            "description": "Cluster Compute Quadruple Extra Large Instance",
-            "provider_type": 1,
-            "slug": "cluster-compute-quadruple-extra-large-instance",
-            "title": "Cluster Compute Quadruple Extra Large Instance"
+            "instance_id": "m2.4xlarge",
+            "slug": "m2.4xlarge",
+            "title": "m2.4xlarge",
+            "description": "Memory Optimized M2 Quadruple Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 9,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "hs1.8xlarge",
-            "description": "High Storage Eight Extra Large Instance",
-            "provider_type": 1,
-            "slug": "high-storage-eight-extra-large-instance",
-            "title": "High Storage Eight Extra Large Instance"
+            "instance_id": "cr1.8xlarge",
+            "slug": "cr1.8xlarge",
+            "title": "cr1.8xlarge",
+            "description": "Memory Optimized CR1 Eight Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 10,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "c1.xlarge",
-            "description": "High-CPU Extra Large Instance",
-            "provider_type": 1,
-            "slug": "high-cpu-extra-large-instance",
-            "title": "High-CPU Extra Large Instance"
+            "instance_id": "c1.medium",
+            "slug": "c1.medium",
+            "title": "c1.medium",
+            "description": "Compute Optimized C1 Medium Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 11,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "m1.small",
-            "description": "Small Instance",
-            "provider_type": 1,
-            "slug": "small-instance",
-            "title": "Small Instance"
+            "instance_id": "c1.xlarge",
+            "slug": "c1.xlarge",
+            "title": "c1.xlarge",
+            "description": "Compute Optimized C1 Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 12,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "cr1.8xlarge",
-            "description": "High Memory Cluster Eight Extra Large",
-            "provider_type": 1,
-            "slug": "high-memory-cluster-eight-extra-large",
-            "title": "High Memory Cluster Eight Extra Large"
+            "instance_id": "cc2.8xlarge",
+            "slug": "cc2.8xlarge",
+            "title": "cc2.8xlarge",
+            "description": "Compute Optimized CC2 Eight Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 13,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "m1.xlarge",
-            "description": "Extra Large Instance",
-            "provider_type": 1,
-            "slug": "extra-large-instance",
-            "title": "Extra Large Instance"
+            "instance_id": "hi1.4xlarge",
+            "slug": "hi1.4xlarge",
+            "title": "hi1.4xlarge",
+            "description": "Storage Optimized HI1 Quadruple Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 14,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "t1.micro",
-            "description": "Micro Instance",
-            "provider_type": 1,
-            "slug": "micro-instance",
-            "title": "Micro Instance"
+            "instance_id": "hs1.8xlarge",
+            "slug": "hs1.8xlarge",
+            "title": "hs1.8xlarge",
+            "description": "Storage Optimized HS1 Eight Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 15,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "cc2.8xlarge",
-            "description": "Cluster Compute Eight Extra Large Instance",
-            "provider_type": 1,
-            "slug": "cluster-compute-eight-extra-large-instance",
-            "title": "Cluster Compute Eight Extra Large Instance"
+            "instance_id": "cg1.4xlarge",
+            "slug": "cg1.4xlarge",
+            "title": "cg1.4xlarge",
+            "description": "GPU CG1 Quadruple Extra Large Instance",
+            "provider_type": 1
         }
     },
     {
         "pk": 16,
         "model": "cloud.cloudinstancesize",
         "fields": {
-            "instance_id": "cg1.4xlarge",
-            "description": "Cluster GPU Quadruple Extra Large Instance",
-            "provider_type": 1,
-            "slug": "cluster-gpu-quadruple-extra-large-instance",
-            "title": "Cluster GPU Quadruple Extra Large Instance"
+            "instance_id": "t2.micro",
+            "slug": "t2.micro",
+            "title": "t2.micro",
+            "description": "General Purpose T2 Micro Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 17,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "t2.small",
+            "slug": "t2.small",
+            "title": "t2.small",
+            "description": "General Purpose T2 Small Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 18,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "t2.medium",
+            "slug": "t2.medium",
+            "title": "t2.medium",
+            "description": "General Purpose T2 Medium Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 19,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "m3.medium",
+            "slug": "m3.medium",
+            "title": "m3.medium",
+            "description": "General Purpose M3 Medium Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 20,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "m3.large",
+            "slug": "m3.large",
+            "title": "m3.large",
+            "description": "General Purpose M3 Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 21,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "m3.xlarge",
+            "slug": "m3.xlarge",
+            "title": "m3.xlarge",
+            "description": "General Purpose M3 Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 22,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "m3.2xlarge",
+            "slug": "m3.2xlarge",
+            "title": "m3.2xlarge",
+            "description": "General Purpose M3 Double Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 23,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c4.large",
+            "slug": "c4.large",
+            "title": "c4.large",
+            "description": "Compute Optimized C4 Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 24,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c4.xlarge",
+            "slug": "c4.xlarge",
+            "title": "c4.xlarge",
+            "description": "Compute Optimized C4 Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 25,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c4.2xlarge",
+            "slug": "c4.2xlarge",
+            "title": "c4.2xlarge",
+            "description": "Compute Optimized C4 Double Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 26,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c4.4xlarge",
+            "slug": "c4.4xlarge",
+            "title": "c4.4xlarge",
+            "description": "Compute Optimized C4 Quadruple Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 27,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c4.8xlarge",
+            "slug": "c4.8xlarge",
+            "title": "c4.8xlarge",
+            "description": "Compute Optimized C4 Eight Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 28,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c3.large",
+            "slug": "c3.large",
+            "title": "c3.large",
+            "description": "Compute Optimized C3 Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 29,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c3.xlarge",
+            "slug": "c3.xlarge",
+            "title": "c3.xlarge",
+            "description": "Compute Optimized C3 Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 30,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c3.2xlarge",
+            "slug": "c3.2xlarge",
+            "title": "c3.2xlarge",
+            "description": "Compute Optimized C3 Double Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 31,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c3.4xlarge",
+            "slug": "c3.4xlarge",
+            "title": "c3.4xlarge",
+            "description": "Compute Optimized C3 Quadruple Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 32,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "c3.8xlarge",
+            "slug": "c3.8xlarge",
+            "title": "c3.8xlarge",
+            "description": "Compute Optimized C3 Eight Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 33,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "r3.large",
+            "slug": "r3.large",
+            "title": "r3.large",
+            "description": "Memory Optimized R3 Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 34,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "r3.xlarge",
+            "slug": "r3.xlarge",
+            "title": "r3.xlarge",
+            "description": "Memory Optimized R3 Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 35,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "r3.2xlarge",
+            "slug": "r3.2xlarge",
+            "title": "r3.2xlarge",
+            "description": "Memory Optimized R3 Double Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 36,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "r3.4xlarge",
+            "slug": "r3.4xlarge",
+            "title": "r3.4xlarge",
+            "description": "Memory Optimized R3 Quadruple Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 37,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "r3.8xlarge",
+            "slug": "r3.8xlarge",
+            "title": "r3.8xlarge",
+            "description": "Memory Optimized R3 Eight Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 38,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "g2.2xlarge",
+            "slug": "g2.2xlarge",
+            "title": "g2.2xlarge",
+            "description": "GPU Optimized G2 Double Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 39,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "g2.8xlarge",
+            "slug": "g2.8xlarge",
+            "title": "g2.8xlarge",
+            "description": "GPU Optimized G2 Eight Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 40,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "i2.xlarge",
+            "slug": "i2.xlarge",
+            "title": "i2.xlarge",
+            "description": "Storage Optimized I2 Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 41,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "i2.2xlarge",
+            "slug": "i2.2xlarge",
+            "title": "i2.2xlarge",
+            "description": "Storage Optimized I2 Double Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 42,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "i2.4xlarge",
+            "slug": "i2.4xlarge",
+            "title": "i2.4xlarge",
+            "description": "Storage Optimized I2 Quadruple Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 43,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "i2.8xlarge",
+            "slug": "i2.8xlarge",
+            "title": "i2.8xlarge",
+            "description": "Storage Optimized I2 Eight Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 44,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "d2.xlarge",
+            "slug": "d2.xlarge",
+            "title": "d2.xlarge",
+            "description": "Dense Storage D2 Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 45,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "d2.2xlarge",
+            "slug": "d2.2xlarge",
+            "title": "d2.2xlarge",
+            "description": "Dense Storage D2 Double Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 46,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "d2.4xlarge",
+            "slug": "d2.4xlarge",
+            "title": "d2.4xlarge",
+            "description": "Dense Storage D2 Quadruple Extra Large Instance",
+            "provider_type": 1
+        }
+    },
+    {
+        "pk": 47,
+        "model": "cloud.cloudinstancesize",
+        "fields": {
+            "instance_id": "d2.8xlarge",
+            "slug": "d2.8xlarge",
+            "title": "d2.8xlarge",
+            "description": "Dense Storage D2 Eight Extra Large Instance",
+            "provider_type": 1
         }
     }
 ]

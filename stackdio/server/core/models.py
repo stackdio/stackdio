@@ -42,13 +42,13 @@ class UserSettings(models.Model):
     def __unicode__(self):
         return self.user.username
 
+
 @receiver(models.signals.post_save, sender=get_user_model())
 def user_post_save(sender, instance, **kwargs):
-    '''
+    """
     Catch the post_save signal for all User objects and create a
     UserSettings objects if needed
-    '''
-    if 'created' in kwargs and kwargs['created'] == True:
+    """
+    if 'created' in kwargs and kwargs['created'] is True:
         logger.debug('Creating UserSettings object for {0!r}'.format(instance))
         UserSettings.objects.create(user=instance)
-

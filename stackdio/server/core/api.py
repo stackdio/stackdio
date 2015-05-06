@@ -62,7 +62,7 @@ class UserSettingsDetailAPIView(generics.RetrieveUpdateAPIView):
 
 
 class ChangePasswordAPIView(views.APIView):
-    '''
+    """
     API that handles changing your account password. Note that
     only PUT requests are available on this endpoint. Below
     are the required parameters of the JSON object you will PUT.
@@ -70,7 +70,7 @@ class ChangePasswordAPIView(views.APIView):
     @curent_password: Your current password.
     @new_password: Your new password you want to change to.
     @confirm_password: Confirm your new password.
-    '''
+    """
 
     parser_classes = (parsers.JSONParser,)
 
@@ -105,9 +105,9 @@ class ChangePasswordAPIView(views.APIView):
 
 
 class VersionAPIView(views.APIView):
-    '''
+    """
     Returns a JSON object with version-specific fields.
-    '''
+    """
 
     def get(self, request, *args, **kwargs):
         from _version import __version__

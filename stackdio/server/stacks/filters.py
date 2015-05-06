@@ -28,4 +28,3 @@ class StackFilter(django_filters.FilterSet):
         fields = (
             'title',
         )
-

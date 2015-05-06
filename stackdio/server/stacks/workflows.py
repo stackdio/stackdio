@@ -59,10 +59,10 @@ class LaunchWorkflowOptions(WorkflowOptions):
 
 
 class LaunchWorkflow(BaseWorkflow):
-    '''
+    """
     Encapsulates all tasks required to launch a new stack or new hosts into
     a stack.
-    '''
+    """
     _options_class = LaunchWorkflowOptions
 
     def task_list(self):
@@ -105,9 +105,9 @@ class DestroyWorkflowOptions(WorkflowOptions):
 
 
 class DestroyHostsWorkflow(BaseWorkflow):
-    '''
+    """
     Encapsulates all tasks required to destroy a set of hosts on a stack.
-    '''
+    """
     _options_class = DestroyWorkflowOptions
 
     def task_list(self):
@@ -126,9 +126,9 @@ class DestroyHostsWorkflow(BaseWorkflow):
 
 
 class DestroyStackWorkflow(BaseWorkflow):
-    '''
+    """
     Encapsulates all tasks required to destroy an entire stack.
-    '''
+    """
     _options_class = DestroyWorkflowOptions
 
     def __init__(self, stack, opts=None):

@@ -21,7 +21,7 @@ define(['q', 'settings'], function (Q, settings) {
             var deferred = Q.defer();
 
             $.ajax({
-                url: '/api',
+                url: '/api/',
                 type: 'GET',
                 headers: {
                     'Accept': 'application/json'

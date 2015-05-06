@@ -134,10 +134,10 @@ class BaseCommand(object):
             sys.exit(1)
 
     def load_resource(self, rp=None, package='stackdio.server'):
-        '''
+        """
         Takes a relative path `rp`, and attempts to pull the full resource
         path using pkg_resources.
-        '''
+        """
         from pkg_resources import ResourceManager, get_provider
         provider = get_provider(package)
         if rp is None:
@@ -155,7 +155,7 @@ class BaseCommand(object):
 
 
 class WizardCommand(BaseCommand):
-    '''
+    """
     QUESTIONS is required. It's a list of dict objects that look like:
 
         attr: required, the unique attribute name for this question that will
@@ -173,7 +173,7 @@ class WizardCommand(BaseCommand):
         _validate_<NAME>(self, question, answers)
         where NAME is the unique name of the question;
     This method will receive the current question
-    '''
+    """
 
     QUESTIONS = []
 
@@ -186,10 +186,10 @@ class WizardCommand(BaseCommand):
 
     # TODO: Ignoring code complexity issues
     def run(self):  # NOQA
-        '''
+        """
         Iterate over the QUESTIONS attribute, prompting the user
         while recording and validating their answers.
-        '''
+        """
         for question in self.QUESTIONS:
             attr = question.get('attr')
             title = question.get('short_desc').format(**self.answers)
@@ -683,5 +683,5 @@ class DjangoManageWrapperCommand(BaseCommand):
         stackdio_root = self.load_resource()
         sys.path.insert(0, stackdio_root)
         from django.core.management import execute_from_command_line
-        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.server.stackdio.settings.__installed' # NOQA
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'stackdio.server.stackdio.settings.__installed'  # NOQA
         execute_from_command_line(self.args)

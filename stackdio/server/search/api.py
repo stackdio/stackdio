@@ -94,4 +94,3 @@ class SearchAPIView(generics.SingleObjectAPIView):
         # serializer = PaginationSerializer(instance=page, context=context)
         # serializer = PaginationSerializer(instance=page, context=context)
         return Response(res)
-

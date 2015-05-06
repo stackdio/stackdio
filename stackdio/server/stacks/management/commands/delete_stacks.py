@@ -22,6 +22,7 @@ from stacks.models import Stack
 import logging
 logger = logging.getLogger('stacks')
 
+
 class Command(BaseCommand):
     args = ''
     help = 'Removes all Stack objects from the database.'

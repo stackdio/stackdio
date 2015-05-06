@@ -153,7 +153,7 @@ sudo ln -s /etc/nginx/sites-available/stackdio /etc/nginx/sites-enabled
 sudo rm /etc/nginx/sites-enabled/default
 ```
 
-Before moving forward, take a minute to reference the [Javascript SPA ReadMe](../stackdio/server/core/static/stackdio/README.md) to make sure that you do all the necessary steps to install the needed JS libraries.
+Before moving forward, take a minute to reference the [Javascript SPA ReadMe](js_setup.md) to make sure that you do all the necessary steps to install the needed JS libraries.
 
 After this, generate the static content we'll need to serve:
 

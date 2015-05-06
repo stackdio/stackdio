@@ -134,7 +134,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'rest_framework',
     'rest_framework.authtoken',
-    #'rest_framework_swagger',
+    # 'rest_framework_swagger',
     'django_nose',
     'south',
     'djcelery',
@@ -289,7 +289,7 @@ REST_FRAMEWORK = {
     'FILTER_BACKEND': 'rest_framework.filters.DjangoFilterBackend',
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        #'api.authentication.APIKeyAuthentication',
+        # 'api.authentication.APIKeyAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ),

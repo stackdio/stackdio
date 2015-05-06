@@ -64,9 +64,10 @@ class BlueprintManager(models.Manager):
 
     # TODO: ignoring code complexity issues
     @transaction.commit_on_success  # NOQA
-    def create(self, owner, data):
-        '''
-        '''
+    def create(self, owner, data, **kwargs):
+        """
+        Custom blueprint creation
+        """
 
         ##
         # validate incoming data
@@ -155,14 +156,14 @@ class BlueprintManager(models.Manager):
 
 
 class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
-    '''
+    """
     Blueprints are a template of reusable configuration used to launch
     Stacks. The purpose to create a blueprint that encapsulates the
     functionality, software, etc you want in your infrastructure once
     and use it to repeatably create your infrastructure when needed.
 
     TODO: @params
-    '''
+    """
 
     class Meta:
         unique_together = ('owner', 'title')
@@ -257,12 +258,12 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
 
 
 class BlueprintHostFormulaComponent(TimeStampedModel):
-    '''
+    """
     An extension of an existing FormulaComponent to add additional metadata
     for those components based on this blueprint. In particular, this is how
     we track the order in which the formula should be provisioned in a
     blueprint.
-    '''
+    """
 
     class Meta:
         verbose_name_plural = 'formula components'
@@ -286,12 +287,12 @@ class BlueprintHostFormulaComponent(TimeStampedModel):
 
 
 class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
-    '''
+    """
     Access rules are a white list of rules for a host that defines
     what protocols and ports are available for the corresponding
     machines at launch time. In other words, they define the
     firefall rules for the machine.
-    '''
+    """
 
     class Meta:
         verbose_name_plural = 'access rules'
@@ -325,8 +326,8 @@ class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
 
 
 class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
-    '''
-    '''
+    """
+    """
 
     class Meta:
         verbose_name_plural = 'volumes'

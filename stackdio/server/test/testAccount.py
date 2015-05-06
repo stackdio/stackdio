@@ -20,6 +20,7 @@ from nose.tools import raises
 import requests
 import json
 
+
 class TestProviderAccounts:
     def setup(self):
         print "setting up"
@@ -37,4 +38,3 @@ class TestProviderAccounts:
             assert True
         else:
             assert len(r.json()['results']) > 0
-

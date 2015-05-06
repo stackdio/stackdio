@@ -21,7 +21,7 @@ import logging
 from rest_framework import serializers
 
 from .models import (
-    Volume, 
+    Volume,
 )
 
 logger = logging.getLogger(__name__)

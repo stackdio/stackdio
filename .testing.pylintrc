@@ -47,11 +47,13 @@ disable=R,
   C0301,
   C0302,
   C0330,
+  C1001,
   W0110,
   W0122,
   W0142,
   W0201,
   W0212,
+  W0232,
   W0404,
   W0511,
   W0603,
@@ -90,11 +92,13 @@ disable=R,
 # C0301 (line-too-long)
 # C0302 (too-many-lines)
 # C0330 (bad-continuation)
+# C1001 (old-style-class) [Way to many Meta inner classes that don't need it]
 # W0110 (deprecated-lambda)
 # W0122 (exec-statement)
 # W0142 (star-args)
 # W0201 (attribute-defined-outside-init) [done in several places in the codebase]
 # W0212 (protected-access)
+# W0232 (no-init) [classes missing __init__ method - several Meta classes that don't need it]
 # W0404 (reimported) [done intentionally for legit reasons]
 # W0511 (fixme) [several outstanding instances currently in the codebase]
 # W0603 (global-statement)
@@ -112,12 +116,6 @@ disable=R,
 # E8501 PEP8 line too long
 
 [REPORTS]
-
-# Include message's id in output
-include-ids=yes
-
-# Include symbolic ids of messages in output
-symbols=no
 
 # Tells whether to display a full report or only the messages
 reports=no

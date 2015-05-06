@@ -81,7 +81,6 @@ img.logo {
     position: absolute;
     top: 0;
     left: 0;
-    background-image: url(/static/img/orange-tech.png);
     background-size: cover;
     background-position: 50% 50%;
     background-repeat: none;
