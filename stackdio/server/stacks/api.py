@@ -44,7 +44,7 @@ from core.permissions import AdminOrOwnerPermission, AdminOrOwnerOrPublicPermiss
 from core.renderers import PlainTextRenderer
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
-from . import tasks, models, serializers, filters, validators, workflows
+from . import filters, models, serializers, tasks, validators, workflows
 
 
 logger = logging.getLogger(__name__)
