@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-
+from __future__ import print_function
 import logging
 import multiprocessing
 import os
@@ -531,4 +531,4 @@ def create_zombies(stack, n):
         arg=('salt-minion',),
         expr_form='compound'
     )
-    print result
+    print(result)
