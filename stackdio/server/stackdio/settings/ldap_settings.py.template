@@ -24,13 +24,6 @@
 # information.
 ##
 
-# Tell Django to use the authentication backend provided by
-# django-auth-ldap
-AUTHENTICATION_BACKENDS = (
-    'django_auth_ldap.backend.LDAPBackend',
-    'django.contrib.auth.backends.ModelBackend',
-)
-
 # python-ldap must be available for this to work. You can use pip
 # to install it.
 import ldap

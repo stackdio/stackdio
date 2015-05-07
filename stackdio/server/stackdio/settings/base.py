@@ -85,6 +85,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'guardian',
     'core',
     'cloud',
     'stacks',
@@ -105,6 +106,14 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
 )
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
+)
+
+# For guardian
+ANONYMOUS_USER_ID = -1
 
 TEMPLATES = [
     {
@@ -267,25 +276,34 @@ LOGGING = {
 # Django REST Framework configuration
 ##
 REST_FRAMEWORK = {
-    'PAGINATE_BY': 50,
-    'PAGINATE_BY_PARAM': 'page_size',
-    'FILTER_BACKEND': 'rest_framework.filters.DjangoFilterBackend',
+    'PAGE_SIZE': 50,
 
+    # Filtering
+    'DEFAULT_FILTER_BACKENDS': (
+        'rest_framework.filters.DjangoFilterBackend',
+    ),
+
+    # Authentication
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 'api.authentication.APIKeyAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ),
 
+    # All endpoints require authentication
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
 
+    # Parsers - enable FormParser to get nice forms in the browse-able API
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
     ),
-
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
 }
 
 ##
@@ -307,7 +325,7 @@ CELERY_DEFAULT_QUEUE = 'default'
 # We'll use json since pickle can sometimes be insecure
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml']
+CELERY_ACCEPT_CONTENT = ['json']
 
 # Configure queues
 CELERY_ROUTES = {
@@ -337,4 +355,8 @@ CELERY_ROUTES = {
 # to ldap_settings.py and modify the settings there.
 ##
 if os.path.isfile(os.path.join(BASE_DIR, 'stackdio', 'settings', 'ldap_settings.py')):
+    LDAP_ENABLED = True
+    AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
     from ldap_settings import *  # NOQA
+else:
+    LDAP_ENABLED = False

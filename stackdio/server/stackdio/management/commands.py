@@ -17,6 +17,7 @@
 
 
 from __future__ import print_function
+
 import getpass
 import os
 import shutil
@@ -29,7 +30,6 @@ import jinja2
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
-
 import psutil
 
 from stackdio.server.core.config import StackdioConfig
