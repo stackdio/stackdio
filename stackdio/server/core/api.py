@@ -20,18 +20,18 @@ from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions, views
 from rest_framework.response import Response
 
-from core.exceptions import BadRequest
+from .exceptions import BadRequest
 from . import models, serializers
 
 
 class UserListAPIView(generics.ListAPIView):
-    queryset = get_user_model().objects.exclude(username='__stackdio__')
+    queryset = get_user_model().objects.exclude(username__in=('__stackdio__', 'AnonymousUser'))
     serializer_class = serializers.UserSerializer
     permission_classes = (permissions.IsAdminUser,)
 
 
 class UserDetailAPIView(generics.RetrieveAPIView):
-    queryset = get_user_model().objects.exclude(username='__stackdio__')
+    queryset = get_user_model().objects.exclude(username__in=('__stackdio__', 'AnonymousUser'))
     serializer_class = serializers.UserSerializer
     permission_classes = (permissions.IsAdminUser,)
 

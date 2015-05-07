@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def render(request, view, context={}):
-    if (request):
+    if request:
         return render_to_response(view,
                                   context,
                                   context_instance=RequestContext(request))

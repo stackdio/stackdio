@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+from __future__ import print_function
 
 import os
+
 import yaml
 from django.core.exceptions import ImproperlyConfigured
 
@@ -27,9 +28,11 @@ class StackdioConfig(dict):
         'user',
         'db_dsn',
         'storage_root',
-        'django_secret_key')
+        'django_secret_key',
+    )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
+        super(StackdioConfig, self).__init__()
         self._load_stackdio_config()
 
     def _load_stackdio_config(self):

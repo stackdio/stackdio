@@ -24,7 +24,7 @@ import collections
 def recursive_update(d, u):
     """
     Recursive update of one dictionary with another. The built-in
-    python dict::update will erase exisitng values.
+    python dict::update will erase existing values.
     """
     for k, v in u.iteritems():
         if isinstance(v, collections.Mapping):

@@ -20,7 +20,7 @@ from django.conf.urls import patterns, url
 from . import api
 
 urlpatterns = patterns(
-    'training.api',
+    'core.api',
 
     url(r'^users/$',
         api.UserListAPIView.as_view(),
