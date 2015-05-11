@@ -13,6 +13,11 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='stack',
-            options={'ordering': ('title',), 'permissions': (('view_stack', 'Can view stack'), ('launch_stack', 'Can launch stack'), ('provision_stack', 'Can provision stack'), ('orchestrate_stack', 'Can orchestrate stack'), ('execute_stack', 'Can execute stack'), ('start_stack', 'Can start stack'), ('stop_stack', 'Can stop stack'), ('terminate_stack', 'Can terminate stack'))},
+            options={'ordering': ('title',), 'default_permissions': ('create', 'launch', 'view', 'update', 'provision', 'orchestrate', 'execute', 'start', 'stop', 'terminate', 'delete')},
+        ),
+        migrations.AlterField(
+            model_name='stack',
+            name='namespace',
+            field=models.CharField(unique=True, max_length=64, verbose_name=b'Namespace', blank=True),
         ),
     ]
