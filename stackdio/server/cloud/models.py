@@ -70,8 +70,11 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         unique_together = ('title', 'provider_type')
         ordering = ('provider_type', 'title')
 
-        permissions = (
-            ('view_cloudprovider', 'Can view cloudprovider'),
+        default_permissions = (
+            'create',
+            'view',
+            'update',
+            'delete',
         )
 
     # What is the type of provider (e.g., AWS, Rackspace, etc)
@@ -216,8 +219,11 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'cloud_provider')
 
-        permissions = (
-            ('view_cloudprofile', 'Can view cloudprofile'),
+        default_permissions = (
+            'create',
+            'view',
+            'update',
+            'delete',
         )
 
     # What cloud provider is this under?

@@ -24,8 +24,11 @@ from django_extensions.db.models import TimeStampedModel
 class Volume(TimeStampedModel):
 
     class Meta:
-        permissions = (
-            ('view_volume', 'Can view volume'),
+        default_permissions = (
+            'create',
+            'view',
+            'update',
+            'delete',
         )
 
     # The stack this volume belongs to

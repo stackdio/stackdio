@@ -220,15 +220,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         unique_together = ('owner', 'title')
         ordering = ('title',)
 
-        permissions = (
-            ('view_stack', 'Can view stack'),
-            ('launch_stack', 'Can launch stack'),
-            ('provision_stack', 'Can provision stack'),
-            ('orchestrate_stack', 'Can orchestrate stack'),
-            ('execute_stack', 'Can execute stack'),
-            ('start_stack', 'Can start stack'),
-            ('stop_stack', 'Can stop stack'),
-            ('terminate_stack', 'Can terminate stack'),
+        default_permissions = (
+            'create',
+            'launch',
+            'view',
+            'update',
+            'provision',
+            'orchestrate',
+            'execute',
+            'start',
+            'stop',
+            'terminate',
+            'delete',
         )
 
     # The "owner" of the stack and all of its infrastructure
@@ -240,7 +243,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
-    namespace = models.CharField('Namespace', max_length=64, blank=True)
+    namespace = models.CharField('Namespace', max_length=64, blank=True, unique=True)
 
     # is this stack publicly available -- meaning it can be found by other
     # users and will remain in read-only mode to them

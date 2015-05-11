@@ -160,8 +160,11 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('owner', 'title')
 
-        permissions = (
-            ('view_blueprint', 'Can view blueprint'),
+        default_permissions = (
+            'create',
+            'view',
+            'update',
+            'delete',
         )
 
     # owner of the blueprint
