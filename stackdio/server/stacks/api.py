@@ -25,18 +25,17 @@ from os import listdir
 from os.path import join, isfile
 
 import envoy
-import salt.cloud
 import yaml
-from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from guardian.shortcuts import get_users_with_perms
 from rest_framework import generics, parsers, permissions, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
 
-from blueprints.models import Blueprint, BlueprintHostDefinition
+from blueprints.models import BlueprintHostDefinition
 from cloud.filters import SecurityGroupFilter
 from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
@@ -85,209 +84,25 @@ class StackListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.StackSerializer
     filter_class = filters.StackFilter
 
-    ALLOWED_FIELDS = ('blueprint', 'title', 'description', 'properties',
-                      'max_retries', 'namespace', 'auto_launch',
-                      'auto_provision', 'parallel', 'public',
-                      'simulate_launch_failures', 'simulate_zombies',
-                      'simulate_ssh_failures', 'failure_percent',)
-
     def get_queryset(self):
         return self.request.user.stacks.all()
 
-    # TODO: Code complexity issues are ignored for now
-    def create(self, request, *args, **kwargs):  # NOQA
+    def perform_create(self, serializer):
         """
         Overriding create method to build roles and metadata objects for this
         Stack as well as generating the salt-cloud map that will be used to
         launch machines
         """
-        logger.debug(request.DATA)
+
         # make sure the user has a public key or they won't be able to SSH
         # later
-        if not request.user.settings.public_key:
+        if not self.request.user.settings.public_key:
             raise BadRequest('You have not added a public key to your user '
                              'profile and will not be able to SSH in to any '
                              'machines. Please update your user profile '
                              'before continuing.')
 
-        # Validate data
-        errors = {}
-
-        for k in request.DATA:
-            if k not in self.ALLOWED_FIELDS:
-                errors.setdefault('unknown_fields', []) \
-                    .append('{0} is an unknown field.'.format(k))
-        if errors:
-            raise BadRequest(errors)
-
-        # REQUIRED PARAMS
-        blueprint_id = request.DATA.pop('blueprint', '')
-        title = request.DATA.get('title', '')
-        description = request.DATA.get('description', '')
-
-        # OPTIONAL PARAMS
-        properties = request.DATA.get('properties', {})
-        max_retries = request.DATA.get('max_retries', 2)
-
-        # UNDOCUMENTED PARAMS
-        # Skips launching if set to False
-        launch_stack = request.DATA.get('auto_launch', True)
-        provision_stack = request.DATA.get('auto_provision', True)
-
-        # Launches in parallel mode if set to True
-        parallel = request.DATA.get('parallel', True)
-
-        # See stacks.tasks::launch_hosts for information on these params
-        simulate_launch_failures = request.DATA.get('simulate_launch_failures',
-                                                    False)
-        simulate_ssh_failures = request.DATA.get('simulate_ssh_failures',
-                                                 False)
-        simulate_zombies = request.DATA.get('simulate_zombies', False)
-        failure_percent = request.DATA.get('failure_percent', 0.3)
-
-        blueprint = None
-
-        # check for required blueprint
-        if not blueprint_id:
-            errors.setdefault('blueprint', []) \
-                .append('This field is required.')
-        else:
-            try:
-                blueprint = Blueprint.objects.get(pk=blueprint_id,
-                                                  owner=request.user)
-            except Blueprint.DoesNotExist:
-                errors.setdefault('blueprint', []).append(
-                    'Blueprint with id {0} does not exist.'.format(
-                        blueprint_id))
-            except ValueError:
-                errors.setdefault('blueprint', []).append(
-                    'This field must be an ID of an existing blueprint.')
-
-        if errors:
-            raise BadRequest(errors)
-
-        # Generate the title and/or description if not provided by user
-        if not title and not description:
-            extra_description = ' (Title and description'
-        elif not title:
-            extra_description = ' (Title'
-        elif not description:
-            extra_description = ' (Description'
-        else:
-            extra_description = ''
-        if extra_description:
-            extra_description += ' auto generated from Blueprint {0})' \
-                .format(blueprint.pk)
-
-        if not title:
-            request.DATA['title'] = '{0} ({1})'.format(
-                blueprint.title,
-                datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
-            )
-
-        if not description:
-            description = blueprint.description
-        request.DATA['description'] = description + '{0}' \
-            .format(extra_description)
-
-        # check for duplicates
-        if models.Stack.objects.filter(owner=self.request.user,
-                                       title=title).count():
-            errors.setdefault('title', []).append(
-                'A Stack with this title already exists in your account.'
-            )
-
-        if not isinstance(properties, dict):
-            errors.setdefault('properties', []).append(
-                'This field must be a JSON object.'
-            )
-        else:
-            # user properties are not allowed to provide a __stackdio__ key
-            if '__stackdio__' in properties:
-                errors.setdefault('properties', []).append(
-                    'The __stackdio__ key is reserved for system use.'
-                )
-
-        # check for hostname collisions if namespace is provided
-        namespace = request.DATA.get('namespace')
-
-        hostdefs = blueprint.host_definitions.all()
-        hostnames = models.get_hostnames_from_hostdefs(
-            hostdefs,
-            username=request.user.username,
-            namespace=namespace
-        )
-
-        if namespace:
-            # If the namespace was not provided, then there is no chance
-            # of collision within the database
-
-            # query for existing host names
-            # Leave this in so that we catch errors faster if they are local,
-            #    Only hit up salt cloud if there are no duplicates locally
-            hosts = models.Host.objects.filter(hostname__in=hostnames)
-            if hosts.count():
-                errors.setdefault('duplicate_hostnames', []).extend(
-                    [h.hostname for h in hosts]
-                )
-
-            if errors:
-                raise BadRequest(errors)
-
-        salt_cloud = salt.cloud.CloudClient(
-            join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
-        query = salt_cloud.query()
-
-        # Since a blueprint can have multiple providers
-        providers = set()
-        for bhd in hostdefs:
-            providers.add(bhd.cloud_profile.cloud_provider)
-
-        # Check to find duplicates
-        dups = []
-        for provider in providers:
-            provider_type = provider.provider_type.type_name
-            for instance, details in query.get(provider.slug, {}) \
-                    .get(provider_type, {}).items():
-                if instance in hostnames:
-                    if details['state'] not in ('shutting-down', 'terminated'):
-                        dups.append(instance)
-
-        if dups:
-            errors.setdefault('duplicate_hostnames', dups)
-
-        if errors:
-            raise BadRequest(errors)
-
-        # create the stack and related objects
-        try:
-            logger.debug(request.DATA)
-            stack = models.Stack.objects.create_stack(request.user,
-                                                      blueprint,
-                                                      **request.DATA)
-        except Exception, e:
-            logger.exception(e)
-            raise BadRequest(str(e))
-
-        if launch_stack:
-            workflow = workflows.LaunchWorkflow(stack)
-            workflow.opts.provision = provision_stack
-            workflow.opts.parallel = parallel
-            workflow.opts.max_retries = max_retries
-            workflow.opts.simulate_launch_failures = simulate_launch_failures
-            workflow.opts.simulate_ssh_failures = simulate_ssh_failures
-            workflow.opts.simulate_zombies = simulate_zombies
-            workflow.opts.failure_percent = failure_percent
-            workflow.execute()
-
-            stack.set_status('queued', models.Stack.PENDING,
-                             'Stack has been submitted to launch queue.')
-
-        # return serialized stack object
-        serializer = serializers.StackSerializer(stack, context={
-            'request': request,
-        })
-        return Response(serializer.data)
+        serializer.save(owner=self.request.user)
 
 
 class StackDetailAPIView(PublicStackMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -306,8 +121,7 @@ class StackDetailAPIView(PublicStackMixin, generics.RetrieveUpdateDestroyAPIView
                              'current state.  Please wait until it is finished '
                              'with the current action.')
 
-        msg = 'Stack will be removed upon successful termination ' \
-              'of all machines'
+        msg = 'Stack will be removed upon successful termination of all machines'
         stack.set_status(models.Stack.DESTROYING,
                          models.Stack.DESTROYING, msg)
         parallel = request.DATA.get('parallel', True)

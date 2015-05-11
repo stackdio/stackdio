@@ -17,18 +17,25 @@
 
 
 import logging
+import os
+from datetime import datetime
 
+import salt.cloud
+
+from django.conf import settings
 from rest_framework import serializers
 
-from blueprints.models import BlueprintHostDefinition
+from blueprints.models import Blueprint, BlueprintHostDefinition
 from blueprints.serializers import (
     BlueprintHostFormulaComponentSerializer,
     BlueprintHostDefinitionSerializer
 )
 from cloud.serializers import SecurityGroupSerializer
 from cloud.models import SecurityGroup
+from core.exceptions import BadRequest
 from core.utils import recursive_update
-from . import models
+from . import models, workflows
+
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +99,7 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
 
 class StackSerializer(serializers.HyperlinkedModelSerializer):
     # Read only fields
-    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+    owner = serializers.ReadOnlyField(source='owner.username')
     host_count = serializers.ReadOnlyField(source='hosts.count')
     volume_count = serializers.ReadOnlyField(source='volumes.count')
     status = serializers.ReadOnlyField()
@@ -118,20 +125,21 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         view_name='stack-properties')
     history = serializers.HyperlinkedIdentityField(
         view_name='stack-history')
-    # access_rules = serializers.HyperlinkedIdentityField(
-    #     view_name='stack-access-rules')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='stack-security-groups')
+
+    # Relation Links
+    blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
 
     class Meta:
         model = models.Stack
         fields = (
             'id',
+            'url',
             'title',
             'description',
             'status',
             'public',
-            'url',
             'owner',
             'namespace',
             'host_count',
@@ -145,12 +153,200 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'history',
             'action',
             'actions',
-            # 'access_rules',
             'security_groups',
             'logs',
             'orchestration_errors',
             'provisioning_errors',
         )
+
+    SECRET_FIELDS = (
+        'max_retries',
+        'auto_launch',
+        'auto_provision',
+        'parallel',
+        'simulate_launch_failures',
+        'simulate_zombies',
+        'simulate_ssh_failures',
+        'failure_percent',
+    )
+
+    REQUIRED_FIELDS = (
+        'blueprint',
+        'title',
+        'description',
+        'properties',
+    )
+
+    OPTIONAL_FIELDS = (
+        'namespace',
+        'public',
+    )
+
+    VALID_FIELDS = SECRET_FIELDS + REQUIRED_FIELDS + OPTIONAL_FIELDS
+
+    def validate(self, attrs):
+        errors = {}
+
+        for k in attrs:
+            if k not in self.VALID_FIELDS:
+                errors.setdefault('unknown fields', []).append(k)
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        properties = attrs.get('properties', {})
+
+        if not isinstance(properties, dict):
+            raise serializers.ValidationError({
+                'properties': ['This field must be a JSON object.']
+            })
+
+        if '__stackdio__' in properties:
+            raise serializers.ValidationError({
+                'properties': ['The `__stackdio__` key is reserved for system use.']
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        # Grab all the extra data not in the validated_data
+
+        logger.debug(self.initial_data)
+
+        # OPTIONAL PARAMS
+        public = self.initial_data.get('public', False)
+        properties = self.initial_data.get('properties', {})
+        max_retries = self.initial_data.get('max_retries', 2)
+
+        # UNDOCUMENTED PARAMS
+        # Skips launching if set to False
+        launch_stack = self.initial_data.get('auto_launch', True)
+        provision_stack = self.initial_data.get('auto_provision', True)
+
+        # Launches in parallel mode if set to True
+        parallel = self.initial_data.get('parallel', True)
+
+        # See stacks.tasks::launch_hosts for information on these params
+        simulate_launch_failures = self.initial_data.get('simulate_launch_failures',
+                                                    False)
+        simulate_ssh_failures = self.initial_data.get('simulate_ssh_failures',
+                                                 False)
+        simulate_zombies = self.initial_data.get('simulate_zombies', False)
+        failure_percent = self.initial_data.get('failure_percent', 0.3)
+
+        # Grab the validated stuff
+        title = validated_data['title']
+        description = validated_data['description']
+        blueprint = validated_data['blueprint']
+        user = validated_data['owner']
+
+        # Generate the title and/or description if not provided by user
+        if not title and not description:
+            extra_description = ' (Title and description'
+        elif not title:
+            extra_description = ' (Title'
+        elif not description:
+            extra_description = ' (Description'
+        else:
+            extra_description = ''
+        if extra_description:
+            extra_description += ' auto generated from Blueprint {0})'.format(blueprint.pk)
+
+        if not title:
+            validated_data['title'] = '{0} ({1})'.format(
+                blueprint.title,
+                datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+            )
+
+        if not description:
+            description = blueprint.description
+        validated_data['description'] = description + extra_description
+
+        # check for duplicates
+        if models.Stack.objects.filter(owner=user,
+                                       title=title).count():
+            raise serializers.ValidationError({
+                'title': ['A Stack with this title already exists in your account.']
+            })
+
+        # check for hostname collisions if namespace is provided
+        namespace = validated_data.get('namespace')
+
+        host_definitions = blueprint.host_definitions.all()
+        hostnames = models.get_hostnames_from_hostdefs(
+            host_definitions,
+            username=user.username,
+            namespace=namespace
+        )
+
+        if namespace:
+            # If the namespace was not provided, then there is no chance
+            # of collision within the database
+
+            # query for existing host names
+            # Leave this in so that we catch errors faster if they are local,
+            #    Only hit up salt cloud if there are no duplicates locally
+            hosts = models.Host.objects.filter(hostname__in=hostnames)
+            if hosts.count():
+                raise serializers.ValidationError({
+                    'duplicate_hostnames': [h.hostname for h in hosts]
+                })
+
+        salt_cloud = salt.cloud.CloudClient(os.path.join(
+            settings.STACKDIO_CONFIG.salt_config_root,
+            'cloud'
+        ))
+        query = salt_cloud.query()
+
+        # Since a blueprint can have multiple providers
+        providers = set()
+        for bhd in host_definitions:
+            providers.add(bhd.cloud_profile.cloud_provider)
+
+        # Check to find duplicates
+        dups = []
+        for provider in providers:
+            provider_type = provider.provider_type.type_name
+            for instance, details in query.get(provider.slug, {}).get(provider_type, {}).items():
+                if instance in hostnames:
+                    if details['state'] not in ('shutting-down', 'terminated'):
+                        dups.append(instance)
+
+        if dups:
+            raise serializers.ValidationError({
+                'duplicate_hostnames': dups
+            })
+
+        # Everything is valid!  Let's create the stack in the database
+        try:
+            stack = models.Stack.objects.create_stack(
+                user,
+                blueprint,
+                title=title,
+                description=description,
+                namespace=namespace,
+                public=public,
+                properties=properties
+            )
+        except Exception, e:
+            raise BadRequest(str(e))
+
+        # The stack was created, now let's launch it
+        if launch_stack:
+            workflow = workflows.LaunchWorkflow(stack)
+            workflow.opts.provision = provision_stack
+            workflow.opts.parallel = parallel
+            workflow.opts.max_retries = max_retries
+            workflow.opts.simulate_launch_failures = simulate_launch_failures
+            workflow.opts.simulate_ssh_failures = simulate_ssh_failures
+            workflow.opts.simulate_zombies = simulate_zombies
+            workflow.opts.failure_percent = failure_percent
+            workflow.execute()
+
+            stack.set_status('queued', models.Stack.PENDING,
+                             'Stack has been submitted to launch queue.')
+
+        return stack
 
 
 class StackBlueprintHostDefinitionSerializer(BlueprintHostDefinitionSerializer):
