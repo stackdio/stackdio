@@ -22,6 +22,12 @@ from django_extensions.db.models import TimeStampedModel
 
 
 class Volume(TimeStampedModel):
+
+    class Meta:
+        permissions = (
+            ('view_volume', 'Can view volume'),
+        )
+
     # The stack this volume belongs to
     stack = models.ForeignKey('stacks.Stack', related_name='volumes')
 

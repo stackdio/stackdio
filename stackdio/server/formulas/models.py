@@ -119,6 +119,10 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     class Meta:
         ordering = ['pk']
 
+        permissions = (
+            ('view_formula', 'Can view formula'),
+        )
+
     # owner of the formula
     owner = models.ForeignKey(settings.AUTH_USER_MODEL,
                               related_name='formulas',

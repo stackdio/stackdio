@@ -70,6 +70,10 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         unique_together = ('title', 'provider_type')
         ordering = ('provider_type', 'title')
 
+        permissions = (
+            ('view_cloudprovider', 'Can view cloudprovider'),
+        )
+
     # What is the type of provider (e.g., AWS, Rackspace, etc)
     provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
 
@@ -211,6 +215,10 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
 class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'cloud_provider')
+
+        permissions = (
+            ('view_cloudprofile', 'Can view cloudprofile'),
+        )
 
     # What cloud provider is this under?
     cloud_provider = models.ForeignKey('CloudProvider', related_name='profiles')

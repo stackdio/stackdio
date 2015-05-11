@@ -220,6 +220,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         unique_together = ('owner', 'title')
         ordering = ('title',)
 
+        permissions = (
+            ('view_stack', 'Can view stack'),
+            ('launch_stack', 'Can launch stack'),
+            ('provision_stack', 'Can provision stack'),
+            ('orchestrate_stack', 'Can orchestrate stack'),
+            ('execute_stack', 'Can execute stack'),
+            ('start_stack', 'Can start stack'),
+            ('stop_stack', 'Can stop stack'),
+            ('terminate_stack', 'Can terminate stack'),
+        )
+
     # The "owner" of the stack and all of its infrastructure
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
 

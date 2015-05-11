@@ -160,6 +160,10 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('owner', 'title')
 
+        permissions = (
+            ('view_blueprint', 'Can view blueprint'),
+        )
+
     # owner of the blueprint
     owner = models.ForeignKey(settings.AUTH_USER_MODEL,
                               related_name='blueprints')
