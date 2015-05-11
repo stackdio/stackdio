@@ -105,17 +105,24 @@ class StackListAPIView(generics.ListCreateAPIView):
         serializer.save(owner=self.request.user)
 
 
-class StackDetailAPIView(PublicStackMixin, generics.RetrieveUpdateDestroyAPIView):
+class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackSerializer
 
     def destroy(self, request, *args, **kwargs):
         """
         Overriding the delete method to make sure the stack
-        is taken offline before being deleted
+        is taken offline before being deleted.  The default delete method
+        returns a 204 status and we want to return a 200 with the serialized
+        object
         """
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def perform_destroy(self, stack):
         # Update the status
-        stack = self.get_object()
         if stack.status not in models.Stack.SAFE_STATES:
             raise BadRequest('You may not delete this stack in its '
                              'current state.  Please wait until it is finished '
@@ -124,7 +131,7 @@ class StackDetailAPIView(PublicStackMixin, generics.RetrieveUpdateDestroyAPIView
         msg = 'Stack will be removed upon successful termination of all machines'
         stack.set_status(models.Stack.DESTROYING,
                          models.Stack.DESTROYING, msg)
-        parallel = request.DATA.get('parallel', True)
+        parallel = self.request.DATA.get('parallel', True)
 
         # Execute the workflow
         workflow = workflows.DestroyStackWorkflow(stack)
