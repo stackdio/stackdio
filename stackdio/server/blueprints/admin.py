@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,12 @@
 
 
 from django.contrib import admin
+from guardian.admin import GuardedModelAdmin
 
 from . import models
 
 
-class BlueprintAdmin(admin.ModelAdmin):
+class BlueprintAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
@@ -30,10 +31,12 @@ class BlueprintAdmin(admin.ModelAdmin):
         'created',
         'modified',
     ]
+
+
 admin.site.register(models.Blueprint, BlueprintAdmin)
 
 
-class BlueprintHostDefinitionAdmin(admin.ModelAdmin):
+class BlueprintHostDefinitionAdmin(GuardedModelAdmin):
     list_display = [
         'hostname_template',
         'blueprint',
@@ -44,11 +47,13 @@ class BlueprintHostDefinitionAdmin(admin.ModelAdmin):
         'subnet_id',
         'formula_components_count',
     ]
+
+
 admin.site.register(models.BlueprintHostDefinition,
                     BlueprintHostDefinitionAdmin)
 
 
-class BlueprintAccessRuleAdmin(admin.ModelAdmin):
+class BlueprintAccessRuleAdmin(GuardedModelAdmin):
     list_display = [
         'host',
         'protocol',
@@ -56,4 +61,6 @@ class BlueprintAccessRuleAdmin(admin.ModelAdmin):
         'to_port',
         'rule',
     ]
+
+
 admin.site.register(models.BlueprintAccessRule, BlueprintAccessRuleAdmin)

@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,14 +17,12 @@
 
 
 from django.contrib import admin
+from guardian.admin import GuardedModelAdmin
 
-from .models import (
-    Formula,
-    FormulaComponent,
-)
+from . import models
 
 
-class FormulaAdmin(admin.ModelAdmin):
+class FormulaAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
@@ -33,14 +31,18 @@ class FormulaAdmin(admin.ModelAdmin):
         'created',
         'modified',
     ]
-admin.site.register(Formula, FormulaAdmin)
 
 
-class FormulaComponentAdmin(admin.ModelAdmin):
+admin.site.register(models.Formula, FormulaAdmin)
+
+
+class FormulaComponentAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
         'formula',
         'sls_path',
     ]
-admin.site.register(FormulaComponent, FormulaComponentAdmin)
+
+
+admin.site.register(models.FormulaComponent, FormulaComponentAdmin)

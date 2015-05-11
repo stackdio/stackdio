@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,12 @@
 
 
 from django.contrib import admin
+from guardian.admin import GuardedModelAdmin
 
 from . import models
 
 
-class StackAdmin(admin.ModelAdmin):
+class StackAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
@@ -31,20 +32,24 @@ class StackAdmin(admin.ModelAdmin):
         'created',
         'modified',
     ]
+
+
 admin.site.register(models.Stack, StackAdmin)
 
 
-class StackHistoryAdmin(admin.ModelAdmin):
+class StackHistoryAdmin(GuardedModelAdmin):
     list_display = [
         'event',
         'status',
         'level',
         'created',
     ]
+
+
 admin.site.register(models.StackHistory, StackHistoryAdmin)
 
 
-class HostAdmin(admin.ModelAdmin):
+class HostAdmin(GuardedModelAdmin):
     list_display = [
         'stack',
         'cloud_profile',
@@ -53,4 +58,6 @@ class HostAdmin(admin.ModelAdmin):
         'provider_dns',
         'fqdn',
     ]
+
+
 admin.site.register(models.Host, HostAdmin)
