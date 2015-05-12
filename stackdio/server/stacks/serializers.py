@@ -40,6 +40,21 @@ from . import models, workflows
 logger = logging.getLogger(__name__)
 
 
+def validate_properties(properties):
+    """
+    Make sure properties are a valid dict and that they don't contain `__stackdio__`
+    """
+    if not isinstance(properties, dict):
+        raise serializers.ValidationError({
+            'properties': ['This field must be a JSON object.']
+        })
+
+    if '__stackdio__' in properties:
+        raise serializers.ValidationError({
+            'properties': ['The `__stackdio__` key is reserved for system use.']
+        })
+
+
 class StackPropertiesSerializer(serializers.Serializer):
     def to_representation(self, obj):
         if obj is not None:
@@ -49,11 +64,29 @@ class StackPropertiesSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         return data
 
+    def validate(self, attrs):
+        validate_properties(attrs)
+        return attrs
+
     def create(self, validated_data):
-        return validated_data
+        """
+        We never create anything with this serializer, so just leave it as not implemented
+        """
+        return super(StackPropertiesSerializer, self).create(validated_data)
 
     def update(self, instance, validated_data):
-        return recursive_update(instance, validated_data)
+        if self.partial:
+            # This is a PATCH, so properly merge in the old data
+            old_properties = instance.properties
+            instance.properties = recursive_update(old_properties, validated_data)
+        else:
+            # This is a PUT, so just add the data directly
+            instance.properties = validated_data
+
+        # Regenerate the pillar file with the new properties
+        instance._generate_pillar_file()
+
+        return instance
 
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
@@ -106,27 +139,27 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
 
     # Identity links
     hosts = serializers.HyperlinkedIdentityField(
-        view_name='stack-hosts')
+        view_name='stack-hosts', read_only=True)
     fqdns = serializers.HyperlinkedIdentityField(
-        view_name='stack-fqdns')
+        view_name='stack-fqdns', read_only=True)
     action = serializers.HyperlinkedIdentityField(
-        view_name='stack-action')
+        view_name='stack-action', read_only=True)
     actions = serializers.HyperlinkedIdentityField(
-        view_name='stackaction-list')
+        view_name='stackaction-list', read_only=True)
     logs = serializers.HyperlinkedIdentityField(
-        view_name='stack-logs')
+        view_name='stack-logs', read_only=True)
     orchestration_errors = serializers.HyperlinkedIdentityField(
-        view_name='stack-orchestration-errors')
+        view_name='stack-orchestration-errors', read_only=True)
     provisioning_errors = serializers.HyperlinkedIdentityField(
-        view_name='stack-provisioning-errors')
+        view_name='stack-provisioning-errors', read_only=True)
     volumes = serializers.HyperlinkedIdentityField(
-        view_name='stack-volumes')
+        view_name='stack-volumes', read_only=True)
     properties = serializers.HyperlinkedIdentityField(
-        view_name='stack-properties')
+        view_name='stack-properties', read_only=True)
     history = serializers.HyperlinkedIdentityField(
-        view_name='stack-history')
+        view_name='stack-history', read_only=True)
     security_groups = serializers.HyperlinkedIdentityField(
-        view_name='stack-security-groups')
+        view_name='stack-security-groups', read_only=True)
 
     # Relation Links
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
@@ -136,6 +169,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'id',
             'url',
+            'blueprint',
             'title',
             'description',
             'status',
@@ -145,7 +179,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'host_count',
             'volume_count',
             'created',
-            'blueprint',
             'fqdns',
             'hosts',
             'volumes',
@@ -196,15 +229,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
 
         properties = attrs.get('properties', {})
 
-        if not isinstance(properties, dict):
-            raise serializers.ValidationError({
-                'properties': ['This field must be a JSON object.']
-            })
-
-        if '__stackdio__' in properties:
-            raise serializers.ValidationError({
-                'properties': ['The `__stackdio__` key is reserved for system use.']
-            })
+        # Validate the properties
+        validate_properties(properties)
 
         return attrs
 

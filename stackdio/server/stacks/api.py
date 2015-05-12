@@ -27,10 +27,9 @@ from os.path import join, isfile
 import envoy
 import yaml
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from guardian.shortcuts import get_users_with_perms
-from rest_framework import generics, parsers, permissions, status
+from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
@@ -49,12 +48,14 @@ from . import filters, models, serializers, tasks, validators, workflows
 logger = logging.getLogger(__name__)
 
 
-class PublicStackMixin(generics.GenericAPIView):
+class PublicStackMixin(object):
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission,)
 
     def get_object(self):
-        obj = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
+        queryset = models.Stack.objects.all()
+
+        obj = get_object_or_404(self.filter_queryset(queryset), id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
 
@@ -146,23 +147,6 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class StackPropertiesAPIView(PublicStackMixin, generics.RetrieveUpdateAPIView):
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackPropertiesSerializer
-
-    def update(self, request, *args, **kwargs):
-        stack = self.get_object()
-
-        if not isinstance(request.DATA, dict):
-            raise BadRequest('Data must be JSON object of properties.')
-
-        if not request.DATA:
-            raise BadRequest('No properties were given.')
-
-        # update the stack properties
-        stack.properties = request.DATA
-
-        # Re-generate the pillar file too
-        stack._generate_pillar_file()
-
-        return Response(stack.properties)
 
 
 class StackHistoryAPIView(PublicStackMixin, generics.ListAPIView):
@@ -446,7 +430,6 @@ def stack_action_zip(request, pk):
 
 class HostListAPIView(PublicStackMixin, generics.ListAPIView):
     serializer_class = serializers.HostSerializer
-    parser_classes = (parsers.JSONParser,)
 
     def get_queryset(self):
         return models.Host.objects.filter(stack__owner=self.request.user)

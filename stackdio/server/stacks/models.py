@@ -374,9 +374,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
     @properties.setter
     def properties(self, props):
-        properties = self.properties
-        recursive_update(properties, props)
-        props_json = json.dumps(properties, indent=4)
+        props_json = json.dumps(props, indent=4)
         if not self.props_file:
             self.props_file.save(self.slug + '.props', ContentFile(props_json))
         else:
