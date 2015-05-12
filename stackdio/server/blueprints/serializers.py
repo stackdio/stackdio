@@ -126,3 +126,6 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
             'properties',
             'host_definitions',
         )
+
+    def validate(self, attrs):
+        return attrs

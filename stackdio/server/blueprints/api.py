@@ -20,10 +20,11 @@ import logging
 
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, permissions
+from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
-from core.permissions import AdminOrOwnerOrPublicPermission
+from core.permissions import AdminOrOwnerOrPublicPermission, StackdioDjangoObjectPermissions
 from stacks.serializers import StackSerializer
 from . import filters, models, serializers, validators
 
@@ -40,17 +41,17 @@ class PublicBlueprintMixin(generics.GenericAPIView):
         return obj
 
 
-# TODO look into how validation works
 class BlueprintListAPIView(generics.ListCreateAPIView):
+    queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.BlueprintFilter
-
-    def get_queryset(self):
-        return self.request.user.blueprints.all()
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    # TODO redo this method
     def create(self, request, *args, **kwargs):
         errors = validators.BlueprintValidator(request).validate()
         if errors:
@@ -60,24 +61,10 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         return Response(self.get_serializer(blueprint).data)
 
 
-class BlueprintPublicAPIView(generics.ListAPIView):
-    serializer_class = serializers.BlueprintSerializer
-    filter_class = filters.BlueprintFilter
-
-    def get_queryset(self):
-        return models.Blueprint.objects.filter(public=True).exclude(owner=self.request.user)
-
-
-class BlueprintAdminListAPIView(generics.ListAPIView):
-    queryset = models.Blueprint.objects.all()
-    serializer_class = serializers.BlueprintSerializer
-    permission_classes = (permissions.IsAdminUser,)
-    filter_class = filters.BlueprintFilter
-
-
 class BlueprintDetailAPIView(PublicBlueprintMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         blueprint = self.get_object()
@@ -129,3 +116,4 @@ class BlueprintDetailAPIView(PublicBlueprintMixin, generics.RetrieveUpdateDestro
 class BlueprintPropertiesAPIView(PublicBlueprintMixin, generics.RetrieveAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
