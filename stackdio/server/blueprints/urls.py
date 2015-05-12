@@ -34,13 +34,4 @@ urlpatterns = patterns(
     url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
         api.BlueprintPropertiesAPIView.as_view(),
         name='blueprint-properties'),
-
-    # List of publicly available blueprints
-    url(r'^blueprints/public/$',
-        api.BlueprintPublicAPIView.as_view(),
-        name='blueprint-public-list'),
-
-    url(r'^admin/blueprints/$',
-        api.BlueprintAdminListAPIView.as_view(),
-        name='blueprint-admin-list'),
 )
