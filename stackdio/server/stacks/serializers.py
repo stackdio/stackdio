@@ -74,19 +74,19 @@ class StackPropertiesSerializer(serializers.Serializer):
         """
         return super(StackPropertiesSerializer, self).create(validated_data)
 
-    def update(self, instance, validated_data):
+    def update(self, stack, validated_data):
         if self.partial:
             # This is a PATCH, so properly merge in the old data
-            old_properties = instance.properties
-            instance.properties = recursive_update(old_properties, validated_data)
+            old_properties = stack.properties
+            stack.properties = recursive_update(old_properties, validated_data)
         else:
             # This is a PUT, so just add the data directly
-            instance.properties = validated_data
+            stack.properties = validated_data
 
         # Regenerate the pillar file with the new properties
-        instance._generate_pillar_file()
+        stack._generate_pillar_file()
 
-        return instance
+        return stack
 
 
 class HostSerializer(serializers.HyperlinkedModelSerializer):
