@@ -30,8 +30,4 @@ urlpatterns = patterns(
     url(r'^volumes/(?P<pk>[0-9]+)/$',
         api.VolumeDetailAPIView.as_view(),
         name='volume-detail'),
-
-    url(r'^admin/volumes/$',
-        api.VolumeAdminListAPIView.as_view(),
-        name='volume-admin-list'),
 )

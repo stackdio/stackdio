@@ -18,9 +18,10 @@
 
 import logging
 
-from rest_framework import generics, permissions
+from rest_framework import generics
+from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 
-from core.permissions import AdminOrOwnerPermission
+from core.permissions import StackdioDjangoObjectPermissions
 from . import filters, models, serializers
 
 logger = logging.getLogger(__name__)
@@ -29,20 +30,12 @@ logger = logging.getLogger(__name__)
 class VolumeListAPIView(generics.ListAPIView):
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
-    filter_class = filters.VolumeFilter
-
-    def get_queryset(self):
-        return models.Volume.objects.filter(stack__owner=self.request.user)
-
-
-class VolumeAdminListAPIView(generics.ListAPIView):
-    queryset = models.Volume.objects.all()
-    serializer_class = serializers.VolumeSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.VolumeFilter
 
 
 class VolumeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
-    permission_classes = (AdminOrOwnerPermission,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
