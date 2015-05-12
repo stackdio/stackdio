@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -70,39 +70,24 @@ def api_root(request, format=None):
                                        request=request,
                                        format=format),
         },
-        'stacks': {
-            'hosts': reverse('host-list',
+        'hosts': reverse('host-list',
+                         request=request,
+                         format=format),
+        'snapshots': reverse('snapshot-list',
                              request=request,
                              format=format),
-            'snapshots': reverse('snapshot-list',
-                                 request=request,
-                                 format=format),
-            'stacks': reverse('stack-list',
+        'stacks': reverse('stack-list',
+                          request=request,
+                          format=format),
+        'volumes': reverse('volume-list',
+                           request=request,
+                           format=format),
+        'blueprints': reverse('blueprint-list',
                               request=request,
                               format=format),
-            'public_stacks': reverse('stack-public-list',
-                                     request=request,
-                                     format=format),
-            'volumes': reverse('volume-list',
-                               request=request,
-                               format=format),
-        },
-        'blueprints': {
-            'blueprints': reverse('blueprint-list',
-                                  request=request,
-                                  format=format),
-            'public_blueprints': reverse('blueprint-public-list',
-                                         request=request,
-                                         format=format),
-        },
-        'formulas': {
-            'formulas': reverse('formula-list',
-                                request=request,
-                                format=format),
-            'public_formulas': reverse('formula-public-list',
-                                       request=request,
-                                       format=format)
-        },
+        'formulas': reverse('formula-list',
+                            request=request,
+                            format=format),
         'search': reverse('search',
                           request=request,
                           format=format),
@@ -113,28 +98,8 @@ def api_root(request, format=None):
                                        request=request,
                                        format=format)
 
-        api['admin'] = {
-            'stacks': reverse('stack-admin-list',
-                              request=request,
-                              format=format),
-            'blueprints': reverse('blueprint-admin-list',
-                                  request=request,
-                                  format=format),
-            'formulas': reverse('formula-admin-list',
-                                request=request,
-                                format=format),
-            'global_orchestration_formulas': reverse('formula-global-orchestration-list',
-                                                     request=request,
-                                                     format=format),
-            'volumes': reverse('volume-admin-list',
-                               request=request,
-                               format=format),
-            'snapshots': reverse('snapshot-admin-list',
-                                 request=request,
-                                 format=format),
-        }
-
     return Response(api)
+
 
 urlpatterns = patterns(
     '',

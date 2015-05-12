@@ -29,6 +29,7 @@ import yaml
 from django.http import HttpResponse
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view
+from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -38,7 +39,11 @@ from blueprints.models import BlueprintHostDefinition
 from cloud.filters import SecurityGroupFilter
 from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
-from core.permissions import AdminOrOwnerPermission, AdminOrOwnerOrPublicPermission
+from core.permissions import (
+    AdminOrOwnerPermission,
+    AdminOrOwnerOrPublicPermission,
+    StackdioDjangoObjectPermissions
+)
 from core.renderers import PlainTextRenderer
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
@@ -60,33 +65,15 @@ class PublicStackMixin(object):
         return obj
 
 
-class StackPublicListAPIView(generics.ListAPIView):
-    serializer_class = serializers.StackSerializer
-    filter_class = filters.StackFilter
-
-    def get_queryset(self):
-        return models.Stack.objects.filter(public=True).exclude(owner=self.request.user)
-
-
-class StackAdminListAPIView(generics.ListAPIView):
+class StackListAPIView(generics.ListCreateAPIView):
     """
-    TODO: Add docstring
+    Displays a list of all stacks visible to you.
     """
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.StackFilter
-
-
-class StackListAPIView(generics.ListCreateAPIView):
-    """
-    TODO: Add docstring
-    """
-    serializer_class = serializers.StackSerializer
-    filter_class = filters.StackFilter
-
-    def get_queryset(self):
-        return self.request.user.stacks.all()
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def perform_create(self, serializer):
         """
@@ -109,6 +96,7 @@ class StackListAPIView(generics.ListCreateAPIView):
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -143,10 +131,13 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class StackPropertiesAPIView(PublicStackMixin, generics.RetrieveUpdateAPIView):
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackPropertiesSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class StackHistoryAPIView(PublicStackMixin, generics.ListAPIView):
+    queryset = models.Stack.objects.all()
     serializer_class = serializers.StackHistorySerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def get_queryset(self):
         stack = self.get_object()
@@ -606,6 +597,7 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
 
 class StackFQDNListAPIView(PublicStackMixin, APIView):
     queryset = models.Stack.objects.all()
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -615,6 +607,7 @@ class StackFQDNListAPIView(PublicStackMixin, APIView):
 
 class StackLogsAPIView(PublicStackMixin, APIView):
     queryset = models.Stack.objects.all()
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -679,6 +672,7 @@ class StackLogsAPIView(PublicStackMixin, APIView):
 
 class StackProvisioningErrorsAPIView(PublicStackMixin, APIView):
     queryset = models.Stack.objects.all()
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -694,6 +688,7 @@ class StackProvisioningErrorsAPIView(PublicStackMixin, APIView):
 
 class StackOrchestrationErrorsAPIView(PublicStackMixin, APIView):
     queryset = models.Stack.objects.all()
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -709,6 +704,7 @@ class StackOrchestrationErrorsAPIView(PublicStackMixin, APIView):
 
 class StackLogsDetailAPIView(StackLogsAPIView):
     queryset = models.Stack.objects.all()
+    permission_classes = (StackdioDjangoObjectPermissions,)
     renderer_classes = (PlainTextRenderer,)
 
     # TODO: Code complexity ignored for now
@@ -753,6 +749,7 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 
 class StackSecurityGroupsAPIView(PublicStackMixin, generics.ListAPIView):
     serializer_class = serializers.StackSecurityGroupSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
     filter_class = SecurityGroupFilter
 
     def get_queryset(self):
