@@ -139,10 +139,6 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         workflow.opts.parallel = parallel
         workflow.execute()
 
-        # Return the stack while its deleting
-        serializer = self.get_serializer(stack)
-        return Response(serializer.data)
-
 
 class StackPropertiesAPIView(PublicStackMixin, generics.RetrieveUpdateAPIView):
     queryset = models.Stack.objects.all()
