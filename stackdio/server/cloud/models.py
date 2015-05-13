@@ -296,6 +296,13 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('snapshot_id', 'cloud_provider')
 
+        default_permissions = (
+            'create',
+            'view',
+            'update',
+            'delete',
+        )
+
     # The cloud provider that has access to this snapshot
     cloud_provider = models.ForeignKey('CloudProvider',
                                        related_name='snapshots')

@@ -19,4 +19,8 @@ class Migration(migrations.Migration):
             name='cloudprovider',
             options={'ordering': ('provider_type', 'title'), 'default_permissions': ('create', 'view', 'update', 'delete')},
         ),
+        migrations.AlterModelOptions(
+            name='snapshot',
+            options={'default_permissions': ('create', 'view', 'update', 'delete')},
+        ),
     ]

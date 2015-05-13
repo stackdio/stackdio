@@ -22,11 +22,27 @@ from rest_framework import permissions
 from rest_framework import serializers
 
 from core.mixins import SuperuserFieldsMixin
+from core.utils import recursive_update
 from formulas.serializers import FormulaComponentSerializer
 from . import models
 from .utils import get_provider_type_and_class
 
 logger = logging.getLogger(__name__)
+
+
+def validate_properties(properties):
+    """
+    Make sure properties are a valid dict and that they don't contain `__stackdio__`
+    """
+    if not isinstance(properties, dict):
+        raise serializers.ValidationError({
+            'properties': ['This field must be a JSON object.']
+        })
+
+    if '__stackdio__' in properties:
+        raise serializers.ValidationError({
+            'properties': ['The `__stackdio__` key is reserved for system use.']
+        })
 
 
 class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
@@ -168,6 +184,39 @@ class GlobalOrchestrationFormulaComponentSerializer(serializers.HyperlinkedModel
             'order',
             'component',
         )
+
+
+class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
+    def to_representation(self, obj):
+        if obj is not None:
+            return obj.global_orchestration_properties
+        return {}
+
+    def to_internal_value(self, data):
+        return data
+
+    def validate(self, attrs):
+        validate_properties(attrs)
+        return attrs
+
+    def create(self, validated_data):
+        """
+        We never create anything with this serializer, so just leave it as not implemented
+        """
+        return super(GlobalOrchestrationPropertiesSerializer, self).create(validated_data)
+
+    def update(self, provider, validated_data):
+        if self.partial:
+            # This is a PATCH, so properly merge in the old data
+            old_properties = provider.global_orchestration_properties
+            provider.global_orchestration_properties = recursive_update(old_properties, validated_data)
+        else:
+            # This is a PUT, so just add the data directly
+            provider.global_orchestration_properties = validated_data
+
+        # Be sure to persist the data
+        provider.save()
+        return provider
 
 
 class CloudProfileSerializer(SuperuserFieldsMixin,

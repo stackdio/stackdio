@@ -19,25 +19,19 @@
 import logging
 
 import yaml
-from rest_framework import (
-    generics,
-    parsers,
-    permissions,
-    status
-)
-from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from rest_framework import generics, parsers, permissions, status
+from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
+from rest_framework.response import Response
 
-from core.exceptions import BadRequest, ResourceConflict
-from core.permissions import (
-    AdminOrOwnerPermission,
-    IsAdminOrReadOnly,
-)
 from blueprints.serializers import BlueprintSerializer
+from core.exceptions import BadRequest, ResourceConflict
+from core.permissions import AdminOrOwnerPermission, IsAdminOrReadOnly, StackdioDjangoObjectPermissions
+from core.utils import recursive_update
+from formulas.models import FormulaComponent
 from . import models
 from . import serializers
 from . import filters
-from core.utils import recursive_update
 
 
 logger = logging.getLogger(__name__)
@@ -56,7 +50,8 @@ class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
 class CloudProviderListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
-    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.CloudProviderFilter
 
     def perform_create(self, serializer):
@@ -93,7 +88,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
-    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def destroy(self, request, *args, **kwargs):
         # check for profiles using this provider before deleting
@@ -112,9 +107,7 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         driver = self.get_object().get_driver()
         driver.destroy()
 
-        return super(CloudProviderDetailAPIView, self).destroy(request,
-                                                               *args,
-                                                               **kwargs)
+        return super(CloudProviderDetailAPIView, self).destroy(request, *args, **kwargs)
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
@@ -129,8 +122,10 @@ class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
 
 
 class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
-    permission_classes = (permissions.IsAdminUser,)
+    queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
 
     def get_provider(self):
         obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
@@ -152,57 +147,32 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
         except models.GlobalOrchestrationFormulaComponent.DoesNotExist:
             pass
 
-        return super(GlobalOrchestrationComponentListAPIView, self) \
-            .create(request, *args, **kwargs)
+        return super(GlobalOrchestrationComponentListAPIView, self).create(request, *args, **kwargs)
 
 
 class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = (permissions.IsAdminUser,)
-    serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
     queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
+    serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
+    filter_backends = (DjangoFilterBackend, StackdioDjangoObjectPermissions)
 
 
 class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
-    permission_classes = (permissions.IsAdminUser,)
-    serializer_class = serializers.serializers.Serializer
+    queryset = models.CloudProvider.objects.all()
+    serializer_class = serializers.GlobalOrchestrationPropertiesSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
-    def get_provider(self):
+    def get_object(self):
         obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
-
-    def retrieve(self, request, *args, **kwargs):
-        return Response(self.get_provider().global_orchestration_properties)
-
-    def update(self, request, *args, **kwargs):
-        """
-        PUT request - overwrite all the props
-        """
-        if not isinstance(request.DATA, dict):
-            raise BadRequest('Request data but be a JSON object, not an array')
-        provider = self.get_provider()
-        provider.global_orchestration_properties = request.DATA
-        provider.save()
-        return Response(provider.global_orchestration_properties)
-
-    def partial_update(self, request, *args, **kwargs):
-        """
-        PATCH request - merge the these new props in, overwrite old with new
-        if there are conflicts
-        """
-        if not isinstance(request.DATA, dict):
-            raise BadRequest('Request data but be a JSON object, not an array')
-        provider = self.get_provider()
-        provider.global_orchestration_properties = recursive_update(
-            provider.global_orchestration_properties, request.DATA)
-        provider.save()
-        return Response(provider.global_orchestration_properties)
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
-    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.CloudProfileFilter
 
     def perform_create(self, serializer):
@@ -213,24 +183,7 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
-    permission_classes = (permissions.DjangoModelPermissions,)
-
-    def destroy(self, request, *args, **kwargs):
-        # check for blueprint usage before deleting
-        blueprints = set([hd.blueprint
-                          for hd in self.get_object().host_definitions.all()])
-        if blueprints:
-            blueprints = BlueprintSerializer(blueprints,
-                                             context={'request': request}).data
-            return Response({
-                'detail': 'One or more blueprints are making use of this '
-                          'profile.',
-                'blueprints': blueprints,
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        return super(CloudProfileDetailAPIView, self).destroy(request,
-                                                              *args,
-                                                              **kwargs)
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         # validate that the AMI exists by looking it up in the cloud provider
@@ -250,23 +203,35 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         profile.update_config()
         return ret
 
+    def destroy(self, request, *args, **kwargs):
+        # check for blueprint usage before deleting
+        blueprints = set([hd.blueprint
+                          for hd in self.get_object().host_definitions.all()])
+        if blueprints:
+            blueprints = BlueprintSerializer(blueprints,
+                                             context={'request': request}).data
+            return Response({
+                'detail': 'One or more blueprints are making use of this '
+                          'profile.',
+                'blueprints': blueprints,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return super(CloudProfileDetailAPIView, self).destroy(request,
+                                                              *args,
+                                                              **kwargs)
+
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
     queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
-    permission_classes = (permissions.DjangoModelPermissions,)
-
-
-class SnapshotAdminListAPIView(generics.ListAPIView):
-    queryset = models.Snapshot.objects.all()
-    serializer_class = serializers.SnapshotSerializer
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
 
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
-    permission_classes = (permissions.DjangoModelPermissions,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class CloudRegionListAPIView(generics.ListAPIView):
@@ -331,24 +296,11 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                     to all hosts launched on the provider. **NOTE**
                     this property may only be set by an admin.
     """
-
+    queryset = models.SecurityGroup.objects.all().with_rules()
     serializer_class = serializers.SecurityGroupSerializer
-    parser_classes = (parsers.JSONParser,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.SecurityGroupFilter
-
-    # Only admins may create security groups directly. Regular users
-    # are restricted to using automatically managed security groups
-    # on stacks
-    permission_classes = (IsAdminOrReadOnly,)
-
-    def get_queryset(self):
-        # if admin, get them all
-        if self.request.user.is_superuser:
-            return models.SecurityGroup.objects.all().with_rules()
-
-        # if user, only get what they own
-        else:
-            return self.request.user.security_groups.all().with_rules()
 
     # TODO: Ignore code complexity issues
     def create(self, request, *args, **kwargs):  # NOQA
@@ -452,11 +404,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupSerializer
-    parser_classes = (parsers.JSONParser,)
-    # Only admins are allowed write access
-    permission_classes = (permissions.IsAuthenticated,
-                          IsAdminOrReadOnly,
-                          AdminOrOwnerPermission,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         """
@@ -559,9 +507,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
     queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupRuleSerializer
-    parser_classes = (parsers.JSONParser,)
-    permission_classes = (permissions.IsAuthenticated,
-                          AdminOrOwnerPermission,)
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def retrieve(self, request, *args, **kwargs):
         sg = self.get_object()
