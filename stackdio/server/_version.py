@@ -19,9 +19,11 @@ __version_info__ = (0, 6, 1, 'beta', 0)
 
 
 def get_version(version=None):
-    """Returns a PEP 386-compliant version number from VERSION.
+    """
+    Returns a PEP 386-compliant version number from VERSION.
 
-    Created by modifying django.utils.version.get_version"""
+    Created by modifying django.utils.version.get_version
+    """
 
     # Now build the two parts of the version number:
     # major = X.Y[.Z]
@@ -40,7 +42,9 @@ def get_version(version=None):
 
 
 def get_major_version(version):
-    "Returns major version from VERSION."
+    """
+    Returns major version from VERSION.
+    """
     parts = 2 if version[2] == 0 else 3
     major = '.'.join(str(x) for x in version[:parts])
     return major
