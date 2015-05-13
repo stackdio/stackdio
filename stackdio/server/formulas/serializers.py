@@ -47,7 +47,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     status_detail = serializers.ReadOnlyField()
 
     # Special read only fields
-    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+    owner = serializers.ReadOnlyField(source='owner.username')
     components = FormulaComponentSerializer(many=True, read_only=True)
 
     # Other fields

@@ -21,7 +21,6 @@ import logging
 from rest_framework import serializers
 
 from core.utils import recursive_update
-
 from . import models
 
 logger = logging.getLogger(__name__)
@@ -109,7 +108,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
     # Read only fields
-    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+    owner = serializers.ReadOnlyField(source='owner.username')
 
     properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
     host_definitions = BlueprintHostDefinitionSerializer(many=True)

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class VolumeSerializer(serializers.HyperlinkedModelSerializer):
-    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+    owner = serializers.ReadOnlyField(source='owner.username')
     snapshot_name = serializers.ReadOnlyField(source='snapshot.snapshot_id')
     size_in_gb = serializers.ReadOnlyField(source='snapshot.size_in_gb')
 
