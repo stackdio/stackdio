@@ -26,6 +26,21 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
+def validate_properties(properties):
+    """
+    Make sure properties are a valid dict and that they don't contain `__stackdio__`
+    """
+    if not isinstance(properties, dict):
+        raise serializers.ValidationError({
+            'properties': ['This field must be a JSON object.']
+        })
+
+    if '__stackdio__' in properties:
+        raise serializers.ValidationError({
+            'properties': ['The `__stackdio__` key is reserved for system use.']
+        })
+
+
 class BlueprintPropertiesSerializer(serializers.Serializer):
     def to_representation(self, obj):
         if obj is not None:
@@ -35,11 +50,26 @@ class BlueprintPropertiesSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         return data
 
-    def create(self, validated_data):
-        return validated_data
+    def validate(self, attrs):
+        validate_properties(attrs)
+        return attrs
 
-    def update(self, instance, validated_data):
-        return recursive_update(instance, validated_data)
+    def create(self, validated_data):
+        """
+        We never create anything with this serializer, so just leave it as not implemented
+        """
+        return super(BlueprintPropertiesSerializer, self).create(validated_data)
+
+    def update(self, blueprint, validated_data):
+        if self.partial:
+            # This is a PATCH, so properly merge in the old data
+            old_properties = blueprint.properties
+            blueprint.properties = recursive_update(old_properties, validated_data)
+        else:
+            # This is a PUT, so just add the data directly
+            blueprint.properties = validated_data
+
+        return blueprint
 
 
 class BlueprintAccessRuleSerializer(serializers.ModelSerializer):

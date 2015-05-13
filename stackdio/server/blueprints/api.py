@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,24 +19,23 @@
 import logging
 
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
-from core.permissions import AdminOrOwnerOrPublicPermission, StackdioDjangoObjectPermissions
+from core.permissions import StackdioDjangoObjectPermissions
 from stacks.serializers import StackSerializer
 from . import filters, models, serializers, validators
 
 logger = logging.getLogger(__name__)
 
 
-class PublicBlueprintMixin(generics.GenericAPIView):
-    permission_classes = (permissions.IsAuthenticated,
-                          AdminOrOwnerOrPublicPermission,)
-
+class PublicBlueprintMixin(object):
     def get_object(self):
-        obj = get_object_or_404(models.Blueprint, id=self.kwargs.get('pk'))
+        queryset = models.Blueprint.objects.all()
+
+        obj = get_object_or_404(self.filter_queryset(queryset), id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
 
@@ -64,7 +63,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         return Response(self.get_serializer(blueprint).data)
 
 
-class BlueprintDetailAPIView(PublicBlueprintMixin, generics.RetrieveUpdateDestroyAPIView):
+class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
     permission_classes = (StackdioDjangoObjectPermissions,)
@@ -116,7 +115,7 @@ class BlueprintDetailAPIView(PublicBlueprintMixin, generics.RetrieveUpdateDestro
                                                           **kwargs)
 
 
-class BlueprintPropertiesAPIView(PublicBlueprintMixin, generics.RetrieveAPIView):
+class BlueprintPropertiesAPIView(PublicBlueprintMixin, generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
     permission_classes = (StackdioDjangoObjectPermissions,)
