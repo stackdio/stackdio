@@ -18,8 +18,6 @@
 
 from django.conf.urls import patterns, include, url
 
-from rest_framework.urlpatterns import format_suffix_patterns
-
 # Enable admin interface
 from django.contrib import admin
 admin.autodiscover()
@@ -40,15 +38,8 @@ urlpatterns = patterns('',
     # the api_v1 module.
     url(r'^api/', include('api_v1.urls')),
     # url(r'^api-docs/', include('rest_framework_swagger.urls')),
-)
 
-# Format suffixes
-urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'api'])
-
-##
-# Default login/logout views. Without this you won't get the login/logout links
-# in the views.
-##
-urlpatterns += patterns('',
+    # Default login/logout views. Without this you won't get the login/logout links
+    # in the views.
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 )
