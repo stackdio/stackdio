@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,7 +41,6 @@ from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
 from core.permissions import (
     AdminOrOwnerPermission,
-    AdminOrOwnerOrPublicPermission,
     StackdioDjangoObjectPermissions
 )
 from core.renderers import PlainTextRenderer
@@ -54,9 +53,6 @@ logger = logging.getLogger(__name__)
 
 
 class PublicStackMixin(object):
-    permission_classes = (permissions.IsAuthenticated,
-                          AdminOrOwnerOrPublicPermission,)
-
     def get_object(self):
         queryset = models.Stack.objects.all()
 
@@ -71,9 +67,9 @@ class StackListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
     filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.StackFilter
-    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def perform_create(self, serializer):
         """
@@ -231,9 +227,9 @@ class StackActionAPIView(generics.GenericAPIView):
                                      'reporting an invalid state: {0}'
                                      .format(host.state))
                 if (
-                    action == driver.ACTION_PROVISION or
-                    action == driver.ACTION_ORCHESTRATE or
-                    action == driver.ACTION_CUSTOM
+                                    action == driver.ACTION_PROVISION or
+                                    action == driver.ACTION_ORCHESTRATE or
+                                action == driver.ACTION_CUSTOM
                 ) and host.state not in (driver.STATE_RUNNING,):
                     raise BadRequest(
                         'Provisioning actions require all hosts to be in the '
@@ -406,7 +402,7 @@ def stack_action_zip(request, pk):
         action_zip.close()
 
         response = HttpResponse(file_buffer.getvalue(),
-                                content_type='application/zip')
+            content_type='application/zip')
         response['Content-Disposition'] = (
             'attachment; filename={0}.zip'.format(filename)
         )

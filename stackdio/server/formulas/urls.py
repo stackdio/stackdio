@@ -43,16 +43,7 @@ urlpatterns = patterns('formulas.api',
         api.FormulaComponentDetailAPIView.as_view(),
         name='formulacomponent-detail'),
 
-    # List of publicly available formulas
-    url(r'^formulas/public/$',
-        api.FormulaPublicAPIView.as_view(),
-        name='formula-public-list'),
-
-    url(r'^admin/formulas/$',
-        api.FormulaAdminListAPIView.as_view(),
-        name='formula-admin-list'),
-
-    url(r'^admin/global_orchestration/formulas/$',
+    url(r'^global_orchestration_formulas/$',
         api.GlobalOrchestrationFormulaListAPIView.as_view(),
         name='formula-global-orchestration-list')
 )

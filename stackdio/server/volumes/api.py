@@ -28,6 +28,9 @@ logger = logging.getLogger(__name__)
 
 
 class VolumeListAPIView(generics.ListAPIView):
+    """
+    Displays a list of all volumes visible to you.
+    """
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
     permission_classes = (StackdioDjangoObjectPermissions,)

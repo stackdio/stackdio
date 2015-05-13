@@ -42,6 +42,9 @@ class PublicBlueprintMixin(generics.GenericAPIView):
 
 
 class BlueprintListAPIView(generics.ListCreateAPIView):
+    """
+    Displays a list of all blueprints visible to you.
+    """
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
     permission_classes = (StackdioDjangoObjectPermissions,)
