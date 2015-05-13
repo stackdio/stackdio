@@ -237,8 +237,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     def create(self, validated_data):
         # Grab all the extra data not in the validated_data
 
-        logger.debug(self.initial_data)
-
         # OPTIONAL PARAMS
         public = self.initial_data.get('public', False)
         properties = self.initial_data.get('properties', {})
