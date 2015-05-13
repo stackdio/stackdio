@@ -266,6 +266,13 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         blueprint = validated_data['blueprint']
         user = validated_data['owner']
 
+        if not user.has_perm('blueprints.view_blueprint', blueprint):
+            raise serializers.ValidationError({
+                'blueprint': [
+                    'You do not have permission to launch a stack from this blueprint.'
+                ]
+            })
+
         # Generate the title and/or description if not provided by user
         if not title and not description:
             extra_description = ' (Title and description'
