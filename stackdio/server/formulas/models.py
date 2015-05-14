@@ -174,6 +174,8 @@ class FormulaComponent(TitleSlugDescriptionModel):
     class Meta:
         ordering = ['pk']
 
+        default_permissions = ()
+
     formula = models.ForeignKey('formulas.Formula',
                                 related_name='components')
 

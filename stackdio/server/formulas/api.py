@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,14 +20,12 @@ import logging
 from urlparse import urlsplit, urlunsplit
 
 from django.contrib.auth import get_user_model
-from rest_framework import generics, status, permissions
-from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
+from rest_framework import generics, status
 from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
 from cloud.serializers import CloudProviderSerializer
 from core.exceptions import BadRequest
-from core.permissions import AdminOrOwnerOrPublicPermission, StackdioDjangoObjectPermissions
 from . import filters, models, serializers, tasks
 
 
@@ -52,8 +50,6 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.FormulaFilter
 
     def pre_save(self, obj):
@@ -133,8 +129,6 @@ class FormulaListAPIView(generics.ListCreateAPIView):
 
 
 class GlobalOrchestrationFormulaListAPIView(FormulaListAPIView):
-    filter_backends = (DjangoFilterBackend,)
-
     def get_user(self):
         user_model = get_user_model()
         try:
@@ -149,7 +143,6 @@ class GlobalOrchestrationFormulaListAPIView(FormulaListAPIView):
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         """
@@ -219,20 +212,16 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaPropertiesSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.FormulaComponent.objects.all()
     serializer_class = serializers.FormulaComponentSerializer
-    permission_classes = (permissions.IsAuthenticated,
-                          AdminOrOwnerOrPublicPermission,)
 
 
 class FormulaActionAPIView(generics.GenericAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
 
     AVAILABLE_ACTIONS = [
         'update',
