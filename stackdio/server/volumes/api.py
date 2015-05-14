@@ -33,12 +33,9 @@ class VolumeListAPIView(generics.ListAPIView):
     """
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.VolumeFilter
 
 
 class VolumeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
