@@ -39,6 +39,7 @@ class UserDetailAPIView(generics.RetrieveAPIView):
 class UserSettingsDetailAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.UserSettings.objects.all()
     serializer_class = serializers.UserSettingsSerializer
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_object(self):
         return self.request.user.settings
@@ -54,6 +55,7 @@ class ChangePasswordAPIView(views.APIView):
     @new_password: Your new password you want to change to.
     @confirm_password: Confirm your new password.
     """
+    permission_classes = (permissions.IsAuthenticated,)
 
     def put(self, request, *args, **kwargs):
         current_password = request.DATA.get('current_password')
@@ -89,6 +91,7 @@ class VersionAPIView(views.APIView):
     """
     Returns a JSON object with version-specific fields.
     """
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         from _version import __version__
