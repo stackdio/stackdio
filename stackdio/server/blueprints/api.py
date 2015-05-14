@@ -20,6 +20,7 @@ import logging
 
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
+from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
@@ -35,6 +36,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.BlueprintFilter
 
     def perform_create(self, serializer):

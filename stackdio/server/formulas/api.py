@@ -21,6 +21,7 @@ from urlparse import urlsplit, urlunsplit
 
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status
+from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
@@ -50,6 +51,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
+    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.FormulaFilter
 
     def pre_save(self, obj):
