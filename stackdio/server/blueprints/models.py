@@ -215,6 +215,8 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     class Meta:
         verbose_name_plural = 'host definitions'
 
+        default_permissions = ()
+
     # The blueprint object this host is owned by
     blueprint = models.ForeignKey('blueprints.Blueprint',
                                   related_name='host_definitions')
@@ -270,6 +272,8 @@ class BlueprintHostFormulaComponent(TimeStampedModel):
         verbose_name_plural = 'formula components'
         ordering = ['order']
 
+        default_permissions = ()
+
     # The formula component we're extending
     component = models.ForeignKey('formulas.FormulaComponent')
 
@@ -297,6 +301,8 @@ class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
 
     class Meta:
         verbose_name_plural = 'access rules'
+
+        default_permissions = ()
 
     # The host definition this access rule applies to
     host = models.ForeignKey('blueprints.BlueprintHostDefinition',
@@ -332,6 +338,8 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
 
     class Meta:
         verbose_name_plural = 'volumes'
+
+        default_permissions = ()
 
     # The host definition this access rule applies to
     host = models.ForeignKey('blueprints.BlueprintHostDefinition',

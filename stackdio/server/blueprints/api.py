@@ -20,24 +20,13 @@ import logging
 
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
-from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
-from core.permissions import StackdioDjangoObjectPermissions
 from stacks.serializers import StackSerializer
 from . import filters, models, serializers, validators
 
 logger = logging.getLogger(__name__)
-
-
-class PublicBlueprintMixin(object):
-    def get_object(self):
-        queryset = models.Blueprint.objects.all()
-
-        obj = get_object_or_404(self.filter_queryset(queryset), id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
 
 
 class BlueprintListAPIView(generics.ListCreateAPIView):
@@ -46,8 +35,6 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.BlueprintFilter
 
     def perform_create(self, serializer):
@@ -66,7 +53,6 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
 class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         blueprint = self.get_object()
@@ -83,9 +69,7 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             logger.warning('Invalid properties for blueprint {0}: {1}'.format(blueprint.title,
                                                                               properties))
 
-        return super(BlueprintDetailAPIView, self).update(request,
-                                                          *args,
-                                                          **kwargs)
+        return super(BlueprintDetailAPIView, self).update(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
         """
@@ -110,12 +94,16 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                 'stacks': stacks
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        return super(BlueprintDetailAPIView, self).delete(request,
-                                                          *args,
-                                                          **kwargs)
+        return super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)
 
 
-class BlueprintPropertiesAPIView(PublicBlueprintMixin, generics.RetrieveUpdateAPIView):
+class BlueprintPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+
+    def get_object(self):
+        queryset = models.Blueprint.objects.all()
+
+        obj = get_object_or_404(self.filter_queryset(queryset), id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
