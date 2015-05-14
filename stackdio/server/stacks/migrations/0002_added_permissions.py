@@ -27,9 +27,4 @@ class Migration(migrations.Migration):
             name='stackhistory',
             options={'ordering': ['-created', '-id'], 'default_permissions': (), 'verbose_name_plural': 'stack history'},
         ),
-        migrations.AlterField(
-            model_name='stack',
-            name='namespace',
-            field=models.CharField(unique=True, max_length=64, verbose_name=b'Namespace', blank=True),
-        ),
     ]

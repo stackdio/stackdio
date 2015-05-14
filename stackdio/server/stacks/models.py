@@ -245,7 +245,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
-    namespace = models.CharField('Namespace', max_length=64, blank=True, unique=True)
+    namespace = models.CharField('Namespace', max_length=64, blank=True)
 
     # is this stack publicly available -- meaning it can be found by other
     # users and will remain in read-only mode to them
