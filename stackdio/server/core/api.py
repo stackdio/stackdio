@@ -18,6 +18,7 @@
 
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions, views
+from rest_framework.filters import DjangoFilterBackend
 from rest_framework.response import Response
 
 from .exceptions import BadRequest
@@ -28,6 +29,7 @@ class UserListAPIView(generics.ListAPIView):
     queryset = get_user_model().objects.exclude(username__in=('__stackdio__', 'AnonymousUser'))
     serializer_class = serializers.UserSerializer
     permission_classes = (permissions.IsAdminUser,)
+    filter_backends = (DjangoFilterBackend,)
     lookup_field = 'username'
 
 
@@ -35,6 +37,7 @@ class UserDetailAPIView(generics.RetrieveAPIView):
     queryset = get_user_model().objects.exclude(username__in=('__stackdio__', 'AnonymousUser'))
     serializer_class = serializers.UserSerializer
     permission_classes = (permissions.IsAdminUser,)
+    filter_backends = (DjangoFilterBackend,)
     lookup_field = 'username'
 
 
