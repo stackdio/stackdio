@@ -54,6 +54,11 @@ def get_global_orch_props_file_path(obj, filename):
 
 
 class CloudProviderType(models.Model):
+    class Meta:
+        default_permissions = (
+            'view',
+        )
+
     PROVIDER_CHOICES = get_cloud_provider_choices()
     type_name = models.CharField(
         'Type Name',
@@ -172,6 +177,10 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     class Meta:
         ordering = ('id',)
 
+        default_permissions = (
+            'view',
+        )
+
     # `title` field will be the type used by salt-cloud for the `size`
     # parameter in the providers yaml file (e.g., 'Micro Instance' or
     # '512MB Standard Instance'
@@ -197,6 +206,13 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
     class Meta:
         verbose_name_plural = 'global orchestration formula components'
         ordering = ('order',)
+
+        default_permissions = (
+            'create',
+            'view',
+            'update',
+            'delete',
+        )
 
     # The formula component we're extending
     component = models.ForeignKey('formulas.FormulaComponent')
@@ -325,6 +341,10 @@ class CloudRegion(TitleSlugDescriptionModel):
         unique_together = ('title', 'provider_type')
         ordering = ('provider_type', 'title')
 
+        default_permissions = (
+            'view',
+        )
+
     # link to the type of provider for this zone
     provider_type = models.ForeignKey('CloudProviderType')
 
@@ -336,6 +356,10 @@ class CloudZone(TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'region')
         ordering = ('region', 'title')
+
+        default_permissions = (
+            'view',
+        )
 
     # link to the region this AZ is in
     region = models.ForeignKey('CloudRegion', related_name='zones')
@@ -376,6 +400,13 @@ class SecurityGroupManager(TransformManager):
 class SecurityGroup(TimeStampedModel, models.Model):
     class Meta:
         unique_together = ('name', 'cloud_provider')
+
+        default_permissions = (
+            'create',
+            'view',
+            'update',
+            'delete',
+        )
 
     objects = SecurityGroupManager()
 
