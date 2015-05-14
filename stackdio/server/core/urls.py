@@ -26,7 +26,7 @@ urlpatterns = patterns(
         api.UserListAPIView.as_view(),
         name='user-list'),
 
-    url(r'^users/(?P<pk>[0-9]+)/$',
+    url(r'^users/(?P<username>[\w.@+-]+)/$',
         api.UserDetailAPIView.as_view(),
         name='user-detail'),
 

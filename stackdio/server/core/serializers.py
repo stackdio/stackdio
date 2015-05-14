@@ -25,6 +25,7 @@ from .models import UserSettings
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = get_user_model()
+        lookup_field = 'username'
         fields = (
             'url',
             'username',
@@ -40,6 +41,7 @@ class UserSettingsSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = UserSettings
+        lookup_field = 'username'
         fields = (
             'user',
             'public_key',
