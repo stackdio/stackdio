@@ -116,6 +116,8 @@ class StatusDetailModel(model_utils.models.StatusModel):
     class Meta:
         abstract = True
 
+        default_permissions = ()
+
     def set_status(self, status, detail=''):
         self.status = status
         self.status_detail = detail
@@ -1020,6 +1022,8 @@ class StackHistory(TimeStampedModel, StatusDetailModel):
         verbose_name_plural = 'stack history'
         ordering = ['-created', '-id']
 
+        default_permissions = ()
+
     STATUS = Stack.STATUS
 
     stack = models.ForeignKey('Stack', related_name='history')
@@ -1049,6 +1053,8 @@ class StackAction(TimeStampedModel, model_utils.models.StatusModel):
 
     class Meta:
         verbose_name_plural = 'stack actions'
+
+        default_permissions = ()
 
     stack = models.ForeignKey('Stack', related_name='actions')
 
@@ -1103,6 +1109,13 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     class Meta:
         ordering = ['blueprint_host_definition', '-index']
+
+        default_permissions = (
+            'create',
+            'view',
+            'update',
+            'delete',
+        )
 
     # TODO: We should be using generic foreign keys here to a cloud provider
     # specific implementation of a Host object. I'm not exactly sure how this

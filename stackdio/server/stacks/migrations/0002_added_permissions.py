@@ -12,8 +12,20 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
+            name='host',
+            options={'ordering': ['blueprint_host_definition', '-index'], 'default_permissions': ('create', 'view', 'update', 'delete')},
+        ),
+        migrations.AlterModelOptions(
             name='stack',
             options={'ordering': ('title',), 'default_permissions': ('create', 'launch', 'view', 'update', 'provision', 'orchestrate', 'execute', 'start', 'stop', 'terminate', 'delete')},
+        ),
+        migrations.AlterModelOptions(
+            name='stackaction',
+            options={'default_permissions': (), 'verbose_name_plural': 'stack actions'},
+        ),
+        migrations.AlterModelOptions(
+            name='stackhistory',
+            options={'ordering': ['-created', '-id'], 'default_permissions': (), 'verbose_name_plural': 'stack history'},
         ),
         migrations.AlterField(
             model_name='stack',
