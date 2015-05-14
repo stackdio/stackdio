@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from=b'title', verbose_name='slug', editable=False, blank=True)),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('public', models.BooleanField(default=False)),
-                ('props_file', core.fields.DeletingFileField(default=None, upload_to=blueprints.models.get_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/Users/cperkins/.stackdio/storage'), max_length=255, blank=True, null=True)),
+                ('props_file', core.fields.DeletingFileField(default=None, upload_to=blueprints.models.get_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/home/stackdio/.stackdio/storage'), max_length=255, blank=True, null=True)),
                 ('owner', models.ForeignKey(related_name='blueprints', to=settings.AUTH_USER_MODEL)),
             ],
         ),

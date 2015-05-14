@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('image_id', models.CharField(max_length=64, verbose_name=b'Image ID')),
                 ('ssh_user', models.CharField(max_length=64, verbose_name=b'SSH User')),
-                ('config_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/Users/cperkins/.stackdio/etc/salt/cloud.profiles.d'), max_length=255, blank=True, null=True)),
+                ('config_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/home/stackdio/.stackdio/etc/salt/cloud.profiles.d'), max_length=255, blank=True, null=True)),
             ],
         ),
         migrations.CreateModel(
@@ -57,8 +57,8 @@ class Migration(migrations.Migration):
                 ('yaml', models.TextField()),
                 ('vpc_id', models.CharField(max_length=64, verbose_name=b'VPC ID', blank=True)),
                 ('account_id', models.CharField(max_length=64, verbose_name=b'Account ID')),
-                ('config_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/Users/cperkins/.stackdio/etc/salt/cloud.providers.d'), max_length=255, blank=True, null=True)),
-                ('global_orch_props_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_global_orch_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/Users/cperkins/.stackdio/storage'), max_length=255, blank=True, null=True)),
+                ('config_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/home/stackdio/.stackdio/etc/salt/cloud.providers.d'), max_length=255, blank=True, null=True)),
+                ('global_orch_props_file', core.fields.DeletingFileField(default=None, upload_to=cloud.models.get_global_orch_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=b'/home/stackdio/.stackdio/storage'), max_length=255, blank=True, null=True)),
             ],
             options={
                 'ordering': ('provider_type', 'title'),
