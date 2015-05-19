@@ -20,7 +20,7 @@ import logging
 
 from django.conf import settings
 from django.db.models import Q
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.response import Response
 
 from . import serializers
@@ -31,8 +31,10 @@ from stacks.models import Stack
 logger = logging.getLogger(__name__)
 
 
+# TODO redo this view, it's bad
 class SearchAPIView(generics.GenericAPIView):
     # Don't accept any form of parseable input
+    permission_classes = (permissions.IsAuthenticated,)
     parser_classes = ()
 
     def get(self, request, *args, **kwargs):
