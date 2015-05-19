@@ -285,7 +285,6 @@ REST_FRAMEWORK = {
 
     # Authentication
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        # 'api.authentication.APIKeyAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ),
@@ -296,11 +295,13 @@ REST_FRAMEWORK = {
         'core.permissions.StackdioDjangoObjectPermissions',
     ),
 
-    # Parsers - enable FormParser to get nice forms in the browse-able API
+    # Parsers - enable FormParser to get nice forms in the browsable API
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
     ),
+
+    # Enable the browsable API - comment out the BrowsableAPIRenderer line to only return json
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
