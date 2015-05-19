@@ -29,6 +29,7 @@ import yaml
 from django.http import HttpResponse
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
@@ -38,9 +39,8 @@ from blueprints.models import BlueprintHostDefinition
 from cloud.filters import SecurityGroupFilter
 from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
-from core.permissions import AdminOrOwnerPermission
+from core.permissions import StackdioDjangoObjectPermissions
 from core.renderers import PlainTextRenderer
-from volumes.models import Volume
 from volumes.serializers import VolumeSerializer
 from . import filters, models, serializers, tasks, validators, workflows
 
@@ -55,6 +55,30 @@ class PublicStackMixin(object):
         obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
+
+
+class StackActionObjectPermissions(StackdioDjangoObjectPermissions):
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.view_%(model_name)s'],
+        'PUT': ['%(app_label)s.view_%(model_name)s'],
+        'PATCH': ['%(app_label)s.view_%(model_name)s'],
+        'DELETE': ['%(app_label)s.view_%(model_name)s'],
+    }
+
+
+def filter_actions(user, stack, actions):
+    ret = []
+    for action in actions:
+        the_action = action
+        if action == 'custom':
+            the_action = 'execute'
+        if user.has_perm('stacks.{0}_stack'.format(the_action.lower()), stack):
+            ret.append(action)
+
+    return ret
 
 
 class StackListAPIView(generics.ListCreateAPIView):
@@ -135,11 +159,7 @@ class StackHistoryAPIView(PublicStackMixin, generics.ListAPIView):
 class StackActionAPIView(PublicStackMixin, generics.GenericAPIView):
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackSerializer
-
-    def get_object(self, queryset=None):
-        obj = get_object_or_404(models.Stack, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+    permission_classes = (permissions.IsAuthenticated, StackActionObjectPermissions)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -147,6 +167,8 @@ class StackActionAPIView(PublicStackMixin, generics.GenericAPIView):
         available_actions = set()
         for driver, hosts in driver_hosts_map.iteritems():
             available_actions.update(driver.get_available_actions())
+
+        available_actions = filter_actions(request.user, stack, available_actions)
 
         return Response({
             'available_actions': sorted(available_actions),
@@ -177,12 +199,20 @@ class StackActionAPIView(PublicStackMixin, generics.GenericAPIView):
         if not action:
             raise BadRequest('action is a required parameter.')
 
+        available_actions = set()
+
         # check the individual provider for available actions
         for driver, hosts in driver_hosts_map.iteritems():
-            available_actions = driver.get_available_actions()
-            if action not in available_actions:
+            host_available_actions = driver.get_available_actions()
+            if action not in host_available_actions:
                 raise BadRequest('At least one of the hosts in this stack '
                                  'does not support the requested action.')
+            available_actions.update(host_available_actions)
+
+        if action not in filter_actions(request.user, stack, available_actions):
+            raise PermissionDenied(
+                'You are not authorized to execute the "{0}" action on this stack'.format(action)
+            )
 
         # All actions other than launch require hosts to be available
         if action != BaseCloudProvider.ACTION_LAUNCH and total_host_count == 0:
