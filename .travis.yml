@@ -4,17 +4,25 @@ python:
   - '2.7'
   - '3.4'
 
+env:
+  - DJANGO_SETTINGS_MODULE=stackdio.settings.testing
+
 before_install:
   - sudo apt-get install -y swig
 
-install: pip install -r requirements/testing.txt
+install:
+  - pip install -r requirements/testing.txt
 
+# Run pep8 and pylint, then copy the config file into place
 before_script:
   - pylint --rcfile=.testing.pylintrc stackdio/server/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
   - pep8 --ignore=E501,E12 --exclude='stackdio/server/*/migrations/*,*/bower_components/*' stackdio/server/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
+  - mkdir /home/travis/.stackdio
+  - cp tests/config /home/travis/.stackdio/config
 
 script:
-  - exit 0
+  - cd stackdio/server
+  - python manage.py test
 
 after_success:
   - coveralls
