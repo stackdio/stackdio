@@ -1,8 +1,8 @@
 # Testing configuration for circle
 
-storage_root: /home/ubuntu/.stackdio
+storage_root: /home/travis/.stackdio
 
-user: ubuntu
+user: travis
 
 salt_bootstrap_script: bootstrap-salt
 salt_bootstrap_args: -K -D git v2014.1.7
