@@ -1,3 +1,2 @@
 -r testing.txt
-MySQL-python==1.2.5
 ipython>=2.0
