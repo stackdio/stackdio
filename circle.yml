@@ -16,5 +16,4 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - cd stackdio/server
-    - python manage.py test
+    - python stackdio/server/manage.py test
