@@ -3,12 +3,6 @@ language: python
 python:
   - '2.7'
 
-before_install:
-  - sudo apt-get update
-  - sudo apt-get install --fix-broken --ignore-missing -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" swig rabbitmq-server python-apt
-  - (git describe && git fetch --tags) || (git remote add upstream git://github.com/stackdio/stackdio.git && git fetch --tags upstream)
-  - pip install --allow-external http://dl.dropbox.com/u/174789/m2crypto-0.20.1.tar.gz
-
 install: pip install -r requirements/testing.txt
 
 before_script:
