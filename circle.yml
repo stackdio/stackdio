@@ -1,0 +1,20 @@
+machine:
+  python:
+    version: '2.7'
+
+## Customize dependencies
+dependencies:
+  override:
+    - pip install -r requirements/testing.txt
+
+## Customize test commands
+test:
+  pre:
+    - pylint --rcfile=.testing.pylintrc stackdio/server/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
+    - pep8 --ignore=E501,E12 --exclude='stackdio/server/*/migrations/*,*/bower_components/*' stackdio/server/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
+    - mkdir /home/ubuntu/.stackdio
+    - cp tests/config /home/ubuntu/.stackdio/config
+
+  override:
+    - cd stackdio/server
+    - python manage.py test
