@@ -1,9 +1,6 @@
 machine:
   python:
-    version:
-      - '2.7'
-      - '3.3'
-
+    version: '2.7'
 
 ## Customize dependencies
 dependencies:
