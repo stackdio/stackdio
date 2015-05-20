@@ -247,9 +247,9 @@ class StackActionAPIView(PublicStackMixin, generics.GenericAPIView):
                                      'reporting an invalid state: {0}'
                                      .format(host.state))
                 if (
-                                    action == driver.ACTION_PROVISION or
-                                    action == driver.ACTION_ORCHESTRATE or
-                                action == driver.ACTION_CUSTOM
+                    action == driver.ACTION_PROVISION or
+                    action == driver.ACTION_ORCHESTRATE or
+                    action == driver.ACTION_CUSTOM
                 ) and host.state not in (driver.STATE_RUNNING,):
                     raise BadRequest(
                         'Provisioning actions require all hosts to be in the '
