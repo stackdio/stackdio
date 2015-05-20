@@ -16,4 +16,4 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python stackdio/server/manage.py test
+    - python stackdio/server/manage.py test --with-xunit --xunit-file=$CIRCLE_TEST_REPORTS/stackdio-tests.xml
