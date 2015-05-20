@@ -16,4 +16,8 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python stackdio/server/manage.py test --with-xunit --xunit-file=$CIRCLE_TEST_REPORTS/stackdio-tests.xml
+    - python stackdio/server/manage.py test --with-xunit --with-coverage --cover-html
+
+  post:
+    - mv nosttests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
+    - mv cover/* $CIRCLE_ARTIFACTS
