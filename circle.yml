@@ -19,5 +19,5 @@ test:
     - python stackdio/server/manage.py test --with-xunit --with-coverage --cover-html
 
   post:
-    - mv nosttests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
+    - mv nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
     - mv cover/* $CIRCLE_ARTIFACTS
