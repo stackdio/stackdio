@@ -16,8 +16,9 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python stackdio/server/manage.py test --with-xunit --with-coverage --cover-html
+    - python stackdio/server/manage.py test --with-xunit --with-coverage --cover-html --cover-package stackdio
 
   post:
     - mv nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
-    - mv cover/* $CIRCLE_ARTIFACTS
+    - mv cover $CIRCLE_ARTIFACTS/coverage
+    - coveralls

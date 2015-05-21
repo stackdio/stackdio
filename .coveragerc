@@ -22,13 +22,9 @@ exclude_lines =
 
 ignore_errors = True
 
-include =
-    */stackdio/*
-
 omit =
-    */site-packages/*
-    */python2.7/*
     */migrations/*
+    */management/*
 
 [html]
 directory = htmlcov
