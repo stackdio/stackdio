@@ -6,7 +6,6 @@ machine:
     NOSE_WITH_XUNIT: 1
     NOSE_WITH_COVERAGE: 1
     NOSE_COVER_PACKAGE: stackdio
-    NOSE_COVER_INCLUSIVE: 1
     NOSE_COVER_BRANCHES: 1
 
 ## Customize dependencies
