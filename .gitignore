@@ -63,7 +63,6 @@ target/
 dev.db
 *.swp
 *.un~
-stackdio/server/core/static/stackdio-built.js
 stackdio/server/core/static/stackdio/bower_components
 stackdio/server/core/static/stackdio/node_modules
 stackdio/server/salt/user_states
@@ -79,7 +78,6 @@ salt-cloud.sh
 *.sublime-project
 *.sublime-workspace
 .codeintel
-find.sh
 
 # ldap_settings.py
 stackdio/server/stackdio/settings/ldap_settings.py
