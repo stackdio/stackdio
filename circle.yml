@@ -2,6 +2,13 @@ machine:
   python:
     version: '2.7'
 
+  environment:
+    NOSE_WITH_XUNIT: 1
+    NOSE_WITH_COVERAGE: 1
+    NOSE_COVER_PACKAGE: stackdio
+    NOSE_COVER_INCLUSIVE: 1
+    NOSE_COVER_BRANCHES: 1
+
 ## Customize dependencies
 dependencies:
   override:
@@ -16,7 +23,7 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python stackdio/server/manage.py test --with-xunit --with-coverage --cover-html --cover-package stackdio
+    - python stackdio/server/manage.py test --cover-html
 
   post:
     - mv nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
