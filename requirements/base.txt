@@ -1,4 +1,6 @@
-https://github.com/clarkperkins/django-guardian/releases/download/v1.2.6/django-guardian-1.2.6.tar.gz
+# Pull in our custom version of django-guardian first
+https://github.com/stackdio/django-guardian/releases/download/v1.2.6/django-guardian-1.2.6.tar.gz
+
 Django>=1.8.0,<1.9
 GitPython>=1.0
 Markdown>=2.6

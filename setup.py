@@ -22,10 +22,9 @@ from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
 
-if float("%d.%d" % sys.version_info[:2]) < 2.6:
-    print('Your Python version {0}.{1}.{2} is not supported.'.format(
-        *sys.version_info[:3]))
-    print('stackdio requires Python 2.6 or newer.')
+if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
+    print('Your Python version {0}.{1}.{2} is not supported.'.format(*sys.version_info[:3]))
+    print('stackdio requires Python 2.7 or newer.')
     sys.exit(1)
 
 # Grab the current version from our stackdio package
@@ -46,9 +45,17 @@ if os.path.isfile('README.md'):
 def load_pip_requirements(fp):
     reqs, deps = [], []
     for r in parse_requirements(fp, session=PipSession()):
-        if r.url is not None:
-            deps.append(str(r.url))
-        reqs.append(str(r.req))
+        # Support for all pip versions
+        if hasattr(r, 'link'):
+            # pip >= 6.0
+            if r.link is not None:
+                deps.append(str(r.link.url))
+        else:
+            # pip < 6.0
+            if r.url is not None:
+                deps.append(str(r.url))
+        if r.req is not None:
+            reqs.append(str(r.req))
     return reqs, deps
 
 if __name__ == "__main__":
