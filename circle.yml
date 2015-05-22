@@ -11,6 +11,7 @@ machine:
 ## Customize dependencies
 dependencies:
   override:
+    - pip install -r links.txt
     - pip install -r requirements/testing.txt
 
 ## Customize test commands

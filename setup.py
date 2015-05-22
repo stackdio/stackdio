@@ -43,25 +43,26 @@ if os.path.isfile('README.md'):
 
 
 def load_pip_requirements(fp):
-    reqs, deps = [], []
-    for r in parse_requirements(fp, session=PipSession()):
+    return [str(r.req) for r in parse_requirements(fp, session=PipSession())]
+
+
+def load_pip_links(fp):
+    deps = []
+    for d in parse_requirements(fp, session=PipSession()):
         # Support for all pip versions
-        if hasattr(r, 'link'):
+        if hasattr(d, 'link'):
             # pip >= 6.0
-            if r.link is not None:
-                deps.append(str(r.link.url))
+            deps.append(str(d.link.url))
         else:
             # pip < 6.0
-            if r.url is not None:
-                deps.append(str(r.url))
-        if r.req is not None:
-            reqs.append(str(r.req))
-    return reqs, deps
+            deps.append(str(d.url))
+    return deps
 
 if __name__ == "__main__":
     # build our list of requirements and dependency links based on our
     # requirements.txt file
-    reqs, deps = load_pip_requirements('requirements.txt')
+    reqs = load_pip_requirements('requirements.txt')
+    deps = load_pip_links('links.txt')
 
     # Call the setup method from setuptools that does all the heavy lifting
     # of packaging stackdio
