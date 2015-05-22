@@ -1,3 +1,4 @@
+https://github.com/clarkperkins/django-guardian/releases/download/v1.2.6/django-guardian-1.2.6.tar.gz
 Django>=1.8.0,<1.9
 GitPython>=1.0
 Markdown>=2.6
@@ -8,7 +9,7 @@ dj-database-url>=0.3
 django-auth-ldap>=1.2
 django-extensions>=1.5
 django-filter>=0.9
-django-guardian>=1.2
+django-guardian>=1.2.6
 django-model-utils>=2.0
 djangorestframework>=3.0
 envoy>=0.0.2
