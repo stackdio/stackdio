@@ -19,19 +19,15 @@
 import logging
 from urlparse import urlsplit, urlunsplit
 
+from django.contrib.auth import get_user_model
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from rest_framework.parsers import JSONParser
-from django.contrib.auth.models import User
 
+from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest
 from core.permissions import AdminOrOwnerOrPublicPermission
-from blueprints.serializers import BlueprintSerializer
 from cloud.serializers import CloudProviderSerializer
-from . import tasks
-from . import serializers
-from . import models
-from . import filters
+from . import filters, models, serializers, tasks
 
 
 logger = logging.getLogger(__name__)
@@ -43,14 +39,14 @@ class PasswordStr(unicode):
     """
     Used so that passwords aren't logged in the celery task log
     """
+
     def __repr__(self):
         return '*' * len(self)
 
 
+# TODO Rewrite the logic in this endpoint
 class FormulaListAPIView(generics.ListCreateAPIView):
-    model = models.Formula
     serializer_class = serializers.FormulaSerializer
-    parser_classes = (JSONParser,)
     filter_class = filters.FormulaFilter
 
     def get_queryset(self):
@@ -83,9 +79,9 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         errors = []
         for uri in uris:
             try:
-                self.model.objects.get(uri=uri, owner=self.get_user())
+                models.Formula.objects.get(uri=uri, owner=self.get_user())
                 errors.append('Duplicate formula detected: {0}'.format(uri))
-            except self.model.DoesNotExist:
+            except models.Formula.DoesNotExist:
                 pass
 
         if errors:
@@ -114,19 +110,19 @@ class FormulaListAPIView(generics.ListCreateAPIView):
                         parse_res.fragment
                     ))
 
-            formula_obj = self.model(
+            formula_obj = models.Formula(
                 public=public,
                 uri=uri,
                 git_username=git_username,
                 access_token=access_token,
-                status=self.model.IMPORTING,
+                status=models.Formula.IMPORTING,
                 status_detail='Importing formula...this could take a while.')
 
             self.pre_save(formula_obj)
             formula_obj.save()
 
             # Import using asynchronous task
-            tasks.import_formula.si(formula_obj.id, PasswordStr(git_password))()
+            tasks.import_formula.si(formula_obj.id, PasswordStr(git_password)).apply_async()
             formula_objs.append(formula_obj)
 
         return Response(self.get_serializer(formula_objs, many=True).data)
@@ -137,40 +133,31 @@ class GlobalOrchestrationFormulaListAPIView(FormulaListAPIView):
     filter_class = filters.FormulaFilter
 
     def get_user(self):
+        user_model = get_user_model()
         try:
-            return User.objects.get(username=GLOBAL_ORCHESTRATION_USER)
-        except User.DoesNotExist:
-            return User.objects.create(username=GLOBAL_ORCHESTRATION_USER, is_active=False)
+            return user_model.objects.get(username=GLOBAL_ORCHESTRATION_USER)
+        except user_model.DoesNotExist:
+            return user_model.objects.create(username=GLOBAL_ORCHESTRATION_USER, is_active=False)
 
 
 class FormulaPublicAPIView(generics.ListAPIView):
-    model = models.Formula
     serializer_class = serializers.FormulaSerializer
-    parser_classes = (JSONParser,)
     filter_class = filters.FormulaFilter
 
     def get_queryset(self):
-        return self.model.objects \
-            .filter(public=True) \
-            .exclude(owner=self.request.user)
+        return models.Formula.objects.filter(public=True).exclude(owner=self.request.user)
 
 
 class FormulaAdminListAPIView(generics.ListAPIView):
-    model = models.Formula
+    queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
     permission_classes = (permissions.IsAdminUser,)
     filter_class = filters.FormulaFilter
 
-    def get_queryset(self):
-        # Return all formulas except the ones for global orchestration
-        return self.model.objects.all()
-
 
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-
-    model = models.Formula
+    queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    parser_classes = (JSONParser,)
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission,)
 
@@ -206,7 +193,8 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             # Check for global orchestration components on this formula
             providers = set()
             for c in formula.components.all():
-                providers.update([i.provider for i in c.globalorchestrationformulacomponent_set.all()])
+                providers.update(
+                    [i.provider for i in c.globalorchestrationformulacomponent_set.all()])
 
             if providers:
                 providers = CloudProviderSerializer(providers,
@@ -221,7 +209,8 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             # Check for Blueprints depending on this formula
             blueprints = set()
             for c in formula.components.all():
-                blueprints.update([i.host.blueprint for i in c.blueprinthostformulacomponent_set.all()])
+                blueprints.update(
+                    [i.host.blueprint for i in c.blueprinthostformulacomponent_set.all()])
 
             if blueprints:
                 blueprints = BlueprintSerializer(blueprints,
@@ -238,24 +227,21 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):
-
-    model = models.Formula
+    queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaPropertiesSerializer
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission,)
 
 
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-
-    model = models.FormulaComponent
+    queryset = models.FormulaComponent.objects.all()
     serializer_class = serializers.FormulaComponentSerializer
-    parser_classes = (JSONParser,)
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission,)
 
 
-class FormulaActionAPIView(generics.SingleObjectAPIView):
-    model = models.Formula
+class FormulaActionAPIView(generics.GenericAPIView):
+    queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission)
@@ -289,6 +275,6 @@ class FormulaActionAPIView(generics.SingleObjectAPIView):
 
             formula.set_status(models.Formula.IMPORTING,
                                'Importing formula...this could take a while.')
-            tasks.update_formula.si(formula.id, PasswordStr(git_password))()
+            tasks.update_formula.si(formula.id, PasswordStr(git_password)).apply_async()
 
         return Response(self.get_serializer(formula).data)

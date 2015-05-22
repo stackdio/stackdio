@@ -21,23 +21,15 @@ import logging
 from decimal import Decimal
 
 from django.conf import settings
-from django.db import models
-from django.db import transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django_extensions.db.models import (
-    TimeStampedModel,
-    TitleSlugDescriptionModel,
-)
+from django.db import models, transaction
+from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
+from cloud.models import CloudProfile, CloudInstanceSize, CloudZone, Snapshot
 from core.fields import DeletingFileField
-from cloud.models import (
-    CloudProfile,
-    CloudInstanceSize,
-    CloudZone,
-    Snapshot
-)
 from formulas.models import FormulaComponent
+
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -63,7 +55,7 @@ def get_props_file_path(obj, filename):
 class BlueprintManager(models.Manager):
 
     # TODO: ignoring code complexity issues
-    @transaction.commit_on_success  # NOQA
+    @transaction.atomic  # NOQA
     def create(self, owner, data, **kwargs):
         """
         Custom blueprint creation
@@ -226,21 +218,23 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
                                       related_name='host_definitions')
 
     # The default number of instances to launch for this host definition
-    count = models.IntegerField()
+    count = models.IntegerField('Count')
 
     # The hostname template that will be used to generate the actual
     # hostname at launch time. Several template variables will be provided
     # when the template is rendered down to its final form
-    hostname_template = models.CharField(max_length=64)
+    hostname_template = models.CharField('Hostname Template', max_length=64)
 
     # The default instance size for the host
     size = models.ForeignKey('cloud.CloudInstanceSize')
 
     # The default availability zone for the host
+    # Only for EC2 classic
     zone = models.ForeignKey('cloud.CloudZone', null=True, blank=True)
 
     # The subnet id for VPC enabled providers
-    subnet_id = models.CharField(max_length=32, blank=True, default='')
+    # Only for EC2 VPC
+    subnet_id = models.CharField('Subnet ID', max_length=32, blank=True, default='')
 
     # The spot instance price for this host. If null, spot
     # instances will not be used for this host.
@@ -277,7 +271,7 @@ class BlueprintHostFormulaComponent(TimeStampedModel):
                              related_name='formula_components')
 
     # The order in which the component should be provisioned
-    order = models.IntegerField(default=0)
+    order = models.IntegerField('Order', default=0)
 
     def __unicode__(self):
         return u'{0}:{1}'.format(
@@ -302,19 +296,19 @@ class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
                              related_name='access_rules')
 
     # The protocol for the access rule. One of tcp, udp, or icmp
-    protocol = models.CharField(max_length=4, choices=PROTOCOL_CHOICES)
+    protocol = models.CharField('Protocol', max_length=4, choices=PROTOCOL_CHOICES)
 
     # The from and to ports define the range of ports to open for the
     # given protocol and rule string. To open a single port, the
     # from and to ports should be the same integer.
-    from_port = models.IntegerField()
-    to_port = models.IntegerField()
+    from_port = models.IntegerField('Start Port')
+    to_port = models.IntegerField('End Port')
 
     # Rule is a string specifying the CIDR for what network has access
     # to the given protocl and ports. For AWS, you may also specify
     # a rule of the form "owner_id:security_group", that will authorize
     # access to the given security group owned by the owner_id's account
-    rule = models.CharField(max_length=255)
+    rule = models.CharField('Rule', max_length=255)
 
     def __unicode__(self):
         return u'{0} {1}-{2} {3}'.format(
@@ -337,10 +331,10 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
                              related_name='volumes')
 
     # The device that the volume should be attached to when a stack is created
-    device = models.CharField(max_length=32, choices=DEVICE_ID_CHOICES)
+    device = models.CharField('Device Name', max_length=32, choices=DEVICE_ID_CHOICES)
 
     # Where the volume will be mounted after created and attached
-    mount_point = models.CharField(max_length=64)
+    mount_point = models.CharField('Mount Point', max_length=64)
 
     # The snapshot ID to create the volume from
     snapshot = models.ForeignKey('cloud.Snapshot',

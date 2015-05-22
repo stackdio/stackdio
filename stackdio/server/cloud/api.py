@@ -44,53 +44,54 @@ logger = logging.getLogger(__name__)
 
 
 class CloudProviderTypeListAPIView(generics.ListAPIView):
-    model = models.CloudProviderType
+    queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
-    model = models.CloudProviderType
+    queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
 
 
 class CloudProviderListAPIView(generics.ListCreateAPIView):
-    model = models.CloudProvider
+    queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
     filter_class = filters.CloudProviderFilter
 
-    def post_save(self, provider_obj, created=False):
+    def perform_create(self, serializer):
 
         data = self.request.DATA
         files = self.request.FILES
 
         # Lookup provider type
         try:
-            driver = provider_obj.get_driver()
+            obj = serializer.save()
+            driver = obj.get_driver()
 
-            # Levarage the driver to generate its required data that
+            # Leverage the driver to generate its required data that
             # will be serialized down to yaml and stored in both the database
             # and the salt cloud providers file
             provider_data = driver.get_provider_data(data, files)
 
             # Generate the yaml and store in the database
-            yaml_data = {}
-            yaml_data[provider_obj.slug] = provider_data
-            provider_obj.yaml = yaml.safe_dump(yaml_data,
-                                               default_flow_style=False)
-            provider_obj.save()
+            yaml_data = {
+                obj.slug: provider_data
+            }
+            obj.yaml = yaml.safe_dump(yaml_data, default_flow_style=False)
+            obj.save()
 
             # Update the salt cloud providers file
-            provider_obj.update_config()
+            obj.update_config()
 
         except models.CloudProviderType.DoesNotExist:
-            err_msg = 'Provider types does not exist.'
+            err_msg = 'Given provider type does not exist.'
             logger.exception(err_msg)
             raise BadRequest(err_msg)
 
 
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = models.CloudProvider
+    queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
@@ -117,13 +118,13 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
-    model = models.CloudInstanceSize
+    queryset = models.CloudInstanceSize.objects.all()
     serializer_class = serializers.CloudInstanceSizeSerializer
     filter_class = filters.CloudInstanceSizeFilter
 
 
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
-    model = models.CloudInstanceSize
+    queryset = models.CloudInstanceSize.objects.all()
     serializer_class = serializers.CloudInstanceSizeSerializer
 
 
@@ -139,8 +140,8 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         return self.get_provider().global_formula_components.all()
 
-    def pre_save(self, obj):
-        obj.provider = self.get_provider()
+    def perform_create(self, serializer):
+        serializer.save(provider=self.get_provider())
 
     def create(self, request, *args, **kwargs):
         component_id = request.DATA.get('component')
@@ -155,11 +156,10 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
             .create(request, *args, **kwargs)
 
 
-class GlobalOrchestrationComponentDetailAPIView(
-        generics.RetrieveUpdateDestroyAPIView):
+class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
-    model = models.GlobalOrchestrationFormulaComponent
+    queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
 
 
 class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
@@ -200,17 +200,18 @@ class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):
-    model = models.CloudProfile
+    queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
     filter_class = filters.CloudProfileFilter
 
-    def post_save(self, profile_obj, created=False):
-        profile_obj.update_config()
+    def perform_create(self, serializer):
+        obj = serializer.save()
+        obj.update_config()
 
 
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = models.CloudProfile
+    queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
@@ -251,52 +252,50 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
-    model = models.Snapshot
+    queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class SnapshotAdminListAPIView(generics.ListAPIView):
-    model = models.Snapshot
+    queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (permissions.IsAdminUser,)
-    queryset = model.objects.all()
 
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    model = models.Snapshot
+    queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (permissions.DjangoModelPermissions,)
 
 
 class CloudRegionListAPIView(generics.ListAPIView):
-    model = models.CloudRegion
+    queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
     filter_class = filters.CloudRegionFilter
 
 
 class CloudRegionDetailAPIView(generics.RetrieveAPIView):
-    model = models.CloudRegion
+    queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
 
 
 class CloudRegionZoneListAPIView(generics.ListAPIView):
-    model = models.CloudZone
     serializer_class = serializers.CloudZoneSerializer
     filter_class = filters.CloudZoneFilter
 
     def get_queryset(self):
-        return self.model.objects.filter(region__id=self.kwargs['pk'])
+        return models.CloudZone.objects.filter(region__id=self.kwargs['pk'])
 
 
 class CloudZoneListAPIView(generics.ListAPIView):
-    model = models.CloudZone
+    queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
     filter_class = filters.CloudZoneFilter
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):
-    model = models.CloudZone
+    queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
 
 
@@ -333,7 +332,6 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                     this property may only be set by an admin.
     """
 
-    model = models.SecurityGroup
     serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
     filter_class = filters.SecurityGroupFilter
@@ -346,7 +344,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         # if admin, get them all
         if self.request.user.is_superuser:
-            return self.model.objects.all().with_rules()
+            return models.SecurityGroup.objects.all().with_rules()
 
         # if user, only get what they own
         else:
@@ -389,9 +387,9 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
                 logger.debug('Security group already exists on the '
                              'provider: {0!r}'.format(provider_group))
 
-            except (KeyError):
+            except KeyError:
                 raise
-            except Exception:
+            except:
                 # doesn't exist on the provider either, we'll create it now
                 provider_group = None
 
@@ -452,7 +450,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     and then delete it.
     """
 
-    model = models.SecurityGroup
+    queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupSerializer
     parser_classes = (parsers.JSONParser,)
     # Only admins are allowed write access
@@ -559,7 +557,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
     field's value to be "revoke"
     """
 
-    model = models.SecurityGroup
+    queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupRuleSerializer
     parser_classes = (parsers.JSONParser,)
     permission_classes = (permissions.IsAuthenticated,
@@ -705,5 +703,5 @@ class CloudProviderVPCSubnetListAPIView(generics.ListAPIView):
 
         subnets = driver.get_vpc_subnets()
         return Response({
-            'results': serializers.VPCSubnetSerializer(subnets).data
+            'results': serializers.VPCSubnetSerializer(subnets, many=True).data
         })

@@ -124,7 +124,7 @@ class StatusDetailModel(model_utils.models.StatusModel):
 
 class StackManager(models.Manager):
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def create_stack(self, owner, blueprint, **data):
         """
         """
@@ -229,11 +229,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
-    namespace = models.CharField(max_length=64, blank=True)
+    namespace = models.CharField('Namespace', max_length=64, blank=True)
 
     # is this stack publicly available -- meaning it can be found by other
     # users and will remain in read-only mode to them
-    public = models.BooleanField(default=False)
+    public = models.BooleanField('Public', default=False)
 
     # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(
@@ -1041,16 +1041,16 @@ class StackAction(TimeStampedModel, model_utils.models.StatusModel):
     stack = models.ForeignKey('Stack', related_name='actions')
 
     # The started executing
-    start = models.DateTimeField()
+    start = models.DateTimeField('Start Time')
 
     # Type of action (custom, launch, etc)
-    type = models.CharField(max_length=50)
+    type = models.CharField('Action Type', max_length=50)
 
     # Which hosts we want to target
-    host_target = models.CharField(max_length=255)
+    host_target = models.CharField('Host Target', max_length=255)
 
     # The command to be run (for custom actions)
-    command = models.TextField()
+    command = models.TextField('Command')
 
     # The output from the action
     std_out_storage = models.TextField()
@@ -1110,7 +1110,7 @@ class Host(TimeStampedModel, StatusDetailModel):
                                           null=True,
                                           related_name='hosts')
 
-    subnet_id = models.CharField(max_length=32, blank=True, default='')
+    subnet_id = models.CharField('Subnet ID', max_length=32, blank=True, default='')
 
     blueprint_host_definition = models.ForeignKey(
         'blueprints.BlueprintHostDefinition',
@@ -1120,42 +1120,44 @@ class Host(TimeStampedModel, StatusDetailModel):
         'blueprints.BlueprintHostFormulaComponent',
         related_name='hosts')
 
-    hostname = models.CharField(max_length=64)
+    hostname = models.CharField('Hostname', max_length=64)
 
-    index = models.IntegerField()
+    index = models.IntegerField('Index')
 
     security_groups = models.ManyToManyField('cloud.SecurityGroup',
                                              related_name='hosts')
 
     # The machine state as provided by the cloud provider
-    state = models.CharField(max_length=32, default='unknown')
-    state_reason = models.CharField(max_length=255, default='', blank=True)
+    state = models.CharField('State', max_length=32, default='unknown')
+    state_reason = models.CharField('State Reason', max_length=255, default='', blank=True)
 
     # This must be updated automatically after the host is online.
     # After salt-cloud has launched VMs, we will need to look up
     # the DNS name set by whatever cloud provider is being used
     # and set it here
-    provider_dns = models.CharField(max_length=64, blank=True)
-    provider_private_dns = models.CharField(max_length=64, blank=True)
-    provider_private_ip = models.CharField(max_length=64, blank=True)
+    provider_dns = models.CharField('Provider DNS', max_length=64, blank=True)
+    provider_private_dns = models.CharField('Provider Private DNS', max_length=64, blank=True)
+    provider_private_ip = models.CharField('Provider Private IP Address', max_length=64, blank=True)
 
     # The FQDN for the host. This includes the hostname and the
     # domain if it was registered with DNS
-    fqdn = models.CharField(max_length=255, blank=True)
+    fqdn = models.CharField('FQDN', max_length=255, blank=True)
 
     # Instance id of the running host. This is provided by the cloud
     # provider
-    instance_id = models.CharField(max_length=32, blank=True)
+    instance_id = models.CharField('Instance ID', max_length=32, blank=True)
 
     # Spot instance request ID will be populated when metadata is refreshed
     # if the host has been configured to launch spot instances. By default,
     # it will be unknown and will be set to NA if spot instances were not
     # used.
-    sir_id = models.CharField(max_length=32,
+    sir_id = models.CharField('SIR ID',
+                              max_length=32,
                               default='unknown')
 
     # The spot instance price for this host if using spot instances
-    sir_price = models.DecimalField(max_digits=5,
+    sir_price = models.DecimalField('Spot Price',
+                                    max_digits=5,
                                     decimal_places=2,
                                     null=True)
 

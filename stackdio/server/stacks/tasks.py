@@ -15,35 +15,34 @@
 # limitations under the License.
 #
 
-
-import time
-import os
-import shutil
-from datetime import datetime
 import json
 import logging
+import os
+import shutil
+import time
+from datetime import datetime
 
 import envoy
-import celery
 import yaml
-from celery.result import AsyncResult
-from celery.utils.log import get_task_logger
-from django.conf import settings
 import salt.client
 import salt.cloud
 import salt.config
 import salt.runner
+from celery import shared_task
+from celery.result import AsyncResult
+from celery.utils.log import get_task_logger
+from django.conf import settings
 
+from cloud.models import SecurityGroup
+from core.exceptions import BadRequest
 from volumes.models import Volume
-import stacks.utils
-from stacks.models import (
+from . import utils
+from .models import (
     Stack,
     Level,
     StackAction,
     Host,
 )
-from cloud.models import SecurityGroup
-from core.exceptions import BadRequest
 
 
 logger = get_task_logger(__name__)
@@ -139,7 +138,7 @@ def state_error(state_str, state_meta):
     return err, is_recoverable(err)
 
 
-@celery.task(name='stacks.handle_error')
+@shared_task(name='stacks.handle_error')
 def handle_error(stack_id, task_id):
     logger.debug('stack_id: {0}'.format(stack_id))
     logger.debug('task_id: {0}'.format(task_id))
@@ -150,7 +149,7 @@ def handle_error(stack_id, task_id):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.launch_hosts')  # NOQA
+@shared_task(name='stacks.launch_hosts')  # NOQA
 def launch_hosts(stack_id, parallel=True, max_retries=2,
                  simulate_launch_failures=False, simulate_zombies=False,
                  simulate_ssh_failures=False, failure_percent=0.3):
@@ -191,7 +190,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         stack = Stack.objects.get(id=stack_id)
         hosts = stack.get_hosts()
         num_hosts = len(hosts)
-        log_file = stacks.utils.get_salt_cloud_log_file(stack, 'launch')
+        log_file = utils.get_salt_cloud_log_file(stack, 'launch')
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
         logger.info('Log file: {0}'.format(log_file))
@@ -250,9 +249,9 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
             if simulate_launch_failures:
                 n = int(len(hosts) * failure_percent)
                 logger.info('Simulating failures on {0} host(s).'.format(n))
-                stacks.utils.mod_hosts_map(stack,
-                                           n,
-                                           private_key='/tmp/bogus-key-file')
+                utils.mod_hosts_map(stack,
+                                    n,
+                                    private_key='/tmp/bogus-key-file')
 
             # Modify the map file to inject a real key file, but one that
             # will not auth via SSH
@@ -264,13 +263,13 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 n = int(len(hosts) * failure_percent)
                 logger.info('Simulating SSH failures on {0} host(s).'
                             ''.format(n))
-                stacks.utils.mod_hosts_map(stack,
-                                           n,
-                                           private_key=bogus_key)
+                utils.mod_hosts_map(stack,
+                                    n,
+                                    private_key=bogus_key)
 
-            cmd = stacks.utils.get_launch_command(stack,
-                                                  log_file,
-                                                  parallel=parallel)
+            cmd = utils.get_launch_command(stack,
+                                           log_file,
+                                           parallel=parallel)
 
             if parallel:
                 logger.info('Launching hosts in PARALLEL mode.')
@@ -287,7 +286,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
             # Remove the failure modifications if necessary
             if simulate_launch_failures:
                 logger.debug('Removing failure simulation modifications.')
-                stacks.utils.unmod_hosts_map(stack, 'private_key')
+                utils.unmod_hosts_map(stack, 'private_key')
                 simulate_launch_failures = False
 
             # Start verifying hosts were launched and all are available
@@ -308,10 +307,10 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
                 # First we'll attempt to SSH to all zombie nodes and terminate
                 # the unsuccessful ones so we can relaunch them
-                zombies = stacks.utils.find_zombie_hosts(stack)
+                zombies = utils.find_zombie_hosts(stack)
                 terminate_list = []
                 if zombies is not None and zombies.count() > 0:
-                    check_ssh_results = stacks.utils.check_for_ssh(
+                    check_ssh_results = utils.check_for_ssh(
                         stack, zombies)
                     if check_ssh_results:
                         for ssh_ok, host in check_ssh_results:
@@ -339,15 +338,15 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                                 Level.WARN)
 
                             # terminate the unresponsive zombie hosts
-                            stacks.utils.terminate_hosts(stack, terminate_list)
+                            utils.terminate_hosts(stack, terminate_list)
 
                 # Revert SSH failure simulation after we've found the SSH
                 # issues and terminated the hosts
                 if simulate_ssh_failures:
                     logger.debug('Reverting SSH failure simulation '
                                  'modifications.')
-                    stacks.utils.unmod_hosts_map(stack,
-                                                 'private_key')
+                    utils.unmod_hosts_map(stack,
+                                          'private_key')
                     simulate_ssh_failures = False
 
                 # The map data structure gives us the list of hosts that
@@ -356,7 +355,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 # we don't have to actually wait for those hosts to die
                 # because salt-cloud renames them and will not consider
                 # them available.
-                dmap = stacks.utils.get_stack_map_data(stack)
+                dmap = utils.get_stack_map_data(stack)
 
                 if 'create' in dmap and len(dmap['create']) > 0:
                     failed_hosts = dmap['create'].keys()
@@ -397,7 +396,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 if simulate_zombies:
                     n = int(len(hosts) * failure_percent)
                     logger.info('Simulating zombies on {0} host(s).'.format(n))
-                    stacks.utils.create_zombies(stack, n)
+                    utils.create_zombies(stack, n)
 
                 # Look for errors if we got valid JSON
                 errors = set()
@@ -466,7 +465,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
             # go through
             stack.set_status(launch_hosts.name, Stack.FINISHED, 'Finished launching hosts.')
 
-    except Stack.DoesNotExist, e:
+    except Stack.DoesNotExist:
         err_msg = 'Unknown stack id {0}'.format(stack_id)
         logger.exception(err_msg)
         raise StackTaskException(err_msg)
@@ -482,7 +481,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.cure_zombies')  # NOQA
+@shared_task(name='stacks.cure_zombies')  # NOQA
 def cure_zombies(stack_id, max_retries=2):
     """
     Attempts to detect zombie hosts, or those hosts in the stack that are
@@ -494,6 +493,7 @@ def cure_zombies(stack_id, max_retries=2):
     @ param stack_id (int) -
     @ param max_retries (int) -
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
 
@@ -502,7 +502,7 @@ def cure_zombies(stack_id, max_retries=2):
             current_try += 1
 
             # Attempt to find zombie hosts
-            zombies = stacks.utils.find_zombie_hosts(stack)
+            zombies = utils.find_zombie_hosts(stack)
 
             if zombies is None or zombies.count() == 0:
                 break
@@ -530,7 +530,7 @@ def cure_zombies(stack_id, max_retries=2):
                         current_try,
                         max_retries + 1),
                     Level.WARN)
-                stacks.utils.bootstrap_hosts(
+                utils.bootstrap_hosts(
                     stack,
                     zombies,
                     parallel=True
@@ -552,7 +552,7 @@ def cure_zombies(stack_id, max_retries=2):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -562,10 +562,10 @@ def cure_zombies(stack_id, max_retries=2):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.update_metadata')  # NOQA
+@shared_task(name='stacks.update_metadata')  # NOQA
 def update_metadata(stack_id, host_ids=None, remove_absent=True):
+    stack = None
     try:
-
         # All hosts are running (we hope!) so now we can pull the various
         # metadata and store what we want to keep track of.
 
@@ -602,9 +602,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                 is_absent = host_data == 'Absent'
 
                 # Check for terminated host state
-                if is_absent or ('state' in host_data
-                                 and host_data['state'] in bad_states):
-
+                if is_absent or ('state' in host_data and host_data['state'] in bad_states):
                     if is_absent and remove_absent:
                         hosts_to_remove.append(host)
                         continue
@@ -669,11 +667,11 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                             volume.save()
                             bdm_updated = True
 
-                    except Volume.DoesNotExist, e:
+                    except Volume.DoesNotExist:
                         # This is most likely fine. Usually means that the
                         # EBS volume for the root drive was found instead.
                         pass
-                    except Exception, e:
+                    except Exception:
                         err_msg = ('Unhandled exception while updating volume '
                                    'metadata.')
                         logger.exception(err_msg)
@@ -700,7 +698,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -710,7 +708,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         raise
 
 
-@celery.task(name='stacks.tag_infrastructure')
+@shared_task(name='stacks.tag_infrastructure')
 def tag_infrastructure(stack_id, host_ids=None):
     """
     Tags hosts and volumes with certain metadata that should prove useful
@@ -720,6 +718,7 @@ def tag_infrastructure(stack_id, host_ids=None):
     the `update_metadata` task as that task actually pulls in information
     we need to use the tagging API effectively.
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
 
@@ -743,7 +742,7 @@ def tag_infrastructure(stack_id, host_ids=None):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -753,12 +752,13 @@ def tag_infrastructure(stack_id, host_ids=None):
         raise
 
 
-@celery.task(name='stacks.register_dns')
+@shared_task(name='stacks.register_dns')
 def register_dns(stack_id, host_ids=None):
     """
     Must be ran after a Stack is up and running and all host information has
     been pulled and stored in the database.
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Registering DNS for stack: {0!r}'.format(stack))
@@ -778,7 +778,7 @@ def register_dns(stack_id, host_ids=None):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -788,7 +788,7 @@ def register_dns(stack_id, host_ids=None):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.ping')  # NOQA
+@shared_task(name='stacks.ping')  # NOQA
 def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
     """
     Attempts to use salt's test.ping module to ping the entire stack
@@ -804,6 +804,7 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
                    The timeout does not affect this parameter.
     @raises StackTaskException
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         required_hosts = set([h.hostname for h in stack.get_hosts()])
@@ -819,14 +820,16 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
                 settings.STACKDIO_CONFIG.salt_config_root),
             '--out=yaml',
             '-G stack_id:{0}'.format(stack_id),  # target the nodes in this
-                                                 # stack only
-            'test.ping',                         # ping all VMs
+            # stack only
+            'test.ping',  # ping all VMs
         ]
 
         # Execute until successful, failing after a few attempts
         cmd = ' '.join(cmd_args)
         failures = 0
         duration = timeout
+
+        result_yaml = {}
 
         while True:
             result = envoy.run(str(cmd))
@@ -847,14 +850,13 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
                         failures += 1
                         logger.debug('The following hosts did not respond to '
                                      'the ping request: {0}; Total failures: '
-                                     '{1}'.format(
-                                         missing_hosts,
-                                         failures))
+                                     '{1}'.format(missing_hosts,
+                                                  failures))
 
                     if result_yaml:
                         break
 
-                except Exception, e:
+                except Exception:
                     failures += 1
                     logger.debug('Unable to parse YAML from envoy results. '
                                  'Total failures: {0}'.format(failures))
@@ -878,7 +880,7 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
 
         # make sure all hosts reported a successful ping
         false_hosts = []
-        for host, value in result_yaml.iteritems():
+        for host, value in result_yaml.items():
             if isinstance(value, bool) and not value:
                 false_hosts.append(host)
 
@@ -894,7 +896,7 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -903,8 +905,9 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
         raise
 
 
-@celery.task(name='stacks.sync_all')
+@shared_task(name='stacks.sync_all')
 def sync_all(stack_id):
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
@@ -919,8 +922,8 @@ def sync_all(stack_id):
             '--config-dir={0}'.format(
                 settings.STACKDIO_CONFIG.salt_config_root),
             '-G stack_id:{0}'.format(stack_id),  # target the nodes in this
-                                                 # stack only
-            'saltutil.sync_all',                 # sync all systems
+            # stack only
+            'saltutil.sync_all',  # sync all systems
         ]
 
         # Execute
@@ -936,9 +939,8 @@ def sync_all(stack_id):
             err_msg = result.std_err if result.std_err else result.std_out
             stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
             raise StackTaskException('Error syncing salt data on stack {0}: '
-                                     '{1!r}'.format(
-                                         stack_id,
-                                         err_msg))
+                                     '{1!r}'.format(stack_id,
+                                                    err_msg))
 
         stack.set_status(sync_all.name, Stack.CONFIGURING,
                          'Finished synchronizing salt systems on all hosts.')
@@ -946,7 +948,7 @@ def sync_all(stack_id):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -956,7 +958,7 @@ def sync_all(stack_id):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.highstate')  # NOQA
+@shared_task(name='stacks.highstate')  # NOQA
 def highstate(stack_id, max_retries=2):
     """
     Executes the state.top function using the custom top file generated via
@@ -970,6 +972,7 @@ def highstate(stack_id, max_retries=2):
     by the SLS. I don't see this as a problem right now, but something we
     might have to tackle in the future if someone were to need that.
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         num_hosts = len(stack.get_hosts())
@@ -1005,7 +1008,7 @@ def highstate(stack_id, max_retries=2):
 
             # "touch" the log file and symlink it to the latest
             for l in (log_file, err_file):
-                with open(l, 'w') as f:
+                with open(l, 'w') as _:
                     pass
             symlink(log_file, log_symlink)
             symlink(err_file, err_symlink)
@@ -1087,10 +1090,10 @@ def highstate(stack_id, max_retries=2):
                         continue
 
                     err_msg = 'Core provisioning errors on hosts: ' \
-                        '{0}. Please see the provisioning errors API ' \
-                        'or the log file for more details: {1}'.format(
-                            ', '.join(errors.keys()),
-                            os.path.basename(log_file))
+                              '{0}. Please see the provisioning errors API ' \
+                              'or the log file for more details: {1}'.format(
+                                  ', '.join(errors.keys()),
+                                  os.path.basename(log_file))
                     stack.set_status(highstate.name,
                                      Stack.ERROR,
                                      err_msg,
@@ -1106,7 +1109,7 @@ def highstate(stack_id, max_retries=2):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1120,7 +1123,7 @@ def change_pillar(stack_id, new_pillar_file):
         settings.STACKDIO_CONFIG.salt_config_root, 'master'))
 
     # From the testing I've done, this also automatically refreshes the pillar
-    ret = salt_client.cmd_iter(
+    salt_client.cmd_iter(
         'stack_id:{0}'.format(stack_id),
         'grains.setval',
         [
@@ -1130,15 +1133,15 @@ def change_pillar(stack_id, new_pillar_file):
         expr_form='grain',
     )
 
-    for res in ret:
-        for minion, state_ret in res.items():
-            # Want to do error checking, but don't know what errors look
-            # like in this case
-            pass
+    # TODO Want to do error checking, but don't know what errors look
+    # like in this case
+    # for res in ret:
+    #     for minion, state_ret in res.items():
+    #         pass
 
 
 # TODO: Ignoring code complexity issues
-@celery.task(name='stacks.global_orchestrate')  # NOQA
+@shared_task(name='stacks.global_orchestrate')  # NOQA
 def global_orchestrate(stack_id, max_retries=2):
     """
     Executes the runners.state.over function with the custom overstate
@@ -1146,6 +1149,7 @@ def global_orchestrate(stack_id, max_retries=2):
     will target the __stackdio__ user's environment and provision the hosts with
     the formulas defined in the global orchestration.
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing global orchestration for stack: {0!r}'.format(stack))
@@ -1188,7 +1192,7 @@ def global_orchestrate(stack_id, max_retries=2):
             err_symlink = os.path.join(root_dir, 'global_orchestration.err.latest')
 
             for l in (log_file, err_file):
-                with open(l, 'w') as f:
+                with open(l, 'w') as _:
                     pass
             symlink(log_file, log_symlink)
             symlink(err_file, err_symlink)
@@ -1220,10 +1224,9 @@ def global_orchestrate(stack_id, max_retries=2):
                     to_print.setdefault(host, []).append(stage_result)
                     if isinstance(stage_result, list):
                         for err in stage_result:
-                            errors.setdefault(host, []) \
-                                .append({
-                                    'error': err
-                                })
+                            errors.setdefault(host, []).append({
+                                'error': err
+                            })
                         continue
 
                     # iterate over the individual states in the
@@ -1264,11 +1267,11 @@ def global_orchestrate(stack_id, max_retries=2):
                     continue
 
                 err_msg = 'Global Orchestration errors on hosts: ' \
-                    '{0}. Please see the global orchestration errors ' \
-                    'API or the global orchestration log file for more ' \
-                    'details: {1}'.format(
-                        ', '.join(errors.keys()),
-                        os.path.basename(log_file))
+                          '{0}. Please see the global orchestration errors ' \
+                          'API or the global orchestration log file for more ' \
+                          'details: {1}'.format(
+                              ', '.join(errors.keys()),
+                              os.path.basename(log_file))
                 stack.set_status(global_orchestrate.name,
                                  Stack.ERROR,
                                  err_msg,
@@ -1284,7 +1287,7 @@ def global_orchestrate(stack_id, max_retries=2):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1294,7 +1297,7 @@ def global_orchestrate(stack_id, max_retries=2):
 
 
 # TODO: Ignoring code complexity issues
-@celery.task(name='stacks.orchestrate')  # NOQA
+@shared_task(name='stacks.orchestrate')  # NOQA
 def orchestrate(stack_id, max_retries=2):
     """
     Executes the runners.state.over function with the custom overstate
@@ -1308,6 +1311,7 @@ def orchestrate(stack_id, max_retries=2):
     will need to support executing multiple overstate files in different
     environments.
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing orchestration for stack: {0!r}'.format(stack))
@@ -1350,7 +1354,7 @@ def orchestrate(stack_id, max_retries=2):
             err_symlink = os.path.join(root_dir, 'orchestration.err.latest')
 
             for l in (log_file, err_file):
-                with open(l, 'w') as f:
+                with open(l, 'w') as _:
                     pass
             symlink(log_file, log_symlink)
             symlink(err_file, err_symlink)
@@ -1384,10 +1388,9 @@ def orchestrate(stack_id, max_retries=2):
                     # to_print.setdefault(host, []).append(stage_result)
                     if isinstance(stage_result, list):
                         for err in stage_result:
-                            errors.setdefault(host, []) \
-                                .append({
-                                    'error': err
-                                })
+                            errors.setdefault(host, []).append({
+                                'error': err
+                            })
                         continue
 
                     if 'result' in stage_result and not stage_result['result']:
@@ -1434,11 +1437,11 @@ def orchestrate(stack_id, max_retries=2):
                     continue
 
                 err_msg = 'Orchestration errors on hosts: ' \
-                    '{0}. Please see the orchestration errors ' \
-                    'API or the orchestration log file for more ' \
-                    'details: {1}'.format(
-                        ', '.join(errors.keys()),
-                        os.path.basename(log_file))
+                          '{0}. Please see the orchestration errors ' \
+                          'API or the orchestration log file for more ' \
+                          'details: {1}'.format(
+                              ', '.join(errors.keys()),
+                              os.path.basename(log_file))
                 stack.set_status(orchestrate.name,
                                  Stack.ERROR,
                                  err_msg,
@@ -1454,7 +1457,7 @@ def orchestrate(stack_id, max_retries=2):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1463,8 +1466,9 @@ def orchestrate(stack_id, max_retries=2):
         raise
 
 
-@celery.task(name='stacks.finish_stack')
+@shared_task(name='stacks.finish_stack')
 def finish_stack(stack_id):
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Finishing stack: {0!r}'.format(stack))
@@ -1482,7 +1486,7 @@ def finish_stack(stack_id):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1491,13 +1495,14 @@ def finish_stack(stack_id):
         raise
 
 
-@celery.task(name='stacks.register_volume_delete')
+@shared_task(name='stacks.register_volume_delete')
 def register_volume_delete(stack_id, host_ids=None):
     """
     Modifies the instance attributes for the volumes in a stack (or host_ids)
     that will automatically delete the volumes when the machines are
     terminated.
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         stack.set_status(finish_stack.name, Stack.DESTROYING,
@@ -1513,10 +1518,10 @@ def register_volume_delete(stack_id, host_ids=None):
         stack.set_status(finish_stack.name, Stack.DESTROYING,
                          'Finished registering volumes for deletion.')
 
-    except Stack.DoesNotExist, e:
+    except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1526,7 +1531,7 @@ def register_volume_delete(stack_id, host_ids=None):
 
 
 # TODO: Ignoring code complexity issues for now
-@celery.task(name='stacks.destroy_hosts')  # NOQA
+@shared_task(name='stacks.destroy_hosts')  # NOQA
 def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                   delete_security_groups=True, parallel=True):
     """
@@ -1534,6 +1539,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
     is set. After all hosts have been destroyed we must also clean
     up any managed security groups on the stack.
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         stack.set_status(destroy_hosts.name, Stack.TERMINATING,
@@ -1545,9 +1551,9 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
             # Build up the salt-cloud command
             cmd_args = [
                 'salt-cloud',
-                '-y',                   # assume yes
-                '-d',                   # destroy argument
-                '--out=yaml',           # output in JSON
+                '-y',  # assume yes
+                '-d',  # destroy argument
+                '--out=yaml',  # output in JSON
                 '--config-dir={0}'.format(
                     settings.STACKDIO_CONFIG.salt_config_root
                 )
@@ -1671,10 +1677,11 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         raise
 
 
-@celery.task(name='stacks.destroy_stack')
+@shared_task(name='stacks.destroy_stack')
 def destroy_stack(stack_id):
     """
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         stack.set_status(destroy_stack.name, Stack.DESTROYING,
@@ -1694,7 +1701,7 @@ def destroy_stack(stack_id):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1703,13 +1710,14 @@ def destroy_stack(stack_id):
         raise
 
 
-@celery.task(name='stacks.unregister_dns')
+@shared_task(name='stacks.unregister_dns')
 def unregister_dns(stack_id, host_ids=None):
     """
     Removes all host information from DNS. Intended to be used just before a
     stack is terminated or stopped or put into some state where DNS no longer
     applies.
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
@@ -1730,7 +1738,7 @@ def unregister_dns(stack_id, host_ids=None):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1739,12 +1747,13 @@ def unregister_dns(stack_id, host_ids=None):
         raise
 
 
-@celery.task(name='stacks.execute_action')
+@shared_task(name='stacks.execute_action')
 def execute_action(stack_id, action, *args, **kwargs):
     """
     Executes a defined action using the stack's cloud provider implementation.
     Actions are defined on the implementation class (e.g, _action_{action})
     """
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing action \'{0}\' on stack: {1!r}'.format(
@@ -1760,7 +1769,7 @@ def execute_action(stack_id, action, *args, **kwargs):
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException:
         raise
     except Exception, e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
@@ -1769,7 +1778,7 @@ def execute_action(stack_id, action, *args, **kwargs):
         raise
 
 
-@celery.task(name='stacks.custom_action')
+@shared_task(name='stacks.custom_action')
 def custom_action(action_id, host_target, command):
     action = StackAction.objects.get(id=action_id)
 

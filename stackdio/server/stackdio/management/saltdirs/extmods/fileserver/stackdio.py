@@ -27,12 +27,12 @@ NOTE: Most of this was taken from salt's fileserver.roots module and
 adapted to work in the manner described above.
 """
 
+# Import python libs
+import logging
+import os
+
 if '__opts__' not in globals():
     __opts__ = {}
-
-# Import python libs
-import os
-import logging
 
 try:
     import fcntl
@@ -42,9 +42,9 @@ except ImportError:
     HAS_FCNTL = False
 
 # Import salt libs
-import salt.fileserver
-import salt.utils
-from salt.utils.event import tagify
+import salt.fileserver  # NOQA
+import salt.utils  # NOQA
+from salt.utils.event import tagify  # NOQA
 
 log = logging.getLogger(__name__)
 

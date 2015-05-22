@@ -20,20 +20,30 @@ import logging
 
 from rest_framework import serializers
 
+from core.utils import recursive_update
+
 from . import models
 
 logger = logging.getLogger(__name__)
 
 
 class BlueprintPropertiesSerializer(serializers.Serializer):
-    def to_native(self, obj):
+    def to_representation(self, obj):
         if obj is not None:
             return obj.properties
         return {}
 
+    def to_internal_value(self, data):
+        return data
+
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        return recursive_update(instance, validated_data)
+
 
 class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.BlueprintAccessRule
         fields = (
@@ -45,7 +55,6 @@ class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
 
 
 class BlueprintVolumeSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.BlueprintVolume
         fields = (
@@ -55,13 +64,12 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
         )
 
 
-class BlueprintHostFormulaComponentSerializer(
-        serializers.HyperlinkedModelSerializer):
-    title = serializers.Field(source='component.title')
-    description = serializers.Field(source='component.description')
-    formula = serializers.Field(source='component.formula')
-    component_id = serializers.Field(source='component.id')
-    sls_path = serializers.Field(source='component.sls_path')
+class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+    title = serializers.ReadOnlyField(source='component.title')
+    description = serializers.ReadOnlyField(source='component.description')
+    formula = serializers.PrimaryKeyRelatedField(read_only=True, source='component.formula')
+    component_id = serializers.ReadOnlyField(source='component.id')
+    sls_path = serializers.ReadOnlyField(source='component.sls_path')
 
     class Meta:
         model = models.BlueprintHostFormulaComponent
@@ -75,9 +83,7 @@ class BlueprintHostFormulaComponentSerializer(
         )
 
 
-class BlueprintHostDefinitionSerializer(
-        serializers.HyperlinkedModelSerializer):
-
+class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
     formula_components = BlueprintHostFormulaComponentSerializer(many=True)
     access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
     volumes = BlueprintVolumeSerializer(many=True)
@@ -102,11 +108,11 @@ class BlueprintHostDefinitionSerializer(
 
 
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
-    owner = serializers.Field()
-    properties = serializers.HyperlinkedIdentityField(
-        view_name='blueprint-properties')
-    host_definitions = BlueprintHostDefinitionSerializer(many=True,
-                                                         required=False)
+    # Read only fields
+    owner = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
+    host_definitions = BlueprintHostDefinitionSerializer(many=True)
 
     class Meta:
         model = models.Blueprint

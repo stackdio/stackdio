@@ -18,21 +18,19 @@
 
 from django.db import models
 
-from south.modelsinspector import add_introspection_rules
-
 
 class DeletingFileField(models.FileField):
     """
     Borrowed from: https://gist.github.com/889692
 
-    FileField subclass that deletes the refernced file when the model object
+    FileField subclass that deletes the referenced file when the model object
     itself is deleted.
 
     WARNING: Be careful using this class - it can cause data loss! This class
     makes at attempt to see if the file's referenced elsewhere, but it can get
     it wrong in any number of cases.
     """
-    def contribute_to_class(self, cls, name):
+    def contribute_to_class(self, cls, name, **kwargs):
         super(DeletingFileField, self).contribute_to_class(cls, name)
         models.signals.post_delete.connect(self.delete_file, sender=cls)
 
@@ -47,6 +45,3 @@ class DeletingFileField(models.FileField):
         elif file:
             # Otherwise, just close the file, so it doesn't tie up resources.
             file.close()
-
-# South migration stuff for custom DeletingFileField
-add_introspection_rules([], ["^core\.fields\.DeletingFileField"])

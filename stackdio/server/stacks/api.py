@@ -16,50 +16,41 @@
 #
 
 
+import StringIO
 import logging
+import zipfile
 from datetime import datetime
 from operator import or_
 from os import listdir
 from os.path import join, isfile
-import zipfile
-import StringIO
 
-import salt.cloud
 import envoy
+import salt.cloud
 import yaml
-from django.shortcuts import get_object_or_404
-from django.http import HttpResponse
-from rest_framework import (
-    generics,
-    parsers,
-    permissions,
-    status,
-)
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.reverse import reverse
-from rest_framework.decorators import api_view
 from django.conf import settings
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, parsers, permissions, status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
+from blueprints.models import Blueprint, BlueprintHostDefinition
+from cloud.filters import SecurityGroupFilter
+from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
+from core.permissions import AdminOrOwnerPermission, AdminOrOwnerOrPublicPermission
 from core.renderers import PlainTextRenderer
-from core.permissions import (
-    AdminOrOwnerPermission,
-    AdminOrOwnerOrPublicPermission,
-)
 from volumes.api import VolumeListAPIView
 from volumes.models import Volume
-from blueprints.models import Blueprint, BlueprintHostDefinition
-from cloud.providers.base import BaseCloudProvider
-from cloud.models import SecurityGroup
-from cloud.filters import SecurityGroupFilter
-from . import tasks, models, serializers, filters, validators, workflows
+from . import filters, models, serializers, tasks, validators, workflows
 
 
 logger = logging.getLogger(__name__)
 
 
-class PublicStackMixin(object):
+class PublicStackMixin(generics.GenericAPIView):
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerOrPublicPermission,)
 
@@ -70,36 +61,28 @@ class PublicStackMixin(object):
 
 
 class StackPublicListAPIView(generics.ListAPIView):
-    model = models.Stack
     serializer_class = serializers.StackSerializer
     filter_class = filters.StackFilter
 
     def get_queryset(self):
-        return self.model.objects \
-            .filter(public=True) \
-            .exclude(owner=self.request.user)
+        return models.Stack.objects.filter(public=True).exclude(owner=self.request.user)
 
 
 class StackAdminListAPIView(generics.ListAPIView):
     """
     TODO: Add docstring
     """
-    model = models.Stack
+    queryset = models.Stack.objects.all()
     serializer_class = serializers.StackSerializer
     permission_classes = (permissions.IsAdminUser,)
     filter_class = filters.StackFilter
-
-    def get_queryset(self):
-        return self.model.objects.all()
 
 
 class StackListAPIView(generics.ListCreateAPIView):
     """
     TODO: Add docstring
     """
-    model = models.Stack
     serializer_class = serializers.StackSerializer
-    parser_classes = (parsers.JSONParser,)
     filter_class = filters.StackFilter
 
     ALLOWED_FIELDS = ('blueprint', 'title', 'description', 'properties',
@@ -161,6 +144,8 @@ class StackListAPIView(generics.ListCreateAPIView):
                                                  False)
         simulate_zombies = request.DATA.get('simulate_zombies', False)
         failure_percent = request.DATA.get('failure_percent', 0.3)
+
+        blueprint = None
 
         # check for required blueprint
         if not blueprint_id:
@@ -230,7 +215,8 @@ class StackListAPIView(generics.ListCreateAPIView):
         hostnames = models.get_hostnames_from_hostdefs(
             hostdefs,
             username=request.user.username,
-            namespace=namespace)
+            namespace=namespace
+        )
 
         if namespace:
             # If the namespace was not provided, then there is no chance
@@ -304,11 +290,9 @@ class StackListAPIView(generics.ListCreateAPIView):
         return Response(serializer.data)
 
 
-class StackDetailAPIView(PublicStackMixin,
-                         generics.RetrieveUpdateDestroyAPIView):
-    model = models.Stack
+class StackDetailAPIView(PublicStackMixin, generics.RetrieveUpdateDestroyAPIView):
+    queryset = models.Stack.objects.all()
     serializer_class = serializers.StackSerializer
-    parser_classes = (parsers.JSONParser,)
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -339,9 +323,8 @@ class StackDetailAPIView(PublicStackMixin,
 
 
 class StackPropertiesAPIView(PublicStackMixin, generics.RetrieveUpdateAPIView):
-    model = models.Stack
+    queryset = models.Stack.objects.all()
     serializer_class = serializers.StackPropertiesSerializer
-    parser_classes = (parsers.JSONParser,)
 
     def update(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -362,7 +345,6 @@ class StackPropertiesAPIView(PublicStackMixin, generics.RetrieveUpdateAPIView):
 
 
 class StackHistoryAPIView(PublicStackMixin, generics.ListAPIView):
-    model = models.StackHistory
     serializer_class = serializers.StackHistorySerializer
 
     def get_queryset(self):
@@ -370,8 +352,8 @@ class StackHistoryAPIView(PublicStackMixin, generics.ListAPIView):
         return stack.history.all()
 
 
-class StackActionAPIView(generics.SingleObjectAPIView):
-    model = models.Stack
+class StackActionAPIView(generics.GenericAPIView):
+    queryset = models.Stack.objects.all()
     serializer_class = serializers.StackSerializer
     permission_classes = (permissions.IsAuthenticated,
                           AdminOrOwnerPermission,)
@@ -439,21 +421,18 @@ class StackActionAPIView(generics.SingleObjectAPIView):
             # happen unless the hosts are in the stopped state.)
             # XXX: Assuming that host metadata is accurate here
             for host in hosts:
-                if action == driver.ACTION_START and \
-                   host.state != driver.STATE_STOPPED:
+                if action == driver.ACTION_START and host.state != driver.STATE_STOPPED:
                     raise BadRequest('Start action requires all hosts to be '
                                      'in the stopped state first. At least '
                                      'one host is reporting an invalid state: '
                                      '{0}'.format(host.state))
-                if action == driver.ACTION_STOP and \
-                   host.state != driver.STATE_RUNNING:
+                if action == driver.ACTION_STOP and host.state != driver.STATE_RUNNING:
                     raise BadRequest('Stop action requires all hosts to be in '
                                      'the running state first. At least one '
                                      'host is reporting an invalid state: '
                                      '{0}'.format(host.state))
-                if action == driver.ACTION_TERMINATE and \
-                   host.state not in (driver.STATE_RUNNING,
-                                      driver.STATE_STOPPED):
+                if action == driver.ACTION_TERMINATE and host.state not in (driver.STATE_RUNNING,
+                                                                            driver.STATE_STOPPED):
                     raise BadRequest('Terminate action requires all hosts to '
                                      'be in the either the running or stopped '
                                      'state first. At least one host is '
@@ -596,7 +575,6 @@ class StackActionAPIView(generics.SingleObjectAPIView):
 
 
 class StackActionListAPIView(PublicStackMixin, generics.ListAPIView):
-    model = models.StackAction
     serializer_class = serializers.StackActionSerializer
 
     def get_queryset(self):
@@ -605,7 +583,7 @@ class StackActionListAPIView(PublicStackMixin, generics.ListAPIView):
 
 
 class StackActionDetailAPIView(generics.RetrieveDestroyAPIView):
-    model = models.StackAction
+    queryset = models.StackAction.objects.all()
     serializer_class = serializers.StackActionSerializer
 
 
@@ -622,7 +600,7 @@ def stack_action_zip(request, pk):
         action_zip = zipfile.ZipFile(file_buffer, 'w')
 
         filename = 'action_output_' + \
-            action.submit_time().strftime('%Y%m%d_%H%M%S')
+                   action.submit_time().strftime('%Y%m%d_%H%M%S')
 
         action_zip.writestr(
             str('{0}/__command'.format(filename)),
@@ -645,13 +623,7 @@ def stack_action_zip(request, pk):
         return Response({"detail": "Not found"})
 
 
-class StackHistoryList(generics.ListAPIView):
-    model = models.StackHistory
-    serializer_class = serializers.StackHistorySerializer
-
-
 class HostListAPIView(PublicStackMixin, generics.ListAPIView):
-    model = models.Host
     serializer_class = serializers.HostSerializer
     parser_classes = (parsers.JSONParser,)
 
@@ -660,7 +632,6 @@ class HostListAPIView(PublicStackMixin, generics.ListAPIView):
 
 
 class StackHostsAPIView(HostListAPIView):
-
     def get_queryset(self):
         stack = self.get_object()
         return models.Host.objects.filter(stack=stack)
@@ -763,8 +734,7 @@ class StackHostsAPIView(HostListAPIView):
             logger.debug(hostdef)
 
             hosts.extend(
-                stack.hosts.filter(blueprint_host_definition=hostdef)
-                .order_by('-index')[:count]
+                stack.hosts.filter(blueprint_host_definition=hostdef).order_by('-index')[:count]
             )
 
         logger.debug('Hosts to remove: {0}'.format(hosts))
@@ -784,9 +754,7 @@ class StackHostsAPIView(HostListAPIView):
         Override get method to add additional host-specific info
         to the result that is looked up via salt when user requests it
         """
-        provider_metadata = request \
-            .QUERY_PARAMS \
-            .get('provider_metadata') == 'true'
+        provider_metadata = request.QUERY_PARAMS.get('provider_metadata') == 'true'
         result = super(StackHostsAPIView, self).get(request, *args, **kwargs)
 
         if not provider_metadata or not result.data['results']:
@@ -813,7 +781,7 @@ class StackVolumesAPIView(PublicStackMixin, VolumeListAPIView):
 
 
 class HostDetailAPIView(generics.RetrieveDestroyAPIView):
-    model = models.Host
+    queryset = models.Host.objects.all()
     serializer_class = serializers.HostSerializer
 
     def destroy(self, request, *args, **kwargs):
@@ -837,7 +805,7 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
 
 
 class StackFQDNListAPIView(PublicStackMixin, APIView):
-    model = models.Stack
+    queryset = models.Stack.objects.all()
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -846,7 +814,7 @@ class StackFQDNListAPIView(PublicStackMixin, APIView):
 
 
 class StackLogsAPIView(PublicStackMixin, APIView):
-    model = models.Stack
+    queryset = models.Stack.objects.all()
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -910,7 +878,7 @@ class StackLogsAPIView(PublicStackMixin, APIView):
 
 
 class StackProvisioningErrorsAPIView(PublicStackMixin, APIView):
-    model = models.Stack
+    queryset = models.Stack.objects.all()
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -925,7 +893,7 @@ class StackProvisioningErrorsAPIView(PublicStackMixin, APIView):
 
 
 class StackOrchestrationErrorsAPIView(PublicStackMixin, APIView):
-    model = models.Stack
+    queryset = models.Stack.objects.all()
 
     def get(self, request, *args, **kwargs):
         stack = self.get_object()
@@ -940,7 +908,7 @@ class StackOrchestrationErrorsAPIView(PublicStackMixin, APIView):
 
 
 class StackLogsDetailAPIView(StackLogsAPIView):
-    model = models.Stack
+    queryset = models.Stack.objects.all()
     renderer_classes = (PlainTextRenderer,)
 
     # TODO: Code complexity ignored for now
@@ -950,12 +918,12 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 
         try:
             tail = int(request.QUERY_PARAMS.get('tail', 0))
-        except:
+        except ValueError:
             tail = None
 
         try:
             head = int(request.QUERY_PARAMS.get('head', 0))
-        except:
+        except ValueError:
             head = None
 
         if head and tail:
@@ -984,7 +952,6 @@ class StackLogsDetailAPIView(StackLogsAPIView):
 
 
 class StackSecurityGroupsAPIView(PublicStackMixin, generics.ListAPIView):
-    model = SecurityGroup
     serializer_class = serializers.StackSecurityGroupSerializer
     filter_class = SecurityGroupFilter
 

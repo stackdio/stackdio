@@ -15,18 +15,23 @@
 # limitations under the License.
 #
 
+"""
+Django settings for stackdio project.
 
-# Django settings for stackdio project.
+For more information on this file, see
+https://docs.djangoproject.com/en/1.8/topics/settings/
 
+For the full list of settings and their values, see
+https://docs.djangoproject.com/en/1.8/ref/settings/
+"""
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
-import djcelery
 import dj_database_url
 
 from core.config import StackdioConfig
 
-
-djcelery.setup_loader()
 
 STACKDIO_CONFIG = StackdioConfig()
 
@@ -39,36 +44,88 @@ STATE_EXECUTION_FIELDS = ('module', 'declaration_id', 'name', 'func')
 ##
 # The Django local storage directory for storing its data
 ##
-FILE_STORAGE_DIRECTORY = os.path.join(STACKDIO_CONFIG['storage_root'],
-                                      'storage')
+FILE_STORAGE_DIRECTORY = os.path.join(
+    STACKDIO_CONFIG['storage_root'],
+    'storage'
+)
 
-LOG_DIRECTORY = os.path.join(STACKDIO_CONFIG['storage_root'],
-                             'var',
-                             'log',
-                             'stackdio')
+LOG_DIRECTORY = os.path.join(
+    STACKDIO_CONFIG['storage_root'],
+    'var',
+    'log',
+    'stackdio'
+)
+
 if not os.path.isdir(LOG_DIRECTORY):
     os.makedirs(LOG_DIRECTORY)
 
 ##
-#
-##
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
-
-##
-# Database configuration. We're using dj-database-url to simplify
-# the required settings and instead of pulling the DSN from an
-# environment variable, we're loading it from the stackdio config
-##
-DATABASES = {
-    'default': dj_database_url.parse(STACKDIO_CONFIG['db_dsn'])
-}
-
-##
 # Some convenience variables
 ##
-SITE_ROOT = '/'.join(os.path.dirname(__file__).split('/')[0:-2])
-PROJECT_ROOT = SITE_ROOT + '/stackdio'
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+# Set DEBUG things to False here, override to True in the development.py settings
+DEBUG = False
+TEMPLATE_DEBUG = DEBUG
+
+# Hosts/domain names that are valid for this site; required if DEBUG is False
+# See https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = ['*']
+
+
+SECRET_KEY = STACKDIO_CONFIG['django_secret_key']
+
+# Application definition
+
+INSTALLED_APPS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'core',
+    'cloud',
+    'stacks',
+    'volumes',
+    'blueprints',
+    'formulas',
+    'rest_framework',
+    'rest_framework.authtoken',
+)
+
+MIDDLEWARE_CLASSES = (
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+)
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'stackdio.wsgi.application'
+
+ROOT_URLCONF = 'stackdio.urls'
+
 
 ##
 # Define your admin tuples like ('full name', 'email@address.com')
@@ -77,132 +134,63 @@ ADMINS = (
     ('Abe Music', 'abe.music@digitalreasoning.com'),
     ('Charlie Penner', 'charlie.penner@digitalreasoning.com'),
     ('Steve Brownlee', 'steve.brownlee@digitalreasoning.com'),
+    ('Clark Perkins', 'clark.perkins@digitalreasoning.com'),
 )
 MANAGERS = ADMINS
 
-# Absolute filesystem path to the directory that will hold user-uploaded files.
-# Example: "/var/www/example.com/media/"
-MEDIA_ROOT = '%s/static/media/' % SITE_ROOT
+##
+# Database
+# https://docs.djangoproject.com/en/1.8/ref/settings/#databases
+#
+# We're using dj-database-url to simplify
+# the required settings and instead of pulling the DSN from an
+# environment variable, we're loading it from the stackdio config
+##
+DATABASES = {
+    'default': dj_database_url.parse(STACKDIO_CONFIG['db_dsn'])
+}
+
+
+# Internationalization
+# https://docs.djangoproject.com/en/1.8/topics/i18n/
+
+LANGUAGE_CODE = 'en-us'
+
+TIME_ZONE = 'America/Chicago'
+
+USE_I18N = True
+
+USE_L10N = True
+
+USE_TZ = True
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/1.8/howto/static-files/
+STATIC_URL = '/static/'
+
+# Absolute path to the directory static files should be collected to.
+# Don't put anything in this directory yourself; store your static files
+# in apps' "static/" subdirectories and in STATICFILES_DIRS.
+# Example: "/var/www/example.com/static/"
+STATIC_ROOT = '%s/static/' % BASE_DIR
+
+# Additional locations of static files
+STATICFILES_DIRS = ()
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://example.com/media/", "http://media.example.com/"
 MEDIA_URL = '/media/'
 
-# Absolute path to the directory static files should be collected to.
-# Don't put anything in this directory yourself; store your static files
-# in apps' "static/" subdirectories and in STATICFILES_DIRS.
-# Example: "/var/www/example.com/static/"
-STATIC_ROOT = '%s/static/' % SITE_ROOT
+# Absolute filesystem path to the directory that will hold user-uploaded files.
+# Example: "/var/www/example.com/media/"
+MEDIA_ROOT = '%s/static/media/' % BASE_DIR
 
-# URL prefix for static files.
-# Example: "http://example.com/static/", "http://static.example.com/"
-STATIC_URL = '/static/'
-
-# Additional locations of static files
-STATICFILES_DIRS = ()
-
-# List of finder classes that know how to find static files in
-# various locations.
-STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-)
-
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS  #NOQA
+# See: https://docs.djangoproject.com/en/1.8/ref/settings/#fixture-dirs
 FIXTURE_DIRS = (
-    os.path.normpath(os.path.join(SITE_ROOT, 'stackdio', 'fixtures')),
+    os.path.normpath(os.path.join(BASE_DIR, 'stackdio', 'fixtures')),
 )
-
-MIDDLEWARE_CLASSES = (
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
-)
-
-INSTALLED_APPS = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.admin',
-    'rest_framework',
-    'rest_framework.authtoken',
-    # 'rest_framework_swagger',
-    'django_nose',
-    'south',
-    'djcelery',
-    'core',
-    'cloud',
-    'stacks',
-    'volumes',
-    'blueprints',
-    'formulas',
-)
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-
-##
-# Additional "global" template directories you might like to use.
-# App templates should go in that app.
-##
-TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or
-    # "C:/www/django/templates". Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-    '%s/templates' % PROJECT_ROOT,
-)
-
-##
-# THE REST OF THIS JUNK IS PROVIDED BY DJANGO. IT COULD BE CHANGED
-# IF YOU FEEL THE NEED, BUT YOU SHOULD PROBABLY LEAVE IT ALONE
-# UNLESS YOU HAVE A BURNING DESIRE OR YOU KNOW WHAT YOU'RE DOING
-##
-
-# Local time zone for this installation. Choices can be found here:
-# http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
-# although not all choices may be available on all operating systems.
-# In a Windows environment this must be set to your system time zone.
-TIME_ZONE = 'America/Chicago'
-
-# Language code for this installation. All choices can be found here:
-# http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'en-us'
-
-SITE_ID = 1
-
-# If you set this to False, Django will make some optimizations so as not
-# to load the internationalization machinery.
-USE_I18N = True
-
-# If you set this to False, Django will not format dates, numbers and
-# calendars according to the current locale.
-USE_L10N = True
-
-# If you set this to False, Django will not use timezone-aware datetimes.
-USE_TZ = True
-
-# Make this unique, and don't share it with anybody.
-# e.g, '!&-bq%17z_osv3a)ziny$k7auc8rwv@^r*alo*e@wt#z^g(x6v'
-SECRET_KEY = STACKDIO_CONFIG['django_secret_key']
-
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-)
-
-ROOT_URLCONF = 'stackdio.urls'
-
-
-# Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'stackdio.wsgi.application'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -262,11 +250,6 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
-        'south': {
-            'handlers': ['null'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
         'amqp': {
             'handlers': ['null'],
             'level': 'DEBUG',
@@ -300,18 +283,9 @@ REST_FRAMEWORK = {
 
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
     ),
 
-}
-
-##
-# Swagger configuration
-##
-SWAGGER_SETTINGS = {
-    'exclude_namespaces': ['django'],
-    'api_version': '1.0 alpha',
-    'is_authenticated': True,
-    'is_superuser': False
 }
 
 ##
@@ -328,6 +302,14 @@ CLOUD_PROVIDERS = [
 BROKER_URL = 'amqp://guest:guest@localhost:5672/'
 CELERY_REDIRECT_STDOUTS = False
 CELERY_DEFAULT_QUEUE = 'default'
+
+# Serializer settings
+# We'll use json since pickle can sometimes be insecure
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml']
+
+# Configure queues
 CELERY_ROUTES = {
     'formulas.import_formula': {'queue': 'formulas'},
     'formulas.update_formula': {'queue': 'formulas'},
@@ -354,5 +336,5 @@ CELERY_ROUTES = {
 # LDAP configuration. To enable this, you should copy ldap_settings.py.template
 # to ldap_settings.py and modify the settings there.
 ##
-if os.path.isfile(os.path.join(PROJECT_ROOT, 'settings', 'ldap_settings.py')):
+if os.path.isfile(os.path.join(BASE_DIR, 'stackdio', 'settings', 'ldap_settings.py')):
     from ldap_settings import *  # NOQA

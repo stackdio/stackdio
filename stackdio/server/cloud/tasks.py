@@ -16,15 +16,16 @@
 #
 
 
-import celery
+from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from .models import CloudProvider
 
+
 logger = get_task_logger(__name__)
 
 
-@celery.task(name='cloud.get_provider_instances')
+@shared_task(name='cloud.get_provider_instances')
 def get_provider_instances(provider_id):
     try:
         provider = CloudProvider.objects.get(id=provider_id)

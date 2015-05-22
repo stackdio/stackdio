@@ -15,18 +15,20 @@
 # limitations under the License.
 #
 
+import imp
+
+import stackdio
 
 # Grab the base settings
 from .base import *  # NOQA
 
-DEBUG = False
-TEMPLATE_DEBUG = False
-ALLOWED_HOSTS = ['*']
+
 WSGI_APPLICATION = 'stackdio.server.stackdio.wsgi.application'
 
 try:
-    from stackdio import urls
+    # If stackdio.urls exists, just set the URLCONF directly
+    imp.find_module('urls', stackdio.__path__)
     ROOT_URLCONF = 'stackdio.urls'
 except ImportError:
-    from stackdio.server.stackdio import urls
+    # It doesn't exist, so the URLCONF needs to be the full path
     ROOT_URLCONF = 'stackdio.server.stackdio.urls'

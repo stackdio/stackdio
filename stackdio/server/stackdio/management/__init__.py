@@ -26,10 +26,10 @@
 import argparse
 import sys
 
+from . import commands
+
 if sys.stdout.isatty():
     import readline  # NOQA
-
-from . import commands
 
 SALT_COMMANDS = (
     'salt',
