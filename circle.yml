@@ -17,13 +17,13 @@ dependencies:
 ## Customize test commands
 test:
   pre:
-    - pylint --rcfile=.testing.pylintrc stackdio/server/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
-    - pep8 --ignore=E501,E12 --exclude='stackdio/server/*/migrations/*,*/bower_components/*' stackdio/server/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
+    - pylint --rcfile=.testing.pylintrc stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
+    - pep8 --ignore=E501,E12 --exclude='stackdio/*/migrations/*,*/bower_components/*' stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
     - mkdir /home/ubuntu/.stackdio
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python stackdio/server/manage.py test --cover-html
+    - python stackdio/manage.py test --cover-html
 
   post:
     - mv nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
