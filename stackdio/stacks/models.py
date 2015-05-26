@@ -750,68 +750,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
             with open(self.overstate_file.path, 'w') as f:
                 f.write(yaml_data)
 
-    def _generate_overstate_file_bak(self):
-        hosts = self.hosts.all()
-
-        # Get the unique set of components for this stack
-        components = set()
-        for host in hosts:
-            components.update(list(
-                host.formula_components.all().order_by('order')
-            ))
-
-        # build a data structure more suitable for helping us build
-        # the overstate dict
-        groups = {}
-        for c in components:
-            """
-            {
-                order_0: {
-                    host_0: [sls, sls, ...],
-                    host_1: [sls, sls, ...],
-                    ...
-                },
-                order_1: {
-                    ...
-                }
-                ...
-            }
-            """
-            groups.setdefault(
-                c.order, {}
-            ).setdefault(
-                '{0}-{1}'.format(c.order, c.host.slug), []
-            ).append(
-                c.component.sls_path
-            )
-
-        # now we know what order each defined blueprint host is in and
-        # the corresponding components to be installed. We will match
-        # hosts based on the stack_id and all roles/SLS. Each group of
-        # hosts beyond the first will have a requirement on the group
-        # before it
-        overstate = {}
-        for i in sorted(groups.keys()):
-            for host, sls in groups[i].iteritems():
-                matches = ' and '.join(['G@roles:{0}'.format(r) for r in sls])
-                overstate[host] = {
-                    'match': 'G@stack_id:{0} and {1}'.format(self.pk, matches),
-                    'sls': sls
-                }
-
-                if i > 0:
-                    overstate[host]['require'] = groups[i - 1].keys()
-
-        # Dump the overstate dict into yaml for salt
-        yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
-        if not self.overstate_file:
-            self.overstate_file.save(
-                'stack_{0}_overstate.sls'.format(self.pk),
-                ContentFile(yaml_data))
-        else:
-            with open(self.overstate_file.path, 'w') as f:
-                f.write(yaml_data)
-
     def _generate_global_overstate_file(self):
         providers = set(
             [host.cloud_profile.cloud_provider for
