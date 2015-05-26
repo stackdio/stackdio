@@ -16,11 +16,16 @@
 #
 
 from __future__ import absolute_import
+import sys
+
 from .version import __version__, __version_info__  # NOQA
 
 # This will make sure the app is always imported when
 # Django starts so that shared_task will use this app.
-from .celery import app as celery_app
+try:
+    from .celery import app as celery_app
+except ImportError:
+    sys.stderr.write('Not importing celery... Ignore if this is running setup.py.')
 
 __copyright__ = "Copyright 2014, Digital Reasoning"
 __license__ = "Apache License Version 2.0, January 2004"
