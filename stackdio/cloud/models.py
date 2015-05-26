@@ -370,7 +370,6 @@ class CloudZone(TitleSlugDescriptionModel):
 
 class SecurityGroupQuerySet(TransformQuerySet):
     def with_rules(self):
-        logger.debug('SecurityGroupQuerySet::with_rules called...')
         return self.transform(self._inject_rules)
 
     def _inject_rules(self, queryset):

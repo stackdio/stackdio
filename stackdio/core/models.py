@@ -48,5 +48,4 @@ def user_post_save(sender, instance, **kwargs):
     UserSettings objects if needed
     """
     if 'created' in kwargs and kwargs['created'] is True:
-        logger.debug('Creating UserSettings object for {0!r}'.format(instance))
         UserSettings.objects.create(user=instance)

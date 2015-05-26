@@ -59,6 +59,7 @@ disable=R,
   W0603,
   W0612,
   W0613,
+  W0614,
   W0621,
   W0622,
   W0631,
@@ -104,6 +105,7 @@ disable=R,
 # W0603 (global-statement)
 # W0612 (unused-variable) [unused return values]
 # W0613 (unused-argument)
+# W0614 (unused-wildcard-import) [needed for settings]
 # W0621 (redefined-outer-name)
 # W0622 (redefined-builtin) [many parameter names shadow builtins]
 # W0631 (undefined-loop-variable) [~3 instances, seem to be okay]

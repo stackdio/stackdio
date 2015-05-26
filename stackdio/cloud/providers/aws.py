@@ -44,8 +44,8 @@ from cloud.providers.base import (
 from core.exceptions import BadRequest, InternalServerError
 
 
-GROUP_PATTERN = re.compile('\d+:[a-zA-Z0-9-_]')
-CIDR_PATTERN = re.compile('[0-9]+(?:\.[0-9]+){3}\/\d{1,2}')
+GROUP_PATTERN = re.compile(r'\d+:[a-zA-Z0-9-_]')
+CIDR_PATTERN = re.compile(r'[0-9]+(?:\.[0-9]+){3}\/\d{1,2}')
 
 # Boto Errors
 BOTO_DUPLICATE_ERROR_CODE = 'InvalidPermission.Duplicate'
@@ -259,27 +259,27 @@ class AWSCloudProvider(BaseCloudProvider):
     STATE_TERMINATED = 'terminated'
 
     @classmethod
-    def get_required_fields(self):
+    def get_required_fields(cls):
         return [
-            self.ACCOUNT_ID,
-            self.ACCESS_KEY,
-            self.SECRET_KEY,
-            self.KEYPAIR,
-            self.PRIVATE_KEY,
-            self.ROUTE53_DOMAIN,
-            # self.SECURITY_GROUPS
+            cls.ACCOUNT_ID,
+            cls.ACCESS_KEY,
+            cls.SECRET_KEY,
+            cls.KEYPAIR,
+            cls.PRIVATE_KEY,
+            cls.ROUTE53_DOMAIN,
+            # cls.SECURITY_GROUPS
         ]
 
     @classmethod
-    def get_available_actions(self):
+    def get_available_actions(cls):
         return [
-            self.ACTION_STOP,
-            self.ACTION_START,
-            self.ACTION_TERMINATE,
-            self.ACTION_LAUNCH,
-            self.ACTION_PROVISION,
-            self.ACTION_ORCHESTRATE,
-            self.ACTION_CUSTOM,
+            cls.ACTION_STOP,
+            cls.ACTION_START,
+            cls.ACTION_TERMINATE,
+            cls.ACTION_LAUNCH,
+            cls.ACTION_PROVISION,
+            cls.ACTION_ORCHESTRATE,
+            cls.ACTION_CUSTOM,
         ]
 
     def get_private_key_path(self):

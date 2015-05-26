@@ -18,8 +18,10 @@ dependencies:
 ## Customize test commands
 test:
   pre:
-    - pylint --rcfile=.testing.pylintrc stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
-    - pep8 --ignore=E501,E12 --exclude='stackdio/*/migrations/*,*/bower_components/*' stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
+    - pep8 --ignore=E501,E12 --exclude='*/migrations/*,*/bower_components/*' * && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors':
+        pwd: stackdio
+    - pylint --rcfile=.testing.pylintrc * && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors':
+        pwd: stackdio
     - mkdir /home/ubuntu/.stackdio
     - cp tests/config /home/ubuntu/.stackdio/config
 

@@ -49,9 +49,11 @@ class CloudProviderTypeTestCase(StackdioTestCase):
 
     def test_create_provider_type(self):
         response = self.client.post('/api/provider_types/', {'title': 'new'})
-        logger.debug(response.data)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class CloudProviderTestCase(StackdioTestCase):
-    pass
+
+    def setUp(self):
+        super(CloudProviderTestCase, self).setUp()
+        self.client.login(username='test.admin', password='1234')
