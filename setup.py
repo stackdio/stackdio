@@ -30,8 +30,9 @@ if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     sys.exit(1)
 
 # Grab the current version from our stackdio package
-sys.path.insert(0, 'stackdio')
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'stackdio'))
 VERSION = __import__('stackdio').__version__
+sys.path.pop(0)
 
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
