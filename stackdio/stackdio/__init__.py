@@ -25,7 +25,7 @@ from .version import __version__, __version_info__  # NOQA
 try:
     from .celery import app as celery_app
 except ImportError:
-    sys.stderr.write('Not importing celery... Ignore if this is running setup.py.')
+    sys.stderr.write('Not importing celery... Ignore if this is running setup.py.\n')
 
 __copyright__ = "Copyright 2014, Digital Reasoning"
 __license__ = "Apache License Version 2.0, January 2004"
