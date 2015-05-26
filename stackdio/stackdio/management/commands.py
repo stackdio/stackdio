@@ -32,8 +32,6 @@ from django.utils.crypto import get_random_string
 from salt.utils import get_colors
 import psutil
 
-from stackdio.server.core.config import StackdioConfig
-
 
 SALT_COLORS = get_colors()
 
@@ -67,6 +65,8 @@ class BaseCommand(object):
     def __init__(self, args, parser=None):
         self.args = args
         self.parser = parser
+        from core.config import StackdioConfig
+        self.stackdio_config = StackdioConfig
 
     def __call__(self, *args, **kwargs):
         self.pre_run()
@@ -133,7 +133,7 @@ class BaseCommand(object):
             self.out('Aborting.', Colors.ERROR)
             sys.exit(1)
 
-    def load_resource(self, rp=None, package='stackdio.server'):
+    def load_resource(self, rp=None, package='stackdio'):
         """
         Takes a relative path `rp`, and attempts to pull the full resource
         path using pkg_resources.
@@ -141,7 +141,7 @@ class BaseCommand(object):
         from pkg_resources import ResourceManager, get_provider
         provider = get_provider(package)
         if rp is None:
-            return provider.module_path
+            return os.path.dirname(provider.module_path)
         return provider.get_resource_filename(ResourceManager(), rp)
 
     def render_template(self, tmpl, outfile=None, context={}):
@@ -319,7 +319,7 @@ class InitCommand(WizardCommand):
 
     def pre_run(self):
         try:
-            self.answers = StackdioConfig()
+            self.answers = self.stackdio_config()
         except ImproperlyConfigured:
             self.answers = {}
 
@@ -360,7 +360,7 @@ class InitCommand(WizardCommand):
             except OSError:
                 pass
 
-        self.render_template('stackdio/management/templates/config.jinja2',
+        self.render_template('management/templates/config.jinja2',
                              self.CONFIG_FILE,
                              context=self.answers)
         self.out('stackdio configuration written to '
@@ -370,7 +370,7 @@ class InitCommand(WizardCommand):
                  **self.INFO_INDENT)
 
         # grab a fresh copy of the config file to be used later
-        self.config = StackdioConfig()
+        self.config = self.stackdio_config()
 
     def _init_salt(self):
         if not os.path.isdir(self.config.salt_config_root):
@@ -382,7 +382,7 @@ class InitCommand(WizardCommand):
                      **self.INFO_INDENT)
 
         # Render salt-master and salt-cloud configuration files
-        self.render_template('stackdio/management/templates/master.jinja2',
+        self.render_template('management/templates/master.jinja2',
                              self.config.salt_master_config,
                              context=self.config)
         self.out('Salt master configuration written to '
@@ -391,7 +391,7 @@ class InitCommand(WizardCommand):
                  width=1024,
                  **self.INFO_INDENT)
 
-        self.render_template('stackdio/management/templates/cloud.jinja2',
+        self.render_template('management/templates/cloud.jinja2',
                              self.config.salt_cloud_config,
                              context=self.config)
         self.out('Salt cloud configuration written to '
@@ -401,7 +401,7 @@ class InitCommand(WizardCommand):
                  **self.INFO_INDENT)
 
         # Copy the salt directories needed
-        saltdirs = self.load_resource('stackdio/management/saltdirs')
+        saltdirs = self.load_resource('management/saltdirs')
         for rp in os.listdir(saltdirs):
             path = os.path.join(saltdirs, rp)
             dst = os.path.join(self.config.salt_root, rp)
@@ -491,7 +491,7 @@ class InitCommand(WizardCommand):
 class ConfigCommand(BaseCommand):
 
     def run(self):
-        config = StackdioConfig()
+        config = self.stackdio_config()
         stackdio_root = self.load_resource()
         site_packages_root = os.path.dirname(stackdio_root)
         context = {
@@ -508,14 +508,14 @@ class ConfigCommand(BaseCommand):
                 'user': config.user,
                 'with_ssl': self.args.with_ssl,
             })
-            tmpl = 'stackdio/management/templates/apache2.jinja2'
+            tmpl = 'management/templates/apache2.jinja2'
         elif self.args.type == 'nginx':
             context.update({
                 'with_ssl': self.args.with_ssl
             })
-            tmpl = 'stackdio/management/templates/nginx.jinja2'
+            tmpl = 'management/templates/nginx.jinja2'
         elif self.args.type == 'supervisord':
-            tmpl = 'stackdio/management/templates/supervisord.jinja2'
+            tmpl = 'management/templates/supervisord.jinja2'
             context.update({
                 'with_gunicorn': self.args.with_gunicorn,
                 'with_celery': self.args.with_celery,
@@ -594,7 +594,7 @@ class UpgradeSaltCommand(BaseCommand):
         self.out('Updating config files...', nl=0)
         sys.stdout.flush()
 
-        config = StackdioConfig()
+        config = self.stackdio_config()
         bootstrap_args = config.salt_bootstrap_args
 
         # Change the config to the new version - don't just do a replace, parse the config and be
@@ -614,7 +614,7 @@ class UpgradeSaltCommand(BaseCommand):
 
         config.salt_bootstrap_args = ' '.join(spl)
 
-        self.render_template('stackdio/management/templates/config.jinja2',
+        self.render_template('management/templates/config.jinja2',
                              self.CONFIG_FILE,
                              context=config)
 
@@ -656,7 +656,7 @@ class SaltWrapperCommand(BaseCommand):
     def run(self):
         import sys
         import salt.scripts
-        config = StackdioConfig()
+        config = self.stackdio_config()
 
         args = [arg for arg in self.args[:] if '--config-dir' not in arg]
         args.insert(1, '--config-dir={0}'.format(config.salt_config_root))
@@ -683,10 +683,6 @@ class SaltWrapperCommand(BaseCommand):
 class DjangoManageWrapperCommand(BaseCommand):
 
     def run(self):
-        import sys
-        # update system path to include required stackdio paths
-        stackdio_root = self.load_resource()
-        sys.path.insert(0, stackdio_root)
         from django.core.management import execute_from_command_line
         # Just default to production - if it's already set to something else, use that
         os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.settings.production')

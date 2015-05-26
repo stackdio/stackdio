@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,13 @@
 # limitations under the License.
 #
 
-from .base import *  # NOQA
+from __future__ import absolute_import
+from .version import __version__, __version_info__  # NOQA
 
-# Add additional testing settings here
+# This will make sure the app is always imported when
+# Django starts so that shared_task will use this app.
+from .celery import app as celery_app
+
+__copyright__ = "Copyright 2014, Digital Reasoning"
+__license__ = "Apache License Version 2.0, January 2004"
+__maintainer__ = "https://github.com/stackdio/stackdio"

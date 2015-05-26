@@ -60,15 +60,15 @@ docs/_build/
 # PyBuilder
 target/
 
-dev.db
+*.db
 *.swp
 *.un~
-stackdio/server/core/static/stackdio/bower_components
-stackdio/server/core/static/stackdio/node_modules
-stackdio/server/salt/user_states
-stackdio/server/salt/core_states
-stackdio/server/salt/config
-stackdio/server/storage
+stackdio/core/static/stackdio/bower_components
+stackdio/core/static/stackdio/node_modules
+stackdio/salt/user_states
+stackdio/salt/core_states
+stackdio/salt/config
+stackdio/storage
 
 
 # abe's development stuff
@@ -80,10 +80,10 @@ salt-cloud.sh
 .codeintel
 
 # ldap_settings.py
-stackdio/server/stackdio/settings/ldap_settings.py
+stackdio/stackdio/settings/ldap_settings.py
 
 # collectstatic junk
-stackdio/server/static
+stackdio/static
 
 # OSX
 .DS_Store

@@ -18,9 +18,13 @@
 
 import os
 import sys
+
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
+
+import stackdio
+
 
 if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     print('Your Python version {0}.{1}.{2} is not supported.'.format(*sys.version_info[:3]))
@@ -28,8 +32,7 @@ if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     sys.exit(1)
 
 # Grab the current version from our stackdio package
-__import__('stackdio.server')
-VERSION = __import__('stackdio').server.__version__
+VERSION = stackdio.__version__
 
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
@@ -76,7 +79,9 @@ if __name__ == "__main__":
         long_description=LONG_DESCRIPTION,
         license='Apache 2.0',
         include_package_data=True,
-        packages=find_packages(),
+        packages=find_packages('stackdio'),
+        package_dir={'': 'stackdio'},
+        py_modules=['manage'],
         zip_safe=False,
         install_requires=reqs,
         dependency_links=deps,
@@ -90,12 +95,11 @@ if __name__ == "__main__":
             'License :: OSI Approved :: Apache Software License',
             'Operating System :: POSIX :: Linux',
             'Programming Language :: Python',
-            'Programming Language :: Python :: 2.6',
             'Programming Language :: Python :: 2.7',
             'Topic :: System :: Clustering',
             'Topic :: System :: Distributed Computing',
         ],
         entry_points={'console_scripts': [
-            'stackdio = stackdio.server.stackdio.management:main'
+            'stackdio = stackdio.management:main'
         ]}
     )
