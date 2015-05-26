@@ -15,31 +15,20 @@
 # limitations under the License.
 #
 
-
-"""
-This file demonstrates writing tests using the unittest module. These will pass
-when you run "manage.py test".
-
-Replace this with more appropriate tests for your application.
-"""
 import logging
 
-from django.contrib.auth import get_user_model
-from django.test import TestCase
 from rest_framework import status
-from rest_framework.test import APIClient
+
+from core.tests import StackdioTestCase
 
 
 logger = logging.getLogger(__name__)
 
 
-class CloudProviderTypeTestCase(TestCase):
+class CloudProviderTypeTestCase(StackdioTestCase):
 
     def setUp(self):
-        self.client = APIClient()
-        user_model = get_user_model()
-        user_model.objects.create_superuser('test.admin', 'test.admin@digitalreasoning.com', '1234')
-        user_model.objects.create_user('test.user', 'test.user@digitalreasoning.com', '1234')
+        super(CloudProviderTypeTestCase, self).setUp()
         self.client.login(username='test.admin', password='1234')
 
     def test_authenticated(self):
@@ -64,7 +53,5 @@ class CloudProviderTypeTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class CloudProviderTestCase(TestCase):
-
-    def setUp(self):
-        self.client = APIClient()
+class CloudProviderTestCase(StackdioTestCase):
+    pass
