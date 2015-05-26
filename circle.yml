@@ -5,7 +5,6 @@ machine:
   environment:
     NOSE_WITH_XUNIT: 1
     NOSE_WITH_COVERAGE: 1
-    NOSE_COVER_PACKAGE: stackdio
     NOSE_COVER_BRANCHES: 1
     DJANGO_SETTINGS_MODULE: 'stackdio.settings.testing'
 
@@ -24,9 +23,11 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python stackdio/manage.py test --cover-html
+    - python stackdio/manage.py test --cover-html:
+      pwd: stackdio
 
   post:
-    - mv nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
-    - mv cover $CIRCLE_ARTIFACTS/coverage
-    - coveralls
+    - mv stackdio/nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
+    - mv stackdio/cover $CIRCLE_ARTIFACTS/coverage
+    - coveralls:
+      pwd: stackdio
