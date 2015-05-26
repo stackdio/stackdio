@@ -98,6 +98,14 @@ def main():
     upgrade_salt_parser.set_defaults(command=commands.UpgradeSaltCommand)
     upgrade_salt_parser.set_defaults(raw_args=False)
 
+    celery_parser = subparsers.add_parser(
+        'celery',
+        help='convenience wrapper for the celery command',
+        add_help=False
+    )
+    celery_parser.set_defaults(command=commands.CeleryWrapperCommand)
+    celery_parser.set_defaults(raw_args=True)
+
     # Runs the development Django server for stackdio API/UI
     managepy_parser = subparsers.add_parser(
         'manage.py',

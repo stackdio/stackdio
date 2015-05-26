@@ -680,6 +680,16 @@ class SaltWrapperCommand(BaseCommand):
         salt_func()
 
 
+class CeleryWrapperCommand(BaseCommand):
+
+    def run(self):
+        # Just default to production - if it's already set to something else, use that
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.settings.production')
+
+        from stackdio.celery import app
+        app.start(self.args)
+
+
 class DjangoManageWrapperCommand(BaseCommand):
 
     def run(self):
