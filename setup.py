@@ -81,7 +81,6 @@ if __name__ == "__main__":
         include_package_data=True,
         packages=find_packages('stackdio'),
         package_dir={'': 'stackdio'},
-        py_modules=['manage'],
         zip_safe=False,
         install_requires=reqs,
         dependency_links=deps,
