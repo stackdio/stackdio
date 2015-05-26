@@ -24,10 +24,10 @@ test:
 
   override:
     - python stackdio/manage.py test --cover-html:
-      pwd: stackdio
+        pwd: stackdio
 
   post:
     - mv stackdio/nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
     - mv stackdio/cover $CIRCLE_ARTIFACTS/coverage
     - coveralls:
-      pwd: stackdio
+        pwd: stackdio
