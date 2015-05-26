@@ -31,17 +31,6 @@ class CloudProviderTypeTestCase(StackdioTestCase):
         super(CloudProviderTypeTestCase, self).setUp()
         self.client.login(username='test.admin', password='1234')
 
-    def test_authenticated(self):
-        # Ensure we are logged out before we try the first request
-        self.client.logout()
-        response = self.client.get('/api/provider_types/')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-        # Non - admins shouldn't be able to see this endpoint
-        self.client.login(username='test.user', password='1234')
-        response = self.client.get('/api/provider_types/')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
     def test_list_provider_types(self):
         # Admins SHOULD be able to see this endpoint
         response = self.client.get('/api/provider_types/')
