@@ -23,8 +23,6 @@ from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
 
-import stackdio
-
 
 if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     print('Your Python version {0}.{1}.{2} is not supported.'.format(*sys.version_info[:3]))
@@ -32,7 +30,8 @@ if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     sys.exit(1)
 
 # Grab the current version from our stackdio package
-VERSION = stackdio.__version__
+sys.path.insert(0, 'stackdio')
+VERSION = __import__('stackdio').__version__
 
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
