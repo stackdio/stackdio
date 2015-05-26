@@ -304,7 +304,7 @@ REST_FRAMEWORK = {
     # Enable the browsable API - comment out the BrowsableAPIRenderer line to only return json
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
-        # 'rest_framework.renderers.BrowsableAPIRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
     ),
 }
 
