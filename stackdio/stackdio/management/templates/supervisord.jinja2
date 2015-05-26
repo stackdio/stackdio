@@ -46,13 +46,13 @@ autorestart=true
 ;;
 ;; celery
 [program:celery-main]
-command=stackdio celery worker -l info -c 4 -Q default,stacks,formulas -n main.%h
+command=stackdio celery worker -l info -c 4 -Q default,stacks,formulas -n main.%%h
 directory={{ stackdio_root }}
 environment=PYTHONOPTIMIZE="1"
 autorestart=true
 
 [program:celery-formulas]
-command=stackdio celery worker -l info -c 1 -Q formulas -n formulas.%h
+command=stackdio celery worker -l info -c 1 -Q formulas -n formulas.%%h
 directory={{ stackdio_root }}
 environment=PYTHONOPTIMIZE="1"
 autorestart=true
