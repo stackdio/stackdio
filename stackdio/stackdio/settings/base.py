@@ -266,7 +266,7 @@ LOGGING = {
         },
         '': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+            'level': 'WARNING',
             'propagate': False,
         },
     }

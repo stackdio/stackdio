@@ -29,6 +29,9 @@ MIDDLEWARE_CLASSES += (
     'core.middleware.JSONIndentAcceptHeaderMiddleware',
 )
 
+# Set the log level to DEBUG - it's WARNING by default
+LOGGING['loggers']['']['level'] = 'DEBUG'
+
 ##
 # Add in additional applications
 ##
