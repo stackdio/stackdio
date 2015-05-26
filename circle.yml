@@ -23,7 +23,7 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python stackdio/manage.py test --cover-html:
+    - python manage.py test --cover-html:
         pwd: stackdio
 
   post:
