@@ -25,6 +25,10 @@ def recursive_update(d, u):
     """
     Recursive update of one dictionary with another. The built-in
     python dict::update will erase existing values.
+    :param d: the base dict object  -  *Will be changed*
+    :param u: the secondary dict object, to be merged into d.  Values in d will be overwritten by u.
+    :return: the merged dict object
+    :rtype: dict
     """
     for k, v in u.iteritems():
         if isinstance(v, collections.Mapping):
@@ -33,3 +37,18 @@ def recursive_update(d, u):
         else:
             d[k] = u[k]
     return d
+
+
+def get_urls(urllist, pre=''):
+    """
+    Return a list of all urls in a given urlpatterns object.  Will recurse down the include tree.
+    :param urllist: the original list of url patterns
+    :param pre: the string to append to the front of the url at the given level
+    :return: a generator that yields strings of full url patterns
+    """
+    for entry in urllist:
+        pattern = entry.regex.pattern.replace('^', '').replace('$', '')
+        yield pre + pattern
+        if hasattr(entry, 'url_patterns'):
+            for subentry in get_urls(entry.url_patterns, pre + pattern):
+                yield subentry
