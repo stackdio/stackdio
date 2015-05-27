@@ -33,8 +33,8 @@ logger = logging.getLogger(__name__)
 
 class StackdioTestCase(TestCase):
     """
-    Base test case class for stackd.io.  Will add a client object, and create an admin and a
-    regular user.  Will also create an 'everybody' group with permissions to view most of the
+    Base test case class for stackd.io.  We'll add a client object, and create an admin and a
+    regular user.  We'll also create an 'everybody' group with permissions to view most of the
     endpoints.
     """
     GLOBAL_PERM_MODELS = (
@@ -56,21 +56,27 @@ class StackdioTestCase(TestCase):
 
     def setUp(self):
         self.client = APIClient()
+
+        self.user = get_user_model().objects.get(username='test.user')
+        self.admin = get_user_model().objects.get(username='test.admin')
+
+    @classmethod
+    def setUpTestData(cls):
         user_model = get_user_model()
-        self.admin = user_model.objects.create_superuser('test.admin',
-                                                         'test.admin@digitalreasoning.com', '1234')
-        self.user = user_model.objects.create_user('test.user', 'test.user@digitalreasoning.com',
-                                                   '1234')
+        admin = user_model.objects.create_superuser('test.admin',
+                                                    'test.admin@stackd.io', '1234')
+        user = user_model.objects.create_user('test.user',
+                                              'test.user@stackd.io', '1234')
 
         # Create an everybody group
         everybody = Group.objects.create(name='everybody')
         # Give the necessary global permissions
-        for perm in self.GLOBAL_PERM_MODELS:
+        for perm in cls.GLOBAL_PERM_MODELS:
             assign_perm(perm % 'view', everybody)
 
         # Put the users in the group
-        self.admin.groups.add(everybody)
-        self.user.groups.add(everybody)
+        admin.groups.add(everybody)
+        user.groups.add(everybody)
 
 
 class AuthenticationTestCase(StackdioTestCase):
