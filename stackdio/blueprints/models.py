@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_props_file_path(obj, filename):
-    return "blueprints/{0}/{1}.props".format(obj.owner.username, obj.slug)
+    return 'blueprints/{0}-{1}.props'.format(obj.pk, obj.slug)
 
 
 class BlueprintManager(models.Manager):
@@ -156,8 +156,6 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
 
     class Meta:
-        unique_together = ('owner', 'title')
-
         default_permissions = (
             'create',
             'view',
