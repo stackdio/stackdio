@@ -56,7 +56,7 @@ class BlueprintManager(models.Manager):
 
     # TODO: ignoring code complexity issues
     @transaction.atomic  # NOQA
-    def create(self, owner, data, **kwargs):
+    def create(self, data, **kwargs):
         """
         Custom blueprint creation
         """
@@ -65,9 +65,7 @@ class BlueprintManager(models.Manager):
         # validate incoming data
         ##
         blueprint = self.model(title=data['title'],
-                               description=data['description'],
-                               public=data.get('public', False),
-                               owner=owner)
+                               description=data['description'])
         blueprint.save()
 
         props_json = json.dumps(data.get('properties', {}), indent=4)
@@ -112,7 +110,7 @@ class BlueprintManager(models.Manager):
                 component_sls_path = component.get('sls_path')
                 component_order = int(component.get('order', 0) or 0)
 
-                d = {'formula__owner': owner}
+                d = {}
                 if component_id:
                     d['pk'] = component_id
                 elif component_sls_path:
@@ -166,13 +164,6 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
             'update',
             'delete',
         )
-
-    # owner of the blueprint
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL,
-                              related_name='blueprints')
-
-    # publicly available to other users?
-    public = models.BooleanField(default=False)
 
     # storage for properties file
     props_file = DeletingFileField(

@@ -137,9 +137,6 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
-    # Read only fields
-    owner = serializers.ReadOnlyField(source='owner.username')
-
     properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
 
@@ -149,8 +146,6 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
             'id',
             'title',
             'description',
-            'owner',
-            'public',
             'url',
             'properties',
             'host_definitions',
