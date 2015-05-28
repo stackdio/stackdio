@@ -20,7 +20,7 @@ import logging
 from guardian.shortcuts import assign_perm
 from rest_framework import status
 
-from core.tests import StackdioTestCase
+from core.tests import StackdioTestCase, PermissionsMixin
 from . import models
 
 
@@ -50,7 +50,7 @@ class CloudProviderTypeTestCase(StackdioTestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
-class CloudProviderTestCase(StackdioTestCase):
+class CloudProviderTestCase(StackdioTestCase, PermissionsMixin):
     """
     Tests for CloudProvider things
     """
@@ -59,45 +59,75 @@ class CloudProviderTestCase(StackdioTestCase):
         'cloud/fixtures/initial_data.json',
     )
 
-    @classmethod
-    def setUpTestData(cls):
-        super(CloudProviderTestCase, cls).setUpTestData()
-
-        models.CloudProvider.objects.create(
-            provider_type_id=1,
-            title='test',
-            description='test',
-            account_id='blah',
-            vpc_id='vpc-blah',
-            region_id=1,
-        )
-
-    def setUp(self):
-        super(CloudProviderTestCase, self).setUp()
-        self.provider = models.CloudProvider.objects.get(pk=1)
+    permission_tests = {
+        'model': models.CloudProvider,
+        'create_data': {
+            'provider_type_id': 1,
+            'title': 'test',
+            'description': 'test',
+            'account_id': 'blah',
+            'vpc_id': 'vpc-blah',
+            'region_id': 1,
+        },
+        'endpoint': '/api/providers/{0}/',
+        'permission': 'cloud.%s_cloudprovider',
+        'permission_types': [
+            {
+                'perm': 'view', 'method': 'get'
+            },
+            {
+                'perm': 'update', 'method': 'patch', 'data': {'title': 'test2'}
+            },
+            {
+                'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
+            },
+        ]
+    }
 
     def test_view_provider_as_admin(self):
+        provider = models.CloudProvider.objects.create(**self.permission_tests['create_data'])
+
         self.client.login(username='test.admin', password='1234')
 
-        response = self.client.get('/api/providers/1/')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_view_provider_as_non_admin(self):
-        self.client.login(username='test.user', password='1234')
-
-        # Should fail now - no permission
-        response = self.client.get('/api/providers/1/')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-        # Assign permission
-        assign_perm('cloud.view_cloudprovider', self.user, self.provider)
-
-        # Should work now - permission granted
-        response = self.client.get('/api/providers/1/')
+        response = self.client.get('/api/providers/{0}/'.format(provider.pk))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
-class CloudProfileTestCase(StackdioTestCase):
+class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     """
-    Tests for CloudProfile things
+    Tests for CloudProvider things
     """
+
+    fixtures = (
+        'cloud/fixtures/initial_data.json',
+    )
+
+    permission_tests = {
+        'model': models.CloudProfile,
+        'create_data': {
+            'cloud_provider_id': 1,
+            'title': 'test',
+            'description': 'test',
+            'image_id': 'blah',
+            'default_instance_size_id': 1,
+            'ssh_user': 'root',
+        },
+        'endpoint': '/api/profiles/{0}/',
+        'permission': 'cloud.%s_cloudprofile',
+        'permission_types': [
+            {
+                'perm': 'view', 'method': 'get'
+            },
+            {
+                'perm': 'update', 'method': 'patch', 'data': {'title': 'test2'}
+            },
+            {
+                'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
+            },
+        ]
+    }
+
+    @classmethod
+    def setUpTestData(cls):
+        super(CloudProfileTestCase, cls).setUpTestData()
+        models.CloudProvider.objects.create(**CloudProviderTestCase.permission_tests['create_data'])

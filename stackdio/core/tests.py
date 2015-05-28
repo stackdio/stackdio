@@ -20,7 +20,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import TestCase
-from guardian.shortcuts import assign_perm
+from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -31,6 +31,69 @@ from .utils import get_urls
 logger = logging.getLogger(__name__)
 
 
+class PermissionsMixin(object):
+    NO_REQUEST_DATA = ('get', 'delete')
+
+    permission_tests = {}
+
+    @classmethod
+    def _error_check_permissions(cls):
+        # Error checking
+        if not cls.permission_tests:
+            # No tests, we'll just stop here - we don't want to fail
+            return False
+
+        if not isinstance(cls.permission_tests, dict):
+            raise AssertionError('The `permission_tests` attribute must be a dict')
+
+        if 'model' not in cls.permission_tests:
+            raise AssertionError('You must specify a model to create an instance of')
+
+        if 'endpoint' not in cls.permission_tests:
+            raise AssertionError('You must specify an endpoint')
+
+        # Things look OK
+        return True
+
+    def test_permissions(self):
+        """
+        Generic method to test permissions for each resource
+        """
+        if not self._error_check_permissions():
+            # Just succeed immediately if necessary
+            return
+
+        self.client.login(username='test.user', password='1234')
+
+        # Create the object
+        obj = self.permission_tests['model'].objects.create(
+            **self.permission_tests.get('create_data', {})
+        )
+
+        endpoint = self.permission_tests['endpoint'].format(obj.pk)
+
+        # Iterate over the methods / permissions
+        for perm_type in self.permission_tests['permission_types']:
+            # Should fail now - no permission
+
+            method = perm_type['method']
+
+            response = getattr(self.client, method)(endpoint, perm_type.get('data', {}))
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+            # Assign permission
+            assign_perm(self.permission_tests['permission'] % perm_type['perm'], self.user, obj)
+
+            # Should work now - permission granted
+            response = getattr(self.client, method)(endpoint, perm_type.get('data', {}))
+            expected_code = perm_type.get('code', status.HTTP_200_OK)
+
+            self.assertEqual(response.status_code, expected_code)
+
+            # Remove permission
+            remove_perm(self.permission_tests['permission'] % perm_type['perm'], self.user, obj)
+
+
 class StackdioTestCase(TestCase):
     """
     Base test case class for stackd.io.  We'll add a client object, and create an admin and a
@@ -38,13 +101,9 @@ class StackdioTestCase(TestCase):
     endpoints.
     """
     GLOBAL_PERM_MODELS = (
-        'cloud.%s_cloudprovidertype',
         'cloud.%s_cloudprovider',
         'cloud.%s_cloudprofile',
         'cloud.%s_snapshot',
-        'cloud.%s_cloudregion',
-        'cloud.%s_cloudzone',
-        'cloud.%s_cloudinstancesize',
         'cloud.%s_securitygroup',
         'cloud.%s_globalorchestrationformulacomponent',
         'stacks.%s_stack',
@@ -52,6 +111,13 @@ class StackdioTestCase(TestCase):
         'volumes.%s_volume',
         'blueprints.%s_blueprint',
         'formulas.%s_formula',
+    )
+
+    GLOBAL_VIEW_ONLY_MODELS = (
+        'cloud.%s_cloudprovidertype',
+        'cloud.%s_cloudregion',
+        'cloud.%s_cloudzone',
+        'cloud.%s_cloudinstancesize',
     )
 
     def setUp(self):
@@ -72,6 +138,10 @@ class StackdioTestCase(TestCase):
         everybody = Group.objects.create(name='everybody')
         # Give the necessary global permissions
         for perm in cls.GLOBAL_PERM_MODELS:
+            for perm_type in ('view', 'update', 'delete'):
+                assign_perm(perm % perm_type, everybody)
+
+        for perm in cls.GLOBAL_VIEW_ONLY_MODELS:
             assign_perm(perm % 'view', everybody)
 
         # Put the users in the group
