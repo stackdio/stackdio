@@ -131,3 +131,36 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     def setUpTestData(cls):
         super(CloudProfileTestCase, cls).setUpTestData()
         models.CloudProvider.objects.create(**CloudProviderTestCase.permission_tests['create_data'])
+
+
+# class CloudInstanceSizeTestCase(StackdioTestCase, PermissionsMixin):
+#     """
+#     Tests for CloudProvider things
+#     """
+#
+#     fixtures = (
+#         'cloud/fixtures/initial_data.json',
+#     )
+#
+#     permission_tests = {
+#         'model': models.CloudInstanceSize,
+#         'create_data': {
+#             'title': 'test',
+#             'description': 'test',
+#             'provider_type_id': 1,
+#             'instance_id': 'blah',
+#         },
+#         'endpoint': '/api/instance_sizes/{0}/',
+#         'permission': 'cloud.%s_cloudinstancesize',
+#         'permission_types': [
+#             {
+#                 'perm': 'view', 'method': 'get'
+#             },
+#             {
+#                 'perm': 'update', 'method': 'patch', 'data': {'title': 'test2'}
+#             },
+#             {
+#                 'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
+#             },
+#         ]
+#     }

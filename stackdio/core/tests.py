@@ -32,8 +32,6 @@ logger = logging.getLogger(__name__)
 
 
 class PermissionsMixin(object):
-    NO_REQUEST_DATA = ('get', 'delete')
-
     permission_tests = {}
 
     @classmethod
