@@ -26,7 +26,6 @@ class BlueprintAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
-        'owner',
         'host_definition_count',
         'created',
         'modified',
