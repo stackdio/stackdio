@@ -436,10 +436,6 @@ class SecurityGroup(TimeStampedModel, models.Model):
     cloud_provider = models.ForeignKey('cloud.CloudProvider',
                                        related_name='security_groups')
 
-    # the owner of this security group
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL,
-                              related_name='security_groups')
-
     # ADMIN-ONLY: setting this to true will cause this security group
     # to be added automatically to all machines that get started in
     # the related cloud provider

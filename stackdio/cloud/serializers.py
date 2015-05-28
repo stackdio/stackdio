@@ -360,7 +360,6 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     # Read-only fields.
     ##
     group_id = serializers.ReadOnlyField()
-    owner = serializers.PrimaryKeyRelatedField(read_only=True)
 
     # Field for showing the number of active hosts using this security
     # group. It is pulled automatically from the model instance method.
@@ -387,13 +386,12 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
             'group_id',
             'cloud_provider',
             'provider_id',
-            'owner',
             'is_default',
             'is_managed',
             'active_hosts',
             'rules',
         )
-        superuser_fields = ('owner', 'is_default', 'is_managed')
+        superuser_fields = ('is_default', 'is_managed')
 
 
 class SecurityGroupRuleSerializer(serializers.Serializer):

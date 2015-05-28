@@ -124,7 +124,6 @@ class SecurityGroupAdmin(GuardedModelAdmin):
         'name',
         'group_id',
         'cloud_provider',
-        'owner',
         'is_default',
     ]
 
