@@ -42,8 +42,4 @@ urlpatterns = patterns('formulas.api',
     url(r'^formula_components/(?P<pk>[0-9]+)/$',
         api.FormulaComponentDetailAPIView.as_view(),
         name='formulacomponent-detail'),
-
-    url(r'^global_orchestration_formulas/$',
-        api.GlobalOrchestrationFormulaListAPIView.as_view(),
-        name='formula-global-orchestration-list')
 )

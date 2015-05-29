@@ -130,18 +130,6 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         return Response(self.get_serializer(formula_objs, many=True).data)
 
 
-class GlobalOrchestrationFormulaListAPIView(FormulaListAPIView):
-    def get_user(self):
-        user_model = get_user_model()
-        try:
-            return user_model.objects.get(username=GLOBAL_ORCHESTRATION_USER)
-        except user_model.DoesNotExist:
-            return user_model.objects.create(username=GLOBAL_ORCHESTRATION_USER, is_active=False)
-
-    def get_queryset(self):
-        return self.get_user().formulas.all()
-
-
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
@@ -174,41 +162,22 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         """
         formula = self.get_object()
 
-        if formula.owner.username == GLOBAL_ORCHESTRATION_USER:
-            # Check for global orchestration components on this formula
-            providers = set()
-            for c in formula.components.all():
-                providers.update(
-                    [i.provider for i in c.globalorchestrationformulacomponent_set.all()])
+        # Check for Blueprints depending on this formula
+        blueprints = set()
+        for c in formula.components.all():
+            blueprints.update(
+                [i.host.blueprint for i in c.blueprinthostformulacomponent_set.all()])
 
-            if providers:
-                providers = CloudProviderSerializer(providers,
-                                                    context={'request': request}).data
-                return Response({
-                    'detail': 'One or more providers are making use of this '
-                              'formula.',
-                    'blueprints': providers,
-                }, status=status.HTTP_400_BAD_REQUEST)
+        if blueprints:
+            blueprints = BlueprintSerializer(blueprints,
+                                             context={'request': request}).data
+            return Response({
+                'detail': 'One or more blueprints are making use of this '
+                          'formula.',
+                'blueprints': blueprints,
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        else:
-            # Check for Blueprints depending on this formula
-            blueprints = set()
-            for c in formula.components.all():
-                blueprints.update(
-                    [i.host.blueprint for i in c.blueprinthostformulacomponent_set.all()])
-
-            if blueprints:
-                blueprints = BlueprintSerializer(blueprints,
-                                                 context={'request': request}).data
-                return Response({
-                    'detail': 'One or more blueprints are making use of this '
-                              'formula.',
-                    'blueprints': blueprints,
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-        return super(FormulaDetailAPIView, self).delete(request,
-                                                        *args,
-                                                        **kwargs)
+        return super(FormulaDetailAPIView, self).delete(request, *args, **kwargs)
 
 
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):

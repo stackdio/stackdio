@@ -101,9 +101,6 @@ class APIRootView(APIView):
             api['core']['users'] = reverse('user-list',
                                            request=request,
                                            format=format)
-            api['global_orchestration_formulas'] = reverse('formula-global-orchestration-list',
-                                                           request=request,
-                                                           format=format)
 
         return Response(api)
 

@@ -18,9 +18,6 @@
 
 import logging
 
-from django.conf import settings
-from django.contrib.auth import get_user_model
-
 from rest_framework import serializers
 
 from blueprints.models import Blueprint
@@ -28,10 +25,6 @@ from formulas.models import Formula
 from stacks.models import Stack
 
 logger = logging.getLogger(__name__)
-
-
-class SearchSerializer(serializers.Serializer):
-    pass
 
 
 class SearchResultTypeField(serializers.Field):
@@ -43,7 +36,7 @@ class SearchResultTypeField(serializers.Field):
         self.result_type = result_type
         super(SearchResultTypeField, self).__init__(source='pk')
 
-    def to_native(self, obj):
+    def to_representation(self, value):
         return self.result_type
 
 

@@ -26,8 +26,6 @@ class FormulaAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
-        'owner',
-        'public',
         'created',
         'modified',
     ]
