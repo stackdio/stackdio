@@ -54,12 +54,6 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
     filter_class = filters.FormulaFilter
 
-    def pre_save(self, obj):
-        obj.owner = self.get_user()
-
-    def get_user(self):
-        return self.request.user
-
     def create(self, request, *args, **kwargs):
         uri = request.DATA.get('uri', '')
         uris = request.DATA.get('uris', [])
@@ -81,7 +75,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         errors = []
         for uri in uris:
             try:
-                models.Formula.objects.get(uri=uri, owner=self.get_user())
+                models.Formula.objects.get(uri=uri)
                 errors.append('Duplicate formula detected: {0}'.format(uri))
             except models.Formula.DoesNotExist:
                 pass
@@ -120,7 +114,6 @@ class FormulaListAPIView(generics.ListCreateAPIView):
                 status=models.Formula.IMPORTING,
                 status_detail='Importing formula...this could take a while.')
 
-            self.pre_save(formula_obj)
             formula_obj.save()
 
             # Import using asynchronous task
