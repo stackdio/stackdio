@@ -47,7 +47,6 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     status_detail = serializers.ReadOnlyField()
 
     # Special read only fields
-    owner = serializers.ReadOnlyField(source='owner.username')
     components = FormulaComponentSerializer(many=True, read_only=True)
 
     # Other fields
@@ -61,9 +60,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'url',
             'title',
             'description',
-            'owner',
             'uri',
-            'public',
             'git_username',
             'private_git_repo',
             'access_token',
