@@ -27,7 +27,8 @@ from os.path import join, isfile
 import envoy
 import yaml
 from django.http import HttpResponse
-from rest_framework import generics, permissions, status
+from guardian.shortcuts import assign_perm
+from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
@@ -106,7 +107,9 @@ class StackListAPIView(generics.ListCreateAPIView):
                              'machines. Please update your user profile '
                              'before continuing.')
 
-        serializer.save(owner=self.request.user)
+        stack = serializer.save()
+        for perm in models.Stack.Meta.default_permissions:
+            assign_perm('stacks.%s_stack' % perm, self.request.user, stack)
 
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

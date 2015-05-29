@@ -68,33 +68,32 @@ def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
 
 # Map, pillar, and properties files go into storage
 def get_map_file_path(obj, filename):
-    return "stacks/{0}/{1}/stack.map".format(obj.owner.username, obj.slug)
+    return "stacks/{0}-{1}/stack.map".format(obj.pk, obj.slug)
 
 
 def get_pillar_file_path(obj, filename):
-    return "stacks/{0}/{1}/stack.pillar".format(obj.owner.username, obj.slug)
+    return "stacks/{0}-{1}/stack.pillar".format(obj.pk, obj.slug)
 
 
 def get_global_pillar_file_path(obj, filename):
-    return "stacks/{0}/{1}/stack.global_pillar".format(obj.owner.username,
-                                                       obj.slug)
+    return "stacks/{0}-{1}/stack.global_pillar".format(obj.pk, obj.slug)
 
 
 def get_props_file_path(obj, filename):
-    return "stacks/{0}/{1}/stack.props".format(obj.owner.username, obj.slug)
+    return "stacks/{0}-{1}/stack.props".format(obj.pk, obj.slug)
 
 
 # Top and overstate files go into salt root
 def get_top_file_path(obj, filename):
-    return "stack_{0}_top.sls".format(obj.id)
+    return "stack_{0}_top.sls".format(obj.pk)
 
 
 def get_overstate_file_path(obj, filename):
-    return "stack_{0}_overstate.sls".format(obj.id)
+    return "stack_{0}_overstate.sls".format(obj.pk)
 
 
 def get_global_overstate_file_path(obj, filename):
-    return "stack_{0}_global_overstate.sls".format(obj.id)
+    return "stack_{0}_global_overstate.sls".format(obj.pk)
 
 
 class StackCreationException(Exception):
@@ -127,21 +126,18 @@ class StatusDetailModel(model_utils.models.StatusModel):
 class StackManager(models.Manager):
 
     @transaction.atomic
-    def create_stack(self, owner, blueprint, **data):
+    def create_stack(self, blueprint, **data):
         """
         """
         title = data.get('title', '')
         description = data.get('description', '')
-        public = data.get('public', False)
 
         if not title:
             raise ValueError("Stack 'title' is a required field.")
 
-        stack = self.model(owner=owner,
-                           blueprint=blueprint,
+        stack = self.model(blueprint=blueprint,
                            title=title,
-                           description=description,
-                           public=public)
+                           description=description)
         stack.save()
 
         # add the namespace
@@ -219,7 +215,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
                      STARTING, STOPPING, TERMINATING, EXECUTING_ACTION, ERROR)
 
     class Meta:
-        unique_together = ('owner', 'title')
         ordering = ('title',)
 
         default_permissions = (
@@ -236,9 +231,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
             'delete',
         )
 
-    # The "owner" of the stack and all of its infrastructure
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='stacks')
-
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint',
                                   related_name='stacks')
@@ -246,10 +238,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
     namespace = models.CharField('Namespace', max_length=64, blank=True)
-
-    # is this stack publicly available -- meaning it can be found by other
-    # users and will remain in read-only mode to them
-    public = models.BooleanField('Public', default=False)
 
     # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(
@@ -388,8 +376,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
             # create the managed security group for each host definition
             # and assign the rules to the group
-            sg_name = 'managed-{0}-{1}-stack-{2}'.format(
-                self.owner.username,
+            sg_name = 'stackdio-managed-{0}-stack-{1}'.format(
                 hostdef.slug,
                 self.pk)
             sg_description = 'stackd.io managed security group'
@@ -423,7 +410,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
 
             # create the security group object that we can use for tracking
             self.security_groups.create(
-                owner=self.owner,
                 cloud_provider=cloud_provider,
                 blueprint_host_definition=hostdef,
                 name=sg_name,
@@ -504,7 +490,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
             for i in indexes:
                 hostname = hostdef.hostname_template.format(
                     namespace=self.namespace,
-                    username=self.owner.username,
                     index=i
                 )
 
@@ -800,12 +785,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
         # owner's username instead
         username = settings.STACKDIO_CONFIG.ssh_user
         if username == '$USERNAME':
-            username = self.owner.username
+            username = 'stackdio'
 
+        # TODO re-add public key
         pillar_props = {
             '__stackdio__': {
                 'username': username,
-                'publickey': self.owner.settings.public_key,
+                'publickey': '',
             }
         }
 

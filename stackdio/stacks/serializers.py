@@ -132,7 +132,6 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
 
 class StackSerializer(serializers.HyperlinkedModelSerializer):
     # Read only fields
-    owner = serializers.ReadOnlyField(source='owner.username')
     host_count = serializers.ReadOnlyField(source='hosts.count')
     volume_count = serializers.ReadOnlyField(source='volumes.count')
     status = serializers.ReadOnlyField()
@@ -173,8 +172,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'description',
             'status',
-            'public',
-            'owner',
             'namespace',
             'host_count',
             'volume_count',

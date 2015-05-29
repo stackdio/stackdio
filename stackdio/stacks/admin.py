@@ -26,7 +26,6 @@ class StackAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
-        'owner',
         'blueprint',
         # 'cloud_provider',
         'created',
