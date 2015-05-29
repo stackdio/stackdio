@@ -18,7 +18,6 @@
 import logging
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.test import TestCase
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import status
