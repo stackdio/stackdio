@@ -27,6 +27,7 @@ from rest_framework.response import Response
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest, ResourceConflict
 from core.permissions import StackdioDjangoModelPermissions, StackdioDjangoObjectPermissions
+from .permissions import StackdioReadOnlyModelPermissions
 from . import models
 from . import serializers
 from . import filters
@@ -38,14 +39,13 @@ logger = logging.getLogger(__name__)
 class CloudProviderTypeListAPIView(generics.ListAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
 
 
 class CloudProviderListAPIView(generics.ListCreateAPIView):
@@ -114,15 +114,14 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
     queryset = models.CloudInstanceSize.objects.all()
     serializer_class = serializers.CloudInstanceSizeSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
     filter_class = filters.CloudInstanceSizeFilter
 
 
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudInstanceSize.objects.all()
     serializer_class = serializers.CloudInstanceSizeSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
 
 
 class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
@@ -240,22 +239,20 @@ class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class CloudRegionListAPIView(generics.ListAPIView):
     queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
     filter_class = filters.CloudRegionFilter
 
 
 class CloudRegionDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
 
 
 class CloudRegionZoneListAPIView(generics.ListAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
     filter_class = filters.CloudZoneFilter
 
     def get_queryset(self):
@@ -265,15 +262,14 @@ class CloudRegionZoneListAPIView(generics.ListAPIView):
 class CloudZoneListAPIView(generics.ListAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
     filter_class = filters.CloudZoneFilter
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioReadOnlyModelPermissions,)
 
 
 class SecurityGroupListAPIView(generics.ListCreateAPIView):
