@@ -20,13 +20,13 @@ import logging
 
 import yaml
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, permissions, status
+from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest, ResourceConflict
-from core.permissions import StackdioDjangoObjectPermissions
+from core.permissions import StackdioDjangoModelPermissions, StackdioDjangoObjectPermissions
 from . import models
 from . import serializers
 from . import filters
@@ -38,18 +38,21 @@ logger = logging.getLogger(__name__)
 class CloudProviderTypeListAPIView(generics.ListAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class CloudProviderListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudProviderFilter
 
     def perform_create(self, serializer):
@@ -86,6 +89,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def destroy(self, request, *args, **kwargs):
         # check for profiles using this provider before deleting
@@ -110,19 +114,22 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class CloudInstanceSizeListAPIView(generics.ListAPIView):
     queryset = models.CloudInstanceSize.objects.all()
     serializer_class = serializers.CloudInstanceSizeSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudInstanceSizeFilter
 
 
 class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudInstanceSize.objects.all()
     serializer_class = serializers.CloudInstanceSizeSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
     queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
 
     def get_provider(self):
         obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
@@ -150,11 +157,13 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
 class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.GlobalOrchestrationPropertiesSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def get_object(self):
         obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
@@ -165,7 +174,8 @@ class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
 class CloudProfileListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudProfileFilter
 
     def perform_create(self, serializer):
@@ -176,6 +186,7 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         # validate that the AMI exists by looking it up in the cloud provider
@@ -216,30 +227,35 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class SnapshotListAPIView(generics.ListCreateAPIView):
     queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
 
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class CloudRegionListAPIView(generics.ListAPIView):
     queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudRegionFilter
 
 
 class CloudRegionDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class CloudRegionZoneListAPIView(generics.ListAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudZoneFilter
 
     def get_queryset(self):
@@ -249,13 +265,15 @@ class CloudRegionZoneListAPIView(generics.ListAPIView):
 class CloudZoneListAPIView(generics.ListAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudZoneFilter
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class SecurityGroupListAPIView(generics.ListCreateAPIView):
@@ -292,7 +310,8 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.SecurityGroup.objects.all().with_rules()
     serializer_class = serializers.SecurityGroupSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.SecurityGroupFilter
 
     # TODO: Ignore code complexity issues
@@ -397,6 +416,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         """
@@ -499,6 +519,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
     queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupRuleSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def retrieve(self, request, *args, **kwargs):
         sg = self.get_object()
@@ -631,7 +652,8 @@ class CloudProviderVPCSubnetListAPIView(generics.ListAPIView):
     """
     """
     queryset = models.CloudProvider.objects.all()
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
 
     def get_provider(self):
         pk = self.kwargs[self.lookup_field]

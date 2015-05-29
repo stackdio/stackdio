@@ -26,12 +26,15 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import logging
 import os
 
 import dj_database_url
 
 from core.config import StackdioConfig
 
+
+logger = logging.getLogger(__name__)
 
 STACKDIO_CONFIG = StackdioConfig()
 
@@ -292,7 +295,6 @@ REST_FRAMEWORK = {
     # All endpoints require authentication
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-        'core.permissions.StackdioDjangoObjectPermissions',
     ),
 
     # Parsers - enable FormParser to get nice forms in the browsable API
@@ -311,10 +313,10 @@ REST_FRAMEWORK = {
 ##
 # Available cloud providers
 ##
-CLOUD_PROVIDERS = [
+CLOUD_PROVIDERS = (
     'cloud.providers.aws.AWSCloudProvider',
     # 'cloud.providers.rackspace.RackspaceCloudProvider',
-]
+)
 
 ##
 # Celery & RabbitMQ
@@ -356,9 +358,9 @@ CELERY_ROUTES = {
 # LDAP configuration. To enable this, you should copy ldap_settings.py.template
 # to ldap_settings.py and modify the settings there.
 ##
-if os.path.isfile(os.path.join(BASE_DIR, 'stackdio', 'settings', 'ldap_settings.py')):
+try:
+    from stackdio.settings.ldap_settings import *  # NOQA
     LDAP_ENABLED = True
     AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
-    from ldap_settings import *  # NOQA
-else:
+except ImportError:
     LDAP_ENABLED = False

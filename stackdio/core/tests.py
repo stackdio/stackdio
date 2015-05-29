@@ -18,7 +18,6 @@
 import logging
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.test import TestCase
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import status
@@ -98,25 +97,6 @@ class StackdioTestCase(TestCase):
     regular user.  We'll also create an 'everybody' group with permissions to view most of the
     endpoints.
     """
-    GLOBAL_PERM_MODELS = (
-        'cloud.%s_cloudprovider',
-        'cloud.%s_cloudprofile',
-        'cloud.%s_snapshot',
-        'cloud.%s_securitygroup',
-        'cloud.%s_globalorchestrationformulacomponent',
-        'stacks.%s_stack',
-        'stacks.%s_host',
-        'volumes.%s_volume',
-        'blueprints.%s_blueprint',
-        'formulas.%s_formula',
-    )
-
-    GLOBAL_VIEW_ONLY_MODELS = (
-        'cloud.%s_cloudprovidertype',
-        'cloud.%s_cloudregion',
-        'cloud.%s_cloudzone',
-        'cloud.%s_cloudinstancesize',
-    )
 
     def setUp(self):
         self.client = APIClient()
@@ -127,24 +107,10 @@ class StackdioTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         user_model = get_user_model()
-        admin = user_model.objects.create_superuser('test.admin',
-                                                    'test.admin@stackd.io', '1234')
-        user = user_model.objects.create_user('test.user',
-                                              'test.user@stackd.io', '1234')
-
-        # Create an everybody group
-        everybody = Group.objects.create(name='everybody')
-        # Give the necessary global permissions
-        for perm in cls.GLOBAL_PERM_MODELS:
-            for perm_type in ('view', 'update', 'delete'):
-                assign_perm(perm % perm_type, everybody)
-
-        for perm in cls.GLOBAL_VIEW_ONLY_MODELS:
-            assign_perm(perm % 'view', everybody)
-
-        # Put the users in the group
-        admin.groups.add(everybody)
-        user.groups.add(everybody)
+        user_model.objects.create_superuser('test.admin',
+                                            'test.admin@stackd.io', '1234')
+        user_model.objects.create_user('test.user',
+                                       'test.user@stackd.io', '1234')
 
 
 class AuthenticationTestCase(StackdioTestCase):

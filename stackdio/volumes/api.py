@@ -21,6 +21,7 @@ import logging
 from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 
+from core.permissions import StackdioDjangoModelPermissions, StackdioDjangoObjectPermissions
 from . import filters, models, serializers
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,12 @@ class VolumeListAPIView(generics.ListAPIView):
     """
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.VolumeFilter
 
 
 class VolumeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
