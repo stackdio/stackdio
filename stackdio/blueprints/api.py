@@ -24,6 +24,7 @@ from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsF
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
+from core.permissions import StackdioDjangoModelPermissions, StackdioDjangoObjectPermissions
 from stacks.serializers import StackSerializer
 from . import filters, models, serializers, validators
 
@@ -36,7 +37,8 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.BlueprintFilter
 
     def perform_create(self, serializer):
@@ -55,6 +57,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
 class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         blueprint = self.get_object()
@@ -102,6 +105,7 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class BlueprintPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def get_object(self):
         queryset = models.Blueprint.objects.all()

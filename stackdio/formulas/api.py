@@ -27,6 +27,7 @@ from rest_framework.response import Response
 from blueprints.serializers import BlueprintSerializer
 from cloud.serializers import CloudProviderSerializer
 from core.exceptions import BadRequest
+from core.permissions import StackdioDjangoModelPermissions, StackdioDjangoObjectPermissions
 from . import filters, models, serializers, tasks
 
 
@@ -51,7 +52,8 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    filter_backends = (DjangoFilterBackend, DjangoObjectPermissionsFilter)
+    permission_classes = (StackdioDjangoModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.FormulaFilter
 
     def pre_save(self, obj):
@@ -145,6 +147,7 @@ class GlobalOrchestrationFormulaListAPIView(FormulaListAPIView):
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         """
@@ -214,16 +217,19 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaPropertiesSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.FormulaComponent.objects.all()
     serializer_class = serializers.FormulaComponentSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
 
 class FormulaActionAPIView(generics.GenericAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
+    permission_classes = (StackdioDjangoObjectPermissions,)
 
     AVAILABLE_ACTIONS = [
         'update',
