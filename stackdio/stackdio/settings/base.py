@@ -295,7 +295,6 @@ REST_FRAMEWORK = {
     # All endpoints require authentication
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-        'core.permissions.StackdioDjangoObjectPermissions',
     ),
 
     # Parsers - enable FormParser to get nice forms in the browsable API

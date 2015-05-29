@@ -24,6 +24,23 @@ from rest_framework import permissions
 logger = logging.getLogger(__name__)
 
 
+# For list/create views
+class StackdioDjangoModelPermissions(permissions.DjangoModelPermissions):
+    """
+    Override the default permission namings
+    """
+    perms_map = {
+        'GET': [],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.create_%(model_name)s'],
+        'PUT': ['%(app_label)s.update_%(model_name)s'],
+        'PATCH': ['%(app_label)s.update_%(model_name)s'],
+        'DELETE': ['%(app_label)s.delete_%(model_name)s'],
+    }
+
+
+# For detail views
 class StackdioDjangoObjectPermissions(permissions.DjangoObjectPermissions):
     """
     Override the default permission namings
@@ -37,6 +54,9 @@ class StackdioDjangoObjectPermissions(permissions.DjangoObjectPermissions):
         'PATCH': ['%(app_label)s.update_%(model_name)s'],
         'DELETE': ['%(app_label)s.delete_%(model_name)s'],
     }
+
+    def has_permission(self, request, view):
+        return True
 
 
 class AdminOrOwnerPermission(permissions.IsAdminUser):
