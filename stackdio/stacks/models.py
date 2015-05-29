@@ -1034,12 +1034,7 @@ class Host(TimeStampedModel, StatusDetailModel):
     class Meta:
         ordering = ['blueprint_host_definition', '-index']
 
-        default_permissions = (
-            'create',
-            'view',
-            'update',
-            'delete',
-        )
+        default_permissions = ()
 
     # TODO: We should be using generic foreign keys here to a cloud provider
     # specific implementation of a Host object. I'm not exactly sure how this
