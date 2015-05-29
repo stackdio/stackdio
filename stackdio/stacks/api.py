@@ -440,12 +440,6 @@ def stack_action_zip(request, pk):
         return Response({"detail": "Not found"})
 
 
-class HostListAPIView(generics.ListAPIView):
-    queryset = models.Host.objects.all()
-    serializer_class = serializers.HostSerializer
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
-
-
 class StackHostsAPIView(PublicStackMixin, generics.ListAPIView):
     queryset = models.Stack.objects.all()
     serializer_class = serializers.HostSerializer

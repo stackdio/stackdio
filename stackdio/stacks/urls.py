@@ -23,10 +23,6 @@ from . import api
 urlpatterns = patterns(
     'stacks.api',
 
-    url(r'^hosts/$',
-        api.HostListAPIView.as_view(),
-        name='host-list'),
-
     url(r'^hosts/(?P<pk>[0-9]+)/$',
         api.HostDetailAPIView.as_view(),
         name='host-detail'),
