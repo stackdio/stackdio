@@ -15,7 +15,12 @@
 # limitations under the License.
 #
 
-from core.permissions import StackdioModelPermissions
+from core.permissions import StackdioModelPermissions, StackdioParentObjectPermissions
+from . import models
+
+
+class CloudProviderParentObjectPermissions(StackdioParentObjectPermissions):
+    parent_model_cls = models.CloudProvider
 
 
 class StackdioReadOnlyModelPermissions(StackdioModelPermissions):

@@ -27,10 +27,7 @@ from rest_framework.response import Response
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest, ResourceConflict
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from .permissions import StackdioReadOnlyModelPermissions
-from . import models
-from . import serializers
-from . import filters
+from . import filters, mixins, models, permissions, serializers
 
 
 logger = logging.getLogger(__name__)
@@ -39,13 +36,13 @@ logger = logging.getLogger(__name__)
 class CloudProviderTypeListAPIView(generics.ListAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
 
 
 class CloudProviderListAPIView(generics.ListCreateAPIView):
@@ -111,29 +108,9 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return super(CloudProviderDetailAPIView, self).destroy(request, *args, **kwargs)
 
 
-class CloudInstanceSizeListAPIView(generics.ListAPIView):
-    queryset = models.CloudInstanceSize.objects.all()
-    serializer_class = serializers.CloudInstanceSizeSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
-    filter_class = filters.CloudInstanceSizeFilter
-
-
-class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
-    queryset = models.CloudInstanceSize.objects.all()
-    serializer_class = serializers.CloudInstanceSizeSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
-
-
-class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
-    queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
+class GlobalOrchestrationComponentListAPIView(mixins.CloudProviderRelatedMixin,
+                                              generics.ListCreateAPIView):
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
-    permission_classes = (StackdioModelPermissions,)
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
-
-    def get_provider(self):
-        obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
 
     def get_queryset(self):
         return self.get_provider().global_formula_components.all()
@@ -159,15 +136,34 @@ class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveUpdateDestroyAP
     permission_classes = (StackdioObjectPermissions,)
 
 
-class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
+class GlobalOrchestrationPropertiesAPIView(mixins.CloudProviderRelatedMixin,
+                                           generics.RetrieveUpdateAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.GlobalOrchestrationPropertiesSerializer
-    permission_classes = (StackdioObjectPermissions,)
 
-    def get_object(self):
-        obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+
+class CloudProviderVPCSubnetListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        provider = self.get_provider()
+        driver = provider.get_driver()
+
+        subnets = driver.get_vpc_subnets()
+        return Response({
+            'results': serializers.VPCSubnetSerializer(subnets, many=True).data
+        })
+
+
+class CloudInstanceSizeListAPIView(generics.ListAPIView):
+    queryset = models.CloudInstanceSize.objects.all()
+    serializer_class = serializers.CloudInstanceSizeSerializer
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
+    filter_class = filters.CloudInstanceSizeFilter
+
+
+class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
+    queryset = models.CloudInstanceSize.objects.all()
+    serializer_class = serializers.CloudInstanceSizeSerializer
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):
@@ -239,20 +235,20 @@ class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class CloudRegionListAPIView(generics.ListAPIView):
     queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
     filter_class = filters.CloudRegionFilter
 
 
 class CloudRegionDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudRegion.objects.all()
     serializer_class = serializers.CloudRegionSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
 
 
 class CloudRegionZoneListAPIView(generics.ListAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
     filter_class = filters.CloudZoneFilter
 
     def get_queryset(self):
@@ -262,14 +258,14 @@ class CloudRegionZoneListAPIView(generics.ListAPIView):
 class CloudZoneListAPIView(generics.ListAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
     filter_class = filters.CloudZoneFilter
 
 
 class CloudZoneDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudZone.objects.all()
     serializer_class = serializers.CloudZoneSerializer
-    permission_classes = (StackdioReadOnlyModelPermissions,)
+    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
 
 
 class SecurityGroupListAPIView(generics.ListCreateAPIView):
@@ -572,7 +568,8 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
         return Response(result[sg.name]['rules'])
 
 
-class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
+class CloudProviderSecurityGroupListAPIView(mixins.CloudProviderRelatedMixin,
+                                            SecurityGroupListAPIView):
     """
     Like the standard, top-level Security Group List API, this API will allow
     you to create and pull security groups. The only significant difference is
@@ -589,12 +586,7 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
 
     See the standard, top-level Security Group API for further information.
     """
-    queryset = models.SecurityGroup.objects.all()
     filter_class = filters.SecurityGroupFilter
-
-    def get_provider(self):
-        pk = self.kwargs[self.lookup_field]
-        return models.CloudProvider.objects.get(pk=pk)
 
     def get_queryset(self):
         provider = self.get_provider()
@@ -642,24 +634,3 @@ class CloudProviderSecurityGroupListAPIView(SecurityGroupListAPIView):
 
         response.data['provider_groups'] = provider_groups
         return response
-
-
-class CloudProviderVPCSubnetListAPIView(generics.ListAPIView):
-    """
-    """
-    queryset = models.CloudProvider.objects.all()
-    permission_classes = (StackdioModelPermissions,)
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
-
-    def get_provider(self):
-        pk = self.kwargs[self.lookup_field]
-        return models.CloudProvider.objects.get(pk=pk)
-
-    def list(self, request, *args, **kwargs):
-        provider = self.get_provider()
-        driver = provider.get_driver()
-
-        subnets = driver.get_vpc_subnets()
-        return Response({
-            'results': serializers.VPCSubnetSerializer(subnets, many=True).data
-        })
