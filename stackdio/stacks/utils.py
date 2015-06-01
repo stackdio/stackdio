@@ -34,6 +34,18 @@ import salt.utils.cloud
 logger = logging.getLogger(__name__)
 
 
+def filter_actions(user, stack, actions):
+    ret = []
+    for action in actions:
+        the_action = action
+        if action == 'custom':
+            the_action = 'execute'
+        if user.has_perm('stacks.{0}_stack'.format(the_action.lower()), stack):
+            ret.append(action)
+
+    return ret
+
+
 def get_salt_cloud_log_file(stack, suffix):
     """
     suffix is a string (e.g, launch, overstate, highstate, error, etc)

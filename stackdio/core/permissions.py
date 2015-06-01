@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 # For list/create views
-class StackdioDjangoModelPermissions(permissions.DjangoModelPermissions):
+class StackdioModelPermissions(permissions.DjangoModelPermissions):
     """
     Override the default permission namings
     """
@@ -41,7 +41,7 @@ class StackdioDjangoModelPermissions(permissions.DjangoModelPermissions):
 
 
 # For detail views
-class StackdioDjangoObjectPermissions(permissions.DjangoObjectPermissions):
+class StackdioObjectPermissions(permissions.DjangoObjectPermissions):
     """
     Override the default permission namings
     """
@@ -56,6 +56,46 @@ class StackdioDjangoObjectPermissions(permissions.DjangoObjectPermissions):
     }
 
     def has_permission(self, request, view):
+        return True
+
+
+class StackdioParentObjectPermissions(StackdioObjectPermissions):
+    """
+    Very similar to regular object permissions, except that we don't want to use the model_cls
+    from the queryset, since the queryset may not be the same type of object that we want to
+    check permissions on.  Classic example being the `/api/stacks/<pk>/hosts/` endpoint - we want
+    to check permissions on a stack object, but the queryset consists of host objects.
+    """
+    parent_model_cls = None
+
+    def has_object_permission(self, request, view, obj):
+        assert self.parent_model_cls is not None, (
+            'Cannot apply StackdioParentObjectPermissions directly. '
+            'You must subclass it and override the `parent_model_cls` '
+            'attribute.')
+
+        model_cls = self.parent_model_cls
+        user = request.user
+
+        perms = self.get_required_object_permissions(request.method, model_cls)
+
+        if not user.has_perms(perms, obj):
+            # If the user does not have permissions we need to determine if
+            # they have read permissions to see 403, or not, and simply see
+            # a 404 response.
+
+            if request.method in permissions.SAFE_METHODS:
+                # Read permissions already checked and failed, no need
+                # to make another lookup.
+                raise permissions.Http404
+
+            read_perms = self.get_required_object_permissions('GET', model_cls)
+            if not user.has_perms(read_perms, obj):
+                raise permissions.Http404
+
+            # Has read permissions.
+            return False
+
         return True
 
 

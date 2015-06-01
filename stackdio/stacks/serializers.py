@@ -259,7 +259,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         title = validated_data['title']
         description = validated_data['description']
         blueprint = validated_data['blueprint']
-        user = validated_data['owner']
+
+        user = self._context['request'].user
 
         if not user.has_perm('blueprints.view_blueprint', blueprint):
             raise serializers.ValidationError({
@@ -291,8 +292,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         validated_data['description'] = description + extra_description
 
         # check for duplicates
-        if models.Stack.objects.filter(owner=user,
-                                       title=title).count():
+        if models.Stack.objects.filter(title=title).count():
             raise serializers.ValidationError({
                 'title': ['A Stack with this title already exists in your account.']
             })
@@ -303,7 +303,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         host_definitions = blueprint.host_definitions.all()
         hostnames = models.get_hostnames_from_hostdefs(
             host_definitions,
-            username=user.username,
             namespace=namespace
         )
 
@@ -348,7 +347,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         # Everything is valid!  Let's create the stack in the database
         try:
             stack = models.Stack.objects.create_stack(
-                user,
                 blueprint,
                 title=title,
                 description=description,
@@ -401,7 +399,6 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'blueprint_host_definition',
             'cloud_provider',
             'provider_id',
-            'owner',
             'is_default',
             'is_managed',
             'active_hosts',
