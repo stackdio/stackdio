@@ -19,7 +19,6 @@
 import logging
 
 import yaml
-from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
