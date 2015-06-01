@@ -15,17 +15,11 @@
 # limitations under the License.
 #
 
-from rest_framework.generics import get_object_or_404
 
-from . import models, permissions
+class PasswordStr(unicode):
+    """
+    Used so that passwords aren't logged in the celery task log
+    """
 
-
-class StackRelatedMixin(object):
-    permission_classes = (permissions.StackParentObjectPermissions,)
-
-    def get_stack(self):
-        queryset = models.Stack.objects.all()
-
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+    def __repr__(self):
+        return '*' * len(self)

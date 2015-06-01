@@ -18,7 +18,6 @@
 
 import logging
 
-from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
@@ -27,7 +26,7 @@ from rest_framework.response import Response
 from core.exceptions import BadRequest
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stacks.serializers import StackSerializer
-from . import filters, models, serializers, validators
+from . import filters, mixins, models, serializers, validators
 
 logger = logging.getLogger(__name__)
 
@@ -96,14 +95,6 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)
 
 
-class BlueprintPropertiesAPIView(generics.RetrieveUpdateAPIView):
+class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
-    permission_classes = (StackdioObjectPermissions,)
-
-    def get_object(self):
-        queryset = models.Blueprint.objects.all()
-
-        obj = get_object_or_404(self.filter_queryset(queryset), id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj

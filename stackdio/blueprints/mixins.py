@@ -20,11 +20,11 @@ from rest_framework.generics import get_object_or_404
 from . import models, permissions
 
 
-class StackRelatedMixin(object):
-    permission_classes = (permissions.StackParentObjectPermissions,)
+class BlueprintRelatedMixin(object):
+    permission_classes = (permissions.BlueprintParentObjectPermissions,)
 
-    def get_stack(self):
-        queryset = models.Stack.objects.all()
+    def get_blueprint(self):
+        queryset = models.Blueprint.objects.all()
 
         obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)

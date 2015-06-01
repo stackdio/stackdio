@@ -27,21 +27,12 @@ from rest_framework.response import Response
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from . import filters, models, serializers, tasks
+from . import filters, mixins, models, permissions, serializers, tasks, utils
 
 
 logger = logging.getLogger(__name__)
 
 GLOBAL_ORCHESTRATION_USER = '__stackdio__'
-
-
-class PasswordStr(unicode):
-    """
-    Used so that passwords aren't logged in the celery task log
-    """
-
-    def __repr__(self):
-        return '*' * len(self)
 
 
 # TODO Rewrite the logic in this endpoint
@@ -106,7 +97,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
             assign_perm('formulas.%s_formula' % perm, request.user, formula_obj)
 
         # Import using asynchronous task
-        tasks.import_formula.si(formula_obj.id, PasswordStr(git_password)).apply_async()
+        tasks.import_formula.si(formula_obj.id, utils.PasswordStr(git_password)).apply_async()
 
         return Response(self.get_serializer(formula_obj).data)
 
@@ -162,22 +153,24 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return super(FormulaDetailAPIView, self).delete(request, *args, **kwargs)
 
 
-class FormulaPropertiesAPIView(generics.RetrieveAPIView):
+class FormulaPropertiesAPIView(mixins.FormulaRelatedMixin, generics.RetrieveAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaPropertiesSerializer
-    permission_classes = (StackdioObjectPermissions,)
 
 
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.FormulaComponent.objects.all()
     serializer_class = serializers.FormulaComponentSerializer
-    permission_classes = (StackdioObjectPermissions,)
+    permission_classes = (permissions.FormulaParentObjectPermissions,)
+
+    def check_object_permissions(self, request, obj):
+        # Check the permissions on the formula instead of the component
+        super(FormulaComponentDetailAPIView, self).check_object_permissions(request, obj.formula)
 
 
-class FormulaActionAPIView(generics.GenericAPIView):
+class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    permission_classes = (StackdioObjectPermissions,)
 
     AVAILABLE_ACTIONS = [
         'update',
@@ -189,7 +182,7 @@ class FormulaActionAPIView(generics.GenericAPIView):
         })
 
     def post(self, request, *args, **kwargs):
-        formula = self.get_object()
+        formula = self.get_formula()
         action = request.DATA.get('action', None)
 
         if not action:
@@ -208,6 +201,6 @@ class FormulaActionAPIView(generics.GenericAPIView):
 
             formula.set_status(models.Formula.IMPORTING,
                                'Importing formula...this could take a while.')
-            tasks.update_formula.si(formula.id, PasswordStr(git_password)).apply_async()
+            tasks.update_formula.si(formula.id, utils.PasswordStr(git_password)).apply_async()
 
         return Response(self.get_serializer(formula).data)
