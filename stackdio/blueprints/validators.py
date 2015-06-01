@@ -48,8 +48,7 @@ class BlueprintValidator(BaseValidator):
             return False
 
         # check for duplicates
-        elif models.Blueprint.objects.filter(owner=self.request.user,
-                                             title=title).count():
+        elif models.Blueprint.objects.filter(title=title).count():
             self.set_error('title', ValidationErrors.DUP_BLUEPRINT)
             return False
         return True
@@ -293,7 +292,7 @@ class BlueprintValidator(BaseValidator):
         component_title = component.get('title', '')
         component_sls_path = component.get('sls_path', '')
 
-        kwargs = {'formula__owner': self.request.user}
+        kwargs = {}
         if component_id:
             k = 'id'
             kwargs['pk'] = component_id

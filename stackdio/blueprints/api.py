@@ -19,12 +19,13 @@
 import logging
 
 from django.shortcuts import get_object_or_404
+from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
-from core.permissions import StackdioDjangoModelPermissions, StackdioDjangoObjectPermissions
+from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stacks.serializers import StackSerializer
 from . import filters, models, serializers, validators
 
@@ -37,12 +38,9 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.BlueprintFilter
-
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
 
     # TODO redo this method
     def create(self, request, *args, **kwargs):
@@ -50,21 +48,21 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         if errors:
             raise BadRequest(errors)
 
-        blueprint = models.Blueprint.objects.create(request.user, request.DATA)
+        blueprint = models.Blueprint.objects.create(request.DATA)
+
+        for perm in blueprint._meta.default_permissions:
+            assign_perm('blueprints.%s_blueprint' % perm, self.request.user, blueprint)
+
         return Response(self.get_serializer(blueprint).data)
 
 
 class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         blueprint = self.get_object()
-
-        # Only the owner of the blueprint can submit PUT/PATCH requests
-        if blueprint.owner != request.user:
-            raise BadRequest('Only the owner of a blueprint may modify it.')
 
         # rebuild properties list
         properties = request.DATA.pop('properties', None)
@@ -84,10 +82,6 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         """
         blueprint = self.get_object()
 
-        # Check ownership
-        # if blueprint.owner != request.user:
-        #     raise BadRequest('Only the owner of a blueprint may delete it.')
-
         # Check usage
         stacks = blueprint.stacks.all()
         if stacks:
@@ -105,7 +99,7 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class BlueprintPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     def get_object(self):
         queryset = models.Blueprint.objects.all()
