@@ -17,7 +17,6 @@
 
 import logging
 
-from guardian.shortcuts import assign_perm
 from rest_framework import status
 
 from core.tests import StackdioTestCase, PermissionsMixin
