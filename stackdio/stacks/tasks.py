@@ -1614,8 +1614,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         security_groups = set()
         for driver, hosts in driver_hosts.iteritems():
             security_groups.update(SecurityGroup.objects.filter(
-                hosts__in=hosts,
-                owner=stack.owner).exclude(is_default=True))
+                hosts__in=hosts).exclude(is_default=True))
 
             known_hosts = hosts.exclude(instance_id='')
             if known_hosts:
