@@ -24,13 +24,13 @@ import shutil
 import sys
 import textwrap
 
-import yaml
 import envoy
 import jinja2
+import psutil
+import yaml
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
-import psutil
 
 
 SALT_COLORS = get_colors()
@@ -683,9 +683,6 @@ class SaltWrapperCommand(BaseCommand):
 class CeleryWrapperCommand(BaseCommand):
 
     def run(self):
-        # Just default to production - if it's already set to something else, use that
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.settings.production')
-
         from stackdio.celery import app
         app.start(self.args)
 
