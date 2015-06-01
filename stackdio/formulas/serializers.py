@@ -32,7 +32,6 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
             'id',
             'title',
             'description',
-            'formula',
             'sls_path',
         )
 

@@ -19,15 +19,14 @@
 import logging
 from urlparse import urlsplit, urlunsplit
 
-from django.contrib.auth import get_user_model
+from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
-from cloud.serializers import CloudProviderSerializer
 from core.exceptions import BadRequest
-from core.permissions import StackdioDjangoModelPermissions, StackdioDjangoObjectPermissions
+from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from . import filters, models, serializers, tasks
 
 
@@ -52,83 +51,70 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.FormulaFilter
 
     def create(self, request, *args, **kwargs):
-        uri = request.DATA.get('uri', '')
-        uris = request.DATA.get('uris', [])
-        public = request.DATA.get('public', False)
+        uri = request.DATA.get('uri')
         git_username = request.DATA.get('git_username', '')
         git_password = request.DATA.get('git_password', '')
         access_token = request.DATA.get('access_token', False)
 
-        if not uri and not uris:
-            raise BadRequest('A uri field or a list of URIs in the uris '
-                             'field is required.')
-        if uri and uris:
-            raise BadRequest('uri and uris fields can not be used '
-                             'together.')
-        if uri and not uris:
-            uris = [uri]
+        if not uri:
+            raise BadRequest('A uri field is required.')
 
         # check for duplicate uris
-        errors = []
-        for uri in uris:
-            try:
-                models.Formula.objects.get(uri=uri)
-                errors.append('Duplicate formula detected: {0}'.format(uri))
-            except models.Formula.DoesNotExist:
-                pass
-
-        if errors:
-            raise BadRequest(errors)
+        try:
+            models.Formula.objects.get(uri=uri)
+            raise BadRequest('Duplicate formula detected: {0}'.format(uri))
+        except models.Formula.DoesNotExist:
+            pass
 
         # create the object in the database and kick off a task
-        formula_objs = []
-        for uri in uris:
-            if git_username != '':
-                if not access_token and not git_password:
-                    raise BadRequest('Your git password is required if you\'re not using an '
-                                     'access token.')
-                if access_token and git_password:
-                    raise BadRequest('If you are using an access token, you may not provide a '
-                                     'password.')
+        if git_username != '':
+            if not access_token and not git_password:
+                raise BadRequest('Your git password is required if you\'re not using an '
+                                 'access token.')
+            if access_token and git_password:
+                raise BadRequest('If you are using an access token, you may not provide a '
+                                 'password.')
 
-                # Add the git username to the uri if necessary
-                parse_res = urlsplit(uri)
-                if '@' not in parse_res.netloc:
-                    new_netloc = '{0}@{1}'.format(git_username, parse_res.netloc)
-                    uri = urlunsplit((
-                        parse_res.scheme,
-                        new_netloc,
-                        parse_res.path,
-                        parse_res.query,
-                        parse_res.fragment
-                    ))
+            # Add the git username to the uri if necessary
+            parse_res = urlsplit(uri)
+            if '@' not in parse_res.netloc:
+                new_netloc = '{0}@{1}'.format(git_username, parse_res.netloc)
+                uri = urlunsplit((
+                    parse_res.scheme,
+                    new_netloc,
+                    parse_res.path,
+                    parse_res.query,
+                    parse_res.fragment
+                ))
 
-            formula_obj = models.Formula(
-                public=public,
-                uri=uri,
-                git_username=git_username,
-                access_token=access_token,
-                status=models.Formula.IMPORTING,
-                status_detail='Importing formula...this could take a while.')
+        formula_obj = models.Formula(
+            uri=uri,
+            git_username=git_username,
+            access_token=access_token,
+            status=models.Formula.IMPORTING,
+            status_detail='Importing formula...this could take a while.')
 
-            formula_obj.save()
+        formula_obj.save()
 
-            # Import using asynchronous task
-            tasks.import_formula.si(formula_obj.id, PasswordStr(git_password)).apply_async()
-            formula_objs.append(formula_obj)
+        # Assign permissions so the user that just created the formula can operate on it
+        for perm in formula_obj._meta.default_permissions:
+            assign_perm('formulas.%s_formula' % perm, request.user, formula_obj)
 
-        return Response(self.get_serializer(formula_objs, many=True).data)
+        # Import using asynchronous task
+        tasks.import_formula.si(formula_obj.id, PasswordStr(git_password)).apply_async()
+
+        return Response(self.get_serializer(formula_obj).data)
 
 
 class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         """
@@ -179,19 +165,19 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaPropertiesSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
 
 class FormulaComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.FormulaComponent.objects.all()
     serializer_class = serializers.FormulaComponentSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
 
 class FormulaActionAPIView(generics.GenericAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     AVAILABLE_ACTIONS = [
         'update',
