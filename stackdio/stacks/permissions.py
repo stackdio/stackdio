@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from core.permissions import StackdioObjectPermissions, StackdioParentObjectPermissions
+from core.permissions import StackdioParentObjectPermissions
 from . import models
 
 
@@ -23,7 +23,7 @@ class StackParentObjectPermissions(StackdioParentObjectPermissions):
     parent_model_cls = models.Stack
 
 
-class StackActionObjectPermissions(StackdioParentObjectPermissions):
+class StackActionObjectPermissions(StackParentObjectPermissions):
     perms_map = {
         'GET': ['%(app_label)s.view_%(model_name)s'],
         'OPTIONS': [],

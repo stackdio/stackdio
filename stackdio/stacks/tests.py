@@ -14,3 +14,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+from rest_framework import status
+
+from core.tests import StackdioTestCase, PermissionsMixin
+from . import models
+
+
+# class StackTestCase(StackdioTestCase, PermissionsMixin):
+#     """
+#     Tests for CloudProvider things
+#     """
+#
+#     fixtures = (
+#         'cloud/fixtures/initial_data.json',
+#     )
+#
+#     permission_tests = {
+#         'model': models.Stack,
+#         'create_data': {
+#             'bluprint': 1,
+#             'title': 'test',
+#             'description': 'test',
+#             'namespace': 'test',
+#         },
+#         'endpoint': '/api/stacks/{0}/',
+#         'permission': 'stacks.%s_stack',
+#         'permission_types': [
+#             {
+#                 'perm': 'view', 'method': 'get'
+#             },
+#             {
+#                 'perm': 'update', 'method': 'patch', 'data': {'title': 'test2'}
+#             },
+#             {
+#                 'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
+#             },
+#         ]
+#     }
+#
+#     @classmethod
+#     def setUpTestData(cls):
+#         super(StackdioTestCase, cls).setUpTestData()

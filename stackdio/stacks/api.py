@@ -114,6 +114,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class StackPropertiesAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateAPIView):
+    queryset = models.Stack.objects.all()
     serializer_class = serializers.StackPropertiesSerializer
 
 
@@ -548,7 +549,11 @@ class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
 class HostDetailAPIView(generics.RetrieveDestroyAPIView):
     queryset = models.Host.objects.all()
     serializer_class = serializers.HostSerializer
-    permission_classes = (StackdioObjectPermissions,)
+    permission_classes = (permissions.StackParentObjectPermissions,)
+
+    def check_object_permissions(self, request, obj):
+        # Check the permissions on the stack instead of the host
+        super(HostDetailAPIView, self).check_object_permissions(request, obj.stack)
 
     def destroy(self, request, *args, **kwargs):
         """
