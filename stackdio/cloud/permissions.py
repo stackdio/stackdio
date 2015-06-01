@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-from core.permissions import StackdioDjangoModelPermissions
+from core.permissions import StackdioModelPermissions
 
 
-class StackdioReadOnlyModelPermissions(StackdioDjangoModelPermissions):
+class StackdioReadOnlyModelPermissions(StackdioModelPermissions):
 
     perms_map = {
         'GET': ['%(app_label)s.view_%(model_name)s'],

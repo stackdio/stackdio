@@ -26,7 +26,7 @@ from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest, ResourceConflict
-from core.permissions import StackdioDjangoModelPermissions, StackdioDjangoObjectPermissions
+from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from .permissions import StackdioReadOnlyModelPermissions
 from . import models
 from . import serializers
@@ -51,7 +51,7 @@ class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
 class CloudProviderListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudProviderFilter
 
@@ -89,7 +89,7 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
 class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.CloudProviderSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     def destroy(self, request, *args, **kwargs):
         # check for profiles using this provider before deleting
@@ -127,7 +127,7 @@ class CloudInstanceSizeDetailAPIView(generics.RetrieveAPIView):
 class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
     queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
 
     def get_provider(self):
@@ -156,13 +156,13 @@ class GlobalOrchestrationComponentListAPIView(generics.ListCreateAPIView):
 class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
 
 class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.CloudProvider.objects.all()
     serializer_class = serializers.GlobalOrchestrationPropertiesSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     def get_object(self):
         obj = get_object_or_404(models.CloudProvider, id=self.kwargs.get('pk'))
@@ -173,7 +173,7 @@ class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
 class CloudProfileListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudProfileFilter
 
@@ -185,7 +185,7 @@ class CloudProfileListAPIView(generics.ListCreateAPIView):
 class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudProfile.objects.all()
     serializer_class = serializers.CloudProfileSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         # validate that the AMI exists by looking it up in the cloud provider
@@ -226,14 +226,14 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class SnapshotListAPIView(generics.ListCreateAPIView):
     queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
 
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
 
 class CloudRegionListAPIView(generics.ListAPIView):
@@ -306,7 +306,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     """
     queryset = models.SecurityGroup.objects.all().with_rules()
     serializer_class = serializers.SecurityGroupSerializer
-    permission_classes = (StackdioDjangoModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.SecurityGroupFilter
 
@@ -412,7 +412,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
         """
@@ -515,7 +515,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
     queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupRuleSerializer
-    permission_classes = (StackdioDjangoObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
     def retrieve(self, request, *args, **kwargs):
         sg = self.get_object()
@@ -648,7 +648,7 @@ class CloudProviderVPCSubnetListAPIView(generics.ListAPIView):
     """
     """
     queryset = models.CloudProvider.objects.all()
-    permission_classes = (StackdioDjangoModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
 
     def get_provider(self):
