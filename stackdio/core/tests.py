@@ -126,6 +126,10 @@ class AuthenticationTestCase(StackdioTestCase):
     # These should be only visible by admins
     ADMIN_ONLY = (
         '/api/users/',
+        '/api/provider_types/',
+        '/api/instance_sizes/',
+        '/api/regions/',
+        '/api/zones/',
     )
 
     def setUp(self):
