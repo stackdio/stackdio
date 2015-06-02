@@ -190,7 +190,6 @@ def ping_stack_hosts(stack):
     )
     target = ' or '.join(
         [hd.hostname_template.format(namespace=stack.namespace,
-                                     username=stack.owner.username,
                                      index='*')
          for hd in stack.blueprint.host_definitions.all()])
     return set(client.cmd(target, 'test.ping', expr_form='compound'))

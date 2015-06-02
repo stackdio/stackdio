@@ -76,8 +76,7 @@ class StackAddRemoveHostsValidator(BaseValidator):
         else:
             try:
                 BlueprintHostDefinition.objects.get(
-                    pk=arg[k],
-                    blueprint__owner=self.request.user
+                    pk=arg[k]
                 )
             except BlueprintHostDefinition.DoesNotExist:
                 e[k] = ValidationErrors.DOES_NOT_EXIST
