@@ -94,23 +94,23 @@ class BaseCloudProvider(object):
             self.provider_storage = None
 
     @classmethod
-    def get_provider_choice(self):
+    def get_provider_choice(cls):
         """
         Should return a two-element tuple of the short and long name of the
         provider type. This should be what the choices attribute on a
         model field is expected (e.g., ('db_value', 'Label') )
         """
 
-        if not hasattr(self, 'SHORT_NAME') or not self.SHORT_NAME:
+        if not hasattr(cls, 'SHORT_NAME') or not cls.SHORT_NAME:
             raise AttributeError('SHORT_NAME must exist and be a string.')
 
-        if not hasattr(self, 'LONG_NAME') or not self.LONG_NAME:
+        if not hasattr(cls, 'LONG_NAME') or not cls.LONG_NAME:
             raise AttributeError('LONG_NAME must exist and be a string.')
 
-        return (self.SHORT_NAME, self.LONG_NAME)
+        return cls.SHORT_NAME, cls.LONG_NAME
 
     @classmethod
-    def get_required_fields(self):
+    def get_required_fields(cls):
         """
         Return the fields required in the data dictionary for
         `get_provider_data` and `validate_provider_data`
@@ -118,7 +118,7 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def get_provider_data(self, data, files=None):
+    def get_provider_data(cls, data, files=None):
         """
         Takes a dict of values provided by the user (most likely from the
         request data) and returns a new dict of info that's specific to
@@ -136,7 +136,7 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def validate_provider_data(self, data, files=None):
+    def validate_provider_data(cls, data, files=None):
         """
         Checks that the keys defined in `get_required_fields` are in the
         given `data` dict. This merely checks that they are there and the
@@ -144,7 +144,7 @@ class BaseCloudProvider(object):
         required.
         """
         errors = {}
-        for key in self.get_required_fields():
+        for key in cls.get_required_fields():
             if not data.get(key):
                 errors.setdefault(key, []).append(
                     '{0} is a required field.'.format(key)
@@ -153,7 +153,7 @@ class BaseCloudProvider(object):
         return errors
 
     @classmethod
-    def validate_image_id(self, image_id):
+    def validate_image_id(cls, image_id):
         """
         Given an image_id, check that it exists and you have
         permissions to use it. It should a tuple:
@@ -165,7 +165,7 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def register_dns(self, hosts):
+    def register_dns(cls, hosts):
         """
         Given a list of 'stacks.Host' objects, this method's
         implementation should handle the registration of DNS
@@ -174,28 +174,10 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def unregister_dns(self, hosts):
+    def unregister_dns(cls, hosts):
         """
         Given a list of 'stacks.Host' objects, this method's
         implementation should handle the de-registration of DNS
         for the given cloud provider (e.g., Route53 on AWS)
         """
         raise NotImplementedError()
-
-    @classmethod
-    def get_current_instance_data(cls):
-        """
-        Get the instance data for the current instance (usually the stackdio
-        instance & salt master
-        """
-
-        # Since there's not a good way to get the provider type of the current
-        # instance, just try them all until one works
-        for subclass in BaseCloudProvider.__subclasses__():
-            try:
-                return subclass.get_current_instance_data()
-            except Exception:
-                continue
-
-        # Nothing worked, so just do the last resort method
-        return socket.getfqdn()

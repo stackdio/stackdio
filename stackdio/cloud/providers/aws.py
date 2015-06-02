@@ -27,8 +27,6 @@ import logging
 from uuid import uuid4
 from time import sleep
 
-import requests
-from requests.exceptions import ConnectionError
 import boto
 import boto.ec2
 import boto.vpc
@@ -314,21 +312,12 @@ class AWSCloudProvider(BaseCloudProvider):
             'private_key': private_key_path,
             'append_domain': data[self.ROUTE53_DOMAIN],
             'location': data[self.REGION],
-
+            'ssh_interface': 'private_ips',
             'ssh_connect_timeout': 300,
             'wait_for_passwd_timeout': 5,
             'rename_on_destroy': True,
             'delvol_on_destroy': True,
         }
-
-        r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
-
-        master_region = r.json()['region']
-
-        if master_region == data[self.REGION]:
-            config_data['ssh_interface'] = 'private_ips'
-        else:
-            config_data['ssh_interface'] = 'public_ips'
 
         # Save the data out to a file that can be reused by this provider
         # later if necessary
@@ -846,25 +835,6 @@ class AWSCloudProvider(BaseCloudProvider):
         return [i
                 for r in ec2.get_all_instances(instance_ids)
                 for i in r.instances]
-
-    @classmethod
-    def get_current_instance_data(cls):
-        # Get most of the instance data (region, size, etc)
-        r = requests.get('http://169.254.169.254/latest/dynamic/instance-identity/document')
-
-        if r.status_code != 200:
-            raise ConnectionError()
-
-        ret = r.json()
-
-        # Grab the hostnames
-        ret['private-hostname'] = requests.get('http://169.254.169.254/latest/meta-data/local-hostname').text
-
-        public_hostname = requests.get('http://169.254.169.254/latest/meta-data/public-hostname')
-        if r.status_code == 200:
-            ret['public-hostname'] = public_hostname.text
-
-        return ret
 
     def _wait(self,
               fun,
