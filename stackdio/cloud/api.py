@@ -312,9 +312,8 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
         description = request.DATA.get('description')
         provider_id = request.DATA.get('cloud_provider')
         is_default = request.DATA.get('is_default', False)
-        owner = request.user
 
-        if not owner.is_superuser:
+        if not request.user.is_superuser:
             is_default = False
         elif not isinstance(is_default, bool):
             is_default = False
@@ -362,13 +361,12 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
             description=description,
             group_id=group_id,
             cloud_provider=provider,
-            owner=owner,
             is_default=is_default
         )
 
         # if an admin and the security group is_default, we need to make sure
         # the cloud provider configuration is properly maintained
-        if owner.is_superuser and is_default:
+        if request.user.is_superuser and is_default:
             logger.debug('Writing cloud providers file because new security '
                          'group was added with is_default flag set to True')
             provider.update_config()
