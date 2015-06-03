@@ -42,67 +42,89 @@ except ImportError:
     HAS_FCNTL = False
 
 # Import salt libs
+from salt.utils.event import tagify  # NOQA
 import salt.fileserver  # NOQA
 import salt.utils  # NOQA
-from salt.utils.event import tagify  # NOQA
 
 log = logging.getLogger(__name__)
 
 
 def __virtual__():
-    """
-    """
-    envs_dir = get_envs_dir()
+    storage_dir = _get_storage_dir()
 
-    if envs_dir is None:
+    if storage_dir is None:
         log.error('stackdio fileserver is enabled in fileserver_backend '
-                  'configuration, but envs location is missing in the '
-                  'stackdio configuration')
+                  'configuration, but root_dir location is missing in the '
+                  'stackdio configuration.')
         return False
 
-    if not os.path.isdir(envs_dir):
-        log.error('stackdio::user_envs location is not a directory: {0}'
-                  .format(envs_dir))
+    if not os.path.isdir(storage_dir):
+        log.error('stackdio::root_dir location is not a directory: {0}'.format(storage_dir))
         return False
 
     return 'stackdio'
 
 
-def get_envs_dir():
-    d = __opts__.get('stackdio', {}).get('user_envs', None)
-    if isinstance(d, list):
-        if len(d) > 1:
-            raise RuntimeError('stackdio user_envs must be a list of '
-                               'length 1')
-        d = d[0]
-    else:
-        raise RuntimeError('stackdio fileserver user_envs expected to be '
-                           'a one-element list, but found {0} instead.'.format(
-                               type(d)))
-    return d
+def _get_storage_dir():
+    root_dir = __opts__.get('root_dir')
+
+    if root_dir is None:
+        log.warn('stackdio fileserver root_dir configuration does not exist.')
+        return root_dir
+
+    storage_dir = os.path.join(root_dir, 'storage')
+
+    if not os.path.exists(storage_dir):
+        # Create the directory if it doesn't exist
+        os.mkdir(storage_dir, 0755)
+
+    if not os.path.isdir(storage_dir):
+        log.warn('stackdio fileserver <root_dir>/storage configuration is not a directory.')
+        return storage_dir
+
+    return storage_dir
+
+
+def _get_env_dir(saltenv):
+    """
+    Grab the actual path where formulas live for a salt env
+    :param saltenv: the salt env
+    :return: the filesystem path corresponding to the salt env
+    """
+    env_type, dot, name = saltenv.partition('.')
+    root_dir = os.path.join(_get_storage_dir(), env_type, name)
+
+    if not os.path.isdir(root_dir):
+        log.warn('The env dir doesn\'t exist... Something has gone horribly wrong.')
+
+    formula_dir = os.path.join(root_dir, 'formulas')
+
+    if not os.path.exists(formula_dir):
+        os.mkdir(formula_dir, 0755)
+
+    return formula_dir
 
 
 def envs():
+    storage_dir = _get_storage_dir()
+
     ret = []
-    envs_dir = get_envs_dir()
-    if envs_dir is None:
-        log.warn('stackdio fileserver user_envs configuration does not exist.')
-        return ret
 
-    if not os.path.isdir(envs_dir):
-        log.warn('stackdio fileserver user_envs configuration is not a '
-                 'directory.')
-        return ret
+    cloud_dir = os.path.join(storage_dir, 'cloud')
+    stacks_dir = os.path.join(storage_dir, 'stacks')
 
-    # Stackdio expects the directory specified in the master configuration
-    # under stackdio::user_envs to contain a number of other directories
-    # corresponding to the user who "owns" it. Each user will be considered
-    # an environment to "sandbox" the formulas owned by them.
-    for user in os.listdir(envs_dir):
-        user_dir = os.path.join(envs_dir, user)
-        if not os.path.isdir(user_dir):
+    for provider in os.listdir(cloud_dir):
+        provider_dir = os.path.join(cloud_dir, provider)
+        if not os.path.isdir(provider_dir):
             continue
-        ret.append(user)
+        ret.append('cloud.{0}'.format(provider))
+
+    for stack in os.listdir(stacks_dir):
+        stack_dir = os.path.join(stacks_dir, stack)
+        if not os.path.isdir(stack_dir):
+            continue
+        ret.append('stacks.{0}'.format(stack))
+
     return ret
 
 
@@ -126,14 +148,13 @@ def find_file(path, saltenv='base', env=None, **kwargs):
     if saltenv not in envs():
         return fnd
 
-    root = os.path.join(get_envs_dir(), saltenv)
+    root = _get_env_dir(saltenv)
     for formula_root in os.listdir(root):
         formula_dir = os.path.join(root, formula_root)
         if not os.path.isdir(formula_dir):
             continue
         full = os.path.join(formula_dir, path)
-        if os.path.isfile(full) and \
-                not salt.fileserver.is_file_ignored(__opts__, full):
+        if os.path.isfile(full) and not salt.fileserver.is_file_ignored(__opts__, full):
             fnd['path'] = full
             fnd['rel'] = path
             return fnd
@@ -198,16 +219,14 @@ def update():
                 old_mtime_map[file_path] = mtime
 
     # generate the new map
-    user_envs_dir = get_envs_dir()
-    user_envs = envs()
+    saltenvs = envs()
     path_map = {}
-    for user_env in user_envs:
-        path_map[user_env] = [os.path.join(user_envs_dir, user_env)]
+    for saltenv in saltenvs:
+        path_map[saltenv] = [_get_env_dir(saltenv)]
     new_mtime_map = salt.fileserver.generate_mtime_map(path_map)
 
     # compare the maps, set changed to the return value
-    data['changed'] = salt.fileserver.diff_mtime_map(old_mtime_map,
-                                                    new_mtime_map)
+    data['changed'] = salt.fileserver.diff_mtime_map(old_mtime_map, new_mtime_map)
 
     # write out the new map
     mtime_map_path_dir = os.path.dirname(mtime_map_path)
@@ -215,8 +234,7 @@ def update():
         os.makedirs(mtime_map_path_dir)
     with salt.utils.fopen(mtime_map_path, 'w') as fp_:
         for file_path, mtime in new_mtime_map.iteritems():
-            fp_.write('{file_path}:{mtime}\n'.format(file_path=file_path,
-                                                    mtime=mtime))
+            fp_.write('{file_path}:{mtime}\n'.format(file_path=file_path, mtime=mtime))
 
     if __opts__.get('fileserver_events', False):
         # if there is a change, fire an event
@@ -333,7 +351,7 @@ def _file_lists(load, form):  # NOQA
     if load['saltenv'] not in envs():
         return []
 
-    env_dir = os.path.join(get_envs_dir(), load['saltenv'])
+    env_dir = _get_env_dir(load['saltenv'])
 
     if not os.path.isdir(env_dir):
         log.error('Environment directory does not exist: {0}'.format(env_dir))
@@ -438,7 +456,7 @@ def symlink_list(load):  # NOQA
     if load['saltenv'] not in envs():
         return ret
 
-    env_root = os.path.join(get_envs_dir(), load['saltenv'])
+    env_root = _get_env_dir(load['saltenv'])
     for formula_root in os.listdir(env_root):
         formula_dir = os.path.join(env_root, formula_root)
         if not os.path.isdir(formula_dir):
