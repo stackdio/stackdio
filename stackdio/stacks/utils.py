@@ -16,20 +16,21 @@
 #
 
 from __future__ import print_function
+
 import logging
 import multiprocessing
 import os
 import random
-import yaml
-from django.conf import settings
 from datetime import datetime
 
-import salt.config as config
-import salt.cloud
 import salt.client
-import salt.utils
+import salt.cloud
+import salt.config as config
 import salt.key
-import salt.utils.cloud
+import salt.utils
+import yaml
+from django.conf import settings
+
 
 logger = logging.getLogger(__name__)
 

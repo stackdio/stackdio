@@ -23,16 +23,18 @@ import time
 from datetime import datetime
 
 import envoy
-import yaml
+import git
 import salt.client
 import salt.cloud
 import salt.config
 import salt.runner
+import yaml
 from celery import shared_task
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
 
+from blueprints.models import BlueprintFormulaVersion
 from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
 from volumes.models import Volume
@@ -136,6 +138,24 @@ def state_error(state_str, state_meta):
         err['stdout'] = \
             state_meta['changes']['stdout']
     return err, is_recoverable(err)
+
+
+def copy_formulas(stack):
+    dest_dir = os.path.join(stack.get_root_directory(), 'formulas')
+
+    for formula in stack.blueprint.get_formulas():
+        formula_dir = os.path.join(dest_dir, formula.get_repo_name())
+
+        shutil.copytree(formula.get_repo_dir(), formula_dir)
+
+        try:
+            # Checkout the tag
+            v = stack.blueprint.formula_versions.get(formula_url=formula.uri)
+            repo = git.Repo(formula_dir)
+            repo.git.checkout(v.version)
+
+        except BlueprintFormulaVersion.DoesNotExist:
+            pass
 
 
 @shared_task(name='stacks.handle_error')
@@ -1316,6 +1336,9 @@ def orchestrate(stack_id, max_retries=2):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing orchestration for stack: {0!r}'.format(stack))
 
+        # Copy the formulas to somewhere useful
+        copy_formulas(stack)
+
         # Set the pillar file back to the regular pillar
         change_pillar(stack_id, stack.pillar_file.path)
 
@@ -1372,7 +1395,7 @@ def orchestrate(stack_id, max_retries=2):
             result = salt_runner.cmd(
                 'stackdio.orchestrate',
                 [
-                    stack.owner.username,
+                    'stacks.{0}-{1}'.format(stack.pk, stack.slug),
                     stack.overstate_file.path
                 ]
             )
