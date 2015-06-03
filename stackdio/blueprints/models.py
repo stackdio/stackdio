@@ -145,6 +145,15 @@ class BlueprintManager(models.Manager):
         return blueprint
 
 
+class BlueprintFormulaVersion(models.Model):
+    """
+    Used to store the commit hashes / tags on a formula
+    """
+    blueprint = models.ForeignKey('blueprints.Blueprint', related_name='formula_versions')
+    formula_url = models.URLField('Formula URL')
+    version = models.CharField('Version', max_length='100')
+
+
 class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
     Blueprints are a template of reusable configuration used to launch
@@ -197,6 +206,14 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         else:
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
+
+    def get_formulas(self):
+        formulas = set()
+        for host_definition in self.host_definitions.all():
+            for component in host_definition.formula_components.all():
+                formulas.add(component.component.formula)
+
+        return list(formulas)
 
 
 class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):

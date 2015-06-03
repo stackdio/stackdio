@@ -136,9 +136,20 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
+class BlueprintFormulaVersionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.BlueprintFormulaVersion
+        fields = (
+            'formula_url',
+            'version',
+        )
+
+
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
+    formula_versions = BlueprintFormulaVersionSerializer(many=True)
 
     class Meta:
         model = models.Blueprint
@@ -148,6 +159,7 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'url',
             'properties',
+            'formula_versions',
             'host_definitions',
         )
 

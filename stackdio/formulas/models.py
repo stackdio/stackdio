@@ -127,9 +127,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         )
 
     # uri to the repository for this formula
-    uri = models.CharField('Repository URI', max_length=255)
+    uri = models.URLField('Repository URI', unique=True)
 
-    # root path of where this formula exists
+    # All components in this formula should start with this prefix
     root_path = models.CharField('Root Path', max_length=64)
 
     git_username = models.CharField('Git Username (for private repos)', max_length=64, blank=True)
@@ -140,8 +140,11 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return self.title
 
     def get_repo_dir(self):
-        return join(settings.STACKDIO_CONFIG.salt_user_states,
-                    '{0}-{1}'.format(self.pk, self.get_repo_name()))
+        return join(
+            settings.FILE_STORAGE_DIRECTORY,
+            'formulas',
+            '{0}-{1}'.format(self.pk, self.get_repo_name())
+        )
 
     def get_repo_name(self):
         return splitext(split(self.uri)[-1])[0]
