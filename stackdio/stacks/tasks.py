@@ -141,10 +141,10 @@ def state_error(state_str, state_meta):
     return err, is_recoverable(err)
 
 
-def copy_formulas(stack):
-    dest_dir = os.path.join(stack.get_root_directory(), 'formulas')
+def copy_formulas(stack_or_provider):
+    dest_dir = os.path.join(stack_or_provider.get_root_directory(), 'formulas')
 
-    for formula in stack.blueprint.get_formulas():
+    for formula in stack_or_provider.get_formulas():
         formula_dir = os.path.join(dest_dir, formula.get_repo_name())
 
         try:
@@ -158,7 +158,7 @@ def copy_formulas(stack):
 
         try:
             # Checkout the tag
-            v = stack.formula_versions.get(formula=formula)
+            v = stack_or_provider.formula_versions.get(formula=formula)
             repo = git.Repo(formula_dir)
             repo.git.checkout(v.version)
 
@@ -1182,6 +1182,15 @@ def global_orchestrate(stack_id, max_retries=2):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing global orchestration for stack: {0!r}'.format(stack))
 
+        providers = set()
+
+        for host_definition in stack.blueprint.host_definitions.all():
+            provider = host_definition.cloud_profile.cloud_provider
+            copy_formulas(provider)
+            providers.add(provider)
+
+        providers = list(providers)
+
         # Set the pillar file to the global pillar data file
         change_pillar(stack_id, stack.global_pillar_file.path)
 
@@ -1235,10 +1244,12 @@ def global_orchestrate(stack_id, max_retries=2):
 
             salt_runner = salt.runner.RunnerClient(opts)
 
+            # This might be kind of scary - but it'll work while we only have one provider per
+            # stack
             result = salt_runner.cmd(
                 'stackdio.orchestrate',
                 [
-                    '__stackdio__',
+                    'cloud.{0}'.format(providers[0].slug),
                     stack.global_overstate_file.path
                 ]
             )

@@ -18,9 +18,11 @@
 
 import logging
 import json
+import os
 
 import yaml
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.core.files.storage import FileSystemStorage
 from django.core.files.base import ContentFile
@@ -100,6 +102,8 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     # the account/owner id of the provider
     account_id = models.CharField('Account ID', max_length=64)
 
+    formula_versions = GenericRelation('formulas.FormulaVersion')
+
     # salt-cloud provider configuration file
     config_file = DeletingFileField(
         max_length=255,
@@ -171,6 +175,16 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         else:
             with open(self.global_orch_props_file.path, 'w') as f:
                 f.write(props_json)
+
+    def get_root_directory(self):
+        return os.path.join(settings.FILE_STORAGE_DIRECTORY, 'cloud', self.slug)
+
+    def get_formulas(self):
+        formulas = set()
+        for component in self.global_formula_components.all():
+            formulas.add(component.component.formula)
+
+        return list(formulas)
 
 
 class CloudInstanceSize(TitleSlugDescriptionModel):

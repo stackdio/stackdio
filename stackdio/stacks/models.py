@@ -357,6 +357,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             return self.hosts.all()
         return self.hosts.filter(id__in=host_ids)
 
+    def get_formulas(self):
+        return self.blueprint.get_formulas()
+
     @property
     def properties(self):
         if not self.props_file:
