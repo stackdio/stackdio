@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+import errno
 import json
 import logging
 import os
@@ -146,7 +147,14 @@ def copy_formulas(stack):
     for formula in stack.blueprint.get_formulas():
         formula_dir = os.path.join(dest_dir, formula.get_repo_name())
 
-        shutil.copytree(formula.get_repo_dir(), formula_dir)
+        try:
+            # Copy over the formula - but just bail if it already exists
+            shutil.copytree(formula.get_repo_dir(), formula_dir)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                logger.debug('Formula not copied, already exists')
+            else:
+                raise
 
         try:
             # Checkout the tag
