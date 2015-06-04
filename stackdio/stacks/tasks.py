@@ -34,9 +34,9 @@ from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
 
-from blueprints.models import BlueprintFormulaVersion
 from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
+from formulas.models import FormulaVersion
 from volumes.models import Volume
 from . import utils
 from .models import (
@@ -150,11 +150,11 @@ def copy_formulas(stack):
 
         try:
             # Checkout the tag
-            v = stack.blueprint.formula_versions.get(formula_url=formula.uri)
+            v = stack.formula_versions.get(formula=formula)
             repo = git.Repo(formula_dir)
             repo.git.checkout(v.version)
 
-        except BlueprintFormulaVersion.DoesNotExist:
+        except FormulaVersion.DoesNotExist:
             pass
 
 

@@ -22,6 +22,7 @@ from shutil import rmtree
 
 import yaml
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
@@ -31,6 +32,14 @@ from stacks.models import StatusDetailModel
 
 
 logger = logging.getLogger(__name__)
+
+
+class FormulaVersion(models.Model):
+    content_type = models.ForeignKey('contenttypes.ContentType')
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+    formula = models.ForeignKey('formulas.Formula')
+    version = models.CharField('Formula Version', max_length=100)
 
 
 class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
@@ -47,7 +56,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     The problem right now is that salt formula (a packaging convention
     defined by saltstack) doesn't make it easy to pick out those
     individual components. So, to make things easier for stackd.io
-    we're proposing a SPECIFILE that would allow formulas to define
+    we're proposing a SPECFILE that would allow formulas to define
     a mapping of their components, with a name, description, etc. Then,
     when stackd.io is importing a formula from an external repository,
     we can read that SPECFILE and build up the entries in the database

@@ -34,6 +34,7 @@ from cloud.serializers import SecurityGroupSerializer
 from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
 from core.utils import recursive_update
+from formulas.serializers import FormulaVersionSerializer
 from . import models, workflows
 
 
@@ -162,6 +163,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
 
     # Relation Links
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
+    formula_versions = FormulaVersionSerializer(many=True)
 
     class Meta:
         model = models.Stack
@@ -176,6 +178,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'host_count',
             'volume_count',
             'created',
+            'formula_versions',
             'fqdns',
             'hosts',
             'volumes',

@@ -80,3 +80,15 @@ class FormulaPropertiesSerializer(serializers.ModelSerializer):
         fields = (
             'properties',
         )
+
+
+class FormulaVersionSerializer(serializers.ModelSerializer):
+    formula = serializers.PrimaryKeyRelatedField(source='formula.uri',
+                                                 queryset=models.Formula.objects.all())
+
+    class Meta:
+        model = models.FormulaVersion
+        fields = (
+            'formula',
+            'version',
+        )

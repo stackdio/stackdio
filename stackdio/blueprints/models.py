@@ -21,6 +21,7 @@ import logging
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.db import models, transaction
@@ -145,15 +146,6 @@ class BlueprintManager(models.Manager):
         return blueprint
 
 
-class BlueprintFormulaVersion(models.Model):
-    """
-    Used to store the commit hashes / tags on a formula
-    """
-    blueprint = models.ForeignKey('blueprints.Blueprint', related_name='formula_versions')
-    formula_url = models.URLField('Formula URL')
-    version = models.CharField('Version', max_length='100')
-
-
 class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
     Blueprints are a template of reusable configuration used to launch
@@ -171,6 +163,8 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
             'update',
             'delete',
         )
+
+    formula_versions = GenericRelation('formulas.FormulaVersion')
 
     # storage for properties file
     props_file = DeletingFileField(

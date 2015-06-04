@@ -25,6 +25,7 @@ import socket
 import envoy
 import yaml
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models, transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
@@ -175,8 +176,7 @@ class StackManager(models.Manager):
         return stack
 
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel,
-            model_utils.models.StatusModel):
+class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.StatusModel):
 
     # Launch workflow:
     PENDING = 'pending'
@@ -234,6 +234,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel,
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint',
                                   related_name='stacks')
+
+    formula_versions = GenericRelation('formulas.FormulaVersion')
 
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
