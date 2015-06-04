@@ -236,6 +236,7 @@ def update_formula(formula_id, git_password):
     repo = None
     current_commit = None
     formula = None
+
     try:
         formula = Formula.objects.get(pk=formula_id)
         formula.set_status(Formula.IMPORTING, 'Updating formula.')
@@ -331,26 +332,6 @@ def update_formula(formula_id, git_password):
         # validate changed components
         for component in changed_components:
             validate_component(formula, repodir, component)
-
-        # Check to see if the removed components are used
-        removal_errors = []
-        for component in removed_components:
-            blueprint_hosts = component.blueprinthostformulacomponent_set.all()
-            if len(blueprint_hosts) is 0:
-                component.delete()
-            else:
-                removal_errors.append(component.sls_path)
-
-        if len(removal_errors) != 0:
-            errors = ', '.join(removal_errors)
-            formula.set_status(
-                Formula.COMPLETE,
-                'Formula could not be updated.  The following components '
-                'are used in blueprints: {0}.   '
-                'Your formula was left unchanged.'.format(errors))
-            # Roll back the pull
-            repo.git.reset('--hard', current_commit)
-            return False
 
         # Add the new components
         for component in added_components:
