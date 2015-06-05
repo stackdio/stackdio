@@ -1,6 +1,6 @@
 # stackd.io
 
-[![Circle CI](https://circleci.com/gh/stackdio/stackdio.svg?style=svg)](https://circleci.com/gh/stackdio/stackdio)
+[![Circle CI](https://circleci.com/gh/stackdio/stackdio/tree/develop.svg?style=svg)](https://circleci.com/gh/stackdio/stackdio/tree/develop)
 [![Coverage Status](https://coveralls.io/repos/stackdio/stackdio/badge.svg?branch=develop)](https://coveralls.io/r/stackdio/stackdio?branch=develop)
 
 stackd.io is a web-based tool for managing, provisioning, and orchestrating cloud infrastructure
