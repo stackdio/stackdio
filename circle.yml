@@ -20,7 +20,7 @@ test:
   pre:
     - pep8 --ignore=E501,E12 --exclude='*/migrations/*,*/bower_components/*' * && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors':
         pwd: stackdio
-    - pylint --rcfile=.testing.pylintrc * && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors':
+    - pylint --rcfile=.pylintrc * && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors':
         pwd: stackdio
     - mkdir /home/ubuntu/.stackdio
     - cp tests/config /home/ubuntu/.stackdio/config

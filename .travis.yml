@@ -14,7 +14,7 @@ install:
 
 # Run pep8 and pylint, then copy the config file into place
 before_script:
-  - pylint --rcfile=.testing.pylintrc stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
+  - pylint --rcfile=.pylintrc stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
   - pep8 --ignore=E501,E12 --exclude='stackdio/*/migrations/*,*/bower_components/*' stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
   - mkdir /home/travis/.stackdio
   - cp tests/config-travis /home/travis/.stackdio/config
