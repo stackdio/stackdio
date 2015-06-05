@@ -159,6 +159,13 @@ class StackManager(models.Manager):
             with open(stack.props_file.path, 'w') as f:
                 f.write(props_json)
 
+        # Copy over the formula versions from the blueprint
+        for version in stack.blueprint.formula_versions.all():
+            stack.formula_versions.create(
+                formula=version.formula,
+                version=version.version,
+            )
+
         stack.create_security_groups()
         stack.create_hosts()
 
