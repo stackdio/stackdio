@@ -20,10 +20,10 @@
 Amazon Web Services provider for stackd.io
 """
 
+import logging
 import os
 import re
 import stat
-import logging
 from uuid import uuid4
 from time import sleep
 
@@ -31,16 +31,11 @@ import boto
 import boto.ec2
 import boto.vpc
 import yaml
-from boto.route53.record import ResourceRecordSets
 from boto.exception import EC2ResponseError
+from boto.route53.record import ResourceRecordSets
 
-from cloud.providers.base import (
-    BaseCloudProvider,
-    TimeoutException,
-    MaxFailuresException,
-)
+from cloud.providers.base import BaseCloudProvider, MaxFailuresException, TimeoutException
 from core.exceptions import BadRequest, InternalServerError
-
 
 GROUP_PATTERN = re.compile(r'\d+:[a-zA-Z0-9-_]')
 CIDR_PATTERN = re.compile(r'[0-9]+(?:\.[0-9]+){3}\/\d{1,2}')
@@ -823,10 +818,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         if resource_ids:
             logger.info('tagging {0!r}'.format(resource_ids))
-            ec2.create_tags(resource_ids, {
-                'stack_id': str(stack.id),
-                'owner': stack.owner.username,
-            })
+            # ec2.create_tags(resource_ids, {
+            #     'stack_id': str(stack.id),
+            #     'owner': stack.owner.username,
+            # })
 
     def get_ec2_instances(self, hosts):
         ec2 = self.connect_ec2()

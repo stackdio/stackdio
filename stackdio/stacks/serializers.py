@@ -18,6 +18,7 @@
 
 import logging
 import os
+from copy import deepcopy
 from datetime import datetime
 
 import salt.cloud
@@ -193,7 +194,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         )
 
     SECRET_FIELDS = (
-        'max_retries',
         'auto_launch',
         'auto_provision',
         'parallel',
@@ -212,13 +212,16 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
 
     OPTIONAL_FIELDS = (
         'namespace',
-        'public',
+        'max_retries',
     )
 
     VALID_FIELDS = SECRET_FIELDS + REQUIRED_FIELDS + OPTIONAL_FIELDS
 
     def validate(self, attrs):
         errors = {}
+
+        # Pull initial_data into the attrs
+        attrs = recursive_update(deepcopy(self.initial_data), attrs)
 
         for k in attrs:
             if k not in self.VALID_FIELDS:
@@ -238,25 +241,22 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         # Grab all the extra data not in the validated_data
 
         # OPTIONAL PARAMS
-        public = self.initial_data.get('public', False)
-        properties = self.initial_data.get('properties', {})
-        max_retries = self.initial_data.get('max_retries', 2)
+        properties = validated_data.get('properties', {})
+        max_retries = validated_data.get('max_retries', 2)
 
         # UNDOCUMENTED PARAMS
         # Skips launching if set to False
-        launch_stack = self.initial_data.get('auto_launch', True)
-        provision_stack = self.initial_data.get('auto_provision', True)
+        launch_stack = validated_data.get('auto_launch', True)
+        provision_stack = validated_data.get('auto_provision', True)
 
         # Launches in parallel mode if set to True
-        parallel = self.initial_data.get('parallel', True)
+        parallel = validated_data.get('parallel', True)
 
         # See stacks.tasks::launch_hosts for information on these params
-        simulate_launch_failures = self.initial_data.get('simulate_launch_failures',
-                                                    False)
-        simulate_ssh_failures = self.initial_data.get('simulate_ssh_failures',
-                                                 False)
-        simulate_zombies = self.initial_data.get('simulate_zombies', False)
-        failure_percent = self.initial_data.get('failure_percent', 0.3)
+        simulate_launch_failures = validated_data.get('simulate_launch_failures', False)
+        simulate_ssh_failures = validated_data.get('simulate_ssh_failures', False)
+        simulate_zombies = validated_data.get('simulate_zombies', False)
+        failure_percent = validated_data.get('failure_percent', 0.3)
 
         # Grab the validated stuff
         title = validated_data['title']
@@ -354,7 +354,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
                 title=title,
                 description=description,
                 namespace=namespace,
-                public=public,
                 properties=properties
             )
         except Exception, e:
