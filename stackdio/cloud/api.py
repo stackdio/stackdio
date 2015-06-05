@@ -26,6 +26,8 @@ from rest_framework.response import Response
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest, ResourceConflict
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from formulas.models import FormulaVersion
+from formulas.serializers import FormulaVersionSerializer
 from . import filters, mixins, models, permissions, serializers
 
 
@@ -150,6 +152,34 @@ class CloudProviderVPCSubnetListAPIView(mixins.CloudProviderRelatedMixin, generi
         return Response({
             'results': serializers.VPCSubnetSerializer(subnets, many=True).data
         })
+
+
+class CloudProviderFormulaVersionsAPIView(mixins.CloudProviderRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = FormulaVersionSerializer
+
+    def get_queryset(self):
+        provider = self.get_provider()
+        return provider.formula_versions.all()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        formula = serializer.validated_data.get('formula')
+        provider = self.get_provider()
+
+        try:
+            # Setting self.instance will cause self.update() to be called instead of
+            # self.create() during save()
+            serializer.instance = provider.formula_versions.get(formula=formula)
+            response_code = status.HTTP_200_OK
+        except FormulaVersion.DoesNotExist:
+            # Return the proper response code
+            response_code = status.HTTP_201_CREATED
+
+        serializer.save(content_object=provider)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=response_code, headers=headers)
 
 
 class CloudInstanceSizeListAPIView(generics.ListAPIView):

@@ -34,7 +34,6 @@ from cloud.serializers import SecurityGroupSerializer
 from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
 from core.utils import recursive_update
-from formulas.serializers import FormulaVersionSerializer
 from . import models, workflows
 
 

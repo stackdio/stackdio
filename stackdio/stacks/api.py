@@ -41,6 +41,7 @@ from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from core.renderers import PlainTextRenderer
+from formulas.models import FormulaVersion
 from formulas.serializers import FormulaVersionSerializer
 from volumes.serializers import VolumeSerializer
 from . import filters, mixins, models, permissions, serializers, tasks, utils, validators, workflows
@@ -742,5 +743,22 @@ class StackFormulaVersionsAPIView(mixins.StackRelatedMixin, generics.ListCreateA
         stack = self.get_stack()
         return stack.formula_versions.all()
 
-    def perform_create(self, serializer):
-        serializer.save(content_object=self.get_stack())
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        formula = serializer.validated_data.get('formula')
+        stack = self.get_stack()
+
+        try:
+            # Setting self.instance will cause self.update() to be called instead of
+            # self.create() during save()
+            serializer.instance = stack.formula_versions.get(formula=formula)
+            response_code = status.HTTP_200_OK
+        except FormulaVersion.DoesNotExist:
+            # Return the proper response code
+            response_code = status.HTTP_201_CREATED
+
+        serializer.save(content_object=stack)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=response_code, headers=headers)

@@ -55,6 +55,10 @@ urlpatterns = patterns(
         api.GlobalOrchestrationPropertiesAPIView.as_view(),
         name='cloudprovider-global-orchestration-properties'),
 
+    url(r'^providers/(?P<pk>[0-9]+)/formula_versions/$',
+        api.CloudProviderFormulaVersionsAPIView.as_view(),
+        name='cloudprovider-formula-versions'),
+
     url(r'^global_orchestration_components/(?P<pk>[0-9]+)/$',
         api.GlobalOrchestrationComponentDetailAPIView.as_view(),
         name='globalorchestrationformulacomponent-detail'),

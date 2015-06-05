@@ -78,6 +78,8 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         view_name='cloudprovider-global-orchestration-list')
     global_orchestration_properties = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-global-orchestration-properties')
+    formula_versions = serializers.HyperlinkedIdentityField(
+        view_name='cloudprovider-formula-versions')
 
     class Meta:
         model = models.CloudProvider
@@ -96,6 +98,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'vpc_subnets',
             'global_orchestration_components',
             'global_orchestration_properties',
+            'formula_versions',
         )
 
     def validate(self, attrs):

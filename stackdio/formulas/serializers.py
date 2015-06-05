@@ -92,19 +92,6 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
             'version',
         )
 
-    def save(self, **kwargs):
-        formula = self.validated_data.get('formula')
-        content_object = kwargs.get('content_object')
-
-        try:
-            # Setting self.instance will cause self.update() to be called instead of
-            # self.create() during the super() call
-            self.instance = content_object.formula_versions.get(formula=formula)
-        except models.FormulaVersion.DoesNotExist:
-            pass
-
-        return super(FormulaVersionSerializer, self).save(**kwargs)
-
     def validate(self, attrs):
         # Make sure the version (ie. tag / hash / branch) given is real
         return attrs

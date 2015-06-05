@@ -21,7 +21,6 @@ import logging
 from rest_framework import serializers
 
 from core.utils import recursive_update
-from formulas.serializers import FormulaVersionSerializer
 from . import models
 
 logger = logging.getLogger(__name__)
@@ -140,7 +139,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
-    formula_versions = FormulaVersionSerializer(many=True)
+    formula_versions = serializers.HyperlinkedIdentityField(view_name='blueprint-formula-versions')
 
     class Meta:
         model = models.Blueprint

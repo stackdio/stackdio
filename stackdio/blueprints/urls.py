@@ -34,4 +34,8 @@ urlpatterns = patterns(
     url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
         api.BlueprintPropertiesAPIView.as_view(),
         name='blueprint-properties'),
+
+    url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
+        api.BlueprintFormulaVersionsAPIView.as_view(),
+        name='blueprint-formula-versions'),
 )
