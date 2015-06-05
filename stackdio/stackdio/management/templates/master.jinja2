@@ -1,0 +1,38 @@
+user: {{ user }}
+root_dir: {{ salt_root }}
+verify_env: True
+worker_threads: 10
+failhard: false
+
+log_level: {{ salt_master_log_level }}
+
+fileserver_backend:
+  - stackdio
+  - roots
+  - minion
+
+file_recv: True
+
+file_roots:
+  base:
+    - {{ salt_root }}/core_states
+
+file_ignore_glob:
+  - '.git/*'
+
+pillar_roots:
+  base:
+    - {{ salt_root }}/pillar
+
+# Disable master config from showing in pillar
+pillar_opts: False
+
+# Where our external pillar and other custom modules live
+extension_modules: {{ salt_root }}/extmods
+
+# Enable our custom external pillar
+ext_pillar:
+  - stackdio: ''
+
+timeout: 60
+gather_job_timeout: 60

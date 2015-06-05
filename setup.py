@@ -18,19 +18,21 @@
 
 import os
 import sys
+
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
 
-if float("%d.%d" % sys.version_info[:2]) < 2.6:
-    print('Your Python version {0}.{1}.{2} is not supported.'.format(
-        *sys.version_info[:3]))
-    print('stackdio requires Python 2.6 or newer.')
+
+if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
+    print('Your Python version {0}.{1}.{2} is not supported.'.format(*sys.version_info[:3]))
+    print('stackdio requires Python 2.7 or newer.')
     sys.exit(1)
 
 # Grab the current version from our stackdio package
-__import__('stackdio.server')
-VERSION = __import__('stackdio').server.__version__
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'stackdio'))
+VERSION = __import__('stackdio').__version__
+sys.path.pop(0)
 
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
@@ -44,17 +46,26 @@ if os.path.isfile('README.md'):
 
 
 def load_pip_requirements(fp):
-    reqs, deps = [], []
-    for r in parse_requirements(fp, session=PipSession()):
-        if r.url is not None:
-            deps.append(str(r.url))
-        reqs.append(str(r.req))
-    return reqs, deps
+    return [str(r.req) for r in parse_requirements(fp, session=PipSession())]
+
+
+def load_pip_links(fp):
+    deps = []
+    for d in parse_requirements(fp, session=PipSession()):
+        # Support for all pip versions
+        if hasattr(d, 'link'):
+            # pip >= 6.0
+            deps.append(str(d.link.url))
+        else:
+            # pip < 6.0
+            deps.append(str(d.url))
+    return deps
 
 if __name__ == "__main__":
     # build our list of requirements and dependency links based on our
     # requirements.txt file
-    reqs, deps = load_pip_requirements('requirements.txt')
+    reqs = load_pip_requirements('requirements.txt')
+    deps = load_pip_links('links.txt')
 
     # Call the setup method from setuptools that does all the heavy lifting
     # of packaging stackdio
@@ -68,7 +79,8 @@ if __name__ == "__main__":
         long_description=LONG_DESCRIPTION,
         license='Apache 2.0',
         include_package_data=True,
-        packages=find_packages(),
+        packages=find_packages('stackdio'),
+        package_dir={'': 'stackdio'},
         zip_safe=False,
         install_requires=reqs,
         dependency_links=deps,
@@ -82,12 +94,11 @@ if __name__ == "__main__":
             'License :: OSI Approved :: Apache Software License',
             'Operating System :: POSIX :: Linux',
             'Programming Language :: Python',
-            'Programming Language :: Python :: 2.6',
             'Programming Language :: Python :: 2.7',
             'Topic :: System :: Clustering',
             'Topic :: System :: Distributed Computing',
         ],
         entry_points={'console_scripts': [
-            'stackdio = stackdio.server.stackdio.management:main'
+            'stackdio = stackdio.management:main'
         ]}
     )

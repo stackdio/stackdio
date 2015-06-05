@@ -1,0 +1,14 @@
+# Testing configuration for travis
+
+storage_root: /home/ubuntu/.stackdio
+
+user: ubuntu
+
+salt_bootstrap_script: bootstrap-salt
+salt_bootstrap_args: -K -D git v2014.1.7
+
+django_secret_key: "$c0mmag@6zppv3l+unbynv7p1ajb$0(yodk-b)axsgsixhlm2^"
+
+db_dsn: sqlite:///stackdio_test.db
+
+ssh_user: $USERNAME

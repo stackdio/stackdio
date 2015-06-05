@@ -1,0 +1,2 @@
+# Pull in our custom version of django-guardian
+https://github.com/stackdio/django-guardian/releases/download/v1.2.6/django-guardian-1.2.6.tar.gz
