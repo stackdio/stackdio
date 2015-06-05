@@ -66,6 +66,16 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
     check permissions on.  Classic example being the `/api/stacks/<pk>/hosts/` endpoint - we want
     to check permissions on a stack object, but the queryset consists of host objects.
     """
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.update_%(model_name)s'],
+        'PUT': ['%(app_label)s.update_%(model_name)s'],
+        'PATCH': ['%(app_label)s.update_%(model_name)s'],
+        'DELETE': ['%(app_label)s.update_%(model_name)s'],
+    }
+
     parent_model_cls = None
 
     def has_object_permission(self, request, view, obj):
@@ -76,6 +86,12 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
 
         model_cls = self.parent_model_cls
         user = request.user
+
+        # There's a weird case sometimes where the BrowsableAPIRenderer checks permissions
+        # that it doesn't need to, and throws an exception.  We'll default to less permissions
+        # here rather than more.
+        if obj._meta.app_label != model_cls._meta.app_label:
+            return False
 
         perms = self.get_required_object_permissions(request.method, model_cls)
 

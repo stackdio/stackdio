@@ -90,4 +90,8 @@ urlpatterns = patterns(
     url(r'^stacks/(?P<pk>[0-9]+)/security_groups/$',
         api.StackSecurityGroupsAPIView.as_view(),
         name='stack-security-groups'),
+
+    url(r'^stacks/(?P<pk>[0-9]+)/formula_versions/$',
+        api.StackFormulaVersionsAPIView.as_view(),
+        name='stack-formula-versions'),
 )

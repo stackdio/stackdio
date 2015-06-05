@@ -160,10 +160,11 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         view_name='stack-history', read_only=True)
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='stack-security-groups', read_only=True)
+    formula_versions = serializers.HyperlinkedIdentityField(
+        view_name='stack-formula-versions', read_only=True)
 
     # Relation Links
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
-    formula_versions = FormulaVersionSerializer(many=True)
 
     class Meta:
         model = models.Stack
@@ -178,7 +179,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'host_count',
             'volume_count',
             'created',
-            'formula_versions',
             'fqdns',
             'hosts',
             'volumes',
@@ -187,6 +187,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'action',
             'actions',
             'security_groups',
+            'formula_versions',
             'logs',
             'orchestration_errors',
             'provisioning_errors',

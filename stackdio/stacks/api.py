@@ -41,6 +41,7 @@ from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from core.renderers import PlainTextRenderer
+from formulas.serializers import FormulaVersionSerializer
 from volumes.serializers import VolumeSerializer
 from . import filters, mixins, models, permissions, serializers, tasks, utils, validators, workflows
 
@@ -732,3 +733,14 @@ class StackSecurityGroupsAPIView(mixins.StackRelatedMixin, generics.ListAPIView)
     def get_queryset(self):
         stack = self.get_stack()
         return stack.get_security_groups()
+
+
+class StackFormulaVersionsAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = FormulaVersionSerializer
+
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.formula_versions.all()
+
+    def perform_create(self, serializer):
+        serializer.save(content_object=self.get_stack())
