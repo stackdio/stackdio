@@ -18,8 +18,10 @@
 
 import logging
 
+from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
+from core.fields import UserField
 from core.utils import recursive_update
 from . import models
 
@@ -138,6 +140,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
+    user_permissions = serializers.HyperlinkedIdentityField(view_name='blueprint-user-permissions-list')
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
     formula_versions = serializers.HyperlinkedIdentityField(view_name='blueprint-formula-versions')
 
@@ -149,6 +152,40 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'url',
             'properties',
+            'user_permissions',
             'formula_versions',
             'host_definitions',
         )
+
+
+class BlueprintPermissionsSerializer(serializers.Serializer):
+    user = UserField()
+    permissions = serializers.ListField()
+
+    def create(self, validated_data):
+        # Grab our data
+        user = validated_data['user']
+        blueprint = validated_data['blueprint']
+        for perm in validated_data['permissions']:
+            assign_perm('blueprints.%s_blueprint' % perm, user, blueprint)
+
+        return self.to_internal_value(validated_data)
+
+    def update(self, instance, validated_data):
+        # The funkiness below is to prevent a client from submitting a PUT or PATCH request to
+        # /api/<resource>/<pk>/permissions/users/user_id1 with user="user_id2".  If this were
+        # allowed, you could change the permissions of any user from the endpoint of any other user
+
+        # Pull the user from the instance to update rather than from the incoming request
+        user = instance['user']
+        # Then add it to the validated_data so the create request uses the correct user
+        validated_data['user'] = user
+        blueprint = validated_data['blueprint']
+
+        if not self.partial:
+            # PUT request - delete all the permissions, then recreate them later
+            for perm in instance['permissions']:
+                remove_perm('blueprints.%s_blueprint' % perm, user, blueprint)
+
+        # We now want to do the same thing as create
+        return self.create(validated_data)

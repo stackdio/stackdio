@@ -16,7 +16,9 @@
 #
 
 
+from django.contrib.auth import get_user_model
 from django.db import models
+from rest_framework.fields import Field
 
 
 class DeletingFileField(models.FileField):
@@ -45,3 +47,15 @@ class DeletingFileField(models.FileField):
         elif file:
             # Otherwise, just close the file, so it doesn't tie up resources.
             file.close()
+
+
+class UserField(Field):
+
+    def __init__(self, **kwargs):
+        super(UserField, self).__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        return get_user_model().objects.get(username=data)
+
+    def to_representation(self, value):
+        return value.username

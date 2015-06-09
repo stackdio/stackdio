@@ -90,8 +90,15 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
         # There's a weird case sometimes where the BrowsableAPIRenderer checks permissions
         # that it doesn't need to, and throws an exception.  We'll default to less permissions
         # here rather than more.
-        if obj._meta.app_label != model_cls._meta.app_label:
-            return False
+        try:
+            if obj._meta.app_label != model_cls._meta.app_label:
+                return False
+        except AttributeError:
+            if isinstance(obj, dict) or isinstance(obj, list):
+                # If this is just a plain old object returned by the API view, allow access
+                return True
+            else:
+                return False
 
         perms = self.get_required_object_permissions(request.method, model_cls)
 
@@ -115,14 +122,13 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
         return True
 
 
-class IsAdminOrReadOnly(permissions.IsAdminUser):
-    """
-    A permission that allows all users read-only permission and admin users
-    all permission
-    """
-
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        else:
-            return super(IsAdminOrReadOnly, self).has_permission(request, view)
+class StackdioPermissionsObjectPermissions(StackdioParentObjectPermissions):
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.admin_%(model_name)s'],
+        'PUT': ['%(app_label)s.admin_%(model_name)s'],
+        'PATCH': ['%(app_label)s.admin_%(model_name)s'],
+        'DELETE': ['%(app_label)s.admin_%(model_name)s'],
+    }

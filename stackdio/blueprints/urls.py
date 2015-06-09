@@ -35,6 +35,14 @@ urlpatterns = patterns(
         api.BlueprintPropertiesAPIView.as_view(),
         name='blueprint-properties'),
 
+    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/users/$',
+        api.BlueprintUserPermissionsListAPIView.as_view(),
+        name='blueprint-user-permissions-list'),
+
+    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/users/(?P<username>[\w.@+-]+)/$',
+        api.BlueprintUserPermissionsDetailAPIView.as_view(),
+        name='blueprint-user-permissions-detail'),
+
     url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
         api.BlueprintFormulaVersionsAPIView.as_view(),
         name='blueprint-formula-versions'),
