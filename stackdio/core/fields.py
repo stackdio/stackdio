@@ -17,6 +17,7 @@
 
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db import models
 from rest_framework.fields import Field
 
@@ -59,3 +60,15 @@ class UserField(Field):
 
     def to_representation(self, value):
         return value.username
+
+
+class GroupField(Field):
+
+    def __init__(self, **kwargs):
+        super(GroupField, self).__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        return Group.objects.get(name=data)
+
+    def to_representation(self, value):
+        return value.name

@@ -94,9 +94,15 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
             if obj._meta.app_label != model_cls._meta.app_label:
                 return False
         except AttributeError:
-            if isinstance(obj, dict) or isinstance(obj, list):
-                # If this is just a plain old object returned by the API view, allow access
-                return True
+            # This means the BrowsableRenderer is trying to check object permissions on one of our
+            # permissions responses... which are just dicts, so it doesn't know what to do.  We'll
+            # check the parent object instead.
+            model_name = model_cls._meta.model_name
+            # All of our parent views have a `get_<model_name>` method, so we'll grab that and use
+            # it to get an object to check permissions on.
+            get_parent_obj = getattr(view, 'get_%s' % model_name)
+            if get_parent_obj:
+                return self.has_object_permission(request, view, get_parent_obj())
             else:
                 return False
 
@@ -124,7 +130,7 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
 
 class StackdioPermissionsObjectPermissions(StackdioParentObjectPermissions):
     perms_map = {
-        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'GET': ['%(app_label)s.admin_%(model_name)s'],
         'OPTIONS': [],
         'HEAD': [],
         'POST': ['%(app_label)s.admin_%(model_name)s'],
