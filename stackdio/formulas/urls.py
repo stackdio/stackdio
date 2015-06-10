@@ -39,6 +39,22 @@ urlpatterns = patterns('formulas.api',
         api.FormulaActionAPIView.as_view(),
         name='formula-action'),
 
+    url(r'^formulas/(?P<pk>[0-9]+)/permissions/users/$',
+        api.FormulaUserPermissionsListAPIView.as_view(),
+        name='formula-user-permissions-list'),
+
+    url(r'^formulas/(?P<pk>[0-9]+)/permissions/users/(?P<username>[\w.@+-]+)/$',
+        api.FormulaUserPermissionsDetailAPIView.as_view(),
+        name='formula-user-permissions-detail'),
+
+    url(r'^formulas/(?P<pk>[0-9]+)/permissions/groups/$',
+        api.FormulaGroupPermissionsListAPIView.as_view(),
+        name='formula-group-permissions-list'),
+
+    url(r'^formulas/(?P<pk>[0-9]+)/permissions/groups/(?P<groupname>[\w.@+-]+)/$',
+        api.FormulaGroupPermissionsDetailAPIView.as_view(),
+        name='formula-group-permissions-detail'),
+
     url(r'^formula_components/(?P<pk>[0-9]+)/$',
         api.FormulaComponentDetailAPIView.as_view(),
         name='formulacomponent-detail'),

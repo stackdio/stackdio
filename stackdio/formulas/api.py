@@ -26,7 +26,12 @@ from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest
+from core.generics import (
+    StackdioObjectPermissionsListAPIView,
+    StackdioObjectPermissionsDetailAPIView,
+)
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from core.serializers import StackdioUserPermissionsSerializer, StackdioGroupPermissionsSerializer
 from . import filters, mixins, models, permissions, serializers, tasks, utils
 
 
@@ -93,7 +98,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         formula_obj.save()
 
         # Assign permissions so the user that just created the formula can operate on it
-        for perm in formula_obj._meta.default_permissions:
+        for perm in models.Formula.object_permissions:
             assign_perm('formulas.%s_formula' % perm, request.user, formula_obj)
 
         # Import using asynchronous task
@@ -204,3 +209,43 @@ class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):
             tasks.update_formula.si(formula.id, utils.PasswordStr(git_password)).apply_async()
 
         return Response(self.get_serializer(formula).data)
+
+
+class FormulaUserPermissionsListAPIView(mixins.FormulaRelatedMixin,
+                                        StackdioObjectPermissionsListAPIView):
+    serializer_class = StackdioUserPermissionsSerializer
+    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
+    user_or_group = 'user'
+
+    def get_permissioned_object(self):
+        return self.get_formula()
+
+
+class FormulaUserPermissionsDetailAPIView(mixins.FormulaRelatedMixin,
+                                          StackdioObjectPermissionsDetailAPIView):
+    serializer_class = StackdioUserPermissionsSerializer
+    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
+    user_or_group = 'user'
+
+    def get_permissioned_object(self):
+        return self.get_formula()
+
+
+class FormulaGroupPermissionsListAPIView(mixins.FormulaRelatedMixin,
+                                         StackdioObjectPermissionsListAPIView):
+    serializer_class = StackdioGroupPermissionsSerializer
+    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
+    user_or_group = 'group'
+
+    def get_permissioned_object(self):
+        return self.get_formula()
+
+
+class FormulaGroupPermissionsDetailAPIView(mixins.FormulaRelatedMixin,
+                                           StackdioObjectPermissionsDetailAPIView):
+    serializer_class = StackdioGroupPermissionsSerializer
+    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
+    user_or_group = 'group'
+
+    def get_permissioned_object(self):
+        return self.get_formula()
