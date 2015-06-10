@@ -18,10 +18,8 @@
 
 import logging
 
-from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
-from core.fields import UserField
 from core.utils import recursive_update
 from . import models
 
