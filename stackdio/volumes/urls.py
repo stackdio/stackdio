@@ -16,9 +16,15 @@
 #
 
 
-from django.conf.urls import patterns, url
+from django.conf.urls import include, patterns, url
+from rest_framework import routers
 
 from . import api
+
+router = routers.SimpleRouter()
+router.register(r'users', api.VolumeUserPermissionsViewSet, 'volume-user-permissions')
+router.register(r'groups', api.VolumeGroupPermissionsViewSet, 'volume-group-permissions')
+
 
 urlpatterns = patterns(
     'volumes.api',
@@ -30,4 +36,7 @@ urlpatterns = patterns(
     url(r'^volumes/(?P<pk>[0-9]+)/$',
         api.VolumeDetailAPIView.as_view(),
         name='volume-detail'),
+
+    url(r'^volumes/(?P<pk>[0-9]+)/permissions/',
+        include(router.urls)),
 )

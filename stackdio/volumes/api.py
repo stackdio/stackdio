@@ -22,7 +22,9 @@ from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from . import filters, models, serializers
+from core.serializers import StackdioUserPermissionsSerializer, StackdioGroupPermissionsSerializer
+from core.viewsets import StackdioObjectPermissionsViewSet
+from . import filters, mixins, models, permissions, serializers
 
 logger = logging.getLogger(__name__)
 
@@ -42,3 +44,17 @@ class VolumeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
     permission_classes = (StackdioObjectPermissions,)
+
+
+class VolumeUserPermissionsViewSet(mixins.VolumeRelatedMixin, StackdioObjectPermissionsViewSet):
+    serializer_class = StackdioUserPermissionsSerializer
+    permission_classes = (permissions.VolumePermissionsObjectPermissions,)
+    user_or_group = 'user'
+    lookup_field = 'username'
+
+
+class VolumeGroupPermissionsViewSet(mixins.VolumeRelatedMixin, StackdioObjectPermissionsViewSet):
+    serializer_class = StackdioGroupPermissionsSerializer
+    permission_classes = (permissions.VolumePermissionsObjectPermissions,)
+    user_or_group = 'group'
+    lookup_field = 'groupname'
