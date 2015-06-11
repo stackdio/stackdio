@@ -72,17 +72,28 @@ class CloudProviderType(models.Model):
         return self.type_name
 
 
+_cloudprovider_model_permissions = (
+    'create',
+)
+
+_cloudprovider_object_permissions = (
+    'view',
+    'update',
+    'delete',
+    'admin',
+)
+
+
 class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
+
+    model_permissions = _cloudprovider_model_permissions
+    object_permissions = _cloudprovider_object_permissions
+
     class Meta:
         unique_together = ('title', 'provider_type')
         ordering = ('provider_type', 'title')
 
-        default_permissions = (
-            'create',
-            'view',
-            'update',
-            'delete',
-        )
+        default_permissions = _cloudprovider_model_permissions + _cloudprovider_object_permissions
 
     # What is the type of provider (e.g., AWS, Rackspace, etc)
     provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
@@ -245,16 +256,27 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
         )
 
 
+_cloudprofile_model_permissions = (
+    'create',
+)
+
+_cloudprofile_object_permissions = (
+    'view',
+    'update',
+    'delete',
+    'admin',
+)
+
+
 class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
+
+    model_permissions = _cloudprofile_model_permissions
+    object_permissions = _cloudprofile_object_permissions
+
     class Meta:
         unique_together = ('title', 'cloud_provider')
 
-        default_permissions = (
-            'create',
-            'view',
-            'update',
-            'delete',
-        )
+        default_permissions = _cloudprofile_model_permissions + _cloudprofile_object_permissions
 
     # What cloud provider is this under?
     cloud_provider = models.ForeignKey('CloudProvider', related_name='profiles')
@@ -322,16 +344,27 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
         return self.cloud_provider.get_driver()
 
 
+_snapshot_model_permissions = (
+    'create',
+)
+
+_snapshot_object_permissions = (
+    'view',
+    'update',
+    'delete',
+    'admin',
+)
+
+
 class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
+
+    model_permissions = _snapshot_model_permissions
+    object_permissions = _snapshot_object_permissions
+
     class Meta:
         unique_together = ('snapshot_id', 'cloud_provider')
 
-        default_permissions = (
-            'create',
-            'view',
-            'update',
-            'delete',
-        )
+        default_permissions = _snapshot_model_permissions + _snapshot_object_permissions
 
     # The cloud provider that has access to this snapshot
     cloud_provider = models.ForeignKey('CloudProvider',
@@ -410,16 +443,27 @@ class SecurityGroupManager(TransformManager):
         return SecurityGroupQuerySet(self.model)
 
 
+_securitygroup_model_permissions = (
+    'create',
+)
+
+_securitygroup_object_permissions = (
+    'view',
+    'update',
+    'delete',
+    'admin',
+)
+
+
 class SecurityGroup(TimeStampedModel, models.Model):
+
+    model_permissions = _securitygroup_model_permissions
+    object_permissions = _securitygroup_object_permissions
+
     class Meta:
         unique_together = ('name', 'cloud_provider')
 
-        default_permissions = (
-            'create',
-            'view',
-            'update',
-            'delete',
-        )
+        default_permissions = _securitygroup_model_permissions + _snapshot_object_permissions
 
     objects = SecurityGroupManager()
 
