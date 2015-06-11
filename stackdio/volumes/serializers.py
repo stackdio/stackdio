@@ -31,8 +31,10 @@ class VolumeSerializer(serializers.HyperlinkedModelSerializer):
     size_in_gb = serializers.ReadOnlyField(source='snapshot.size_in_gb')
 
     # Link fields
-    user_permissions = serializers.HyperlinkedIdentityField(source='volume-user-permissions-list')
-    group_permissions = serializers.HyperlinkedIdentityField(source='volume-group-permissions-list')
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='volume-user-permissions-list')
+    group_permissions = serializers.HyperlinkedIdentityField(
+        view_name='volume-group-permissions-list')
 
     class Meta:
         model = models.Volume
