@@ -16,9 +16,15 @@
 #
 
 
-from django.conf.urls import patterns, url
+from django.conf.urls import include, patterns, url
+from rest_framework import routers
 
 from . import api
+
+router = routers.SimpleRouter()
+router.register(r'users', api.StackUserPermissionsViewSet, 'stack-user-permissions')
+router.register(r'groups', api.StackGroupPermissionsViewSet, 'stack-group-permissions')
+
 
 urlpatterns = patterns(
     'stacks.api',
@@ -42,6 +48,9 @@ urlpatterns = patterns(
     url(r'^stacks/(?P<pk>[0-9]+)/$',
         api.StackDetailAPIView.as_view(),
         name='stack-detail'),
+
+    url(r'^stacks/(?P<pk>[0-9]+)/permissions/',
+        include(router.urls)),
 
     url(r'^stacks/(?P<pk>[0-9]+)/hosts/$',
         api.StackHostsAPIView.as_view(),

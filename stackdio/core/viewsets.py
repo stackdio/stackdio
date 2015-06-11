@@ -30,7 +30,7 @@ class StackdioObjectPermissionsViewSet(mixins.ListModelMixin,
     """
     user_or_group = None
     lookup_value_regex = r'[\w.@+-]+'
-    
+
     def get_user_or_group(self):
         assert self.user_or_group in ('user', 'group'), (
             "'%s' should include a `user_or_group` attribute that is one of 'user' or 'group'."

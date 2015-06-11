@@ -29,3 +29,6 @@ class StackRelatedMixin(object):
         obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
+
+    def get_permissioned_object(self):
+        return self.get_stack()

@@ -162,6 +162,10 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         view_name='stack-security-groups', read_only=True)
     formula_versions = serializers.HyperlinkedIdentityField(
         view_name='stack-formula-versions', read_only=True)
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='stack-user-permissions-list', read_only=True)
+    group_permissions = serializers.HyperlinkedIdentityField(
+        view_name='stack-group-permissions-list', read_only=True)
 
     # Relation Links
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
@@ -179,6 +183,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'host_count',
             'volume_count',
             'created',
+            'user_permissions',
+            'group_permissions',
             'fqdns',
             'hosts',
             'volumes',
