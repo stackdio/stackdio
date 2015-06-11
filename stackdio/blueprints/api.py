@@ -24,10 +24,7 @@ from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsF
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
-from core.generics import (
-    StackdioObjectPermissionsListAPIView,
-    StackdioObjectPermissionsDetailAPIView,
-)
+from core.viewsets import StackdioObjectPermissionsViewSet
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from core.serializers import StackdioUserPermissionsSerializer, StackdioGroupPermissionsSerializer
 from formulas.models import FormulaVersion
@@ -107,44 +104,20 @@ class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.Retrieve
     serializer_class = serializers.BlueprintPropertiesSerializer
 
 
-class BlueprintUserPermissionsListAPIView(mixins.BlueprintRelatedMixin,
-                                          StackdioObjectPermissionsListAPIView):
+class BlueprintUserPermissionsViewSet(mixins.BlueprintRelatedMixin,
+                                      StackdioObjectPermissionsViewSet):
     serializer_class = StackdioUserPermissionsSerializer
     permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
     user_or_group = 'user'
-
-    def get_permissioned_object(self):
-        return self.get_blueprint()
+    lookup_field = 'username'
 
 
-class BlueprintUserPermissionsDetailAPIView(mixins.BlueprintRelatedMixin,
-                                            StackdioObjectPermissionsDetailAPIView):
-    serializer_class = StackdioUserPermissionsSerializer
-    permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
-    user_or_group = 'user'
-
-    def get_permissioned_object(self):
-        return self.get_blueprint()
-
-
-class BlueprintGroupPermissionsListAPIView(mixins.BlueprintRelatedMixin,
-                                           StackdioObjectPermissionsListAPIView):
+class BlueprintGroupPermissionsViewSet(mixins.BlueprintRelatedMixin,
+                                       StackdioObjectPermissionsViewSet):
     serializer_class = StackdioGroupPermissionsSerializer
     permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
     user_or_group = 'group'
-
-    def get_permissioned_object(self):
-        return self.get_blueprint()
-
-
-class BlueprintGroupPermissionsDetailAPIView(mixins.BlueprintRelatedMixin,
-                                             StackdioObjectPermissionsDetailAPIView):
-    serializer_class = StackdioGroupPermissionsSerializer
-    permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
-    user_or_group = 'group'
-
-    def get_permissioned_object(self):
-        return self.get_blueprint()
+    lookup_field = 'groupname'
 
 
 class BlueprintFormulaVersionsAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):

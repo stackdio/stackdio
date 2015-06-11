@@ -16,9 +16,15 @@
 #
 
 
-from django.conf.urls import patterns, url
+from django.conf.urls import include, patterns, url
+from rest_framework import routers
 
 from . import api
+
+router = routers.SimpleRouter()
+router.register(r'users', api.BlueprintUserPermissionsViewSet, 'blueprint-user-permissions')
+router.register(r'groups', api.BlueprintGroupPermissionsViewSet, 'blueprint-group-permissions')
+
 
 urlpatterns = patterns(
     'blueprints.api',
@@ -35,21 +41,8 @@ urlpatterns = patterns(
         api.BlueprintPropertiesAPIView.as_view(),
         name='blueprint-properties'),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/users/$',
-        api.BlueprintUserPermissionsListAPIView.as_view(),
-        name='blueprint-user-permissions-list'),
-
-    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/users/(?P<username>[\w.@+-]+)/$',
-        api.BlueprintUserPermissionsDetailAPIView.as_view(),
-        name='blueprint-user-permissions-detail'),
-
-    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/groups/$',
-        api.BlueprintGroupPermissionsListAPIView.as_view(),
-        name='blueprint-group-permissions-list'),
-
-    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/groups/(?P<groupname>[\w.@+-]+)/$',
-        api.BlueprintGroupPermissionsDetailAPIView.as_view(),
-        name='blueprint-group-permissions-detail'),
+    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/',
+        include(router.urls)),
 
     url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
         api.BlueprintFormulaVersionsAPIView.as_view(),

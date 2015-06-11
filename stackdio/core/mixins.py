@@ -18,8 +18,6 @@
 
 import logging
 
-from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
-
 logger = logging.getLogger(__name__)
 
 
@@ -55,56 +53,3 @@ class SuperuserFieldsMixin(object):
             fields.pop(field_name)
 
         return fields
-
-
-class StackdioPermissionedObjectMixin(object):
-    """
-    Provides generic functions needed by permission API endpoints
-    """
-    user_or_group = None
-
-    def get_user_or_group(self):
-        assert self.user_or_group in ('user', 'group'), (
-            "'%s' should include a `user_or_group` attribute that is one of 'user' or 'group'."
-            % self.__class__.__name__
-        )
-        return self.user_or_group
-
-    def switch_user_group(self, if_user, if_group):
-        if self.get_user_or_group() == 'user':
-            return if_user
-        elif self.get_user_or_group() == 'group':
-            return if_group
-        else:
-            raise ValueError(
-                "'%s' should include a `user_or_group` attribute that is one of 'user' or 'group'."
-                % self.__class__.__name__
-            )
-
-    def get_permissioned_object(self):
-        raise NotImplementedError('`get_permissioned_object()` must be implemented.')
-
-    def _transform_perm(self, model_name):
-        def do_tranform(item):
-            perm, sep, empty = item.partition('_' + model_name)
-            return perm
-
-        return do_tranform
-
-    def get_queryset(self):
-        obj = self.get_permissioned_object()
-        model_name = obj._meta.model_name
-
-        # Grab the perms for either the users or groups
-        perm_map = self.switch_user_group(
-            get_users_with_perms(obj, attach_perms=True),
-            get_groups_with_perms(obj, attach_perms=True),
-        )
-
-        ret = []
-        for auth_obj, perms in perm_map.items():
-            ret.append({
-                self.get_user_or_group(): auth_obj,
-                'permissions': map(self._transform_perm(model_name), perms),
-            })
-        return ret

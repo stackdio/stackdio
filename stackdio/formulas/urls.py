@@ -16,11 +16,18 @@
 #
 
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, patterns, url
+from rest_framework import routers
 
 from . import api
 
-urlpatterns = patterns('formulas.api',
+router = routers.SimpleRouter()
+router.register(r'users', api.FormulaUserPermissionsViewSet, 'formula-user-permissions')
+router.register(r'groups', api.FormulaGroupPermissionsViewSet, 'formula-group-permissions')
+
+
+urlpatterns = patterns(
+    'formulas.api',
 
     url(r'^formulas/$',
         api.FormulaListAPIView.as_view(),
@@ -39,21 +46,8 @@ urlpatterns = patterns('formulas.api',
         api.FormulaActionAPIView.as_view(),
         name='formula-action'),
 
-    url(r'^formulas/(?P<pk>[0-9]+)/permissions/users/$',
-        api.FormulaUserPermissionsListAPIView.as_view(),
-        name='formula-user-permissions-list'),
-
-    url(r'^formulas/(?P<pk>[0-9]+)/permissions/users/(?P<username>[\w.@+-]+)/$',
-        api.FormulaUserPermissionsDetailAPIView.as_view(),
-        name='formula-user-permissions-detail'),
-
-    url(r'^formulas/(?P<pk>[0-9]+)/permissions/groups/$',
-        api.FormulaGroupPermissionsListAPIView.as_view(),
-        name='formula-group-permissions-list'),
-
-    url(r'^formulas/(?P<pk>[0-9]+)/permissions/groups/(?P<groupname>[\w.@+-]+)/$',
-        api.FormulaGroupPermissionsDetailAPIView.as_view(),
-        name='formula-group-permissions-detail'),
+    url(r'^formulas/(?P<pk>[0-9]+)/permissions/',
+        include(router.urls)),
 
     url(r'^formula_components/(?P<pk>[0-9]+)/$',
         api.FormulaComponentDetailAPIView.as_view(),

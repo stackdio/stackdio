@@ -26,10 +26,7 @@ from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest
-from core.generics import (
-    StackdioObjectPermissionsListAPIView,
-    StackdioObjectPermissionsDetailAPIView,
-)
+from core.viewsets import StackdioObjectPermissionsViewSet
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from core.serializers import StackdioUserPermissionsSerializer, StackdioGroupPermissionsSerializer
 from . import filters, mixins, models, permissions, serializers, tasks, utils
@@ -211,41 +208,15 @@ class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):
         return Response(self.get_serializer(formula).data)
 
 
-class FormulaUserPermissionsListAPIView(mixins.FormulaRelatedMixin,
-                                        StackdioObjectPermissionsListAPIView):
+class FormulaUserPermissionsViewSet(mixins.FormulaRelatedMixin, StackdioObjectPermissionsViewSet):
     serializer_class = StackdioUserPermissionsSerializer
     permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
     user_or_group = 'user'
-
-    def get_permissioned_object(self):
-        return self.get_formula()
+    lookup_field = 'username'
 
 
-class FormulaUserPermissionsDetailAPIView(mixins.FormulaRelatedMixin,
-                                          StackdioObjectPermissionsDetailAPIView):
-    serializer_class = StackdioUserPermissionsSerializer
-    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
-    user_or_group = 'user'
-
-    def get_permissioned_object(self):
-        return self.get_formula()
-
-
-class FormulaGroupPermissionsListAPIView(mixins.FormulaRelatedMixin,
-                                         StackdioObjectPermissionsListAPIView):
+class FormulaGroupPermissionsViewSet(mixins.FormulaRelatedMixin, StackdioObjectPermissionsViewSet):
     serializer_class = StackdioGroupPermissionsSerializer
     permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
     user_or_group = 'group'
-
-    def get_permissioned_object(self):
-        return self.get_formula()
-
-
-class FormulaGroupPermissionsDetailAPIView(mixins.FormulaRelatedMixin,
-                                           StackdioObjectPermissionsDetailAPIView):
-    serializer_class = StackdioGroupPermissionsSerializer
-    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
-    user_or_group = 'group'
-
-    def get_permissioned_object(self):
-        return self.get_formula()
+    lookup_field = 'groupname'
