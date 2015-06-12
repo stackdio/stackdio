@@ -80,9 +80,9 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
 
     def has_object_permission(self, request, view, obj):
         assert self.parent_model_cls is not None, (
-            'Cannot apply StackdioParentObjectPermissions directly. '
+            'Cannot apply %s directly. '
             'You must subclass it and override the `parent_model_cls` '
-            'attribute.')
+            'attribute.' % self.__class__.__name__)
 
         model_cls = self.parent_model_cls
         user = request.user
@@ -126,6 +126,44 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
             return False
 
         return True
+
+
+class StackdioPermissionsModelPermissions(permissions.DjangoModelPermissions):
+    """
+    Override the default permission namings
+    """
+    perms_map = {
+        'GET': ['%(app_label)s.admin_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.admin_%(model_name)s'],
+        'PUT': ['%(app_label)s.admin_%(model_name)s'],
+        'PATCH': ['%(app_label)s.admin_%(model_name)s'],
+        'DELETE': ['%(app_label)s.admin_%(model_name)s'],
+    }
+
+    model_cls = None
+
+    def has_permission(self, request, view):
+        assert self.model_cls is not None, (
+            'Cannot apply %s directly. '
+            'You must subclass it and override the `parent_model_cls` '
+            'attribute.' % self.__class__.__name__)
+
+        model_cls = self.model_cls
+
+        # Workaround to ensure DjangoModelPermissions are not applied
+        # to the root view when using DefaultRouter.
+        if getattr(view, '_ignore_model_permissions', False):
+            return True
+
+        perms = self.get_required_permissions(request.method, model_cls)
+
+        return (
+            request.user and
+            (request.user.is_authenticated() or not self.authenticated_users_only) and
+            request.user.has_perms(perms)
+        )
 
 
 class StackdioPermissionsObjectPermissions(StackdioParentObjectPermissions):

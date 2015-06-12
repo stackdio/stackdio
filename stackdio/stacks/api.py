@@ -41,8 +41,14 @@ from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from core.renderers import PlainTextRenderer
-from core.serializers import StackdioUserPermissionsSerializer, StackdioGroupPermissionsSerializer
-from core.viewsets import StackdioObjectPermissionsViewSet
+from core.serializers import (
+    StackdioUserObjectPermissionsSerializer,
+    StackdioGroupObjectPermissionsSerializer,
+)
+from core.viewsets import (
+    StackdioObjectUserPermissionsViewSet,
+    StackdioObjectGroupPermissionsViewSet,
+)
 from formulas.models import FormulaVersion
 from formulas.serializers import FormulaVersionSerializer
 from volumes.serializers import VolumeSerializer
@@ -122,18 +128,14 @@ class StackPropertiesAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateAP
     serializer_class = serializers.StackPropertiesSerializer
 
 
-class StackUserPermissionsViewSet(mixins.StackRelatedMixin, StackdioObjectPermissionsViewSet):
-    serializer_class = StackdioUserPermissionsSerializer
+class StackUserPermissionsViewSet(mixins.StackRelatedMixin, StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.StackPermissionsObjectPermissions,)
-    user_or_group = 'user'
-    lookup_field = 'username'
 
 
-class StackGroupPermissionsViewSet(mixins.StackRelatedMixin, StackdioObjectPermissionsViewSet):
-    serializer_class = StackdioGroupPermissionsSerializer
+class StackGroupPermissionsViewSet(mixins.StackRelatedMixin, StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.StackPermissionsObjectPermissions,)
-    user_or_group = 'group'
-    lookup_field = 'groupname'
 
 
 class StackHistoryAPIView(mixins.StackRelatedMixin, generics.ListAPIView):

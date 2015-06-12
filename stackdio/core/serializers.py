@@ -49,7 +49,64 @@ class UserSettingsSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class StackdioPermissionsSerializer(serializers.Serializer):
+class StackdioModelPermissionsSerializer(serializers.Serializer):
+    permissions = serializers.ListField()
+
+    def create(self, validated_data):
+        # Determine if this is a user or group
+        view = self.context['view']
+        user_or_group = view.get_user_or_group()
+
+        # Grab our data
+        auth_obj = validated_data[user_or_group]
+
+        # Grab model class
+        model_cls = validated_data['model_cls']
+        app_label = model_cls._meta.app_label
+        model_name = model_cls._meta.model_name
+
+        for perm in validated_data['permissions']:
+            assign_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj)
+
+        return self.to_internal_value(validated_data)
+
+    def update(self, instance, validated_data):
+        # Determine if this is a user or group
+        view = self.context['view']
+        user_or_group = view.get_user_or_group()
+
+        # The funkiness below is to prevent a client from submitting a PUT or PATCH request to
+        # /api/<resource>/permissions/users/user_id1 with user="user_id2".  If this were
+        # allowed, you could change the permissions of any user from the endpoint of any other user
+
+        # Pull the user from the instance to update rather than from the incoming request
+        auth_obj = instance[user_or_group]
+        # Then add it to the validated_data so the create request uses the correct user
+        validated_data[user_or_group] = auth_obj
+
+        # Grab the object
+        model_cls = validated_data['model_cls']
+        app_label = model_cls._meta.app_label
+        model_name = model_cls._meta.model_name
+
+        if not self.partial:
+            # PUT request - delete all the permissions, then recreate them later
+            for perm in instance['permissions']:
+                remove_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj)
+
+        # We now want to do the same thing as create
+        return self.create(validated_data)
+
+
+class StackdioUserModelPermissionsSerializer(StackdioModelPermissionsSerializer):
+    user = fields.UserField()
+
+
+class StackdioGroupModelPermissionsSerializer(StackdioModelPermissionsSerializer):
+    group = fields.GroupField()
+
+
+class StackdioObjectPermissionsSerializer(serializers.Serializer):
     permissions = serializers.ListField()
 
     def create(self, validated_data):
@@ -97,9 +154,9 @@ class StackdioPermissionsSerializer(serializers.Serializer):
         return self.create(validated_data)
 
 
-class StackdioUserPermissionsSerializer(StackdioPermissionsSerializer):
+class StackdioUserObjectPermissionsSerializer(StackdioObjectPermissionsSerializer):
     user = fields.UserField()
 
 
-class StackdioGroupPermissionsSerializer(StackdioPermissionsSerializer):
+class StackdioGroupObjectPermissionsSerializer(StackdioObjectPermissionsSerializer):
     group = fields.GroupField()

@@ -24,9 +24,23 @@ from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsF
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
-from core.viewsets import StackdioObjectPermissionsViewSet
-from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from core.serializers import StackdioUserPermissionsSerializer, StackdioGroupPermissionsSerializer
+from core.permissions import (
+    StackdioModelPermissions,
+    StackdioObjectPermissions,
+    StackdioPermissionsModelPermissions,
+)
+from core.serializers import (
+    StackdioUserModelPermissionsSerializer,
+    StackdioGroupModelPermissionsSerializer,
+    StackdioUserObjectPermissionsSerializer,
+    StackdioGroupObjectPermissionsSerializer,
+)
+from core.viewsets import (
+    StackdioModelUserPermissionsViewSet,
+    StackdioModelGroupPermissionsViewSet,
+    StackdioObjectUserPermissionsViewSet,
+    StackdioObjectGroupPermissionsViewSet,
+)
 from formulas.models import FormulaVersion
 from formulas.serializers import FormulaVersionSerializer
 from stacks.serializers import StackSerializer
@@ -104,20 +118,28 @@ class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.Retrieve
     serializer_class = serializers.BlueprintPropertiesSerializer
 
 
-class BlueprintUserPermissionsViewSet(mixins.BlueprintRelatedMixin,
-                                      StackdioObjectPermissionsViewSet):
-    serializer_class = StackdioUserPermissionsSerializer
-    permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
-    user_or_group = 'user'
-    lookup_field = 'username'
+class BlueprintModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
+    model_cls = models.Blueprint
 
 
-class BlueprintGroupPermissionsViewSet(mixins.BlueprintRelatedMixin,
-                                       StackdioObjectPermissionsViewSet):
-    serializer_class = StackdioGroupPermissionsSerializer
+class BlueprintModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    serializer_class = StackdioGroupModelPermissionsSerializer
+    permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
+    model_cls = models.Blueprint
+
+
+class BlueprintObjectUserPermissionsViewSet(mixins.BlueprintRelatedMixin,
+                                            StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
-    user_or_group = 'group'
-    lookup_field = 'groupname'
+
+
+class BlueprintObjectGroupPermissionsViewSet(mixins.BlueprintRelatedMixin,
+                                             StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
+    permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
 
 
 class BlueprintFormulaVersionsAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):

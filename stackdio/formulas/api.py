@@ -26,9 +26,12 @@ from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest
-from core.viewsets import StackdioObjectPermissionsViewSet
+from core.viewsets import (
+    StackdioObjectUserPermissionsViewSet,
+    StackdioObjectGroupPermissionsViewSet,
+)
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from core.serializers import StackdioUserPermissionsSerializer, StackdioGroupPermissionsSerializer
+from core.serializers import StackdioUserObjectPermissionsSerializer, StackdioGroupObjectPermissionsSerializer
 from . import filters, mixins, models, permissions, serializers, tasks, utils
 
 
@@ -208,15 +211,13 @@ class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):
         return Response(self.get_serializer(formula).data)
 
 
-class FormulaUserPermissionsViewSet(mixins.FormulaRelatedMixin, StackdioObjectPermissionsViewSet):
-    serializer_class = StackdioUserPermissionsSerializer
+class FormulaUserPermissionsViewSet(mixins.FormulaRelatedMixin,
+                                    StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
-    user_or_group = 'user'
-    lookup_field = 'username'
 
 
-class FormulaGroupPermissionsViewSet(mixins.FormulaRelatedMixin, StackdioObjectPermissionsViewSet):
-    serializer_class = StackdioGroupPermissionsSerializer
+class FormulaGroupPermissionsViewSet(mixins.FormulaRelatedMixin,
+                                     StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
-    user_or_group = 'group'
-    lookup_field = 'groupname'

@@ -137,11 +137,16 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
-    properties = serializers.HyperlinkedIdentityField(view_name='blueprint-properties')
-    user_permissions = serializers.HyperlinkedIdentityField(view_name='blueprint-user-permissions-list')
-    group_permissions = serializers.HyperlinkedIdentityField(view_name='blueprint-group-permissions-list')
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
-    formula_versions = serializers.HyperlinkedIdentityField(view_name='blueprint-formula-versions')
+
+    properties = serializers.HyperlinkedIdentityField(
+        view_name='blueprint-properties')
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='blueprint-object-user-permissions-list')
+    group_permissions = serializers.HyperlinkedIdentityField(
+        view_name='blueprint-object-group-permissions-list')
+    formula_versions = serializers.HyperlinkedIdentityField(
+        view_name='blueprint-formula-versions')
 
     class Meta:
         model = models.Blueprint

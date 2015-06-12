@@ -21,9 +21,22 @@ from rest_framework import routers
 
 from . import api
 
-router = routers.SimpleRouter()
-router.register(r'users', api.BlueprintUserPermissionsViewSet, 'blueprint-user-permissions')
-router.register(r'groups', api.BlueprintGroupPermissionsViewSet, 'blueprint-group-permissions')
+model_router = routers.SimpleRouter()
+model_router.register(r'users',
+                      api.BlueprintModelUserPermissionsViewSet,
+                      'blueprint-model-user-permissions')
+model_router.register(r'groups',
+                      api.BlueprintModelGroupPermissionsViewSet,
+                      'blueprint-model-group-permissions')
+
+
+object_router = routers.SimpleRouter()
+object_router.register(r'users',
+                       api.BlueprintObjectUserPermissionsViewSet,
+                       'blueprint-object-user-permissions')
+object_router.register(r'groups',
+                       api.BlueprintObjectGroupPermissionsViewSet,
+                       'blueprint-object-group-permissions')
 
 
 urlpatterns = patterns(
@@ -32,6 +45,9 @@ urlpatterns = patterns(
     url(r'^blueprints/$',
         api.BlueprintListAPIView.as_view(),
         name='blueprint-list'),
+
+    url(r'^blueprints/permissions/',
+        include(model_router.urls)),
 
     url(r'^blueprints/(?P<pk>[0-9]+)/$',
         api.BlueprintDetailAPIView.as_view(),
@@ -42,7 +58,7 @@ urlpatterns = patterns(
         name='blueprint-properties'),
 
     url(r'^blueprints/(?P<pk>[0-9]+)/permissions/',
-        include(router.urls)),
+        include(object_router.urls)),
 
     url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
         api.BlueprintFormulaVersionsAPIView.as_view(),
