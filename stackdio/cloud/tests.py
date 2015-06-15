@@ -84,11 +84,9 @@ class CloudProviderTestCase(StackdioTestCase, PermissionsMixin):
     }
 
     def test_view_provider_as_admin(self):
-        provider = models.CloudProvider.objects.create(**self.permission_tests['create_data'])
-
         self.client.login(username='test.admin', password='1234')
 
-        response = self.client.get('/api/providers/{0}/'.format(provider.pk))
+        response = self.client.get('/api/providers/{0}/'.format(self.obj.pk))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 

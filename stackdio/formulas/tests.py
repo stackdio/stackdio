@@ -47,12 +47,7 @@ class FormulaTestCase(StackdioTestCase, PermissionsMixin):
     }
 
     def test_update(self):
-        # Create the object
-        obj = self.permission_tests['model'].objects.create(
-            **self.permission_tests.get('create_data', {})
-        )
-
-        endpoint = self.permission_tests['endpoint'].format(obj.pk)
+        endpoint = self.permission_tests['endpoint'].format(self.obj.pk)
 
         self.client.login(username='test.user', password='1234')
 

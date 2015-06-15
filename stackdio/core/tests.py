@@ -52,6 +52,12 @@ class PermissionsMixin(object):
         # Things look OK
         return True
 
+    def set_up_perms(self):
+        # Create the object
+        self.obj = self.permission_tests['model'].objects.create(
+            **self.permission_tests.get('create_data', {})
+        )
+
     def test_permissions(self):
         """
         Generic method to test permissions for each resource
@@ -62,12 +68,7 @@ class PermissionsMixin(object):
 
         self.client.login(username='test.user', password='1234')
 
-        # Create the object
-        obj = self.permission_tests['model'].objects.create(
-            **self.permission_tests.get('create_data', {})
-        )
-
-        endpoint = self.permission_tests['endpoint'].format(obj.pk)
+        endpoint = self.permission_tests['endpoint'].format(self.obj.pk)
 
         # Iterate over the methods / permissions
         for perm_type in self.permission_tests['permission_types']:
@@ -79,7 +80,8 @@ class PermissionsMixin(object):
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
             # Assign permission
-            assign_perm(self.permission_tests['permission'] % perm_type['perm'], self.user, obj)
+            assign_perm(self.permission_tests['permission'] % perm_type['perm'],
+                        self.user, self.obj)
 
             # Should work now - permission granted
             response = getattr(self.client, method)(endpoint, perm_type.get('data', {}))
@@ -88,7 +90,76 @@ class PermissionsMixin(object):
             self.assertEqual(response.status_code, expected_code)
 
             # Remove permission
-            remove_perm(self.permission_tests['permission'] % perm_type['perm'], self.user, obj)
+            remove_perm(self.permission_tests['permission'] % perm_type['perm'],
+                        self.user, self.obj)
+
+    def _add_admin_object_permission(self):
+        endpoint = self.permission_tests['endpoint'].format(self.obj.pk)
+        endpoint += 'permissions/users/'
+
+        self.client.login(username='test.admin', password='1234')
+
+        # Grant permissions to test.user via the API (but poorly - test to make sure
+        # there is an array or perms)
+        response = self.client.post(endpoint, {'user': 'test.user', 'permissions': 'admin'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Now actually grant permissions
+        response = self.client.post(endpoint, {'user': 'test.user', 'permissions': ['admin']})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make sure the user now has admin permissions
+        self.assertTrue(self.user.has_perm(self.permission_tests['permission'] % 'admin', self.obj))
+
+        self.client.login(username='test.user', password='1234')
+
+    def test_add_object_permissions(self):
+        endpoint = self.permission_tests['endpoint'].format(self.obj.pk)
+        endpoint += 'permissions/users/'
+
+        self.client.login(username='test.user', password='1234')
+
+        # Try hitting the user permissions endpoint
+        response = self.client.get(endpoint)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Add admin permission
+        self._add_admin_object_permission()
+
+        # Now try again with permissions
+        response = self.client.get(endpoint)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_partial_update_object_permissions(self):
+        orig_endpoint = self.permission_tests['endpoint'].format(self.obj.pk)
+        endpoint = orig_endpoint + 'permissions/users/test.user/'
+
+        self.client.login(username='test.user', password='1234')
+
+        # Try hitting the user permissions endpoint
+        response = self.client.put(endpoint, {'user': 'test.user', 'permissions': 'blah'})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Add admin permission
+        self._add_admin_object_permission()
+
+        # Now try again with permissions, but try with an invalid permission
+        response = self.client.put(endpoint, {'user': 'test.user', 'permissions': ['blah']})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Now try updating for real
+        response = self.client.patch(endpoint, {'user': 'test.user', 'permissions': ['view']})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(self.user.has_perm(self.permission_tests['permission'] % 'view', self.obj))
+
+        # Try grabbing the object
+        response = self.client.get(orig_endpoint)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Make sure the endpoint properly shows the permissions
+        response = self.client.get(endpoint)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['permissions'], ['admin', 'view'])
 
 
 class StackdioTestCase(TestCase):
@@ -103,6 +174,9 @@ class StackdioTestCase(TestCase):
 
         self.user = get_user_model().objects.get(username='test.user')
         self.admin = get_user_model().objects.get(username='test.admin')
+
+        if hasattr(self, 'set_up_perms'):
+            self.set_up_perms()
 
     @classmethod
     def setUpTestData(cls):
