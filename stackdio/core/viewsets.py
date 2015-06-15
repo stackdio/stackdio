@@ -17,7 +17,7 @@
 
 from django.http import Http404
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms, remove_perm
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 
 from core.shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 
