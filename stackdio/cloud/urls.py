@@ -68,7 +68,7 @@ snapshot_object_router.register(r'users',
 snapshot_object_router.register(r'groups',
                                 api.SnapshotObjectGroupPermissionsViewSet,
                                 'snapshot-object-group-permissions')
-gi
+
 urlpatterns = patterns(
     'cloud.api',
 
