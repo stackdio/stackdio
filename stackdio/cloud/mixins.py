@@ -23,9 +23,38 @@ from . import models, permissions
 class CloudProviderRelatedMixin(object):
     permission_classes = (permissions.CloudProviderParentObjectPermissions,)
 
-    def get_provider(self):
+    def get_cloudprovider(self):
         queryset = models.CloudProvider.objects.all()
 
         obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
+
+    def get_permissioned_object(self):
+        return self.get_cloudprovider()
+
+
+class CloudProfileRelatedMixin(object):
+
+    def get_cloudprofile(self):
+        queryset = models.CloudProfile.objects.all()
+
+        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissioned_object(self):
+        return self.get_cloudprofile()
+
+
+class SnapshotRelatedMixin(object):
+
+    def get_snapshot(self):
+        queryset = models.Snapshot.objects.all()
+
+        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissioned_object(self):
+        return self.get_snapshot()

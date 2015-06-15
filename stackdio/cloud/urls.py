@@ -16,9 +16,63 @@
 #
 
 
-from django.conf.urls import patterns, url
+from django.conf.urls import include, patterns, url
+from rest_framework import routers
 
 from . import api
+
+provider_model_router = routers.SimpleRouter()
+provider_model_router.register(r'users', 
+                               api.CloudProviderModelUserPermissionsViewSet, 
+                               'cloudprovider-model-user-permissions')
+provider_model_router.register(r'groups', 
+                               api.CloudProviderModelGroupPermissionsViewSet, 
+                               'cloudprovider-model-group-permissions')
+
+
+provider_object_router = routers.SimpleRouter()
+provider_object_router.register(r'users', 
+                                api.CloudProviderObjectUserPermissionsViewSet, 
+                                'cloudprovider-object-user-permissions')
+provider_object_router.register(r'groups', 
+                                api.CloudProviderObjectGroupPermissionsViewSet, 
+                                'cloudprovider-object-group-permissions')
+
+
+profile_model_router = routers.SimpleRouter()
+profile_model_router.register(r'users', 
+                              api.CloudProfileModelUserPermissionsViewSet,
+                              'cloudprofile-model-user-permissions')
+profile_model_router.register(r'groups', 
+                              api.CloudProfileModelGroupPermissionsViewSet,
+                              'cloudprofile-model-group-permissions')
+
+
+profile_object_router = routers.SimpleRouter()
+profile_object_router.register(r'users', 
+                               api.CloudProfileObjectUserPermissionsViewSet,
+                               'cloudprofile-object-user-permissions')
+profile_object_router.register(r'groups', 
+                               api.CloudProfileObjectGroupPermissionsViewSet,
+                               'cloudprofile-object-group-permissions')
+
+
+snapshot_model_router = routers.SimpleRouter()
+snapshot_model_router.register(r'users', 
+                               api.SnapshotModelUserPermissionsViewSet,
+                               'snapshot-model-user-permissions')
+snapshot_model_router.register(r'groups', 
+                               api.SnapshotModelGroupPermissionsViewSet,
+                               'snapshot-model-group-permissions')
+
+
+snapshot_object_router = routers.SimpleRouter()
+snapshot_object_router.register(r'users', 
+                                api.SnapshotObjectUserPermissionsViewSet,
+                                'snapshot-object-user-permissions')
+snapshot_object_router.register(r'groups', 
+                                api.SnapshotObjectGroupPermissionsViewSet,
+                                'snapshot-object-group-permissions')
 
 urlpatterns = patterns(
     'cloud.api',
@@ -34,6 +88,9 @@ urlpatterns = patterns(
     url(r'^providers/$',
         api.CloudProviderListAPIView.as_view(),
         name='cloudprovider-list'),
+
+    url(r'^providers/permissions/',
+        include(provider_model_router.urls)),
 
     url(r'^providers/(?P<pk>[0-9]+)/$',
         api.CloudProviderDetailAPIView.as_view(),
@@ -59,6 +116,9 @@ urlpatterns = patterns(
         api.CloudProviderFormulaVersionsAPIView.as_view(),
         name='cloudprovider-formula-versions'),
 
+    url(r'^providers/(?P<pk>[0-9]+)/permissions/',
+        include(provider_object_router.urls)),
+
     url(r'^global_orchestration_components/(?P<pk>[0-9]+)/$',
         api.GlobalOrchestrationComponentDetailAPIView.as_view(),
         name='globalorchestrationformulacomponent-detail'),
@@ -75,17 +135,29 @@ urlpatterns = patterns(
         api.CloudProfileListAPIView.as_view(),
         name='cloudprofile-list'),
 
+    url(r'^profiles/permissions/',
+        include(profile_model_router.urls)),
+
     url(r'^profiles/(?P<pk>[0-9]+)/$',
         api.CloudProfileDetailAPIView.as_view(),
         name='cloudprofile-detail'),
+
+    url(r'^profiles/(?P<pk>[0-9]+)/permissions/',
+        include(profile_object_router.urls)),
 
     url(r'^snapshots/$',
         api.SnapshotListAPIView.as_view(),
         name='snapshot-list'),
 
+    url(r'^snapshots/permissions/',
+        include(snapshot_model_router.urls)),
+
     url(r'^snapshots/(?P<pk>[0-9]+)/$',
         api.SnapshotDetailAPIView.as_view(),
         name='snapshot-detail'),
+
+    url(r'^snapshots/(?P<pk>[0-9]+)/permissions/',
+        include(snapshot_object_router.urls)),
 
     url(r'^regions/$',
         api.CloudRegionListAPIView.as_view(),
