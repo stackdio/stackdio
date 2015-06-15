@@ -22,58 +22,53 @@ from rest_framework import routers
 from . import api
 
 provider_model_router = routers.SimpleRouter()
-provider_model_router.register(r'users', 
-                               api.CloudProviderModelUserPermissionsViewSet, 
+provider_model_router.register(r'users',
+                               api.CloudProviderModelUserPermissionsViewSet,
                                'cloudprovider-model-user-permissions')
-provider_model_router.register(r'groups', 
-                               api.CloudProviderModelGroupPermissionsViewSet, 
+provider_model_router.register(r'groups',
+                               api.CloudProviderModelGroupPermissionsViewSet,
                                'cloudprovider-model-group-permissions')
 
-
 provider_object_router = routers.SimpleRouter()
-provider_object_router.register(r'users', 
-                                api.CloudProviderObjectUserPermissionsViewSet, 
+provider_object_router.register(r'users',
+                                api.CloudProviderObjectUserPermissionsViewSet,
                                 'cloudprovider-object-user-permissions')
-provider_object_router.register(r'groups', 
-                                api.CloudProviderObjectGroupPermissionsViewSet, 
+provider_object_router.register(r'groups',
+                                api.CloudProviderObjectGroupPermissionsViewSet,
                                 'cloudprovider-object-group-permissions')
 
-
 profile_model_router = routers.SimpleRouter()
-profile_model_router.register(r'users', 
+profile_model_router.register(r'users',
                               api.CloudProfileModelUserPermissionsViewSet,
                               'cloudprofile-model-user-permissions')
-profile_model_router.register(r'groups', 
+profile_model_router.register(r'groups',
                               api.CloudProfileModelGroupPermissionsViewSet,
                               'cloudprofile-model-group-permissions')
 
-
 profile_object_router = routers.SimpleRouter()
-profile_object_router.register(r'users', 
+profile_object_router.register(r'users',
                                api.CloudProfileObjectUserPermissionsViewSet,
                                'cloudprofile-object-user-permissions')
-profile_object_router.register(r'groups', 
+profile_object_router.register(r'groups',
                                api.CloudProfileObjectGroupPermissionsViewSet,
                                'cloudprofile-object-group-permissions')
 
-
 snapshot_model_router = routers.SimpleRouter()
-snapshot_model_router.register(r'users', 
+snapshot_model_router.register(r'users',
                                api.SnapshotModelUserPermissionsViewSet,
                                'snapshot-model-user-permissions')
-snapshot_model_router.register(r'groups', 
+snapshot_model_router.register(r'groups',
                                api.SnapshotModelGroupPermissionsViewSet,
                                'snapshot-model-group-permissions')
 
-
 snapshot_object_router = routers.SimpleRouter()
-snapshot_object_router.register(r'users', 
+snapshot_object_router.register(r'users',
                                 api.SnapshotObjectUserPermissionsViewSet,
                                 'snapshot-object-user-permissions')
-snapshot_object_router.register(r'groups', 
+snapshot_object_router.register(r'groups',
                                 api.SnapshotObjectGroupPermissionsViewSet,
                                 'snapshot-object-group-permissions')
-
+gi
 urlpatterns = patterns(
     'cloud.api',
 
