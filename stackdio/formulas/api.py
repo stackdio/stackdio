@@ -114,30 +114,10 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         return Response(self.get_serializer(formula_obj).data)
 
 
-class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+class FormulaDetailAPIView(generics.RetrieveDestroyAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
     permission_classes = (StackdioObjectPermissions,)
-
-    def update(self, request, *args, **kwargs):
-        """
-        Override PUT requests to only allow the public field to be changed.
-        """
-        formula = self.get_object()
-
-        public = request.DATA.get('public', None)
-        if public is None or len(request.DATA) > 1:
-            raise BadRequest('Only "public" field of a formula may be '
-                             'modified.')
-
-        if not isinstance(public, bool):
-            raise BadRequest("'public' field must be a boolean value.")
-
-        # Update formula's public field
-        formula.public = public
-        formula.save()
-
-        return Response(self.get_serializer(formula).data)
 
     def delete(self, request, *args, **kwargs):
         """

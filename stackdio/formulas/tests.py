@@ -14,3 +14,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+from rest_framework import status
+
+from core.tests import PermissionsMixin, StackdioTestCase
+from . import models
+
+
+class FormulaTestCase(StackdioTestCase, PermissionsMixin):
+    """
+    Tests for CloudProvider things
+    """
+
+    permission_tests = {
+        'model': models.Formula,
+        'create_data': {
+            'title': 'test',
+            'description': 'test',
+            'uri': 'https://github.com/stackdio-formulas/java-formula.git',
+            'root_path': '~/.stackdio/storage/formulas/java-formula',
+        },
+        'endpoint': '/api/formulas/{0}/',
+        'permission': 'formulas.%s_formula',
+        'permission_types': [
+            {
+                'perm': 'view', 'method': 'get'
+            },
+            {
+                'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
+            },
+        ]
+    }
+
+    def test_update(self):
+        # Create the object
+        obj = self.permission_tests['model'].objects.create(
+            **self.permission_tests.get('create_data', {})
+        )
+
+        endpoint = self.permission_tests['endpoint'].format(obj.pk)
+
+        self.client.login(username='test.user', password='1234')
+
+        # Test put and patch
+        response = self.client.put(endpoint, {'title': 'test2'})
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        response = self.client.patch(endpoint, {'title': 'test2'})
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
