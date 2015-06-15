@@ -22,6 +22,14 @@ from rest_framework import viewsets
 from core.shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 
 
+def _filter_perms(available_perms, perms):
+    ret = []
+    for perm in perms:
+        if perm in available_perms:
+            ret.append(perm)
+    return ret
+
+
 class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
     """
     Viewset for creating permissions endpoints
@@ -80,6 +88,7 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
     def get_queryset(self):
         model_cls = self.get_model_cls()
         model_name = model_cls._meta.model_name
+        model_perms = model_cls.model_permissions
 
         # Grab the perms for either the users or groups
         perm_map = self.switch_user_group(
@@ -89,9 +98,11 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
 
         ret = []
         for auth_obj, perms in perm_map.items():
+            new_perms = map(self._transform_perm(model_name), perms)
+
             ret.append({
                 self.get_user_or_group(): auth_obj,
-                'permissions': map(self._transform_perm(model_name), perms),
+                'permissions': _filter_perms(model_perms, new_perms),
             })
         return ret
 
@@ -138,6 +149,7 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
     def get_queryset(self):
         obj = self.get_permissioned_object()
         model_name = obj._meta.model_name
+        object_perms = obj.object_permissions
 
         # Grab the perms for either the users or groups
         perm_map = self.switch_user_group(
@@ -147,9 +159,11 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
 
         ret = []
         for auth_obj, perms in perm_map.items():
+            new_perms = map(self._transform_perm(model_name), perms)
+
             ret.append({
                 self.get_user_or_group(): auth_obj,
-                'permissions': map(self._transform_perm(model_name), perms),
+                'permissions': _filter_perms(object_perms, new_perms),
             })
         return ret
 
