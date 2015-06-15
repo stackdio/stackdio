@@ -139,33 +139,33 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
 
     # Identity links
     hosts = serializers.HyperlinkedIdentityField(
-        view_name='stack-hosts', read_only=True)
+        view_name='stack-hosts')
     fqdns = serializers.HyperlinkedIdentityField(
-        view_name='stack-fqdns', read_only=True)
+        view_name='stack-fqdns')
     action = serializers.HyperlinkedIdentityField(
-        view_name='stack-action', read_only=True)
+        view_name='stack-action')
     actions = serializers.HyperlinkedIdentityField(
-        view_name='stackaction-list', read_only=True)
+        view_name='stackaction-list')
     logs = serializers.HyperlinkedIdentityField(
-        view_name='stack-logs', read_only=True)
+        view_name='stack-logs')
     orchestration_errors = serializers.HyperlinkedIdentityField(
-        view_name='stack-orchestration-errors', read_only=True)
+        view_name='stack-orchestration-errors')
     provisioning_errors = serializers.HyperlinkedIdentityField(
-        view_name='stack-provisioning-errors', read_only=True)
+        view_name='stack-provisioning-errors')
     volumes = serializers.HyperlinkedIdentityField(
-        view_name='stack-volumes', read_only=True)
+        view_name='stack-volumes')
     properties = serializers.HyperlinkedIdentityField(
-        view_name='stack-properties', read_only=True)
+        view_name='stack-properties')
     history = serializers.HyperlinkedIdentityField(
-        view_name='stack-history', read_only=True)
+        view_name='stack-history')
     security_groups = serializers.HyperlinkedIdentityField(
-        view_name='stack-security-groups', read_only=True)
+        view_name='stack-security-groups')
     formula_versions = serializers.HyperlinkedIdentityField(
-        view_name='stack-formula-versions', read_only=True)
+        view_name='stack-formula-versions')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='stack-user-permissions-list', read_only=True)
+        view_name='stack-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='stack-group-permissions-list', read_only=True)
+        view_name='stack-object-group-permissions-list')
 
     # Relation Links
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())

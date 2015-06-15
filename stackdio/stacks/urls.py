@@ -21,9 +21,22 @@ from rest_framework import routers
 
 from . import api
 
-router = routers.SimpleRouter()
-router.register(r'users', api.StackUserPermissionsViewSet, 'stack-user-permissions')
-router.register(r'groups', api.StackGroupPermissionsViewSet, 'stack-group-permissions')
+model_router = routers.SimpleRouter()
+model_router.register(r'users',
+                      api.StackModelUserPermissionsViewSet,
+                      'stack-model-user-permissions')
+model_router.register(r'groups',
+                      api.StackModelGroupPermissionsViewSet,
+                      'stack-model-group-permissions')
+
+
+object_router = routers.SimpleRouter()
+object_router.register(r'users',
+                       api.StackObjectUserPermissionsViewSet,
+                       'stack-object-user-permissions')
+object_router.register(r'groups',
+                       api.StackObjectGroupPermissionsViewSet,
+                       'stack-object-group-permissions')
 
 
 urlpatterns = patterns(
@@ -45,12 +58,15 @@ urlpatterns = patterns(
         api.StackListAPIView.as_view(),
         name='stack-list'),
 
+    url(r'^stacks/permissions/',
+        include(model_router.urls)),
+
     url(r'^stacks/(?P<pk>[0-9]+)/$',
         api.StackDetailAPIView.as_view(),
         name='stack-detail'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/permissions/',
-        include(router.urls)),
+        include(object_router.urls)),
 
     url(r'^stacks/(?P<pk>[0-9]+)/hosts/$',
         api.StackHostsAPIView.as_view(),
