@@ -22,11 +22,7 @@ from rest_framework import mixins, viewsets
 from core.shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 
 
-class StackdioBasePermissionsViewSet(mixins.ListModelMixin,
-                                     mixins.RetrieveModelMixin,
-                                     mixins.UpdateModelMixin,
-                                     mixins.DestroyModelMixin,
-                                     viewsets.GenericViewSet):
+class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
     """
     Viewset for creating permissions endpoints
     """
@@ -106,6 +102,9 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
 
         return response
 
+    def perform_create(self, serializer):
+        serializer.save(model_cls=self.get_model_cls())
+
     def perform_update(self, serializer):
         serializer.save(model_cls=self.get_model_cls())
 
@@ -161,6 +160,9 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
         response.data['available_permissions'] = sorted(obj.object_permissions)
 
         return response
+
+    def perform_create(self, serializer):
+        serializer.save(object=self.get_permissioned_object())
 
     def perform_update(self, serializer):
         serializer.save(object=self.get_permissioned_object())

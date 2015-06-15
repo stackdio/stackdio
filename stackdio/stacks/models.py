@@ -792,7 +792,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
         pillar_props = {
             '__stackdio__': {
                 'username': username,
-                'publickey': '',
+                'publickey': 'non_empty_for_now',
             }
         }
 
