@@ -50,7 +50,6 @@ class UserSettingsSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):
-    permissions = serializers.ListField()
 
     def create(self, validated_data):
         # Determine if this is a user or group
@@ -100,14 +99,15 @@ class StackdioModelPermissionsSerializer(serializers.Serializer):
 
 class StackdioUserModelPermissionsSerializer(StackdioModelPermissionsSerializer):
     user = fields.UserField()
+    permissions = serializers.ListField()
 
 
 class StackdioGroupModelPermissionsSerializer(StackdioModelPermissionsSerializer):
     group = fields.GroupField()
+    permissions = serializers.ListField()
 
 
 class StackdioObjectPermissionsSerializer(serializers.Serializer):
-    permissions = serializers.ListField()
 
     def create(self, validated_data):
         # Determine if this is a user or group
@@ -156,7 +156,9 @@ class StackdioObjectPermissionsSerializer(serializers.Serializer):
 
 class StackdioUserObjectPermissionsSerializer(StackdioObjectPermissionsSerializer):
     user = fields.UserField()
+    permissions = serializers.ListField()
 
 
 class StackdioGroupObjectPermissionsSerializer(StackdioObjectPermissionsSerializer):
     group = fields.GroupField()
+    permissions = serializers.ListField()
