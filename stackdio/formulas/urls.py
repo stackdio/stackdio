@@ -21,9 +21,22 @@ from rest_framework import routers
 
 from . import api
 
-router = routers.SimpleRouter()
-router.register(r'users', api.FormulaUserPermissionsViewSet, 'formula-user-permissions')
-router.register(r'groups', api.FormulaGroupPermissionsViewSet, 'formula-group-permissions')
+model_router = routers.SimpleRouter()
+model_router.register(r'users',
+                      api.FormulaModelUserPermissionsViewSet,
+                      'formula-model-user-permissions')
+model_router.register(r'groups',
+                      api.FormulaModelGroupPermissionsViewSet,
+                      'formula-model-group-permissions')
+
+
+object_router = routers.SimpleRouter()
+object_router.register(r'users',
+                       api.FormulaObjectUserPermissionsViewSet,
+                       'formula-object-user-permissions')
+object_router.register(r'groups',
+                       api.FormulaObjectGroupPermissionsViewSet,
+                       'formula-object-group-permissions')
 
 
 urlpatterns = patterns(
@@ -32,6 +45,9 @@ urlpatterns = patterns(
     url(r'^formulas/$',
         api.FormulaListAPIView.as_view(),
         name='formula-list'),
+
+    url(r'^formulas/permissions/',
+        include(model_router.urls)),
 
     url(r'^formulas/(?P<pk>[0-9]+)/$',
         api.FormulaDetailAPIView.as_view(),
@@ -47,7 +63,7 @@ urlpatterns = patterns(
         name='formula-action'),
 
     url(r'^formulas/(?P<pk>[0-9]+)/permissions/',
-        include(router.urls)),
+        include(object_router.urls)),
 
     url(r'^formula_components/(?P<pk>[0-9]+)/$',
         api.FormulaComponentDetailAPIView.as_view(),

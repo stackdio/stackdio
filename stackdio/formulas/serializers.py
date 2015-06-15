@@ -52,9 +52,9 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
     action = serializers.HyperlinkedIdentityField(view_name='formula-action')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='formula-user-permissions-list')
+        view_name='formula-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='formula-group-permissions-list')
+        view_name='formula-object-group-permissions-list')
 
     class Meta:
         model = models.Formula
