@@ -128,6 +128,9 @@ class AuthenticationTestCase(StackdioTestCase):
         'formulas',
         'stacks',
         'volumes',
+        'providers',
+        'profiles',
+        'snapshots',
     )
 
     PERMISSIONS_ENDPOINTS = (
