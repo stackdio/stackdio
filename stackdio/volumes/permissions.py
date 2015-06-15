@@ -15,12 +15,20 @@
 # limitations under the License.
 #
 
-from core.permissions import StackdioParentObjectPermissions, StackdioPermissionsObjectPermissions
+from core.permissions import (
+    StackdioParentObjectPermissions,
+    StackdioPermissionsModelPermissions,
+    StackdioPermissionsObjectPermissions,
+)
 from . import models
 
 
 class VolumeParentObjectPermissions(StackdioParentObjectPermissions):
     parent_model_cls = models.Volume
+
+
+class VolumePermissionsModelPermissions(StackdioPermissionsModelPermissions):
+    model_cls = models.Volume
 
 
 class VolumePermissionsObjectPermissions(StackdioPermissionsObjectPermissions):

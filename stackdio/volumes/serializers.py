@@ -32,9 +32,9 @@ class VolumeSerializer(serializers.HyperlinkedModelSerializer):
 
     # Link fields
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='volume-user-permissions-list')
+        view_name='volume-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='volume-group-permissions-list')
+        view_name='volume-object-group-permissions-list')
 
     class Meta:
         model = models.Volume

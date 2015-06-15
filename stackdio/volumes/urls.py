@@ -21,9 +21,22 @@ from rest_framework import routers
 
 from . import api
 
-router = routers.SimpleRouter()
-router.register(r'users', api.VolumeUserPermissionsViewSet, 'volume-user-permissions')
-router.register(r'groups', api.VolumeGroupPermissionsViewSet, 'volume-group-permissions')
+model_router = routers.SimpleRouter()
+model_router.register(r'users',
+                      api.VolumeModelUserPermissionsViewSet,
+                      'volume-model-user-permissions')
+model_router.register(r'groups',
+                      api.VolumeModelGroupPermissionsViewSet,
+                      'volume-model-group-permissions')
+
+
+object_router = routers.SimpleRouter()
+object_router.register(r'users',
+                       api.VolumeObjectUserPermissionsViewSet,
+                       'volume-object-user-permissions')
+object_router.register(r'groups',
+                       api.VolumeObjectGroupPermissionsViewSet,
+                       'volume-object-group-permissions')
 
 
 urlpatterns = patterns(
@@ -33,10 +46,13 @@ urlpatterns = patterns(
         api.VolumeListAPIView.as_view(),
         name='volume-list'),
 
+    url(r'^volumes/permissions/',
+        include(model_router.urls)),
+
     url(r'^volumes/(?P<pk>[0-9]+)/$',
         api.VolumeDetailAPIView.as_view(),
         name='volume-detail'),
 
     url(r'^volumes/(?P<pk>[0-9]+)/permissions/',
-        include(router.urls)),
+        include(object_router.urls)),
 )
