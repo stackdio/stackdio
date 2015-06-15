@@ -44,6 +44,7 @@ class FormulaVersion(models.Model):
 
 _formula_model_permissions = (
     'create',
+    'admin',
 )
 
 _formula_object_permissions = (
@@ -143,7 +144,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     class Meta:
         ordering = ['pk']
 
-        default_permissions = _formula_model_permissions + _formula_object_permissions
+        default_permissions = tuple(set(_formula_model_permissions + _formula_object_permissions))
 
     # uri to the repository for this formula
     uri = models.URLField('Repository URI', unique=True)

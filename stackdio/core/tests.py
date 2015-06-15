@@ -123,14 +123,26 @@ class AuthenticationTestCase(StackdioTestCase):
         '/api/settings/change_password/',
     )
 
+    PERMISSION_MODELS = (
+        'blueprints',
+        'formulas',
+        'stacks',
+        'volumes',
+    )
+
+    PERMISSIONS_ENDPOINTS = (
+        '/api/%s/permissions/users/',
+        '/api/%s/permissions/groups/',
+    )
+
     # These should be only visible by admins
-    ADMIN_ONLY = (
+    ADMIN_ONLY = [
         '/api/users/',
         '/api/provider_types/',
         '/api/instance_sizes/',
         '/api/regions/',
         '/api/zones/',
-    )
+    ]
 
     def setUp(self):
         super(AuthenticationTestCase, self).setUp()
@@ -148,8 +160,15 @@ class AuthenticationTestCase(StackdioTestCase):
                 continue
             if '(?P<' in url:
                 continue
+            if url.endswith('/permissions/'):
+                continue
 
             self.list_endpoints.append('/api/' + url)
+
+        # Dynamically update the admin only endpoints
+        for model in self.PERMISSION_MODELS:
+            for url in self.PERMISSIONS_ENDPOINTS:
+                self.ADMIN_ONLY.append(url % model)
 
     def test_permission_denied(self):
         for url in self.list_endpoints:

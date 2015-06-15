@@ -185,6 +185,7 @@ class StackManager(models.Manager):
 
 _stack_model_permissions = (
     'create',
+    'admin',
 )
 
 _stack_object_permissions = (
@@ -246,7 +247,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
     class Meta:
         ordering = ('title',)
 
-        default_permissions = _stack_model_permissions + _stack_object_permissions
+        default_permissions = tuple(set(_stack_model_permissions + _stack_object_permissions))
 
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint',

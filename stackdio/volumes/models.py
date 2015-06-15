@@ -23,6 +23,7 @@ from django_extensions.db.models import TimeStampedModel
 
 _volume_model_permissions = (
     'create',
+    'admin',
 )
 
 
@@ -40,7 +41,7 @@ class Volume(TimeStampedModel):
     object_permissions = _volume_object_permissions
 
     class Meta:
-        default_permissions = _volume_model_permissions + _volume_object_permissions
+        default_permissions = tuple(set(_volume_model_permissions + _volume_object_permissions))
 
     # The stack this volume belongs to
     stack = models.ForeignKey('stacks.Stack', related_name='volumes')

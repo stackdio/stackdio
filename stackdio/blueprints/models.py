@@ -148,6 +148,7 @@ class BlueprintManager(models.Manager):
 
 _blueprint_model_permissions = (
     'create',
+    'admin',
 )
 
 _blueprint_object_permissions = (
@@ -171,7 +172,8 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     object_permissions = _blueprint_object_permissions
 
     class Meta:
-        default_permissions = _blueprint_model_permissions + _blueprint_object_permissions
+        default_permissions = tuple(set(_blueprint_model_permissions +
+                                        _blueprint_object_permissions))
 
     formula_versions = GenericRelation('formulas.FormulaVersion')
 

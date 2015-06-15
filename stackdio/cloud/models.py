@@ -74,6 +74,7 @@ class CloudProviderType(models.Model):
 
 _cloudprovider_model_permissions = (
     'create',
+    'admin',
 )
 
 _cloudprovider_object_permissions = (
@@ -93,7 +94,8 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         unique_together = ('title', 'provider_type')
         ordering = ('provider_type', 'title')
 
-        default_permissions = _cloudprovider_model_permissions + _cloudprovider_object_permissions
+        default_permissions = tuple(set(_cloudprovider_model_permissions +
+                                        _cloudprovider_object_permissions))
 
     # What is the type of provider (e.g., AWS, Rackspace, etc)
     provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
@@ -258,6 +260,7 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
 
 _cloudprofile_model_permissions = (
     'create',
+    'admin',
 )
 
 _cloudprofile_object_permissions = (
@@ -276,7 +279,8 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'cloud_provider')
 
-        default_permissions = _cloudprofile_model_permissions + _cloudprofile_object_permissions
+        default_permissions = tuple(set(_cloudprofile_model_permissions +
+                                        _cloudprofile_object_permissions))
 
     # What cloud provider is this under?
     cloud_provider = models.ForeignKey('CloudProvider', related_name='profiles')
@@ -346,6 +350,7 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
 
 _snapshot_model_permissions = (
     'create',
+    'admin',
 )
 
 _snapshot_object_permissions = (
@@ -364,7 +369,8 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('snapshot_id', 'cloud_provider')
 
-        default_permissions = _snapshot_model_permissions + _snapshot_object_permissions
+        default_permissions = tuple(set(_snapshot_model_permissions +
+                                        _snapshot_object_permissions))
 
     # The cloud provider that has access to this snapshot
     cloud_provider = models.ForeignKey('CloudProvider',
@@ -445,6 +451,7 @@ class SecurityGroupManager(TransformManager):
 
 _securitygroup_model_permissions = (
     'create',
+    'admin',
 )
 
 _securitygroup_object_permissions = (
@@ -463,7 +470,8 @@ class SecurityGroup(TimeStampedModel, models.Model):
     class Meta:
         unique_together = ('name', 'cloud_provider')
 
-        default_permissions = _securitygroup_model_permissions + _snapshot_object_permissions
+        default_permissions = tuple(set(_securitygroup_model_permissions +
+                                        _snapshot_object_permissions))
 
     objects = SecurityGroupManager()
 
