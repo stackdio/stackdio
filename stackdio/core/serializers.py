@@ -51,6 +51,23 @@ class UserSettingsSerializer(serializers.HyperlinkedModelSerializer):
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):
 
+    def validate(self, attrs):
+        view = self.context['view']
+
+        available_perms = view.model_cls.model_permissions
+        bad_perms = []
+
+        for perm in attrs['permissions']:
+            if perm not in available_perms:
+                bad_perms.append(perm)
+
+        if bad_perms:
+            raise serializers.ValidationError({
+                'permissions': ['Invalid permissions: {0}'.format(', '.join(bad_perms))]
+            })
+
+        return attrs
+
     def create(self, validated_data):
         # Determine if this is a user or group
         view = self.context['view']
@@ -108,6 +125,23 @@ class StackdioGroupModelPermissionsSerializer(StackdioModelPermissionsSerializer
 
 
 class StackdioObjectPermissionsSerializer(serializers.Serializer):
+
+    def validate(self, attrs):
+        view = self.context['view']
+
+        available_perms = view.get_permissioned_object().object_permissions
+        bad_perms = []
+
+        for perm in attrs['permissions']:
+            if perm not in available_perms:
+                bad_perms.append(perm)
+
+        if bad_perms:
+            raise serializers.ValidationError({
+                'permissions': ['Invalid permissions: {0}'.format(', '.join(bad_perms))]
+            })
+
+        return attrs
 
     def create(self, validated_data):
         # Determine if this is a user or group
