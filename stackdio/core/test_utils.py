@@ -15,11 +15,26 @@
 # limitations under the License.
 #
 
+import logging
+
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import TestCase
-from guardian.shortcuts import assign_perm, remove_perm
+from guardian.shortcuts import assign_perm, remove_perm, get_perms
 from rest_framework import status
 from rest_framework.test import APIClient
+
+logger = logging.getLogger(__name__)
+
+
+def group_has_perm(group, perm, obj=None):
+    if obj:
+        return perm in get_perms(group, obj)
+    else:
+        for gperm in group.permissions.all():
+            if gperm.codename == perm:
+                return True
+        return False
 
 
 class PermissionsMixin(object):
@@ -166,6 +181,7 @@ class StackdioTestCase(TestCase):
 
         self.user = get_user_model().objects.get(username='test.user')
         self.admin = get_user_model().objects.get(username='test.admin')
+        self.group = Group.objects.get(name='stackdio')
 
         if hasattr(self, 'set_up_perms'):
             self.set_up_perms()
@@ -177,3 +193,5 @@ class StackdioTestCase(TestCase):
                                             'test.admin@stackd.io', '1234')
         user_model.objects.create_user('test.user',
                                        'test.user@stackd.io', '1234')
+
+        Group.objects.create(name='stackdio')
