@@ -23,6 +23,7 @@ from rest_framework import serializers
 from .models import UserSettings
 from . import fields
 
+
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = get_user_model()

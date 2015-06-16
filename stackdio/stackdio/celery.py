@@ -5,7 +5,7 @@ from celery import Celery
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.settings.production')
 
-from django.conf import settings
+from django.conf import settings  # NOQA
 
 app = Celery('stackdio')
 

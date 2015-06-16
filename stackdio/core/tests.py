@@ -34,17 +34,17 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
 
     def get_serializer(self, user_or_group):
         if user_or_group == 'user':
-            serializer = serializers.StackdioUserModelPermissionsSerializer()
             view = viewsets.StackdioModelUserPermissionsViewSet()
+            view.serializer_class = serializers.StackdioUserModelPermissionsSerializer
         elif user_or_group == 'group':
-            serializer = serializers.StackdioGroupModelPermissionsSerializer()
             view = viewsets.StackdioModelGroupPermissionsViewSet()
+            view.serializer_class = serializers.StackdioGroupModelPermissionsSerializer
         else:
-            serializer = None
             view = None
         view.model_cls = CloudProvider
-        serializer.context['view'] = view
-        return serializer
+        view.request = None
+        view.format_kwarg = None
+        return view.get_serializer()
 
     def _test_validate(self, auth_obj, user_or_group):
         serializer = self.get_serializer(user_or_group)
@@ -206,18 +206,18 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
 
     def get_serializer(self, user_or_group):
         if user_or_group == 'user':
-            serializer = serializers.StackdioUserObjectPermissionsSerializer()
             view = viewsets.StackdioObjectUserPermissionsViewSet()
+            view.serializer_class = serializers.StackdioUserObjectPermissionsSerializer
         elif user_or_group == 'group':
-            serializer = serializers.StackdioGroupObjectPermissionsSerializer()
             view = viewsets.StackdioObjectGroupPermissionsViewSet()
+            view.serializer_class = serializers.StackdioGroupObjectPermissionsSerializer
         else:
-            serializer = None
             view = None
         view.get_permissioned_object = lambda: self.provider
+        view.request = None
+        view.format_kwarg = None
         view.model_cls = CloudProvider
-        serializer.context['view'] = view
-        return serializer
+        return view.get_serializer()
 
     def _test_validate(self, auth_obj, user_or_group):
         serializer = self.get_serializer(user_or_group)
@@ -353,6 +353,21 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
 
     def test_group_partial_update(self):
         self._test_partial_update(self.group, 'group')
+
+
+class ModelPermissionsViewSetTestCase(StackdioTestCase):
+
+    def get_viewset(self, user_or_group):
+        if user_or_group == 'user':
+            view = viewsets.StackdioModelUserPermissionsViewSet()
+            view.serializer_class = serializers.StackdioUserModelPermissionsSerializer
+        elif user_or_group == 'group':
+            view = viewsets.StackdioModelGroupPermissionsViewSet()
+            view.serializer_class = serializers.StackdioGroupModelPermissionsSerializer
+        else:
+            view = None
+        view.model_cls = CloudProvider
+        return view
 
 
 class AuthenticationTestCase(StackdioTestCase):

@@ -144,13 +144,13 @@ class StackPropertiesAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateAP
     serializer_class = serializers.StackPropertiesSerializer
 
 
-class StackObjectUserPermissionsViewSet(mixins.StackRelatedMixin, 
+class StackObjectUserPermissionsViewSet(mixins.StackRelatedMixin,
                                         StackdioObjectUserPermissionsViewSet):
     serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.StackPermissionsObjectPermissions,)
 
 
-class StackObjectGroupPermissionsViewSet(mixins.StackRelatedMixin, 
+class StackObjectGroupPermissionsViewSet(mixins.StackRelatedMixin,
                                          StackdioObjectGroupPermissionsViewSet):
     serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.StackPermissionsObjectPermissions,)

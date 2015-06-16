@@ -87,6 +87,7 @@ def get_users_with_model_perms(model_cls, attach_perms=False, with_superusers=Fa
                                   user.user_permissions.filter(content_type=ctype)])
         return users
 
+
 def get_groups_with_model_perms(model_cls, attach_perms=False):
     """
     Returns queryset of all ``Group`` objects with *any* model permissions for
