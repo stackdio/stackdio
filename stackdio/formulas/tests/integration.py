@@ -18,7 +18,7 @@
 from rest_framework import status
 
 from core.tests.utils import PermissionsMixin, StackdioTestCase
-from . import models
+from formulas import models
 
 
 class FormulaTestCase(StackdioTestCase, PermissionsMixin):
