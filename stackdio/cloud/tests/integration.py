@@ -19,9 +19,8 @@ import logging
 
 from rest_framework import status
 
-from core.tests import StackdioTestCase
-from core.test_utils import PermissionsMixin, StackdioTestCase
-from . import models
+from core.tests.utils import PermissionsMixin, StackdioTestCase
+from cloud import models
 
 
 logger = logging.getLogger(__name__)

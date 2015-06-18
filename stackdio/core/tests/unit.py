@@ -23,9 +23,9 @@ from rest_framework.serializers import ValidationError
 
 from api_v1.urls import urlpatterns
 from cloud.models import CloudProvider
-from .test_utils import StackdioTestCase, group_has_perm
-from .utils import get_urls
-from . import serializers, viewsets
+from core.tests.utils import StackdioTestCase, group_has_perm
+from core.utils import get_urls
+from core import serializers, viewsets
 
 logger = logging.getLogger(__name__)
 

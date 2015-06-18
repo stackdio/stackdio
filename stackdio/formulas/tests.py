@@ -17,8 +17,7 @@
 
 from rest_framework import status
 
-from core.tests import StackdioTestCase
-from core.test_utils import PermissionsMixin, StackdioTestCase
+from core.tests.utils import PermissionsMixin, StackdioTestCase
 from . import models
 
 
