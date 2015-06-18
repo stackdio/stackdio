@@ -182,6 +182,7 @@ class StackdioTestCase(TestCase):
         self.user = get_user_model().objects.get(username='test.user')
         self.admin = get_user_model().objects.get(username='test.admin')
         self.group = Group.objects.get(name='stackdio')
+        self.user.groups.add(self.group)
 
         if hasattr(self, 'set_up_perms'):
             self.set_up_perms()

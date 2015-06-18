@@ -17,15 +17,12 @@
 
 import logging
 
-from guardian.shortcuts import assign_perm
-from rest_framework import status
+from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework.serializers import ValidationError
 
-from api_v1.urls import urlpatterns
 from cloud.models import CloudProvider
 from core.tests.utils import StackdioTestCase, group_has_perm
-from core.utils import get_urls
-from core import serializers, viewsets
+from core import serializers, shortcuts, viewsets
 
 logger = logging.getLogger(__name__)
 
@@ -355,6 +352,189 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
         self._test_partial_update(self.group, 'group')
 
 
+class PermissionsShortcutsTestCase(StackdioTestCase):
+
+    def test_users_with_model_perms(self):
+        for perm in CloudProvider.model_permissions:
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+                with_group_users=False,
+                with_superusers=False,
+            )
+
+            self.assertEqual(users.count(), 0)
+
+            assign_perm('cloud.%s_cloudprovider' % perm, self.user)
+
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+                with_group_users=False,
+                with_superusers=False,
+            )
+
+            self.assertEqual(users.count(), 1)
+            self.assertEqual(users.first(), self.user)
+
+            remove_perm('cloud.%s_cloudprovider' % perm, self.user)
+
+            # Make sure assigning the group permissions doesn't show up here
+            assign_perm('cloud.%s_cloudprovider' % perm, self.group)
+
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+                with_group_users=False,
+                with_superusers=False,
+            )
+
+            self.assertEqual(users.count(), 0)
+
+    def test_users_with_model_perms_with_groups(self):
+        for perm in CloudProvider.model_permissions:
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+                with_group_users=True,
+                with_superusers=False,
+            )
+
+            self.assertEqual(users.count(), 0)
+
+            assign_perm('cloud.%s_cloudprovider' % perm, self.group)
+
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+                with_group_users=True,
+                with_superusers=False,
+            )
+
+            self.assertEqual(users.count(), 1)
+            self.assertEqual(users.first(), self.user)
+
+            remove_perm('cloud.%s_cloudprovider' % perm, self.group)
+
+    def test_users_with_model_perms_with_superusers(self):
+        users = shortcuts.get_users_with_model_perms(
+            CloudProvider,
+            attach_perms=False,
+            with_group_users=False,
+            with_superusers=True,
+        )
+
+        self.assertEqual(users.count(), 1)
+        self.assertEqual(users.first(), self.admin)
+
+    def test_users_with_model_perms_attach_perms(self):
+        for perm in CloudProvider.model_permissions:
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=True,
+                with_group_users=False,
+                with_superusers=False,
+            )
+
+            self.assertTrue(isinstance(users, dict))
+            self.assertEqual(len(users), 0)
+
+            assign_perm('cloud.%s_cloudprovider' % perm, self.user)
+
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=True,
+                with_group_users=False,
+                with_superusers=False,
+            )
+
+            self.assertTrue(isinstance(users, dict))
+            self.assertEqual(len(users), 1)
+            self.assertTrue(self.user in users)
+            self.assertEqual(users[self.user], ['%s_cloudprovider' % perm])
+
+            remove_perm('cloud.%s_cloudprovider' % perm, self.user)
+
+    def test_users_with_model_perms_wrong_model(self):
+        for perm in CloudProvider.model_permissions:
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+                with_group_users=False,
+                with_superusers=False,
+            )
+
+            self.assertEqual(users.count(), 0)
+
+            assign_perm('cloud.%s_cloudprofile' % perm, self.user)
+
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+                with_group_users=False,
+                with_superusers=False,
+            )
+
+            self.assertEqual(users.count(), 0)
+
+            # Make sure assigning the group permissions doesn't show up here
+            assign_perm('cloud.%s_cloudprofile' % perm, self.group)
+
+            users = shortcuts.get_users_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+                with_group_users=False,
+                with_superusers=False,
+            )
+
+            self.assertEqual(users.count(), 0)
+
+    def test_groups_with_model_perms(self):
+        for perm in CloudProvider.model_permissions:
+            groups = shortcuts.get_groups_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+            )
+
+            self.assertEqual(groups.count(), 0)
+
+            assign_perm('cloud.%s_cloudprovider' % perm, self.group)
+
+            groups = shortcuts.get_groups_with_model_perms(
+                CloudProvider,
+                attach_perms=False,
+            )
+
+            self.assertEqual(groups.count(), 1)
+            self.assertEqual(groups.first(), self.group)
+
+            remove_perm('cloud.%s_cloudprovider' % perm, self.group)
+            
+    def test_groups_with_model_perms_attach_perms(self):
+        for perm in CloudProvider.model_permissions:
+            groups = shortcuts.get_groups_with_model_perms(
+                CloudProvider,
+                attach_perms=True,
+            )
+
+            self.assertTrue(isinstance(groups, dict))
+            self.assertEqual(len(groups), 0)
+
+            assign_perm('cloud.%s_cloudprovider' % perm, self.group)
+
+            groups = shortcuts.get_groups_with_model_perms(
+                CloudProvider,
+                attach_perms=True,
+            )
+
+            self.assertTrue(isinstance(groups, dict))
+            self.assertEqual(len(groups), 1)
+            self.assertTrue(self.group in groups)
+            self.assertEqual(groups[self.group], ['%s_cloudprovider' % perm])
+
+            remove_perm('cloud.%s_cloudprovider' % perm, self.group)
+
+
 class ModelPermissionsViewSetTestCase(StackdioTestCase):
 
     def get_viewset(self, user_or_group):
@@ -369,95 +549,5 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
         view.model_cls = CloudProvider
         return view
 
-
-class AuthenticationTestCase(StackdioTestCase):
-    """
-    Test all list endpoints to ensure they throw a permission denied when a user isn't logged in
-    """
-
-    # These don't allow get requests
-    EXEMPT_ENDPOINTS = (
-        '/api/settings/change_password/',
-    )
-
-    PERMISSION_MODELS = (
-        'blueprints',
-        'formulas',
-        'stacks',
-        'volumes',
-        'providers',
-        'profiles',
-        'snapshots',
-    )
-
-    PERMISSIONS_ENDPOINTS = (
-        '/api/%s/permissions/users/',
-        '/api/%s/permissions/groups/',
-    )
-
-    # These should be only visible by admins
-    ADMIN_ONLY = [
-        '/api/users/',
-        '/api/provider_types/',
-        '/api/instance_sizes/',
-        '/api/regions/',
-        '/api/zones/',
-    ]
-
-    def setUp(self):
-        super(AuthenticationTestCase, self).setUp()
-
-        # Build up a list of all list endpoints
-
-        # Start out with just the root endpoint
-        self.list_endpoints = ['/api/']
-
-        for url in list(get_urls(urlpatterns)):
-            # Filter out the urls with format things in them
-            if not url:
-                continue
-            if 'format' in url:
-                continue
-            if '(?P<' in url:
-                continue
-            if url.endswith('/permissions/'):
-                continue
-
-            self.list_endpoints.append('/api/' + url)
-
-        # Dynamically update the admin only endpoints
-        for model in self.PERMISSION_MODELS:
-            for url in self.PERMISSIONS_ENDPOINTS:
-                self.ADMIN_ONLY.append(url % model)
-
-    def test_permission_denied(self):
-        for url in self.list_endpoints:
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_success_admin(self):
-        self.client.login(username='test.admin', password='1234')
-
-        for url in self.list_endpoints:
-            response = self.client.get(url)
-            expected = status.HTTP_200_OK
-            if url in self.EXEMPT_ENDPOINTS:
-                expected = status.HTTP_405_METHOD_NOT_ALLOWED
-
-            self.assertEqual(response.status_code, expected, 'URL {0} failed'.format(url))
-
-    def test_success_non_admin(self):
-        self.client.login(username='test.user', password='1234')
-
-        for url in self.list_endpoints:
-            response = self.client.get(url)
-            expected = status.HTTP_200_OK
-            if url in self.EXEMPT_ENDPOINTS:
-                expected = status.HTTP_405_METHOD_NOT_ALLOWED
-            elif url in self.ADMIN_ONLY:
-                expected = status.HTTP_403_FORBIDDEN
-
-            self.assertEqual(response.status_code, expected,
-                             'URL {0} failed.  Expected {1}, was {2}.'.format(url,
-                                                                              expected,
-                                                                              response.status_code))
+    def _test_get_queryset(self, auth_obj, user_or_group):
+        view = self.get_viewset(user_or_group)
