@@ -31,21 +31,3 @@ class PlainTextRenderer(renderers.BaseRenderer):
         if isinstance(data, basestring):
             return data
         return smart_unicode(data)
-
-
-class XMLRenderer(PlainTextRenderer):
-    """
-    Subclass PlainTextRenderer, but switch to XML content-type. DRF has a built-in
-    XMLRenderer, but it wants to put everything inside of a <root> tag.
-    """
-    media_type = 'application/xml'
-    format = 'xml'
-
-
-class JSONRenderer(PlainTextRenderer):
-    """
-    Subclass PlainTextRenderer, but switch to JSON content-type. Need a way to
-    quickly pass JSON strings out without running through deserializer.
-    """
-    media_type = 'application/json'
-    format = 'json'
