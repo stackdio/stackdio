@@ -17,8 +17,11 @@
 
 
 class JSONIndentAcceptHeaderMiddleware(object):
+    """
+    Used in development to always get pretty-printed JSON
+    """
 
     def process_request(self, request):
-        if request.META.get('HTTP_ACCEPT') == 'application/json':
+        if request.META.get('HTTP_ACCEPT') in ('application/json', '*/*', None):
             request.META['HTTP_ACCEPT'] = 'application/json; indent=4'
         return None
