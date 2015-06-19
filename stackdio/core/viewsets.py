@@ -45,9 +45,11 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
         return self.user_or_group
 
     def switch_user_group(self, if_user, if_group):
-        if self.get_user_or_group() == 'user':
+        user_group = self.get_user_or_group()
+
+        if user_group == 'user':
             return if_user
-        elif self.get_user_or_group() == 'group':
+        elif user_group == 'group':
             return if_group
         else:
             raise ValueError(

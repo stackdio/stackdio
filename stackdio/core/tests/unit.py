@@ -17,6 +17,7 @@
 
 import logging
 
+from django.http import Http404
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework.serializers import ValidationError
 
@@ -436,7 +437,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
                 with_superusers=False,
             )
 
-            self.assertTrue(isinstance(users, dict))
+            self.assertIsInstance(users, dict)
             self.assertEqual(len(users), 0)
 
             assign_perm('cloud.%s_cloudprovider' % perm, self.user)
@@ -448,7 +449,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
                 with_superusers=False,
             )
 
-            self.assertTrue(isinstance(users, dict))
+            self.assertIsInstance(users, dict)
             self.assertEqual(len(users), 1)
             self.assertTrue(self.user in users)
             self.assertEqual(users[self.user], ['%s_cloudprovider' % perm])
@@ -517,7 +518,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
                 attach_perms=True,
             )
 
-            self.assertTrue(isinstance(groups, dict))
+            self.assertIsInstance(groups, dict)
             self.assertEqual(len(groups), 0)
 
             assign_perm('cloud.%s_cloudprovider' % perm, self.group)
@@ -527,7 +528,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
                 attach_perms=True,
             )
 
-            self.assertTrue(isinstance(groups, dict))
+            self.assertIsInstance(groups, dict)
             self.assertEqual(len(groups), 1)
             self.assertTrue(self.group in groups)
             self.assertEqual(groups[self.group], ['%s_cloudprovider' % perm])
@@ -535,7 +536,78 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             remove_perm('cloud.%s_cloudprovider' % perm, self.group)
 
 
+class BasePermissionsViewSetTestCase(StackdioTestCase):
+
+    def get_viewset(self):
+        view = viewsets.StackdioBasePermissionsViewSet()
+        return view
+
+    def test_filter_perms(self):
+        avail_perms = CloudProvider._meta.default_permissions
+
+        perms = ['foo', 'bar', 'blah', 'has', 'baz']
+
+        new_perms = viewsets._filter_perms(avail_perms, perms)
+
+        self.assertEqual(len(new_perms), 0)
+
+    def test_switch_user_group(self):
+        view = self.get_viewset()
+
+        try:
+            self.assertRaises(AssertionError, view.switch_user_group, 'user', 'group')
+        except ValueError:
+            raise AssertionError('`switch_user_group` should have raised an AssertionError, not '
+                                 'a ValueError')
+
+        view.user_or_group = 'user'
+        self.assertEqual(view.switch_user_group('user', 'group'), 'user')
+
+        view.user_or_group = 'group'
+        self.assertEqual(view.switch_user_group('user', 'group'), 'group')
+
+    def test_transform_perm(self):
+        view = self.get_viewset()
+
+        tranform_func = view._transform_perm('cloudprovider')
+
+        self.assertCallable(tranform_func)
+
+        self.assertEqual(tranform_func('blah_cloudprovider'), 'blah')
+        self.assertEqual(tranform_func('blah_cloudprofile'), 'blah_cloudprofile')
+
+    def test_get_object(self):
+        view = self.get_viewset()
+
+        queryset = [
+            {'user': self.user, 'permissions': ['view', 'admin', 'create']},
+            {'user': self.admin, 'permissions': ['delete', 'update', 'view']},
+        ]
+
+        view.user_or_group = 'user'
+        view.lookup_field = 'username'
+        view.get_queryset = lambda: queryset
+        view.kwargs = {
+            'username': 'test.user'
+        }
+
+        obj = view.get_object()
+
+        self.assertTrue('user' in obj)
+        self.assertTrue('permissions' in obj)
+
+        self.assertEqual(obj['user'], self.user)
+        self.assertEqual(obj['permissions'], ['view', 'admin', 'create'])
+
+        view.kwargs['username'] = 'test.bahss'
+
+        self.assertRaises(Http404, view.get_object)
+
+
 class ModelPermissionsViewSetTestCase(StackdioTestCase):
+
+    def _create_perms(self):
+        pass
 
     def get_viewset(self, user_or_group):
         if user_or_group == 'user':
@@ -550,4 +622,5 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
         return view
 
     def _test_get_queryset(self, auth_obj, user_or_group):
+
         view = self.get_viewset(user_or_group)

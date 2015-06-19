@@ -16,6 +16,7 @@
 #
 
 import logging
+from unittest.util import safe_repr
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -196,3 +197,10 @@ class StackdioTestCase(TestCase):
                                        'test.user@stackd.io', '1234')
 
         Group.objects.create(name='stackdio')
+
+    def assertCallable(self, obj, msg=None):
+        """Same as self.assertTrue(callable(obj)), with a nicer
+        default message."""
+        if not callable(obj):
+            standardMsg = '%s is not callable' % (safe_repr(obj))
+            self.fail(self._formatMessage(msg, standardMsg))
