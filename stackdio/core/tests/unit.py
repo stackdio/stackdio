@@ -19,7 +19,6 @@ import logging
 
 from django.http import Http404
 from guardian.shortcuts import assign_perm, remove_perm
-from rest_framework.request import Request
 from rest_framework.serializers import ValidationError
 
 from cloud.models import CloudProvider
