@@ -19,6 +19,7 @@ import logging
 
 from django.http import Http404
 from guardian.shortcuts import assign_perm, remove_perm
+from rest_framework.request import Request
 from rest_framework.serializers import ValidationError
 
 from cloud.models import CloudProvider
@@ -606,8 +607,9 @@ class BasePermissionsViewSetTestCase(StackdioTestCase):
 
 class ModelPermissionsViewSetTestCase(StackdioTestCase):
 
-    def _create_perms(self):
-        pass
+    def _create_perms(self, auth_obj):
+        for perm in CloudProvider._meta.default_permissions:
+            assign_perm('cloud.%s_cloudprovider' % perm, auth_obj)
 
     def get_viewset(self, user_or_group):
         if user_or_group == 'user':
@@ -622,5 +624,113 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
         return view
 
     def _test_get_queryset(self, auth_obj, user_or_group):
-
         view = self.get_viewset(user_or_group)
+
+        self._create_perms(auth_obj)
+
+        queryset = view.get_queryset()
+
+        self.assertEqual(len(queryset), 1)
+
+        first = queryset[0]
+
+        self.assertTrue(user_or_group in first)
+        self.assertTrue('permissions' in first)
+
+        self.assertEqual(first[user_or_group], auth_obj)
+        self.assertEqual(first['permissions'], ['admin', 'create'])
+
+    def test_user_get_queryset(self):
+        self._test_get_queryset(self.user, 'user')
+
+    def test_group_get_queryset(self):
+        self._test_get_queryset(self.group, 'group')
+
+    def test_perform_destroy(self):
+        view = self.get_viewset('user')
+
+        self._create_perms(self.user)
+
+        view.perform_destroy({
+            'user': self.user,
+            'permissions': ['create', 'admin'],
+        })
+
+        for perm in CloudProvider.model_permissions:
+            self.assertFalse(self.user.has_perm('cloud.%s_cloudprovider' % perm))
+
+
+class ObjectPermissionsViewSetTestCase(StackdioTestCase):
+
+    fixtures = (
+        'cloud/fixtures/initial_data.json',
+    )
+
+    @classmethod
+    def setUpTestData(cls):
+        super(ObjectPermissionsViewSetTestCase, cls).setUpTestData()
+
+        CloudProvider.objects.create(
+            provider_type_id=1,
+            title='test',
+            description='test',
+            account_id='blah',
+            vpc_id='vpc-blah',
+            region_id=1,
+        )
+
+    def setUp(self):
+        super(ObjectPermissionsViewSetTestCase, self).setUp()
+        self.provider = CloudProvider.objects.get(id=1)
+
+    def _create_perms(self, auth_obj, obj):
+        for perm in CloudProvider._meta.default_permissions:
+            assign_perm('cloud.%s_cloudprovider' % perm, auth_obj, obj)
+
+    def get_viewset(self, user_or_group):
+        if user_or_group == 'user':
+            view = viewsets.StackdioObjectUserPermissionsViewSet()
+            view.serializer_class = serializers.StackdioUserObjectPermissionsSerializer
+        elif user_or_group == 'group':
+            view = viewsets.StackdioObjectGroupPermissionsViewSet()
+            view.serializer_class = serializers.StackdioGroupObjectPermissionsSerializer
+        else:
+            view = None
+        view.get_permissioned_object = lambda: self.provider
+        return view
+
+    def _test_get_queryset(self, auth_obj, user_or_group):
+        view = self.get_viewset(user_or_group)
+
+        self._create_perms(auth_obj, self.provider)
+
+        queryset = view.get_queryset()
+
+        self.assertEqual(len(queryset), 1)
+
+        first = queryset[0]
+
+        self.assertTrue(user_or_group in first)
+        self.assertTrue('permissions' in first)
+
+        self.assertEqual(first[user_or_group], auth_obj)
+        self.assertEqual(first['permissions'], ['admin', 'delete', 'update', 'view'])
+
+    def test_user_get_queryset(self):
+        self._test_get_queryset(self.user, 'user')
+
+    def test_group_get_queryset(self):
+        self._test_get_queryset(self.group, 'group')
+
+    def test_perform_destroy(self):
+        view = self.get_viewset('user')
+
+        self._create_perms(self.user, self.provider)
+
+        view.perform_destroy({
+            'user': self.user,
+            'permissions': ['view', 'delete', 'update', 'admin'],
+        })
+
+        for perm in CloudProvider.object_permissions:
+            self.assertFalse(self.user.has_perm('cloud.%s_cloudprovider' % perm, self.provider))
