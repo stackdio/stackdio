@@ -181,10 +181,6 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
 
 class ObjectPermissionSerializerTestCase(StackdioTestCase):
 
-    fixtures = (
-        'cloud/fixtures/initial_data.json',
-    )
-
     @classmethod
     def setUpTestData(cls):
         super(ObjectPermissionSerializerTestCase, cls).setUpTestData()
@@ -660,10 +656,6 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
 
 
 class ObjectPermissionsViewSetTestCase(StackdioTestCase):
-
-    fixtures = (
-        'cloud/fixtures/initial_data.json',
-    )
 
     @classmethod
     def setUpTestData(cls):

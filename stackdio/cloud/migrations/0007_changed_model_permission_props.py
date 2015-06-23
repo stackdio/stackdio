@@ -7,7 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cloud', '0005_added_admin_perm'),
+        ('cloud', '0006_initial_data'),
     ]
 
     operations = [
