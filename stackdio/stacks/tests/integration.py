@@ -21,10 +21,6 @@
 #     Tests for CloudProvider things
 #     """
 #
-#     fixtures = (
-#         'cloud/fixtures/initial_data.json',
-#     )
-#
 #     permission_tests = {
 #         'model': models.Stack,
 #         'create_data': {

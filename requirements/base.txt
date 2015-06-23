@@ -10,7 +10,7 @@ django-extensions>=1.5
 django-filter>=0.9
 django-guardian==1.2.6
 django-model-utils>=2.0
-djangorestframework>=3.0
+djangorestframework>=3.1
 envoy>=0.0.2
 psutil>=2.1
 requests>=2.4
