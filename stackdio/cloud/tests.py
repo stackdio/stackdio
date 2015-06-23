@@ -54,10 +54,6 @@ class CloudProviderTestCase(StackdioTestCase, PermissionsMixin):
     Tests for CloudProvider things
     """
 
-    fixtures = (
-        'cloud/fixtures/initial_data.json',
-    )
-
     permission_tests = {
         'model': models.CloudProvider,
         'create_data': {
@@ -97,10 +93,6 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     Tests for CloudProvider things
     """
 
-    fixtures = (
-        'cloud/fixtures/initial_data.json',
-    )
-
     permission_tests = {
         'model': models.CloudProfile,
         'create_data': {
@@ -136,10 +128,6 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
 #     """
 #     Tests for CloudProvider things
 #     """
-#
-#     fixtures = (
-#         'cloud/fixtures/initial_data.json',
-#     )
 #
 #     permission_tests = {
 #         'model': models.CloudInstanceSize,
