@@ -22,7 +22,19 @@ from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from . import filters, models, serializers
+from core.serializers import (
+    StackdioUserModelPermissionsSerializer,
+    StackdioGroupModelPermissionsSerializer,
+    StackdioUserObjectPermissionsSerializer,
+    StackdioGroupObjectPermissionsSerializer,
+)
+from core.viewsets import (
+    StackdioModelUserPermissionsViewSet,
+    StackdioModelGroupPermissionsViewSet,
+    StackdioObjectUserPermissionsViewSet,
+    StackdioObjectGroupPermissionsViewSet,
+)
+from . import filters, mixins, models, permissions, serializers
 
 logger = logging.getLogger(__name__)
 
@@ -42,3 +54,27 @@ class VolumeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.Volume.objects.all()
     serializer_class = serializers.VolumeSerializer
     permission_classes = (StackdioObjectPermissions,)
+
+
+class VolumeModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.VolumePermissionsModelPermissions,)
+    model_cls = models.Volume
+
+
+class VolumeModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    serializer_class = StackdioGroupModelPermissionsSerializer
+    permission_classes = (permissions.VolumePermissionsModelPermissions,)
+    model_cls = models.Volume
+
+
+class VolumeObjectUserPermissionsViewSet(mixins.VolumeRelatedMixin,
+                                         StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
+    permission_classes = (permissions.VolumePermissionsObjectPermissions,)
+
+
+class VolumeObjectGroupPermissionsViewSet(mixins.VolumeRelatedMixin,
+                                          StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
+    permission_classes = (permissions.VolumePermissionsObjectPermissions,)

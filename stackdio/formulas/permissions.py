@@ -15,9 +15,21 @@
 # limitations under the License.
 #
 
-from core.permissions import StackdioParentObjectPermissions
+from core.permissions import (
+    StackdioParentObjectPermissions,
+    StackdioPermissionsModelPermissions,
+    StackdioPermissionsObjectPermissions,
+)
 from . import models
 
 
 class FormulaParentObjectPermissions(StackdioParentObjectPermissions):
+    parent_model_cls = models.Formula
+
+
+class FormulaPermissionsModelPermissions(StackdioPermissionsModelPermissions):
+    model_cls = models.Formula
+
+
+class FormulaPermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
     parent_model_cls = models.Formula

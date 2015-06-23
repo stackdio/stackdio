@@ -146,6 +146,19 @@ class BlueprintManager(models.Manager):
         return blueprint
 
 
+_blueprint_model_permissions = (
+    'create',
+    'admin',
+)
+
+_blueprint_object_permissions = (
+    'view',
+    'update',
+    'delete',
+    'admin',
+)
+
+
 class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
     Blueprints are a template of reusable configuration used to launch
@@ -155,14 +168,12 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
 
     TODO: @params
     """
+    model_permissions = _blueprint_model_permissions
+    object_permissions = _blueprint_object_permissions
 
     class Meta:
-        default_permissions = (
-            'create',
-            'view',
-            'update',
-            'delete',
-        )
+        default_permissions = tuple(set(_blueprint_model_permissions +
+                                        _blueprint_object_permissions))
 
     formula_versions = GenericRelation('formulas.FormulaVersion')
 

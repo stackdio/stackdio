@@ -80,9 +80,9 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
 
     def has_object_permission(self, request, view, obj):
         assert self.parent_model_cls is not None, (
-            'Cannot apply StackdioParentObjectPermissions directly. '
+            'Cannot apply %s directly. '
             'You must subclass it and override the `parent_model_cls` '
-            'attribute.')
+            'attribute.' % self.__class__.__name__)
 
         model_cls = self.parent_model_cls
         user = request.user
@@ -90,8 +90,21 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
         # There's a weird case sometimes where the BrowsableAPIRenderer checks permissions
         # that it doesn't need to, and throws an exception.  We'll default to less permissions
         # here rather than more.
-        if obj._meta.app_label != model_cls._meta.app_label:
-            return False
+        try:
+            if obj._meta.app_label != model_cls._meta.app_label:
+                return False
+        except AttributeError:
+            # This means the BrowsableRenderer is trying to check object permissions on one of our
+            # permissions responses... which are just dicts, so it doesn't know what to do.  We'll
+            # check the parent object instead.
+            model_name = model_cls._meta.model_name
+            # All of our parent views have a `get_<model_name>` method, so we'll grab that and use
+            # it to get an object to check permissions on.
+            get_parent_obj = getattr(view, 'get_%s' % model_name)
+            if get_parent_obj:
+                return self.has_object_permission(request, view, get_parent_obj())
+            else:
+                return False
 
         perms = self.get_required_object_permissions(request.method, model_cls)
 
@@ -115,14 +128,51 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
         return True
 
 
-class IsAdminOrReadOnly(permissions.IsAdminUser):
+class StackdioPermissionsModelPermissions(permissions.DjangoModelPermissions):
     """
-    A permission that allows all users read-only permission and admin users
-    all permission
+    Override the default permission namings
     """
+    perms_map = {
+        'GET': ['%(app_label)s.admin_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.admin_%(model_name)s'],
+        'PUT': ['%(app_label)s.admin_%(model_name)s'],
+        'PATCH': ['%(app_label)s.admin_%(model_name)s'],
+        'DELETE': ['%(app_label)s.admin_%(model_name)s'],
+    }
+
+    model_cls = None
 
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
+        assert self.model_cls is not None, (
+            'Cannot apply %s directly. '
+            'You must subclass it and override the `parent_model_cls` '
+            'attribute.' % self.__class__.__name__)
+
+        model_cls = self.model_cls
+
+        # Workaround to ensure DjangoModelPermissions are not applied
+        # to the root view when using DefaultRouter.
+        if getattr(view, '_ignore_model_permissions', False):
             return True
-        else:
-            return super(IsAdminOrReadOnly, self).has_permission(request, view)
+
+        perms = self.get_required_permissions(request.method, model_cls)
+
+        return (
+            request.user and
+            (request.user.is_authenticated() or not self.authenticated_users_only) and
+            request.user.has_perms(perms)
+        )
+
+
+class StackdioPermissionsObjectPermissions(StackdioParentObjectPermissions):
+    perms_map = {
+        'GET': ['%(app_label)s.admin_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.admin_%(model_name)s'],
+        'PUT': ['%(app_label)s.admin_%(model_name)s'],
+        'PATCH': ['%(app_label)s.admin_%(model_name)s'],
+        'DELETE': ['%(app_label)s.admin_%(model_name)s'],
+    }

@@ -15,19 +15,21 @@
 # limitations under the License.
 #
 
+from core.permissions import (
+    StackdioParentObjectPermissions,
+    StackdioPermissionsModelPermissions,
+    StackdioPermissionsObjectPermissions,
+)
+from . import models
 
-from django.utils.encoding import smart_unicode
-from rest_framework import renderers
+
+class VolumeParentObjectPermissions(StackdioParentObjectPermissions):
+    parent_model_cls = models.Volume
 
 
-class PlainTextRenderer(renderers.BaseRenderer):
-    """
-    Your basic text/plain renderer.
-    """
-    media_type = 'text/plain'
-    format = 'txt'
+class VolumePermissionsModelPermissions(StackdioPermissionsModelPermissions):
+    model_cls = models.Volume
 
-    def render(self, data, media_type=None, renderer_context=None):
-        if isinstance(data, basestring):
-            return data
-        return smart_unicode(data)
+
+class VolumePermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
+    parent_model_cls = models.Volume

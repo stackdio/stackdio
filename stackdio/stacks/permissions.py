@@ -15,11 +15,23 @@
 # limitations under the License.
 #
 
-from core.permissions import StackdioParentObjectPermissions
+from core.permissions import (
+    StackdioParentObjectPermissions,
+    StackdioPermissionsModelPermissions,
+    StackdioPermissionsObjectPermissions,
+)
 from . import models
 
 
 class StackParentObjectPermissions(StackdioParentObjectPermissions):
+    parent_model_cls = models.Stack
+
+
+class StackPermissionsModelPermissions(StackdioPermissionsModelPermissions):
+    model_cls = models.Stack
+
+
+class StackPermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
     parent_model_cls = models.Stack
 
 

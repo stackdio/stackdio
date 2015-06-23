@@ -183,6 +183,26 @@ class StackManager(models.Manager):
         return stack
 
 
+_stack_model_permissions = (
+    'create',
+    'admin',
+)
+
+_stack_object_permissions = (
+    'launch',
+    'view',
+    'update',
+    'provision',
+    'orchestrate',
+    'execute',
+    'start',
+    'stop',
+    'terminate',
+    'delete',
+    'admin',
+)
+
+
 class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.StatusModel):
 
     # Launch workflow:
@@ -221,22 +241,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                      ORCHESTRATING, FINALIZING, DESTROYING, FINISHED,
                      STARTING, STOPPING, TERMINATING, EXECUTING_ACTION, ERROR)
 
+    model_permissions = _stack_model_permissions
+    object_permissions = _stack_object_permissions
+
     class Meta:
         ordering = ('title',)
 
-        default_permissions = (
-            'create',
-            'launch',
-            'view',
-            'update',
-            'provision',
-            'orchestrate',
-            'execute',
-            'start',
-            'stop',
-            'terminate',
-            'delete',
-        )
+        default_permissions = tuple(set(_stack_model_permissions + _stack_object_permissions))
 
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint',
@@ -782,7 +793,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
         pillar_props = {
             '__stackdio__': {
                 'username': username,
-                'publickey': '',
+                'publickey': 'non_empty_for_now',
             }
         }
 

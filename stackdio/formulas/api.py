@@ -26,7 +26,19 @@ from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest
+from core.viewsets import (
+    StackdioModelUserPermissionsViewSet,
+    StackdioModelGroupPermissionsViewSet,
+    StackdioObjectUserPermissionsViewSet,
+    StackdioObjectGroupPermissionsViewSet,
+)
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from core.serializers import (
+    StackdioUserModelPermissionsSerializer,
+    StackdioGroupModelPermissionsSerializer,
+    StackdioUserObjectPermissionsSerializer,
+    StackdioGroupObjectPermissionsSerializer,
+)
 from . import filters, mixins, models, permissions, serializers, tasks, utils
 
 
@@ -93,7 +105,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         formula_obj.save()
 
         # Assign permissions so the user that just created the formula can operate on it
-        for perm in formula_obj._meta.default_permissions:
+        for perm in models.Formula.object_permissions:
             assign_perm('formulas.%s_formula' % perm, request.user, formula_obj)
 
         # Import using asynchronous task
@@ -102,30 +114,10 @@ class FormulaListAPIView(generics.ListCreateAPIView):
         return Response(self.get_serializer(formula_obj).data)
 
 
-class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+class FormulaDetailAPIView(generics.RetrieveDestroyAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
     permission_classes = (StackdioObjectPermissions,)
-
-    def update(self, request, *args, **kwargs):
-        """
-        Override PUT requests to only allow the public field to be changed.
-        """
-        formula = self.get_object()
-
-        public = request.DATA.get('public', None)
-        if public is None or len(request.DATA) > 1:
-            raise BadRequest('Only "public" field of a formula may be '
-                             'modified.')
-
-        if not isinstance(public, bool):
-            raise BadRequest("'public' field must be a boolean value.")
-
-        # Update formula's public field
-        formula.public = public
-        formula.save()
-
-        return Response(self.get_serializer(formula).data)
 
     def delete(self, request, *args, **kwargs):
         """
@@ -204,3 +196,27 @@ class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):
             tasks.update_formula.si(formula.id, utils.PasswordStr(git_password)).apply_async()
 
         return Response(self.get_serializer(formula).data)
+
+
+class FormulaModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.FormulaPermissionsModelPermissions,)
+    model_cls = models.Formula
+
+
+class FormulaModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    serializer_class = StackdioGroupModelPermissionsSerializer
+    permission_classes = (permissions.FormulaPermissionsModelPermissions,)
+    model_cls = models.Formula
+
+
+class FormulaObjectUserPermissionsViewSet(mixins.FormulaRelatedMixin,
+                                          StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
+    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
+
+
+class FormulaObjectGroupPermissionsViewSet(mixins.FormulaRelatedMixin,
+                                           StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
+    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)

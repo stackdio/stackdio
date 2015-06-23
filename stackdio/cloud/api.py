@@ -26,6 +26,18 @@ from rest_framework.response import Response
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest, ResourceConflict
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from core.serializers import (
+    StackdioUserModelPermissionsSerializer,
+    StackdioGroupModelPermissionsSerializer,
+    StackdioUserObjectPermissionsSerializer,
+    StackdioGroupObjectPermissionsSerializer,
+)
+from core.viewsets import (
+    StackdioModelUserPermissionsViewSet,
+    StackdioModelGroupPermissionsViewSet,
+    StackdioObjectUserPermissionsViewSet,
+    StackdioObjectGroupPermissionsViewSet,
+)
 from formulas.models import FormulaVersion
 from formulas.serializers import FormulaVersionSerializer
 from . import filters, mixins, models, permissions, serializers
@@ -109,15 +121,39 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return super(CloudProviderDetailAPIView, self).destroy(request, *args, **kwargs)
 
 
+class CloudProviderModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.CloudProviderPermissionsModelPermissions,)
+    model_cls = models.CloudProvider
+
+
+class CloudProviderModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    serializer_class = StackdioGroupModelPermissionsSerializer
+    permission_classes = (permissions.CloudProviderPermissionsModelPermissions,)
+    model_cls = models.CloudProvider
+
+
+class CloudProviderObjectUserPermissionsViewSet(mixins.CloudProviderRelatedMixin,
+                                                StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
+    permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
+
+
+class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderRelatedMixin,
+                                                 StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
+    permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
+
+
 class GlobalOrchestrationComponentListAPIView(mixins.CloudProviderRelatedMixin,
                                               generics.ListCreateAPIView):
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
 
     def get_queryset(self):
-        return self.get_provider().global_formula_components.all()
+        return self.get_cloudprovider().global_formula_components.all()
 
     def perform_create(self, serializer):
-        serializer.save(provider=self.get_provider())
+        serializer.save(provider=self.get_cloudprovider())
 
     def create(self, request, *args, **kwargs):
         component_id = request.DATA.get('component')
@@ -145,7 +181,7 @@ class GlobalOrchestrationPropertiesAPIView(mixins.CloudProviderRelatedMixin,
 
 class CloudProviderVPCSubnetListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
-        provider = self.get_provider()
+        provider = self.get_cloudprovider()
         driver = provider.get_driver()
 
         subnets = driver.get_vpc_subnets()
@@ -158,7 +194,7 @@ class CloudProviderFormulaVersionsAPIView(mixins.CloudProviderRelatedMixin, gene
     serializer_class = FormulaVersionSerializer
 
     def get_queryset(self):
-        provider = self.get_provider()
+        provider = self.get_cloudprovider()
         return provider.formula_versions.all()
 
     def create(self, request, *args, **kwargs):
@@ -166,7 +202,7 @@ class CloudProviderFormulaVersionsAPIView(mixins.CloudProviderRelatedMixin, gene
         serializer.is_valid(raise_exception=True)
 
         formula = serializer.validated_data.get('formula')
-        provider = self.get_provider()
+        provider = self.get_cloudprovider()
 
         try:
             # Setting self.instance will cause self.update() to be called instead of
@@ -248,6 +284,30 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                                               **kwargs)
 
 
+class CloudProfileModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.CloudProfilePermissionsModelPermissions,)
+    model_cls = models.CloudProfile
+
+
+class CloudProfileModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    serializer_class = StackdioGroupModelPermissionsSerializer
+    permission_classes = (permissions.CloudProfilePermissionsModelPermissions,)
+    model_cls = models.CloudProfile
+
+
+class CloudProfileObjectUserPermissionsViewSet(mixins.CloudProfileRelatedMixin,
+                                               StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
+    permission_classes = (permissions.CloudProfilePermissionsObjectPermissions,)
+
+
+class CloudProfileObjectGroupPermissionsViewSet(mixins.CloudProfileRelatedMixin,
+                                                StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
+    permission_classes = (permissions.CloudProfilePermissionsObjectPermissions,)
+
+
 class SnapshotListAPIView(generics.ListCreateAPIView):
     queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
@@ -259,6 +319,30 @@ class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Snapshot.objects.all()
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (StackdioObjectPermissions,)
+
+
+class SnapshotModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.SnapshotPermissionsModelPermissions,)
+    model_cls = models.Snapshot
+
+
+class SnapshotModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    serializer_class = StackdioGroupModelPermissionsSerializer
+    permission_classes = (permissions.SnapshotPermissionsModelPermissions,)
+    model_cls = models.Snapshot
+
+
+class SnapshotObjectUserPermissionsViewSet(mixins.SnapshotRelatedMixin,
+                                           StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
+    permission_classes = (permissions.SnapshotPermissionsObjectPermissions,)
+
+
+class SnapshotObjectGroupPermissionsViewSet(mixins.SnapshotRelatedMixin,
+                                            StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
+    permission_classes = (permissions.SnapshotPermissionsObjectPermissions,)
 
 
 class CloudRegionListAPIView(generics.ListAPIView):
@@ -616,7 +700,7 @@ class CloudProviderSecurityGroupListAPIView(mixins.CloudProviderRelatedMixin,
     filter_class = filters.SecurityGroupFilter
 
     def get_queryset(self):
-        provider = self.get_provider()
+        provider = self.get_cloudprovider()
 
         # if admin, return all of the known default security groups on the
         # account
@@ -646,7 +730,7 @@ class CloudProviderSecurityGroupListAPIView(mixins.CloudProviderRelatedMixin,
 
         # Grab the groups from the provider and inject them into the response,
         # removing the known managed security groups first
-        provider = self.get_provider()
+        provider = self.get_cloudprovider()
         driver = provider.get_driver()
         provider_groups = driver.get_security_groups()
         for group in provider.security_groups.all():

@@ -42,6 +42,19 @@ class FormulaVersion(models.Model):
     version = models.CharField('Formula Version', max_length=100)
 
 
+_formula_model_permissions = (
+    'create',
+    'admin',
+)
+
+_formula_object_permissions = (
+    'view',
+    'update',
+    'delete',
+    'admin',
+)
+
+
 class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     """
     The intention here is to be able to install an entire formula along
@@ -125,15 +138,13 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     IMPORTING = 'importing'
     STATUS = Choices(ERROR, COMPLETE, IMPORTING)
 
+    model_permissions = _formula_model_permissions
+    object_permissions = _formula_object_permissions
+
     class Meta:
         ordering = ['pk']
 
-        default_permissions = (
-            'create',
-            'view',
-            'update',
-            'delete',
-        )
+        default_permissions = tuple(set(_formula_model_permissions + _formula_object_permissions))
 
     # uri to the repository for this formula
     uri = models.URLField('Repository URI', unique=True)

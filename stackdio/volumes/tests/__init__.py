@@ -15,19 +15,3 @@
 # limitations under the License.
 #
 
-
-from django.utils.encoding import smart_unicode
-from rest_framework import renderers
-
-
-class PlainTextRenderer(renderers.BaseRenderer):
-    """
-    Your basic text/plain renderer.
-    """
-    media_type = 'text/plain'
-    format = 'txt'
-
-    def render(self, data, media_type=None, renderer_context=None):
-        if isinstance(data, basestring):
-            return data
-        return smart_unicode(data)

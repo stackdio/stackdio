@@ -80,6 +80,10 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         view_name='cloudprovider-global-orchestration-properties')
     formula_versions = serializers.HyperlinkedIdentityField(
         view_name='cloudprovider-formula-versions')
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='cloudprovider-object-user-permissions-list')
+    group_permissions = serializers.HyperlinkedIdentityField(
+        view_name='cloudprovider-object-group-permissions-list')
 
     class Meta:
         model = models.CloudProvider
@@ -96,6 +100,8 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
             'region',
             'security_groups',
             'vpc_subnets',
+            'user_permissions',
+            'group_permissions',
             'global_orchestration_components',
             'global_orchestration_properties',
             'formula_versions',
@@ -231,6 +237,11 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
         queryset=models.CloudInstanceSize.objects.all()
     )
 
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='cloudprofile-object-user-permissions-list')
+    group_permissions = serializers.HyperlinkedIdentityField(
+        view_name='cloudprofile-object-group-permissions-list')
+
     class Meta:
         model = models.CloudProfile
         fields = (
@@ -243,6 +254,8 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
             'image_id',
             'default_instance_size',
             'ssh_user',
+            'user_permissions',
+            'group_permissions',
         )
 
         superuser_fields = ('image_id',)
@@ -297,6 +310,11 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
         queryset=models.CloudProvider.objects.all()
     )
 
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='snapshot-object-user-permissions-list')
+    group_permissions = serializers.HyperlinkedIdentityField(
+        view_name='snapshot-object-group-permissions-list')
+
     class Meta:
         model = models.Snapshot
         fields = (
@@ -309,6 +327,8 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
             'snapshot_id',
             'size_in_gb',
             'filesystem_type',
+            'user_permissions',
+            'group_permissions',
         )
 
     def validate(self, attrs):

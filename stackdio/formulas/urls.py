@@ -16,15 +16,38 @@
 #
 
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, patterns, url
+from rest_framework import routers
 
 from . import api
 
-urlpatterns = patterns('formulas.api',
+model_router = routers.SimpleRouter()
+model_router.register(r'users',
+                      api.FormulaModelUserPermissionsViewSet,
+                      'formula-model-user-permissions')
+model_router.register(r'groups',
+                      api.FormulaModelGroupPermissionsViewSet,
+                      'formula-model-group-permissions')
+
+
+object_router = routers.SimpleRouter()
+object_router.register(r'users',
+                       api.FormulaObjectUserPermissionsViewSet,
+                       'formula-object-user-permissions')
+object_router.register(r'groups',
+                       api.FormulaObjectGroupPermissionsViewSet,
+                       'formula-object-group-permissions')
+
+
+urlpatterns = patterns(
+    'formulas.api',
 
     url(r'^formulas/$',
         api.FormulaListAPIView.as_view(),
         name='formula-list'),
+
+    url(r'^formulas/permissions/',
+        include(model_router.urls)),
 
     url(r'^formulas/(?P<pk>[0-9]+)/$',
         api.FormulaDetailAPIView.as_view(),
@@ -38,6 +61,9 @@ urlpatterns = patterns('formulas.api',
     url(r'^formulas/(?P<pk>[0-9]+)/action/$',
         api.FormulaActionAPIView.as_view(),
         name='formula-action'),
+
+    url(r'^formulas/(?P<pk>[0-9]+)/permissions/',
+        include(object_router.urls)),
 
     url(r'^formula_components/(?P<pk>[0-9]+)/$',
         api.FormulaComponentDetailAPIView.as_view(),

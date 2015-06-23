@@ -24,11 +24,27 @@ from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsF
 from rest_framework.response import Response
 
 from core.exceptions import BadRequest
-from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from core.permissions import (
+    StackdioModelPermissions,
+    StackdioObjectPermissions,
+    StackdioPermissionsModelPermissions,
+)
+from core.serializers import (
+    StackdioUserModelPermissionsSerializer,
+    StackdioGroupModelPermissionsSerializer,
+    StackdioUserObjectPermissionsSerializer,
+    StackdioGroupObjectPermissionsSerializer,
+)
+from core.viewsets import (
+    StackdioModelUserPermissionsViewSet,
+    StackdioModelGroupPermissionsViewSet,
+    StackdioObjectUserPermissionsViewSet,
+    StackdioObjectGroupPermissionsViewSet,
+)
 from formulas.models import FormulaVersion
 from formulas.serializers import FormulaVersionSerializer
 from stacks.serializers import StackSerializer
-from . import filters, mixins, models, serializers, validators
+from . import filters, mixins, models, permissions, serializers, validators
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +67,7 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
 
         blueprint = models.Blueprint.objects.create(request.DATA)
 
-        for perm in blueprint._meta.default_permissions:
+        for perm in models.Blueprint.object_permissions:
             assign_perm('blueprints.%s_blueprint' % perm, self.request.user, blueprint)
 
         return Response(self.get_serializer(blueprint).data)
@@ -100,6 +116,30 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
+
+
+class BlueprintModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
+    model_cls = models.Blueprint
+
+
+class BlueprintModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    serializer_class = StackdioGroupModelPermissionsSerializer
+    permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
+    model_cls = models.Blueprint
+
+
+class BlueprintObjectUserPermissionsViewSet(mixins.BlueprintRelatedMixin,
+                                            StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
+    permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
+
+
+class BlueprintObjectGroupPermissionsViewSet(mixins.BlueprintRelatedMixin,
+                                             StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
+    permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
 
 
 class BlueprintFormulaVersionsAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):

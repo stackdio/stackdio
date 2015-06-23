@@ -41,6 +41,18 @@ from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from core.renderers import PlainTextRenderer
+from core.serializers import (
+    StackdioUserModelPermissionsSerializer,
+    StackdioGroupModelPermissionsSerializer,
+    StackdioUserObjectPermissionsSerializer,
+    StackdioGroupObjectPermissionsSerializer,
+)
+from core.viewsets import (
+    StackdioModelUserPermissionsViewSet,
+    StackdioModelGroupPermissionsViewSet,
+    StackdioObjectUserPermissionsViewSet,
+    StackdioObjectGroupPermissionsViewSet,
+)
 from formulas.models import FormulaVersion
 from formulas.serializers import FormulaVersionSerializer
 from volumes.serializers import VolumeSerializer
@@ -76,7 +88,7 @@ class StackListAPIView(generics.ListCreateAPIView):
                              'before continuing.')
 
         stack = serializer.save()
-        for perm in stack._meta.default_permissions:
+        for perm in models.Stack.object_permissions:
             assign_perm('stacks.%s_stack' % perm, self.request.user, stack)
 
 
@@ -115,9 +127,33 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         workflow.execute()
 
 
+class StackModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.StackPermissionsModelPermissions,)
+    model_cls = models.Stack
+
+
+class StackModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    serializer_class = StackdioGroupModelPermissionsSerializer
+    permission_classes = (permissions.StackPermissionsModelPermissions,)
+    model_cls = models.Stack
+
+
 class StackPropertiesAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateAPIView):
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackPropertiesSerializer
+
+
+class StackObjectUserPermissionsViewSet(mixins.StackRelatedMixin,
+                                        StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
+    permission_classes = (permissions.StackPermissionsObjectPermissions,)
+
+
+class StackObjectGroupPermissionsViewSet(mixins.StackRelatedMixin,
+                                         StackdioObjectGroupPermissionsViewSet):
+    serializer_class = StackdioGroupObjectPermissionsSerializer
+    permission_classes = (permissions.StackPermissionsObjectPermissions,)
 
 
 class StackHistoryAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
