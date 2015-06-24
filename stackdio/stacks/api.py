@@ -312,7 +312,7 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
             stack._generate_pillar_file()
 
             tasks.propagate_ssh.si(stack.id).apply_async()
-            
+
             serializer = self.get_serializer(stack)
             return Response(serializer.data)
 

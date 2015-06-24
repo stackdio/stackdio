@@ -1062,11 +1062,11 @@ def highstate(stack_id, max_retries=2):
             )
 
             result = {}
-            # cmd_batch returns a generator that blocks until jobs finish, so
+            # cmd_iter returns a generator that blocks until jobs finish, so
             # we want to loop through it until the jobs are done
             for i in ret:
                 for k, v in i.items():
-                    result[k] = v
+                    result[k] = v['ret']
 
             salt_logger.removeHandler(file_log_handler)
             if old_handler:
@@ -1214,11 +1214,11 @@ def propagate_ssh(stack_id, max_retries=2):
             )
 
             result = {}
-            # cmd_batch returns a generator that blocks until jobs finish, so
+            # cmd_iter returns a generator that blocks until jobs finish, so
             # we want to loop through it until the jobs are done
             for i in ret:
                 for k, v in i.items():
-                    result[k] = v
+                    result[k] = v['ret']
 
             salt_logger.removeHandler(file_log_handler)
             if old_handler:
