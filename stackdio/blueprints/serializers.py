@@ -18,6 +18,7 @@
 
 import logging
 
+from django.conf import settings
 from rest_framework import serializers
 
 from core.utils import recursive_update
@@ -164,5 +165,5 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
         )
 
         extra_kwargs = {
-            'create_users': {'required': False}
+            'create_users': {'default': settings.STACKDIO_CONFIG.create_ssh_users}
         }

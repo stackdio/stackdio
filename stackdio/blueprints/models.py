@@ -68,7 +68,7 @@ class BlueprintManager(models.Manager):
         blueprint = self.model(
             title=data['title'],
             description=data['description'],
-            create_users=data.get('create_users', settings.STACKDIO_CONFIG.create_ssh_users)
+            create_users=data['create_users'],
         )
 
         blueprint.save()

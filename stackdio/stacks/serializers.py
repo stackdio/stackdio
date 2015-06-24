@@ -18,11 +18,9 @@
 
 import logging
 import os
-from copy import deepcopy
 from datetime import datetime
 
 import salt.cloud
-
 from django.conf import settings
 from rest_framework import serializers
 
@@ -36,7 +34,6 @@ from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
 from core.utils import recursive_update
 from . import models, workflows
-
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +128,22 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
+class StackCreateUserDefault(object):
+    """
+    Used to set the default value of create_users to be that of the blueprint
+    """
+    def __init__(self):
+        super(StackCreateUserDefault, self).__init__()
+        self._context = None
+
+    def __call__(self):
+        blueprint = Blueprint.objects.get(pk=self._context.initial_data['blueprint'])
+        return blueprint.create_users
+
+    def set_context(self, field):
+        self._context = field.parent
+
+
 class StackSerializer(serializers.HyperlinkedModelSerializer):
     # Read only fields
     host_count = serializers.ReadOnlyField(source='hosts.count')
@@ -167,6 +180,9 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     group_permissions = serializers.HyperlinkedIdentityField(
         view_name='stack-object-group-permissions-list')
 
+    # Relation Links
+    blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
+
     class Meta:
         model = models.Stack
         fields = (
@@ -198,7 +214,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         )
 
         extra_kwargs = {
-            'create_users': {'required': False}
+            'create_users': {'default': StackCreateUserDefault()}
         }
 
     SECRET_FIELDS = (
@@ -221,6 +237,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     OPTIONAL_FIELDS = (
         'namespace',
         'max_retries',
+        'create_users',
     )
 
     VALID_FIELDS = SECRET_FIELDS + REQUIRED_FIELDS + OPTIONAL_FIELDS
@@ -234,9 +251,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
 
         if errors:
             raise serializers.ValidationError(errors)
-
-        if 'create_users' not in attrs:
-            attrs['create_users'] = attrs['blueprint'].create_users
 
         properties = attrs.get('properties', {})
 
