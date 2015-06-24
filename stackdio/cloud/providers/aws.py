@@ -273,6 +273,7 @@ class AWSCloudProvider(BaseCloudProvider):
             cls.ACTION_PROVISION,
             cls.ACTION_ORCHESTRATE,
             cls.ACTION_CUSTOM,
+            cls.ACTION_SSH,
         ]
 
     def get_private_key_path(self):

@@ -346,6 +346,7 @@ CELERY_ROUTES = {
     'stacks.launch_hosts': {'queue': 'stacks'},
     'stacks.orchestrate': {'queue': 'stacks'},
     'stacks.ping': {'queue': 'stacks'},
+    'stacks.propagate_ssh': {'queue': 'stacks'},
     'stacks.register_dns': {'queue': 'stacks'},
     'stacks.register_volume_delete': {'queue': 'stacks'},
     'stacks.sync_all': {'queue': 'stacks'},
