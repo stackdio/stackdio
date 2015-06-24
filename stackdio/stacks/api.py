@@ -88,8 +88,6 @@ class StackListAPIView(generics.ListCreateAPIView):
                              'before continuing.')
 
         stack = serializer.save()
-        for perm in models.Stack.object_permissions:
-            assign_perm('stacks.%s_stack' % perm, self.request.user, stack)
 
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

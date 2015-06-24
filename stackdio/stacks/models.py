@@ -34,7 +34,7 @@ from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
-from guardian.shortcuts import get_users_with_perms
+from guardian.shortcuts import assign_perm, get_users_with_perms
 from model_utils import Choices
 
 from core.fields import DeletingFileField
@@ -127,12 +127,12 @@ class StatusDetailModel(model_utils.models.StatusModel):
 class StackManager(models.Manager):
 
     @transaction.atomic
-    def create_stack(self, blueprint, **data):
+    def create_stack(self, create_user, blueprint, **data):
         """
         """
         title = data.get('title', '')
         description = data.get('description', '')
-        create_users = data.get('create_users', blueprint.create_users)
+        create_users = data['create_users']
 
         if not title:
             raise ValueError("Stack 'title' is a required field.")
@@ -142,6 +142,9 @@ class StackManager(models.Manager):
                            description=description,
                            create_users=create_users)
         stack.save()
+
+        for perm in self.model.object_permissions:
+            assign_perm('stacks.%s_stack' % perm, create_user, stack)
 
         # add the namespace
         namespace = data.get('namespace', '').strip()

@@ -286,7 +286,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         blueprint = validated_data['blueprint']
         create_users = validated_data['create_users']
 
-        user = self._context['request'].user
+        user = self.context['request'].user
 
         if not user.has_perm('blueprints.view_blueprint', blueprint):
             raise serializers.ValidationError({
@@ -373,6 +373,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         # Everything is valid!  Let's create the stack in the database
         try:
             stack = models.Stack.objects.create_stack(
+                user,
                 blueprint,
                 title=title,
                 description=description,
