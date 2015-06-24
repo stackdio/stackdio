@@ -311,7 +311,9 @@ class InitCommand(WizardCommand):
                           'public RSA key so they may SSH in to their machines. '
                           'This setting allows you to turn this feature off in the '
                           'case where you use some other external authentication '
-                          'system, such as IPA or Active Directory.'),
+                          'system, such as IPA or Active Directory.\n'
+                          'NOTE: This is just a default value.  It can be overridden '
+                          'on a per-stack or per-blueprint basis.'),
             'default': True,
         }]
 

@@ -41,4 +41,7 @@ db_dsn: {{ db_dsn }}
 ##
 # User accounts will be created for all users that have ssh
 # permission if this is set to true.
+#
+# NOTE: This is just a default value.  It can be overridden
+# on a per-stack or per-blueprint basis.
 create_ssh_users: {{ create_ssh_users }}
