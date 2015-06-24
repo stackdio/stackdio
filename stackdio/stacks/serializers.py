@@ -167,9 +167,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     group_permissions = serializers.HyperlinkedIdentityField(
         view_name='stack-object-group-permissions-list')
 
-    # Relation Links
-    blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
-
     class Meta:
         model = models.Stack
         fields = (
@@ -180,6 +177,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'status',
             'namespace',
+            'create_users',
             'host_count',
             'volume_count',
             'created',
@@ -198,6 +196,10 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'orchestration_errors',
             'provisioning_errors',
         )
+
+        extra_kwargs = {
+            'create_users': {'required': False}
+        }
 
     SECRET_FIELDS = (
         'auto_launch',
@@ -226,15 +228,15 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     def validate(self, attrs):
         errors = {}
 
-        # Pull initial_data into the attrs
-        attrs = recursive_update(deepcopy(self.initial_data), attrs)
-
         for k in attrs:
             if k not in self.VALID_FIELDS:
                 errors.setdefault('unknown fields', []).append(k)
 
         if errors:
             raise serializers.ValidationError(errors)
+
+        if 'create_users' not in attrs:
+            attrs['create_users'] = attrs['blueprint'].create_users
 
         properties = attrs.get('properties', {})
 
@@ -268,6 +270,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         title = validated_data['title']
         description = validated_data['description']
         blueprint = validated_data['blueprint']
+        create_users = validated_data['create_users']
 
         user = self._context['request'].user
 
@@ -360,7 +363,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
                 title=title,
                 description=description,
                 namespace=namespace,
-                properties=properties
+                create_users=create_users,
+                properties=properties,
             )
         except Exception, e:
             raise BadRequest(str(e))

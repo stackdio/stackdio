@@ -155,9 +155,14 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'description',
             'url',
+            'create_users',
             'properties',
             'user_permissions',
             'group_permissions',
             'formula_versions',
             'host_definitions',
         )
+
+        extra_kwargs = {
+            'create_users': {'required': False}
+        }

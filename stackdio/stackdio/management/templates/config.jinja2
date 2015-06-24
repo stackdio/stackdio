@@ -39,8 +39,6 @@ django_secret_key: "{{ django_secret_key }}"
 db_dsn: {{ db_dsn }}
 
 ##
-# The user that will be created on all stackd.io managed
-# machines. Setting this value to $USERNAME will create
-# users based on the authenticated stackd.io user that
-# launched the machines.
-ssh_user: {{ ssh_user }}
+# User accounts will be created for all users that have ssh
+# permission if this is set to true.
+create_ssh_users: {{ create_ssh_users }}
