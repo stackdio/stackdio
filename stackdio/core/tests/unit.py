@@ -22,8 +22,10 @@ from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework.serializers import ValidationError
 
 from cloud.models import CloudProvider
+import core.serializers
 from core.tests.utils import StackdioTestCase, group_has_perm
-from core import serializers, shortcuts, viewsets
+from core import shortcuts, viewsets
+from users import serializers
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +35,10 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
     def get_serializer(self, user_or_group):
         if user_or_group == 'user':
             view = viewsets.StackdioModelUserPermissionsViewSet()
-            view.serializer_class = serializers.StackdioUserModelPermissionsSerializer
+            view.serializer_class = core.serializers.StackdioUserModelPermissionsSerializer
         elif user_or_group == 'group':
             view = viewsets.StackdioModelGroupPermissionsViewSet()
-            view.serializer_class = serializers.StackdioGroupModelPermissionsSerializer
+            view.serializer_class = core.serializers.StackdioGroupModelPermissionsSerializer
         else:
             view = None
         view.model_cls = CloudProvider
@@ -201,10 +203,10 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
     def get_serializer(self, user_or_group):
         if user_or_group == 'user':
             view = viewsets.StackdioObjectUserPermissionsViewSet()
-            view.serializer_class = serializers.StackdioUserObjectPermissionsSerializer
+            view.serializer_class = core.serializers.StackdioUserObjectPermissionsSerializer
         elif user_or_group == 'group':
             view = viewsets.StackdioObjectGroupPermissionsViewSet()
-            view.serializer_class = serializers.StackdioGroupObjectPermissionsSerializer
+            view.serializer_class = core.serializers.StackdioGroupObjectPermissionsSerializer
         else:
             view = None
         view.get_permissioned_object = lambda: self.provider
@@ -609,10 +611,10 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
     def get_viewset(self, user_or_group):
         if user_or_group == 'user':
             view = viewsets.StackdioModelUserPermissionsViewSet()
-            view.serializer_class = serializers.StackdioUserModelPermissionsSerializer
+            view.serializer_class = core.serializers.StackdioUserModelPermissionsSerializer
         elif user_or_group == 'group':
             view = viewsets.StackdioModelGroupPermissionsViewSet()
-            view.serializer_class = serializers.StackdioGroupModelPermissionsSerializer
+            view.serializer_class = core.serializers.StackdioGroupModelPermissionsSerializer
         else:
             view = None
         view.model_cls = CloudProvider
@@ -681,10 +683,10 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
     def get_viewset(self, user_or_group):
         if user_or_group == 'user':
             view = viewsets.StackdioObjectUserPermissionsViewSet()
-            view.serializer_class = serializers.StackdioUserObjectPermissionsSerializer
+            view.serializer_class = core.serializers.StackdioUserObjectPermissionsSerializer
         elif user_or_group == 'group':
             view = viewsets.StackdioObjectGroupPermissionsViewSet()
-            view.serializer_class = serializers.StackdioGroupObjectPermissionsSerializer
+            view.serializer_class = core.serializers.StackdioGroupObjectPermissionsSerializer
         else:
             view = None
         view.get_permissioned_object = lambda: self.provider

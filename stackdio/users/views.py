@@ -15,18 +15,6 @@
 # limitations under the License.
 #
 
+from django.shortcuts import render
 
-from django.contrib import admin
-from guardian.admin import GuardedModelAdmin
-
-from .models import UserSettings
-
-
-class UserSettingsAdmin(GuardedModelAdmin):
-    list_display = [
-        'user',
-        'public_key',
-    ]
-
-
-admin.site.register(UserSettings, UserSettingsAdmin)
+# Create your views here.

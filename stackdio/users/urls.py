@@ -16,19 +16,25 @@
 #
 
 
-from rest_framework import permissions, views
-from rest_framework.response import Response
+from django.conf.urls import patterns, url
+from . import api
 
+urlpatterns = patterns(
+    'users.api',
 
-class VersionAPIView(views.APIView):
-    """
-    Returns a JSON object with version-specific fields.
-    """
-    permission_classes = (permissions.IsAuthenticated,)
+    url(r'^users/$',
+        api.UserListAPIView.as_view(),
+        name='user-list'),
 
-    def get(self, request, *args, **kwargs):
-        from stackdio.version import __version__
+    url(r'^users/(?P<username>[\w.@+-]+)/$',
+        api.UserDetailAPIView.as_view(),
+        name='user-detail'),
 
-        return Response({
-            'version': __version__,
-        })
+    url(r'^settings/$',
+        api.UserSettingsDetailAPIView.as_view(),
+        name='usersettings-detail'),
+
+    url(r'^settings/change_password/$',
+        api.ChangePasswordAPIView.as_view(),
+        name='change_password'),
+)

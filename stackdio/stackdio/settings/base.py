@@ -90,6 +90,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'guardian',
     'core',
+    'users',
     'cloud',
     'stacks',
     'volumes',

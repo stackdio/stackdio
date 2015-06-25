@@ -27,7 +27,6 @@ from os.path import join, isfile
 import envoy
 import yaml
 from django.http import HttpResponse
-from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import PermissionDenied
@@ -57,7 +56,6 @@ from formulas.models import FormulaVersion
 from formulas.serializers import FormulaVersionSerializer
 from volumes.serializers import VolumeSerializer
 from . import filters, mixins, models, permissions, serializers, tasks, utils, validators, workflows
-
 
 logger = logging.getLogger(__name__)
 

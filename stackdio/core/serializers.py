@@ -15,39 +15,10 @@
 # limitations under the License.
 #
 
-
-from django.contrib.auth import get_user_model
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
-from .models import UserSettings
-from . import fields
-
-
-class UserSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = get_user_model()
-        lookup_field = 'username'
-        fields = (
-            'url',
-            'username',
-            'first_name',
-            'last_name',
-            'email',
-            'last_login'
-        )
-
-
-class UserSettingsSerializer(serializers.HyperlinkedModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    class Meta:
-        model = UserSettings
-        lookup_field = 'username'
-        fields = (
-            'user',
-            'public_key',
-        )
+from users import fields
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):

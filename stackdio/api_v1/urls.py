@@ -110,6 +110,7 @@ urlpatterns = patterns(
     ##
     # IMPORTS URLS FROM ALL APPS
     ##
+    url(r'^', include('users.urls')),
     url(r'^', include('core.urls')),
     url(r'^', include('cloud.urls')),
     url(r'^', include('stacks.urls')),
