@@ -140,8 +140,22 @@ class ChangePasswordSerializer(serializers.Serializer):
         return attrs
 
     def save(self, **kwargs):
+        """
+        Using create / update here doesn't really make sense, so we'll just
+        override save() directly\
+        """
+        assert hasattr(self, '_errors'), (
+            'You must call `.is_valid()` before calling `.save()`.'
+        )
+
+        assert not self.errors, (
+            'You cannot call `.save()` on a serializer with invalid data.'
+        )
+
         # change the password
         new_password = self.validated_data['new_password']
 
         self.instance.set_password(new_password)
         self.instance.save()
+
+        return self.instance
