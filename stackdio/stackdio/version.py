@@ -40,7 +40,7 @@ def get_version(version=None):
         else:
             sub = version[3] + str(version[4])
 
-    return '%s-%s' % (major, sub)
+    return '%s-%s' % (major, sub) if sub else major
 
 
 def get_major_version(version):
