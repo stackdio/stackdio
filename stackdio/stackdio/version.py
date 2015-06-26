@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-__version_info__ = (0, 7, 0, 'alpha', 0)
+__version_info__ = (0, 7, 0, 'dev', 0)
 
 
 def get_version(version=None):
@@ -35,18 +35,19 @@ def get_version(version=None):
     sub = ''
 
     if version[3] != 'final':
-        mapping = {'alpha': 'a', 'beta': 'b', 'rc': 'c'}
-        sub = mapping[version[3]] + str(version[4])
+        if version[3] == 'dev':
+            sub = 'dev'
+        else:
+            sub = version[3] + str(version[4])
 
-    return str(major + sub)
+    return '%s-%s' % (major, sub)
 
 
 def get_major_version(version):
     """
     Returns major version from VERSION.
     """
-    parts = 2 if version[2] == 0 else 3
-    major = '.'.join(str(x) for x in version[:parts])
+    major = '.'.join(str(x) for x in version[:3])
     return major
 
 
