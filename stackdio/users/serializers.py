@@ -116,6 +116,10 @@ class ChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField()
 
     def to_representation(self, instance):
+        """
+        We just want to return a serialized user object here, since we should never show
+        passwords in plain text
+        """
         return UserSerializer(instance, context=self.context).to_representation(instance)
 
     def validate(self, attrs):
