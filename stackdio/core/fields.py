@@ -17,6 +17,7 @@
 
 
 from django.db import models
+from rest_framework import relations
 
 
 class DeletingFileField(models.FileField):
@@ -45,3 +46,16 @@ class DeletingFileField(models.FileField):
         elif file:
             # Otherwise, just close the file, so it doesn't tie up resources.
             file.close()
+
+
+class HyperlinkedField(relations.HyperlinkedIdentityField):
+    """
+    Sometimes we want to have a link field that doesn't have a lookup_field.
+    This allows for that to happen.
+    """
+    def get_url(self, obj, view_name, request, format):
+        return self.reverse(view_name, request=request, format=format)
+
+    def get_object(self, view_name, view_args, view_kwargs):
+        raise relations.ObjectDoesNotExist('%s should never have an associated object.'
+                                           % self.__class__.__name__)

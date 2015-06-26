@@ -15,78 +15,49 @@
 # limitations under the License.
 #
 
-
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from rest_framework import generics, permissions, views
-from rest_framework.filters import DjangoFilterBackend
+from rest_framework import generics
 from rest_framework.response import Response
 
-from core.exceptions import BadRequest
-from . import models, serializers
+from . import serializers
 
 
 class UserListAPIView(generics.ListAPIView):
-    queryset = get_user_model().objects.exclude(username__in=('__stackdio__', 'AnonymousUser'))
-    serializer_class = serializers.UserSerializer
-    permission_classes = (permissions.IsAdminUser,)
-    filter_backends = (DjangoFilterBackend,)
+    queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
+    serializer_class = serializers.PublicUserSerializer
     lookup_field = 'username'
 
 
 class UserDetailAPIView(generics.RetrieveAPIView):
-    queryset = get_user_model().objects.exclude(username__in=('__stackdio__', 'AnonymousUser'))
-    serializer_class = serializers.UserSerializer
-    permission_classes = (permissions.IsAdminUser,)
-    filter_backends = (DjangoFilterBackend,)
+    queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
+    serializer_class = serializers.PublicUserSerializer
     lookup_field = 'username'
 
 
-class UserSettingsDetailAPIView(generics.RetrieveUpdateAPIView):
-    queryset = models.UserSettings.objects.all()
-    serializer_class = serializers.UserSettingsSerializer
-    permission_classes = (permissions.IsAuthenticated,)
+class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):
+    queryset = get_user_model().objects.all()
+    serializer_class = serializers.UserSerializer
 
     def get_object(self):
-        return self.request.user.settings
+        return self.request.user
 
 
-class ChangePasswordAPIView(views.APIView):
+class ChangePasswordAPIView(generics.GenericAPIView):
     """
     API that handles changing your account password. Note that
-    only PUT requests are available on this endpoint. Below
+    only POST requests are available on this endpoint. Below
     are the required parameters of the JSON object you will PUT.
 
-    @curent_password: Your current password.
+    @current_password: Your current password.
     @new_password: Your new password you want to change to.
-    @confirm_password: Confirm your new password.
     """
-    permission_classes = (permissions.IsAuthenticated,)
 
-    def put(self, request, *args, **kwargs):
-        current_password = request.DATA.get('current_password')
-        new_password = request.DATA.get('new_password')
-        confirm_password = request.DATA.get('confirm_password')
+    serializer_class = serializers.ChangePasswordSerializer
 
-        errors = []
-        if not current_password:
-            errors.append('Current password field is required.')
-        if not new_password:
-            errors.append('New password field is required.')
-        if not confirm_password:
-            errors.append('New password confirmation field is required.')
-        if errors:
-            raise BadRequest(dict(errors=errors))
-
-        if not request.user.check_password(current_password):
-            errors.append('You entered an incorrect current password value.')
-        if new_password != confirm_password:
-            errors.append('Your new password and password confirmation fields '
-                          'do not match.')
-        if errors:
-            raise BadRequest(dict(errors=errors))
-
-        # change the password
-        request.user.set_password(new_password)
-        request.user.save()
-
-        return Response()
+    def post(self, request, *args, **kwargs):
+        instance = request.user
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

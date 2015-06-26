@@ -30,11 +30,11 @@ urlpatterns = patterns(
         api.UserDetailAPIView.as_view(),
         name='user-detail'),
 
-    url(r'^settings/$',
-        api.UserSettingsDetailAPIView.as_view(),
-        name='usersettings-detail'),
+    url(r'^user/$',
+        api.CurrentUserDetailAPIView.as_view(),
+        name='currentuser-detail'),
 
-    url(r'^settings/change_password/$',
+    url(r'^user/password/$',
         api.ChangePasswordAPIView.as_view(),
-        name='change_password'),
+        name='currentuser-password'),
 )

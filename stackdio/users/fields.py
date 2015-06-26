@@ -17,10 +17,10 @@
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from rest_framework.fields import Field
+from rest_framework import fields
 
 
-class UserField(Field):
+class UserField(fields.Field):
 
     def __init__(self, **kwargs):
         super(UserField, self).__init__(**kwargs)
@@ -32,7 +32,7 @@ class UserField(Field):
         return value.username
 
 
-class GroupField(Field):
+class GroupField(fields.Field):
 
     def __init__(self, **kwargs):
         super(GroupField, self).__init__(**kwargs)

@@ -37,17 +37,16 @@ class APIRootView(APIView):
 
     def get(self, request, format=None):
         api = OrderedDict((
-            ('core', {
-                'settings': reverse('usersettings-detail',
-                                    request=request,
-                                    format=format),
-                'change_password': reverse('change_password',
-                                           request=request,
-                                           format=format),
-                'version': reverse('version',
-                                   request=request,
-                                   format=format),
-            }),
+            ('version', reverse('version',
+                                request=request,
+                                format=format)),
+            ('users', reverse('user-list',
+                              request=request,
+                              format=format)),
+            ('current_user', reverse('currentuser-detail',
+                                     request=request,
+                                     format=format)),
+
             ('cloud', OrderedDict((
                 ('provider_types', reverse('cloudprovidertype-list',
                                            request=request,
@@ -94,18 +93,13 @@ class APIRootView(APIView):
                                format=format)),
         ))
 
-        if request.user.is_staff:
-            api['core']['users'] = reverse('user-list',
-                                           request=request,
-                                           format=format)
-
         return Response(api)
 
 
 urlpatterns = patterns(
     '',
 
-    url(r'^$', APIRootView.as_view()),
+    url(r'^$', APIRootView.as_view(), name='api-root'),
 
     ##
     # IMPORTS URLS FROM ALL APPS
