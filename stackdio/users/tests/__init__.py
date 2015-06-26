@@ -15,3 +15,5 @@
 # limitations under the License.
 #
 
+
+from users.tests.unit import *

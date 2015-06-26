@@ -29,6 +29,14 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
+LDAP_MANAGED_FIELDS = (
+    'username',
+    'first_name',
+    'last_name',
+    'email',
+)
+
+
 class PublicUserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = get_user_model()
@@ -51,13 +59,6 @@ class UserSettingsSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    LDAP_MANAGED_FIELDS = (
-        'username',
-        'first_name',
-        'last_name',
-        'email',
-    )
-
     superuser = serializers.BooleanField(source='is_superuser', read_only=True)
 
     settings = UserSettingsSerializer()
@@ -85,7 +86,7 @@ class UserSerializer(serializers.ModelSerializer):
             for attr, value in attrs.items():
                 current_value = getattr(self.instance, attr)
                 # Only deny the request if the field is LDAP managed AND is changed
-                if attr in self.LDAP_MANAGED_FIELDS and value != current_value:
+                if attr in LDAP_MANAGED_FIELDS and value != current_value:
                     errors[attr] = ['This in an LDAP managed field.']
 
             if errors:
@@ -142,7 +143,7 @@ class ChangePasswordSerializer(serializers.Serializer):
     def save(self, **kwargs):
         """
         Using create / update here doesn't really make sense, so we'll just
-        override save() directly\
+        override save() directly
         """
         assert hasattr(self, '_errors'), (
             'You must call `.is_valid()` before calling `.save()`.'

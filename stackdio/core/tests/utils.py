@@ -191,10 +191,10 @@ class StackdioTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         user_model = get_user_model()
-        user_model.objects.create_superuser('test.admin',
-                                            'test.admin@stackd.io', '1234')
-        user_model.objects.create_user('test.user',
-                                       'test.user@stackd.io', '1234')
+        user_model.objects.create_superuser('test.admin', 'test.admin@stackd.io', '1234',
+                                            first_name='Test', last_name='Admin')
+        user_model.objects.create_user('test.user', 'test.user@stackd.io', '1234',
+                                       first_name='Test', last_name='User')
 
         Group.objects.create(name='stackdio')
 

@@ -21,11 +21,10 @@ from django.http import Http404
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework.serializers import ValidationError
 
-from cloud.models import CloudProvider
 import core.serializers
+from cloud.models import CloudProvider
 from core.tests.utils import StackdioTestCase, group_has_perm
 from core import shortcuts, viewsets
-from users import serializers
 
 logger = logging.getLogger(__name__)
 
