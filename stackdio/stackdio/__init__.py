@@ -18,7 +18,7 @@
 from __future__ import absolute_import
 import sys
 
-from .version import __version__, __version_info__  # NOQA
+from .version import __version__
 
 # This will make sure the app is always imported when
 # Django starts so that shared_task will use this app.
