@@ -17,6 +17,7 @@
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from rest_framework import generics
 from rest_framework.response import Response
 
@@ -33,6 +34,18 @@ class UserDetailAPIView(generics.RetrieveAPIView):
     queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
     serializer_class = serializers.PublicUserSerializer
     lookup_field = 'username'
+
+
+class GroupListAPIView(generics.ListCreateAPIView):
+    queryset = Group.objects.all()
+    serializer_class = serializers.GroupSerializer
+    lookup_field = 'name'
+
+
+class GroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Group.objects.all()
+    serializer_class = serializers.GroupSerializer
+    lookup_field = 'name'
 
 
 class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):

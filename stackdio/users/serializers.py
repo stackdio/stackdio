@@ -20,6 +20,7 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from core import fields
@@ -47,6 +48,19 @@ class PublicUserSerializer(serializers.HyperlinkedModelSerializer):
             'first_name',
             'last_name',
             'email',
+        )
+
+
+class GroupSerializer(serializers.HyperlinkedModelSerializer):
+    users = PublicUserSerializer(source='user_set', many=True)
+
+    class Meta:
+        model = Group
+        lookup_field = 'name'
+        fields = (
+            'url',
+            'name',
+            'users',
         )
 
 

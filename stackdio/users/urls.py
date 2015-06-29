@@ -30,6 +30,14 @@ urlpatterns = patterns(
         api.UserDetailAPIView.as_view(),
         name='user-detail'),
 
+    url(r'^groups/$',
+        api.GroupListAPIView.as_view(),
+        name='group-list'),
+
+    url(r'^groups/(?P<name>[\w.@+-]+)/$',
+        api.GroupDetailAPIView.as_view(),
+        name='group-detail'),
+
     url(r'^user/$',
         api.CurrentUserDetailAPIView.as_view(),
         name='currentuser-detail'),
