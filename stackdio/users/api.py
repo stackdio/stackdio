@@ -21,7 +21,7 @@ from django.contrib.auth.models import Group
 from rest_framework import generics
 from rest_framework.response import Response
 
-from . import serializers
+from . import mixins, serializers
 
 
 class UserListAPIView(generics.ListAPIView):
@@ -46,6 +46,14 @@ class GroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Group.objects.all()
     serializer_class = serializers.GroupSerializer
     lookup_field = 'name'
+
+
+class GroupUserListAPIView(mixins.GroupRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = serializers.PublicUserSerializer
+    lookup_field = 'name'
+
+    def get_queryset(self):
+        return self.get_group().user_set.all()
 
 
 class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):
