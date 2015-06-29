@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-VERSION = (0, 7, 0, 'dev', 0)
+VERSION = (0, 7, 0, 'dev')
 
 
-def get_version(version=None):
+def get_version(version):
     """
     Returns a PEP 440-compliant version number from VERSION.
 
@@ -31,27 +31,24 @@ def get_version(version=None):
     #     | {a|b|rc}N - for alpha, beta and rc releases
     #     | .postN - for post-release releases
 
-    major = get_major_version(version)
+    # Build the first part of the version
+    major = '.'.join(str(x) for x in version[:3])
 
-    if len(VERSION) <= 3:
+    # Just return it if this isn't a pre- or post- release
+    if len(version) <= 3:
         return major
 
+    # Add the rest
+    sub = ''.join(str(x) for x in version[3:5])
+
     if version[3] in ('dev', 'post'):
-        sub = '.%s%i' % version[3:5]
+        # We need a dot for these
+        return '%s.%s' % (major, sub)
     elif version[3] in ('a', 'b', 'rc'):
-        sub = '%s%i' % version[3:5]
+        # No dot for these
+        return '%s%s' % (major, sub)
     else:
-        raise ValueError('Invalid VERSION: %s' % str(VERSION))
-
-    return str(major + sub)
-
-
-def get_major_version(version):
-    """
-    Returns major version from VERSION.
-    """
-    major = '.'.join(str(x) for x in version[:3])
-    return major
+        raise ValueError('Invalid version: %s' % str(version))
 
 
 __version__ = get_version(VERSION)
