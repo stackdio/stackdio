@@ -23,8 +23,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from core import fields
-from . import models
+from core.fields import HyperlinkedField
+from . import fields, models
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,22 @@ LDAP_MANAGED_FIELDS = (
 )
 
 
+class UserGroupSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Group
+        lookup_field = 'name'
+        fields = (
+            'url',
+            'name',
+        )
+
+
 class PublicUserSerializer(serializers.HyperlinkedModelSerializer):
+    groups = serializers.HyperlinkedIdentityField(
+        view_name='user-grouplist',
+        lookup_field='username'
+    )
+
     class Meta:
         model = get_user_model()
         lookup_field = 'username'
@@ -48,11 +63,23 @@ class PublicUserSerializer(serializers.HyperlinkedModelSerializer):
             'first_name',
             'last_name',
             'email',
+            'groups',
+        )
+
+
+class GroupUserSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = get_user_model()
+        lookup_field = 'username'
+        fields = (
+            'url',
+            'username',
         )
 
 
 class GroupSerializer(serializers.HyperlinkedModelSerializer):
-    users = PublicUserSerializer(source='user_set', many=True)
+    users = serializers.HyperlinkedIdentityField(view_name='group-userlist', lookup_field='name')
+    action = serializers.HyperlinkedIdentityField(view_name='group-action', lookup_field='name')
 
     class Meta:
         model = Group
@@ -61,8 +88,38 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer):
             'url',
             'name',
             'users',
+            'action',
         )
 
+
+class GroupActionReturnSerializer(GroupSerializer):
+    users = GroupUserSerializer(source='user_set', many=True)
+
+
+class GroupActionSerializer(serializers.Serializer):
+    available_actions = ('add-user', 'remove-user')
+
+    action = serializers.ChoiceField(available_actions)
+    user = fields.UserField()
+
+    def to_representation(self, instance):
+        """
+        We just want to return a serialized group object here - that way you can see immediately
+        what the new users in the group are
+        """
+        return GroupActionReturnSerializer(instance, context=self.context).to_representation(instance)
+
+    def save(self, **kwargs):
+        group = self.instance
+        action = self.validated_data['action']
+        user = self.validated_data['user']
+
+        if action == 'add-user':
+            group.user_set.add(user)
+        elif action == 'remove-user':
+            group.user_set.remove(user)
+
+        return group
 
 class UserSettingsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,7 +134,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     settings = UserSettingsSerializer()
 
-    change_password = fields.HyperlinkedField(view_name='currentuser-password')
+    change_password = HyperlinkedField(view_name='currentuser-password')
 
     class Meta:
         model = get_user_model()

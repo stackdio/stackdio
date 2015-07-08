@@ -17,7 +17,21 @@
 
 from rest_framework.generics import get_object_or_404
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+
+
+class UserRelatedMixin(object):
+
+    def get_user(self):
+        queryset = get_user_model().objects.all()
+
+        obj = get_object_or_404(queryset, username=self.kwargs.get('username'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissioned_object(self):
+        return self.get_user()
 
 
 class GroupRelatedMixin(object):
@@ -25,7 +39,7 @@ class GroupRelatedMixin(object):
     def get_group(self):
         queryset = Group.objects.all()
 
-        obj = get_object_or_404(queryset, id=self.kwargs.get('name'))
+        obj = get_object_or_404(queryset, name=self.kwargs.get('name'))
         self.check_object_permissions(self.request, obj)
         return obj
 

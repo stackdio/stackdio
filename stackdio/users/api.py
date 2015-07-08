@@ -36,6 +36,14 @@ class UserDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'username'
 
 
+class UserGroupListAPIView(mixins.UserRelatedMixin, generics.ListAPIView):
+    serializer_class = serializers.UserGroupSerializer
+    lookup_field = 'username'
+
+    def get_queryset(self):
+        return self.get_user().groups.all()
+
+
 class GroupListAPIView(generics.ListCreateAPIView):
     queryset = Group.objects.all()
     serializer_class = serializers.GroupSerializer
@@ -48,12 +56,30 @@ class GroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'name'
 
 
-class GroupUserListAPIView(mixins.GroupRelatedMixin, generics.ListCreateAPIView):
-    serializer_class = serializers.PublicUserSerializer
+class GroupUserListAPIView(mixins.GroupRelatedMixin, generics.ListAPIView):
+    serializer_class = serializers.GroupUserSerializer
     lookup_field = 'name'
 
     def get_queryset(self):
         return self.get_group().user_set.all()
+
+
+class GroupActionAPIView(mixins.GroupRelatedMixin, generics.GenericAPIView):
+    serializer_class = serializers.GroupActionSerializer
+
+    def get(self, request, *args, **kwargs):
+        ret = {
+            'available_actions': self.serializer_class.available_actions
+        }
+        return Response(ret)
+
+    def post(self, request, *args, **kwargs):
+        group = self.get_group()
+
+        serializer = self.get_serializer(group, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):
@@ -77,8 +103,8 @@ class ChangePasswordAPIView(generics.GenericAPIView):
     serializer_class = serializers.ChangePasswordSerializer
 
     def post(self, request, *args, **kwargs):
-        instance = request.user
-        serializer = self.get_serializer(instance, data=request.data)
+        user = request.user
+        serializer = self.get_serializer(user, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)

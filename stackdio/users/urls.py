@@ -30,6 +30,10 @@ urlpatterns = patterns(
         api.UserDetailAPIView.as_view(),
         name='user-detail'),
 
+    url(r'^users/(?P<username>[\w.@+-]+)/groups/$',
+        api.UserGroupListAPIView.as_view(),
+        name='user-grouplist'),
+
     url(r'^groups/$',
         api.GroupListAPIView.as_view(),
         name='group-list'),
@@ -37,6 +41,14 @@ urlpatterns = patterns(
     url(r'^groups/(?P<name>[\w.@+-]+)/$',
         api.GroupDetailAPIView.as_view(),
         name='group-detail'),
+
+    url(r'^groups/(?P<name>[\w.@+-]+)/users/$',
+        api.GroupUserListAPIView.as_view(),
+        name='group-userlist'),
+
+    url(r'^groups/(?P<name>[\w.@+-]+)/action/$',
+        api.GroupActionAPIView.as_view(),
+        name='group-action'),
 
     url(r'^user/$',
         api.CurrentUserDetailAPIView.as_view(),
