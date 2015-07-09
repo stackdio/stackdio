@@ -27,6 +27,7 @@ class UserSettings(models.Model):
 
     class Meta:
         verbose_name_plural = 'User settings'
+        default_permissions = ()
 
     # which user the settings below
     user = models.OneToOneField(settings.AUTH_USER_MODEL,
