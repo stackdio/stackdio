@@ -21,10 +21,11 @@ def create_group_perms(apps, schema_editor):
         )
 
 def remove_group_perms(apps, schema_editor):
+    Group = apps.get_model('auth', 'Group')
     Permission = apps.get_model('auth', 'Permission')
     ContentType = apps.get_model('contenttypes', 'ContentType')
 
-    content_type = ContentType.objects.get(app_label='auth', model='group')
+    content_type = ContentType.objects.get_for_model(Group)
 
     for perm in group_add_perms:
         Permission.objects.get(
