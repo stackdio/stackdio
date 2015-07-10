@@ -15,8 +15,12 @@
 # limitations under the License.
 #
 
+import logging
+
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):
