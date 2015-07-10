@@ -26,7 +26,7 @@ class StackdioModelPermissionsSerializer(serializers.Serializer):
     def validate(self, attrs):
         view = self.context['view']
 
-        available_perms = view.model_cls.model_permissions
+        available_perms = view.get_model_permissions()
         bad_perms = []
 
         for perm in attrs['permissions']:
@@ -101,7 +101,7 @@ class StackdioObjectPermissionsSerializer(serializers.Serializer):
     def validate(self, attrs):
         view = self.context['view']
 
-        available_perms = view.get_permissioned_object().object_permissions
+        available_perms = view.get_object_permissions()
         bad_perms = []
 
         for perm in attrs['permissions']:

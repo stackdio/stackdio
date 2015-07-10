@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import logging
+
 from django.db import migrations
 
+logger = logging.getLogger(__name__)
 
-group_add_perms = ('view', 'admin')
+
+group_add_perms = ('admin', 'create', 'update')
 
 def create_group_perms(apps, schema_editor):
     Group = apps.get_model('auth', 'Group')
@@ -28,10 +32,14 @@ def remove_group_perms(apps, schema_editor):
     content_type = ContentType.objects.get_for_model(Group)
 
     for perm in group_add_perms:
-        Permission.objects.get(
-            codename='%s_group' % perm,
-            content_type=content_type,
-        ).delete()
+        try:
+            p = Permission.objects.get(
+                codename='%s_group' % perm,
+                content_type=content_type,
+            )
+            p.delete()
+        except Permission.DoesNotExist:
+            logger.debug('Not deleting permission `%s_group`, it did not exist' % perm)
 
 
 class Migration(migrations.Migration):
@@ -39,6 +47,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('users', '0001_initial'),
         ('auth', '__latest__'),
+        ('contenttypes', '__latest__'),
     ]
 
     operations = [

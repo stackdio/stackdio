@@ -87,10 +87,15 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
         )
         return self.model_cls
 
+    def get_model_permissions(self):
+        return getattr(self.get_model_cls(),
+                       'model_permissions',
+                       getattr(self, 'model_permissions', ()))
+
     def get_queryset(self):
         model_cls = self.get_model_cls()
         model_name = model_cls._meta.model_name
-        model_perms = model_cls.model_permissions
+        model_perms = self.get_model_permissions()
 
         # Grab the perms for either the users or groups
         perm_map = self.switch_user_group(
@@ -111,7 +116,7 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
     def list(self, request, *args, **kwargs):
         response = super(StackdioModelPermissionsViewSet, self).list(request, *args, **kwargs)
         # add available permissions to the response
-        response.data['available_permissions'] = sorted(self.model_cls.model_permissions)
+        response.data['available_permissions'] = sorted(self.get_model_permissions())
 
         return response
 
@@ -148,10 +153,15 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
     def get_permissioned_object(self):
         raise NotImplementedError('`get_permissioned_object()` must be implemented.')
 
+    def get_object_permissions(self):
+        return getattr(self.get_permissioned_object(),
+                       'object_permissions',
+                       getattr(self, 'object_permissions', ()))
+
     def get_queryset(self):
         obj = self.get_permissioned_object()
         model_name = obj._meta.model_name
-        object_perms = obj.object_permissions
+        object_perms = self.get_object_permissions()
 
         # Grab the perms for either the users or groups
         perm_map = self.switch_user_group(
@@ -172,8 +182,7 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
     def list(self, request, *args, **kwargs):
         response = super(StackdioObjectPermissionsViewSet, self).list(request, *args, **kwargs)
         # add available permissions to the response
-        obj = self.get_permissioned_object()
-        response.data['available_permissions'] = sorted(obj.object_permissions)
+        response.data['available_permissions'] = sorted(self.get_object_permissions())
 
         return response
 

@@ -16,8 +16,23 @@
 #
 
 
-from django.conf.urls import patterns, url
+from django.conf.urls import include, patterns, url
+from rest_framework import routers
+
 from . import api
+
+
+model_router = routers.SimpleRouter()
+model_router.register(r'users',
+                      api.GroupModelUserPermissionsViewSet,
+                      'group-model-user-permissions')
+
+
+object_router = routers.SimpleRouter()
+object_router.register(r'users',
+                       api.GroupObjectUserPermissionsViewSet,
+                       'group-object-user-permissions')
+
 
 urlpatterns = patterns(
     'users.api',
@@ -38,9 +53,15 @@ urlpatterns = patterns(
         api.GroupListAPIView.as_view(),
         name='group-list'),
 
+    url(r'^groups/permissions/',
+        include(model_router.urls)),
+
     url(r'^groups/(?P<name>[\w.@+-]+)/$',
         api.GroupDetailAPIView.as_view(),
         name='group-detail'),
+
+    url(r'^groups/(?P<name>[\w.@+-]+)/permissions/',
+        include(object_router.urls)),
 
     url(r'^groups/(?P<name>[\w.@+-]+)/users/$',
         api.GroupUserListAPIView.as_view(),

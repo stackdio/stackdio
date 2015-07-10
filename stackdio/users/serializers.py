@@ -80,6 +80,10 @@ class GroupUserSerializer(serializers.HyperlinkedModelSerializer):
 class GroupSerializer(serializers.HyperlinkedModelSerializer):
     users = serializers.HyperlinkedIdentityField(view_name='group-userlist', lookup_field='name')
     action = serializers.HyperlinkedIdentityField(view_name='group-action', lookup_field='name')
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='group-object-user-permissions-list',
+        lookup_field='name',
+    )
 
     class Meta:
         model = Group
@@ -89,6 +93,7 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer):
             'name',
             'users',
             'action',
+            'user_permissions',
         )
 
 

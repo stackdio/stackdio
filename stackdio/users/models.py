@@ -41,10 +41,13 @@ class UserSettings(models.Model):
 
 
 @receiver(models.signals.post_save, sender=settings.AUTH_USER_MODEL)
-def user_post_save(sender, instance, **kwargs):
+def user_post_save(sender, **kwargs):
     """
     Catch the post_save signal for all User objects and create a
     UserSettings objects if needed
     """
-    if 'created' in kwargs and kwargs['created'] is True:
-        UserSettings.objects.create(user=instance)
+    user = kwargs.pop('instance')
+    created = kwargs.pop('created', False)
+
+    if created and user.id != settings.ANONYMOUS_USER_ID:
+        UserSettings.objects.create(user=user)

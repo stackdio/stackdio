@@ -19,9 +19,15 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework import generics
+from rest_framework.permissions import DjangoModelPermissions, DjangoObjectPermissions
 from rest_framework.response import Response
 
-from . import mixins, serializers
+from core.serializers import (
+    StackdioUserModelPermissionsSerializer,
+    StackdioUserObjectPermissionsSerializer,
+)
+from core.viewsets import StackdioModelUserPermissionsViewSet, StackdioObjectUserPermissionsViewSet
+from . import mixins, permissions, serializers
 
 
 class UserListAPIView(generics.ListAPIView):
@@ -47,12 +53,14 @@ class UserGroupListAPIView(mixins.UserRelatedMixin, generics.ListAPIView):
 class GroupListAPIView(generics.ListCreateAPIView):
     queryset = Group.objects.all()
     serializer_class = serializers.GroupSerializer
+    permission_classes = (DjangoModelPermissions,)
     lookup_field = 'name'
 
 
 class GroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Group.objects.all()
     serializer_class = serializers.GroupSerializer
+    permission_classes = (DjangoObjectPermissions,)
     lookup_field = 'name'
 
 
@@ -80,6 +88,21 @@ class GroupActionAPIView(mixins.GroupRelatedMixin, generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class GroupModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    serializer_class = StackdioUserModelPermissionsSerializer
+    permission_classes = (permissions.GroupPermissionsModelPermissions,)
+    model_permissions = ('create', 'admin')
+    model_cls = Group
+
+
+class GroupObjectUserPermissionsViewSet(mixins.GroupRelatedMixin,
+                                        StackdioObjectUserPermissionsViewSet):
+    serializer_class = StackdioUserObjectPermissionsSerializer
+    permission_classes = (permissions.GroupPermissionsObjectPermissions,)
+    object_permissions = ('update', 'delete', 'admin')
+
 
 
 class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):

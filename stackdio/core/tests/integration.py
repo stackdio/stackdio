@@ -39,6 +39,7 @@ class AuthenticationTestCase(StackdioTestCase):
         'providers',
         'profiles',
         'snapshots',
+        'groups',
     )
 
     PERMISSIONS_ENDPOINTS = (
