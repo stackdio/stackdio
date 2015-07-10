@@ -34,10 +34,8 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
     def get_serializer(self, user_or_group):
         if user_or_group == 'user':
             view = viewsets.StackdioModelUserPermissionsViewSet()
-            view.serializer_class = core.serializers.StackdioUserModelPermissionsSerializer
         elif user_or_group == 'group':
             view = viewsets.StackdioModelGroupPermissionsViewSet()
-            view.serializer_class = core.serializers.StackdioGroupModelPermissionsSerializer
         else:
             view = None
         view.model_cls = CloudProvider
@@ -202,10 +200,8 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
     def get_serializer(self, user_or_group):
         if user_or_group == 'user':
             view = viewsets.StackdioObjectUserPermissionsViewSet()
-            view.serializer_class = core.serializers.StackdioUserObjectPermissionsSerializer
         elif user_or_group == 'group':
             view = viewsets.StackdioObjectGroupPermissionsViewSet()
-            view.serializer_class = core.serializers.StackdioGroupObjectPermissionsSerializer
         else:
             view = None
         view.get_permissioned_object = lambda: self.provider
@@ -610,10 +606,8 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
     def get_viewset(self, user_or_group):
         if user_or_group == 'user':
             view = viewsets.StackdioModelUserPermissionsViewSet()
-            view.serializer_class = core.serializers.StackdioUserModelPermissionsSerializer
         elif user_or_group == 'group':
             view = viewsets.StackdioModelGroupPermissionsViewSet()
-            view.serializer_class = core.serializers.StackdioGroupModelPermissionsSerializer
         else:
             view = None
         view.model_cls = CloudProvider
@@ -682,10 +676,8 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
     def get_viewset(self, user_or_group):
         if user_or_group == 'user':
             view = viewsets.StackdioObjectUserPermissionsViewSet()
-            view.serializer_class = core.serializers.StackdioUserObjectPermissionsSerializer
         elif user_or_group == 'group':
             view = viewsets.StackdioObjectGroupPermissionsViewSet()
-            view.serializer_class = core.serializers.StackdioGroupObjectPermissionsSerializer
         else:
             view = None
         view.get_permissioned_object = lambda: self.provider

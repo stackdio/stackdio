@@ -26,12 +26,18 @@ model_router = routers.SimpleRouter()
 model_router.register(r'users',
                       api.GroupModelUserPermissionsViewSet,
                       'group-model-user-permissions')
+model_router.register(r'groups',
+                      api.GroupModelGroupPermissionsViewSet,
+                      'group-model-group-permissions')
 
 
 object_router = routers.SimpleRouter()
 object_router.register(r'users',
                        api.GroupObjectUserPermissionsViewSet,
                        'group-object-user-permissions')
+object_router.register(r'groups',
+                       api.GroupObjectGroupPermissionsViewSet,
+                       'group-object-group-permissions')
 
 
 urlpatterns = patterns(

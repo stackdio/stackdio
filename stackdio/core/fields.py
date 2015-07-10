@@ -15,9 +15,12 @@
 # limitations under the License.
 #
 
+import logging
 
 from django.db import models
 from rest_framework import relations
+
+logger = logging.getLogger(__name__)
 
 
 class DeletingFileField(models.FileField):
@@ -59,3 +62,53 @@ class HyperlinkedField(relations.HyperlinkedIdentityField):
     def get_object(self, view_name, view_args, view_kwargs):
         raise relations.ObjectDoesNotExist('%s should never have an associated object.'
                                            % self.__class__.__name__)
+
+
+class HyperlinkedPermissionsField(relations.HyperlinkedIdentityField):
+
+    def __init__(self, view_name, permission_lookup_field, **kwargs):
+        assert permission_lookup_field is not None, (
+            'The `permission_lookup_field` argument is required.'
+        )
+        self.permission_lookup_field = permission_lookup_field
+        self.permission_lookup_url_kwarg = kwargs.pop('permission_lookup_url_kwarg',
+                                                      self.permission_lookup_field)
+        super(HyperlinkedPermissionsField, self).__init__(view_name, **kwargs)
+
+    def get_object(self, view_name, view_args, view_kwargs):
+        raise relations.ObjectDoesNotExist('%s is a read only field, so the object isn\'t needed.'
+                                           % self.__class__.__name__)
+
+class HyperlinkedModelPermissionsField(HyperlinkedPermissionsField):
+
+    def get_url(self, obj, view_name, request, format):
+        # This is a little hack-y.  Not sure if I like it.
+        permission_lookup_obj = obj.get('user') or obj.get('group')
+        permission_lookup_value = getattr(permission_lookup_obj, self.permission_lookup_field)
+
+        kwargs = {
+            self.permission_lookup_url_kwarg: permission_lookup_value,
+        }
+
+        return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+
+class HyperlinkedObjectPermissionsField(HyperlinkedPermissionsField):
+
+    def get_url(self, obj, view_name, request, format):
+
+        lookup_value = getattr(self.get_parent_object(), self.lookup_field)
+        # This is a little hack-y.  Not sure if I like it.
+        permission_lookup_obj = obj.get('user') or obj.get('group')
+        permission_lookup_value = getattr(permission_lookup_obj, self.permission_lookup_field)
+
+        kwargs = {
+            self.lookup_url_kwarg: lookup_value,
+            self.permission_lookup_url_kwarg: permission_lookup_value,
+        }
+
+        return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+    def get_parent_object(self):
+        view = self.context['view']
+        return view.get_permissioned_object()

@@ -18,8 +18,6 @@
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
-from users import fields
-
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):
 
@@ -86,16 +84,6 @@ class StackdioModelPermissionsSerializer(serializers.Serializer):
         return self.create(validated_data)
 
 
-class StackdioUserModelPermissionsSerializer(StackdioModelPermissionsSerializer):
-    user = fields.UserField()
-    permissions = serializers.ListField()
-
-
-class StackdioGroupModelPermissionsSerializer(StackdioModelPermissionsSerializer):
-    group = fields.GroupField()
-    permissions = serializers.ListField()
-
-
 class StackdioObjectPermissionsSerializer(serializers.Serializer):
 
     def validate(self, attrs):
@@ -158,13 +146,3 @@ class StackdioObjectPermissionsSerializer(serializers.Serializer):
 
         # We now want to do the same thing as create
         return self.create(validated_data)
-
-
-class StackdioUserObjectPermissionsSerializer(StackdioObjectPermissionsSerializer):
-    user = fields.UserField()
-    permissions = serializers.ListField()
-
-
-class StackdioGroupObjectPermissionsSerializer(StackdioObjectPermissionsSerializer):
-    group = fields.GroupField()
-    permissions = serializers.ListField()
