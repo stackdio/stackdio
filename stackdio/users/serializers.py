@@ -24,7 +24,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from core.fields import HyperlinkedField
-from . import fields, models
+from . import models
 
 
 logger = logging.getLogger(__name__)
@@ -110,7 +110,8 @@ class GroupActionSerializer(serializers.Serializer):
     available_actions = ('add-user', 'remove-user')
 
     action = serializers.ChoiceField(available_actions)
-    user = fields.UserField()
+    user = serializers.SlugRelatedField(slug_field='username',
+                                        queryset=get_user_model().objects.all())
 
     def to_representation(self, instance):
         """

@@ -17,12 +17,13 @@
 
 import logging
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.http import Http404
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms, remove_perm
 from rest_framework import viewsets
-from rest_framework.serializers import ListField
+from rest_framework.serializers import ListField, SlugRelatedField
 
-from users.fields import UserField, GroupField
 from core.shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 from . import fields, serializers
 
@@ -75,12 +76,12 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
 
         # Create a class
         class StackdioUserPermissionsSerializer(super_cls):
-            user = UserField()
+            user = SlugRelatedField(slug_field='username', queryset=get_user_model().objects.all())
             url = url_field
             permissions = ListField()
 
         class StackdioGroupPermissionsSerializer(super_cls):
-            group = GroupField()
+            group = SlugRelatedField(slug_field='name', queryset=Group.objects.all())
             url = url_field
             permissions = ListField()
 

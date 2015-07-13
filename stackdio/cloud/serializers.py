@@ -79,8 +79,10 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
     # Foreign Key Relations
-    provider_type = serializers.RelatedField(queryset=models.CloudProviderType.objects.all())
-    region = serializers.RelatedField(queryset=models.CloudRegion.objects.all())
+    provider_type = serializers.SlugRelatedField(slug_field='type_name',
+                                                 queryset=models.CloudProvider.objects.all())
+    region = serializers.SlugRelatedField(slug_field='title',
+                                          queryset=models.CloudRegion.objects.all())
 
     # Hyperlinks
     security_groups = serializers.HyperlinkedIdentityField(
@@ -101,16 +103,14 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
     class Meta:
         model = models.CloudProvider
         fields = (
-            'id',
             'url',
             'title',
             'slug',
             'description',
             'provider_type',
-            'provider_type_name',
+            'region',
             'account_id',
             'vpc_id',
-            'region',
             'security_groups',
             'vpc_subnets',
             'user_permissions',
