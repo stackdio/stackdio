@@ -84,38 +84,38 @@ urlpatterns = patterns(
         api.CloudProviderTypeListAPIView.as_view(),
         name='cloudprovidertype-list'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/$',
         api.CloudProviderTypeDetailAPIView.as_view(),
         name='cloudprovidertype-detail'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/permissions/',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/permissions/',
         include(providertype_object_router.urls)),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/instance_sizes/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/instance_sizes/$',
         api.CloudInstanceSizeListAPIView.as_view(),
         name='cloudinstancesize-list'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
         api.CloudInstanceSizeDetailAPIView.as_view(),
         name='cloudinstancesize-detail'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/regions/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/$',
         api.CloudRegionListAPIView.as_view(),
         name='cloudregion-list'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/regions/(?P<title>[\w.@+-]+)/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/$',
         api.CloudRegionDetailAPIView.as_view(),
         name='cloudregion-detail'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
         api.CloudRegionZoneListAPIView.as_view(),
         name='cloudregion-zones'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/zones/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/zones/$',
         api.CloudZoneListAPIView.as_view(),
         name='cloudzone-list'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/zones/(?P<title>[\w.@+-]+)/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/zones/(?P<title>[\w.@+-]+)/$',
         api.CloudZoneDetailAPIView.as_view(),
         name='cloudzone-detail'),
 

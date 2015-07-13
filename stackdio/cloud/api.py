@@ -45,22 +45,26 @@ class CloudProviderTypeListAPIView(generics.ListAPIView):
     serializer_class = serializers.CloudProviderTypeSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    lookup_field = 'type_name'
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
     permission_classes = (StackdioObjectPermissions,)
+    lookup_field = 'type_name'
 
 
 class CloudProviderTypeObjectUserPermissionsViewSet(mixins.CloudProviderTypeRelatedMixin,
                                                     StackdioObjectUserPermissionsViewSet):
     permission_classes = (permissions.CloudProviderTypePermissionsObjectPermissions,)
+    parent_lookup_field = 'type_name'
 
 
 class CloudProviderTypeObjectGroupPermissionsViewSet(mixins.CloudProviderTypeRelatedMixin,
                                                      StackdioObjectGroupPermissionsViewSet):
     permission_classes = (permissions.CloudProviderTypePermissionsObjectPermissions,)
+    parent_lookup_field = 'type_name'
 
 
 class CloudProviderListAPIView(generics.ListCreateAPIView):
@@ -332,6 +336,8 @@ class CloudInstanceSizeListAPIView(mixins.CloudProviderTypeRelatedMixin, generic
     lookup_field = 'instance_id'
 
     def get_queryset(self):
+        logger.debug(self.get_cloudprovidertype())
+
         return models.CloudInstanceSize.objects.filter(provider_type=self.get_cloudprovidertype())
 
 

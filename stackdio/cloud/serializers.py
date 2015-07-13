@@ -50,16 +50,20 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
     title = serializers.ReadOnlyField(source='get_type_name_display')
 
     # Links
-    instance_sizes = serializers.HyperlinkedIdentityField(view_name='cloudinstancesize-list')
-    regions = serializers.HyperlinkedIdentityField(view_name='cloudregion-list')
-    zones = serializers.HyperlinkedIdentityField(view_name='cloudzone-list')
+    instance_sizes = serializers.HyperlinkedIdentityField(view_name='cloudinstancesize-list',
+                                                          lookup_field='type_name')
+    regions = serializers.HyperlinkedIdentityField(view_name='cloudregion-list',
+                                                   lookup_field='type_name')
+    zones = serializers.HyperlinkedIdentityField(view_name='cloudzone-list',
+                                                 lookup_field='type_name')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovidertype-object-user-permissions-list')
+        view_name='cloudprovidertype-object-user-permissions-list', lookup_field='type_name')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovidertype-object-group-permissions-list')
+        view_name='cloudprovidertype-object-group-permissions-list', lookup_field='type_name')
 
     class Meta:
         model = models.CloudProviderType
+        lookup_field = 'type_name'
         fields = (
             'url',
             'title',
@@ -74,14 +78,9 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
 
 class CloudProviderSerializer(SuperuserFieldsMixin,
                               serializers.HyperlinkedModelSerializer):
-    # Read only fields
-    provider_type_name = serializers.ReadOnlyField(source='provider_type.type_name')
-
     # Foreign Key Relations
-    provider_type = serializers.PrimaryKeyRelatedField(
-        queryset=models.CloudProviderType.objects.all())
-    region = serializers.PrimaryKeyRelatedField(
-        queryset=models.CloudRegion.objects.all())
+    provider_type = serializers.RelatedField(queryset=models.CloudProviderType.objects.all())
+    region = serializers.RelatedField(queryset=models.CloudRegion.objects.all())
 
     # Hyperlinks
     security_groups = serializers.HyperlinkedIdentityField(
@@ -349,8 +348,11 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
     url = HyperlinkedParentField(
         view_name='cloudinstancesize-detail',
         parent_relation_field='provider_type',
+        parent_lookup_field='type_name',
         lookup_field='instance_id',
     )
+
+    provider_type = serializers.CharField(source='provider_type.type_name')
 
     class Meta:
         model = models.CloudInstanceSize
@@ -368,6 +370,7 @@ class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
     url = HyperlinkedParentField(
         view_name='cloudregion-detail',
         parent_relation_field='provider_type',
+        parent_lookup_field='type_name',
         lookup_field='title',
     )
 
@@ -375,6 +378,7 @@ class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
     zones = serializers.StringRelatedField(many=True, read_only=True)
     zones_url = HyperlinkedParentField(
         view_name='cloudregion-zones',
+        parent_lookup_field='type_name',
         parent_relation_field='provider_type',
         lookup_field='title',
     )
@@ -394,6 +398,7 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
     url = HyperlinkedParentField(
         view_name='cloudzone-detail',
         parent_relation_field='region.provider_type',
+        parent_lookup_field='type_name',
         lookup_field='title',
     )
 
@@ -429,8 +434,7 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
     # SecurityGroup object
     provider_id = serializers.ReadOnlyField(source='cloud_provider.id')
 
-    rules_url = serializers.HyperlinkedIdentityField(
-        view_name='securitygroup-rules')
+    rules_url = serializers.HyperlinkedIdentityField(view_name='securitygroup-rules')
 
     class Meta:
         model = models.SecurityGroup
