@@ -41,6 +41,8 @@ def filter_actions(user, stack, actions):
         the_action = action
         if action == 'custom':
             the_action = 'execute'
+        elif action == 'propagate-ssh':
+            the_action = 'admin'
         if user.has_perm('stacks.{0}_stack'.format(the_action.lower()), stack):
             ret.append(action)
 

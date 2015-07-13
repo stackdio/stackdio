@@ -24,6 +24,7 @@ import socket
 
 import envoy
 import yaml
+import model_utils.models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models, transaction
@@ -33,13 +34,12 @@ from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
-import model_utils.models
+from guardian.shortcuts import assign_perm, get_users_with_perms
 from model_utils import Choices
 
 from core.fields import DeletingFileField
 from core.utils import recursive_update
 from cloud.models import SecurityGroup
-from cloud.providers.base import BaseCloudProvider
 
 
 PROTOCOL_CHOICES = [
@@ -127,19 +127,24 @@ class StatusDetailModel(model_utils.models.StatusModel):
 class StackManager(models.Manager):
 
     @transaction.atomic
-    def create_stack(self, blueprint, **data):
+    def create_stack(self, create_user, blueprint, **data):
         """
         """
         title = data.get('title', '')
         description = data.get('description', '')
+        create_users = data['create_users']
 
         if not title:
             raise ValueError("Stack 'title' is a required field.")
 
         stack = self.model(blueprint=blueprint,
                            title=title,
-                           description=description)
+                           description=description,
+                           create_users=create_users)
         stack.save()
+
+        for perm in self.model.object_permissions:
+            assign_perm('stacks.%s_stack' % perm, create_user, stack)
 
         # add the namespace
         namespace = data.get('namespace', '').strip()
@@ -192,6 +197,7 @@ _stack_object_permissions = (
     'launch',
     'view',
     'update',
+    'ssh',
     'provision',
     'orchestrate',
     'execute',
@@ -258,6 +264,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
     namespace = models.CharField('Namespace', max_length=64, blank=True)
+
+    create_users = models.BooleanField('Create SSH Users')
 
     # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(
@@ -782,18 +790,38 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
     def _generate_pillar_file(self):
         from blueprints.models import BlueprintHostFormulaComponent
 
-        # pull the ssh_user property from the stackd.io config file and
-        # if the username value is $USERNAME, we'll substitute the stack
-        # owner's username instead
-        username = settings.STACKDIO_CONFIG.ssh_user
-        if username == '$USERNAME':
-            username = 'stackdio'
+        users = []
+        # pull the create_ssh_users property from the stackd.io config file.
+        # If it's False, we won't create ssh users on the box.
+        if self.create_users:
+            user_permissions_map = get_users_with_perms(
+                self, attach_perms=True, with_superusers=True, with_group_users=True
+            )
 
-        # TODO re-add public key
+            for user, perms in user_permissions_map.items():
+                if 'ssh_stack' in perms:
+                    if user.settings.public_key:
+                        logger.debug('Granting {0} ssh permission to stack: {1}'.format(
+                            user.username,
+                            self.title,
+                        ))
+                        users.append({
+                            'username': user.username,
+                            'public_key': user.settings.public_key,
+                            'id': user.id,
+                        })
+                    else:
+                        logger.debug(
+                            'User {0} has ssh permission for stack {1}, but has no public key.  '
+                            'Skipping.'.format(
+                                user.username,
+                                self.title,
+                            )
+                        )
+
         pillar_props = {
             '__stackdio__': {
-                'username': username,
-                'publickey': 'non_empty_for_now',
+                'users': users
             }
         }
 

@@ -18,11 +18,9 @@
 
 import logging
 import os
-from copy import deepcopy
 from datetime import datetime
 
 import salt.cloud
-
 from django.conf import settings
 from rest_framework import serializers
 
@@ -36,7 +34,6 @@ from cloud.models import SecurityGroup
 from core.exceptions import BadRequest
 from core.utils import recursive_update
 from . import models, workflows
-
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +128,22 @@ class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
+class StackCreateUserDefault(object):
+    """
+    Used to set the default value of create_users to be that of the blueprint
+    """
+    def __init__(self):
+        super(StackCreateUserDefault, self).__init__()
+        self._context = None
+
+    def __call__(self):
+        blueprint = Blueprint.objects.get(pk=self._context.initial_data['blueprint'])
+        return blueprint.create_users
+
+    def set_context(self, field):
+        self._context = field.parent
+
+
 class StackSerializer(serializers.HyperlinkedModelSerializer):
     # Read only fields
     host_count = serializers.ReadOnlyField(source='hosts.count')
@@ -180,6 +193,7 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'description',
             'status',
             'namespace',
+            'create_users',
             'host_count',
             'volume_count',
             'created',
@@ -198,6 +212,10 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'orchestration_errors',
             'provisioning_errors',
         )
+
+        extra_kwargs = {
+            'create_users': {'default': StackCreateUserDefault()}
+        }
 
     SECRET_FIELDS = (
         'auto_launch',
@@ -219,15 +237,13 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
     OPTIONAL_FIELDS = (
         'namespace',
         'max_retries',
+        'create_users',
     )
 
     VALID_FIELDS = SECRET_FIELDS + REQUIRED_FIELDS + OPTIONAL_FIELDS
 
     def validate(self, attrs):
         errors = {}
-
-        # Pull initial_data into the attrs
-        attrs = recursive_update(deepcopy(self.initial_data), attrs)
 
         for k in attrs:
             if k not in self.VALID_FIELDS:
@@ -268,8 +284,9 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         title = validated_data['title']
         description = validated_data['description']
         blueprint = validated_data['blueprint']
+        create_users = validated_data['create_users']
 
-        user = self._context['request'].user
+        user = self.context['request'].user
 
         if not user.has_perm('blueprints.view_blueprint', blueprint):
             raise serializers.ValidationError({
@@ -356,11 +373,13 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         # Everything is valid!  Let's create the stack in the database
         try:
             stack = models.Stack.objects.create_stack(
+                user,
                 blueprint,
                 title=title,
                 description=description,
                 namespace=namespace,
-                properties=properties
+                create_users=create_users,
+                properties=properties,
             )
         except Exception, e:
             raise BadRequest(str(e))

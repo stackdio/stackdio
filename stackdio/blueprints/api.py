@@ -27,7 +27,6 @@ from core.exceptions import BadRequest
 from core.permissions import (
     StackdioModelPermissions,
     StackdioObjectPermissions,
-    StackdioPermissionsModelPermissions,
 )
 from core.serializers import (
     StackdioUserModelPermissionsSerializer,

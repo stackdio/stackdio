@@ -177,7 +177,7 @@ def handle_error(stack_id, task_id):
 
 
 # TODO: Ignoring code complexity issues for now
-@shared_task(name='stacks.launch_hosts')  # NOQA
+@shared_task(name='stacks.launch_hosts')
 def launch_hosts(stack_id, parallel=True, max_retries=2,
                  simulate_launch_failures=False, simulate_zombies=False,
                  simulate_ssh_failures=False, failure_percent=0.3):
@@ -509,7 +509,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
 
 # TODO: Ignoring code complexity issues for now
-@shared_task(name='stacks.cure_zombies')  # NOQA
+@shared_task(name='stacks.cure_zombies')
 def cure_zombies(stack_id, max_retries=2):
     """
     Attempts to detect zombie hosts, or those hosts in the stack that are
@@ -590,7 +590,7 @@ def cure_zombies(stack_id, max_retries=2):
 
 
 # TODO: Ignoring code complexity issues for now
-@shared_task(name='stacks.update_metadata')  # NOQA
+@shared_task(name='stacks.update_metadata')
 def update_metadata(stack_id, host_ids=None, remove_absent=True):
     stack = None
     try:
@@ -816,7 +816,7 @@ def register_dns(stack_id, host_ids=None):
 
 
 # TODO: Ignoring code complexity issues for now
-@shared_task(name='stacks.ping')  # NOQA
+@shared_task(name='stacks.ping')
 def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
     """
     Attempts to use salt's test.ping module to ping the entire stack
@@ -986,7 +986,7 @@ def sync_all(stack_id):
 
 
 # TODO: Ignoring code complexity issues for now
-@shared_task(name='stacks.highstate')  # NOQA
+@shared_task(name='stacks.highstate')
 def highstate(stack_id, max_retries=2):
     """
     Executes the state.top function using the custom top file generated via
@@ -1054,20 +1054,19 @@ def highstate(stack_id, max_retries=2):
                     old_handler = handler
                     salt_logger.removeHandler(handler)
 
-            ret = salt_client.cmd_batch(
+            ret = salt_client.cmd_iter(
                 'stack_id:{0}'.format(stack_id),
                 'state.top',
                 [stack.top_file.name],
-                expr_form='grain',
-                batch=str(salt_client.opts['worker_threads'])
+                expr_form='grain'
             )
 
             result = {}
-            # cmd_batch returns a generator that blocks until jobs finish, so
+            # cmd_iter returns a generator that blocks until jobs finish, so
             # we want to loop through it until the jobs are done
             for i in ret:
                 for k, v in i.items():
-                    result[k] = v
+                    result[k] = v['ret']
 
             salt_logger.removeHandler(file_log_handler)
             if old_handler:
@@ -1146,6 +1145,158 @@ def highstate(stack_id, max_retries=2):
         raise
 
 
+@shared_task(name='stacks.propagate_ssh')
+def propagate_ssh(stack_id, max_retries=2):
+    """
+    Similar to stacks.highstate, except we only run `core.stackdio_users`
+    instead of `core.*`.  This is useful so that ssh keys can be added to
+    hosts without having to completely re run provisioning.
+    """
+    stack = None
+    try:
+        stack = Stack.objects.get(id=stack_id)
+        num_hosts = len(stack.get_hosts())
+        logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
+
+        # Set up logging for this task
+        root_dir = stack.get_root_directory()
+        log_dir = stack.get_log_directory()
+
+        # we'll break out of the loop based on the given number of retries
+        current_try, unrecoverable_error = 0, False
+        while True:
+            current_try += 1
+            logger.info('Task {0} try #{1} for stack {2!r}'.format(
+                propagate_ssh.name,
+                current_try,
+                stack))
+
+            # Update status
+            stack.set_status(propagate_ssh.name, Stack.PROVISIONING,
+                             'Propagating ssh try {0} of {1}. '
+                             'This may take a while.'.format(
+                                 current_try,
+                                 max_retries + 1))
+
+            now = datetime.now().strftime('%Y%m%d-%H%M%S')
+            log_file = os.path.join(log_dir,
+                                    '{0}.provisioning.log'.format(now))
+            err_file = os.path.join(log_dir,
+                                    '{0}.provisioning.err'.format(now))
+            log_symlink = os.path.join(root_dir, 'provisioning.log.latest')
+            err_symlink = os.path.join(root_dir, 'provisioning.err.latest')
+
+            # "touch" the log file and symlink it to the latest
+            for l in (log_file, err_file):
+                with open(l, 'w') as _:
+                    pass
+            symlink(log_file, log_symlink)
+            symlink(err_file, err_symlink)
+
+            file_log_handler = logging.FileHandler(log_file)
+            file_log_handler.setFormatter(salt_formatter)
+            salt_logger.addHandler(file_log_handler)
+
+            salt_client = salt.client.LocalClient(os.path.join(
+                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+
+            old_handler = None
+            for handler in salt_logger.handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    old_handler = handler
+                    salt_logger.removeHandler(handler)
+
+            ret = salt_client.cmd_iter(
+                'stack_id:{0}'.format(stack_id),
+                'state.sls',
+                ['core.stackdio_users'],
+                expr_form='grain'
+            )
+
+            result = {}
+            # cmd_iter returns a generator that blocks until jobs finish, so
+            # we want to loop through it until the jobs are done
+            for i in ret:
+                for k, v in i.items():
+                    result[k] = v['ret']
+
+            salt_logger.removeHandler(file_log_handler)
+            if old_handler:
+                salt_logger.addHandler(old_handler)
+
+            with open(log_file, 'a') as f:
+                f.write(yaml.safe_dump(result))
+
+            if len(result) != num_hosts:
+                logger.debug('salt did not propagate ssh keys to all hosts')
+                if current_try <= max_retries:
+                    continue
+                err_msg = 'Salt errored and did not propagate ssh keys to all hosts'
+                stack.set_status(propagate_ssh.name, Stack.ERROR,
+                                 err_msg, Level.ERROR)
+                raise StackTaskException('Error propagating ssh keys: '
+                                         '{0!r}'.format(err_msg))
+
+            else:
+                # each key in the dict is a host, and the value of the host
+                # is either a list or dict. Those that are lists we can
+                # assume to be a list of errors
+                errors = {}
+                for host, states in result.iteritems():
+                    if type(states) is list:
+                        errors[host] = states
+                        continue
+
+                    # iterate over the individual states in the host
+                    # looking for state failures
+                    for state_str, state_meta in states.iteritems():
+                        if not is_state_error(state_meta):
+                            continue
+
+                        if not is_requisite_error(state_meta):
+                            err, recoverable = state_error(state_str,
+                                                           state_meta)
+                            if not recoverable:
+                                unrecoverable_error = True
+                            errors.setdefault(host, []).append(err)
+
+                if errors:
+                    # write the errors to the err_file
+                    with open(err_file, 'a') as f:
+                        f.write(yaml.safe_dump(errors))
+
+                    if not unrecoverable_error and current_try <= max_retries:  # NOQA
+                        continue
+
+                    err_msg = 'SSH key propagation errors on hosts: ' \
+                              '{0}. Please see the provisioning errors API ' \
+                              'or the log file for more details: {1}'.format(
+                                  ', '.join(errors.keys()),
+                                  os.path.basename(log_file))
+                    stack.set_status(propagate_ssh.name,
+                                     Stack.ERROR,
+                                     err_msg,
+                                     Level.ERROR)
+                    raise StackTaskException(err_msg)
+
+                # Everything worked?
+                break
+
+        stack.set_status(propagate_ssh.name, Stack.FINISHED,
+                         'Finished propagating ssh keys to all hosts.')
+
+    except Stack.DoesNotExist:
+        err_msg = 'Unknown Stack with id {0}'.format(stack_id)
+        raise StackTaskException(err_msg)
+    except StackTaskException:
+        raise
+    except Exception, e:
+        err_msg = 'Unhandled exception: {0}'.format(str(e))
+        stack.set_status(propagate_ssh.name, Stack.ERROR, err_msg, Level.ERROR)
+        logger.exception(err_msg)
+        raise
+
+
 def change_pillar(stack_id, new_pillar_file):
     salt_client = salt.client.LocalClient(os.path.join(
         settings.STACKDIO_CONFIG.salt_config_root, 'master'))
@@ -1169,7 +1320,7 @@ def change_pillar(stack_id, new_pillar_file):
 
 
 # TODO: Ignoring code complexity issues
-@shared_task(name='stacks.global_orchestrate')  # NOQA
+@shared_task(name='stacks.global_orchestrate')
 def global_orchestrate(stack_id, max_retries=2):
     """
     Executes the runners.state.over function with the custom overstate
@@ -1336,7 +1487,7 @@ def global_orchestrate(stack_id, max_retries=2):
 
 
 # TODO: Ignoring code complexity issues
-@shared_task(name='stacks.orchestrate')  # NOQA
+@shared_task(name='stacks.orchestrate')
 def orchestrate(stack_id, max_retries=2):
     """
     Executes the runners.state.over function with the custom overstate
@@ -1573,7 +1724,7 @@ def register_volume_delete(stack_id, host_ids=None):
 
 
 # TODO: Ignoring code complexity issues for now
-@shared_task(name='stacks.destroy_hosts')  # NOQA
+@shared_task(name='stacks.destroy_hosts')
 def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                   delete_security_groups=True, parallel=True):
     """

@@ -88,8 +88,6 @@ class StackListAPIView(generics.ListCreateAPIView):
                              'before continuing.')
 
         stack = serializer.save()
-        for perm in models.Stack.object_permissions:
-            assign_perm('stacks.%s_stack' % perm, self.request.user, stack)
 
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -308,6 +306,15 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
                 ))
 
             return Response(ret)
+
+        elif action == BaseCloudProvider.ACTION_SSH:
+            # Re-generate the pillar file
+            stack._generate_pillar_file()
+
+            tasks.propagate_ssh.si(stack.id).apply_async()
+
+            serializer = self.get_serializer(stack)
+            return Response(serializer.data)
 
         # Keep track of the tasks we need to run for this execution
         task_list = []

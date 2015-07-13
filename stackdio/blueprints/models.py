@@ -65,8 +65,12 @@ class BlueprintManager(models.Manager):
         ##
         # validate incoming data
         ##
-        blueprint = self.model(title=data['title'],
-                               description=data['description'])
+        blueprint = self.model(
+            title=data['title'],
+            description=data['description'],
+            create_users=data['create_users'],
+        )
+
         blueprint.save()
 
         props_json = json.dumps(data.get('properties', {}), indent=4)
@@ -176,6 +180,8 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
                                         _blueprint_object_permissions))
 
     formula_versions = GenericRelation('formulas.FormulaVersion')
+
+    create_users = models.BooleanField('Create SSH Users')
 
     # storage for properties file
     props_file = DeletingFileField(

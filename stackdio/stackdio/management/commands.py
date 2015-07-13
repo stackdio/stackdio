@@ -303,18 +303,18 @@ class InitCommand(WizardCommand):
                           'must have access to it.'),
             'default': 'mysql://stackdio:password@localhost:3306/stackdio',
         }, {
-            'attr': 'ssh_user',
-            'short_desc': ('What SSH user should be created on stackd.io managed '
-                           'machines?'),
+            'attr': 'create_ssh_users',
+            'short_desc': 'Should stackd.io create ssh user accounts on launched stacks?',
             'long_desc': ('When machines are launched and provisioned with core '
-                          'functionality, stackd.io will create a user on the '
+                          'functionality, stackd.io will create users on the '
                           'machine and add the authenticated stackd.io user\'s '
                           'public RSA key so they may SSH in to their machines. '
-                          'This setting lets you control what the default '
-                          'username should be. Note that by default, this user '
-                          'is the actual username of the authenticated stackd.io '
-                          'user (signified by $USERNAME).'),
-            'default': '$USERNAME',
+                          'This setting allows you to turn this feature off in the '
+                          'case where you use some other external authentication '
+                          'system, such as IPA or Active Directory.\n'
+                          'NOTE: This is just a default value.  It can be overridden '
+                          'on a per-stack or per-blueprint basis.'),
+            'default': True,
         }]
 
     def pre_run(self):
