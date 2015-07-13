@@ -21,6 +21,14 @@ from rest_framework import routers
 
 from . import api
 
+providertype_object_router = routers.SimpleRouter()
+providertype_object_router.register(r'users',
+                                    api.CloudProviderTypeObjectUserPermissionsViewSet,
+                                    'cloudprovidertype-object-user-permissions')
+providertype_object_router.register(r'groups',
+                                    api.CloudProviderTypeObjectGroupPermissionsViewSet,
+                                    'cloudprovidertype-object-group-permissions')
+
 provider_model_router = routers.SimpleRouter()
 provider_model_router.register(r'users',
                                api.CloudProviderModelUserPermissionsViewSet,
@@ -79,6 +87,9 @@ urlpatterns = patterns(
     url(r'^provider_types/(?P<pk>[0-9]+)/$',
         api.CloudProviderTypeDetailAPIView.as_view(),
         name='cloudprovidertype-detail'),
+
+    url(r'^provider_types/(?P<pk>[0-9]+)/permissions/',
+        include(providertype_object_router.urls)),
 
     url(r'^provider_types/(?P<pk>[0-9]+)/instance_sizes/$',
         api.CloudInstanceSizeListAPIView.as_view(),

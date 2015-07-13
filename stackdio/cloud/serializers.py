@@ -53,17 +53,22 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
     instance_sizes = serializers.HyperlinkedIdentityField(view_name='cloudinstancesize-list')
     regions = serializers.HyperlinkedIdentityField(view_name='cloudregion-list')
     zones = serializers.HyperlinkedIdentityField(view_name='cloudzone-list')
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='cloudprovidertype-object-user-permissions-list')
+    group_permissions = serializers.HyperlinkedIdentityField(
+        view_name='cloudprovidertype-object-group-permissions-list')
 
     class Meta:
         model = models.CloudProviderType
         fields = (
-            'id',
             'url',
             'title',
             'type_name',
             'instance_sizes',
             'regions',
             'zones',
+            'user_permissions',
+            'group_permissions',
         )
 
 

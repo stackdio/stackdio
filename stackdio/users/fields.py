@@ -21,24 +21,37 @@ from rest_framework import fields
 
 
 class UserField(fields.Field):
+    default_error_messages = {
+        'invalid': '"{username}" is not a valid user.'
+    }
 
     def __init__(self, **kwargs):
         super(UserField, self).__init__(**kwargs)
 
     def to_internal_value(self, data):
-        return get_user_model().objects.get(username=data)
+        User = get_user_model()
+        try:
+            return User.objects.get(username=data)
+        except User.DoesNotExist:
+            self.fail('invalid', username=data)
 
     def to_representation(self, value):
         return value.username
 
 
 class GroupField(fields.Field):
+    default_error_messages = {
+        'invalid': '"{groupname}" is not a valid group.'
+    }
 
     def __init__(self, **kwargs):
         super(GroupField, self).__init__(**kwargs)
 
     def to_internal_value(self, data):
-        return Group.objects.get(name=data)
+        try:
+            return Group.objects.get(name=data)
+        except Group.DoesNotExist:
+            self.fail('invalid', groupname=data)
 
     def to_representation(self, value):
         return value.name

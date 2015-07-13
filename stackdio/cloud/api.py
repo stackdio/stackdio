@@ -43,13 +43,24 @@ logger = logging.getLogger(__name__)
 class CloudProviderTypeListAPIView(generics.ListAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
-    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
+    permission_classes = (StackdioModelPermissions,)
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
 
 
 class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
     queryset = models.CloudProviderType.objects.all()
     serializer_class = serializers.CloudProviderTypeSerializer
-    permission_classes = (permissions.StackdioReadOnlyModelPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
+
+
+class CloudProviderTypeObjectUserPermissionsViewSet(mixins.CloudProviderTypeRelatedMixin,
+                                                    StackdioObjectUserPermissionsViewSet):
+    permission_classes = (permissions.CloudProviderTypePermissionsObjectPermissions,)
+
+
+class CloudProviderTypeObjectGroupPermissionsViewSet(mixins.CloudProviderTypeRelatedMixin,
+                                                     StackdioObjectGroupPermissionsViewSet):
+    permission_classes = (permissions.CloudProviderTypePermissionsObjectPermissions,)
 
 
 class CloudProviderListAPIView(generics.ListCreateAPIView):

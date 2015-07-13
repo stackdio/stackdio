@@ -28,6 +28,10 @@ class CloudProviderTypeParentObjectPermissions(StackdioParentObjectPermissions):
     parent_model_cls = models.CloudProviderType
 
 
+class CloudProviderTypePermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
+    parent_model_cls = models.CloudProviderType
+
+
 class CloudProviderParentObjectPermissions(StackdioParentObjectPermissions):
     parent_model_cls = models.CloudProvider
 
