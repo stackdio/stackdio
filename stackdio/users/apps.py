@@ -35,7 +35,6 @@ def create_extra_group_permissions(app_config, verbosity=2, interactive=True, us
 
     django.contrib.auth.management:create_permissions
     """
-    logger.debug('post_migrate for users...')
 
     if not app_config.models_module:
         return
