@@ -110,8 +110,7 @@ class GroupActionSerializer(serializers.Serializer):
     available_actions = ('add-user', 'remove-user')
 
     action = serializers.ChoiceField(available_actions)
-    user = serializers.SlugRelatedField(slug_field='username',
-                                        queryset=get_user_model().objects.all())
+    user = serializers.SlugRelatedField(slug_field='username', queryset=models.get_user_queryset())
 
     def to_representation(self, instance):
         """

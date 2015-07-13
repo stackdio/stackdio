@@ -16,11 +16,17 @@
 #
 
 import logging
+
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.dispatch import receiver
 
 logger = logging.getLogger(__name__)
+
+
+def get_user_queryset():
+    return get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
 
 
 class UserSettings(models.Model):

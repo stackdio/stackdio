@@ -24,7 +24,8 @@ from guardian.shortcuts import get_groups_with_perms, get_users_with_perms, remo
 from rest_framework import viewsets
 from rest_framework.serializers import ListField, SlugRelatedField
 
-from core.shortcuts import get_groups_with_model_perms, get_users_with_model_perms
+from users.models import get_user_queryset
+from .shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 from . import fields, serializers
 
 logger = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
 
         # Create a class
         class StackdioUserPermissionsSerializer(super_cls):
-            user = SlugRelatedField(slug_field='username', queryset=get_user_model().objects.all())
+            user = SlugRelatedField(slug_field='username', queryset=get_user_queryset())
             url = url_field
             permissions = ListField()
 
