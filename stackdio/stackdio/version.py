@@ -15,39 +15,40 @@
 # limitations under the License.
 #
 
-__version_info__ = (0, 7, 0, 'alpha', 0)
+VERSION = (0, 7, 0, 'dev')
 
 
-def get_version(version=None):
+def get_version(version):
     """
-    Returns a PEP 386-compliant version number from VERSION.
+    Returns a PEP 440-compliant version number from VERSION.
 
     Created by modifying django.utils.version.get_version
     """
 
     # Now build the two parts of the version number:
     # major = X.Y[.Z]
-    # sub = .devN - for pre-alpha releases
-    #     | {a|b|c}N - for alpha, beta and rc releases
+    # sub = .devN - for development releases
+    #     | {a|b|rc}N - for alpha, beta and rc releases
+    #     | .postN - for post-release releases
 
-    major = get_major_version(version)
+    # Build the first part of the version
+    major = '.'.join(str(x) for x in version[:3])
 
-    sub = ''
+    # Just return it if this isn't a pre- or post- release
+    if len(version) <= 3:
+        return major
 
-    if version[3] != 'final':
-        mapping = {'alpha': 'a', 'beta': 'b', 'rc': 'c'}
-        sub = mapping[version[3]] + str(version[4])
+    # Add the rest
+    sub = ''.join(str(x) for x in version[3:5])
 
-    return str(major + sub)
-
-
-def get_major_version(version):
-    """
-    Returns major version from VERSION.
-    """
-    parts = 2 if version[2] == 0 else 3
-    major = '.'.join(str(x) for x in version[:parts])
-    return major
+    if version[3] in ('dev', 'post'):
+        # We need a dot for these
+        return '%s.%s' % (major, sub)
+    elif version[3] in ('a', 'b', 'rc'):
+        # No dot for these
+        return '%s%s' % (major, sub)
+    else:
+        raise ValueError('Invalid version: %s' % str(version))
 
 
-__version__ = get_version(__version_info__)
+__version__ = get_version(VERSION)

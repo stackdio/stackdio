@@ -27,7 +27,6 @@ from os.path import join, isfile
 import envoy
 import yaml
 from django.http import HttpResponse
-from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import PermissionDenied
@@ -41,12 +40,6 @@ from cloud.providers.base import BaseCloudProvider
 from core.exceptions import BadRequest
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from core.renderers import PlainTextRenderer
-from core.serializers import (
-    StackdioUserModelPermissionsSerializer,
-    StackdioGroupModelPermissionsSerializer,
-    StackdioUserObjectPermissionsSerializer,
-    StackdioGroupObjectPermissionsSerializer,
-)
 from core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -57,7 +50,6 @@ from formulas.models import FormulaVersion
 from formulas.serializers import FormulaVersionSerializer
 from volumes.serializers import VolumeSerializer
 from . import filters, mixins, models, permissions, serializers, tasks, utils, validators, workflows
-
 
 logger = logging.getLogger(__name__)
 
@@ -126,13 +118,11 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class StackModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    serializer_class = StackdioUserModelPermissionsSerializer
     permission_classes = (permissions.StackPermissionsModelPermissions,)
     model_cls = models.Stack
 
 
 class StackModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    serializer_class = StackdioGroupModelPermissionsSerializer
     permission_classes = (permissions.StackPermissionsModelPermissions,)
     model_cls = models.Stack
 
@@ -144,13 +134,11 @@ class StackPropertiesAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateAP
 
 class StackObjectUserPermissionsViewSet(mixins.StackRelatedMixin,
                                         StackdioObjectUserPermissionsViewSet):
-    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.StackPermissionsObjectPermissions,)
 
 
 class StackObjectGroupPermissionsViewSet(mixins.StackRelatedMixin,
                                          StackdioObjectGroupPermissionsViewSet):
-    serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.StackPermissionsObjectPermissions,)
 
 

@@ -26,18 +26,12 @@ from rest_framework.response import Response
 
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest
+from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
-)
-from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from core.serializers import (
-    StackdioUserModelPermissionsSerializer,
-    StackdioGroupModelPermissionsSerializer,
-    StackdioUserObjectPermissionsSerializer,
-    StackdioGroupObjectPermissionsSerializer,
 )
 from . import filters, mixins, models, permissions, serializers, tasks, utils
 
@@ -199,24 +193,20 @@ class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):
 
 
 class FormulaModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    serializer_class = StackdioUserModelPermissionsSerializer
     permission_classes = (permissions.FormulaPermissionsModelPermissions,)
     model_cls = models.Formula
 
 
 class FormulaModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    serializer_class = StackdioGroupModelPermissionsSerializer
     permission_classes = (permissions.FormulaPermissionsModelPermissions,)
     model_cls = models.Formula
 
 
 class FormulaObjectUserPermissionsViewSet(mixins.FormulaRelatedMixin,
                                           StackdioObjectUserPermissionsViewSet):
-    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
 
 
 class FormulaObjectGroupPermissionsViewSet(mixins.FormulaRelatedMixin,
                                            StackdioObjectGroupPermissionsViewSet):
-    serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.FormulaPermissionsObjectPermissions,)

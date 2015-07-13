@@ -20,12 +20,22 @@ from unittest.util import safe_repr
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.http import HttpRequest
 from django.test import TestCase
 from guardian.shortcuts import assign_perm, remove_perm, get_perms
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.test import APIClient
 
 logger = logging.getLogger(__name__)
+
+
+def get_fake_request():
+    django_request = HttpRequest()
+    django_request.META['SERVER_NAME'] = 'localhost.localdomain'
+    django_request.META['SERVER_PORT'] = 80
+
+    return Request(django_request)
 
 
 def group_has_perm(group, perm, obj=None):
@@ -191,10 +201,10 @@ class StackdioTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         user_model = get_user_model()
-        user_model.objects.create_superuser('test.admin',
-                                            'test.admin@stackd.io', '1234')
-        user_model.objects.create_user('test.user',
-                                       'test.user@stackd.io', '1234')
+        user_model.objects.create_superuser('test.admin', 'test.admin@stackd.io', '1234',
+                                            first_name='Test', last_name='Admin')
+        user_model.objects.create_user('test.user', 'test.user@stackd.io', '1234',
+                                       first_name='Test', last_name='User')
 
         Group.objects.create(name='stackdio')
 

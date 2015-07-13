@@ -35,6 +35,9 @@ logger = logging.getLogger(__name__)
 
 
 class FormulaVersion(models.Model):
+    class Meta:
+        default_permissions = ()
+
     content_type = models.ForeignKey('contenttypes.ContentType')
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()

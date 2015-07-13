@@ -26,12 +26,6 @@ from rest_framework.response import Response
 from blueprints.serializers import BlueprintSerializer
 from core.exceptions import BadRequest, ResourceConflict
 from core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from core.serializers import (
-    StackdioUserModelPermissionsSerializer,
-    StackdioGroupModelPermissionsSerializer,
-    StackdioUserObjectPermissionsSerializer,
-    StackdioGroupObjectPermissionsSerializer,
-)
 from core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -122,26 +116,22 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CloudProviderModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    serializer_class = StackdioUserModelPermissionsSerializer
     permission_classes = (permissions.CloudProviderPermissionsModelPermissions,)
     model_cls = models.CloudProvider
 
 
 class CloudProviderModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    serializer_class = StackdioGroupModelPermissionsSerializer
     permission_classes = (permissions.CloudProviderPermissionsModelPermissions,)
     model_cls = models.CloudProvider
 
 
 class CloudProviderObjectUserPermissionsViewSet(mixins.CloudProviderRelatedMixin,
                                                 StackdioObjectUserPermissionsViewSet):
-    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
 
 
 class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderRelatedMixin,
                                                  StackdioObjectGroupPermissionsViewSet):
-    serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
 
 
@@ -285,26 +275,22 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CloudProfileModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    serializer_class = StackdioUserModelPermissionsSerializer
     permission_classes = (permissions.CloudProfilePermissionsModelPermissions,)
     model_cls = models.CloudProfile
 
 
 class CloudProfileModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    serializer_class = StackdioGroupModelPermissionsSerializer
     permission_classes = (permissions.CloudProfilePermissionsModelPermissions,)
     model_cls = models.CloudProfile
 
 
 class CloudProfileObjectUserPermissionsViewSet(mixins.CloudProfileRelatedMixin,
                                                StackdioObjectUserPermissionsViewSet):
-    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.CloudProfilePermissionsObjectPermissions,)
 
 
 class CloudProfileObjectGroupPermissionsViewSet(mixins.CloudProfileRelatedMixin,
                                                 StackdioObjectGroupPermissionsViewSet):
-    serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.CloudProfilePermissionsObjectPermissions,)
 
 
@@ -322,26 +308,22 @@ class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SnapshotModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    serializer_class = StackdioUserModelPermissionsSerializer
     permission_classes = (permissions.SnapshotPermissionsModelPermissions,)
     model_cls = models.Snapshot
 
 
 class SnapshotModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    serializer_class = StackdioGroupModelPermissionsSerializer
     permission_classes = (permissions.SnapshotPermissionsModelPermissions,)
     model_cls = models.Snapshot
 
 
 class SnapshotObjectUserPermissionsViewSet(mixins.SnapshotRelatedMixin,
                                            StackdioObjectUserPermissionsViewSet):
-    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.SnapshotPermissionsObjectPermissions,)
 
 
 class SnapshotObjectGroupPermissionsViewSet(mixins.SnapshotRelatedMixin,
                                             StackdioObjectGroupPermissionsViewSet):
-    serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.SnapshotPermissionsObjectPermissions,)
 
 

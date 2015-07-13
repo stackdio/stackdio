@@ -90,6 +90,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'guardian',
     'core',
+    'users',
     'cloud',
     'stacks',
     'volumes',
@@ -198,11 +199,6 @@ MEDIA_URL = '/media/'
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"
 MEDIA_ROOT = '%s/static/media/' % BASE_DIR
-
-# See: https://docs.djangoproject.com/en/1.8/ref/settings/#fixture-dirs
-FIXTURE_DIRS = (
-    os.path.normpath(os.path.join(BASE_DIR, 'stackdio', 'fixtures')),
-)
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

@@ -29,6 +29,7 @@ class StackdioConfig(dict):
         'db_dsn',
         'storage_root',
         'django_secret_key',
+        'create_ssh_users',
     )
 
     def __init__(self):
@@ -67,7 +68,6 @@ class StackdioConfig(dict):
         self.salt_master_config = os.path.join(self.salt_config_root, 'master')
         self.salt_cloud_config = os.path.join(self.salt_config_root, 'cloud')
         self.salt_core_states = os.path.join(self.storage_root, 'core_states')
-        self.salt_user_states = os.path.join(self.storage_root, 'user_states')
         self.salt_providers_dir = os.path.join(self.salt_config_root,
                                                'cloud.providers.d')
         self.salt_profiles_dir = os.path.join(self.salt_config_root,

@@ -15,11 +15,18 @@
 # limitations under the License.
 #
 
+import logging
+
 from django.http import Http404
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms, remove_perm
 from rest_framework import viewsets
+from rest_framework.serializers import ListField
 
+from users.fields import UserField, GroupField
 from core.shortcuts import get_groups_with_model_perms, get_users_with_model_perms
+from . import fields, serializers
+
+logger = logging.getLogger(__name__)
 
 
 def _filter_perms(available_perms, perms):
@@ -35,7 +42,50 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
     Viewset for creating permissions endpoints
     """
     user_or_group = None
+    model_or_object = None
     lookup_value_regex = r'[\w.@+-]+'
+    parent_lookup_field = 'pk'
+    parent_lookup_url_kwarg = None
+
+    def get_model_name(self):
+        raise NotImplementedError('`get_model_name()` must be implemented.')
+
+    def get_serializer_class(self):
+        user_or_group = self.get_user_or_group()
+        model_or_object = self.get_model_or_object()
+        model_name = self.get_model_name()
+
+        super_cls = self.switch_model_object(serializers.StackdioModelPermissionsSerializer,
+                                             serializers.StackdioObjectPermissionsSerializer)
+
+        url_field_kwargs = {
+            'view_name': '{0}-{1}-{2}-permissions-detail'.format(model_name,
+                                                                 model_or_object,
+                                                                 user_or_group),
+            'permission_lookup_field': self.lookup_field,
+            'permission_lookup_url_kwarg': self.lookup_url_kwarg or self.lookup_field,
+            'lookup_field': self.parent_lookup_field,
+            'lookup_url_kwarg': self.parent_lookup_url_kwarg or self.parent_lookup_field,
+        }
+
+        url_field = self.switch_model_object(
+            fields.HyperlinkedModelPermissionsField(**url_field_kwargs),
+            fields.HyperlinkedObjectPermissionsField(**url_field_kwargs),
+        )
+
+        # Create a class
+        class StackdioUserPermissionsSerializer(super_cls):
+            user = UserField()
+            url = url_field
+            permissions = ListField()
+
+        class StackdioGroupPermissionsSerializer(super_cls):
+            group = GroupField()
+            url = url_field
+            permissions = ListField()
+
+        return self.switch_user_group(StackdioUserPermissionsSerializer,
+                                      StackdioGroupPermissionsSerializer)
 
     def get_user_or_group(self):
         assert self.user_or_group in ('user', 'group'), (
@@ -45,17 +95,23 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
         return self.user_or_group
 
     def switch_user_group(self, if_user, if_group):
-        user_group = self.get_user_or_group()
+        return {
+            'user': if_user,
+            'group': if_group,
+        }.get(self.get_user_or_group())
 
-        if user_group == 'user':
-            return if_user
-        elif user_group == 'group':
-            return if_group
-        else:
-            raise ValueError(
-                "'%s' should include a `user_or_group` attribute that is one of 'user' or 'group'."
-                % self.__class__.__name__
-            )
+    def get_model_or_object(self):
+        assert self.model_or_object in ('model', 'object'), (
+            "'%s' should include a `model_or_object` attribute that is one of 'model' or 'object'."
+            % self.__class__.__name__
+        )
+        return self.model_or_object
+
+    def switch_model_object(self, if_model, if_object):
+        return {
+            'model': if_model,
+            'object': if_object,
+        }.get(self.get_model_or_object())
 
     def _transform_perm(self, model_name):
         def do_tranform(item):
@@ -67,18 +123,21 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
     def get_object(self):
         queryset = self.get_queryset()
 
+        url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        name_attr = self.switch_user_group('username', 'name')
+
         for obj in queryset:
             auth_obj = obj[self.get_user_or_group()]
-            name_attr = self.switch_user_group('username', 'name')
 
-            if self.kwargs[self.lookup_field] == getattr(auth_obj, name_attr):
+            if self.kwargs[url_kwarg] == getattr(auth_obj, name_attr):
                 return obj
 
-        raise Http404('No permissions found for %s' % self.kwargs[self.lookup_field])
+        raise Http404('No permissions found for %s' % self.kwargs[url_kwarg])
 
 
 class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
     model_cls = None
+    model_or_object = 'model'
 
     def get_model_cls(self):
         assert self.model_cls, (
@@ -87,10 +146,18 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
         )
         return self.model_cls
 
+    def get_model_name(self):
+        return self.get_model_cls()._meta.model_name
+
+    def get_model_permissions(self):
+        return getattr(self.get_model_cls(),
+                       'model_permissions',
+                       getattr(self, 'model_permissions', ()))
+
     def get_queryset(self):
         model_cls = self.get_model_cls()
         model_name = model_cls._meta.model_name
-        model_perms = model_cls.model_permissions
+        model_perms = self.get_model_permissions()
 
         # Grab the perms for either the users or groups
         perm_map = self.switch_user_group(
@@ -111,7 +178,7 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
     def list(self, request, *args, **kwargs):
         response = super(StackdioModelPermissionsViewSet, self).list(request, *args, **kwargs)
         # add available permissions to the response
-        response.data['available_permissions'] = sorted(self.model_cls.model_permissions)
+        response.data['available_permissions'] = sorted(self.get_model_permissions())
 
         return response
 
@@ -133,25 +200,36 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
 class StackdioModelUserPermissionsViewSet(StackdioModelPermissionsViewSet):
     user_or_group = 'user'
     lookup_field = 'username'
+    lookup_url_kwarg = 'username'
 
 
 class StackdioModelGroupPermissionsViewSet(StackdioModelPermissionsViewSet):
     user_or_group = 'group'
-    lookup_field = 'groupname'
+    lookup_field = 'name'
+    lookup_url_kwarg = 'groupname'
 
 
 class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
     """
     Viewset for creating permissions endpoints
     """
+    model_or_object = 'object'
 
     def get_permissioned_object(self):
         raise NotImplementedError('`get_permissioned_object()` must be implemented.')
 
+    def get_model_name(self):
+        return self.get_permissioned_object()._meta.model_name
+
+    def get_object_permissions(self):
+        return getattr(self.get_permissioned_object(),
+                       'object_permissions',
+                       getattr(self, 'object_permissions', ()))
+
     def get_queryset(self):
         obj = self.get_permissioned_object()
         model_name = obj._meta.model_name
-        object_perms = obj.object_permissions
+        object_perms = self.get_object_permissions()
 
         # Grab the perms for either the users or groups
         perm_map = self.switch_user_group(
@@ -172,8 +250,7 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
     def list(self, request, *args, **kwargs):
         response = super(StackdioObjectPermissionsViewSet, self).list(request, *args, **kwargs)
         # add available permissions to the response
-        obj = self.get_permissioned_object()
-        response.data['available_permissions'] = sorted(obj.object_permissions)
+        response.data['available_permissions'] = sorted(self.get_object_permissions())
 
         return response
 
@@ -196,8 +273,10 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
 class StackdioObjectUserPermissionsViewSet(StackdioObjectPermissionsViewSet):
     user_or_group = 'user'
     lookup_field = 'username'
+    lookup_url_kwarg = 'username'
 
 
 class StackdioObjectGroupPermissionsViewSet(StackdioObjectPermissionsViewSet):
     user_or_group = 'group'
-    lookup_field = 'groupname'
+    lookup_field = 'name'
+    lookup_url_kwarg = 'groupname'

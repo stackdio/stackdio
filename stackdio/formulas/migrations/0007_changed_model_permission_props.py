@@ -15,4 +15,8 @@ class Migration(migrations.Migration):
             name='formula',
             options={'ordering': ['pk'], 'default_permissions': ('admin', 'create', 'delete', 'update', 'view')},
         ),
+        migrations.AlterModelOptions(
+            name='formulaversion',
+            options={'default_permissions': ()},
+        ),
     ]
