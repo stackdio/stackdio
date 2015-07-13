@@ -123,11 +123,11 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
     def get_object(self):
         queryset = self.get_queryset()
 
+        url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        name_attr = self.switch_user_group('username', 'name')
+
         for obj in queryset:
             auth_obj = obj[self.get_user_or_group()]
-            name_attr = self.switch_user_group('username', 'name')
-
-            url_kwarg = self.lookup_url_kwarg or self.lookup_field
 
             if self.kwargs[url_kwarg] == getattr(auth_obj, name_attr):
                 return obj
