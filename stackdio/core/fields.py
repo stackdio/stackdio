@@ -64,6 +64,51 @@ class HyperlinkedField(relations.HyperlinkedIdentityField):
                                            % self.__class__.__name__)
 
 
+class HyperlinkedParentField(relations.HyperlinkedIdentityField):
+    
+    def __init__(self, view_name, parent_relation_field, **kwargs):
+        assert parent_relation_field is not None, (
+            'The `parent_relation_field` argument is required.'
+        )
+
+        self.parent_relation_field = parent_relation_field.split('.')
+        self.parent_lookup_field = kwargs.pop('parent_lookup_field', 'pk')
+        self.parent_lookup_url_kwarg = kwargs.pop('parent_lookup_url_kwarg',
+                                                  self.parent_lookup_field)
+        super(HyperlinkedParentField, self).__init__(view_name, **kwargs)
+
+    def get_url(self, obj, view_name, request, format):
+        # Unsaved objects will not yet have a valid URL.
+        if hasattr(obj, 'pk') and obj.pk is None:
+            return None
+
+        middle_obj = obj
+
+        for field in self.parent_relation_field:
+            middle_obj = getattr(middle_obj, field)
+
+        parent_obj = middle_obj
+
+        parent_lookup_value = getattr(parent_obj, self.parent_lookup_field)
+        lookup_value = getattr(obj, self.lookup_field)
+
+        kwargs = {
+            self.parent_lookup_url_kwarg: parent_lookup_value,
+            self.lookup_url_kwarg: lookup_value,
+        }
+
+        return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+    def get_object(self, view_name, view_args, view_kwargs):
+        lookup_value = view_kwargs[self.lookup_url_kwarg]
+        parent_lookup_value = view_kwargs[self.parent_lookup_url_kwarg]
+        lookup_kwargs = {
+            self.lookup_field: lookup_value,
+            self.parent_lookup_field: parent_lookup_value,
+        }
+        return self.get_queryset().get(**lookup_kwargs)
+
+
 class HyperlinkedPermissionsField(relations.HyperlinkedIdentityField):
 
     def __init__(self, view_name, permission_lookup_field, **kwargs):

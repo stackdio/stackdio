@@ -80,6 +80,34 @@ urlpatterns = patterns(
         api.CloudProviderTypeDetailAPIView.as_view(),
         name='cloudprovidertype-detail'),
 
+    url(r'^provider_types/(?P<pk>[0-9]+)/instance_sizes/$',
+        api.CloudInstanceSizeListAPIView.as_view(),
+        name='cloudinstancesize-list'),
+
+    url(r'^provider_types/(?P<pk>[0-9]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
+        api.CloudInstanceSizeDetailAPIView.as_view(),
+        name='cloudinstancesize-detail'),
+
+    url(r'^provider_types/(?P<pk>[0-9]+)/regions/$',
+        api.CloudRegionListAPIView.as_view(),
+        name='cloudregion-list'),
+
+    url(r'^provider_types/(?P<pk>[0-9]+)/regions/(?P<title>[\w.@+-]+)/$',
+        api.CloudRegionDetailAPIView.as_view(),
+        name='cloudregion-detail'),
+
+    url(r'^provider_types/(?P<pk>[0-9]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
+        api.CloudRegionZoneListAPIView.as_view(),
+        name='cloudregion-zones'),
+
+    url(r'^provider_types/(?P<pk>[0-9]+)/zones/$',
+        api.CloudZoneListAPIView.as_view(),
+        name='cloudzone-list'),
+
+    url(r'^provider_types/(?P<pk>[0-9]+)/zones/(?P<title>[\w.@+-]+)/$',
+        api.CloudZoneDetailAPIView.as_view(),
+        name='cloudzone-detail'),
+
     url(r'^providers/$',
         api.CloudProviderListAPIView.as_view(),
         name='cloudprovider-list'),
@@ -118,14 +146,6 @@ urlpatterns = patterns(
         api.GlobalOrchestrationComponentDetailAPIView.as_view(),
         name='globalorchestrationformulacomponent-detail'),
 
-    url(r'^instance_sizes/$',
-        api.CloudInstanceSizeListAPIView.as_view(),
-        name='cloudinstancesize-list'),
-
-    url(r'^instance_sizes/(?P<pk>[0-9]+)/$',
-        api.CloudInstanceSizeDetailAPIView.as_view(),
-        name='cloudinstancesize-detail'),
-
     url(r'^profiles/$',
         api.CloudProfileListAPIView.as_view(),
         name='cloudprofile-list'),
@@ -153,26 +173,6 @@ urlpatterns = patterns(
 
     url(r'^snapshots/(?P<pk>[0-9]+)/permissions/',
         include(snapshot_object_router.urls)),
-
-    url(r'^regions/$',
-        api.CloudRegionListAPIView.as_view(),
-        name='cloudregion-list'),
-
-    url(r'^regions/(?P<pk>[0-9]+)/$',
-        api.CloudRegionDetailAPIView.as_view(),
-        name='cloudregion-detail'),
-
-    url(r'^regions/(?P<pk>[0-9]+)/zones/$',
-        api.CloudRegionZoneListAPIView.as_view(),
-        name='cloudregion-zones'),
-
-    url(r'^zones/$',
-        api.CloudZoneListAPIView.as_view(),
-        name='cloudzone-list'),
-
-    url(r'^zones/(?P<pk>[0-9]+)/$',
-        api.CloudZoneDetailAPIView.as_view(),
-        name='cloudzone-detail'),
 
     url(r'^security_groups/$',
         api.SecurityGroupListAPIView.as_view(),

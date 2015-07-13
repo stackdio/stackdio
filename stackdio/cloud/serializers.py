@@ -21,6 +21,7 @@ import logging
 from rest_framework import permissions
 from rest_framework import serializers
 
+from core.fields import HyperlinkedParentField
 from core.mixins import SuperuserFieldsMixin
 from core.utils import recursive_update
 from formulas.serializers import FormulaComponentSerializer
@@ -48,6 +49,11 @@ def validate_properties(properties):
 class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
     title = serializers.ReadOnlyField(source='get_type_name_display')
 
+    # Links
+    instance_sizes = serializers.HyperlinkedIdentityField(view_name='cloudinstancesize-list')
+    regions = serializers.HyperlinkedIdentityField(view_name='cloudregion-list')
+    zones = serializers.HyperlinkedIdentityField(view_name='cloudzone-list')
+
     class Meta:
         model = models.CloudProviderType
         fields = (
@@ -55,6 +61,9 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
             'url',
             'title',
             'type_name',
+            'instance_sizes',
+            'regions',
+            'zones',
         )
 
 
@@ -156,20 +165,6 @@ class VPCSubnetSerializer(serializers.Serializer):
     availability_zone = serializers.ReadOnlyField()
     cidr_block = serializers.ReadOnlyField()
     tags = serializers.ReadOnlyField()
-
-
-class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = models.CloudInstanceSize
-        fields = (
-            'id',
-            'url',
-            'title',
-            'slug',
-            'description',
-            'provider_type',
-            'instance_id',
-        )
 
 
 class GlobalOrchestrationFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
@@ -345,15 +340,44 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
         return attrs
 
 
+class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
+    url = HyperlinkedParentField(
+        view_name='cloudinstancesize-detail',
+        parent_relation_field='provider_type',
+        lookup_field='instance_id',
+    )
+
+    class Meta:
+        model = models.CloudInstanceSize
+        fields = (
+            'url',
+            'title',
+            'slug',
+            'description',
+            'provider_type',
+            'instance_id',
+        )
+
+
 class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
-    provider_type = serializers.PrimaryKeyRelatedField(read_only=True)
+    url = HyperlinkedParentField(
+        view_name='cloudregion-detail',
+        parent_relation_field='provider_type',
+        lookup_field='title',
+    )
+
+    provider_type = serializers.CharField(source='provider_type.type_name')
     zones = serializers.StringRelatedField(many=True, read_only=True)
-    zones_url = serializers.HyperlinkedIdentityField(view_name='cloudregion-zones')
+    zones_url = HyperlinkedParentField(
+        view_name='cloudregion-zones',
+        parent_relation_field='provider_type',
+        lookup_field='title',
+    )
 
     class Meta:
         model = models.CloudRegion
         fields = (
-            'id',
+            'url',
             'title',
             'provider_type',
             'zones',
@@ -362,18 +386,23 @@ class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
-    provider_type = serializers.PrimaryKeyRelatedField(
-        source='region.provider_type',
-        queryset=models.CloudProviderType.objects.all()
+    url = HyperlinkedParentField(
+        view_name='cloudzone-detail',
+        parent_relation_field='region.provider_type',
+        lookup_field='title',
     )
+
+    region = serializers.CharField(source='region.title')
+
+    provider_type = serializers.CharField(source='region.provider_type.type_name')
 
     class Meta:
         model = models.CloudZone
         fields = (
-            'id',
+            'url',
             'title',
-            'provider_type',
             'region',
+            'provider_type',
         )
 
 
