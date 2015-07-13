@@ -21,9 +21,40 @@ from django.conf import settings
 from rest_framework.serializers import ValidationError
 
 from core.tests.utils import StackdioTestCase, get_fake_request
-from users import serializers
+from users import fields, serializers
 
 logger = logging.getLogger(__name__)
+
+
+class FieldTestCase(StackdioTestCase):
+
+    def test_user_to_representation(self):
+        field = fields.UserField()
+
+        representation = field.to_representation(self.user)
+
+        self.assertEqual(representation, 'test.user')
+
+    def test_user_to_internal_value(self):
+        field = fields.UserField()
+
+        self.assertRaises(ValidationError, field.to_internal_value, 'foo.bar')
+
+        self.assertEqual(field.to_internal_value('test.user'), self.user)
+
+    def test_group_to_representation(self):
+        field = fields.GroupField()
+
+        representation = field.to_representation(self.group)
+
+        self.assertEqual(representation, 'stackdio')
+
+    def test_group_to_internal_value(self):
+        field = fields.GroupField()
+
+        self.assertRaises(ValidationError, field.to_internal_value, 'foo.bar')
+
+        self.assertEqual(field.to_internal_value('stackdio'), self.group)
 
 
 class UserSerializerTestCase(StackdioTestCase):
