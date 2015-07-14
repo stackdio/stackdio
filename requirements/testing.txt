@@ -1,6 +1,6 @@
 -r base.txt
 coveralls
-django-nose>=1.0
+django-nose>=1.0,<=1.4
 mock
 pep8
 pylint<=1.2.0
