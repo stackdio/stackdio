@@ -67,12 +67,12 @@ class CloudProviderTypeObjectGroupPermissionsViewSet(mixins.CloudProviderTypeRel
     parent_lookup_field = 'type_name'
 
 
-class CloudProviderListAPIView(generics.ListCreateAPIView):
-    queryset = models.CloudProvider.objects.all()
-    serializer_class = serializers.CloudProviderSerializer
+class CloudAccountListAPIView(generics.ListCreateAPIView):
+    queryset = models.CloudAccount.objects.all()
+    serializer_class = serializers.CloudAccountSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
-    filter_class = filters.CloudProviderFilter
+    filter_class = filters.CloudAccountFilter
 
     def perform_create(self, serializer):
 
@@ -105,21 +105,20 @@ class CloudProviderListAPIView(generics.ListCreateAPIView):
             raise BadRequest(err_msg)
 
 
-class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.CloudProvider.objects.all()
-    serializer_class = serializers.CloudProviderSerializer
+class CloudAccountDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = models.CloudAccount.objects.all()
+    serializer_class = serializers.CloudAccountSerializer
     permission_classes = (StackdioObjectPermissions,)
 
     def destroy(self, request, *args, **kwargs):
-        # check for profiles using this provider before deleting
+        # check for profiles using this account before deleting
         profiles = set(self.get_object().profiles.all())
         if profiles:
             profiles = serializers.CloudProfileSerializer(
                 profiles,
                 context={'request': request}).data
             return Response({
-                'detail': 'One or more profiles are making use of this '
-                          'provider.',
+                'detail': 'One or more profiles are making use of this account.',
                 'profiles': profiles,
             }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -127,38 +126,38 @@ class CloudProviderDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         driver = self.get_object().get_driver()
         driver.destroy()
 
-        return super(CloudProviderDetailAPIView, self).destroy(request, *args, **kwargs)
+        return super(CloudAccountDetailAPIView, self).destroy(request, *args, **kwargs)
 
 
-class CloudProviderModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.CloudProviderPermissionsModelPermissions,)
-    model_cls = models.CloudProvider
+class CloudAccountModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    permission_classes = (permissions.CloudAccountPermissionsModelPermissions,)
+    model_cls = models.CloudAccount
 
 
-class CloudProviderModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudProviderPermissionsModelPermissions,)
-    model_cls = models.CloudProvider
+class CloudAccountModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    permission_classes = (permissions.CloudAccountPermissionsModelPermissions,)
+    model_cls = models.CloudAccount
 
 
-class CloudProviderObjectUserPermissionsViewSet(mixins.CloudProviderRelatedMixin,
-                                                StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
+class CloudAccountObjectUserPermissionsViewSet(mixins.CloudAccountRelatedMixin,
+                                               StackdioObjectUserPermissionsViewSet):
+    permission_classes = (permissions.CloudAccountPermissionsObjectPermissions,)
 
 
-class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderRelatedMixin,
-                                                 StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
+class CloudAccountObjectGroupPermissionsViewSet(mixins.CloudAccountRelatedMixin,
+                                                StackdioObjectGroupPermissionsViewSet):
+    permission_classes = (permissions.CloudAccountPermissionsObjectPermissions,)
 
 
-class GlobalOrchestrationComponentListAPIView(mixins.CloudProviderRelatedMixin,
+class GlobalOrchestrationComponentListAPIView(mixins.CloudAccountRelatedMixin,
                                               generics.ListCreateAPIView):
     serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
 
     def get_queryset(self):
-        return self.get_cloudprovider().global_formula_components.all()
+        return self.get_cloudaccount().global_formula_components.all()
 
     def perform_create(self, serializer):
-        serializer.save(provider=self.get_cloudprovider())
+        serializer.save(account=self.get_cloudaccount())
 
     def create(self, request, *args, **kwargs):
         component_id = request.DATA.get('component')
@@ -178,16 +177,16 @@ class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveUpdateDestroyAP
     permission_classes = (StackdioObjectPermissions,)
 
 
-class GlobalOrchestrationPropertiesAPIView(mixins.CloudProviderRelatedMixin,
+class GlobalOrchestrationPropertiesAPIView(mixins.CloudAccountRelatedMixin,
                                            generics.RetrieveUpdateAPIView):
-    queryset = models.CloudProvider.objects.all()
+    queryset = models.CloudAccount.objects.all()
     serializer_class = serializers.GlobalOrchestrationPropertiesSerializer
 
 
-class CloudProviderVPCSubnetListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
+class CloudAccountVPCSubnetListAPIView(mixins.CloudAccountRelatedMixin, generics.ListAPIView):
     def list(self, request, *args, **kwargs):
-        provider = self.get_cloudprovider()
-        driver = provider.get_driver()
+        account = self.get_cloudaccount()
+        driver = account.get_driver()
 
         subnets = driver.get_vpc_subnets()
         return Response({
@@ -195,31 +194,31 @@ class CloudProviderVPCSubnetListAPIView(mixins.CloudProviderRelatedMixin, generi
         })
 
 
-class CloudProviderFormulaVersionsAPIView(mixins.CloudProviderRelatedMixin,
-                                          generics.ListCreateAPIView):
+class CloudAccountFormulaVersionsAPIView(mixins.CloudAccountRelatedMixin,
+                                         generics.ListCreateAPIView):
     serializer_class = FormulaVersionSerializer
 
     def get_queryset(self):
-        provider = self.get_cloudprovider()
-        return provider.formula_versions.all()
+        account = self.get_cloudaccount()
+        return account.formula_versions.all()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         formula = serializer.validated_data.get('formula')
-        provider = self.get_cloudprovider()
+        account = self.get_cloudaccount()
 
         try:
             # Setting self.instance will cause self.update() to be called instead of
             # self.create() during save()
-            serializer.instance = provider.formula_versions.get(formula=formula)
+            serializer.instance = account.formula_versions.get(formula=formula)
             response_code = status.HTTP_200_OK
         except FormulaVersion.DoesNotExist:
             # Return the proper response code
             response_code = status.HTTP_201_CREATED
 
-        serializer.save(content_object=provider)
+        serializer.save(content_object=account)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=response_code, headers=headers)
 
@@ -242,9 +241,9 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (StackdioObjectPermissions,)
 
     def update(self, request, *args, **kwargs):
-        # validate that the AMI exists by looking it up in the cloud provider
+        # validate that the AMI exists by looking it up in the cloud account
         if 'image_id' in request.DATA:
-            driver = self.get_object().cloud_provider.get_driver()
+            driver = self.get_object().account.get_driver()
             result, error = driver.has_image(request.DATA['image_id'])
             if not result:
                 raise BadRequest(error)
@@ -405,7 +404,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     `rules` attribute. The `active_hosts` field will also be
     updated to show the number of hosts known by stackd.io to be
     using the security group at this time, but please **note**
-    that other machines in the cloud provider could be using
+    that other machines in the cloud account could be using
     the same security group and stackd.io may not be aware.
 
     ### POST
@@ -414,16 +413,16 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     in the JSON request:
 
     `name` -- The name of the security group. This will also be
-              used to create the security group on the provider.
+              used to create the security group on the account.
 
     `description` -- The description or purpose of the group.
 
-    `cloud_provider` -- The id of the cloud provider to associate
+    `account` -- The id of the cloud account to associate
                         this group with.
 
     `is_default` -- Boolean representing if this group, for this
-                    provider, is set to automatically be added
-                    to all hosts launched on the provider. **NOTE**
+                    account, is set to automatically be added
+                    to all hosts launched on the account. **NOTE**
                     this property may only be set by an admin.
     """
     queryset = models.SecurityGroup.objects.all().with_rules()
@@ -437,7 +436,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
         name = request.DATA.get('name')
         group_id = request.DATA.get('group_id')
         description = request.DATA.get('description')
-        provider_id = request.DATA.get('cloud_provider')
+        account_id = request.DATA.get('account')
         is_default = request.DATA.get('is_default', False)
 
         if not request.user.is_superuser:
@@ -445,39 +444,39 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
         elif not isinstance(is_default, bool):
             is_default = False
 
-        provider = models.CloudProvider.objects.get(id=provider_id)
-        driver = provider.get_driver()
+        account = models.CloudAccount.objects.get(id=account_id)
+        driver = account.get_driver()
 
         # check if the group already exists in our DB first
         try:
             models.SecurityGroup.objects.get(
                 name=name,
                 group_id=group_id,
-                cloud_provider=provider
+                account=account
             )
             raise ResourceConflict('Security group already exists')
         except models.SecurityGroup.DoesNotExist:
             # doesn't exist in our database
             pass
 
-        # check if the group exists on the provider
-        provider_group = None
+        # check if the group exists on the account
+        account = None
         if group_id:
             try:
-                provider_group = driver.get_security_groups([group_id])[name]
+                account_group = driver.get_security_groups([group_id])[name]
                 logger.debug('Security group already exists on the '
-                             'provider: {0!r}'.format(provider_group))
+                             'account: {0!r}'.format(account_group))
 
             except KeyError:
                 raise
             except:
-                # doesn't exist on the provider either, we'll create it now
-                provider_group = None
+                # doesn't exist on the account either, we'll create it now
+                account_group = None
 
         # admin is using an existing group, use the existing group id
-        if provider_group:
-            group_id = provider_group['group_id']
-            description = provider_group['description']
+        if account_group:
+            group_id = account_group['group_id']
+            description = account_group['description']
         else:
             # create a new group
             group_id = driver.create_security_group(name, description)
@@ -487,16 +486,16 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
             name=name,
             description=description,
             group_id=group_id,
-            cloud_provider=provider,
+            account=account,
             is_default=is_default
         )
 
         # if an admin and the security group is_default, we need to make sure
-        # the cloud provider configuration is properly maintained
+        # the cloud account configuration is properly maintained
         if request.user.is_superuser and is_default:
-            logger.debug('Writing cloud providers file because new security '
+            logger.debug('Writing cloud accounts file because new security '
                          'group was added with is_default flag set to True')
-            provider.update_config()
+            account.update_config()
 
         serializer = serializers.SecurityGroupSerializer(group_obj, context={
             'request': request
@@ -524,7 +523,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     ### DELETE
 
     Removes the corresponding security group from stackd.io as well as
-    from the underlying cloud provider. **NOTE** that if the security
+    from the underlying cloud account. **NOTE** that if the security
     group is currently being used, then it can not be removed. You
     must first terminate all machines depending on the security group
     and then delete it.
@@ -553,10 +552,10 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             obj.is_default = is_default
             obj.save()
 
-            # update providers configuration file
+            # update accounts configuration file
             logger.debug('Security group is_default modified; updating cloud '
-                         'provider configuration.')
-            obj.cloud_provider.update_config()
+                         'account configuration.')
+            obj.account.update_config()
 
         serializer = self.get_serializer(obj)
         return Response(serializer.data)
@@ -567,8 +566,8 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         # Delete from AWS. This will throw the appropriate error
         # if the group is being used.
-        provider = sg.cloud_provider
-        driver = provider.get_driver()
+        account = sg.account
+        driver = account.get_driver()
         driver.delete_security_group(sg.name)
 
         # store the is_default and delete the security group
@@ -577,12 +576,12 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
                                                                  *args,
                                                                  **kwargs)
 
-        # update providers configuration file if the security
+        # update accounts configuration file if the security
         # group's is_default was True
         if is_default:
             logger.debug('Security group deleted and is_default set to True; '
-                         'updating cloud provider configuration.')
-            provider.update_config()
+                         'updating cloud account configuration.')
+            account.update_config()
 
         # return the original destroy response
         return result
@@ -617,7 +616,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
             'rule': '192.168.1.108/32'
         }
 
-    ##### To authorize a range of UDP ports to another provider's group
+    ##### To authorize a range of UDP ports to another account's group
         {
             'action': 'authorize',
             'protocol': 'udp',
@@ -626,8 +625,8 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
             'rule': '<account_number>:<group_name>'
         }
 
-        Where account_number is the account ID of the provider and
-        group_name is an existing group name on that provider.
+        Where account_number is the account ID of the account and
+        group_name is an existing group name on that account.
 
     To revoke either of the rules above, you would just change the `action`
     field's value to be "revoke"
@@ -639,14 +638,14 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         sg = self.get_object()
-        driver = sg.cloud_provider.get_driver()
+        driver = sg.account.get_driver()
         result = driver.get_security_groups(sg.group_id)
         return Response(result[sg.name]['rules'])
 
     def update(self, request, *args, **kwargs):
         sg = self.get_object()
-        provider = sg.cloud_provider
-        driver = provider.get_driver()
+        account = sg.account
+        driver = account.get_driver()
 
         # validate input
         errors = []
@@ -669,11 +668,11 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
         # address and anything else will be considered a group
         # rule, however, a group can contain the account id of
         # the group we're dealing with. If the group rule does
-        # not contain a colon then we'll add the provider's
+        # not contain a colon then we'll add the account's
         # account id
         rule = request.DATA.get('rule')
         if not driver.is_cidr_rule(rule) and ':' not in rule:
-            rule = provider.account_id + ':' + rule
+            rule = account.account_id + ':' + rule
             request.DATA['rule'] = rule
             logger.debug('Prefixing group rule with account id. '
                          'New rule: {0}'.format(rule))
@@ -692,28 +691,28 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
         return Response(result[sg.name]['rules'])
 
 
-class CloudProviderSecurityGroupListAPIView(mixins.CloudProviderRelatedMixin,
-                                            SecurityGroupListAPIView):
+class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
+                                           SecurityGroupListAPIView):
     """
     Like the standard, top-level Security Group List API, this API will allow
     you to create and pull security groups. The only significant difference is
     that GET requests will only return security groups associated with the
-    provider.
+    account.
 
     *For regular users*, this will only show security groups owned by you and
-    associated with the provider. *For admins*, this will pull all security
-    groups on the provider, regardless of ownership.
+    associated with the account. *For admins*, this will pull all security
+    groups on the account, regardless of ownership.
 
     Additionally, admins may provide a query parameter and value
     `filter=default` to only show the security groups that have been designated
-    as "default" groups to be attached to all hosts started using this provider
+    as "default" groups to be attached to all hosts started using this account
 
     See the standard, top-level Security Group API for further information.
     """
     filter_class = filters.SecurityGroupFilter
 
     def get_queryset(self):
-        provider = self.get_cloudprovider()
+        account = self.get_cloudaccount()
 
         # if admin, return all of the known default security groups on the
         # account
@@ -721,18 +720,18 @@ class CloudProviderSecurityGroupListAPIView(mixins.CloudProviderRelatedMixin,
             kwargs = {}
             if self.request.QUERY_PARAMS.get('filter', '') == 'default':
                 kwargs['is_default'] = True
-            return provider.security_groups.filter(**kwargs).with_rules()
+            return account.security_groups.filter(**kwargs).with_rules()
 
         # if user, only get what they own
         else:
             return self.request.user.security_groups.filter(
-                cloud_provider=provider
+                account=account
             ).with_rules()
 
     # Override the generic list API to inject the security groups
-    # known by the cloud provider
+    # known by the cloud account
     def list(self, request, *args, **kwargs):
-        response = super(CloudProviderSecurityGroupListAPIView, self).list(
+        response = super(CloudAccountSecurityGroupListAPIView, self).list(
             request,
             *args,
             **kwargs)
@@ -741,20 +740,20 @@ class CloudProviderSecurityGroupListAPIView(mixins.CloudProviderRelatedMixin,
         if not request.user.is_superuser:
             return response
 
-        # Grab the groups from the provider and inject them into the response,
+        # Grab the groups from the account and inject them into the response,
         # removing the known managed security groups first
-        provider = self.get_cloudprovider()
-        driver = provider.get_driver()
-        provider_groups = driver.get_security_groups()
-        for group in provider.security_groups.all():
-            if group.name in provider_groups:
-                del provider_groups[group.name]
+        account = self.get_cloudaccount()
+        driver = account.get_driver()
+        account_groups = driver.get_security_groups()
+        for group in account.security_groups.all():
+            if group.name in account_groups:
+                del account_groups[group.name]
 
         # Filter these too
         query_name = request.QUERY_PARAMS.get('name', '')
-        for name, data in provider_groups.items():
+        for name, data in account_groups.items():
             if query_name.lower() not in name.lower():
-                del provider_groups[name]
+                del account_groups[name]
 
-        response.data['provider_groups'] = provider_groups
+        response.data['account_groups'] = account_groups
         return response

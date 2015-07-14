@@ -351,16 +351,16 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         ))
         query = salt_cloud.query()
 
-        # Since a blueprint can have multiple providers
-        providers = set()
+        # Since a blueprint can have multiple accounts
+        accounts = set()
         for bhd in host_definitions:
-            providers.add(bhd.cloud_profile.cloud_provider)
+            accounts.add(bhd.cloud_profile.account)
 
         # Check to find duplicates
         dups = []
-        for provider in providers:
-            provider_type = provider.provider_type.type_name
-            for instance, details in query.get(provider.slug, {}).get(provider_type, {}).items():
+        for account in accounts:
+            provider_type = account.provider_type.type_name
+            for instance, details in query.get(account.slug, {}).get(provider_type, {}).items():
                 if instance in hostnames:
                     if details['state'] not in ('shutting-down', 'terminated'):
                         dups.append(instance)
@@ -424,8 +424,8 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'rules_url',
             'group_id',
             'blueprint_host_definition',
-            'cloud_provider',
-            'provider_id',
+            'account',
+            'account_id',
             'is_default',
             'is_managed',
             'active_hosts',

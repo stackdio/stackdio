@@ -18,7 +18,7 @@
 
 # class StackTestCase(StackdioTestCase, PermissionsMixin):
 #     """
-#     Tests for CloudProvider things
+#     Tests for CloudAccount things
 #     """
 #
 #     permission_tests = {

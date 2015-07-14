@@ -49,13 +49,13 @@ class CloudProviderTypeTestCase(StackdioTestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
-class CloudProviderTestCase(StackdioTestCase, PermissionsMixin):
+class CloudAccountTestCase(StackdioTestCase, PermissionsMixin):
     """
-    Tests for CloudProvider things
+    Tests for CloudAccount things
     """
 
     permission_tests = {
-        'model': models.CloudProvider,
+        'model': models.CloudAccount,
         'create_data': {
             'provider_type_id': 1,
             'title': 'test',
@@ -64,8 +64,8 @@ class CloudProviderTestCase(StackdioTestCase, PermissionsMixin):
             'vpc_id': 'vpc-blah',
             'region_id': 1,
         },
-        'endpoint': '/api/providers/{0}/',
-        'permission': 'cloud.%s_cloudprovider',
+        'endpoint': '/api/accounts/{0}/',
+        'permission': 'cloud.%s_cloudaccount',
         'permission_types': [
             {
                 'perm': 'view', 'method': 'get'
@@ -79,16 +79,16 @@ class CloudProviderTestCase(StackdioTestCase, PermissionsMixin):
         ]
     }
 
-    def test_view_provider_as_admin(self):
+    def test_view_account_as_admin(self):
         self.client.login(username='test.admin', password='1234')
 
-        response = self.client.get('/api/providers/{0}/'.format(self.obj.pk))
+        response = self.client.get('/api/accounts/{0}/'.format(self.obj.pk))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     """
-    Tests for CloudProvider things
+    Tests for CloudAccount things
     """
 
     permission_tests = {
@@ -119,12 +119,12 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     @classmethod
     def setUpTestData(cls):
         super(CloudProfileTestCase, cls).setUpTestData()
-        models.CloudProvider.objects.create(**CloudProviderTestCase.permission_tests['create_data'])
+        models.CloudAccount.objects.create(**CloudAccountTestCase.permission_tests['create_data'])
 
 
 # class CloudInstanceSizeTestCase(StackdioTestCase, PermissionsMixin):
 #     """
-#     Tests for CloudProvider things
+#     Tests for CloudAccount things
 #     """
 #
 #     permission_tests = {

@@ -19,12 +19,12 @@ import django_filters
 from cloud import models
 
 
-class CloudProviderFilter(django_filters.FilterSet):
+class CloudAccountFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
     region = django_filters.CharFilter(name='region__title')
 
     class Meta:
-        model = models.CloudProvider
+        model = models.CloudAccount
         fields = (
             'title',
             'region',
@@ -76,7 +76,7 @@ class SecurityGroupFilter(django_filters.FilterSet):
     description = django_filters.CharFilter(lookup_type='icontains')
     default = django_filters.BooleanFilter(name='is_default')
     managed = django_filters.BooleanFilter(name='is_managed')
-    cloud_provider = django_filters.CharFilter(name='cloud_provder__title')
+    account = django_filters.CharFilter(name='account__title')
 
     class Meta:
         model = models.SecurityGroup
@@ -85,5 +85,5 @@ class SecurityGroupFilter(django_filters.FilterSet):
             'description',
             'default',
             'managed',
-            'cloud_provider',
+            'account',
         )

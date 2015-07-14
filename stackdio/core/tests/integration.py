@@ -36,7 +36,7 @@ class AuthenticationTestCase(StackdioTestCase):
         'formulas',
         'stacks',
         'volumes',
-        'providers',
+        'accounts',
         'profiles',
         'snapshots',
         'groups',

@@ -113,11 +113,11 @@ def envs():
     cloud_dir = os.path.join(storage_dir, 'cloud')
     stacks_dir = os.path.join(storage_dir, 'stacks')
 
-    for provider in os.listdir(cloud_dir):
-        provider_dir = os.path.join(cloud_dir, provider)
-        if not os.path.isdir(provider_dir):
+    for account in os.listdir(cloud_dir):
+        account_dir = os.path.join(cloud_dir, account)
+        if not os.path.isdir(account_dir):
             continue
-        ret.append('cloud.{0}'.format(provider))
+        ret.append('cloud.{0}'.format(account))
 
     for stack in os.listdir(stacks_dir):
         stack_dir = os.path.join(stacks_dir, stack)

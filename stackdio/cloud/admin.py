@@ -31,7 +31,7 @@ class CloudProviderTypeAdmin(GuardedModelAdmin):
 admin.site.register(models.CloudProviderType, CloudProviderTypeAdmin)
 
 
-class CloudProviderAdmin(GuardedModelAdmin):
+class CloudAccountAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
@@ -40,7 +40,7 @@ class CloudProviderAdmin(GuardedModelAdmin):
     ]
 
 
-admin.site.register(models.CloudProvider, CloudProviderAdmin)
+admin.site.register(models.CloudAccount, CloudAccountAdmin)
 
 
 class CloudInstanceSizeAdmin(GuardedModelAdmin):
@@ -59,7 +59,7 @@ admin.site.register(models.CloudInstanceSize, CloudInstanceSizeAdmin)
 class GlobalOrchestrationFormulaComponentAdmin(GuardedModelAdmin):
     list_display = [
         'component',
-        'provider',
+        'account',
         'order',
     ]
 
@@ -71,7 +71,7 @@ admin.site.register(models.GlobalOrchestrationFormulaComponent,
 class CloudProfileAdmin(GuardedModelAdmin):
     list_display = [
         'title',
-        'cloud_provider',
+        'account',
         'image_id',
         'default_instance_size',
         'ssh_user',
@@ -85,7 +85,7 @@ class SnapshotAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
-        'cloud_provider',
+        'account',
         'snapshot_id',
         'size_in_gb',
         'filesystem_type',
@@ -123,7 +123,7 @@ class SecurityGroupAdmin(GuardedModelAdmin):
     list_display = [
         'name',
         'group_id',
-        'cloud_provider',
+        'account',
         'is_default',
     ]
 

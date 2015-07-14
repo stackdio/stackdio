@@ -32,16 +32,16 @@ class CloudProviderTypePermissionsObjectPermissions(StackdioPermissionsObjectPer
     parent_model_cls = models.CloudProviderType
 
 
-class CloudProviderParentObjectPermissions(StackdioParentObjectPermissions):
-    parent_model_cls = models.CloudProvider
+class CloudAccountParentObjectPermissions(StackdioParentObjectPermissions):
+    parent_model_cls = models.CloudAccount
 
 
-class CloudProviderPermissionsModelPermissions(StackdioPermissionsModelPermissions):
-    model_cls = models.CloudProvider
+class CloudAccountPermissionsModelPermissions(StackdioPermissionsModelPermissions):
+    model_cls = models.CloudAccount
 
 
-class CloudProviderPermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
-    parent_model_cls = models.CloudProvider
+class CloudAccountPermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
+    parent_model_cls = models.CloudAccount
 
 
 class CloudProfilePermissionsModelPermissions(StackdioPermissionsModelPermissions):

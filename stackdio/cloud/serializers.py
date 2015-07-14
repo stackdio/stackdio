@@ -76,32 +76,31 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class CloudProviderSerializer(SuperuserFieldsMixin,
-                              serializers.HyperlinkedModelSerializer):
+class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
     # Foreign Key Relations
     provider_type = serializers.SlugRelatedField(slug_field='type_name',
-                                                 queryset=models.CloudProvider.objects.all())
+                                                 queryset=models.CloudProviderType.objects.all())
     region = serializers.SlugRelatedField(slug_field='title',
                                           queryset=models.CloudRegion.objects.all())
 
     # Hyperlinks
     security_groups = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovider-securitygroup-list')
+        view_name='cloudaccount-securitygroup-list')
     vpc_subnets = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovider-vpcsubnet-list')
+        view_name='cloudaccount-vpcsubnet-list')
     global_orchestration_components = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovider-global-orchestration-list')
+        view_name='cloudaccount-global-orchestration-list')
     global_orchestration_properties = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovider-global-orchestration-properties')
+        view_name='cloudaccount-global-orchestration-properties')
     formula_versions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovider-formula-versions')
+        view_name='cloudaccount-formula-versions')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovider-object-user-permissions-list')
+        view_name='cloudaccount-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovider-object-group-permissions-list')
+        view_name='cloudaccount-object-group-permissions-list')
 
     class Meta:
-        model = models.CloudProvider
+        model = models.CloudAccount
         fields = (
             'url',
             'title',
@@ -121,7 +120,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
         )
 
     def validate(self, attrs):
-        # validate provider specific request data
+        # validate account specific request data
         request = self.context['request']
 
         # patch requests only accept a few things for modification
@@ -156,7 +155,7 @@ class CloudProviderSerializer(SuperuserFieldsMixin,
                                                      request.FILES)
 
             if errors:
-                logger.error('Cloud provider validation errors: '
+                logger.error('Cloud account validation errors: '
                              '{0}'.format(errors))
                 raise serializers.ValidationError(errors)
 
@@ -213,24 +212,24 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
         """
         return super(GlobalOrchestrationPropertiesSerializer, self).create(validated_data)
 
-    def update(self, provider, validated_data):
+    def update(self, account, validated_data):
         if self.partial:
             # This is a PATCH, so properly merge in the old data
-            old_properties = provider.global_orchestration_properties
-            provider.global_orchestration_properties = recursive_update(old_properties, validated_data)
+            old_properties = account.global_orchestration_properties
+            account.global_orchestration_properties = recursive_update(old_properties, validated_data)
         else:
             # This is a PUT, so just add the data directly
-            provider.global_orchestration_properties = validated_data
+            account.global_orchestration_properties = validated_data
 
         # Be sure to persist the data
-        provider.save()
-        return provider
+        account.save()
+        return account
 
 
 class CloudProfileSerializer(SuperuserFieldsMixin,
                              serializers.HyperlinkedModelSerializer):
-    cloud_provider = serializers.PrimaryKeyRelatedField(
-        queryset=models.CloudProvider.objects.all()
+    account = serializers.PrimaryKeyRelatedField(
+        queryset=models.CloudAccount.objects.all()
     )
     default_instance_size = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudInstanceSize.objects.all()
@@ -249,7 +248,7 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
             'title',
             'slug',
             'description',
-            'cloud_provider',
+            'account',
             'image_id',
             'default_instance_size',
             'ssh_user',
@@ -283,20 +282,20 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
 
         elif request.method == 'POST':
             image_id = request.DATA.get('image_id')
-            provider_id = request.DATA.get('cloud_provider')
-            if not provider_id:
+            account_id = request.DATA.get('account')
+            if not account_id:
                 raise serializers.ValidationError({
-                    'cloud_provider': 'Required field.'
+                    'account': 'Required field.'
                 })
 
-            provider = models.CloudProvider.objects.get(pk=provider_id)
-            driver = provider.get_driver()
+            account = models.CloudAccount.objects.get(pk=account_id)
+            driver = account.get_driver()
 
             valid, exc_msg = driver.validate_image_id(image_id)
             if not valid:
                 raise serializers.ValidationError({
                     'image_id': ['Image ID does not exist on the given cloud '
-                                 'provider. Check that it exists and you have '
+                                 'account. Check that it exists and you have '
                                  'access to it.'],
                     'image_id_exception': [exc_msg]
                 })
@@ -305,8 +304,8 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
 
 
 class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
-    cloud_provider = serializers.PrimaryKeyRelatedField(
-        queryset=models.CloudProvider.objects.all()
+    account = serializers.PrimaryKeyRelatedField(
+        queryset=models.CloudAccount.objects.all()
     )
 
     user_permissions = serializers.HyperlinkedIdentityField(
@@ -322,7 +321,7 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'slug',
             'description',
-            'cloud_provider',
+            'account',
             'snapshot_id',
             'size_in_gb',
             'filesystem_type',
@@ -334,9 +333,9 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
         request = self.context['request']
 
         # validate that the snapshot exists by looking it up in the cloud
-        # provider
-        provider_id = request.DATA.get('cloud_provider')
-        driver = models.CloudProvider.objects.get(pk=provider_id).get_driver()
+        # account
+        account_id = request.DATA.get('account')
+        driver = models.CloudAccount.objects.get(pk=account_id).get_driver()
 
         result, error = driver.has_snapshot(request.DATA['snapshot_id'])
         if not result:
@@ -429,10 +428,10 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
 
     # Rules are defined in two places depending on the object we're dealing
     # with. If it's a QuerySet the rules are pulled in one query to the
-    # cloud provider using the SecurityGroupQuerySet::with_rules method.
+    # cloud account using the SecurityGroupQuerySet::with_rules method.
     # For single, detail objects we use the rules instance method on the
     # SecurityGroup object
-    provider_id = serializers.ReadOnlyField(source='cloud_provider.id')
+    account_id = serializers.ReadOnlyField(source='account.id')
 
     rules_url = serializers.HyperlinkedIdentityField(view_name='securitygroup-rules')
 
@@ -445,8 +444,8 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
             'description',
             'rules_url',
             'group_id',
-            'cloud_provider',
-            'provider_id',
+            'account',
+            'account_id',
             'is_default',
             'is_managed',
             'active_hosts',

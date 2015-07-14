@@ -350,9 +350,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
     def get_driver_hosts_map(self, host_ids=None):
         """
         Stacks are comprised of multiple hosts. Each host may be
-        located in different cloud providers. This method returns
+        located in different cloud accounts. This method returns
         a map of the underlying driver implementation and the hosts
-        that running in the provider.
+        that running in the account.
 
         @param host_ids (list); a list of primary keys for the hosts
             we're interested in
@@ -360,14 +360,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with QuerySet value for the matching host objects
         """
         hosts = self.get_hosts(host_ids)
-        providers = {}
+        accounts = {}
         for h in hosts:
-            providers.setdefault(h.get_provider(), []).append(h)
+            accounts.setdefault(h.get_account(), []).append(h)
 
         result = {}
-        for p, hosts in providers.iteritems():
+        for a, hosts in accounts.iteritems():
             result[p.get_driver()] = self.hosts.filter(
-                cloud_profile__cloud_provider=p,
+                cloud_profile__account=a,
                 pk__in=[h.pk for h in hosts]
             )
         return result
@@ -412,9 +412,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                 self.pk)
             sg_description = 'stackd.io managed security group'
 
-            # cloud provider and driver for the host definition
-            cloud_provider = hostdef.cloud_profile.cloud_provider
-            driver = cloud_provider.get_driver()
+            # cloud account and driver for the host definition
+            account = hostdef.cloud_profile.account
+            driver = account.get_driver()
 
             try:
 
@@ -441,7 +441,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
             # create the security group object that we can use for tracking
             self.security_groups.create(
-                cloud_provider=cloud_provider,
+                account=account,
                 blueprint_host_definition=hostdef,
                 name=sg_name,
                 description=sg_description,
@@ -534,22 +534,22 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                     state=Host.PENDING
                 )
 
-                if hostdef.cloud_profile.cloud_provider.vpc_enabled:
+                if hostdef.cloud_profile.account.vpc_enabled:
                     kwargs['subnet_id'] = hostdef.subnet_id
                 else:
                     kwargs['availability_zone'] = hostdef.zone
 
                 host = self.hosts.create(**kwargs)
 
-                # Add in the cloud provider default security groups as
+                # Add in the cloud account default security groups as
                 # defined by an admin.
-                provider_groups = set(list(
-                    host.cloud_profile.cloud_provider.security_groups.filter(
+                account_groups = set(list(
+                    host.cloud_profile.account.security_groups.filter(
                         is_default=True
                     )
                 ))
 
-                host.security_groups.add(*provider_groups)
+                host.security_groups.add(*account_groups)
 
                 # Add in the security group provided by this host definition
                 security_group = SecurityGroup.objects.get(
@@ -588,9 +588,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
         for host in hosts:
             # load provider yaml to extract default security groups
-            cloud_provider = host.cloud_profile.cloud_provider
-            cloud_provider_yaml = yaml.safe_load(
-                cloud_provider.yaml)[cloud_provider.slug]
+            cloud_account = host.cloud_profile.account
+            cloud_account_yaml = yaml.safe_load(
+                cloud_account.yaml)[cloud_account.slug]
 
             # pull various stuff we need for a host
             roles = [c.component.sls_path for
@@ -601,7 +601,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             ])
             volumes = host.volumes.all()
 
-            domain = cloud_provider_yaml['append_domain']
+            domain = cloud_account_yaml['append_domain']
             fqdn = '{0}.{1}'.format(host.hostname, domain)
 
             # The volumes will be defined on the map as well as in the grains.
@@ -649,7 +649,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
                             'volumes': map_volumes,
-                            'cloud_provider': host.cloud_profile.cloud_provider.slug,
+                            'cloud_account': host.cloud_profile.account.slug,
                             'cloud_profile': host.cloud_profile.slug,
                             'namespace': self.namespace,
                         },
@@ -657,14 +657,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
                     # The rest of the settings in the map are salt-cloud
                     # specific and control the VM in various ways
-                    # depending on the cloud provider being used.
+                    # depending on the cloud account being used.
                     'size': instance_size,
                     'securitygroupid': list(security_groups),
                     'volumes': map_volumes,
                 }
             }
 
-            if cloud_provider.vpc_enabled:
+            if cloud_account.vpc_enabled:
                 host_metadata[host.hostname]['subnetid'] = host.subnet_id
             else:
                 host_metadata[host.hostname]['availability_zone'] \
@@ -746,27 +746,27 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                 f.write(yaml_data)
 
     def _generate_global_overstate_file(self):
-        providers = set(
-            [host.cloud_profile.cloud_provider for
+        accounts = set(
+            [host.cloud_profile.account for
                 host in self.hosts.all()])
 
         overstate = {}
 
-        for provider in providers:
-            # Target the stack_id and cloud provider
-            target = 'G@stack_id:{0} and G@cloud_provider:{1}'.format(
+        for account in accounts:
+            # Target the stack_id and cloud account
+            target = 'G@stack_id:{0} and G@cloud_account:{1}'.format(
                 self.id,
-                provider.slug)
+                account.slug)
 
             groups = {}
-            for c in provider.global_formula_components.all():
+            for c in account.global_formula_components.all():
                 groups.setdefault(
                     c.order, set()
                 ).add(c.component.sls_path)
 
             for order in sorted(groups.keys()):
                 for role in groups[order]:
-                    state_title = '{0}_{1}'.format(provider.slug, role)
+                    state_title = '{0}_{1}'.format(account.slug, role)
                     overstate[state_title] = {
                         'match': target,
                         'sls': list([role]),
@@ -860,23 +860,23 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
         pillar_props = {}
 
         # Find all of the globally used formulas for the stack
-        providers = set(
-            [host.cloud_profile.cloud_provider for
+        accounts = set(
+            [host.cloud_profile.account for
                 host in self.hosts.all()]
         )
         global_formulas = []
-        for provider in providers:
-            for gfc in provider.global_formula_components.all():
+        for account in accounts:
+            for gfc in account.global_formula_components.all():
                 global_formulas.append(gfc.component.formula)
 
         # Add the global formulas into the props
         for formula in set(global_formulas):
             recursive_update(pillar_props, formula.properties)
 
-        # Add in the provider properties AFTER the stack properties
-        for provider in providers:
+        # Add in the account properties AFTER the stack properties
+        for account in accounts:
             recursive_update(pillar_props,
-                             provider.global_orchestration_properties)
+                             account.global_orchestration_properties)
 
         pillar_file_yaml = yaml.safe_dump(pillar_props,
                                           default_flow_style=False)
@@ -925,16 +925,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
             # yaml_result contains all host information in the stack, but
             # we have to dig a bit to get individual host metadata out
-            # of provider and provider type dictionaries
+            # of account and provider type dictionaries
             host_result = {}
             for host in self.hosts.all():
-                cloud_provider = host.cloud_profile.cloud_provider
-                provider_type = cloud_provider.provider_type
+                cloud_account = host.cloud_profile.account
+                provider_type = cloud_account.provider_type
 
                 # each host is buried in a cloud provider type dict that's
-                # inside a cloud provider name dict
+                # inside a cloud account name dict
                 host_result[host.hostname] = yaml_result \
-                    .get(cloud_provider.slug, {}) \
+                    .get(cloud_account.slug, {}) \
                     .get(provider_type.type_name, {}) \
                     .get(host.hostname, None)
 
@@ -1066,7 +1066,7 @@ class Host(TimeStampedModel, StatusDetailModel):
 
         default_permissions = ()
 
-    # TODO: We should be using generic foreign keys here to a cloud provider
+    # TODO: We should be using generic foreign keys here to a cloud account
     # specific implementation of a Host object. I'm not exactly sure how this
     # will work, but I think by using Django's content type system we can make
     # it work...just not sure how easy it will be to extend, maintain, etc.
@@ -1101,7 +1101,7 @@ class Host(TimeStampedModel, StatusDetailModel):
     security_groups = models.ManyToManyField('cloud.SecurityGroup',
                                              related_name='hosts')
 
-    # The machine state as provided by the cloud provider
+    # The machine state as provided by the cloud account
     state = models.CharField('State', max_length=32, default='unknown')
     state_reason = models.CharField('State Reason', max_length=255, default='', blank=True)
 
@@ -1138,11 +1138,11 @@ class Host(TimeStampedModel, StatusDetailModel):
     def __unicode__(self):
         return self.hostname
 
-    def get_provider(self):
-        return self.cloud_profile.cloud_provider
+    def get_account(self):
+        return self.cloud_profile.account
 
     def get_provider_type(self):
-        return self.cloud_profile.cloud_provider.provider_type
+        return self.get_account().provider_type
 
     def get_driver(self):
         return self.cloud_profile.get_driver()
