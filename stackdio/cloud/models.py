@@ -372,7 +372,7 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
     object_permissions = _snapshot_object_permissions
 
     class Meta:
-        unique_together = ('snapshot_id', 'cloud_provider')
+        unique_together = ('snapshot_id', 'account')
 
         default_permissions = tuple(set(_snapshot_model_permissions +
                                         _snapshot_object_permissions))
