@@ -15,37 +15,4 @@
 # limitations under the License.
 #
 
-
-import logging
-
-from django.conf import settings
-from django.db import models
-from django.dispatch import receiver
-
-logger = logging.getLogger(__name__)
-
-
-class UserSettings(models.Model):
-
-    class Meta:
-        verbose_name_plural = 'User settings'
-
-    # which user the settings below
-    user = models.OneToOneField(settings.AUTH_USER_MODEL,
-                                related_name='settings')
-
-    # public RSA key for the user
-    public_key = models.TextField(blank=True)
-
-    def __unicode__(self):
-        return self.user.username
-
-
-@receiver(models.signals.post_save, sender=settings.AUTH_USER_MODEL)
-def user_post_save(sender, instance, **kwargs):
-    """
-    Catch the post_save signal for all User objects and create a
-    UserSettings objects if needed
-    """
-    if 'created' in kwargs and kwargs['created'] is True:
-        UserSettings.objects.create(user=instance)
+# Django will complain if there's no models.py

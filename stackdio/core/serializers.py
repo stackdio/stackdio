@@ -15,39 +15,12 @@
 # limitations under the License.
 #
 
+import logging
 
-from django.contrib.auth import get_user_model
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
-from .models import UserSettings
-from . import fields
-
-
-class UserSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = get_user_model()
-        lookup_field = 'username'
-        fields = (
-            'url',
-            'username',
-            'first_name',
-            'last_name',
-            'email',
-            'last_login'
-        )
-
-
-class UserSettingsSerializer(serializers.HyperlinkedModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    class Meta:
-        model = UserSettings
-        lookup_field = 'username'
-        fields = (
-            'user',
-            'public_key',
-        )
+logger = logging.getLogger(__name__)
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):
@@ -55,7 +28,7 @@ class StackdioModelPermissionsSerializer(serializers.Serializer):
     def validate(self, attrs):
         view = self.context['view']
 
-        available_perms = view.model_cls.model_permissions
+        available_perms = view.get_model_permissions()
         bad_perms = []
 
         for perm in attrs['permissions']:
@@ -115,22 +88,12 @@ class StackdioModelPermissionsSerializer(serializers.Serializer):
         return self.create(validated_data)
 
 
-class StackdioUserModelPermissionsSerializer(StackdioModelPermissionsSerializer):
-    user = fields.UserField()
-    permissions = serializers.ListField()
-
-
-class StackdioGroupModelPermissionsSerializer(StackdioModelPermissionsSerializer):
-    group = fields.GroupField()
-    permissions = serializers.ListField()
-
-
 class StackdioObjectPermissionsSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         view = self.context['view']
 
-        available_perms = view.get_permissioned_object().object_permissions
+        available_perms = view.get_object_permissions()
         bad_perms = []
 
         for perm in attrs['permissions']:
@@ -187,13 +150,3 @@ class StackdioObjectPermissionsSerializer(serializers.Serializer):
 
         # We now want to do the same thing as create
         return self.create(validated_data)
-
-
-class StackdioUserObjectPermissionsSerializer(StackdioObjectPermissionsSerializer):
-    user = fields.UserField()
-    permissions = serializers.ListField()
-
-
-class StackdioGroupObjectPermissionsSerializer(StackdioObjectPermissionsSerializer):
-    group = fields.GroupField()
-    permissions = serializers.ListField()

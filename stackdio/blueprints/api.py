@@ -28,12 +28,6 @@ from core.permissions import (
     StackdioModelPermissions,
     StackdioObjectPermissions,
 )
-from core.serializers import (
-    StackdioUserModelPermissionsSerializer,
-    StackdioGroupModelPermissionsSerializer,
-    StackdioUserObjectPermissionsSerializer,
-    StackdioGroupObjectPermissionsSerializer,
-)
 from core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -118,26 +112,22 @@ class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.Retrieve
 
 
 class BlueprintModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    serializer_class = StackdioUserModelPermissionsSerializer
     permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
     model_cls = models.Blueprint
 
 
 class BlueprintModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    serializer_class = StackdioGroupModelPermissionsSerializer
     permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
     model_cls = models.Blueprint
 
 
 class BlueprintObjectUserPermissionsViewSet(mixins.BlueprintRelatedMixin,
                                             StackdioObjectUserPermissionsViewSet):
-    serializer_class = StackdioUserObjectPermissionsSerializer
     permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
 
 
 class BlueprintObjectGroupPermissionsViewSet(mixins.BlueprintRelatedMixin,
                                              StackdioObjectGroupPermissionsViewSet):
-    serializer_class = StackdioGroupObjectPermissionsSerializer
     permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
 
 

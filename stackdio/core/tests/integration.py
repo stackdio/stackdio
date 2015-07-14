@@ -28,7 +28,7 @@ class AuthenticationTestCase(StackdioTestCase):
 
     # These don't allow get requests
     EXEMPT_ENDPOINTS = (
-        '/api/settings/change_password/',
+        '/api/user/password/',
     )
 
     PERMISSION_MODELS = (
@@ -39,6 +39,7 @@ class AuthenticationTestCase(StackdioTestCase):
         'providers',
         'profiles',
         'snapshots',
+        'groups',
     )
 
     PERMISSIONS_ENDPOINTS = (
@@ -48,7 +49,6 @@ class AuthenticationTestCase(StackdioTestCase):
 
     # These should be only visible by admins
     ADMIN_ONLY = [
-        '/api/users/',
         '/api/provider_types/',
         '/api/instance_sizes/',
         '/api/regions/',

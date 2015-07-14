@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,20 +15,17 @@
 # limitations under the License.
 #
 
+from django.contrib import admin
+from guardian.admin import GuardedModelAdmin
 
-from rest_framework import permissions, views
-from rest_framework.response import Response
+from users.models import UserSettings
 
 
-class VersionAPIView(views.APIView):
-    """
-    Returns a JSON object with version-specific fields.
-    """
-    permission_classes = (permissions.IsAuthenticated,)
+class UserSettingsAdmin(GuardedModelAdmin):
+    list_display = [
+        'user',
+        'public_key',
+    ]
 
-    def get(self, request, *args, **kwargs):
-        from stackdio.version import __version__
 
-        return Response({
-            'version': __version__,
-        })
+admin.site.register(UserSettings, UserSettingsAdmin)

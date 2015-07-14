@@ -16,19 +16,4 @@
 #
 
 
-from rest_framework import permissions, views
-from rest_framework.response import Response
-
-
-class VersionAPIView(views.APIView):
-    """
-    Returns a JSON object with version-specific fields.
-    """
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get(self, request, *args, **kwargs):
-        from stackdio.version import __version__
-
-        return Response({
-            'version': __version__,
-        })
+from users.tests.unit import *
