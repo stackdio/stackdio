@@ -18,8 +18,8 @@ dependencies:
 ## Customize test commands
 test:
   pre:
-    - pep8 --ignore=E501,E12 --exclude='*/migrations/*,*/bower_components/*' * && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors':
-    - pylint --rcfile=.pylintrc * && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors':
+    - pep8 --ignore=E501,E12 --exclude='*/migrations/*,*/bower_components/*' * && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
+    - pylint --rcfile=.pylintrc * && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
     - mkdir /home/ubuntu/.stackdio
     - cp tests/config /home/ubuntu/.stackdio/config
 
@@ -29,4 +29,4 @@ test:
   post:
     - mv stackdio/nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
     - mv stackdio/cover $CIRCLE_ARTIFACTS/coverage
-    - coveralls:
+    - coveralls
