@@ -94,7 +94,7 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     permission_tests = {
         'model': models.CloudProfile,
         'create_data': {
-            'cloud_provider_id': 1,
+            'account_id': 1,
             'title': 'test',
             'description': 'test',
             'image_id': 'blah',
