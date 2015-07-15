@@ -37,14 +37,14 @@ class CloudProviderTestCase(StackdioTestCase):
 
     def test_create_provider(self):
         # No creation should be allowed via the API, neither as an admin or non
-        response = self.client.post('/api/providers/', {'title': 'new'})
+        response = self.client.post('/api/cloud/providers/', {'title': 'new'})
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # Try as non-admin
         self.client.logout()
         self.client.login(username='test.user', password='1234')
 
-        response = self.client.post('/api/providers/', {'title': 'new'})
+        response = self.client.post('/api/cloud/providers/', {'title': 'new'})
         # Should just be forbidden now
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -64,7 +64,7 @@ class CloudAccountTestCase(StackdioTestCase, PermissionsMixin):
             'vpc_id': 'vpc-blah',
             'region_id': 1,
         },
-        'endpoint': '/api/accounts/{0}/',
+        'endpoint': '/api/cloud/accounts/{0}/',
         'permission': 'cloud.%s_cloudaccount',
         'permission_types': [
             {
@@ -82,7 +82,7 @@ class CloudAccountTestCase(StackdioTestCase, PermissionsMixin):
     def test_view_account_as_admin(self):
         self.client.login(username='test.admin', password='1234')
 
-        response = self.client.get('/api/accounts/{0}/'.format(self.obj.pk))
+        response = self.client.get('/api/cloud/accounts/{0}/'.format(self.obj.pk))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
@@ -101,7 +101,7 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
             'default_instance_size_id': 1,
             'ssh_user': 'root',
         },
-        'endpoint': '/api/profiles/{0}/',
+        'endpoint': '/api/cloud/profiles/{0}/',
         'permission': 'cloud.%s_cloudprofile',
         'permission_types': [
             {

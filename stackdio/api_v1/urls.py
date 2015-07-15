@@ -76,9 +76,6 @@ class APIRootView(APIView):
             ('stacks', reverse('stack-list',
                                request=request,
                                format=format)),
-            ('snapshots', reverse('snapshot-list',
-                                  request=request,
-                                  format=format)),
             ('volumes', reverse('volume-list',
                                 request=request,
                                 format=format)),
@@ -100,7 +97,7 @@ urlpatterns = patterns(
     ##
     url(r'^', include('users.urls')),
     url(r'^', include('core.urls')),
-    url(r'^', include('cloud.urls')),
+    url(r'^cloud/', include('cloud.urls')),
     url(r'^', include('stacks.urls')),
     url(r'^', include('volumes.urls')),
     url(r'^', include('blueprints.urls')),
