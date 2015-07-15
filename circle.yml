@@ -24,7 +24,7 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python manage.py test --cover-html:
+    - python manage.py test --cover-html
 
   post:
     - mv stackdio/nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
