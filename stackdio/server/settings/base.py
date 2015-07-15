@@ -186,7 +186,7 @@ STATIC_URL = '/static/'
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/var/www/example.com/static/"
-STATIC_ROOT = '%s/static/' % BASE_DIR
+STATIC_ROOT = '%s/static/' % STACKDIO_CONFIG.storage_root
 
 # Additional locations of static files
 STATICFILES_DIRS = ()

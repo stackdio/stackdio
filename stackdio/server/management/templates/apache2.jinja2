@@ -77,7 +77,7 @@ SSLCryptoDevice builtin
 <IfVersion < 2.4 >
     WSGISocketPrefix {{ storage_root }}/var/run
 </IfVersion>
-WSGIPythonPath {{ stackdio_root }}:{{ site_packages_root }}
+WSGIPythonPath {{ stackdio_root }}
 
 {% if with_ssl %}
 # Enable listening on port 443 and set up basic SSL. Note that mod_ssl
@@ -95,7 +95,7 @@ Listen 80
     ServerAdmin admin@example.com
     ServerName stackdio.example.com
 
-    DocumentRoot {{ stackdio_root }}
+    DocumentRoot {{ storage_root }}
 
     # NOTE: The following directories must exist.
     LogLevel warn
@@ -103,8 +103,8 @@ Listen 80
     CustomLog {{ storage_root }}/var/log/web/access_log common
 
     ## Non-Django directories
-    Alias /static {{ stackdio_root }}/static
-    <Directory "{{ stackdio_root }}/static">
+    Alias /static {{ storage_root }}/static
+    <Directory "{{ storage_root }}/static">
         Options -Indexes
         Order deny,allow
         <IfVersion >= 2.4 >
@@ -128,7 +128,7 @@ Listen 80
         </Files>
     </Directory>
 
-    WSGIDaemonProcess {{ user }} user={{ user }} group={{ user }} processes=2 python-path={{ stackdio_root }}:{{ site_packages_root }}
+    WSGIDaemonProcess {{ user }} user={{ user }} group={{ user }} processes=2 python-path={{ stackdio_root }}
     WSGIProcessGroup {{ user }}
     WSGIScriptAlias / {{ stackdio_root }}/stackdio/wsgi.py
     WSGIPassAuthorization On

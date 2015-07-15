@@ -133,7 +133,7 @@ class BaseCommand(object):
             self.out('Aborting.', Colors.ERROR)
             sys.exit(1)
 
-    def load_resource(self, rp=None, package='stackdio.server'):
+    def load_resource(self, rp=None, package='stackdio'):
         """
         Takes a relative path `rp`, and attempts to pull the full resource
         path using pkg_resources.
@@ -493,9 +493,7 @@ class ConfigCommand(BaseCommand):
     def run(self):
         config = self.stackdio_config()
         stackdio_root = self.load_resource()
-        site_packages_root = os.path.dirname(stackdio_root)
         context = {
-            'site_packages_root': site_packages_root,
             'stackdio_root': stackdio_root,
             'storage_root': config.storage_root,
         }
@@ -508,14 +506,14 @@ class ConfigCommand(BaseCommand):
                 'user': config.user,
                 'with_ssl': self.args.with_ssl,
             })
-            tmpl = 'management/templates/apache2.jinja2'
+            tmpl = 'server/management/templates/apache2.jinja2'
         elif self.args.type == 'nginx':
             context.update({
                 'with_ssl': self.args.with_ssl
             })
-            tmpl = 'management/templates/nginx.jinja2'
+            tmpl = 'server/management/templates/nginx.jinja2'
         elif self.args.type == 'supervisord':
-            tmpl = 'management/templates/supervisord.jinja2'
+            tmpl = 'server/management/templates/supervisord.jinja2'
             context.update({
                 'with_gunicorn': self.args.with_gunicorn,
                 'with_celery': self.args.with_celery,

@@ -30,7 +30,8 @@ if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     sys.exit(1)
 
 # Grab the current version from our stackdio package
-VERSION = __import__('stackdio.server').__version__
+from stackdio.server import __version__
+VERSION = __version__
 
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
@@ -77,7 +78,7 @@ if __name__ == "__main__":
         long_description=LONG_DESCRIPTION,
         license='Apache 2.0',
         include_package_data=True,
-        packages=find_packages(),
+        packages=find_packages(exclude=('tests', 'dist', 'build')),
         zip_safe=False,
         install_requires=reqs,
         dependency_links=deps,
