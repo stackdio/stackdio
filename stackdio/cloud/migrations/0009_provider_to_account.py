@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='globalorchestrationformulacomponent',
             name='account',
-            field=models.ForeignKey('cloud.CloudAccount', related_name='global_formula_components'),
+            field=models.ForeignKey(to='cloud.CloudAccount', related_name='global_formula_components'),
         ),
         migrations.RenameField(
             model_name='cloudprofile',
@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='cloudprofile',
             name='account',
-            field=models.ForeignKey('cloud.CloudAccount', related_name='profiles'),
+            field=models.ForeignKey(to='cloud.CloudAccount', related_name='profiles'),
         ),
         migrations.RenameField(
             model_name='securitygroup',
@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='securitygroup',
             name='account',
-            field=models.ForeignKey('cloud.CloudAccount', related_name='security_groups'),
+            field=models.ForeignKey(to='cloud.CloudAccount', related_name='security_groups'),
         ),
         migrations.RenameField(
             model_name='snapshot',
