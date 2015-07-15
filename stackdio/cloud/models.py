@@ -432,7 +432,7 @@ class SecurityGroupQuerySet(TransformQuerySet):
         """
         by_account = {}
         for group in queryset:
-            by_account.setdefault(group.cloud_account, []).append(group)
+            by_account.setdefault(group.account, []).append(group)
 
         for account, groups in by_account.iteritems():
             group_ids = [group.group_id for group in groups]
