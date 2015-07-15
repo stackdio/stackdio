@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 
 from django.db import models, migrations
 
+from cloud.utils import get_cloud_provider_choices
+
 
 class Migration(migrations.Migration):
 
@@ -19,6 +21,11 @@ class Migration(migrations.Migration):
             model_name='cloudprovider',
             old_name='type_name',
             new_name='name',
+        ),
+        migrations.AlterField(
+            model_name='cloudprovider',
+            name='name',
+            field=models.CharField(unique=True, max_length=32, verbose_name=b'Name', choices=get_cloud_provider_choices()),
         ),
         migrations.RenameField(
             model_name='cloudinstancesize',

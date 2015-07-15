@@ -366,7 +366,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
         result = {}
         for a, hosts in accounts.iteritems():
-            result[p.get_driver()] = self.hosts.filter(
+            result[a.get_driver()] = self.hosts.filter(
                 cloud_profile__account=a,
                 pk__in=[h.pk for h in hosts]
             )
