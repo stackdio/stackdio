@@ -21,13 +21,13 @@ from rest_framework import routers
 
 from . import api
 
-providertype_object_router = routers.SimpleRouter()
-providertype_object_router.register(r'users',
-                                    api.CloudProviderTypeObjectUserPermissionsViewSet,
-                                    'cloudprovidertype-object-user-permissions')
-providertype_object_router.register(r'groups',
-                                    api.CloudProviderTypeObjectGroupPermissionsViewSet,
-                                    'cloudprovidertype-object-group-permissions')
+provider_object_router = routers.SimpleRouter()
+provider_object_router.register(r'users',
+                                api.CloudProviderObjectUserPermissionsViewSet,
+                                'cloudprovider-object-user-permissions')
+provider_object_router.register(r'groups',
+                                api.CloudProviderObjectGroupPermissionsViewSet,
+                                'cloudprovider-object-group-permissions')
 
 account_model_router = routers.SimpleRouter()
 account_model_router.register(r'users',
@@ -80,42 +80,42 @@ snapshot_object_router.register(r'groups',
 urlpatterns = patterns(
     'cloud.api',
 
-    url(r'^provider_types/$',
-        api.CloudProviderTypeListAPIView.as_view(),
-        name='cloudprovidertype-list'),
+    url(r'^providers/$',
+        api.CloudProviderListAPIView.as_view(),
+        name='cloudprovider-list'),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/$',
-        api.CloudProviderTypeDetailAPIView.as_view(),
-        name='cloudprovidertype-detail'),
+    url(r'^providers/(?P<name>[\w.@+-]+)/$',
+        api.CloudProviderDetailAPIView.as_view(),
+        name='cloudprovider-detail'),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/permissions/',
-        include(providertype_object_router.urls)),
+    url(r'^providers/(?P<name>[\w.@+-]+)/permissions/',
+        include(provider_object_router.urls)),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/instance_sizes/$',
+    url(r'^providers/(?P<name>[\w.@+-]+)/instance_sizes/$',
         api.CloudInstanceSizeListAPIView.as_view(),
         name='cloudinstancesize-list'),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
+    url(r'^providers/(?P<name>[\w.@+-]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
         api.CloudInstanceSizeDetailAPIView.as_view(),
         name='cloudinstancesize-detail'),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/$',
+    url(r'^providers/(?P<name>[\w.@+-]+)/regions/$',
         api.CloudRegionListAPIView.as_view(),
         name='cloudregion-list'),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/$',
+    url(r'^providers/(?P<name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/$',
         api.CloudRegionDetailAPIView.as_view(),
         name='cloudregion-detail'),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
+    url(r'^providers/(?P<name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
         api.CloudRegionZoneListAPIView.as_view(),
         name='cloudregion-zones'),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/zones/$',
+    url(r'^providers/(?P<name>[\w.@+-]+)/zones/$',
         api.CloudZoneListAPIView.as_view(),
         name='cloudzone-list'),
 
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/zones/(?P<title>[\w.@+-]+)/$',
+    url(r'^providers/(?P<name>[\w.@+-]+)/zones/(?P<title>[\w.@+-]+)/$',
         api.CloudZoneDetailAPIView.as_view(),
         name='cloudzone-detail'),
 

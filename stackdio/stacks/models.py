@@ -929,13 +929,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             host_result = {}
             for host in self.hosts.all():
                 cloud_account = host.cloud_profile.account
-                provider_type = cloud_account.provider_type
+                provider = cloud_account.provider
 
                 # each host is buried in a cloud provider type dict that's
                 # inside a cloud account name dict
                 host_result[host.hostname] = yaml_result \
                     .get(cloud_account.slug, {}) \
-                    .get(provider_type.type_name, {}) \
+                    .get(provider.name, {}) \
                     .get(host.hostname, None)
 
             return host_result
@@ -1141,8 +1141,8 @@ class Host(TimeStampedModel, StatusDetailModel):
     def get_account(self):
         return self.cloud_profile.account
 
-    def get_provider_type(self):
-        return self.get_account().provider_type
+    def get_provider(self):
+        return self.get_account().provider
 
     def get_driver(self):
         return self.cloud_profile.get_driver()

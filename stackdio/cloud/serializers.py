@@ -46,28 +46,28 @@ def validate_properties(properties):
         })
 
 
-class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
+class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
     title = serializers.ReadOnlyField(source='get_type_name_display')
 
     # Links
     instance_sizes = serializers.HyperlinkedIdentityField(view_name='cloudinstancesize-list',
-                                                          lookup_field='type_name')
+                                                          lookup_field='name')
     regions = serializers.HyperlinkedIdentityField(view_name='cloudregion-list',
-                                                   lookup_field='type_name')
+                                                   lookup_field='name')
     zones = serializers.HyperlinkedIdentityField(view_name='cloudzone-list',
-                                                 lookup_field='type_name')
+                                                 lookup_field='name')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovidertype-object-user-permissions-list', lookup_field='type_name')
+        view_name='cloudprovider-object-user-permissions-list', lookup_field='name')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprovidertype-object-group-permissions-list', lookup_field='type_name')
+        view_name='cloudprovider-object-group-permissions-list', lookup_field='name')
 
     class Meta:
-        model = models.CloudProviderType
-        lookup_field = 'type_name'
+        model = models.CloudProvider
+        lookup_field = 'name'
         fields = (
             'url',
             'title',
-            'type_name',
+            'name',
             'instance_sizes',
             'regions',
             'zones',
@@ -78,8 +78,8 @@ class CloudProviderTypeSerializer(serializers.HyperlinkedModelSerializer):
 
 class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
     # Foreign Key Relations
-    provider_type = serializers.SlugRelatedField(slug_field='type_name',
-                                                 queryset=models.CloudProviderType.objects.all())
+    provider = serializers.SlugRelatedField(slug_field='name',
+                                            queryset=models.CloudProvider.objects.all())
     region = serializers.SlugRelatedField(slug_field='title',
                                           queryset=models.CloudRegion.objects.all())
 
@@ -106,7 +106,7 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'slug',
             'description',
-            'provider_type',
+            'provider',
             'region',
             'account_id',
             'vpc_id',
@@ -141,7 +141,7 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
         elif request.method == 'POST':
 
             provider_type, provider_class = get_provider_type_and_class(
-                request.DATA.get('provider_type'))
+                request.DATA.get('provider'))
 
             # Grab the region name from the database
             try:
@@ -216,7 +216,8 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
         if self.partial:
             # This is a PATCH, so properly merge in the old data
             old_properties = account.global_orchestration_properties
-            account.global_orchestration_properties = recursive_update(old_properties, validated_data)
+            account.global_orchestration_properties = recursive_update(old_properties,
+                                                                       validated_data)
         else:
             # This is a PUT, so just add the data directly
             account.global_orchestration_properties = validated_data
@@ -346,12 +347,12 @@ class SnapshotSerializer(serializers.HyperlinkedModelSerializer):
 class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
     url = HyperlinkedParentField(
         view_name='cloudinstancesize-detail',
-        parent_relation_field='provider_type',
-        parent_lookup_field='type_name',
+        parent_relation_field='provider',
+        parent_lookup_field='name',
         lookup_field='instance_id',
     )
 
-    provider_type = serializers.CharField(source='provider_type.type_name')
+    provider = serializers.CharField(source='provider.name')
 
     class Meta:
         model = models.CloudInstanceSize
@@ -360,7 +361,7 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
             'title',
             'slug',
             'description',
-            'provider_type',
+            'provider',
             'instance_id',
         )
 
@@ -368,17 +369,17 @@ class CloudInstanceSizeSerializer(serializers.HyperlinkedModelSerializer):
 class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
     url = HyperlinkedParentField(
         view_name='cloudregion-detail',
-        parent_relation_field='provider_type',
-        parent_lookup_field='type_name',
+        parent_relation_field='provider',
+        parent_lookup_field='name',
         lookup_field='title',
     )
 
-    provider_type = serializers.CharField(source='provider_type.type_name')
+    provider = serializers.CharField(source='provider.name')
     zones = serializers.StringRelatedField(many=True, read_only=True)
     zones_url = HyperlinkedParentField(
         view_name='cloudregion-zones',
-        parent_lookup_field='type_name',
-        parent_relation_field='provider_type',
+        parent_lookup_field='name',
+        parent_relation_field='provider',
         lookup_field='title',
     )
 
@@ -387,7 +388,7 @@ class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'url',
             'title',
-            'provider_type',
+            'provider',
             'zones',
             'zones_url',
         )
@@ -396,14 +397,14 @@ class CloudRegionSerializer(serializers.HyperlinkedModelSerializer):
 class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
     url = HyperlinkedParentField(
         view_name='cloudzone-detail',
-        parent_relation_field='region.provider_type',
-        parent_lookup_field='type_name',
+        parent_relation_field='region.provider',
+        parent_lookup_field='name',
         lookup_field='title',
     )
 
     region = serializers.CharField(source='region.title')
 
-    provider_type = serializers.CharField(source='region.provider_type.type_name')
+    provider = serializers.CharField(source='region.provider.name')
 
     class Meta:
         model = models.CloudZone
@@ -411,7 +412,7 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
             'url',
             'title',
             'region',
-            'provider_type',
+            'provider',
         )
 
 

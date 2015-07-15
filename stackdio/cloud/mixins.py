@@ -24,18 +24,18 @@ from . import models, permissions
 logger = logging.getLogger(__name__)
 
 
-class CloudProviderTypeRelatedMixin(object):
-    permission_classes = (permissions.CloudProviderTypeParentObjectPermissions,)
+class CloudProviderRelatedMixin(object):
+    permission_classes = (permissions.CloudProviderParentObjectPermissions,)
 
-    def get_cloudprovidertype(self):
-        queryset = models.CloudProviderType.objects.all()
+    def get_cloudprovider(self):
+        queryset = models.CloudProvider.objects.all()
 
-        obj = get_object_or_404(queryset, type_name=self.kwargs.get('type_name'))
+        obj = get_object_or_404(queryset, name=self.kwargs.get('name'))
         self.check_object_permissions(self.request, obj)
         return obj
 
     def get_permissioned_object(self):
-        return self.get_cloudprovidertype()
+        return self.get_cloudprovider()
 
 
 class CloudRegionRelatedMixin(object):

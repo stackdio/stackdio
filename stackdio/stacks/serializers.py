@@ -359,8 +359,8 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         # Check to find duplicates
         dups = []
         for account in accounts:
-            provider_type = account.provider_type.type_name
-            for instance, details in query.get(account.slug, {}).get(provider_type, {}).items():
+            provider = account.provider.name
+            for instance, details in query.get(account.slug, {}).get(provider, {}).items():
                 if instance in hostnames:
                     if details['state'] not in ('shutting-down', 'terminated'):
                         dups.append(instance)

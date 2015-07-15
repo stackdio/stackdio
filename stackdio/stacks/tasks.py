@@ -235,10 +235,10 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
             accounts.add(host.cloud_profile.account)
 
         for account in accounts:
-            provider_type = account.provider_type.type_name
+            provider = account.provider.name
 
             for instance, details in query.get(account.slug, {}) \
-                    .get(provider_type, {}).items():
+                    .get(provider, {}).items():
                 if instance in hostnames:
                     if details['state'] in ('shutting-down', 'terminated'):
                         salt_cloud.action(

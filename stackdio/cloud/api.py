@@ -40,31 +40,31 @@ from . import filters, mixins, models, permissions, serializers
 logger = logging.getLogger(__name__)
 
 
-class CloudProviderTypeListAPIView(generics.ListAPIView):
-    queryset = models.CloudProviderType.objects.all()
-    serializer_class = serializers.CloudProviderTypeSerializer
+class CloudProviderListAPIView(generics.ListAPIView):
+    queryset = models.CloudProvider.objects.all()
+    serializer_class = serializers.CloudProviderSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
-    lookup_field = 'type_name'
+    lookup_field = 'name'
 
 
-class CloudProviderTypeDetailAPIView(generics.RetrieveAPIView):
-    queryset = models.CloudProviderType.objects.all()
-    serializer_class = serializers.CloudProviderTypeSerializer
+class CloudProviderDetailAPIView(generics.RetrieveAPIView):
+    queryset = models.CloudProvider.objects.all()
+    serializer_class = serializers.CloudProviderSerializer
     permission_classes = (StackdioObjectPermissions,)
-    lookup_field = 'type_name'
+    lookup_field = 'name'
 
 
-class CloudProviderTypeObjectUserPermissionsViewSet(mixins.CloudProviderTypeRelatedMixin,
+class CloudProviderObjectUserPermissionsViewSet(mixins.CloudProviderRelatedMixin,
                                                     StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.CloudProviderTypePermissionsObjectPermissions,)
-    parent_lookup_field = 'type_name'
+    permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
+    parent_lookup_field = 'name'
 
 
-class CloudProviderTypeObjectGroupPermissionsViewSet(mixins.CloudProviderTypeRelatedMixin,
+class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderRelatedMixin,
                                                      StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudProviderTypePermissionsObjectPermissions,)
-    parent_lookup_field = 'type_name'
+    permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
+    parent_lookup_field = 'name'
 
 
 class CloudAccountListAPIView(generics.ListCreateAPIView):
@@ -99,7 +99,7 @@ class CloudAccountListAPIView(generics.ListCreateAPIView):
             # Update the salt cloud providers file
             obj.update_config()
 
-        except models.CloudProviderType.DoesNotExist:
+        except models.CloudProvider.DoesNotExist:
             err_msg = 'Given provider type does not exist.'
             logger.exception(err_msg)
             raise BadRequest(err_msg)
@@ -329,68 +329,68 @@ class SnapshotObjectGroupPermissionsViewSet(mixins.SnapshotRelatedMixin,
     permission_classes = (permissions.SnapshotPermissionsObjectPermissions,)
 
 
-class CloudInstanceSizeListAPIView(mixins.CloudProviderTypeRelatedMixin, generics.ListAPIView):
+class CloudInstanceSizeListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
     serializer_class = serializers.CloudInstanceSizeSerializer
     filter_class = filters.CloudInstanceSizeFilter
     lookup_field = 'instance_id'
 
     def get_queryset(self):
-        logger.debug(self.get_cloudprovidertype())
+        logger.debug(self.get_cloudprovider())
 
-        return models.CloudInstanceSize.objects.filter(provider_type=self.get_cloudprovidertype())
+        return models.CloudInstanceSize.objects.filter(provider=self.get_cloudprovider())
 
 
-class CloudInstanceSizeDetailAPIView(mixins.CloudProviderTypeRelatedMixin,
+class CloudInstanceSizeDetailAPIView(mixins.CloudProviderRelatedMixin,
                                      generics.RetrieveAPIView):
     serializer_class = serializers.CloudInstanceSizeSerializer
     lookup_field = 'instance_id'
 
     def get_queryset(self):
-        return models.CloudInstanceSize.objects.filter(provider_type=self.get_cloudprovidertype())
+        return models.CloudInstanceSize.objects.filter(provider=self.get_cloudprovider())
 
 
-class CloudRegionListAPIView(mixins.CloudProviderTypeRelatedMixin, generics.ListAPIView):
+class CloudRegionListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
     serializer_class = serializers.CloudRegionSerializer
     filter_class = filters.CloudRegionFilter
     lookup_field = 'title'
 
     def get_queryset(self):
-        return models.CloudRegion.objects.filter(provider_type=self.get_cloudprovidertype())
+        return models.CloudRegion.objects.filter(provider=self.get_cloudprovider())
 
 
-class CloudRegionDetailAPIView(mixins.CloudProviderTypeRelatedMixin, generics.RetrieveAPIView):
+class CloudRegionDetailAPIView(mixins.CloudProviderRelatedMixin, generics.RetrieveAPIView):
     serializer_class = serializers.CloudRegionSerializer
     lookup_field = 'title'
 
     def get_queryset(self):
-        return models.CloudRegion.objects.filter(provider_type=self.get_cloudprovidertype())
+        return models.CloudRegion.objects.filter(provider=self.get_cloudprovider())
 
 
-class CloudRegionZoneListAPIView(mixins.CloudProviderTypeRelatedMixin, generics.ListAPIView):
+class CloudRegionZoneListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
     serializer_class = serializers.CloudZoneSerializer
     filter_class = filters.CloudZoneFilter
 
     def get_queryset(self):
-        region = models.CloudRegion.objects.get(provider_type=self.get_cloudprovidertype(),
+        region = models.CloudRegion.objects.get(provider=self.get_cloudprovider(),
                                                 title=self.kwargs.get('title'))
         return region.zones.all()
 
 
-class CloudZoneListAPIView(mixins.CloudProviderTypeRelatedMixin, generics.ListAPIView):
+class CloudZoneListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
     serializer_class = serializers.CloudZoneSerializer
     filter_class = filters.CloudZoneFilter
     lookup_field = 'title'
 
     def get_queryset(self):
-        return models.CloudZone.objects.filter(region__provider_type=self.get_cloudprovidertype())
+        return models.CloudZone.objects.filter(region__provider=self.get_cloudprovider())
 
 
-class CloudZoneDetailAPIView(mixins.CloudProviderTypeRelatedMixin, generics.RetrieveAPIView):
+class CloudZoneDetailAPIView(mixins.CloudProviderRelatedMixin, generics.RetrieveAPIView):
     serializer_class = serializers.CloudZoneSerializer
     lookup_field = 'title'
 
     def get_queryset(self):
-        return models.CloudZone.objects.filter(region__provider_type=self.get_cloudprovidertype())
+        return models.CloudZone.objects.filter(region__provider=self.get_cloudprovider())
 
 
 class SecurityGroupListAPIView(generics.ListCreateAPIView):

@@ -185,7 +185,7 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
         super(ObjectPermissionSerializerTestCase, cls).setUpTestData()
 
         CloudAccount.objects.create(
-            provider_type_id=1,
+            provider_id=1,
             title='test',
             description='test',
             account_id='blah',
@@ -657,7 +657,7 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
         super(ObjectPermissionsViewSetTestCase, cls).setUpTestData()
 
         CloudAccount.objects.create(
-            provider_type_id=1,
+            provider_id=1,
             title='test',
             description='test',
             account_id='blah',

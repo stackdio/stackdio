@@ -22,13 +22,13 @@ from guardian.admin import GuardedModelAdmin
 from . import models
 
 
-class CloudProviderTypeAdmin(GuardedModelAdmin):
+class CloudProviderAdmin(GuardedModelAdmin):
     list_display = [
-        'type_name',
+        'name',
     ]
 
 
-admin.site.register(models.CloudProviderType, CloudProviderTypeAdmin)
+admin.site.register(models.CloudProvider, CloudProviderAdmin)
 
 
 class CloudAccountAdmin(GuardedModelAdmin):
@@ -48,7 +48,7 @@ class CloudInstanceSizeAdmin(GuardedModelAdmin):
         'title',
         'slug',
         'description',
-        'provider_type',
+        'provider',
         'instance_id',
     ]
 
@@ -100,7 +100,7 @@ class CloudRegionAdmin(GuardedModelAdmin):
         'title',
         'slug',
         'description',
-        'provider_type',
+        'provider',
     ]
 
 

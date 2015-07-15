@@ -26,25 +26,25 @@ from cloud import models
 logger = logging.getLogger(__name__)
 
 
-class CloudProviderTypeTestCase(StackdioTestCase):
+class CloudProviderTestCase(StackdioTestCase):
     """
-    Tests for CloudProviderType things
+    Tests for CloudProvider things
     """
 
     def setUp(self):
-        super(CloudProviderTypeTestCase, self).setUp()
+        super(CloudProviderTestCase, self).setUp()
         self.client.login(username='test.admin', password='1234')
 
-    def test_create_provider_type(self):
+    def test_create_provider(self):
         # No creation should be allowed via the API, neither as an admin or non
-        response = self.client.post('/api/provider_types/', {'title': 'new'})
+        response = self.client.post('/api/providers/', {'title': 'new'})
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # Try as non-admin
         self.client.logout()
         self.client.login(username='test.user', password='1234')
 
-        response = self.client.post('/api/provider_types/', {'title': 'new'})
+        response = self.client.post('/api/providers/', {'title': 'new'})
         # Should just be forbidden now
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -57,7 +57,7 @@ class CloudAccountTestCase(StackdioTestCase, PermissionsMixin):
     permission_tests = {
         'model': models.CloudAccount,
         'create_data': {
-            'provider_type_id': 1,
+            'provider_id': 1,
             'title': 'test',
             'description': 'test',
             'account_id': 'blah',
@@ -120,32 +120,3 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     def setUpTestData(cls):
         super(CloudProfileTestCase, cls).setUpTestData()
         models.CloudAccount.objects.create(**CloudAccountTestCase.permission_tests['create_data'])
-
-
-# class CloudInstanceSizeTestCase(StackdioTestCase, PermissionsMixin):
-#     """
-#     Tests for CloudAccount things
-#     """
-#
-#     permission_tests = {
-#         'model': models.CloudInstanceSize,
-#         'create_data': {
-#             'title': 'test',
-#             'description': 'test',
-#             'provider_type_id': 1,
-#             'instance_id': 'blah',
-#         },
-#         'endpoint': '/api/instance_sizes/{0}/',
-#         'permission': 'cloud.%s_cloudinstancesize',
-#         'permission_types': [
-#             {
-#                 'perm': 'view', 'method': 'get'
-#             },
-#             {
-#                 'perm': 'update', 'method': 'patch', 'data': {'title': 'test2'}
-#             },
-#             {
-#                 'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
-#             },
-#         ]
-#     }

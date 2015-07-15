@@ -55,28 +55,28 @@ def get_global_orch_props_file_path(obj, filename):
     return "cloud/{0}/global_orch.props".format(obj.slug)
 
 
-_cloudprovidertype_model_permissions = ()
-_cloudprovidertype_object_permissions = ('view', 'admin')
+_cloudprovider_model_permissions = ()
+_cloudprovider_object_permissions = ('view', 'admin')
 
 
-class CloudProviderType(models.Model):
+class CloudProvider(models.Model):
 
-    model_permissions = _cloudprovidertype_model_permissions
-    object_permissions = _cloudprovidertype_object_permissions
+    model_permissions = _cloudprovider_model_permissions
+    object_permissions = _cloudprovider_object_permissions
 
     class Meta:
-        default_permissions = tuple(set(_cloudprovidertype_model_permissions +
-                                        _cloudprovidertype_object_permissions))
+        default_permissions = tuple(set(_cloudprovider_model_permissions +
+                                        _cloudprovider_object_permissions))
 
     PROVIDER_CHOICES = get_cloud_provider_choices()
-    type_name = models.CharField(
-        'Type Name',
+    name = models.CharField(
+        'Name',
         max_length=32,
         choices=PROVIDER_CHOICES,
         unique=True)
 
     def __unicode__(self):
-        return self.type_name
+        return self.name
 
 
 _cloudaccount_model_permissions = (
@@ -98,14 +98,14 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
     object_permissions = _cloudaccount_object_permissions
 
     class Meta:
-        unique_together = ('title', 'provider_type')
-        ordering = ('provider_type', 'title')
+        unique_together = ('title', 'provider')
+        ordering = ('provider', 'title')
 
         default_permissions = tuple(set(_cloudaccount_model_permissions +
                                         _cloudaccount_object_permissions))
 
     # What is the type of provider (e.g., AWS, Rackspace, etc)
-    provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
+    provider = models.ForeignKey('cloud.CloudProvider', verbose_name='Cloud Provider')
 
     # Used to store the provider-specifc YAML that will be written
     # to disk in settings.STACKDIO_CONFIG.salt_providers_dir
@@ -152,7 +152,7 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
 
     def get_driver(self):
         # determine the type and implementation class for this account
-        ptype, pclass = get_provider_type_and_class(self.provider_type.id)
+        ptype, pclass = get_provider_type_and_class(self.provider.id)
 
         # instantiate the implementation class and return it
         return pclass(self)
@@ -218,7 +218,7 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     # '512MB Standard Instance'
 
     # link to the type of provider for this instance size
-    provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
+    provider = models.ForeignKey('cloud.CloudProvider', verbose_name='Cloud Provider')
 
     # The underlying size ID of the instance (e.g., t1.micro)
     instance_id = models.CharField('Instance ID', max_length=64)
@@ -395,13 +395,13 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 
 class CloudRegion(TitleSlugDescriptionModel):
     class Meta:
-        unique_together = ('title', 'provider_type')
-        ordering = ('provider_type', 'title')
+        unique_together = ('title', 'provider')
+        ordering = ('provider', 'title')
 
         default_permissions = ()
 
     # link to the type of provider for this zone
-    provider_type = models.ForeignKey('CloudProviderType')
+    provider = models.ForeignKey('cloud.CloudProvider', verbose_name='Cloud Provider')
 
     def __unicode__(self):
         return self.title

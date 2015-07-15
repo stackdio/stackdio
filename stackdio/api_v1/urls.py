@@ -51,9 +51,9 @@ class APIRootView(APIView):
                                      format=format)),
 
             ('cloud', OrderedDict((
-                ('provider_types', reverse('cloudprovidertype-list',
-                                           request=request,
-                                           format=format)),
+                ('providers', reverse('cloudprovider-list',
+                                      request=request,
+                                      format=format)),
                 ('accounts', reverse('cloudaccount-list',
                                      request=request,
                                      format=format)),

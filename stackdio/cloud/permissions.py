@@ -24,12 +24,12 @@ from core.permissions import (
 from . import models
 
 
-class CloudProviderTypeParentObjectPermissions(StackdioParentObjectPermissions):
-    parent_model_cls = models.CloudProviderType
+class CloudProviderParentObjectPermissions(StackdioParentObjectPermissions):
+    parent_model_cls = models.CloudProvider
 
 
-class CloudProviderTypePermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
-    parent_model_cls = models.CloudProviderType
+class CloudProviderPermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
+    parent_model_cls = models.CloudProvider
 
 
 class CloudAccountParentObjectPermissions(StackdioParentObjectPermissions):
