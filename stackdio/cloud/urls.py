@@ -21,6 +21,14 @@ from rest_framework import routers
 
 from . import api
 
+providertype_object_router = routers.SimpleRouter()
+providertype_object_router.register(r'users',
+                                    api.CloudProviderTypeObjectUserPermissionsViewSet,
+                                    'cloudprovidertype-object-user-permissions')
+providertype_object_router.register(r'groups',
+                                    api.CloudProviderTypeObjectGroupPermissionsViewSet,
+                                    'cloudprovidertype-object-group-permissions')
+
 provider_model_router = routers.SimpleRouter()
 provider_model_router.register(r'users',
                                api.CloudProviderModelUserPermissionsViewSet,
@@ -76,9 +84,40 @@ urlpatterns = patterns(
         api.CloudProviderTypeListAPIView.as_view(),
         name='cloudprovidertype-list'),
 
-    url(r'^provider_types/(?P<pk>[0-9]+)/$',
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/$',
         api.CloudProviderTypeDetailAPIView.as_view(),
         name='cloudprovidertype-detail'),
+
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/permissions/',
+        include(providertype_object_router.urls)),
+
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/instance_sizes/$',
+        api.CloudInstanceSizeListAPIView.as_view(),
+        name='cloudinstancesize-list'),
+
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
+        api.CloudInstanceSizeDetailAPIView.as_view(),
+        name='cloudinstancesize-detail'),
+
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/$',
+        api.CloudRegionListAPIView.as_view(),
+        name='cloudregion-list'),
+
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/$',
+        api.CloudRegionDetailAPIView.as_view(),
+        name='cloudregion-detail'),
+
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
+        api.CloudRegionZoneListAPIView.as_view(),
+        name='cloudregion-zones'),
+
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/zones/$',
+        api.CloudZoneListAPIView.as_view(),
+        name='cloudzone-list'),
+
+    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/zones/(?P<title>[\w.@+-]+)/$',
+        api.CloudZoneDetailAPIView.as_view(),
+        name='cloudzone-detail'),
 
     url(r'^providers/$',
         api.CloudProviderListAPIView.as_view(),
@@ -118,14 +157,6 @@ urlpatterns = patterns(
         api.GlobalOrchestrationComponentDetailAPIView.as_view(),
         name='globalorchestrationformulacomponent-detail'),
 
-    url(r'^instance_sizes/$',
-        api.CloudInstanceSizeListAPIView.as_view(),
-        name='cloudinstancesize-list'),
-
-    url(r'^instance_sizes/(?P<pk>[0-9]+)/$',
-        api.CloudInstanceSizeDetailAPIView.as_view(),
-        name='cloudinstancesize-detail'),
-
     url(r'^profiles/$',
         api.CloudProfileListAPIView.as_view(),
         name='cloudprofile-list'),
@@ -153,26 +184,6 @@ urlpatterns = patterns(
 
     url(r'^snapshots/(?P<pk>[0-9]+)/permissions/',
         include(snapshot_object_router.urls)),
-
-    url(r'^regions/$',
-        api.CloudRegionListAPIView.as_view(),
-        name='cloudregion-list'),
-
-    url(r'^regions/(?P<pk>[0-9]+)/$',
-        api.CloudRegionDetailAPIView.as_view(),
-        name='cloudregion-detail'),
-
-    url(r'^regions/(?P<pk>[0-9]+)/zones/$',
-        api.CloudRegionZoneListAPIView.as_view(),
-        name='cloudregion-zones'),
-
-    url(r'^zones/$',
-        api.CloudZoneListAPIView.as_view(),
-        name='cloudzone-list'),
-
-    url(r'^zones/(?P<pk>[0-9]+)/$',
-        api.CloudZoneDetailAPIView.as_view(),
-        name='cloudzone-detail'),
 
     url(r'^security_groups/$',
         api.SecurityGroupListAPIView.as_view(),

@@ -195,7 +195,7 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
 
     def setUp(self):
         super(ObjectPermissionSerializerTestCase, self).setUp()
-        self.provider = CloudProvider.objects.get(id=1)
+        self.provider = CloudProvider.objects.get()
 
     def get_serializer(self, user_or_group):
         if user_or_group == 'user':
@@ -667,7 +667,7 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
 
     def setUp(self):
         super(ObjectPermissionsViewSetTestCase, self).setUp()
-        self.provider = CloudProvider.objects.get(id=1)
+        self.provider = CloudProvider.objects.get()
 
     def _create_perms(self, auth_obj, obj):
         for perm in CloudProvider._meta.default_permissions:

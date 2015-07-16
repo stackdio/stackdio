@@ -29,7 +29,6 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.FormulaComponent
         fields = (
-            'id',
             'title',
             'description',
             'sls_path',
@@ -59,7 +58,6 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.Formula
         fields = (
-            'id',
             'url',
             'title',
             'description',

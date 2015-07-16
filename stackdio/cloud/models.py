@@ -55,11 +55,18 @@ def get_global_orch_props_file_path(obj, filename):
     return "cloud/{0}/global_orch.props".format(obj.slug)
 
 
+_cloudprovidertype_model_permissions = ()
+_cloudprovidertype_object_permissions = ('view', 'admin')
+
+
 class CloudProviderType(models.Model):
+
+    model_permissions = _cloudprovidertype_model_permissions
+    object_permissions = _cloudprovidertype_object_permissions
+
     class Meta:
-        default_permissions = (
-            'view',
-        )
+        default_permissions = tuple(set(_cloudprovidertype_model_permissions +
+                                        _cloudprovidertype_object_permissions))
 
     PROVIDER_CHOICES = get_cloud_provider_choices()
     type_name = models.CharField(
@@ -204,9 +211,7 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     class Meta:
         ordering = ('id',)
 
-        default_permissions = (
-            'view',
-        )
+        default_permissions = ()
 
     # `title` field will be the type used by salt-cloud for the `size`
     # parameter in the providers yaml file (e.g., 'Micro Instance' or
@@ -394,9 +399,7 @@ class CloudRegion(TitleSlugDescriptionModel):
         unique_together = ('title', 'provider_type')
         ordering = ('provider_type', 'title')
 
-        default_permissions = (
-            'view',
-        )
+        default_permissions = ()
 
     # link to the type of provider for this zone
     provider_type = models.ForeignKey('CloudProviderType')
@@ -410,9 +413,7 @@ class CloudZone(TitleSlugDescriptionModel):
         unique_together = ('title', 'region')
         ordering = ('region', 'title')
 
-        default_permissions = (
-            'view',
-        )
+        default_permissions = ()
 
     # link to the region this AZ is in
     region = models.ForeignKey('CloudRegion', related_name='zones')

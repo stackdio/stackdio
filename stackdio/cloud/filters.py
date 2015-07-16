@@ -43,26 +43,22 @@ class CloudProfileFilter(django_filters.FilterSet):
 
 class CloudInstanceSizeFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
-    provider_type = django_filters.CharFilter(name='provider_type__type_name')
 
     class Meta:
         model = models.CloudInstanceSize
         fields = (
             'title',
             'instance_id',
-            'provider_type',
         )
 
 
 class CloudRegionFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
-    provider_type = django_filters.CharFilter(name='provider_type__type_name')
 
     class Meta:
         model = models.CloudRegion
         fields = (
             'title',
-            'provider_type',
         )
 
 

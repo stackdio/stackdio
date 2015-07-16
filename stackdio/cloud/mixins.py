@@ -15,9 +15,40 @@
 # limitations under the License.
 #
 
+import logging
+
 from rest_framework.generics import get_object_or_404
 
 from . import models, permissions
+
+logger = logging.getLogger(__name__)
+
+
+class CloudProviderTypeRelatedMixin(object):
+    permission_classes = (permissions.CloudProviderTypeParentObjectPermissions,)
+
+    def get_cloudprovidertype(self):
+        queryset = models.CloudProviderType.objects.all()
+
+        obj = get_object_or_404(queryset, type_name=self.kwargs.get('type_name'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissioned_object(self):
+        return self.get_cloudprovidertype()
+
+
+class CloudRegionRelatedMixin(object):
+
+    def get_cloudregion(self):
+        queryset = models.CloudRegion.objects.all()
+
+        obj = get_object_or_404(queryset, title=self.kwargs.get('title'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissioned_object(self):
+        return self.get_cloudregion()
 
 
 class CloudProviderRelatedMixin(object):

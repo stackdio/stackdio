@@ -21,7 +21,9 @@ import logging
 from django.conf import settings
 from rest_framework import serializers
 
+from cloud.models import CloudInstanceSize, CloudZone
 from core.utils import recursive_update
+from formulas.models import Formula
 from . import models
 
 logger = logging.getLogger(__name__)
@@ -97,14 +99,13 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
 class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
     title = serializers.ReadOnlyField(source='component.title')
     description = serializers.ReadOnlyField(source='component.description')
-    formula = serializers.PrimaryKeyRelatedField(read_only=True, source='component.formula')
-    component_id = serializers.ReadOnlyField(source='component.id')
+    formula = serializers.SlugRelatedField(source='component.formula', slug_field='uri',
+                                           queryset=Formula.objects.all())
     sls_path = serializers.ReadOnlyField(source='component.sls_path')
 
     class Meta:
         model = models.BlueprintHostFormulaComponent
         fields = (
-            'component_id',
             'title',
             'description',
             'formula',
@@ -118,10 +119,13 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
     access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
     volumes = BlueprintVolumeSerializer(many=True)
 
+    size = serializers.SlugRelatedField(slug_field='instance_id',
+                                        queryset=CloudInstanceSize.objects.all())
+    zone = serializers.SlugRelatedField(slug_field='title', queryset=CloudZone.objects.all())
+
     class Meta:
         model = models.BlueprintHostDefinition
         fields = (
-            'id',
             'title',
             'description',
             'cloud_profile',
@@ -153,9 +157,9 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
         model = models.Blueprint
         fields = (
             'id',
+            'url',
             'title',
             'description',
-            'url',
             'create_users',
             'properties',
             'user_permissions',
