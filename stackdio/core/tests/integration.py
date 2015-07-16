@@ -36,9 +36,9 @@ class AuthenticationTestCase(StackdioTestCase):
         'formulas',
         'stacks',
         'volumes',
-        'providers',
-        'profiles',
-        'snapshots',
+        'cloud/accounts',
+        'cloud/profiles',
+        'cloud/snapshots',
         'groups',
     )
 
@@ -67,6 +67,8 @@ class AuthenticationTestCase(StackdioTestCase):
             if '(?P<' in url:
                 continue
             if url.endswith('/permissions/'):
+                continue
+            if url.endswith('cloud/'):
                 continue
 
             self.list_endpoints.append('/api/' + url)

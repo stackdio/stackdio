@@ -23,7 +23,7 @@ from formulas import models
 
 class FormulaTestCase(StackdioTestCase, PermissionsMixin):
     """
-    Tests for CloudProvider things
+    Tests for CloudAccount things
     """
 
     permission_tests = {

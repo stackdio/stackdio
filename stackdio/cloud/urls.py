@@ -21,22 +21,6 @@ from rest_framework import routers
 
 from . import api
 
-providertype_object_router = routers.SimpleRouter()
-providertype_object_router.register(r'users',
-                                    api.CloudProviderTypeObjectUserPermissionsViewSet,
-                                    'cloudprovidertype-object-user-permissions')
-providertype_object_router.register(r'groups',
-                                    api.CloudProviderTypeObjectGroupPermissionsViewSet,
-                                    'cloudprovidertype-object-group-permissions')
-
-provider_model_router = routers.SimpleRouter()
-provider_model_router.register(r'users',
-                               api.CloudProviderModelUserPermissionsViewSet,
-                               'cloudprovider-model-user-permissions')
-provider_model_router.register(r'groups',
-                               api.CloudProviderModelGroupPermissionsViewSet,
-                               'cloudprovider-model-group-permissions')
-
 provider_object_router = routers.SimpleRouter()
 provider_object_router.register(r'users',
                                 api.CloudProviderObjectUserPermissionsViewSet,
@@ -44,6 +28,22 @@ provider_object_router.register(r'users',
 provider_object_router.register(r'groups',
                                 api.CloudProviderObjectGroupPermissionsViewSet,
                                 'cloudprovider-object-group-permissions')
+
+account_model_router = routers.SimpleRouter()
+account_model_router.register(r'users',
+                              api.CloudAccountModelUserPermissionsViewSet,
+                              'cloudaccount-model-user-permissions')
+account_model_router.register(r'groups',
+                              api.CloudAccountModelGroupPermissionsViewSet,
+                              'cloudaccount-model-group-permissions')
+
+account_object_router = routers.SimpleRouter()
+account_object_router.register(r'users',
+                               api.CloudAccountObjectUserPermissionsViewSet,
+                               'cloudaccount-object-user-permissions')
+account_object_router.register(r'groups',
+                               api.CloudAccountObjectGroupPermissionsViewSet,
+                               'cloudaccount-object-group-permissions')
 
 profile_model_router = routers.SimpleRouter()
 profile_model_router.register(r'users',
@@ -80,78 +80,78 @@ snapshot_object_router.register(r'groups',
 urlpatterns = patterns(
     'cloud.api',
 
-    url(r'^provider_types/$',
-        api.CloudProviderTypeListAPIView.as_view(),
-        name='cloudprovidertype-list'),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/$',
-        api.CloudProviderTypeDetailAPIView.as_view(),
-        name='cloudprovidertype-detail'),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/permissions/',
-        include(providertype_object_router.urls)),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/instance_sizes/$',
-        api.CloudInstanceSizeListAPIView.as_view(),
-        name='cloudinstancesize-list'),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
-        api.CloudInstanceSizeDetailAPIView.as_view(),
-        name='cloudinstancesize-detail'),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/$',
-        api.CloudRegionListAPIView.as_view(),
-        name='cloudregion-list'),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/$',
-        api.CloudRegionDetailAPIView.as_view(),
-        name='cloudregion-detail'),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
-        api.CloudRegionZoneListAPIView.as_view(),
-        name='cloudregion-zones'),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/zones/$',
-        api.CloudZoneListAPIView.as_view(),
-        name='cloudzone-list'),
-
-    url(r'^provider_types/(?P<type_name>[\w.@+-]+)/zones/(?P<title>[\w.@+-]+)/$',
-        api.CloudZoneDetailAPIView.as_view(),
-        name='cloudzone-detail'),
-
     url(r'^providers/$',
         api.CloudProviderListAPIView.as_view(),
         name='cloudprovider-list'),
 
-    url(r'^providers/permissions/',
-        include(provider_model_router.urls)),
-
-    url(r'^providers/(?P<pk>[0-9]+)/$',
+    url(r'^providers/(?P<name>[\w.@+-]+)/$',
         api.CloudProviderDetailAPIView.as_view(),
         name='cloudprovider-detail'),
 
-    url(r'^providers/(?P<pk>[0-9]+)/security_groups/$',
-        api.CloudProviderSecurityGroupListAPIView.as_view(),
-        name='cloudprovider-securitygroup-list'),
-
-    url(r'^providers/(?P<pk>[0-9]+)/vpc_subnets/$',
-        api.CloudProviderVPCSubnetListAPIView.as_view(),
-        name='cloudprovider-vpcsubnet-list'),
-
-    url(r'^providers/(?P<pk>[0-9]+)/global_orchestration_components/$',
-        api.GlobalOrchestrationComponentListAPIView.as_view(),
-        name='cloudprovider-global-orchestration-list'),
-
-    url(r'^providers/(?P<pk>[0-9]+)/global_orchestration_properties/$',
-        api.GlobalOrchestrationPropertiesAPIView.as_view(),
-        name='cloudprovider-global-orchestration-properties'),
-
-    url(r'^providers/(?P<pk>[0-9]+)/formula_versions/$',
-        api.CloudProviderFormulaVersionsAPIView.as_view(),
-        name='cloudprovider-formula-versions'),
-
-    url(r'^providers/(?P<pk>[0-9]+)/permissions/',
+    url(r'^providers/(?P<name>[\w.@+-]+)/permissions/',
         include(provider_object_router.urls)),
+
+    url(r'^providers/(?P<name>[\w.@+-]+)/instance_sizes/$',
+        api.CloudInstanceSizeListAPIView.as_view(),
+        name='cloudinstancesize-list'),
+
+    url(r'^providers/(?P<name>[\w.@+-]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
+        api.CloudInstanceSizeDetailAPIView.as_view(),
+        name='cloudinstancesize-detail'),
+
+    url(r'^providers/(?P<name>[\w.@+-]+)/regions/$',
+        api.CloudRegionListAPIView.as_view(),
+        name='cloudregion-list'),
+
+    url(r'^providers/(?P<name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/$',
+        api.CloudRegionDetailAPIView.as_view(),
+        name='cloudregion-detail'),
+
+    url(r'^providers/(?P<name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
+        api.CloudRegionZoneListAPIView.as_view(),
+        name='cloudregion-zones'),
+
+    url(r'^providers/(?P<name>[\w.@+-]+)/zones/$',
+        api.CloudZoneListAPIView.as_view(),
+        name='cloudzone-list'),
+
+    url(r'^providers/(?P<name>[\w.@+-]+)/zones/(?P<title>[\w.@+-]+)/$',
+        api.CloudZoneDetailAPIView.as_view(),
+        name='cloudzone-detail'),
+
+    url(r'^accounts/$',
+        api.CloudAccountListAPIView.as_view(),
+        name='cloudaccount-list'),
+
+    url(r'^accounts/permissions/',
+        include(account_model_router.urls)),
+
+    url(r'^accounts/(?P<pk>[0-9]+)/$',
+        api.CloudAccountDetailAPIView.as_view(),
+        name='cloudaccount-detail'),
+
+    url(r'^accounts/(?P<pk>[0-9]+)/security_groups/$',
+        api.CloudAccountSecurityGroupListAPIView.as_view(),
+        name='cloudaccount-securitygroup-list'),
+
+    url(r'^accounts/(?P<pk>[0-9]+)/vpc_subnets/$',
+        api.CloudAccountVPCSubnetListAPIView.as_view(),
+        name='cloudaccount-vpcsubnet-list'),
+
+    url(r'^accounts/(?P<pk>[0-9]+)/global_orchestration_components/$',
+        api.GlobalOrchestrationComponentListAPIView.as_view(),
+        name='cloudaccount-global-orchestration-list'),
+
+    url(r'^accounts/(?P<pk>[0-9]+)/global_orchestration_properties/$',
+        api.GlobalOrchestrationPropertiesAPIView.as_view(),
+        name='cloudaccount-global-orchestration-properties'),
+
+    url(r'^accounts/(?P<pk>[0-9]+)/formula_versions/$',
+        api.CloudAccountFormulaVersionsAPIView.as_view(),
+        name='cloudaccount-formula-versions'),
+
+    url(r'^accounts/(?P<pk>[0-9]+)/permissions/',
+        include(account_object_router.urls)),
 
     url(r'^global_orchestration_components/(?P<pk>[0-9]+)/$',
         api.GlobalOrchestrationComponentDetailAPIView.as_view(),

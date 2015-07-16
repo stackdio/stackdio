@@ -22,16 +22,16 @@ from guardian.admin import GuardedModelAdmin
 from . import models
 
 
-class CloudProviderTypeAdmin(GuardedModelAdmin):
+class CloudProviderAdmin(GuardedModelAdmin):
     list_display = [
-        'type_name',
+        'name',
     ]
 
 
-admin.site.register(models.CloudProviderType, CloudProviderTypeAdmin)
+admin.site.register(models.CloudProvider, CloudProviderAdmin)
 
 
-class CloudProviderAdmin(GuardedModelAdmin):
+class CloudAccountAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
@@ -40,7 +40,7 @@ class CloudProviderAdmin(GuardedModelAdmin):
     ]
 
 
-admin.site.register(models.CloudProvider, CloudProviderAdmin)
+admin.site.register(models.CloudAccount, CloudAccountAdmin)
 
 
 class CloudInstanceSizeAdmin(GuardedModelAdmin):
@@ -48,7 +48,7 @@ class CloudInstanceSizeAdmin(GuardedModelAdmin):
         'title',
         'slug',
         'description',
-        'provider_type',
+        'provider',
         'instance_id',
     ]
 
@@ -59,7 +59,7 @@ admin.site.register(models.CloudInstanceSize, CloudInstanceSizeAdmin)
 class GlobalOrchestrationFormulaComponentAdmin(GuardedModelAdmin):
     list_display = [
         'component',
-        'provider',
+        'account',
         'order',
     ]
 
@@ -71,7 +71,7 @@ admin.site.register(models.GlobalOrchestrationFormulaComponent,
 class CloudProfileAdmin(GuardedModelAdmin):
     list_display = [
         'title',
-        'cloud_provider',
+        'account',
         'image_id',
         'default_instance_size',
         'ssh_user',
@@ -85,7 +85,7 @@ class SnapshotAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'slug',
-        'cloud_provider',
+        'account',
         'snapshot_id',
         'size_in_gb',
         'filesystem_type',
@@ -100,7 +100,7 @@ class CloudRegionAdmin(GuardedModelAdmin):
         'title',
         'slug',
         'description',
-        'provider_type',
+        'provider',
     ]
 
 
@@ -123,7 +123,7 @@ class SecurityGroupAdmin(GuardedModelAdmin):
     list_display = [
         'name',
         'group_id',
-        'cloud_provider',
+        'account',
         'is_default',
     ]
 

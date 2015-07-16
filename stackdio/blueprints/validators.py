@@ -111,7 +111,7 @@ class BlueprintValidator(BaseValidator):
                 cloud_profile = models.CloudProfile.objects.get(
                     pk=host['cloud_profile']
                 )
-                if not cloud_profile.cloud_provider.vpc_enabled:
+                if not cloud_profile.cloud_account.vpc_enabled:
                     host_errors.update(self._validate_host_zone(host))
                 else:
                     host_errors.update(self._validate_host_subnet(host))
@@ -231,7 +231,7 @@ class BlueprintValidator(BaseValidator):
 
     def _validate_host_subnet(self, host):
         e = {}
-        # Subnets are for hosts being launched into a provider that's using
+        # Subnets are for hosts being launched into an account that's using
         # VPC
         if 'subnet_id' not in host:
             e['subnet_id'] = ValidationErrors.REQUIRED_FIELD

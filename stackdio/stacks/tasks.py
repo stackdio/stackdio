@@ -141,10 +141,10 @@ def state_error(state_str, state_meta):
     return err, is_recoverable(err)
 
 
-def copy_formulas(stack_or_provider):
-    dest_dir = os.path.join(stack_or_provider.get_root_directory(), 'formulas')
+def copy_formulas(stack_or_account):
+    dest_dir = os.path.join(stack_or_account.get_root_directory(), 'formulas')
 
-    for formula in stack_or_provider.get_formulas():
+    for formula in stack_or_account.get_formulas():
         formula_dir = os.path.join(dest_dir, formula.get_repo_name())
 
         try:
@@ -158,7 +158,7 @@ def copy_formulas(stack_or_provider):
 
         try:
             # Checkout the tag
-            v = stack_or_provider.formula_versions.get(formula=formula)
+            v = stack_or_account.formula_versions.get(formula=formula)
             repo = git.Repo(formula_dir)
             repo.git.checkout(v.version)
 
@@ -229,16 +229,16 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
         hostnames = [host.hostname for host in hosts]
 
-        # Since a blueprint can have multiple providers
-        providers = set()
+        # Since a blueprint can have multiple accounts
+        accounts = set()
         for host in hosts:
-            providers.add(host.cloud_profile.cloud_provider)
+            accounts.add(host.cloud_profile.account)
 
-        for provider in providers:
-            provider_type = provider.provider_type.type_name
+        for account in accounts:
+            provider = account.provider.name
 
-            for instance, details in query.get(provider.slug, {}) \
-                    .get(provider_type, {}).items():
+            for instance, details in query.get(account.slug, {}) \
+                    .get(provider, {}).items():
                 if instance in hostnames:
                     if details['state'] in ('shutting-down', 'terminated'):
                         salt_cloud.action(
@@ -756,7 +756,7 @@ def tag_infrastructure(stack_id, host_ids=None):
         stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
                          'Tagging stack infrastructure.')
 
-        # for each set of hosts on a provider, use the driver implementation
+        # for each set of hosts on an account, use the driver implementation
         # to tag the various infrastructure
         driver_hosts = stack.get_driver_hosts_map(host_ids)
 
@@ -1333,14 +1333,14 @@ def global_orchestrate(stack_id, max_retries=2):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Executing global orchestration for stack: {0!r}'.format(stack))
 
-        providers = set()
+        accounts = set()
 
         for host_definition in stack.blueprint.host_definitions.all():
-            provider = host_definition.cloud_profile.cloud_provider
-            copy_formulas(provider)
-            providers.add(provider)
+            account = host_definition.cloud_profile.account
+            copy_formulas(account)
+            accounts.add(account)
 
-        providers = list(providers)
+        accounts = list(accounts)
 
         # Set the pillar file to the global pillar data file
         change_pillar(stack_id, stack.global_pillar_file.path)
@@ -1395,12 +1395,12 @@ def global_orchestrate(stack_id, max_retries=2):
 
             salt_runner = salt.runner.RunnerClient(opts)
 
-            # This might be kind of scary - but it'll work while we only have one provider per
+            # This might be kind of scary - but it'll work while we only have one account per
             # stack
             result = salt_runner.cmd(
                 'stackdio.orchestrate',
                 [
-                    'cloud.{0}'.format(providers[0].slug),
+                    'cloud.{0}'.format(accounts[0].slug),
                     stack.global_overstate_file.path
                 ]
             )

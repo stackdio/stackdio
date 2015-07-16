@@ -100,7 +100,7 @@ class BlueprintManager(models.Manager):
                 spot_price=spot_price,
             )
 
-            if profile_obj.cloud_provider.vpc_enabled:
+            if profile_obj.cloud_account.vpc_enabled:
                 kwargs['subnet_id'] = host.get('subnet_id')
             else:
                 zone_obj = CloudZone.objects.get(pk=host['zone'])
@@ -258,7 +258,7 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     # Only for EC2 classic
     zone = models.ForeignKey('cloud.CloudZone', null=True, blank=True)
 
-    # The subnet id for VPC enabled providers
+    # The subnet id for VPC enabled accounts
     # Only for EC2 VPC
     subnet_id = models.CharField('Subnet ID', max_length=32, blank=True, default='')
 

@@ -24,18 +24,18 @@ from . import models, permissions
 logger = logging.getLogger(__name__)
 
 
-class CloudProviderTypeRelatedMixin(object):
-    permission_classes = (permissions.CloudProviderTypeParentObjectPermissions,)
+class CloudProviderRelatedMixin(object):
+    permission_classes = (permissions.CloudProviderParentObjectPermissions,)
 
-    def get_cloudprovidertype(self):
-        queryset = models.CloudProviderType.objects.all()
+    def get_cloudprovider(self):
+        queryset = models.CloudProvider.objects.all()
 
-        obj = get_object_or_404(queryset, type_name=self.kwargs.get('type_name'))
+        obj = get_object_or_404(queryset, name=self.kwargs.get('name'))
         self.check_object_permissions(self.request, obj)
         return obj
 
     def get_permissioned_object(self):
-        return self.get_cloudprovidertype()
+        return self.get_cloudprovider()
 
 
 class CloudRegionRelatedMixin(object):
@@ -51,18 +51,18 @@ class CloudRegionRelatedMixin(object):
         return self.get_cloudregion()
 
 
-class CloudProviderRelatedMixin(object):
-    permission_classes = (permissions.CloudProviderParentObjectPermissions,)
+class CloudAccountRelatedMixin(object):
+    permission_classes = (permissions.CloudAccountParentObjectPermissions,)
 
-    def get_cloudprovider(self):
-        queryset = models.CloudProvider.objects.all()
+    def get_cloudaccount(self):
+        queryset = models.CloudAccount.objects.all()
 
         obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
 
     def get_permissioned_object(self):
-        return self.get_cloudprovider()
+        return self.get_cloudaccount()
 
 
 class CloudProfileRelatedMixin(object):

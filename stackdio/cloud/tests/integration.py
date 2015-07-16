@@ -26,46 +26,46 @@ from cloud import models
 logger = logging.getLogger(__name__)
 
 
-class CloudProviderTypeTestCase(StackdioTestCase):
+class CloudProviderTestCase(StackdioTestCase):
     """
-    Tests for CloudProviderType things
+    Tests for CloudProvider things
     """
 
     def setUp(self):
-        super(CloudProviderTypeTestCase, self).setUp()
+        super(CloudProviderTestCase, self).setUp()
         self.client.login(username='test.admin', password='1234')
 
-    def test_create_provider_type(self):
+    def test_create_provider(self):
         # No creation should be allowed via the API, neither as an admin or non
-        response = self.client.post('/api/provider_types/', {'title': 'new'})
+        response = self.client.post('/api/cloud/providers/', {'title': 'new'})
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # Try as non-admin
         self.client.logout()
         self.client.login(username='test.user', password='1234')
 
-        response = self.client.post('/api/provider_types/', {'title': 'new'})
+        response = self.client.post('/api/cloud/providers/', {'title': 'new'})
         # Should just be forbidden now
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
-class CloudProviderTestCase(StackdioTestCase, PermissionsMixin):
+class CloudAccountTestCase(StackdioTestCase, PermissionsMixin):
     """
-    Tests for CloudProvider things
+    Tests for CloudAccount things
     """
 
     permission_tests = {
-        'model': models.CloudProvider,
+        'model': models.CloudAccount,
         'create_data': {
-            'provider_type_id': 1,
+            'provider_id': 1,
             'title': 'test',
             'description': 'test',
             'account_id': 'blah',
             'vpc_id': 'vpc-blah',
             'region_id': 1,
         },
-        'endpoint': '/api/providers/{0}/',
-        'permission': 'cloud.%s_cloudprovider',
+        'endpoint': '/api/cloud/accounts/{0}/',
+        'permission': 'cloud.%s_cloudaccount',
         'permission_types': [
             {
                 'perm': 'view', 'method': 'get'
@@ -79,29 +79,29 @@ class CloudProviderTestCase(StackdioTestCase, PermissionsMixin):
         ]
     }
 
-    def test_view_provider_as_admin(self):
+    def test_view_account_as_admin(self):
         self.client.login(username='test.admin', password='1234')
 
-        response = self.client.get('/api/providers/{0}/'.format(self.obj.pk))
+        response = self.client.get('/api/cloud/accounts/{0}/'.format(self.obj.pk))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     """
-    Tests for CloudProvider things
+    Tests for CloudAccount things
     """
 
     permission_tests = {
         'model': models.CloudProfile,
         'create_data': {
-            'cloud_provider_id': 1,
+            'account_id': 1,
             'title': 'test',
             'description': 'test',
             'image_id': 'blah',
             'default_instance_size_id': 1,
             'ssh_user': 'root',
         },
-        'endpoint': '/api/profiles/{0}/',
+        'endpoint': '/api/cloud/profiles/{0}/',
         'permission': 'cloud.%s_cloudprofile',
         'permission_types': [
             {
@@ -119,33 +119,4 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
     @classmethod
     def setUpTestData(cls):
         super(CloudProfileTestCase, cls).setUpTestData()
-        models.CloudProvider.objects.create(**CloudProviderTestCase.permission_tests['create_data'])
-
-
-# class CloudInstanceSizeTestCase(StackdioTestCase, PermissionsMixin):
-#     """
-#     Tests for CloudProvider things
-#     """
-#
-#     permission_tests = {
-#         'model': models.CloudInstanceSize,
-#         'create_data': {
-#             'title': 'test',
-#             'description': 'test',
-#             'provider_type_id': 1,
-#             'instance_id': 'blah',
-#         },
-#         'endpoint': '/api/instance_sizes/{0}/',
-#         'permission': 'cloud.%s_cloudinstancesize',
-#         'permission_types': [
-#             {
-#                 'perm': 'view', 'method': 'get'
-#             },
-#             {
-#                 'perm': 'update', 'method': 'patch', 'data': {'title': 'test2'}
-#             },
-#             {
-#                 'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
-#             },
-#         ]
-#     }
+        models.CloudAccount.objects.create(**CloudAccountTestCase.permission_tests['create_data'])

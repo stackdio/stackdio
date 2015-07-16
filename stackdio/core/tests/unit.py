@@ -22,7 +22,7 @@ from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework.serializers import ValidationError
 
 import core.serializers
-from cloud.models import CloudProvider
+from cloud.models import CloudAccount
 from core.tests.utils import StackdioTestCase, group_has_perm
 from core import shortcuts, viewsets
 
@@ -38,7 +38,7 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
             view = viewsets.StackdioModelGroupPermissionsViewSet()
         else:
             view = None
-        view.model_cls = CloudProvider
+        view.model_cls = CloudAccount
         view.request = None
         view.format_kwarg = None
         return view.get_serializer()
@@ -69,18 +69,18 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
 
         obj = serializer.create({user_or_group: auth_obj,
                                  'permissions': ['create'],
-                                 'model_cls': CloudProvider})
+                                 'model_cls': CloudAccount})
 
         self.assertEqual(obj[user_or_group], auth_obj)
         self.assertEqual(obj['permissions'], ['create'])
 
         true = ['create']
 
-        for perm in CloudProvider._meta.default_permissions:
+        for perm in CloudAccount._meta.default_permissions:
             if user_or_group == 'user':
-                has_perm = auth_obj.has_perm('cloud.%s_cloudprovider' % perm)
+                has_perm = auth_obj.has_perm('cloud.%s_cloudaccount' % perm)
             elif user_or_group == 'group':
-                has_perm = group_has_perm(auth_obj, '%s_cloudprovider' % perm)
+                has_perm = group_has_perm(auth_obj, '%s_cloudaccount' % perm)
             if perm in true:
                 self.assertTrue(has_perm)
             else:
@@ -89,7 +89,7 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
     def _test_update(self, auth_obj, user_or_group):
         serializer = self.get_serializer(user_or_group)
 
-        assign_perm('cloud.create_cloudprovider', auth_obj)
+        assign_perm('cloud.create_cloudaccount', auth_obj)
 
         instance = {
             user_or_group: auth_obj,
@@ -99,7 +99,7 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
         validated_data = {
             user_or_group: auth_obj,
             'permissions': ['admin'],
-            'model_cls': CloudProvider,
+            'model_cls': CloudAccount,
         }
 
         obj = serializer.update(instance, validated_data)
@@ -109,11 +109,11 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
 
         true = ['admin']
 
-        for perm in CloudProvider._meta.default_permissions:
+        for perm in CloudAccount._meta.default_permissions:
             if user_or_group == 'user':
-                has_perm = auth_obj.has_perm('cloud.%s_cloudprovider' % perm)
+                has_perm = auth_obj.has_perm('cloud.%s_cloudaccount' % perm)
             elif user_or_group == 'group':
-                has_perm = group_has_perm(auth_obj, '%s_cloudprovider' % perm)
+                has_perm = group_has_perm(auth_obj, '%s_cloudaccount' % perm)
             if perm in true:
                 self.assertTrue(has_perm)
             else:
@@ -123,7 +123,7 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
         serializer = self.get_serializer(user_or_group)
         serializer.partial = True
 
-        assign_perm('cloud.create_cloudprovider', auth_obj)
+        assign_perm('cloud.create_cloudaccount', auth_obj)
 
         instance = {
             user_or_group: auth_obj,
@@ -133,7 +133,7 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
         validated_data = {
             user_or_group: auth_obj,
             'permissions': ['admin'],
-            'model_cls': CloudProvider,
+            'model_cls': CloudAccount,
         }
 
         obj = serializer.update(instance, validated_data)
@@ -143,11 +143,11 @@ class ModelPermissionSerializerTestCase(StackdioTestCase):
 
         true = ['admin', 'create']
 
-        for perm in CloudProvider._meta.default_permissions:
+        for perm in CloudAccount._meta.default_permissions:
             if user_or_group == 'user':
-                has_perm = auth_obj.has_perm('cloud.%s_cloudprovider' % perm)
+                has_perm = auth_obj.has_perm('cloud.%s_cloudaccount' % perm)
             elif user_or_group == 'group':
-                has_perm = group_has_perm(auth_obj, '%s_cloudprovider' % perm)
+                has_perm = group_has_perm(auth_obj, '%s_cloudaccount' % perm)
             if perm in true:
                 self.assertTrue(has_perm)
             else:
@@ -184,8 +184,8 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
     def setUpTestData(cls):
         super(ObjectPermissionSerializerTestCase, cls).setUpTestData()
 
-        CloudProvider.objects.create(
-            provider_type_id=1,
+        CloudAccount.objects.create(
+            provider_id=1,
             title='test',
             description='test',
             account_id='blah',
@@ -195,7 +195,7 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
 
     def setUp(self):
         super(ObjectPermissionSerializerTestCase, self).setUp()
-        self.provider = CloudProvider.objects.get()
+        self.account = CloudAccount.objects.get()
 
     def get_serializer(self, user_or_group):
         if user_or_group == 'user':
@@ -204,10 +204,10 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
             view = viewsets.StackdioObjectGroupPermissionsViewSet()
         else:
             view = None
-        view.get_permissioned_object = lambda: self.provider
+        view.get_permissioned_object = lambda: self.account
         view.request = None
         view.format_kwarg = None
-        view.model_cls = CloudProvider
+        view.model_cls = CloudAccount
         return view.get_serializer()
 
     def _test_validate(self, auth_obj, user_or_group):
@@ -236,18 +236,18 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
 
         obj = serializer.create({user_or_group: auth_obj,
                                  'permissions': ['view'],
-                                 'object': self.provider})
+                                 'object': self.account})
 
         self.assertEqual(obj[user_or_group], auth_obj)
         self.assertEqual(obj['permissions'], ['view'])
 
         true = ['view']
 
-        for perm in CloudProvider._meta.default_permissions:
+        for perm in CloudAccount._meta.default_permissions:
             if user_or_group == 'user':
-                has_perm = auth_obj.has_perm('cloud.%s_cloudprovider' % perm, self.provider)
+                has_perm = auth_obj.has_perm('cloud.%s_cloudaccount' % perm, self.account)
             elif user_or_group == 'group':
-                has_perm = group_has_perm(auth_obj, '%s_cloudprovider' % perm, self.provider)
+                has_perm = group_has_perm(auth_obj, '%s_cloudaccount' % perm, self.account)
             if perm in true:
                 self.assertTrue(has_perm)
             else:
@@ -256,7 +256,7 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
     def _test_update(self, auth_obj, user_or_group):
         serializer = self.get_serializer(user_or_group)
 
-        assign_perm('cloud.view_cloudprovider', auth_obj, self.provider)
+        assign_perm('cloud.view_cloudaccount', auth_obj, self.account)
 
         instance = {
             user_or_group: auth_obj,
@@ -266,7 +266,7 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
         validated_data = {
             user_or_group: auth_obj,
             'permissions': ['admin'],
-            'object': self.provider,
+            'object': self.account,
         }
 
         obj = serializer.update(instance, validated_data)
@@ -276,11 +276,11 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
 
         true = ['admin']
 
-        for perm in CloudProvider._meta.default_permissions:
+        for perm in CloudAccount._meta.default_permissions:
             if user_or_group == 'user':
-                has_perm = auth_obj.has_perm('cloud.%s_cloudprovider' % perm, self.provider)
+                has_perm = auth_obj.has_perm('cloud.%s_cloudaccount' % perm, self.account)
             elif user_or_group == 'group':
-                has_perm = group_has_perm(auth_obj, '%s_cloudprovider' % perm, self.provider)
+                has_perm = group_has_perm(auth_obj, '%s_cloudaccount' % perm, self.account)
             if perm in true:
                 self.assertTrue(has_perm)
             else:
@@ -290,7 +290,7 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
         serializer = self.get_serializer(user_or_group)
         serializer.partial = True
 
-        assign_perm('cloud.view_cloudprovider', auth_obj, self.provider)
+        assign_perm('cloud.view_cloudaccount', auth_obj, self.account)
 
         instance = {
             user_or_group: auth_obj,
@@ -300,7 +300,7 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
         validated_data = {
             user_or_group: auth_obj,
             'permissions': ['admin'],
-            'object': self.provider,
+            'object': self.account,
         }
 
         obj = serializer.update(instance, validated_data)
@@ -310,11 +310,11 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
 
         true = ['admin', 'view']
 
-        for perm in CloudProvider._meta.default_permissions:
+        for perm in CloudAccount._meta.default_permissions:
             if user_or_group == 'user':
-                has_perm = auth_obj.has_perm('cloud.%s_cloudprovider' % perm, self.provider)
+                has_perm = auth_obj.has_perm('cloud.%s_cloudaccount' % perm, self.account)
             elif user_or_group == 'group':
-                has_perm = group_has_perm(auth_obj, '%s_cloudprovider' % perm, self.provider)
+                has_perm = group_has_perm(auth_obj, '%s_cloudaccount' % perm, self.account)
 
             if perm in true:
                 self.assertTrue(has_perm)
@@ -349,9 +349,9 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
 class PermissionsShortcutsTestCase(StackdioTestCase):
 
     def test_users_with_model_perms(self):
-        for perm in CloudProvider.model_permissions:
+        for perm in CloudAccount.model_permissions:
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
                 with_group_users=False,
                 with_superusers=False,
@@ -359,10 +359,10 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
 
             self.assertEqual(users.count(), 0)
 
-            assign_perm('cloud.%s_cloudprovider' % perm, self.user)
+            assign_perm('cloud.%s_cloudaccount' % perm, self.user)
 
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
                 with_group_users=False,
                 with_superusers=False,
@@ -371,13 +371,13 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             self.assertEqual(users.count(), 1)
             self.assertEqual(users.first(), self.user)
 
-            remove_perm('cloud.%s_cloudprovider' % perm, self.user)
+            remove_perm('cloud.%s_cloudaccount' % perm, self.user)
 
             # Make sure assigning the group permissions doesn't show up here
-            assign_perm('cloud.%s_cloudprovider' % perm, self.group)
+            assign_perm('cloud.%s_cloudaccount' % perm, self.group)
 
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
                 with_group_users=False,
                 with_superusers=False,
@@ -386,9 +386,9 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             self.assertEqual(users.count(), 0)
 
     def test_users_with_model_perms_with_groups(self):
-        for perm in CloudProvider.model_permissions:
+        for perm in CloudAccount.model_permissions:
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
                 with_group_users=True,
                 with_superusers=False,
@@ -396,10 +396,10 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
 
             self.assertEqual(users.count(), 0)
 
-            assign_perm('cloud.%s_cloudprovider' % perm, self.group)
+            assign_perm('cloud.%s_cloudaccount' % perm, self.group)
 
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
                 with_group_users=True,
                 with_superusers=False,
@@ -408,11 +408,11 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             self.assertEqual(users.count(), 1)
             self.assertEqual(users.first(), self.user)
 
-            remove_perm('cloud.%s_cloudprovider' % perm, self.group)
+            remove_perm('cloud.%s_cloudaccount' % perm, self.group)
 
     def test_users_with_model_perms_with_superusers(self):
         users = shortcuts.get_users_with_model_perms(
-            CloudProvider,
+            CloudAccount,
             attach_perms=False,
             with_group_users=False,
             with_superusers=True,
@@ -422,9 +422,9 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
         self.assertEqual(users.first(), self.admin)
 
     def test_users_with_model_perms_attach_perms(self):
-        for perm in CloudProvider.model_permissions:
+        for perm in CloudAccount.model_permissions:
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=True,
                 with_group_users=False,
                 with_superusers=False,
@@ -433,10 +433,10 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             self.assertIsInstance(users, dict)
             self.assertEqual(len(users), 0)
 
-            assign_perm('cloud.%s_cloudprovider' % perm, self.user)
+            assign_perm('cloud.%s_cloudaccount' % perm, self.user)
 
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=True,
                 with_group_users=False,
                 with_superusers=False,
@@ -445,14 +445,14 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             self.assertIsInstance(users, dict)
             self.assertEqual(len(users), 1)
             self.assertTrue(self.user in users)
-            self.assertEqual(users[self.user], ['%s_cloudprovider' % perm])
+            self.assertEqual(users[self.user], ['%s_cloudaccount' % perm])
 
-            remove_perm('cloud.%s_cloudprovider' % perm, self.user)
+            remove_perm('cloud.%s_cloudaccount' % perm, self.user)
 
     def test_users_with_model_perms_wrong_model(self):
-        for perm in CloudProvider.model_permissions:
+        for perm in CloudAccount.model_permissions:
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
                 with_group_users=False,
                 with_superusers=False,
@@ -463,7 +463,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             assign_perm('cloud.%s_cloudprofile' % perm, self.user)
 
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
                 with_group_users=False,
                 with_superusers=False,
@@ -475,7 +475,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             assign_perm('cloud.%s_cloudprofile' % perm, self.group)
 
             users = shortcuts.get_users_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
                 with_group_users=False,
                 with_superusers=False,
@@ -484,49 +484,49 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             self.assertEqual(users.count(), 0)
 
     def test_groups_with_model_perms(self):
-        for perm in CloudProvider.model_permissions:
+        for perm in CloudAccount.model_permissions:
             groups = shortcuts.get_groups_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
             )
 
             self.assertEqual(groups.count(), 0)
 
-            assign_perm('cloud.%s_cloudprovider' % perm, self.group)
+            assign_perm('cloud.%s_cloudaccount' % perm, self.group)
 
             groups = shortcuts.get_groups_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=False,
             )
 
             self.assertEqual(groups.count(), 1)
             self.assertEqual(groups.first(), self.group)
 
-            remove_perm('cloud.%s_cloudprovider' % perm, self.group)
+            remove_perm('cloud.%s_cloudaccount' % perm, self.group)
             
     def test_groups_with_model_perms_attach_perms(self):
-        for perm in CloudProvider.model_permissions:
+        for perm in CloudAccount.model_permissions:
             groups = shortcuts.get_groups_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=True,
             )
 
             self.assertIsInstance(groups, dict)
             self.assertEqual(len(groups), 0)
 
-            assign_perm('cloud.%s_cloudprovider' % perm, self.group)
+            assign_perm('cloud.%s_cloudaccount' % perm, self.group)
 
             groups = shortcuts.get_groups_with_model_perms(
-                CloudProvider,
+                CloudAccount,
                 attach_perms=True,
             )
 
             self.assertIsInstance(groups, dict)
             self.assertEqual(len(groups), 1)
             self.assertTrue(self.group in groups)
-            self.assertEqual(groups[self.group], ['%s_cloudprovider' % perm])
+            self.assertEqual(groups[self.group], ['%s_cloudaccount' % perm])
 
-            remove_perm('cloud.%s_cloudprovider' % perm, self.group)
+            remove_perm('cloud.%s_cloudaccount' % perm, self.group)
 
 
 class BasePermissionsViewSetTestCase(StackdioTestCase):
@@ -536,7 +536,7 @@ class BasePermissionsViewSetTestCase(StackdioTestCase):
         return view
 
     def test_filter_perms(self):
-        avail_perms = CloudProvider._meta.default_permissions
+        avail_perms = CloudAccount._meta.default_permissions
 
         perms = ['foo', 'bar', 'blah', 'has', 'baz']
 
@@ -562,11 +562,11 @@ class BasePermissionsViewSetTestCase(StackdioTestCase):
     def test_transform_perm(self):
         view = self.get_viewset()
 
-        tranform_func = view._transform_perm('cloudprovider')
+        tranform_func = view._transform_perm('cloudaccount')
 
         self.assertCallable(tranform_func)
 
-        self.assertEqual(tranform_func('blah_cloudprovider'), 'blah')
+        self.assertEqual(tranform_func('blah_cloudaccount'), 'blah')
         self.assertEqual(tranform_func('blah_cloudprofile'), 'blah_cloudprofile')
 
     def test_get_object(self):
@@ -600,8 +600,8 @@ class BasePermissionsViewSetTestCase(StackdioTestCase):
 class ModelPermissionsViewSetTestCase(StackdioTestCase):
 
     def _create_perms(self, auth_obj):
-        for perm in CloudProvider._meta.default_permissions:
-            assign_perm('cloud.%s_cloudprovider' % perm, auth_obj)
+        for perm in CloudAccount._meta.default_permissions:
+            assign_perm('cloud.%s_cloudaccount' % perm, auth_obj)
 
     def get_viewset(self, user_or_group):
         if user_or_group == 'user':
@@ -610,7 +610,7 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
             view = viewsets.StackdioModelGroupPermissionsViewSet()
         else:
             view = None
-        view.model_cls = CloudProvider
+        view.model_cls = CloudAccount
         return view
 
     def _test_get_queryset(self, auth_obj, user_or_group):
@@ -646,8 +646,8 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
             'permissions': ['create', 'admin'],
         })
 
-        for perm in CloudProvider.model_permissions:
-            self.assertFalse(self.user.has_perm('cloud.%s_cloudprovider' % perm))
+        for perm in CloudAccount.model_permissions:
+            self.assertFalse(self.user.has_perm('cloud.%s_cloudaccount' % perm))
 
 
 class ObjectPermissionsViewSetTestCase(StackdioTestCase):
@@ -656,8 +656,8 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
     def setUpTestData(cls):
         super(ObjectPermissionsViewSetTestCase, cls).setUpTestData()
 
-        CloudProvider.objects.create(
-            provider_type_id=1,
+        CloudAccount.objects.create(
+            provider_id=1,
             title='test',
             description='test',
             account_id='blah',
@@ -667,11 +667,11 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
 
     def setUp(self):
         super(ObjectPermissionsViewSetTestCase, self).setUp()
-        self.provider = CloudProvider.objects.get()
+        self.account = CloudAccount.objects.get()
 
     def _create_perms(self, auth_obj, obj):
-        for perm in CloudProvider._meta.default_permissions:
-            assign_perm('cloud.%s_cloudprovider' % perm, auth_obj, obj)
+        for perm in CloudAccount._meta.default_permissions:
+            assign_perm('cloud.%s_cloudaccount' % perm, auth_obj, obj)
 
     def get_viewset(self, user_or_group):
         if user_or_group == 'user':
@@ -680,13 +680,13 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
             view = viewsets.StackdioObjectGroupPermissionsViewSet()
         else:
             view = None
-        view.get_permissioned_object = lambda: self.provider
+        view.get_permissioned_object = lambda: self.account
         return view
 
     def _test_get_queryset(self, auth_obj, user_or_group):
         view = self.get_viewset(user_or_group)
 
-        self._create_perms(auth_obj, self.provider)
+        self._create_perms(auth_obj, self.account)
 
         queryset = view.get_queryset()
 
@@ -709,12 +709,12 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
     def test_perform_destroy(self):
         view = self.get_viewset('user')
 
-        self._create_perms(self.user, self.provider)
+        self._create_perms(self.user, self.account)
 
         view.perform_destroy({
             'user': self.user,
             'permissions': ['view', 'delete', 'update', 'admin'],
         })
 
-        for perm in CloudProvider.object_permissions:
-            self.assertFalse(self.user.has_perm('cloud.%s_cloudprovider' % perm, self.provider))
+        for perm in CloudAccount.object_permissions:
+            self.assertFalse(self.user.has_perm('cloud.%s_cloudaccount' % perm, self.account))

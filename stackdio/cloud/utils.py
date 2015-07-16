@@ -32,13 +32,13 @@ logger = logging.getLogger(__name__)
 
 def get_provider_type_and_class(provider_type_id):
     try:
-        provider_type = models.CloudProviderType.objects.get(id=provider_type_id)
-    except models.CloudProviderType.DoesNotExist:
+        provider_type = models.CloudProvider.objects.get(id=provider_type_id)
+    except models.CloudProvider.DoesNotExist:
         raise core_exceptions.BadRequest('Provider types does not exist.')
 
     provider_classes = get_cloud_providers()
     for provider_class in provider_classes:
-        if provider_class.SHORT_NAME == provider_type.type_name:
+        if provider_class.SHORT_NAME == provider_type.name:
             return provider_type, provider_class
 
     return None, None

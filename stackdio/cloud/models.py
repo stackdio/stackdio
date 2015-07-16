@@ -55,36 +55,36 @@ def get_global_orch_props_file_path(obj, filename):
     return "cloud/{0}/global_orch.props".format(obj.slug)
 
 
-_cloudprovidertype_model_permissions = ()
-_cloudprovidertype_object_permissions = ('view', 'admin')
+_cloudprovider_model_permissions = ()
+_cloudprovider_object_permissions = ('view', 'admin')
 
 
-class CloudProviderType(models.Model):
+class CloudProvider(models.Model):
 
-    model_permissions = _cloudprovidertype_model_permissions
-    object_permissions = _cloudprovidertype_object_permissions
+    model_permissions = _cloudprovider_model_permissions
+    object_permissions = _cloudprovider_object_permissions
 
     class Meta:
-        default_permissions = tuple(set(_cloudprovidertype_model_permissions +
-                                        _cloudprovidertype_object_permissions))
+        default_permissions = tuple(set(_cloudprovider_model_permissions +
+                                        _cloudprovider_object_permissions))
 
     PROVIDER_CHOICES = get_cloud_provider_choices()
-    type_name = models.CharField(
-        'Type Name',
+    name = models.CharField(
+        'Name',
         max_length=32,
         choices=PROVIDER_CHOICES,
         unique=True)
 
     def __unicode__(self):
-        return self.type_name
+        return self.name
 
 
-_cloudprovider_model_permissions = (
+_cloudaccount_model_permissions = (
     'create',
     'admin',
 )
 
-_cloudprovider_object_permissions = (
+_cloudaccount_object_permissions = (
     'view',
     'update',
     'delete',
@@ -92,20 +92,20 @@ _cloudprovider_object_permissions = (
 )
 
 
-class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
+class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
 
-    model_permissions = _cloudprovider_model_permissions
-    object_permissions = _cloudprovider_object_permissions
+    model_permissions = _cloudaccount_model_permissions
+    object_permissions = _cloudaccount_object_permissions
 
     class Meta:
-        unique_together = ('title', 'provider_type')
-        ordering = ('provider_type', 'title')
+        unique_together = ('title', 'provider')
+        ordering = ('provider', 'title')
 
-        default_permissions = tuple(set(_cloudprovider_model_permissions +
-                                        _cloudprovider_object_permissions))
+        default_permissions = tuple(set(_cloudaccount_model_permissions +
+                                        _cloudaccount_object_permissions))
 
     # What is the type of provider (e.g., AWS, Rackspace, etc)
-    provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
+    provider = models.ForeignKey('cloud.CloudProvider', verbose_name='Cloud Provider')
 
     # Used to store the provider-specifc YAML that will be written
     # to disk in settings.STACKDIO_CONFIG.salt_providers_dir
@@ -119,7 +119,7 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
     # FOR EC2 VPC
     vpc_id = models.CharField('VPC ID', max_length=64, blank=True)
 
-    # the account/owner id of the provider
+    # the account/owner id of the account
     account_id = models.CharField('Account ID', max_length=64)
 
     formula_versions = GenericRelation('formulas.FormulaVersion')
@@ -151,23 +151,23 @@ class CloudProvider(TimeStampedModel, TitleSlugDescriptionModel):
         return len(self.vpc_id) > 0
 
     def get_driver(self):
-        # determine the type and implementation class for this provider
-        ptype, pclass = get_provider_type_and_class(self.provider_type.id)
+        # determine the type and implementation class for this account
+        ptype, pclass = get_provider_type_and_class(self.provider.id)
 
         # instantiate the implementation class and return it
         return pclass(self)
 
     def update_config(self):
         """
-        Writes the yaml configuration file for the given provider object.
+        Writes the yaml configuration file for the given account object.
         """
-        # update the provider object's security group information
+        # update the account object's security group information
         security_groups = [sg.group_id for sg in self.security_groups.filter(
             is_default=True
         )]
-        provider_yaml = yaml.safe_load(self.yaml)
-        provider_yaml[self.slug]['securitygroupid'] = security_groups
-        self.yaml = yaml.safe_dump(provider_yaml, default_flow_style=False)
+        account_yaml = yaml.safe_load(self.yaml)
+        account_yaml[self.slug]['securitygroupid'] = security_groups
+        self.yaml = yaml.safe_dump(account_yaml, default_flow_style=False)
         self.save()
 
         if not self.config_file:
@@ -218,7 +218,7 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     # '512MB Standard Instance'
 
     # link to the type of provider for this instance size
-    provider_type = models.ForeignKey('CloudProviderType', verbose_name='Provider Type')
+    provider = models.ForeignKey('cloud.CloudProvider', verbose_name='Cloud Provider')
 
     # The underlying size ID of the instance (e.g., t1.micro)
     instance_id = models.CharField('Instance ID', max_length=64)
@@ -230,7 +230,7 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
 class GlobalOrchestrationFormulaComponent(TimeStampedModel):
     """
     An extension of an existing FormulaComponent to add additional metadata
-    for those components based on this provider. In particular, this is how
+    for those components based on this account. In particular, this is how
     we track the order in which the formula should be provisioned during
     global orchestration.
     """
@@ -250,8 +250,8 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
     component = models.ForeignKey('formulas.FormulaComponent')
 
     # The cloud this extended formula component applies to
-    provider = models.ForeignKey('cloud.CloudProvider',
-                                 related_name='global_formula_components')
+    account = models.ForeignKey('cloud.CloudAccount',
+                                related_name='global_formula_components')
 
     # The order in which the component should be provisioned
     order = models.IntegerField(default=0)
@@ -259,7 +259,7 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
     def __unicode__(self):
         return u'{0}:{1}'.format(
             self.component,
-            self.provider
+            self.account
         )
 
 
@@ -282,13 +282,13 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
     object_permissions = _cloudprofile_object_permissions
 
     class Meta:
-        unique_together = ('title', 'cloud_provider')
+        unique_together = ('title', 'account')
 
         default_permissions = tuple(set(_cloudprofile_model_permissions +
                                         _cloudprofile_object_permissions))
 
-    # What cloud provider is this under?
-    cloud_provider = models.ForeignKey('CloudProvider', related_name='profiles')
+    # What cloud account is this under?
+    account = models.ForeignKey('cloud.CloudAccount', related_name='profiles')
 
     # The underlying image id of this profile (e.g., ami-38df83a')
     image_id = models.CharField('Image ID', max_length=64)
@@ -324,7 +324,7 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
         """
         profile_yaml = {
             self.slug: {
-                'provider': self.cloud_provider.slug,
+                'provider': self.account.slug,
                 'image': self.image_id,
                 'size': self.default_instance_size.title,
                 'ssh_username': self.ssh_user,
@@ -350,7 +350,7 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
                 f.write(profile_yaml)
 
     def get_driver(self):
-        return self.cloud_provider.get_driver()
+        return self.account.get_driver()
 
 
 _snapshot_model_permissions = (
@@ -372,17 +372,16 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
     object_permissions = _snapshot_object_permissions
 
     class Meta:
-        unique_together = ('snapshot_id', 'cloud_provider')
+        unique_together = ('snapshot_id', 'account')
 
         default_permissions = tuple(set(_snapshot_model_permissions +
                                         _snapshot_object_permissions))
 
-    # The cloud provider that has access to this snapshot
-    cloud_provider = models.ForeignKey('CloudProvider',
-                                       related_name='snapshots')
+    # The cloud account that has access to this snapshot
+    account = models.ForeignKey('cloud.CloudAccount', related_name='snapshots')
 
     # The snapshot id. Must exist already, be preformatted, and available
-    # to the associated cloud provider
+    # to the associated cloud account
     snapshot_id = models.CharField(max_length=32)
 
     # How big the snapshot is...this doesn't actually affect the actual
@@ -396,13 +395,13 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 
 class CloudRegion(TitleSlugDescriptionModel):
     class Meta:
-        unique_together = ('title', 'provider_type')
-        ordering = ('provider_type', 'title')
+        unique_together = ('title', 'provider')
+        ordering = ('provider', 'title')
 
         default_permissions = ()
 
     # link to the type of provider for this zone
-    provider_type = models.ForeignKey('CloudProviderType')
+    provider = models.ForeignKey('cloud.CloudProvider', verbose_name='Cloud Provider')
 
     def __unicode__(self):
         return self.title
@@ -428,21 +427,21 @@ class SecurityGroupQuerySet(TransformQuerySet):
 
     def _inject_rules(self, queryset):
         """
-        Pull all the security group rules using the cloud provider's
+        Pull all the security group rules using the cloud account's
         implementation.
         """
-        by_provider = {}
+        by_account = {}
         for group in queryset:
-            by_provider.setdefault(group.cloud_provider, []).append(group)
+            by_account.setdefault(group.account, []).append(group)
 
-        for provider, groups in by_provider.iteritems():
+        for account, groups in by_account.iteritems():
             group_ids = [group.group_id for group in groups]
-            driver = provider.get_driver()
-            provider_groups = driver.get_security_groups(group_ids)
+            driver = account.get_driver()
+            account_groups = driver.get_security_groups(group_ids)
 
             # add in the rules
             for group in groups:
-                group.rules = provider_groups[group.name]['rules']
+                group.rules = account_groups[group.name]['rules']
 
 
 class SecurityGroupManager(TransformManager):
@@ -469,7 +468,7 @@ class SecurityGroup(TimeStampedModel, models.Model):
     object_permissions = _securitygroup_object_permissions
 
     class Meta:
-        unique_together = ('name', 'cloud_provider')
+        unique_together = ('name', 'account')
 
         default_permissions = tuple(set(_securitygroup_model_permissions +
                                         _snapshot_object_permissions))
@@ -484,7 +483,7 @@ class SecurityGroup(TimeStampedModel, models.Model):
 
     # ID given by the provider
     # NOTE: This will be set automatically after it has been created on the
-    # provider and will be ignored if passed in
+    # account and will be ignored if passed in
     group_id = models.CharField(max_length=16, blank=True)
 
     # The stack that the security group is for (this is only
@@ -499,13 +498,12 @@ class SecurityGroup(TimeStampedModel, models.Model):
         default=None,
         related_name='security_groups')
 
-    # the cloud provider for this group
-    cloud_provider = models.ForeignKey('cloud.CloudProvider',
-                                       related_name='security_groups')
+    # the cloud account for this group
+    account = models.ForeignKey('cloud.CloudAccount', related_name='security_groups')
 
     # ADMIN-ONLY: setting this to true will cause this security group
     # to be added automatically to all machines that get started in
-    # the related cloud provider
+    # the related cloud account
     is_default = models.BooleanField(default=False)
 
     # Flag for us to track which security groups were created by
@@ -526,7 +524,7 @@ class SecurityGroup(TimeStampedModel, models.Model):
         Pulls the security groups using the cloud provider
         """
         logger.debug('SecurityGroup::rules called...')
-        driver = self.cloud_provider.get_driver()
+        driver = self.account.get_driver()
         try:
             groups = driver.get_security_groups([self.group_id])
             return groups[self.name]['rules']

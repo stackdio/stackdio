@@ -27,7 +27,6 @@ class StackAdmin(GuardedModelAdmin):
         'title',
         'slug',
         'blueprint',
-        # 'cloud_provider',
         'created',
         'modified',
     ]
