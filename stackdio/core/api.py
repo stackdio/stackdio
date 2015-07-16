@@ -27,7 +27,7 @@ class VersionAPIView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
-        from stackdio.version import __version__
+        from stackdio.server import __version__
 
         return Response({
             'version': __version__,

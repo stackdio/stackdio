@@ -1,0 +1,64 @@
+;;
+;; Example stackd.io configuration for supervisord
+;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; supervisord settings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; For more information on the config file, please see:
+; http://supervisord.org/configuration.html
+
+; we want to run via a socket file (vs an open http server)
+[unix_http_server]
+file=/tmp/supervisor.sock
+username=root
+password=1234
+
+[supervisord]
+logfile={{ storage_root }}/var/log/supervisord/supervisord.log ; (main log file;default $CWD/supervisord.log)
+pidfile={{ storage_root }}/var/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
+childlogdir={{ storage_root }}/var/log/supervisord
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[supervisorctl]
+serverurl=unix:///tmp/supervisor.sock
+username=root
+password=1234
+history_file=~/.sc_history
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; app specific settings
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+{% if with_gunicorn %}
+;;
+;; django webserver
+[program:gunicorn]
+command=gunicorn stackdio.server.wsgi
+autorestart=true
+{% endif %}
+
+{% if with_celery %}
+;;
+;; celery
+[program:celery-main]
+command=stackdio celery worker -l info -c 4 -Q default,stacks,formulas -n main.%%h
+environment=PYTHONOPTIMIZE="1"
+autorestart=true
+
+[program:celery-formulas]
+command=stackdio celery worker -l info -c 1 -Q formulas -n formulas.%%h
+environment=PYTHONOPTIMIZE="1"
+autorestart=true
+{% endif %}
+
+{% if with_salt_master %}
+;;
+;; salt-master
+[program:salt-master]
+command=stackdio salt-master -l info
+autorestart=true
+{% endif %}

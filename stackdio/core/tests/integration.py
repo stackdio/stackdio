@@ -16,9 +16,10 @@
 #
 
 from rest_framework import status
-from api_v1.urls import urlpatterns
-from core.tests import StackdioTestCase
-from core.utils import get_urls
+
+from stackdio.core.tests.utils import StackdioTestCase
+from stackdio.core.utils import get_urls
+from stackdio.api.urls import urlpatterns
 
 
 class AuthenticationTestCase(StackdioTestCase):

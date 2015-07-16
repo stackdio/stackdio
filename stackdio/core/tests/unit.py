@@ -21,10 +21,9 @@ from django.http import Http404
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework.serializers import ValidationError
 
-import core.serializers
-from cloud.models import CloudAccount
-from core.tests.utils import StackdioTestCase, group_has_perm
-from core import shortcuts, viewsets
+from stackdio.api.cloud.models import CloudAccount
+from stackdio.core import shortcuts, viewsets
+from stackdio.core.tests.utils import StackdioTestCase, group_has_perm
 
 logger = logging.getLogger(__name__)
 

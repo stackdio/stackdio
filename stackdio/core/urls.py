@@ -17,10 +17,11 @@
 
 
 from django.conf.urls import patterns, url
+
 from . import api
 
 urlpatterns = patterns(
-    'core.api',
+    'stackdio.core.api',
 
     url(r'^version/$',
         api.VersionAPIView.as_view(),

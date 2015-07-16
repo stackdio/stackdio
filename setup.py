@@ -30,9 +30,8 @@ if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     sys.exit(1)
 
 # Grab the current version from our stackdio package
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'stackdio'))
-VERSION = __import__('stackdio').__version__
-sys.path.pop(0)
+from stackdio.server import __version__
+VERSION = __version__
 
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
@@ -79,8 +78,7 @@ if __name__ == "__main__":
         long_description=LONG_DESCRIPTION,
         license='Apache 2.0',
         include_package_data=True,
-        packages=find_packages('stackdio'),
-        package_dir={'': 'stackdio'},
+        packages=find_packages(exclude=('tests', 'dist', 'build')),
         zip_safe=False,
         install_requires=reqs,
         dependency_links=deps,
@@ -99,6 +97,6 @@ if __name__ == "__main__":
             'Topic :: System :: Distributed Computing',
         ],
         entry_points={'console_scripts': [
-            'stackdio = stackdio.management:main'
+            'stackdio = stackdio.server.management:main'
         ]}
     )

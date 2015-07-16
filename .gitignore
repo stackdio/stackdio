@@ -63,12 +63,12 @@ target/
 *.db
 *.swp
 *.un~
-stackdio/core/static/stackdio/bower_components
-stackdio/core/static/stackdio/node_modules
-stackdio/salt/user_states
-stackdio/salt/core_states
-stackdio/salt/config
-stackdio/storage
+stackdio/core/static/stackdio/bower_components/
+stackdio/core/static/stackdio/node_modules/
+salt/user_states/
+salt/core_states/
+salt/config/
+storage/
 
 
 # abe's development stuff
@@ -80,7 +80,7 @@ salt-cloud.sh
 .codeintel
 
 # ldap_settings.py
-stackdio/stackdio/settings/ldap_settings.py
+stackdio/server/settings/ldap_settings.py
 
 # collectstatic junk
 stackdio/static
