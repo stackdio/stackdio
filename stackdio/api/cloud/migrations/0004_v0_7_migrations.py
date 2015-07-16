@@ -2,12 +2,12 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-
+from stackdio.api.cloud.utils import get_cloud_provider_choices
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cloud', '0002_initial'),
+        ('cloud', '0003_initial_data'),
     ]
 
     operations = [

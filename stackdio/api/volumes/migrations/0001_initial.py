@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('stacks', '0001_initial'),
-        ('cloud', '0002_added_circular_relation_fields'),
+        ('cloud', '0002_initial'),
     ]
 
     operations = [

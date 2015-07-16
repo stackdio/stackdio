@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='volume',
-            options={'default_permissions': ('create', 'view', 'update', 'delete')},
+            options={'default_permissions': ('admin', 'create', 'delete', 'update', 'view')},
         ),
     ]
