@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='blueprint',
-            options={'default_permissions': ('create', 'view', 'update', 'delete')},
+            options={'default_permissions': ('admin', 'create', 'delete', 'update', 'view')},
         ),
         migrations.AlterModelOptions(
             name='blueprintaccessrule',
@@ -30,5 +30,23 @@ class Migration(migrations.Migration):
         migrations.AlterModelOptions(
             name='blueprintvolume',
             options={'default_permissions': (), 'verbose_name_plural': 'volumes'},
+        ),
+        migrations.AlterUniqueTogether(
+            name='blueprint',
+            unique_together=set([]),
+        ),
+        migrations.RemoveField(
+            model_name='blueprint',
+            name='owner',
+        ),
+        migrations.RemoveField(
+            model_name='blueprint',
+            name='public',
+        ),
+        migrations.AddField(
+            model_name='blueprint',
+            name='create_users',
+            field=models.BooleanField(default=True, verbose_name=b'Create SSH Users'),
+            preserve_default=False,
         ),
     ]

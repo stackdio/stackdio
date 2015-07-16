@@ -7,7 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cloud', '0002_added_circular_relation_fields'),
+        ('cloud', '0002_initial'),
     ]
 
     operations = [
