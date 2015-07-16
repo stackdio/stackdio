@@ -111,7 +111,7 @@ class BlueprintValidator(BaseValidator):
                 cloud_profile = models.CloudProfile.objects.get(
                     pk=host['cloud_profile']
                 )
-                if not cloud_profile.cloud_account.vpc_enabled:
+                if not cloud_profile.account.vpc_enabled:
                     host_errors.update(self._validate_host_zone(host))
                 else:
                     host_errors.update(self._validate_host_subnet(host))

@@ -99,7 +99,7 @@ class BlueprintManager(models.Manager):
                 spot_price=spot_price,
             )
 
-            if profile_obj.cloud_account.vpc_enabled:
+            if profile_obj.account.vpc_enabled:
                 kwargs['subnet_id'] = host.get('subnet_id')
             else:
                 zone_obj = CloudZone.objects.get(pk=host['zone'])
