@@ -49,7 +49,6 @@ class APIRootView(APIView):
             ('current_user', reverse('currentuser-detail',
                                      request=request,
                                      format=format)),
-
             ('cloud', reverse('cloud-root',
                               request=request,
                               format=format)),

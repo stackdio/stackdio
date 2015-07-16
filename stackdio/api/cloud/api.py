@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 class CloudRootView(APIView):
     """
-    Root of the stackd.io API. Below are all of the API endpoints that
+    Root of the cloud API. Below are all of the cloud API endpoints that
     are currently accessible. Each API will have its own documentation
     and particular parameters that may discoverable by browsing directly
     to them.
