@@ -16,5 +16,5 @@
 #
 
 
-from core.tests.unit import *  # NOQA
-from core.tests.integration import *  # NOQA
+from .integration import *  # NOQA
+from .unit import *  # NOQA
