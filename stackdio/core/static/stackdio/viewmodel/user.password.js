@@ -15,7 +15,7 @@
   * 
 */
 
-define(['../bower_components/q/q', 'knockout', 'util/galaxy', 'api/api', 'util/form'],
+define(['q', 'knockout', 'util/galaxy', 'api/api', 'util/form'],
 function (Q, ko, $galaxy, API, formutils) {
     var vm = function () {
         var self = this;
