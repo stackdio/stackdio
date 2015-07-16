@@ -30,3 +30,4 @@ test:
     - mv nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
     - mv cover $CIRCLE_ARTIFACTS/coverage
     - coveralls
+
