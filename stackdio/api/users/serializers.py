@@ -142,6 +142,11 @@ class UserSettingsSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     superuser = serializers.BooleanField(source='is_superuser', read_only=True)
 
+    groups = serializers.HyperlinkedIdentityField(
+        view_name='user-grouplist',
+        lookup_field='username'
+    )
+
     settings = UserSettingsSerializer()
 
     change_password = HyperlinkedField(view_name='currentuser-password')
@@ -155,6 +160,7 @@ class UserSerializer(serializers.ModelSerializer):
             'email',
             'superuser',
             'last_login',
+            'groups',
             'change_password',
             'settings',
         )

@@ -20,8 +20,12 @@ import logging
 
 import yaml
 from rest_framework import generics, status
+from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
 from stackdio.api.blueprints.serializers import BlueprintSerializer
 from stackdio.api.formulas.models import FormulaVersion
@@ -37,6 +41,37 @@ from stackdio.core.viewsets import (
 from . import filters, mixins, models, serializers, permissions
 
 logger = logging.getLogger(__name__)
+
+
+class CloudRootView(APIView):
+    """
+    Root of the cloud API. Below are all of the cloud API endpoints that
+    are currently accessible. Each API will have its own documentation
+    and particular parameters that may discoverable by browsing directly
+    to them.
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        api = OrderedDict((
+            ('providers', reverse('cloudprovider-list',
+                                  request=request,
+                                  format=format)),
+            ('accounts', reverse('cloudaccount-list',
+                                 request=request,
+                                 format=format)),
+            ('profiles', reverse('cloudprofile-list',
+                                 request=request,
+                                 format=format)),
+            ('snapshots', reverse('snapshot-list',
+                                  request=request,
+                                  format=format)),
+            ('security_groups', reverse('securitygroup-list',
+                                        request=request,
+                                        format=format)),
+        ))
+
+        return Response(api)
 
 
 class CloudProviderListAPIView(generics.ListAPIView):

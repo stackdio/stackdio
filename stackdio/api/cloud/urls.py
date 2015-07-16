@@ -80,6 +80,10 @@ snapshot_object_router.register(r'groups',
 urlpatterns = patterns(
     'stackdio.api.cloud.api',
 
+    url(r'^$',
+        api.CloudRootView.as_view(),
+        name='cloud-root'),
+
     url(r'^providers/$',
         api.CloudProviderListAPIView.as_view(),
         name='cloudprovider-list'),
