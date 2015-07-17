@@ -32,6 +32,7 @@ import os
 import dj_database_url
 
 from stackdio.core.config import StackdioConfig
+from stackdio.server.version import __version__
 
 
 logger = logging.getLogger(__name__)
@@ -275,6 +276,8 @@ LOGGING = {
 # Django REST Framework configuration
 ##
 REST_FRAMEWORK = {
+    'STACKDIO_VERSION': __version__,
+
     'PAGE_SIZE': 50,
 
     # Filtering
