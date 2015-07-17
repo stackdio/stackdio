@@ -225,7 +225,8 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
     )
-    default_instance_size = serializers.PrimaryKeyRelatedField(
+    default_instance_size = serializers.SlugRelatedField(
+        slug_field='instance_id',
         queryset=models.CloudInstanceSize.objects.all()
     )
 
