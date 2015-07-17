@@ -359,7 +359,7 @@ CELERY_ROUTES = {
 # to ldap_settings.py and modify the settings there.
 ##
 try:
-    from stackdio.server.settings.ldap_settings import *  # pylint: disable=wildcard-import, unused-wildcard-import
+    from stackdio.server.settings.ldap_settings import *  # pylint: disable=wildcard-import, unused-wildcard-import, no-name-in-module
     LDAP_ENABLED = True
     AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
 except ImportError:
