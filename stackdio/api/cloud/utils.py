@@ -42,7 +42,8 @@ def get_provider_driver_class(provider):
 def check_cloud_provider_settings():
     if not hasattr(settings, 'CLOUD_PROVIDERS'):
         raise ImproperlyConfigured(
-            'settings.CLOUD_PROVIDERS must set with a list of supported cloud providers.')
+            'settings.CLOUD_PROVIDERS must set with a list of supported cloud providers.'
+        )
 
 
 def get_cloud_provider_choices():
@@ -59,25 +60,23 @@ def get_cloud_providers():
     check_cloud_provider_settings()
 
     providers = []
-    try:
-        for class_path in settings.CLOUD_PROVIDERS:
+    for class_path in settings.CLOUD_PROVIDERS:
+        try:
             module_path, class_name = class_path.rsplit('.', 1)
             module = importlib.import_module(module_path)
             providers.append(getattr(module, class_name))
-
-    except ImportError as e:
-        # msg = 'Could not import {0} from settings.CLOUD_PROVIDERS'.format(class_path)
-        # logger.error(e)
-        # raise ImportError(msg)
-        raise
+        except ImportError as e:
+            msg = 'Could not import {0} from settings.CLOUD_PROVIDERS'.format(class_path)
+            logger.error(e)
+            raise ImproperlyConfigured(msg)
 
     return providers
 
 
 def find_roles(filename, pattern):
-    with open(filename) as file:
+    with open(filename) as f:
         recording = False
-        for line in file:
+        for line in f:
             # if line.startswith(pattern):
             # re.match('^(\s)+-\s(?!match\:)', line)
             if re.match(pattern, line):
