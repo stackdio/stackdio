@@ -45,7 +45,7 @@ def remove_cloud_objects(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('cloud', '0005_added_admin_perm'),
+        ('cloud', '0002_initial'),
     ]
 
     operations = [

@@ -7,12 +7,12 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('blueprints', '0004_added_admin_perm'),
+        ('volumes', '0001_initial'),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='blueprint',
+            name='volume',
             options={'default_permissions': ('admin', 'create', 'delete', 'update', 'view')},
         ),
     ]
