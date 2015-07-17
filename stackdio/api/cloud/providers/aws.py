@@ -31,7 +31,6 @@ import boto
 import boto.ec2
 import boto.vpc
 import yaml
-from boto.exception import EC2ResponseError
 from boto.route53.record import ResourceRecordSets
 
 from stackdio.api.cloud.providers.base import (
@@ -327,22 +326,27 @@ class AWSCloudProvider(BaseCloudProvider):
         return config_data
 
     # TODO: Ignoring code complexity issues...
-    def validate_provider_data(self, data, files=None):  # NOQA
-
-        errors = super(AWSCloudProvider, self) \
-            .validate_provider_data(data, files)
+    def validate_provider_data(self, serializer_attrs, all_data):
+        errors = super(AWSCloudProvider, self).validate_provider_data(serializer_attrs, all_data)
 
         if errors:
             return errors
 
+        region = serializer_attrs[self.REGION].slug
+        access_key = all_data.get(self.ACCESS_KEY)
+        secret_key = all_data.get(self.SECRET_KEY)
+        keypair = all_data.get(self.KEYPAIR)
+
         # check authentication credentials
+        ec2 = None
         try:
             ec2 = boto.ec2.connect_to_region(
-                data[self.REGION],
-                aws_access_key_id=data[self.ACCESS_KEY],
-                aws_secret_access_key=data[self.SECRET_KEY])
+                region,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+            )
             ec2.get_all_zones()
-        except boto.exception.EC2ResponseError, e:
+        except boto.exception.EC2ResponseError:
             err_msg = 'Unable to authenticate to AWS with the provided keys.'
             errors.setdefault(self.ACCESS_KEY, []).append(err_msg)
             errors.setdefault(self.SECRET_KEY, []).append(err_msg)
@@ -352,25 +356,22 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # check keypair
         try:
-            ec2.get_all_key_pairs(data[self.KEYPAIR])
-        except boto.exception.EC2ResponseError, e:
+            ec2.get_all_key_pairs(keypair)
+        except boto.exception.EC2ResponseError:
             errors.setdefault(self.KEYPAIR, []).append(
-                'The keypair \'{0}\' does not exist in this account.'
-                ''.format(data[self.KEYPAIR])
+                'The keypair \'{0}\' does not exist in this account.'.format(keypair)
             )
 
         # check route 53 domain
-        try:
-            if self.ROUTE53_DOMAIN in data:
+        domain = all_data.get(self.ROUTE53_DOMAIN)
+        if domain:
+            try:
                 # connect to route53 and check that the domain is available
-                r53 = boto.connect_route53(data[self.ACCESS_KEY],
-                                           data[self.SECRET_KEY])
+                r53 = boto.connect_route53(access_key, secret_key)
                 found_domain = False
-                domain = data[self.ROUTE53_DOMAIN]
 
                 hosted_zones = r53.get_all_hosted_zones()
-                hosted_zones = \
-                    hosted_zones['ListHostedZonesResponse']['HostedZones']
+                hosted_zones = hosted_zones['ListHostedZonesResponse']['HostedZones']
                 for hosted_zone in hosted_zones:
                     if hosted_zone['Name'].startswith(domain):
                         found_domain = True
@@ -380,21 +381,23 @@ class AWSCloudProvider(BaseCloudProvider):
                     err = 'The Route53 domain \'{0}\' does not exist in ' \
                           'this account.'.format(domain)
                     errors.setdefault(self.ROUTE53_DOMAIN, []).append(err)
-        # except boto.exception.DNSServerError, e:
-        except Exception, e:
-            logger.exception('Route53 issue?')
-            errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))
+            # except boto.exception.DNSServerError, e:
+            except Exception, e:
+                logger.exception('Route53 issue?')
+                errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))
 
         # check VPC required fields
-        if self.VPC_ID in data and data[self.VPC_ID]:
-            vpc_id = data[self.VPC_ID]
+        vpc_id = all_data.get(self.VPC_ID)
+        if vpc_id:
 
+            vpc = None
             try:
                 vpc = boto.vpc.connect_to_region(
-                    data[self.REGION],
-                    aws_access_key_id=data[self.ACCESS_KEY],
-                    aws_secret_access_key=data[self.SECRET_KEY])
-            except boto.exception.EC2ResponseError, e:
+                    region,
+                    aws_access_key_id=access_key,
+                    aws_secret_access_key=secret_key,
+                )
+            except boto.exception.EC2ResponseError:
                 err_msg = ('Unable to authenticate to AWS VPC with the '
                            'provided keys.')
                 errors.setdefault(self.ACCESS_KEY, []).append(err_msg)
@@ -403,7 +406,7 @@ class AWSCloudProvider(BaseCloudProvider):
             if not errors:
                 try:
                     vpc.get_all_vpcs([vpc_id])
-                except boto.exception.EC2ResponseError, e:
+                except boto.exception.EC2ResponseError:
                     errors.setdefault(self.VPC_ID, []).append(
                         'The VPC \'{0}\' does not exist in this account.'
                         .format(vpc_id)
@@ -479,8 +482,8 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # create the group in the VPC or classic
         kwargs = {}
-        if self.obj.vpc_id:
-            kwargs['vpc_id'] = self.obj.vpc_id
+        if self.account.vpc_id:
+            kwargs['vpc_id'] = self.account.vpc_id
 
         ec2 = self.connect_ec2()
         group = ec2.create_security_group(security_group_name,
@@ -509,9 +512,9 @@ class AWSCloudProvider(BaseCloudProvider):
     def delete_security_group(self, group_name):
         from django.core.exceptions import ObjectDoesNotExist
 
-        if self.obj.vpc_id:
+        if self.account.vpc_id:
             try:
-                sg = self.obj.security_groups.get(name=group_name)
+                sg = self.account.security_groups.get(name=group_name)
                 kwargs = {'group_id': sg.group_id}
             except ObjectDoesNotExist:
                 return
@@ -575,7 +578,10 @@ class AWSCloudProvider(BaseCloudProvider):
                 self.revoke_security_group(group_id, rule)
 
     # FIXME(abe): Ignoring code complexity
-    def get_security_groups(self, group_ids=[]):  # NOQA
+    def get_security_groups(self, group_ids=None):  # NOQA
+        if group_ids is None:
+            group_ids = []
+
         if not isinstance(group_ids, list):
             group_ids = [group_ids]
 
@@ -584,9 +590,9 @@ class AWSCloudProvider(BaseCloudProvider):
 
         result = {}
         for group in groups:
-            if self.obj.vpc_enabled and not group.vpc_id:
+            if self.account.vpc_enabled and not group.vpc_id:
                 continue
-            if not self.obj.vpc_enabled and group.vpc_id:
+            if not self.account.vpc_enabled and group.vpc_id:
                 continue
 
             rules_ingress, rules_egress = [], []
@@ -640,7 +646,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return result
 
-    def get_vpc_subnets(self, subnet_ids=[]):
+    def get_vpc_subnets(self, subnet_ids=None):
+        if subnet_ids is None:
+            subnet_ids = []
+
         try:
             vpc = self.connect_vpc()
             subnets = vpc.get_all_subnets(subnet_ids)
@@ -687,7 +696,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # for each host, create a new record in Route 53
         for host in hosts:
-            if self.obj.vpc_id:
+            if self.account.vpc_id:
                 record_value = host.provider_private_ip
                 record_type = 'A'
             else:
@@ -726,7 +735,7 @@ class AWSCloudProvider(BaseCloudProvider):
         # for each host, delete the existing record
         finish = False
         for host in hosts:
-            if self.obj.vpc_id:
+            if self.account.vpc_id:
                 record_value = host.provider_private_ip
                 record_type = 'A'
             else:
@@ -802,7 +811,12 @@ class AWSCloudProvider(BaseCloudProvider):
                     'Name': name,
                 })
 
-    def tag_resources(self, stack, hosts=[], volumes=[]):
+    def tag_resources(self, stack, hosts=None, volumes=None):
+        if hosts is None:
+            hosts = []
+        if volumes is None:
+            volumes = []
+
         ec2 = self.connect_ec2()
 
         # Tag each volume with a unique name. This makes it easier to view
@@ -943,8 +957,7 @@ class AWSCloudProvider(BaseCloudProvider):
         Generic function to handle most all states accordingly. If you need
         custom logic in the state handling, do so in the _action* methods.
         """
-        stack.set_status(status, status,
-                         '%s all hosts in this stack.' % status.capitalize())
+        stack.set_status(status, status, '{0} all hosts in this stack.'.format(status.capitalize()))
 
         hosts = stack.get_hosts()
         instance_ids = [h.instance_id for h in hosts]
@@ -956,11 +969,10 @@ class AWSCloudProvider(BaseCloudProvider):
             self.wait_for_state(hosts, success_state)
             return True
         except MaxFailuresException:
-            logger.error('Max number of failures reached while waiting '
-                         'for state: %s' % success_state)
+            logger.error('Max number of failures reached while waiting for state: %s',
+                         success_state)
         except TimeoutException:
-            logger.error('Timeout reached while waiting for state: '
-                         '%s.' % success_state)
+            logger.error('Timeout reached while waiting for state: %s.', success_state)
 
         return False
 

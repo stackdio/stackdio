@@ -25,6 +25,7 @@ class ValidationErrors(object):
     OBJECT_REQUIRED = 'Object type required.'
     LIST_REQUIRED = 'List type required.'
     INT_REQUIRED = 'Non-negative integer required.'
+    STRING_REQUIRED = 'String required.'
     DECIMAL_REQUIRED = 'Non-negative decimal value required.'
 
     DUP_BLUEPRINT = 'A Blueprint with this value already exists.'

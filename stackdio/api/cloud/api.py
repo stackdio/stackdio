@@ -116,6 +116,7 @@ class CloudAccountListAPIView(generics.ListCreateAPIView):
         # Lookup provider type
         try:
             obj = serializer.save()
+
             driver = obj.get_driver()
 
             # Leverage the driver to generate its required data that
@@ -494,7 +495,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
             pass
 
         # check if the group exists on the account
-        account = None
+        account_group = None
         if group_id:
             try:
                 account_group = driver.get_security_groups([group_id])[name]
@@ -503,7 +504,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
             except KeyError:
                 raise
-            except:
+            except Exception:
                 # doesn't exist on the account either, we'll create it now
                 account_group = None
 

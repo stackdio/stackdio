@@ -79,8 +79,7 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         if properties and isinstance(properties, dict):
             blueprint.properties = properties
         else:
-            logger.warning('Invalid properties for blueprint {0}: {1}'.format(blueprint.title,
-                                                                              properties))
+            logger.warning('Invalid properties for blueprint {0}: {1}'.format(blueprint.title, properties))
 
         return super(BlueprintDetailAPIView, self).update(request, *args, **kwargs)
 

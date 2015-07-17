@@ -148,12 +148,12 @@ class BlueprintValidator(BaseValidator):
         e = {}
         if 'size' not in host:
             e['size'] = ValidationErrors.REQUIRED_FIELD
-        elif not isinstance(host['size'], int):
-            e['size'] = ValidationErrors.INT_REQUIRED
+        elif not isinstance(host['size'], basestring):
+            e['size'] = ValidationErrors.STRING_REQUIRED
         # check the size instance
         else:
             try:
-                models.CloudInstanceSize.objects.get(pk=host['size'])
+                models.CloudInstanceSize.objects.get(instance_id=host['size'])
             except models.CloudInstanceSize.DoesNotExist:
                 e['size'] = ValidationErrors.DOES_NOT_EXIST
         return e

@@ -44,7 +44,6 @@ disable=R,
   C0111,
   C0203,
   C0204,
-  C0301,
   C0302,
   C0330,
   C1001,
@@ -65,7 +64,6 @@ disable=R,
   W0704,
   F0220,
   F0401,
-  E8501,
   E8121,
   E8122,
   E8123,
@@ -89,7 +87,6 @@ disable=R,
 # C0111 (missing-docstring)
 # C0203 (bad-mcs-method-argument)
 # C0204 (bad-mcs-classmethod-argument)
-# C0301 (line-too-long)
 # C0302 (too-many-lines)
 # C0330 (bad-continuation)
 # C1001 (old-style-class) [Way to many Meta inner classes that don't need it]
@@ -113,7 +110,6 @@ disable=R,
 #
 # E812* All PEP8 E12*
 # E8265 PEP8 E265 - block comment should start with "# "
-# E8501 PEP8 line too long
 
 [REPORTS]
 

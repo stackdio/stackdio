@@ -32,6 +32,7 @@ import os
 import dj_database_url
 
 from stackdio.core.config import StackdioConfig
+from stackdio.server.version import __version__
 
 
 logger = logging.getLogger(__name__)
@@ -275,6 +276,8 @@ LOGGING = {
 # Django REST Framework configuration
 ##
 REST_FRAMEWORK = {
+    'STACKDIO_VERSION': __version__,
+
     'PAGE_SIZE': 50,
 
     # Filtering
@@ -356,7 +359,7 @@ CELERY_ROUTES = {
 # to ldap_settings.py and modify the settings there.
 ##
 try:
-    from stackdio.server.settings.ldap_settings import *  # NOQA
+    from stackdio.server.settings.ldap_settings import *  # pylint: disable=wildcard-import, unused-wildcard-import, no-name-in-module
     LDAP_ENABLED = True
     AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
 except ImportError:

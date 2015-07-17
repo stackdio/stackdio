@@ -74,7 +74,7 @@ class StackdioConfig(dict):
                                               'cloud.profiles.d')
 
         # defaults
-        if not self.salt_master_log_level:
+        if not self.salt_master_log_level:  # pylint: disable=access-member-before-definition
             self.salt_master_log_level = 'info'
 
     def __getattr__(self, k):

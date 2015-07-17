@@ -23,31 +23,23 @@ import importlib
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-from stackdio.core import exceptions as core_exceptions
-
-import models
-
 logger = logging.getLogger(__name__)
 
 
-def get_provider_type_and_class(provider_type_id):
-    try:
-        provider_type = models.CloudProvider.objects.get(id=provider_type_id)
-    except models.CloudProvider.DoesNotExist:
-        raise core_exceptions.BadRequest('Provider types does not exist.')
-
+def get_provider_driver_class(provider):
     provider_classes = get_cloud_providers()
     for provider_class in provider_classes:
-        if provider_class.SHORT_NAME == provider_type.name:
-            return provider_type, provider_class
+        if provider_class.SHORT_NAME == provider.name:
+            return provider_class
 
-    return None, None
+    return None
 
 
 def check_cloud_provider_settings():
     if not hasattr(settings, 'CLOUD_PROVIDERS'):
         raise ImproperlyConfigured(
-            'settings.CLOUD_PROVIDERS must set with a list of supported cloud providers.')
+            'settings.CLOUD_PROVIDERS must set with a list of supported cloud providers.'
+        )
 
 
 def get_cloud_provider_choices():
@@ -64,25 +56,23 @@ def get_cloud_providers():
     check_cloud_provider_settings()
 
     providers = []
-    try:
-        for class_path in settings.CLOUD_PROVIDERS:
+    for class_path in settings.CLOUD_PROVIDERS:
+        try:
             module_path, class_name = class_path.rsplit('.', 1)
             module = importlib.import_module(module_path)
             providers.append(getattr(module, class_name))
-
-    except ImportError as e:
-        # msg = 'Could not import {0} from settings.CLOUD_PROVIDERS'.format(class_path)
-        # logger.error(e)
-        # raise ImportError(msg)
-        raise
+        except ImportError as e:
+            msg = 'Could not import {0} from settings.CLOUD_PROVIDERS'.format(class_path)
+            logger.error(e)
+            raise ImproperlyConfigured(msg)
 
     return providers
 
 
 def find_roles(filename, pattern):
-    with open(filename) as file:
+    with open(filename) as f:
         recording = False
-        for line in file:
+        for line in f:
             # if line.startswith(pattern):
             # re.match('^(\s)+-\s(?!match\:)', line)
             if re.match(pattern, line):

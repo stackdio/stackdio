@@ -29,7 +29,10 @@ LANDING_PAGE_TEMPLATE = 'index.html'
 logger = logging.getLogger(__name__)
 
 
-def render(request, view, context={}):
+def render(request, view, context=None):
+    if context is None:
+        context = {}
+
     if request:
         return render_to_response(view,
                                   context,

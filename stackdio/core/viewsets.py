@@ -155,7 +155,7 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
                        'model_permissions',
                        getattr(self, 'model_permissions', ()))
 
-    def get_queryset(self):
+    def get_queryset(self):  # pylint: disable=method-hidden
         model_cls = self.get_model_cls()
         model_name = model_cls._meta.model_name
         model_perms = self.get_model_permissions()
@@ -227,14 +227,15 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
                        'object_permissions',
                        getattr(self, 'object_permissions', ()))
 
-    def get_queryset(self):
+    def get_queryset(self):  # pylint: disable=method-hidden
         obj = self.get_permissioned_object()
         model_name = obj._meta.model_name
         object_perms = self.get_object_permissions()
 
         # Grab the perms for either the users or groups
         perm_map = self.switch_user_group(
-            get_users_with_perms(obj, attach_perms=True),
+            get_users_with_perms(obj, attach_perms=True,
+                                 with_superusers=False, with_group_users=False),
             get_groups_with_perms(obj, attach_perms=True),
         )
 
@@ -271,13 +272,13 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
                         obj)
 
 
-class StackdioObjectUserPermissionsViewSet(StackdioObjectPermissionsViewSet):
+class StackdioObjectUserPermissionsViewSet(StackdioObjectPermissionsViewSet):  # pylint: disable=abstract-method
     user_or_group = 'user'
     lookup_field = 'username'
     lookup_url_kwarg = 'username'
 
 
-class StackdioObjectGroupPermissionsViewSet(StackdioObjectPermissionsViewSet):
+class StackdioObjectGroupPermissionsViewSet(StackdioObjectPermissionsViewSet):  # pylint: disable=abstract-method
     user_or_group = 'group'
     lookup_field = 'name'
     lookup_url_kwarg = 'groupname'

@@ -26,7 +26,7 @@ from stackdio.core.mixins import SuperuserFieldsMixin
 from stackdio.core.utils import recursive_update
 from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models
-from .utils import get_provider_type_and_class
+from .utils import get_provider_driver_class
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +130,7 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
             # TODO removed default AZ for now, might add in region later
 
             errors = {}
-            for k in request.DATA:
+            for k in self.initial_data:
                 if k not in fields_available:
                     errors.setdefault(k, []).append(
                         'Field may not be modified.')
@@ -139,20 +139,13 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
                 raise serializers.ValidationError(errors)
 
         elif request.method == 'POST':
+            provider = attrs['provider']
 
-            provider_type, provider_class = get_provider_type_and_class(
-                request.DATA.get('provider'))
+            provider_class = get_provider_driver_class(provider)
 
-            # Grab the region name from the database
-            try:
-                region = models.CloudRegion.objects.get(id=request.DATA['region']).slug
-                request.DATA['region'] = region
-            except models.CloudRegion.DoesNotExist:
-                raise serializers.ValidationError('Invalid region')
+            provider_driver = provider_class()
 
-            provider = provider_class()
-            errors = provider.validate_provider_data(request.DATA,
-                                                     request.FILES)
+            errors = provider_driver.validate_provider_data(attrs, self.initial_data)
 
             if errors:
                 logger.error('Cloud account validation errors: '
@@ -162,7 +155,7 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
         return attrs
 
 
-class VPCSubnetSerializer(serializers.Serializer):
+class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     vpc_id = serializers.ReadOnlyField()
     id = serializers.ReadOnlyField()
     availability_zone = serializers.ReadOnlyField()
@@ -232,7 +225,8 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
     )
-    default_instance_size = serializers.PrimaryKeyRelatedField(
+    default_instance_size = serializers.SlugRelatedField(
+        slug_field='instance_id',
         queryset=models.CloudInstanceSize.objects.all()
     )
 
@@ -455,7 +449,7 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
         superuser_fields = ('is_default', 'is_managed')
 
 
-class SecurityGroupRuleSerializer(serializers.Serializer):
+class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     action = serializers.CharField(max_length=15)
     protocol = serializers.CharField(max_length=4)
     from_port = serializers.IntegerField()

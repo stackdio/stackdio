@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from stackdio.server.settings.base import *  # NOQA
+from stackdio.server.settings.base import *  # pylint: disable=wildcard-import, unused-wildcard-import
 
 # Add additional testing settings here
 

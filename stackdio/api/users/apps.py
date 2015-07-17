@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
+
 import logging
 
 from django.apps import AppConfig, apps
@@ -29,7 +31,8 @@ logger = logging.getLogger(__name__)
 EXTRA_GROUP_PERMS = ('admin', 'create', 'update')
 
 
-def create_extra_group_permissions(app_config, verbosity=2, interactive=True, using=DEFAULT_DB_ALIAS, **kwargs):
+def create_extra_group_permissions(app_config, verbosity=2, interactive=True,
+                                   using=DEFAULT_DB_ALIAS, **kwargs):
     """
     Create the extra group permissions we need.  Pulled almost entirely from:
 

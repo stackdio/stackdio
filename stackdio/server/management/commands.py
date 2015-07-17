@@ -144,7 +144,10 @@ class BaseCommand(object):
             return os.path.dirname(provider.module_path)
         return provider.get_resource_filename(ResourceManager(), rp)
 
-    def render_template(self, tmpl, outfile=None, context={}):
+    def render_template(self, tmpl, outfile=None, context=None):
+        if context is None:
+            context = {}
+
         tmpl = self.load_resource(tmpl)
         with open(tmpl) as f:
             t = jinja2.Template(f.read()).render(context)
@@ -446,7 +449,7 @@ class InitCommand(WizardCommand):
         else:
             try:
                 os.makedirs(path)
-            except:
+            except Exception:
                 return False, ('Directory did not exist and we could not '
                                'create it. Make sure appropriate permissions '
                                'are set.')
