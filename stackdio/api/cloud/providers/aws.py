@@ -31,7 +31,6 @@ import boto
 import boto.ec2
 import boto.vpc
 import yaml
-from boto.exception import EC2ResponseError
 from boto.route53.record import ResourceRecordSets
 
 from stackdio.api.cloud.providers.base import (
@@ -398,7 +397,7 @@ class AWSCloudProvider(BaseCloudProvider):
                     aws_access_key_id=access_key,
                     aws_secret_access_key=secret_key,
                 )
-            except boto.exception.EC2ResponseError, e:
+            except boto.exception.EC2ResponseError:
                 err_msg = ('Unable to authenticate to AWS VPC with the '
                            'provided keys.')
                 errors.setdefault(self.ACCESS_KEY, []).append(err_msg)
@@ -579,7 +578,10 @@ class AWSCloudProvider(BaseCloudProvider):
                 self.revoke_security_group(group_id, rule)
 
     # FIXME(abe): Ignoring code complexity
-    def get_security_groups(self, group_ids=[]):  # NOQA
+    def get_security_groups(self, group_ids=None):  # NOQA
+        if group_ids is None:
+            group_ids = []
+
         if not isinstance(group_ids, list):
             group_ids = [group_ids]
 
@@ -644,7 +646,10 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return result
 
-    def get_vpc_subnets(self, subnet_ids=[]):
+    def get_vpc_subnets(self, subnet_ids=None):
+        if subnet_ids is None:
+            subnet_ids = []
+
         try:
             vpc = self.connect_vpc()
             subnets = vpc.get_all_subnets(subnet_ids)
@@ -806,7 +811,12 @@ class AWSCloudProvider(BaseCloudProvider):
                     'Name': name,
                 })
 
-    def tag_resources(self, stack, hosts=[], volumes=[]):
+    def tag_resources(self, stack, hosts=None, volumes=None):
+        if hosts is None:
+            hosts = []
+        if volumes is None:
+            volumes = []
+
         ec2 = self.connect_ec2()
 
         # Tag each volume with a unique name. This makes it easier to view
@@ -947,8 +957,7 @@ class AWSCloudProvider(BaseCloudProvider):
         Generic function to handle most all states accordingly. If you need
         custom logic in the state handling, do so in the _action* methods.
         """
-        stack.set_status(status, status,
-                         '%s all hosts in this stack.' % status.capitalize())
+        stack.set_status(status, status, '{0} all hosts in this stack.'.format(status.capitalize()))
 
         hosts = stack.get_hosts()
         instance_ids = [h.instance_id for h in hosts]
@@ -960,11 +969,10 @@ class AWSCloudProvider(BaseCloudProvider):
             self.wait_for_state(hosts, success_state)
             return True
         except MaxFailuresException:
-            logger.error('Max number of failures reached while waiting '
-                         'for state: %s' % success_state)
+            logger.error('Max number of failures reached while waiting for state: %s',
+                         success_state)
         except TimeoutException:
-            logger.error('Timeout reached while waiting for state: '
-                         '%s.' % success_state)
+            logger.error('Timeout reached while waiting for state: %s.', success_state)
 
         return False
 

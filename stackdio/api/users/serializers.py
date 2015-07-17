@@ -106,7 +106,7 @@ class GroupActionReturnSerializer(GroupSerializer):
     users = GroupUserSerializer(source='user_set', many=True)
 
 
-class GroupActionSerializer(serializers.Serializer):
+class GroupActionSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     available_actions = ('add-user', 'remove-user')
 
     action = serializers.ChoiceField(available_actions)
@@ -200,7 +200,7 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ChangePasswordSerializer(serializers.Serializer):
+class ChangePasswordSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     current_password = serializers.CharField()
     new_password = serializers.CharField()
 

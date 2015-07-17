@@ -49,7 +49,7 @@ PROTOCOL_CHOICES = [
 
 logger = logging.getLogger(__name__)
 
-HOST_INDEX_PATTERN = re.compile('.*-.*-(\d+)')
+HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
 
 
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
@@ -127,8 +127,6 @@ class StackManager(models.Manager):
 
     @transaction.atomic
     def create_stack(self, create_user, blueprint, **data):
-        """
-        """
         title = data.get('title', '')
         description = data.get('description', '')
         create_users = data['create_users']

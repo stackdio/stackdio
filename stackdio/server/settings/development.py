@@ -17,7 +17,7 @@
 
 
 # Grab the base settings
-from stackdio.server.settings.base import *  # NOQA
+from stackdio.server.settings.base import *  # pylint: disable=wildcard-import, unused-wildcard-import
 
 DEBUG = True
 TEMPLATE_DEBUG = True

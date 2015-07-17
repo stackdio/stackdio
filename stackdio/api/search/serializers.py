@@ -27,7 +27,7 @@ from stackdio.api.stacks.models import Stack
 logger = logging.getLogger(__name__)
 
 
-class SearchResultTypeField(serializers.Field):
+class SearchResultTypeField(serializers.Field):  # pylint: disable=abstract-method
     """
     Tricks a read-only field into returning the value we want
     it to return instead of leveraging a value on the model.

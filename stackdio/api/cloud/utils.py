@@ -23,10 +23,6 @@ import importlib
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-from stackdio.core import exceptions as core_exceptions
-
-import models
-
 logger = logging.getLogger(__name__)
 
 

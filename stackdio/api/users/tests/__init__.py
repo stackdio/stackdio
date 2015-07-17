@@ -15,4 +15,4 @@
 # limitations under the License.
 #
 
-from .unit import *  # NOQA
+from .unit import *  # pylint: disable=wildcard-import

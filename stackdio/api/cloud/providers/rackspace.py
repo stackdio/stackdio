@@ -80,3 +80,15 @@ class RackspaceCloudProvider(BaseCloudProvider):
             cls.TENANT_ID,
             cls.API_KEY,
         ]
+
+    @classmethod
+    def register_dns(cls, hosts):
+        pass
+
+    @classmethod
+    def unregister_dns(cls, hosts):
+        pass
+
+    @classmethod
+    def validate_image_id(cls, image_id):
+        pass

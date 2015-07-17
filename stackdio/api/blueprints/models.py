@@ -349,8 +349,6 @@ class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
 
 
 class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
-    """
-    """
 
     class Meta:
         verbose_name_plural = 'volumes'

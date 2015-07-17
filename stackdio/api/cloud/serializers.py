@@ -155,7 +155,7 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
         return attrs
 
 
-class VPCSubnetSerializer(serializers.Serializer):
+class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     vpc_id = serializers.ReadOnlyField()
     id = serializers.ReadOnlyField()
     availability_zone = serializers.ReadOnlyField()
@@ -449,7 +449,7 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
         superuser_fields = ('is_default', 'is_managed')
 
 
-class SecurityGroupRuleSerializer(serializers.Serializer):
+class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     action = serializers.CharField(max_length=15)
     protocol = serializers.CharField(max_length=4)
     from_port = serializers.IntegerField()

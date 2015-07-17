@@ -1871,8 +1871,6 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
 
 @shared_task(name='stacks.destroy_stack')
 def destroy_stack(stack_id):
-    """
-    """
     stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
