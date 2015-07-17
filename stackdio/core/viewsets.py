@@ -234,7 +234,8 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
 
         # Grab the perms for either the users or groups
         perm_map = self.switch_user_group(
-            get_users_with_perms(obj, attach_perms=True),
+            get_users_with_perms(obj, attach_perms=True,
+                                 with_superusers=False, with_group_users=False),
             get_groups_with_perms(obj, attach_perms=True),
         )
 

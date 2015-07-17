@@ -83,7 +83,7 @@ class BlueprintManager(models.Manager):
         # create corresonding hosts and related models
         for host in data['hosts']:
             profile_obj = CloudProfile.objects.get(pk=host['cloud_profile'])
-            size_obj = CloudInstanceSize.objects.get(pk=host['size'])
+            size_obj = CloudInstanceSize.objects.get(instance_id=host['size'])
             spot_price = host.get('spot_config', {}).get('spot_price', None)
             formula_components = host.get('formula_components', [])
             if spot_price is not None:
