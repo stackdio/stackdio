@@ -19,7 +19,6 @@
 import logging
 import os
 import shutil
-import socket
 
 from django.conf import settings
 
@@ -59,11 +58,15 @@ class BaseCloudProvider(object):
     ACTION_CUSTOM = 'custom'
     ACTION_SSH = 'propagate-ssh'
 
-    def __init__(self, obj=None, *args, **kwargs):
+    def __init__(self, account=None, *args, **kwargs):
+        if account:
+            from stackdio.api.cloud.models import CloudAccount
 
-        # The `obj` attribute is the Django ORM object for this cloud
-        # provider instance. See models.py for more information.
-        self.obj = obj
+            assert isinstance(account, CloudAccount)
+
+        # The `account` attribute is the Django ORM object for this cloud
+        # account instance. See models.py for more information.
+        self.account = account
 
         # `provider_storage` is the location where provider implementations
         # should be writing their files to. If implementations are written
@@ -71,7 +74,7 @@ class BaseCloudProvider(object):
         # up, etc.
         self.provider_storage = os.path.join(settings.FILE_STORAGE_DIRECTORY,
                                              'cloud',
-                                             obj.slug) if self.obj else None
+                                             account.slug) if self.account else None
 
         # make sure the storage directory is available
         if self.provider_storage and \
@@ -137,7 +140,7 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def validate_provider_data(cls, data, files=None):
+    def validate_provider_data(cls, serializer_attrs, all_data):
         """
         Checks that the keys defined in `get_required_fields` are in the
         given `data` dict. This merely checks that they are there and the
@@ -146,7 +149,7 @@ class BaseCloudProvider(object):
         """
         errors = {}
         for key in cls.get_required_fields():
-            if not data.get(key):
+            if not all_data.get(key):
                 errors.setdefault(key, []).append(
                     '{0} is a required field.'.format(key)
                 )

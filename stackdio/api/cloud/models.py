@@ -33,7 +33,7 @@ from django_extensions.db.models import (
 
 from stackdio.core.queryset_transform import TransformManager, TransformQuerySet
 from stackdio.core.fields import DeletingFileField
-from .utils import get_cloud_provider_choices, get_provider_type_and_class
+from .utils import get_cloud_provider_choices, get_provider_driver_class
 
 logger = logging.getLogger(__name__)
 
@@ -150,11 +150,11 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
         return len(self.vpc_id) > 0
 
     def get_driver(self):
-        # determine the type and implementation class for this account
-        ptype, pclass = get_provider_type_and_class(self.provider.id)
+        # determine the provider driver class
+        provider_class = get_provider_driver_class(self.provider)
 
-        # instantiate the implementation class and return it
-        return pclass(self)
+        # Return an instance of the provider driver
+        return provider_class(self)
 
     def update_config(self):
         """

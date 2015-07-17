@@ -116,6 +116,9 @@ class CloudAccountListAPIView(generics.ListCreateAPIView):
         # Lookup provider type
         try:
             obj = serializer.save()
+
+            logger.debug(obj.slug)
+
             driver = obj.get_driver()
 
             # Leverage the driver to generate its required data that
