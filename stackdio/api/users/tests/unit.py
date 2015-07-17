@@ -116,6 +116,7 @@ class UserSerializerTestCase(StackdioTestCase):
 
         settings.LDAP_ENABLED = self.ldap_orig
 
+
 class ChangePasswordSerializerTestCase(StackdioTestCase):
 
     def setUp(self):

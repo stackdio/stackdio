@@ -131,6 +131,7 @@ class GroupActionSerializer(serializers.Serializer):
 
         return group
 
+
 class UserSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.UserSettings

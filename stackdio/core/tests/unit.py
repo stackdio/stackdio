@@ -502,7 +502,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             self.assertEqual(groups.first(), self.group)
 
             remove_perm('cloud.%s_cloudaccount' % perm, self.group)
-            
+
     def test_groups_with_model_perms_attach_perms(self):
         for perm in CloudAccount.model_permissions:
             groups = shortcuts.get_groups_with_model_perms(

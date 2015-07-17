@@ -65,7 +65,7 @@ class HyperlinkedField(relations.HyperlinkedIdentityField):
 
 
 class HyperlinkedParentField(relations.HyperlinkedIdentityField):
-    
+
     def __init__(self, view_name, parent_relation_field, **kwargs):
         assert parent_relation_field is not None, (
             'The `parent_relation_field` argument is required.'
@@ -123,6 +123,7 @@ class HyperlinkedPermissionsField(relations.HyperlinkedIdentityField):
     def get_object(self, view_name, view_args, view_kwargs):
         raise relations.ObjectDoesNotExist('%s is a read only field, so the object isn\'t needed.'
                                            % self.__class__.__name__)
+
 
 class HyperlinkedModelPermissionsField(HyperlinkedPermissionsField):
 
