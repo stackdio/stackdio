@@ -1,0 +1,47 @@
+##
+# Root directory for stackdio to store files, logs, etc.
+# It should already exist and be owned by the user 
+# defined below
+# Example: /mnt/stackdio
+storage_root: {{ storage_root }}
+
+##
+# The user that will own the storage_root above, run
+# the salt processes, celery workers, and Django dev
+# server. If you decide to use a wsgi server to serve
+# the application, then it will need to be running as
+# this user as well.
+user: {{ user }}
+
+##
+# When bootstrapping salt minions, which bootstrap script
+# and arguments should salt-cloud use? Typically, 
+# 'bootstrap-salt' will be the script to use, and the
+# the args would be empty. However, if you need special
+# minion revisions, verbose logging, etc, you can control
+# that here. See http://bootstrap.saltstack.org for the
+# allowed arguments.
+salt_bootstrap_script: {{ salt_bootstrap_script }}
+salt_bootstrap_args: {{ salt_bootstrap_args }}
+
+##
+# This should be a unique and unpredictable value that is 
+# used by Django for cryptographic signing. For more info,
+# see the Django settings docs.
+django_secret_key: "{{ django_secret_key }}"
+
+##
+# The DSN for the database stackdio will use. The host
+# must running (for non-sqlite servers), the database
+# must already be created, and the user/pass must have
+# access to the database.
+# Example: mysql://user:pass@host:port/db_name
+db_dsn: {{ db_dsn }}
+
+##
+# User accounts will be created for all users that have ssh
+# permission if this is set to true.
+#
+# NOTE: This is just a default value.  It can be overridden
+# on a per-stack or per-blueprint basis.
+create_ssh_users: {{ create_ssh_users }}

@@ -1,0 +1,549 @@
+[
+    {
+        "model": "CloudProviderType",
+        "objects": [
+            {
+                "pk": 1,
+                "type_name": "ec2"
+            }
+        ]
+    },
+    {
+        "model": "CloudRegion",
+        "objects": [
+            {
+                "pk": 1,
+                "slug": "ap-northeast-1",
+                "provider_type_id": 1,
+                "description": "",
+                "title": "ap-northeast-1"
+            },
+            {
+                "pk": 2,
+                "slug": "ap-southeast-1",
+                "provider_type_id": 1,
+                "description": "",
+                "title": "ap-southeast-1"
+            },
+            {
+                "pk": 3,
+                "slug": "ap-southeast-2",
+                "provider_type_id": 1,
+                "description": "",
+                "title": "ap-southeast-2"
+            },
+            {
+                "pk": 4,
+                "slug": "eu-west-1",
+                "provider_type_id": 1,
+                "description": "",
+                "title": "eu-west-1"
+            },
+            {
+                "pk": 5,
+                "slug": "sa-east-1",
+                "provider_type_id": 1,
+                "description": "",
+                "title": "sa-east-1"
+            },
+            {
+                "pk": 6,
+                "slug": "us-east-1",
+                "provider_type_id": 1,
+                "description": "",
+                "title": "us-east-1"
+            },
+            {
+                "pk": 7,
+                "slug": "us-west-1",
+                "provider_type_id": 1,
+                "description": "",
+                "title": "us-west-1"
+            },
+            {
+                "pk": 8,
+                "slug": "us-west-2",
+                "provider_type_id": 1,
+                "description": "",
+                "title": "us-west-2"
+            }
+        ]
+    },
+    {
+        "model": "CloudZone",
+        "objects": [
+            {
+                "slug": "ap-northeast-1a",
+                "region_id": 1,
+                "description": "",
+                "title": "ap-northeast-1a"
+            },
+            {
+                "slug": "ap-northeast-1b",
+                "region_id": 1,
+                "description": "",
+                "title": "ap-northeast-1b"
+            },
+            {
+                "slug": "ap-northeast-1c",
+                "region_id": 1,
+                "description": "",
+                "title": "ap-northeast-1c"
+            },
+            {
+                "slug": "ap-southeast-1a",
+                "region_id": 2,
+                "description": "",
+                "title": "ap-southeast-1a"
+            },
+            {
+                "slug": "ap-southeast-1b",
+                "region_id": 2,
+                "description": "",
+                "title": "ap-southeast-1b"
+            },
+            {
+                "slug": "ap-southeast-2a",
+                "region_id": 3,
+                "description": "",
+                "title": "ap-southeast-2a"
+            },
+            {
+                "slug": "ap-southeast-2b",
+                "region_id": 3,
+                "description": "",
+                "title": "ap-southeast-2b"
+            },
+            {
+                "slug": "eu-west-1a",
+                "region_id": 4,
+                "description": "",
+                "title": "eu-west-1a"
+            },
+            {
+                "slug": "eu-west-1b",
+                "region_id": 4,
+                "description": "",
+                "title": "eu-west-1b"
+            },
+            {
+                "slug": "eu-west-1c",
+                "region_id": 4,
+                "description": "",
+                "title": "eu-west-1c"
+            },
+            {
+                "slug": "sa-east-1a",
+                "region_id": 5,
+                "description": "",
+                "title": "sa-east-1a"
+            },
+            {
+                "slug": "sa-east-1b",
+                "region_id": 5,
+                "description": "",
+                "title": "sa-east-1b"
+            },
+            {
+                "slug": "us-east-1a",
+                "region_id": 6,
+                "description": "",
+                "title": "us-east-1a"
+            },
+            {
+                "slug": "us-east-1b",
+                "region_id": 6,
+                "description": "",
+                "title": "us-east-1b"
+            },
+            {
+                "slug": "us-east-1c",
+                "region_id": 6,
+                "description": "",
+                "title": "us-east-1c"
+            },
+            {
+                "slug": "us-east-1d",
+                "region_id": 6,
+                "description": "",
+                "title": "us-east-1d"
+            },
+            {
+                "slug": "us-east-1e",
+                "region_id": 6,
+                "description": "",
+                "title": "us-east-1e"
+            },
+            {
+                "slug": "us-west-1a",
+                "region_id": 7,
+                "description": "",
+                "title": "us-west-1a"
+            },
+            {
+                "slug": "us-west-1b",
+                "region_id": 7,
+                "description": "",
+                "title": "us-west-1b"
+            },
+            {
+                "slug": "us-west-1c",
+                "region_id": 7,
+                "description": "",
+                "title": "us-west-1c"
+            },
+            {
+                "slug": "us-west-2a",
+                "region_id": 8,
+                "description": "",
+                "title": "us-west-2a"
+            },
+            {
+                "slug": "us-west-2b",
+                "region_id": 8,
+                "description": "",
+                "title": "us-west-2b"
+            },
+            {
+                "slug": "us-west-2c",
+                "region_id": 8,
+                "description": "",
+                "title": "us-west-2c"
+            }
+        ]
+    },
+    {
+        "model": "CloudInstanceSize",
+        "objects": [
+            {
+                "instance_id": "t1.micro",
+                "slug": "t1.micro",
+                "title": "t1.micro",
+                "description": "T1 Micro Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m1.small",
+                "slug": "m1.small",
+                "title": "m1.small",
+                "description": "General Purpose M1 Small Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m1.medium",
+                "slug": "m1.medium",
+                "title": "m1.medium",
+                "description": "General Purpose M1 Medium Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m1.large",
+                "slug": "m1.large",
+                "title": "m1.large",
+                "description": "General Purpose M1 Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m1.xlarge",
+                "slug": "m1.xlarge",
+                "title": "m1.xlarge",
+                "description": "General Purpose M1 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m2.xlarge",
+                "slug": "m2.xlarge",
+                "title": "m2.xlarge",
+                "description": "Memory Optimized M2 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m2.2xlarge",
+                "slug": "m2.2xlarge",
+                "title": "m2.2xlarge",
+                "description": "Memory Optimized M2 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m2.4xlarge",
+                "slug": "m2.4xlarge",
+                "title": "m2.4xlarge",
+                "description": "Memory Optimized M2 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "cr1.8xlarge",
+                "slug": "cr1.8xlarge",
+                "title": "cr1.8xlarge",
+                "description": "Memory Optimized CR1 Eight Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c1.medium",
+                "slug": "c1.medium",
+                "title": "c1.medium",
+                "description": "Compute Optimized C1 Medium Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c1.xlarge",
+                "slug": "c1.xlarge",
+                "title": "c1.xlarge",
+                "description": "Compute Optimized C1 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "cc2.8xlarge",
+                "slug": "cc2.8xlarge",
+                "title": "cc2.8xlarge",
+                "description": "Compute Optimized CC2 Eight Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "hi1.4xlarge",
+                "slug": "hi1.4xlarge",
+                "title": "hi1.4xlarge",
+                "description": "Storage Optimized HI1 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "hs1.8xlarge",
+                "slug": "hs1.8xlarge",
+                "title": "hs1.8xlarge",
+                "description": "Storage Optimized HS1 Eight Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "cg1.4xlarge",
+                "slug": "cg1.4xlarge",
+                "title": "cg1.4xlarge",
+                "description": "GPU CG1 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "t2.micro",
+                "slug": "t2.micro",
+                "title": "t2.micro",
+                "description": "General Purpose T2 Micro Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "t2.small",
+                "slug": "t2.small",
+                "title": "t2.small",
+                "description": "General Purpose T2 Small Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "t2.medium",
+                "slug": "t2.medium",
+                "title": "t2.medium",
+                "description": "General Purpose T2 Medium Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m3.medium",
+                "slug": "m3.medium",
+                "title": "m3.medium",
+                "description": "General Purpose M3 Medium Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m3.large",
+                "slug": "m3.large",
+                "title": "m3.large",
+                "description": "General Purpose M3 Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m3.xlarge",
+                "slug": "m3.xlarge",
+                "title": "m3.xlarge",
+                "description": "General Purpose M3 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m3.2xlarge",
+                "slug": "m3.2xlarge",
+                "title": "m3.2xlarge",
+                "description": "General Purpose M3 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c4.large",
+                "slug": "c4.large",
+                "title": "c4.large",
+                "description": "Compute Optimized C4 Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c4.xlarge",
+                "slug": "c4.xlarge",
+                "title": "c4.xlarge",
+                "description": "Compute Optimized C4 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c4.2xlarge",
+                "slug": "c4.2xlarge",
+                "title": "c4.2xlarge",
+                "description": "Compute Optimized C4 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c4.4xlarge",
+                "slug": "c4.4xlarge",
+                "title": "c4.4xlarge",
+                "description": "Compute Optimized C4 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c4.8xlarge",
+                "slug": "c4.8xlarge",
+                "title": "c4.8xlarge",
+                "description": "Compute Optimized C4 Eight Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c3.large",
+                "slug": "c3.large",
+                "title": "c3.large",
+                "description": "Compute Optimized C3 Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c3.xlarge",
+                "slug": "c3.xlarge",
+                "title": "c3.xlarge",
+                "description": "Compute Optimized C3 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c3.2xlarge",
+                "slug": "c3.2xlarge",
+                "title": "c3.2xlarge",
+                "description": "Compute Optimized C3 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c3.4xlarge",
+                "slug": "c3.4xlarge",
+                "title": "c3.4xlarge",
+                "description": "Compute Optimized C3 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "c3.8xlarge",
+                "slug": "c3.8xlarge",
+                "title": "c3.8xlarge",
+                "description": "Compute Optimized C3 Eight Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "r3.large",
+                "slug": "r3.large",
+                "title": "r3.large",
+                "description": "Memory Optimized R3 Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "r3.xlarge",
+                "slug": "r3.xlarge",
+                "title": "r3.xlarge",
+                "description": "Memory Optimized R3 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "r3.2xlarge",
+                "slug": "r3.2xlarge",
+                "title": "r3.2xlarge",
+                "description": "Memory Optimized R3 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "r3.4xlarge",
+                "slug": "r3.4xlarge",
+                "title": "r3.4xlarge",
+                "description": "Memory Optimized R3 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "r3.8xlarge",
+                "slug": "r3.8xlarge",
+                "title": "r3.8xlarge",
+                "description": "Memory Optimized R3 Eight Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "g2.2xlarge",
+                "slug": "g2.2xlarge",
+                "title": "g2.2xlarge",
+                "description": "GPU Optimized G2 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "g2.8xlarge",
+                "slug": "g2.8xlarge",
+                "title": "g2.8xlarge",
+                "description": "GPU Optimized G2 Eight Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "i2.xlarge",
+                "slug": "i2.xlarge",
+                "title": "i2.xlarge",
+                "description": "Storage Optimized I2 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "i2.2xlarge",
+                "slug": "i2.2xlarge",
+                "title": "i2.2xlarge",
+                "description": "Storage Optimized I2 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "i2.4xlarge",
+                "slug": "i2.4xlarge",
+                "title": "i2.4xlarge",
+                "description": "Storage Optimized I2 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "i2.8xlarge",
+                "slug": "i2.8xlarge",
+                "title": "i2.8xlarge",
+                "description": "Storage Optimized I2 Eight Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "d2.xlarge",
+                "slug": "d2.xlarge",
+                "title": "d2.xlarge",
+                "description": "Dense Storage D2 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "d2.2xlarge",
+                "slug": "d2.2xlarge",
+                "title": "d2.2xlarge",
+                "description": "Dense Storage D2 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "d2.4xlarge",
+                "slug": "d2.4xlarge",
+                "title": "d2.4xlarge",
+                "description": "Dense Storage D2 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "d2.8xlarge",
+                "slug": "d2.8xlarge",
+                "title": "d2.8xlarge",
+                "description": "Dense Storage D2 Eight Extra Large Instance",
+                "provider_type_id": 1
+            }
+        ]
+    }
+]

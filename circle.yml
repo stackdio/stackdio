@@ -1,0 +1,33 @@
+machine:
+  python:
+    version: '2.7'
+
+  environment:
+    NOSE_WITH_XUNIT: 1
+    NOSE_WITH_COVERAGE: 1
+    NOSE_COVER_BRANCHES: 1
+    NOSE_COVER_INCLUSIVE: 1
+    DJANGO_SETTINGS_MODULE: 'stackdio.server.settings.testing'
+
+## Customize dependencies
+dependencies:
+  override:
+    - pip install -r links.txt
+    - pip install -r requirements/testing.txt
+
+## Customize test commands
+test:
+  pre:
+    - pep8 --ignore=E501,E12 --exclude='*/migrations/*,*/bower_components/*' stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
+    - pylint --rcfile=.pylintrc stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
+    - mkdir /home/ubuntu/.stackdio
+    - cp tests/config /home/ubuntu/.stackdio/config
+
+  override:
+    - python manage.py test --cover-html
+
+  post:
+    - mv nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
+    - mv cover $CIRCLE_ARTIFACTS/coverage
+    - coveralls
+

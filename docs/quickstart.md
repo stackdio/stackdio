@@ -72,7 +72,7 @@ workon stackdio
 > **NOTE** Double-check that your virtualenv is activated or else this will probably complain that you don't have permissions to install (because it's trying to install into the global python site-packages directory which we don't want!)
 
 ```bash
-pip install https://github.com/stackdio/stackdio.git
+pip install --process-dependency-links https://github.com/stackdio/stackdio.git
 
 # The above should install directly from github, but if
 # you'd rather install manually:
@@ -80,7 +80,7 @@ pip install https://github.com/stackdio/stackdio.git
 cd /tmp
 git clone git@github.com:stackdio/stackdio.git
 cd stackdio
-pip install .
+pip install --process-dependency-links .
 ```
 
 ### Configuration
@@ -153,7 +153,7 @@ sudo ln -s /etc/nginx/sites-available/stackdio /etc/nginx/sites-enabled
 sudo rm /etc/nginx/sites-enabled/default
 ```
 
-Before moving forward, take a minute to reference the [Javascript SPA ReadMe](../stackdio/server/core/static/stackdio/README.md) to make sure that you do all the necessary steps to install the needed JS libraries.
+Before moving forward, take a minute to reference the [Javascript SPA ReadMe](js_setup.md) to make sure that you do all the necessary steps to install the needed JS libraries.
 
 After this, generate the static content we'll need to serve:
 
