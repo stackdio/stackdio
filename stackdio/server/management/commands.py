@@ -317,7 +317,7 @@ class InitCommand(WizardCommand):
                           'system, such as IPA or Active Directory.\n'
                           'NOTE: This is just a default value.  It can be overridden '
                           'on a per-stack or per-blueprint basis.'),
-            'default': True,
+            'default': 'true',
         }]
 
     def pre_run(self):
