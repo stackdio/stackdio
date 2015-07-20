@@ -363,7 +363,7 @@ class InitCommand(WizardCommand):
             except OSError:
                 pass
 
-        self.render_template('management/templates/config.jinja2',
+        self.render_template('server/management/templates/config.jinja2',
                              self.CONFIG_FILE,
                              context=self.answers)
         self.out('stackdio configuration written to '
