@@ -691,7 +691,9 @@ class CeleryWrapperCommand(BaseCommand):
 class DjangoManageWrapperCommand(BaseCommand):
 
     def run(self):
-        from django.core.management import execute_from_command_line
         # Just default to production - if it's already set to something else, use that
         os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.server.settings.production')
+
+        # Import the needed arg
+        from django.core.management import execute_from_command_line
         execute_from_command_line(self.args)
