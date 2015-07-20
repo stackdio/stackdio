@@ -385,7 +385,7 @@ class InitCommand(WizardCommand):
                      **self.INFO_INDENT)
 
         # Render salt-master and salt-cloud configuration files
-        self.render_template('management/templates/master.jinja2',
+        self.render_template('server/management/templates/master.jinja2',
                              self.config.salt_master_config,
                              context=self.config)
         self.out('Salt master configuration written to '
@@ -394,7 +394,7 @@ class InitCommand(WizardCommand):
                  width=1024,
                  **self.INFO_INDENT)
 
-        self.render_template('management/templates/cloud.jinja2',
+        self.render_template('server/management/templates/cloud.jinja2',
                              self.config.salt_cloud_config,
                              context=self.config)
         self.out('Salt cloud configuration written to '
@@ -404,7 +404,7 @@ class InitCommand(WizardCommand):
                  **self.INFO_INDENT)
 
         # Copy the salt directories needed
-        saltdirs = self.load_resource('management/saltdirs')
+        saltdirs = self.load_resource('server/management/saltdirs')
         for rp in os.listdir(saltdirs):
             path = os.path.join(saltdirs, rp)
             dst = os.path.join(self.config.salt_root, rp)
@@ -615,7 +615,7 @@ class UpgradeSaltCommand(BaseCommand):
 
         config.salt_bootstrap_args = ' '.join(spl)
 
-        self.render_template('management/templates/config.jinja2',
+        self.render_template('server/management/templates/config.jinja2',
                              self.CONFIG_FILE,
                              context=config)
 
