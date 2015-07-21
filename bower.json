@@ -1,6 +1,6 @@
 {
     "name": "stackd.io",
-    "version": "0.7.0a0",
+    "version": "0.7.0.dev2",
     "dependencies": {
         "jquery": "~1.9.1",
         "bootstrap": "~3.0.1",
@@ -29,7 +29,6 @@
         "tests"
     ],
     "authors": [
-        "Steve Brownlee <chortlehoort@gmail.com>",
         "Clark Perkins <r.clark.perkins@gmail.com>"
     ],
     "license": "Apache 2",
