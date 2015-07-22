@@ -59,14 +59,17 @@ class BaseValidator(object):
         self.serializer = self.field.root
 
     def __call__(self, value):
-        pass
+        self.validate(value)
+
+    def validate(self, value):
+        raise NotImplementedError()
 
 
 class CreateOnlyValidator(BaseValidator):
     """
     To be used on fields where the value can't be changed after the object has been created
     """
-    def __call__(self, value):
+    def validate(self, value):
         if self.serializer.instance is not None:
             # This is an update request - this is not allowed, so we need to
             # raise a validation error

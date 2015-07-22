@@ -26,7 +26,7 @@ from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
 from stackdio.api.formulas.serializers import FormulaComponentSerializer
-from . import models
+from . import models, validators
 from .utils import get_provider_driver_class
 
 logger = logging.getLogger(__name__)
@@ -167,11 +167,11 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModel
 
 
 class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    vpc_id = serializers.ReadOnlyField()
-    id = serializers.ReadOnlyField()
-    availability_zone = serializers.ReadOnlyField()
-    cidr_block = serializers.ReadOnlyField()
-    tags = serializers.ReadOnlyField()
+    vpc_id = serializers.CharField()
+    id = serializers.CharField()
+    availability_zone = serializers.CharField()
+    cidr_block = serializers.CharField()
+    tags = serializers.DictField(child=serializers.CharField())
 
 
 class GlobalOrchestrationFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
@@ -231,7 +231,7 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
         return account
 
 
-class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
+class CloudProfileSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
     )
@@ -261,47 +261,26 @@ class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
             'group_permissions',
         )
 
-    # TODO: Ignoring code complexity issues
-    def validate(self, attrs):  # NOQA
-        # validate provider specific request data
-        request = self.context['request']
+        # Don't allow these to be changed after profile creation
+        create_only_fields = (
+            'account',
+        )
 
-        # patch requests only accept a few things for modification
-        if request.method in ('PATCH', 'PUT'):
-            fields_available = ('title',
-                                'description',
-                                'image_id',
-                                'default_instance_size',
-                                'ssh_user',)
+    def validate(self, attrs):
+        image_id = attrs['image_id']
+        account = attrs['account']
 
-            errors = {}
-            for k in request.DATA:
-                if k not in fields_available:
-                    errors.setdefault(k, []).append(
-                        'Field may not be modified.')
-            if errors:
-                logger.debug(errors)
-                raise serializers.ValidationError(errors)
+        driver = account.get_driver()
 
-        elif request.method == 'POST':
-            image_id = request.DATA.get('image_id')
-            account_id = request.DATA.get('account')
-            if not account_id:
-                raise serializers.ValidationError({
-                    'account': 'Required field.'
-                })
-
-            account = models.CloudAccount.objects.get(pk=account_id)
-            driver = account.get_driver()
-
-            valid, exc_msg = driver.validate_image_id(image_id)
-            if not valid:
-                raise serializers.ValidationError({
-                    'image_id': ['Image ID does not exist on the given cloud '
-                                 'account. Check that it exists and you have '
-                                 'access to it.'],
-                    'image_id_exception': [exc_msg]
-                })
+        # Ensure that the image id is valid
+        valid, exc_msg = driver.validate_image_id(image_id)
+        if not valid:
+            raise serializers.ValidationError({
+                'image_id': ['Image ID does not exist on the given cloud '
+                             'account. Check that it exists and you have '
+                             'access to it.',
+                             exc_msg],
+            })
 
         return attrs
 

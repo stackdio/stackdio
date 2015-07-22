@@ -99,3 +99,15 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         # Make sure the version (ie. tag / hash / branch) given is real
         return attrs
+
+    def create(self, validated_data):
+        # Somewhat of a hack, but if the object already exists, we want to update the current one
+        content_obj = validated_data['content_object']
+        formula = validated_data['formula']
+        try:
+            version = content_obj.formula_versions.get(formula=formula)
+            return self.update(version, validated_data)
+        except models.FormulaVersion.DoesNotExist:
+            pass
+
+        return super(FormulaVersionSerializer, self).create(validated_data)

@@ -137,22 +137,5 @@ class BlueprintFormulaVersionsAPIView(mixins.BlueprintRelatedMixin, generics.Lis
         blueprint = self.get_blueprint()
         return blueprint.formula_versions.all()
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        formula = serializer.validated_data.get('formula')
-        blueprint = self.get_blueprint()
-
-        try:
-            # Setting self.instance will cause self.update() to be called instead of
-            # self.create() during save()
-            serializer.instance = blueprint.formula_versions.get(formula=formula)
-            response_code = status.HTTP_200_OK
-        except FormulaVersion.DoesNotExist:
-            # Return the proper response code
-            response_code = status.HTTP_201_CREATED
-
-        serializer.save(content_object=blueprint)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=response_code, headers=headers)
+    def perform_create(self, serializer):
+        serializer.save(content_object=self.get_blueprint())

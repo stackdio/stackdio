@@ -27,8 +27,8 @@ from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 
+from stackdio.api.blueprints.models import Blueprint
 from stackdio.api.blueprints.serializers import BlueprintSerializer
-from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.core.exceptions import BadRequest, ResourceConflict
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
@@ -185,14 +185,15 @@ class GlobalOrchestrationPropertiesAPIView(mixins.CloudAccountRelatedMixin,
 
 
 class CloudAccountVPCSubnetListAPIView(mixins.CloudAccountRelatedMixin, generics.ListAPIView):
-    def list(self, request, *args, **kwargs):
+    serializer_class = serializers.VPCSubnetSerializer
+
+    def get_queryset(self):
         account = self.get_cloudaccount()
         driver = account.get_driver()
-
+        # Grab the subnets from the driver
         subnets = driver.get_vpc_subnets()
-        return Response({
-            'results': serializers.VPCSubnetSerializer(subnets, many=True).data
-        })
+        # Sort them by name
+        return sorted(subnets, key=lambda s: s.tags.get('Name'))
 
 
 class CloudAccountFormulaVersionsAPIView(mixins.CloudAccountRelatedMixin,
@@ -203,25 +204,8 @@ class CloudAccountFormulaVersionsAPIView(mixins.CloudAccountRelatedMixin,
         account = self.get_cloudaccount()
         return account.formula_versions.all()
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        formula = serializer.validated_data.get('formula')
-        account = self.get_cloudaccount()
-
-        try:
-            # Setting self.instance will cause self.update() to be called instead of
-            # self.create() during save()
-            serializer.instance = account.formula_versions.get(formula=formula)
-            response_code = status.HTTP_200_OK
-        except FormulaVersion.DoesNotExist:
-            # Return the proper response code
-            response_code = status.HTTP_201_CREATED
-
-        serializer.save(content_object=account)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=response_code, headers=headers)
+    def perform_create(self, serializer):
+        serializer.save(content_object=self.get_cloudaccount())
 
 
 class CloudProfileListAPIView(generics.ListCreateAPIView):
@@ -241,40 +225,18 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.CloudProfileSerializer
     permission_classes = (StackdioObjectPermissions,)
 
-    def update(self, request, *args, **kwargs):
-        # validate that the AMI exists by looking it up in the cloud account
-        if 'image_id' in request.DATA:
-            driver = self.get_object().account.get_driver()
-            result, error = driver.has_image(request.DATA['image_id'])
-            if not result:
-                raise BadRequest(error)
-
-        # Perform the update
-        ret = super(CloudProfileDetailAPIView, self).update(request,
-                                                            *args,
-                                                            **kwargs)
-
-        # Regenerate the profile config file
-        profile = self.get_object()
-        profile.update_config()
-        return ret
-
-    def destroy(self, request, *args, **kwargs):
+    def perform_destroy(self, instance):
         # check for blueprint usage before deleting
-        blueprints = set([hd.blueprint
-                          for hd in self.get_object().host_definitions.all()])
+        blueprints = Blueprint.objects.filter(host_definition__cloud_profile=instance).distinct()
+
         if blueprints:
-            blueprints = BlueprintSerializer(blueprints,
-                                             context={'request': request}).data
-            return Response({
+            raise ValidationError({
                 'detail': 'One or more blueprints are making use of this '
                           'profile.',
-                'blueprints': blueprints,
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'blueprints': [b.title for b in blueprints],
+            })
 
-        return super(CloudProfileDetailAPIView, self).destroy(request,
-                                                              *args,
-                                                              **kwargs)
+        instance.delete()
 
 
 class CloudProfileModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
@@ -336,8 +298,6 @@ class CloudInstanceSizeListAPIView(mixins.CloudProviderRelatedMixin, generics.Li
     lookup_field = 'instance_id'
 
     def get_queryset(self):
-        logger.debug(self.get_cloudprovider())
-
         return models.CloudInstanceSize.objects.filter(provider=self.get_cloudprovider())
 
 
