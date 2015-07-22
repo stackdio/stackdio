@@ -36,6 +36,9 @@ from rest_framework.serializers import ValidationError
 
 from stackdio.api.cloud.providers.base import (
     BaseCloudProvider,
+    DeleteGroupException,
+    GroupExistsException,
+    GroupNotFoundException,
     MaxFailuresException,
     TimeoutException,
 )
@@ -460,23 +463,17 @@ class AWSCloudProvider(BaseCloudProvider):
         """
         return CIDR_PATTERN.match(rule)
 
-    def create_security_group(self,
-                              security_group_name,
-                              description,
-                              delete_if_exists=False):
+    def create_security_group(self, security_group_name, description, delete_if_exists=False):
         """
         Returns the identifier of the group.
         """
-        if not description:
-            description = 'Default description provided by stackd.io'
 
         if delete_if_exists:
             try:
                 self.delete_security_group(security_group_name)
-                logger.warn('create_security_group has deleted existing group '
-                            '{0} prior to creating it.'.format(
-                                security_group_name))
-            except BadRequest:
+                logger.info('create_security_group has deleted existing group '
+                            '{0} prior to re-creating it.'.format(security_group_name))
+            except DeleteGroupException:
                 logger.debug('security group did not already exist')
 
         # create the group in the VPC or classic
@@ -485,11 +482,16 @@ class AWSCloudProvider(BaseCloudProvider):
             kwargs['vpc_id'] = self.account.vpc_id
 
         ec2 = self.connect_ec2()
-        group = ec2.create_security_group(security_group_name,
-                                          description,
-                                          **kwargs)
+        try:
+            group = ec2.create_security_group(
+                security_group_name,
+                description,
+                **kwargs
+            )
 
-        return group.id
+            return group.id
+        except boto.exception.EC2ResponseError as e:
+            raise GroupExistsException(e.message)
 
     def _security_group_rule_to_kwargs(self, rule):
         kwargs = {
@@ -523,13 +525,11 @@ class AWSCloudProvider(BaseCloudProvider):
         ec2 = self.connect_ec2()
         try:
             ec2.delete_security_group(**kwargs)
-        except boto.exception.EC2ResponseError, e:
+        except boto.exception.EC2ResponseError as e:
             logger.exception('Error deleting security group {0}'.format(
                 group_name)
             )
-            if e.status == 400:
-                raise BadRequest(e.error_message)
-            raise InternalServerError(e.error_message)
+            raise DeleteGroupException(e.error_message)
 
     def authorize_security_group(self, group_id, rule):
         """
@@ -576,8 +576,7 @@ class AWSCloudProvider(BaseCloudProvider):
             for rule in group['rules']:
                 self.revoke_security_group(group_id, rule)
 
-    # FIXME(abe): Ignoring code complexity
-    def get_security_groups(self, group_ids=None):  # NOQA
+    def get_security_groups(self, group_ids=None):
         if group_ids is None:
             group_ids = []
 
@@ -585,7 +584,10 @@ class AWSCloudProvider(BaseCloudProvider):
             group_ids = [group_ids]
 
         ec2 = self.connect_ec2()
-        groups = ec2.get_all_security_groups(group_ids=group_ids)
+        try:
+            groups = ec2.get_all_security_groups(group_ids=group_ids)
+        except boto.exception.EC2ResponseError as e:
+            raise GroupNotFoundException(e.message)
 
         result = {}
         for group in groups:

@@ -34,6 +34,18 @@ class MaxFailuresException(Exception):
     pass
 
 
+class GroupNotFoundException(Exception):
+    pass
+
+
+class GroupExistsException(Exception):
+    pass
+
+
+class DeleteGroupException(Exception):
+    pass
+
+
 class BaseCloudProvider(object):
 
     REQUIRED_MESSAGE = 'This field is required.'

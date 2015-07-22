@@ -25,8 +25,9 @@ from rest_framework import serializers
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
+from stackdio.api.cloud.providers.base import GroupExistsException, GroupNotFoundException
 from stackdio.api.formulas.serializers import FormulaComponentSerializer
-from . import models, validators
+from . import models
 from .utils import get_provider_driver_class
 
 logger = logging.getLogger(__name__)
@@ -397,41 +398,134 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class SecurityGroupSerializer(serializers.HyperlinkedModelSerializer):
-    ##
-    # Read-only fields.
-    ##
-    group_id = serializers.ReadOnlyField()
-
+class SecurityGroupSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     # Field for showing the number of active hosts using this security
     # group. It is pulled automatically from the model instance method.
     active_hosts = serializers.ReadOnlyField(source='get_active_hosts')
 
-    # Rules are defined in two places depending on the object we're dealing
-    # with. If it's a QuerySet the rules are pulled in one query to the
-    # cloud account using the SecurityGroupQuerySet::with_rules method.
-    # For single, detail objects we use the rules instance method on the
-    # SecurityGroup object
-    account_id = serializers.ReadOnlyField(source='account.id')
+    account = serializers.PrimaryKeyRelatedField(queryset=models.CloudAccount.objects.all())
 
-    rules_url = serializers.HyperlinkedIdentityField(view_name='securitygroup-rules')
+    rules = serializers.HyperlinkedIdentityField(view_name='securitygroup-rules')
+
+    default = serializers.BooleanField(source='is_default', required=False)
+    managed = serializers.BooleanField(source='is_managed', read_only=True)
+
+    default_description = 'Created by stackd.io'
 
     class Meta:
         model = models.SecurityGroup
         fields = (
             'id',
             'url',
+            'group_id',
             'name',
             'description',
-            'rules_url',
-            'group_id',
             'account',
-            'account_id',
-            'is_default',
-            'is_managed',
+            'default',
+            'managed',
             'active_hosts',
             'rules',
         )
+
+        extra_kwargs = {
+            'group_id': {'required': False},
+            'description': {'required': False},
+        }
+
+        create_only_fields = (
+            'group_id',
+            'name',
+            'account',
+            'description',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super(SecurityGroupSerializer, self).__init__(*args, **kwargs)
+        self.should_create_group = None
+
+    def validate(self, attrs):
+        if self.instance is None:
+            # All of this validation only matters if we are creating a new group
+            account = attrs['account']
+            driver = account.get_driver()
+
+            name = attrs['name']
+            group_id = attrs.get('group_id')
+
+            # check if the group exists on the account
+            if group_id:
+                try:
+                    account_group = driver.get_security_groups([group_id]).get(name)
+
+                    if not account_group:
+                        err_msg = "The `group_id` doesn\'t match the given `name`"
+                        raise serializers.ValidationError({
+                            'group_id': [err_msg],
+                            'name': [err_msg],
+                        })
+                    logger.debug('Security group with id "{0}" and name "{1}" already exists on '
+                                 'the account.'.format(group_id, name))
+                except GroupNotFoundException:
+                    # doesn't exist on the account, we'll try to create it later
+                    account_group = None
+            else:
+                account_group = None
+
+            # Set all the appropriate data
+            if account_group:
+                # Already exists, just need to create in our database
+                attrs['group_id'] = account_group['group_id']
+                attrs['description'] = account_group['description']
+                attrs['is_managed'] = False
+                self.should_create_group = False
+            else:
+                # create a new group
+                self.should_create_group = True
+                attrs['is_managed'] = True
+
+        return attrs
+
+    def create(self, validated_data):
+        account = validated_data['account']
+
+        validated_data.setdefault('description', self.default_description)
+        validated_data.setdefault('is_default', False)
+
+        if self.should_create_group:
+            # Only create the group on the provider if we deemed it necessary during validation
+            name = validated_data['name']
+            description = validated_data['description']
+            driver = account.get_driver()
+
+            # create the new provider group
+            try:
+                validated_data['group_id'] = driver.create_security_group(name, description)
+            except GroupExistsException:
+                raise serializers.ValidationError({
+                    'name': ['A group with the name `{0}` already exists on this '
+                             'account.'.format(name)],
+                })
+
+        # Create the database object
+        group = super(SecurityGroupSerializer, self).create(validated_data)
+
+        logger.debug('Writing cloud accounts file because new security '
+                     'group was added with is_default flag set to True')
+        account.update_config()
+
+        return group
+
+    def update(self, instance, validated_data):
+        logger.debug(validated_data)
+
+        group = super(SecurityGroupSerializer, self).update(instance, validated_data)
+
+        account = validated_data['account']
+        logger.debug('Writing cloud accounts file because new security '
+                     'group was added with is_default flag set to True')
+        account.update_config()
+
+        return group
 
 
 class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method

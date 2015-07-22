@@ -18,7 +18,7 @@
 
 import logging
 
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.permissions import IsAuthenticated
@@ -28,9 +28,9 @@ from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 
 from stackdio.api.blueprints.models import Blueprint
-from stackdio.api.blueprints.serializers import BlueprintSerializer
+from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
-from stackdio.core.exceptions import BadRequest, ResourceConflict
+from stackdio.core.exceptions import BadRequest
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
@@ -381,87 +381,16 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     `account` -- The id of the cloud account to associate
                         this group with.
 
-    `is_default` -- Boolean representing if this group, for this
+    `default` -- Boolean representing if this group, for this
                     account, is set to automatically be added
                     to all hosts launched on the account. **NOTE**
                     this property may only be set by an admin.
     """
-    queryset = models.SecurityGroup.objects.all().with_rules()
+    queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.SecurityGroupFilter
-
-    # TODO: Ignore code complexity issues
-    def create(self, request, *args, **kwargs):  # NOQA
-        name = request.DATA.get('name')
-        group_id = request.DATA.get('group_id')
-        description = request.DATA.get('description')
-        account_id = request.DATA.get('account')
-        is_default = request.DATA.get('is_default', False)
-
-        if not request.user.is_superuser:
-            is_default = False
-        elif not isinstance(is_default, bool):
-            is_default = False
-
-        account = models.CloudAccount.objects.get(id=account_id)
-        driver = account.get_driver()
-
-        # check if the group already exists in our DB first
-        try:
-            models.SecurityGroup.objects.get(
-                name=name,
-                group_id=group_id,
-                account=account
-            )
-            raise ResourceConflict('Security group already exists')
-        except models.SecurityGroup.DoesNotExist:
-            # doesn't exist in our database
-            pass
-
-        # check if the group exists on the account
-        account_group = None
-        if group_id:
-            try:
-                account_group = driver.get_security_groups([group_id])[name]
-                logger.debug('Security group already exists on the '
-                             'account: {0!r}'.format(account_group))
-
-            except KeyError:
-                raise
-            except Exception:
-                # doesn't exist on the account either, we'll create it now
-                account_group = None
-
-        # admin is using an existing group, use the existing group id
-        if account_group:
-            group_id = account_group['group_id']
-            description = account_group['description']
-        else:
-            # create a new group
-            group_id = driver.create_security_group(name, description)
-
-        # create a new group in the DB
-        group_obj = models.SecurityGroup.objects.create(
-            name=name,
-            description=description,
-            group_id=group_id,
-            account=account,
-            is_default=is_default
-        )
-
-        # if an admin and the security group is_default, we need to make sure
-        # the cloud account configuration is properly maintained
-        if request.user.is_superuser and is_default:
-            logger.debug('Writing cloud accounts file because new security '
-                         'group was added with is_default flag set to True')
-            account.update_config()
-
-        serializer = serializers.SecurityGroupSerializer(group_obj, context={
-            'request': request
-        })
-        return Response(serializer.data)
 
 
 class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -476,10 +405,10 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     `active_hosts` fields will be populated like with the full
     list.
 
-    ### PUT
+    ### PUT / PATCH
 
     Updates an existing security group's details. Currently, only
-    the is_default field may be modified and only by admins.
+    the is_default field may be modified.
 
     ### DELETE
 
@@ -494,48 +423,26 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.SecurityGroupSerializer
     permission_classes = (StackdioObjectPermissions,)
 
-    def update(self, request, *args, **kwargs):
-        """
-        Allow admins to update the is_default field on security groups.
-        """
+    def perform_destroy(self, instance):
+        account = instance.account
 
-        if 'is_default' not in request.DATA:
-            raise BadRequest('is_default is the only field allowed to be '
-                             'updated.')
+        if instance.is_managed:
+            # Delete from AWS. This will throw the appropriate error
+            # if the group is being used.
+            driver = account.get_driver()
+            try:
+                driver.delete_security_group(instance.name)
+            except DeleteGroupException as e:
+                raise ValidationError({
+                    'detail': ['Could not delete this security group.',
+                               e.message]
+                })
 
-        is_default = request.DATA.get('is_default')
-        if not isinstance(is_default, bool):
-            raise BadRequest('is_default field must be a boolean.')
+        # Save this before we delete
+        is_default = instance.is_default
 
-        # update the field value if needed
-        obj = self.get_object()
-        if obj.is_default != is_default:
-            obj.is_default = is_default
-            obj.save()
-
-            # update accounts configuration file
-            logger.debug('Security group is_default modified; updating cloud '
-                         'account configuration.')
-            obj.account.update_config()
-
-        serializer = self.get_serializer(obj)
-        return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-
-        sg = self.get_object()
-
-        # Delete from AWS. This will throw the appropriate error
-        # if the group is being used.
-        account = sg.account
-        driver = account.get_driver()
-        driver.delete_security_group(sg.name)
-
-        # store the is_default and delete the security group
-        is_default = sg.is_default
-        result = super(SecurityGroupDetailAPIView, self).destroy(request,
-                                                                 *args,
-                                                                 **kwargs)
+        # Delete the instance
+        instance.delete()
 
         # update accounts configuration file if the security
         # group's is_default was True
@@ -543,9 +450,6 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             logger.debug('Security group deleted and is_default set to True; '
                          'updating cloud account configuration.')
             account.update_config()
-
-        # return the original destroy response
-        return result
 
 
 class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):

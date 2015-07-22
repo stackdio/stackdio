@@ -31,7 +31,7 @@ from django_extensions.db.models import (
     TitleSlugDescriptionModel,
 )
 
-from stackdio.core.queryset_transform import TransformManager, TransformQuerySet
+from stackdio.core.queryset_transform import TransformQuerySet
 from stackdio.core.fields import DeletingFileField
 from .utils import get_cloud_provider_choices, get_provider_driver_class
 
@@ -443,11 +443,6 @@ class SecurityGroupQuerySet(TransformQuerySet):
                 group.rules = account_groups[group.name]['rules']
 
 
-class SecurityGroupManager(TransformManager):
-    def get_queryset(self):
-        return SecurityGroupQuerySet(self.model)
-
-
 _securitygroup_model_permissions = (
     'create',
     'admin',
@@ -472,7 +467,7 @@ class SecurityGroup(TimeStampedModel, models.Model):
         default_permissions = tuple(set(_securitygroup_model_permissions +
                                         _snapshot_object_permissions))
 
-    objects = SecurityGroupManager()
+    objects = SecurityGroupQuerySet.as_manager()
 
     # Name of the security group (REQUIRED)
     name = models.CharField(max_length=255)
@@ -483,19 +478,22 @@ class SecurityGroup(TimeStampedModel, models.Model):
     # ID given by the provider
     # NOTE: This will be set automatically after it has been created on the
     # account and will be ignored if passed in
-    group_id = models.CharField(max_length=16, blank=True)
+    group_id = models.CharField(max_length=16)
 
     # The stack that the security group is for (this is only
     # useful if it's a managed security group)
-    stack = models.ForeignKey('stacks.Stack',
-                              null=True,
-                              related_name='security_groups')
+    stack = models.ForeignKey(
+        'stacks.Stack',
+        null=True,
+        related_name='security_groups'
+    )
 
     blueprint_host_definition = models.ForeignKey(
         'blueprints.BlueprintHostDefinition',
         null=True,
         default=None,
-        related_name='security_groups')
+        related_name='security_groups'
+    )
 
     # the cloud account for this group
     account = models.ForeignKey('cloud.CloudAccount', related_name='security_groups')
@@ -522,8 +520,8 @@ class SecurityGroup(TimeStampedModel, models.Model):
         """
         Pulls the security groups using the cloud provider
         """
-        logger.debug('SecurityGroup::rules called...')
         driver = self.account.get_driver()
+        groups = None
         try:
             groups = driver.get_security_groups([self.group_id])
             return groups[self.name]['rules']
