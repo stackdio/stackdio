@@ -21,6 +21,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class CreateOnlyFieldsMixin(object):
+
+    def get_fields(self):
+        fields = super(CreateOnlyFieldsMixin, self).get_fields()
+        if self.instance is not None and hasattr(self.Meta, 'create_only_fields'):
+            # If this is an update request, we want to set all the create_only_fields
+            # specified in the Meta class to be read_only
+            for field, instance in fields.items():
+                if field in self.Meta.create_only_fields:
+                    instance.read_only = True
+        return fields
+
+
 class SuperuserFieldsMixin(object):
     """
     Filters out the serialized fields found in `superuser_fields` if

@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from rest_framework.fields import SkipField
+from rest_framework.serializers import ValidationError
 
 VALID_PROTOCOLS = ('tcp', 'udp', 'icmp')
 
@@ -44,24 +46,28 @@ class ValidationErrors(object):
 
 
 class BaseValidator(object):
+    """
+    Used to set up some basic things useful for other validators
+    """
+    def __init__(self):
+        super(BaseValidator, self).__init__()
+        self.field = None
+        self.serializer = None
 
-    def __init__(self, request):
-        self.request = request
-        self.data = request.DATA
-        self._errors = {}
+    def set_context(self, serializer_field):
+        self.field = serializer_field
+        self.serializer = self.field.root
 
-    def validate(self):
-        return self._errors
+    def __call__(self, value):
+        pass
 
-    def set_error(self, key, msg):
-        self._errors.setdefault(key, []).append(msg)
 
-    def _validate_count(self, obj):
-        e = {}
-        if 'count' not in obj:
-            e['count'] = ValidationErrors.REQUIRED_FIELD
-        elif not isinstance(obj['count'], int):
-            e['count'] = ValidationErrors.INT_REQUIRED
-        elif obj['count'] <= 0:
-            e['count'] = ValidationErrors.MIN_ONE
-        return e
+class CreateOnlyValidator(BaseValidator):
+    """
+    To be used on fields where the value can't be changed after the object has been created
+    """
+    def __call__(self, value):
+        if self.serializer.instance is not None:
+            # This is an update request - this is not allowed, so we need to
+            # raise a validation error
+            raise ValidationError('This field may not be updated')

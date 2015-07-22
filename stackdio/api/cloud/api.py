@@ -18,13 +18,13 @@
 
 import logging
 
-import yaml
 from rest_framework import generics, status
 from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.serializers import ValidationError
 from rest_framework.views import APIView
 
 from stackdio.api.blueprints.serializers import BlueprintSerializer
@@ -108,60 +108,26 @@ class CloudAccountListAPIView(generics.ListCreateAPIView):
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudAccountFilter
 
-    def perform_create(self, serializer):
-
-        data = self.request.DATA
-        files = self.request.FILES
-
-        # Lookup provider type
-        try:
-            obj = serializer.save()
-
-            driver = obj.get_driver()
-
-            # Leverage the driver to generate its required data that
-            # will be serialized down to yaml and stored in both the database
-            # and the salt cloud providers file
-            provider_data = driver.get_provider_data(data, files)
-
-            # Generate the yaml and store in the database
-            yaml_data = {
-                obj.slug: provider_data
-            }
-            obj.yaml = yaml.safe_dump(yaml_data, default_flow_style=False)
-            obj.save()
-
-            # Update the salt cloud providers file
-            obj.update_config()
-
-        except models.CloudProvider.DoesNotExist:
-            err_msg = 'Given provider type does not exist.'
-            logger.exception(err_msg)
-            raise BadRequest(err_msg)
-
 
 class CloudAccountDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudAccount.objects.all()
     serializer_class = serializers.CloudAccountSerializer
     permission_classes = (StackdioObjectPermissions,)
 
-    def destroy(self, request, *args, **kwargs):
+    def perform_destroy(self, instance):
         # check for profiles using this account before deleting
-        profiles = set(self.get_object().profiles.all())
+        profiles = [p.slug for p in instance.profiles.all()]
         if profiles:
-            profiles = serializers.CloudProfileSerializer(
-                profiles,
-                context={'request': request}).data
-            return Response({
+            raise ValidationError({
                 'detail': 'One or more profiles are making use of this account.',
                 'profiles': profiles,
-            }, status=status.HTTP_400_BAD_REQUEST)
+            })
 
-        # ask the driver to clean up after itsef since it's no longer needed
-        driver = self.get_object().get_driver()
+        # ask the driver to clean up after itself since it's no longer needed
+        driver = instance.get_driver()
         driver.destroy()
 
-        return super(CloudAccountDetailAPIView, self).destroy(request, *args, **kwargs)
+        instance.delete()
 
 
 class CloudAccountModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):

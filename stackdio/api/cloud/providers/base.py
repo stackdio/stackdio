@@ -21,6 +21,7 @@ import os
 import shutil
 
 from django.conf import settings
+from rest_framework.serializers import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -113,8 +114,7 @@ class BaseCloudProvider(object):
 
         return cls.SHORT_NAME, cls.LONG_NAME
 
-    @classmethod
-    def get_required_fields(cls):
+    def get_required_fields(self):
         """
         Return the fields required in the data dictionary for
         `get_provider_data` and `validate_provider_data`
@@ -122,7 +122,7 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def get_provider_data(cls, data, files=None):
+    def get_provider_data(cls, validated_data):
         """
         Takes a dict of values provided by the user (most likely from the
         request data) and returns a new dict of info that's specific to
@@ -139,8 +139,7 @@ class BaseCloudProvider(object):
         """
         raise NotImplementedError()
 
-    @classmethod
-    def validate_provider_data(cls, serializer_attrs, all_data):
+    def validate_provider_data(self, serializer_attrs, all_data):
         """
         Checks that the keys defined in `get_required_fields` are in the
         given `data` dict. This merely checks that they are there and the
@@ -148,13 +147,21 @@ class BaseCloudProvider(object):
         required.
         """
         errors = {}
-        for key in cls.get_required_fields():
-            if not all_data.get(key):
+        for key in self.get_required_fields():
+            value = all_data.get(key)
+            if not value:
                 errors.setdefault(key, []).append(
                     '{0} is a required field.'.format(key)
                 )
+            else:
+                # If it's valid, we'll throw it into the attrs so it
+                # ends up in the validated data
+                serializer_attrs[key] = value
 
-        return errors
+        if errors:
+            raise ValidationError(errors)
+
+        return serializer_attrs
 
     @classmethod
     def validate_image_id(cls, image_id):

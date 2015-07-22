@@ -32,6 +32,7 @@ import boto.ec2
 import boto.vpc
 import yaml
 from boto.route53.record import ResourceRecordSets
+from rest_framework.serializers import ValidationError
 
 from stackdio.api.cloud.providers.base import (
     BaseCloudProvider,
@@ -254,29 +255,26 @@ class AWSCloudProvider(BaseCloudProvider):
     STATE_SHUTTING_DOWN = 'shutting-down'
     STATE_TERMINATED = 'terminated'
 
-    @classmethod
-    def get_required_fields(cls):
+    def get_required_fields(self):
         return [
-            cls.ACCOUNT_ID,
-            cls.ACCESS_KEY,
-            cls.SECRET_KEY,
-            cls.KEYPAIR,
-            cls.PRIVATE_KEY,
-            cls.ROUTE53_DOMAIN,
-            # cls.SECURITY_GROUPS
+            self.ACCOUNT_ID,
+            self.ACCESS_KEY,
+            self.SECRET_KEY,
+            self.KEYPAIR,
+            self.PRIVATE_KEY,
+            self.ROUTE53_DOMAIN,
         ]
 
-    @classmethod
-    def get_available_actions(cls):
+    def get_available_actions(self):
         return [
-            cls.ACTION_STOP,
-            cls.ACTION_START,
-            cls.ACTION_TERMINATE,
-            cls.ACTION_LAUNCH,
-            cls.ACTION_PROVISION,
-            cls.ACTION_ORCHESTRATE,
-            cls.ACTION_CUSTOM,
-            cls.ACTION_SSH,
+            self.ACTION_STOP,
+            self.ACTION_START,
+            self.ACTION_TERMINATE,
+            self.ACTION_LAUNCH,
+            self.ACTION_PROVISION,
+            self.ACTION_ORCHESTRATE,
+            self.ACTION_CUSTOM,
+            self.ACTION_SSH,
         ]
 
     def get_private_key_path(self):
@@ -294,23 +292,23 @@ class AWSCloudProvider(BaseCloudProvider):
         config_data = self.get_config()
         return config_data['location'], config_data['id'], config_data['key']
 
-    def get_provider_data(self, data, files=None):
+    def get_provider_data(self, validated_data):
         # write the private key to the proper location
         private_key_path = self.get_private_key_path()
         with open(private_key_path, 'w') as f:
-            f.write(data[self.PRIVATE_KEY])
+            f.write(validated_data[self.PRIVATE_KEY])
 
         # change the file permissions of the RSA key
         os.chmod(private_key_path, stat.S_IRUSR)
 
         config_data = {
             'provider': self.SHORT_NAME,
-            'id': data[self.ACCESS_KEY],
-            'key': data[self.SECRET_KEY],
-            'keyname': data[self.KEYPAIR],
+            'id': validated_data[self.ACCESS_KEY],
+            'key': validated_data[self.SECRET_KEY],
+            'keyname': validated_data[self.KEYPAIR],
             'private_key': private_key_path,
-            'append_domain': data[self.ROUTE53_DOMAIN],
-            'location': data[self.REGION],
+            'append_domain': validated_data[self.ROUTE53_DOMAIN],
+            'location': validated_data[self.REGION],
             'ssh_interface': 'private_ips',
             'ssh_connect_timeout': 300,
             'wait_for_passwd_timeout': 5,
@@ -327,15 +325,14 @@ class AWSCloudProvider(BaseCloudProvider):
 
     # TODO: Ignoring code complexity issues...
     def validate_provider_data(self, serializer_attrs, all_data):
-        errors = super(AWSCloudProvider, self).validate_provider_data(serializer_attrs, all_data)
+        attrs = super(AWSCloudProvider, self).validate_provider_data(serializer_attrs, all_data)
 
-        if errors:
-            return errors
+        region = attrs[self.REGION].slug
+        access_key = attrs[self.ACCESS_KEY]
+        secret_key = attrs[self.SECRET_KEY]
+        keypair = attrs[self.KEYPAIR]
 
-        region = serializer_attrs[self.REGION].slug
-        access_key = all_data.get(self.ACCESS_KEY)
-        secret_key = all_data.get(self.SECRET_KEY)
-        keypair = all_data.get(self.KEYPAIR)
+        errors = {}
 
         # check authentication credentials
         ec2 = None
@@ -352,7 +349,7 @@ class AWSCloudProvider(BaseCloudProvider):
             errors.setdefault(self.SECRET_KEY, []).append(err_msg)
 
         if errors:
-            return errors
+            raise ValidationError(errors)
 
         # check keypair
         try:
@@ -363,7 +360,7 @@ class AWSCloudProvider(BaseCloudProvider):
             )
 
         # check route 53 domain
-        domain = all_data.get(self.ROUTE53_DOMAIN)
+        domain = attrs[self.ROUTE53_DOMAIN]
         if domain:
             try:
                 # connect to route53 and check that the domain is available
@@ -387,7 +384,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))
 
         # check VPC required fields
-        vpc_id = all_data.get(self.VPC_ID)
+        vpc_id = attrs[self.VPC_ID]
         if vpc_id:
 
             vpc = None
@@ -411,8 +408,10 @@ class AWSCloudProvider(BaseCloudProvider):
                         'The VPC \'{0}\' does not exist in this account.'
                         .format(vpc_id)
                     )
+        if errors:
+            raise ValidationError(errors)
 
-        return errors
+        return attrs
 
     def validate_image_id(self, image_id):
         ec2 = self.connect_ec2()

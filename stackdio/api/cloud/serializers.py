@@ -18,11 +18,12 @@
 
 import logging
 
+import yaml
 from rest_framework import permissions
 from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedParentField
-from stackdio.core.mixins import SuperuserFieldsMixin
+from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
 from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models
@@ -76,7 +77,7 @@ class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
+class CloudAccountSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     # Foreign Key Relations
     provider = serializers.SlugRelatedField(slug_field='name',
                                             queryset=models.CloudProvider.objects.all())
@@ -119,40 +120,50 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
             'formula_versions',
         )
 
+        # Don't allow these to be changed after account creation
+        create_only_fields = (
+            'provider',
+            'region',
+            'account_id',
+            'vpc_id',
+        )
+
     def validate(self, attrs):
-        # validate account specific request data
-        request = self.context['request']
-
-        # patch requests only accept a few things for modification
-        if request.method == 'PATCH':
-            fields_available = ('title',
-                                'description')
-            # TODO removed default AZ for now, might add in region later
-
-            errors = {}
-            for k in self.initial_data:
-                if k not in fields_available:
-                    errors.setdefault(k, []).append(
-                        'Field may not be modified.')
-            if errors:
-                logger.debug(errors)
-                raise serializers.ValidationError(errors)
-
-        elif request.method == 'POST':
+        if self.instance is not None:
+            # This is an update request, so there's no further validation required
+            return attrs
+        else:
+            # this is a create request, so we need to do more validation
             provider = attrs['provider']
-
             provider_class = get_provider_driver_class(provider)
-
             provider_driver = provider_class()
 
-            errors = provider_driver.validate_provider_data(attrs, self.initial_data)
+            # Farm provider-specific validation out to the provider driver
+            return provider_driver.validate_provider_data(attrs, self.initial_data)
 
-            if errors:
-                logger.error('Cloud account validation errors: '
-                             '{0}'.format(errors))
-                raise serializers.ValidationError(errors)
+    def create(self, validated_data):
+        logger.debug(validated_data)
 
-        return attrs
+        account = super(CloudAccountSerializer, self).create(validated_data)
+
+        driver = account.get_driver()
+
+        # Leverage the driver to generate its required data that
+        # will be serialized down to yaml and stored in both the database
+        # and the salt cloud providers file
+        provider_data = driver.get_provider_data(validated_data)
+
+        # Generate the yaml and store in the database
+        yaml_data = {
+            account.slug: provider_data
+        }
+        account.yaml = yaml.safe_dump(yaml_data, default_flow_style=False)
+        account.save()
+
+        # Update the salt cloud providers file
+        account.update_config()
+
+        return account
 
 
 class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-method
@@ -220,8 +231,7 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
         return account
 
 
-class CloudProfileSerializer(SuperuserFieldsMixin,
-                             serializers.HyperlinkedModelSerializer):
+class CloudProfileSerializer(serializers.HyperlinkedModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
     )
@@ -250,8 +260,6 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
             'user_permissions',
             'group_permissions',
         )
-
-        superuser_fields = ('image_id',)
 
     # TODO: Ignoring code complexity issues
     def validate(self, attrs):  # NOQA
@@ -410,8 +418,7 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class SecurityGroupSerializer(SuperuserFieldsMixin,
-                              serializers.HyperlinkedModelSerializer):
+class SecurityGroupSerializer(serializers.HyperlinkedModelSerializer):
     ##
     # Read-only fields.
     ##
@@ -446,7 +453,6 @@ class SecurityGroupSerializer(SuperuserFieldsMixin,
             'active_hosts',
             'rules',
         )
-        superuser_fields = ('is_default', 'is_managed')
 
 
 class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method
