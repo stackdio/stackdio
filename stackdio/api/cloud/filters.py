@@ -64,6 +64,7 @@ class CloudRegionFilter(django_filters.FilterSet):
 
 
 class CloudZoneFilter(django_filters.FilterSet):
+    title = django_filters.CharFilter(lookup_type='icontains')
 
     class Meta:
         model = models.CloudZone
@@ -77,7 +78,6 @@ class SecurityGroupFilter(django_filters.FilterSet):
     description = django_filters.CharFilter(lookup_type='icontains')
     default = django_filters.BooleanFilter(name='is_default')
     managed = django_filters.BooleanFilter(name='is_managed')
-    account = django_filters.CharFilter(name='account__title')
 
     class Meta:
         model = models.SecurityGroup
@@ -86,5 +86,4 @@ class SecurityGroupFilter(django_filters.FilterSet):
             'description',
             'default',
             'managed',
-            'account',
         )

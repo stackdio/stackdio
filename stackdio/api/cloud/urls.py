@@ -138,6 +138,10 @@ urlpatterns = patterns(
         api.CloudAccountSecurityGroupListAPIView.as_view(),
         name='cloudaccount-securitygroup-list'),
 
+    url(r'^accounts/(?P<pk>[0-9]+)/security_groups/all/$',
+        api.FullCloudAccountSecurityGroupListAPIView.as_view(),
+        name='cloudaccount-fullsecuritygroup-list'),
+
     url(r'^accounts/(?P<pk>[0-9]+)/vpc_subnets/$',
         api.CloudAccountVPCSubnetListAPIView.as_view(),
         name='cloudaccount-vpcsubnet-list'),

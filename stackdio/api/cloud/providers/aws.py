@@ -40,6 +40,8 @@ from stackdio.api.cloud.providers.base import (
     GroupExistsException,
     GroupNotFoundException,
     MaxFailuresException,
+    SecurityGroup,
+    SecurityGroupRule,
     TimeoutException,
 )
 from stackdio.core.exceptions import BadRequest, InternalServerError
@@ -576,6 +578,27 @@ class AWSCloudProvider(BaseCloudProvider):
             for rule in group['rules']:
                 self.revoke_security_group(group_id, rule)
 
+    @staticmethod
+    def get_rules_list(rules):
+        ret = []
+
+        for rule in rules:
+            rule_string = None
+            for grant in rule.grants:
+                if grant.cidr_ip:
+                    rule_string = grant.cidr_ip
+                elif grant.name:
+                    rule_string = '{0.owner_id}:{0.name}'.format(grant)
+
+            ret.append(SecurityGroupRule(
+                rule.ip_protocol,
+                rule.from_port,
+                rule.to_port,
+                rule_string,
+            ))
+
+        return ret
+
     def get_security_groups(self, group_ids=None):
         if group_ids is None:
             group_ids = []
@@ -589,44 +612,25 @@ class AWSCloudProvider(BaseCloudProvider):
         except boto.exception.EC2ResponseError as e:
             raise GroupNotFoundException(e.message)
 
-        result = {}
+        result = []
         for group in groups:
+            # Skip the group if it's the wrong kind
             if self.account.vpc_enabled and not group.vpc_id:
                 continue
             if not self.account.vpc_enabled and group.vpc_id:
                 continue
 
-            rules_ingress, rules_egress = [], []
-            group_rules = [(0, r) for r in group.rules] + \
-                [(1, r) for r in group.rules_egress]
-            for rule_type, rule in group_rules:
-                for grant in rule.grants:
-                    if grant.cidr_ip:
-                        rule_string = grant.cidr_ip
-                    elif grant.name:
-                        rule_string = '{0.owner_id}:{0.name}'.format(grant)
-                    else:
-                        rule_string = None
+            rules = self.get_rules_list(group.rules)
+            rules_egress = self.get_rules_list(group.rules_egress)
 
-                    d = {
-                        'protocol': rule.ip_protocol,
-                        'from_port': rule.from_port,
-                        'to_port': rule.to_port,
-                        'rule': rule_string,
-                    }
-                    if rule_type == 0:
-                        rules_ingress.append(d)
-                    else:
-                        rules_egress.append(d)
-
-            result[group.name] = {
-                'group_id': group.id,
-                'name': group.name,
-                'description': group.description,
-                'rules': rules_ingress,
-                'rules_egress': rules_egress,
-                'vpc_id': group.vpc_id,
-            }
+            result.append(SecurityGroup(
+                group.name,
+                group.description,
+                group.id,
+                group.vpc_id,
+                rules,
+                rules_egress,
+            ))
 
         return result
 

@@ -46,6 +46,24 @@ class DeleteGroupException(Exception):
     pass
 
 
+class SecurityGroupRule(object):
+    def __init__(self, protocol, from_port, to_port, rule):
+        self.protocol = protocol
+        self.from_port = from_port
+        self.to_port = to_port
+        self.rule = rule
+
+
+class SecurityGroup(object):
+    def __init__(self, name, description, group_id, vpc_id, rules, rules_egress):
+        self.name = name
+        self.description = description
+        self.group_id = group_id
+        self.vpc_id = vpc_id
+        self.rules = rules
+        self.rules_egress = rules_egress
+
+
 class BaseCloudProvider(object):
 
     REQUIRED_MESSAGE = 'This field is required.'

@@ -463,9 +463,9 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
     `protocol` -- the protocol of the rule [tcp, udp, icmp]
 
-    `from_port` -- the starting port for the rule's port range [1-65535]
+    `from_port` -- the starting port for the rule's port range [0-65535]
 
-    `to_port` -- the ending port for the rule's port range [1-65535]
+    `to_port` -- the ending port for the rule's port range [0-65535]
 
     `rule` -- the actual rule, this should be either a CIDR (IP address
     with associated routing prefix) **or** an existing account ID and
@@ -474,20 +474,20 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
     ##### To authorize SSH to a single IP address
         {
-            'action': 'authorize',
-            'protocol': 'tcp',
-            'from_port': 22,
-            'to_port': 22,
-            'rule': '192.168.1.108/32'
+            "action": "authorize",
+            "protocol": "tcp",
+            "from_port": 22,
+            "to_port": 22,
+            "rule": "192.168.1.108/32"
         }
 
     ##### To authorize a range of UDP ports to another account's group
         {
-            'action': 'authorize',
-            'protocol': 'udp',
-            'from_port': 3000,
-            'to_port': 3030,
-            'rule': '<account_number>:<group_name>'
+            "action": "authorize",
+            "protocol": "udp",
+            "from_port": 3000,
+            "to_port": 3030,
+            "rule": "<account_number>:<group_name>"
         }
 
         Where account_number is the account ID of the account and
@@ -557,7 +557,7 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
 
 
 class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
-                                           SecurityGroupListAPIView):
+                                           generics.ListCreateAPIView):
     """
     Like the standard, top-level Security Group List API, this API will allow
     you to create and pull security groups. The only significant difference is
@@ -574,51 +574,61 @@ class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
 
     See the standard, top-level Security Group API for further information.
     """
+    serializer_class = serializers.CloudAccountSecurityGroupSerializer
     filter_class = filters.SecurityGroupFilter
 
     def get_queryset(self):
         account = self.get_cloudaccount()
+        return account.security_groups.all()
 
-        # if admin, return all of the known default security groups on the
-        # account
-        if self.request.user.is_superuser:
-            kwargs = {}
-            if self.request.QUERY_PARAMS.get('filter', '') == 'default':
-                kwargs['is_default'] = True
-            return account.security_groups.filter(**kwargs).with_rules()
+    def perform_create(self, serializer):
+        serializer.save(account=self.get_cloudaccount())
 
-        # if user, only get what they own
-        else:
-            return self.request.user.security_groups.filter(
-                account=account
-            ).with_rules()
 
-    # Override the generic list API to inject the security groups
-    # known by the cloud account
-    def list(self, request, *args, **kwargs):
-        response = super(CloudAccountSecurityGroupListAPIView, self).list(
-            request,
-            *args,
-            **kwargs)
+class FullCloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
+                                               generics.ListAPIView):
 
-        # only admins get to see all the groups on the account
-        if not request.user.is_superuser:
-            return response
+    serializer_class = serializers.DirectCloudAccountSecurityGroupSerializer
+    filter_class = filters.SecurityGroupFilter
 
-        # Grab the groups from the account and inject them into the response,
-        # removing the known managed security groups first
+    def get_queryset(self):
         account = self.get_cloudaccount()
         driver = account.get_driver()
         account_groups = driver.get_security_groups()
-        for group in account.security_groups.all():
-            if group.name in account_groups:
-                del account_groups[group.name]
 
-        # Filter these too
-        query_name = request.QUERY_PARAMS.get('name', '')
-        for name, data in account_groups.items():
-            if query_name.lower() not in name.lower():
-                del account_groups[name]
+        class FakeQuerySet(object):
+            """
+            Fake queryset class to make filters magically work even though we just have a list
+            """
+            model = models.SecurityGroup
 
-        response.data['account_groups'] = account_groups
-        return response
+            def __init__(self, groups):
+                self._groups = groups
+
+            def __len__(self):
+                return len(self._groups)
+
+            def __getitem__(self, item):
+                return self._groups[item]
+
+            def all(self):
+                return self
+
+            def filter(self, **kwargs):
+                """
+                This is VERY naive, but it works for what we want
+                """
+                ret = []
+                for group in self._groups:
+                    for k, v in kwargs.items():
+                        spl = k.split('__')
+                        if len(spl) > 1:
+                            if spl[1] == 'icontains':
+                                if v.lower() in getattr(group, spl[0]).lower():
+                                    ret.append(group)
+                        else:
+                            if getattr(group, k) == v:
+                                ret.append(group)
+                return FakeQuerySet(ret)
+
+        return FakeQuerySet(sorted(account_groups, key=lambda x: x.name))

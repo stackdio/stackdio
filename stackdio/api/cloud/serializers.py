@@ -88,6 +88,8 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModel
     # Hyperlinks
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudaccount-securitygroup-list')
+    all_security_groups = serializers.HyperlinkedIdentityField(
+        view_name='cloudaccount-fullsecuritygroup-list')
     vpc_subnets = serializers.HyperlinkedIdentityField(
         view_name='cloudaccount-vpcsubnet-list')
     global_orchestration_components = serializers.HyperlinkedIdentityField(
@@ -113,6 +115,7 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModel
             'account_id',
             'vpc_id',
             'security_groups',
+            'all_security_groups',
             'vpc_subnets',
             'user_permissions',
             'group_permissions',
@@ -428,6 +431,7 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedMode
         )
 
         extra_kwargs = {
+            'name': {'required': False},
             'group_id': {'required': False},
             'description': {'required': False},
         }
@@ -449,20 +453,28 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedMode
             account = attrs['account']
             driver = account.get_driver()
 
-            name = attrs['name']
+            name = attrs.get('name')
             group_id = attrs.get('group_id')
+
+            if not name and not group_id:
+                err_msg = 'You must provide one of `name` or `group_id`'
+                raise serializers.ValidationError({
+                    'name': [err_msg],
+                    'group_id': [err_msg],
+                })
 
             # check if the group exists on the account
             if group_id:
                 try:
-                    account_group = driver.get_security_groups([group_id]).get(name)
+                    account_group_list = driver.get_security_groups([group_id])
 
-                    if not account_group:
-                        err_msg = "The `group_id` doesn\'t match the given `name`"
-                        raise serializers.ValidationError({
-                            'group_id': [err_msg],
-                            'name': [err_msg],
-                        })
+                    if len(account_group_list) != 1:
+                        logger.info('The list of account groups doesn\'t have the right number of '
+                                    'elements (If you\'re seeing this, something has gone '
+                                    'horribly wrong): {0}'.format(account_group_list))
+                        raise GroupNotFoundException()
+
+                    account_group = account_group_list[0]
                     logger.debug('Security group with id "{0}" and name "{1}" already exists on '
                                  'the account.'.format(group_id, name))
                 except GroupNotFoundException:
@@ -474,8 +486,8 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedMode
             # Set all the appropriate data
             if account_group:
                 # Already exists, just need to create in our database
-                attrs['group_id'] = account_group['group_id']
-                attrs['description'] = account_group['description']
+                attrs['group_id'] = account_group.group_id
+                attrs['description'] = account_group.description
                 attrs['is_managed'] = False
                 self.should_create_group = False
             else:
@@ -528,9 +540,48 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedMode
         return group
 
 
+class CloudAccountSecurityGroupSerializer(SecurityGroupSerializer):
+    account = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = models.SecurityGroup
+        fields = (
+            'id',
+            'url',
+            'group_id',
+            'name',
+            'description',
+            'account',
+            'default',
+            'managed',
+            'active_hosts',
+            'rules',
+        )
+
+        extra_kwargs = {
+            'group_id': {'required': False},
+            'description': {'required': False},
+        }
+
+        create_only_fields = (
+            'group_id',
+            'name',
+            'description',
+        )
+
+
 class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    action = serializers.CharField(max_length=15)
+    action = serializers.CharField(max_length=15, write_only=True)
     protocol = serializers.CharField(max_length=4)
     from_port = serializers.IntegerField()
     to_port = serializers.IntegerField()
     rule = serializers.CharField(max_length=255)
+
+
+class DirectCloudAccountSecurityGroupSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    name = serializers.CharField()
+    description = serializers.CharField()
+    group_id = serializers.CharField()
+    vpc_id = serializers.CharField()
+    rules = SecurityGroupRuleSerializer(many=True)
+    rules_egress = SecurityGroupRuleSerializer(many=True)
