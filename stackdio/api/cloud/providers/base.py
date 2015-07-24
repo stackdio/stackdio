@@ -46,6 +46,14 @@ class DeleteGroupException(Exception):
     pass
 
 
+class RuleNotFoundException(Exception):
+    pass
+
+
+class RuleExistsException(Exception):
+    pass
+
+
 class SecurityGroupRule(object):
     def __init__(self, protocol, from_port, to_port, rule):
         self.protocol = protocol

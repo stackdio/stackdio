@@ -33,6 +33,7 @@ from django_extensions.db.models import (
 
 from stackdio.core.queryset_transform import TransformQuerySet
 from stackdio.core.fields import DeletingFileField
+from stackdio.api.cloud.providers.base import GroupNotFoundException
 from .utils import get_cloud_provider_choices, get_provider_driver_class
 
 logger = logging.getLogger(__name__)
@@ -521,10 +522,9 @@ class SecurityGroup(TimeStampedModel, models.Model):
         Pulls the security groups using the cloud provider
         """
         driver = self.account.get_driver()
-        groups = None
-        try:
-            groups = driver.get_security_groups([self.group_id])
-            return groups[self.name]['rules']
-        except KeyError:
-            logger.debug(groups)
-            raise
+        groups = driver.get_security_groups([self.group_id])
+        if len(groups) == 1:
+            return groups[0].rules
+        else:
+            raise GroupNotFoundException('The group with id "{0}" was not '
+                                         'found.'.format(self.group_id))

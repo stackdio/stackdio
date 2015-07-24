@@ -30,8 +30,8 @@ from rest_framework.views import APIView
 from stackdio.api.blueprints.models import Blueprint
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
-from stackdio.core.exceptions import BadRequest
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from stackdio.core.utils import FakeQuerySet
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -90,13 +90,13 @@ class CloudProviderDetailAPIView(generics.RetrieveAPIView):
 
 
 class CloudProviderObjectUserPermissionsViewSet(mixins.CloudProviderRelatedMixin,
-                                                    StackdioObjectUserPermissionsViewSet):
+                                                StackdioObjectUserPermissionsViewSet):
     permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
     parent_lookup_field = 'name'
 
 
 class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderRelatedMixin,
-                                                     StackdioObjectGroupPermissionsViewSet):
+                                                 StackdioObjectGroupPermissionsViewSet):
     permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
     parent_lookup_field = 'name'
 
@@ -395,7 +395,7 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
 
 class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Shows the detail for a security group and allows for the is_default
+    Shows the detail for a security group and allows for the default
     flag to be modified (for admins only.)
 
     ### GET
@@ -408,15 +408,15 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     ### PUT / PATCH
 
     Updates an existing security group's details. Currently, only
-    the is_default field may be modified.
+    the `default` field may be modified.
 
     ### DELETE
 
-    Removes the corresponding security group from stackd.io as well as
-    from the underlying cloud account. **NOTE** that if the security
-    group is currently being used, then it can not be removed. You
-    must first terminate all machines depending on the security group
-    and then delete it.
+    Removes the corresponding security group from stackd.io, as well as
+    from the underlying cloud account if `managed` is true.
+    **NOTE** that if the security group is currently being used, then
+    it can not be removed. You must first terminate all machines depending
+    on the security group and then delete it.
     """
 
     queryset = models.SecurityGroup.objects.all()
@@ -452,7 +452,7 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             account.update_config()
 
 
-class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
+class SecurityGroupRulesAPIView(mixins.SecurityGroupRelatedMixin, generics.ListAPIView):
     """
     ### PUT
 
@@ -496,64 +496,18 @@ class SecurityGroupRulesAPIView(generics.RetrieveUpdateAPIView):
     To revoke either of the rules above, you would just change the `action`
     field's value to be "revoke"
     """
-
-    queryset = models.SecurityGroup.objects.all()
     serializer_class = serializers.SecurityGroupRuleSerializer
-    permission_classes = (StackdioObjectPermissions,)
 
-    def retrieve(self, request, *args, **kwargs):
-        sg = self.get_object()
-        driver = sg.account.get_driver()
-        result = driver.get_security_groups(sg.group_id)
-        return Response(result[sg.name]['rules'])
+    def get_queryset(self):
+        return self.get_securitygroup().rules()
 
-    def update(self, request, *args, **kwargs):
-        sg = self.get_object()
-        account = sg.account
-        driver = account.get_driver()
+    def put(self, request, *args, **kwargs):
+        security_group = self.get_securitygroup()
 
-        # validate input
-        errors = []
-        required_fields = [
-            'action',
-            'protocol',
-            'from_port',
-            'to_port',
-            'rule']
-        for field in required_fields:
-            v = request.DATA.get(field)
-            if not v:
-                errors.append('{0} is a required field.'.format(field))
-
-        if errors:
-            raise BadRequest(errors)
-
-        # Check the rule to determine the "type" of the rule. This
-        # can be a CIDR or group rule. CIDR will look like an IP
-        # address and anything else will be considered a group
-        # rule, however, a group can contain the account id of
-        # the group we're dealing with. If the group rule does
-        # not contain a colon then we'll add the account's
-        # account id
-        rule = request.DATA.get('rule')
-        if not driver.is_cidr_rule(rule) and ':' not in rule:
-            rule = account.account_id + ':' + rule
-            request.DATA['rule'] = rule
-            logger.debug('Prefixing group rule with account id. '
-                         'New rule: {0}'.format(rule))
-
-        if request.DATA.get('action') == 'authorize':
-            driver.authorize_security_group(sg.group_id, request.DATA)
-        elif request.DATA.get('action') == 'revoke':
-            driver.revoke_security_group(sg.group_id, request.DATA)
-        elif request.DATA.get('action') == 'revoke_all':
-            driver.revoke_all_security_groups(sg.group_id)
-        else:
-            raise BadRequest('Missing or invalid `action` parameter. Must be '
-                             'one of \'authorize\' or \'revoke\'')
-
-        result = driver.get_security_groups(sg.group_id)
-        return Response(result[sg.name]['rules'])
+        serializer = self.get_serializer(security_group=security_group, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
@@ -562,17 +516,27 @@ class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
     Like the standard, top-level Security Group List API, this API will allow
     you to create and pull security groups. The only significant difference is
     that GET requests will only return security groups associated with the
-    account.
+    account, and you may only create security groups on the associated account.
 
-    *For regular users*, this will only show security groups owned by you and
-    associated with the account. *For admins*, this will pull all security
-    groups on the account, regardless of ownership.
+    ### GET
 
-    Additionally, admins may provide a query parameter and value
-    `filter=default` to only show the security groups that have been designated
-    as "default" groups to be attached to all hosts started using this account
+    Retrieves the detail for the security group as defined by its
+    `pk` identifier in the URL. The associated `rules` and
+    `active_hosts` fields will be populated like with the full
+    list.
 
-    See the standard, top-level Security Group API for further information.
+    ### PUT / PATCH
+
+    Updates an existing security group's details. Currently, only
+    the `default` field may be modified.
+
+    ### DELETE
+
+    Removes the corresponding security group from stackd.io, as well as
+    from the underlying cloud account if `managed` is true.
+    **NOTE** that if the security group is currently being used, then
+    it can not be removed. You must first terminate all machines depending
+    on the security group and then delete it.
     """
     serializer_class = serializers.CloudAccountSecurityGroupSerializer
     filter_class = filters.SecurityGroupFilter
@@ -587,7 +551,12 @@ class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
 
 class FullCloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
                                                generics.ListAPIView):
-
+    """
+    The standard security_group endpoint will only show you security groups that are
+    stored in our local database.  This endpoint will reach out to the associated
+    CloudAccount and pull a list of all applicable security groups, along with their
+    associated rules.
+    """
     serializer_class = serializers.DirectCloudAccountSecurityGroupSerializer
     filter_class = filters.SecurityGroupFilter
 
@@ -596,39 +565,4 @@ class FullCloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
         driver = account.get_driver()
         account_groups = driver.get_security_groups()
 
-        class FakeQuerySet(object):
-            """
-            Fake queryset class to make filters magically work even though we just have a list
-            """
-            model = models.SecurityGroup
-
-            def __init__(self, groups):
-                self._groups = groups
-
-            def __len__(self):
-                return len(self._groups)
-
-            def __getitem__(self, item):
-                return self._groups[item]
-
-            def all(self):
-                return self
-
-            def filter(self, **kwargs):
-                """
-                This is VERY naive, but it works for what we want
-                """
-                ret = []
-                for group in self._groups:
-                    for k, v in kwargs.items():
-                        spl = k.split('__')
-                        if len(spl) > 1:
-                            if spl[1] == 'icontains':
-                                if v.lower() in getattr(group, spl[0]).lower():
-                                    ret.append(group)
-                        else:
-                            if getattr(group, k) == v:
-                                ret.append(group)
-                return FakeQuerySet(ret)
-
-        return FakeQuerySet(sorted(account_groups, key=lambda x: x.name))
+        return FakeQuerySet(models.SecurityGroup, sorted(account_groups, key=lambda x: x.name))

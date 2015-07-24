@@ -19,6 +19,41 @@
 import collections
 
 
+class FakeQuerySet(object):
+    """
+    Fake queryset class to make filters magically work even though we just have a list
+    """
+    def __init__(self, model, groups):
+        self.model = model
+        self._groups = groups
+
+    def __len__(self):
+        return len(self._groups)
+
+    def __getitem__(self, item):
+        return self._groups[item]
+
+    def all(self):
+        return self
+
+    def filter(self, **kwargs):
+        """
+        This is VERY naive, but it works for what we want
+        """
+        ret = []
+        for group in self._groups:
+            for k, v in kwargs.items():
+                spl = k.split('__')
+                if len(spl) > 1:
+                    if spl[1] == 'icontains':
+                        if v.lower() in getattr(group, spl[0]).lower():
+                            ret.append(group)
+                else:
+                    if getattr(group, k) == v:
+                        ret.append(group)
+        return FakeQuerySet(self.model, ret)
+
+
 # Thanks Alex Martelli
 # http://goo.gl/nENTTt
 def recursive_update(d, u):

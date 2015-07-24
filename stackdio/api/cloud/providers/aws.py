@@ -40,6 +40,8 @@ from stackdio.api.cloud.providers.base import (
     GroupExistsException,
     GroupNotFoundException,
     MaxFailuresException,
+    RuleExistsException,
+    RuleNotFoundException,
     SecurityGroup,
     SecurityGroupRule,
     TimeoutException,
@@ -495,16 +497,20 @@ class AWSCloudProvider(BaseCloudProvider):
         except boto.exception.EC2ResponseError as e:
             raise GroupExistsException(e.message)
 
-    def _security_group_rule_to_kwargs(self, rule):
+    @staticmethod
+    def _security_group_rule_to_kwargs(rule):
         kwargs = {
             'ip_protocol': rule['protocol'],
             'from_port': rule['from_port'],
             'to_port': rule['to_port'],
         }
         if GROUP_PATTERN.match(rule['rule']):
-            src_owner_id, src_group_name = rule['rule'].split(':')
+            src_owner_id, src_group = rule['rule'].split(':')
             kwargs['src_security_group_owner_id'] = src_owner_id
-            kwargs['src_security_group_name'] = src_group_name
+            if src_group.startswith('sg-'):
+                kwargs['src_security_group_group_id'] = src_group
+            else:
+                kwargs['src_security_group_name'] = src_group
         elif CIDR_PATTERN.match(rule['rule']):
             kwargs['cidr_ip'] = rule['rule']
         else:
@@ -548,17 +554,17 @@ class AWSCloudProvider(BaseCloudProvider):
         kwargs = self._security_group_rule_to_kwargs(rule)
         kwargs['group_id'] = group_id
 
+        logger.debug(kwargs)
+
         try:
             ec2.authorize_security_group(**kwargs)
-        except boto.exception.EC2ResponseError, e:
-            if e.status == 400:
-                if e.error_message.startswith('Unable to find group'):
-                    account_id = kwargs['src_security_group_owner_id']
-                    err_msg = e.error_message + ' on account \'{0}\''.format(
-                        account_id)
-                    raise BadRequest(err_msg)
-                raise BadRequest(e.error_message)
-            raise InternalServerError(e.error_message)
+        except boto.exception.EC2ResponseError as e:
+            if e.error_message.startswith('Unable to find group'):
+                account_id = kwargs['src_security_group_owner_id']
+                err_msg = e.error_message + ' on account \'{0}\''.format(
+                    account_id)
+                raise GroupNotFoundException(err_msg)
+            raise RuleExistsException(e.error_message)
 
     def revoke_security_group(self, group_id, rule):
         """
@@ -567,15 +573,18 @@ class AWSCloudProvider(BaseCloudProvider):
         ec2 = self.connect_ec2()
         kwargs = self._security_group_rule_to_kwargs(rule)
         kwargs['group_id'] = group_id
-        ec2.revoke_security_group(**kwargs)
+        try:
+            ec2.revoke_security_group(**kwargs)
+        except boto.exception.EC2ResponseError as e:
+            raise RuleNotFoundException(e.error_message)
 
     def revoke_all_security_groups(self, group_id):
         """
         Revokes ALL rules on the security group.
         """
-        groups = self.get_security_groups(group_id)
-        for group_name, group in groups.iteritems():
-            for rule in group['rules']:
+        groups = self.get_security_groups([group_id])
+        for group in groups:
+            for rule in group.rules:
                 self.revoke_security_group(group_id, rule)
 
     @staticmethod

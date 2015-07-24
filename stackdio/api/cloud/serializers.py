@@ -25,7 +25,13 @@ from rest_framework import serializers
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
-from stackdio.api.cloud.providers.base import GroupExistsException, GroupNotFoundException
+from stackdio.api.cloud.providers.base import (
+    GroupExistsException,
+    GroupNotFoundException,
+    RuleExistsException,
+    RuleNotFoundException,
+    SecurityGroupRule,
+)
 from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models
 from .utils import get_provider_driver_class
@@ -570,12 +576,85 @@ class CloudAccountSecurityGroupSerializer(SecurityGroupSerializer):
         )
 
 
-class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    action = serializers.CharField(max_length=15, write_only=True)
+class SecurityGroupRuleSerializer(serializers.Serializer):
+    available_actions = ('authorize', 'revoke')
+
+    action = serializers.CharField(write_only=True)
     protocol = serializers.CharField(max_length=4)
-    from_port = serializers.IntegerField()
-    to_port = serializers.IntegerField()
+    from_port = serializers.IntegerField(min_value=0, max_value=65535)
+    to_port = serializers.IntegerField(min_value=0, max_value=65535)
     rule = serializers.CharField(max_length=255)
+
+    def __init__(self, security_group=None, *args, **kwargs):
+        self.security_group = security_group
+        super(SecurityGroupRuleSerializer, self).__init__(*args, **kwargs)
+
+    def validate(self, attrs):
+        action = attrs['action']
+
+        if action not in self.available_actions:
+            raise serializers.ValidationError({
+                'action': ['{0} is not a valid action.'.format(action)]
+            })
+
+        from_port = attrs['from_port']
+        to_port = attrs['to_port']
+
+        if from_port > to_port:
+            err_msg = '`from_port` ({0}) must be less than `to_port` ({1})'.format(from_port,
+                                                                                   to_port)
+            raise serializers.ValidationError({
+                'from_port': [err_msg],
+                'to_port': [err_msg],
+            })
+
+        group = self.security_group
+        account = group.account
+        driver = account.get_driver()
+        rule = attrs['rule']
+
+        # Check the rule to determine the "type" of the rule. This
+        # can be a CIDR or group rule. CIDR will look like an IP
+        # address and anything else will be considered a group
+        # rule, however, a group can contain the account id of
+        # the group we're dealing with. If the group rule does
+        # not contain a colon then we'll add the account's
+        # account id
+        if not driver.is_cidr_rule(rule) and ':' not in rule:
+            rule = account.account_id + ':' + rule
+            attrs['rule'] = rule
+            logger.debug('Prefixing group rule with account id. '
+                         'New rule: {0}'.format(rule))
+
+        return attrs
+
+    def save(self, **kwargs):
+        group = self.security_group
+        account = group.account
+        driver = account.get_driver()
+
+        action = self.validated_data['action']
+
+        rule_actions = {
+            'authorize': driver.authorize_security_group,
+            'revoke': driver.revoke_security_group,
+        }
+
+        try:
+            rule_actions[action](group.group_id, self.validated_data)
+        except (RuleNotFoundException, RuleExistsException, GroupNotFoundException) as e:
+            raise serializers.ValidationError({
+                'rule': e.message
+            })
+
+        self.instance = SecurityGroupRule(
+            self.validated_data['protocol'],
+            self.validated_data['from_port'],
+            self.validated_data['to_port'],
+            self.validated_data['rule'],
+        )
+
+        return self.instance
 
 
 class DirectCloudAccountSecurityGroupSerializer(serializers.Serializer):  # pylint: disable=abstract-method
