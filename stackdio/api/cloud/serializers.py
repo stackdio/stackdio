@@ -258,20 +258,22 @@ class CloudProfileSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModel
         )
 
     def validate(self, attrs):
-        image_id = attrs['image_id']
-        account = attrs['account']
+        image_id = attrs.get('image_id')
+        # Don't validate when it's a PATCH request and image_id doesn't exist
+        if not self.partial or image_id is not None:
+            account = attrs['account']
 
-        driver = account.get_driver()
+            driver = account.get_driver()
 
-        # Ensure that the image id is valid
-        valid, exc_msg = driver.validate_image_id(image_id)
-        if not valid:
-            raise serializers.ValidationError({
-                'image_id': ['Image ID does not exist on the given cloud '
-                             'account. Check that it exists and you have '
-                             'access to it.',
-                             exc_msg],
-            })
+            # Ensure that the image id is valid
+            valid, exc_msg = driver.validate_image_id(image_id)
+            if not valid:
+                raise serializers.ValidationError({
+                    'image_id': ['Image ID does not exist on the given cloud '
+                                 'account. Check that it exists and you have '
+                                 'access to it.',
+                                 exc_msg],
+                })
 
         return attrs
 

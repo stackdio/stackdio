@@ -227,7 +227,7 @@ class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_destroy(self, instance):
         # check for blueprint usage before deleting
-        blueprints = Blueprint.objects.filter(host_definition__cloud_profile=instance).distinct()
+        blueprints = Blueprint.objects.filter(host_definitions__cloud_profile=instance).distinct()
 
         if blueprints:
             raise ValidationError({
