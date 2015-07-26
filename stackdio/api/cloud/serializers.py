@@ -25,6 +25,8 @@ from rest_framework import serializers
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
+from stackdio.core.validators import PropertiesValidator
+from stackdio.api.blueprints.models import PROTOCOL_CHOICES
 from stackdio.api.cloud.providers.base import (
     GroupExistsException,
     GroupNotFoundException,
@@ -37,21 +39,6 @@ from . import models
 from .utils import get_provider_driver_class
 
 logger = logging.getLogger(__name__)
-
-
-def validate_properties(properties):
-    """
-    Make sure properties are a valid dict and that they don't contain `__stackdio__`
-    """
-    if not isinstance(properties, dict):
-        raise serializers.ValidationError({
-            'properties': ['This field must be a JSON object.']
-        })
-
-    if '__stackdio__' in properties:
-        raise serializers.ValidationError({
-            'properties': ['The `__stackdio__` key is reserved for system use.']
-        })
 
 
 class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
@@ -217,14 +204,8 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
         return data
 
     def validate(self, attrs):
-        validate_properties(attrs)
+        PropertiesValidator().validate(attrs)
         return attrs
-
-    def create(self, validated_data):
-        """
-        We never create anything with this serializer, so just leave it as not implemented
-        """
-        return super(GlobalOrchestrationPropertiesSerializer, self).create(validated_data)
 
     def update(self, account, validated_data):
         if self.partial:
@@ -580,7 +561,7 @@ class SecurityGroupRuleSerializer(serializers.Serializer):
     available_actions = ('authorize', 'revoke')
 
     action = serializers.CharField(write_only=True)
-    protocol = serializers.CharField(max_length=4)
+    protocol = serializers.ChoiceField(PROTOCOL_CHOICES)
     from_port = serializers.IntegerField(min_value=0, max_value=65535)
     to_port = serializers.IntegerField(min_value=0, max_value=65535)
     rule = serializers.CharField(max_length=255)

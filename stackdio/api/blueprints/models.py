@@ -29,12 +29,13 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 
 from stackdio.core.fields import DeletingFileField
 from stackdio.api.cloud.models import CloudProfile, CloudInstanceSize, CloudZone, Snapshot
-from stackdio.api.formulas.models import FormulaComponent
+from stackdio.api.formulas.models import Formula, FormulaComponent
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
     ('udp', 'UDP'),
     ('icmp', 'ICMP'),
+    ('-1', 'all'),
 ]
 
 DEVICE_ID_CHOICES = [
@@ -52,36 +53,19 @@ def get_props_file_path(obj, filename):
     return 'blueprints/{0}-{1}.props'.format(obj.pk, obj.slug)
 
 
-class BlueprintManager(models.Manager):
+class BlueprintQuerySet(models.QuerySet):
 
-    # TODO: ignoring code complexity issues
-    @transaction.atomic  # NOQA
-    def create(self, data, **kwargs):
+    def create(self, **kwargs):
         """
-        Custom blueprint creation
+        Override so that properties don't get passed in to the Blueprint constructor -
+        django doesn't particularly like that
         """
-
-        ##
-        # validate incoming data
-        ##
-        blueprint = self.model(
-            title=data['title'],
-            description=data['description'],
-            create_users=data['create_users'],
-        )
-
-        blueprint.save()
-
-        props_json = json.dumps(data.get('properties', {}), indent=4)
-        if not blueprint.props_file:
-            blueprint.props_file.save(blueprint.slug + '.props',
-                                      ContentFile(props_json))
-        else:
-            with open(blueprint.props_file.path, 'w') as f:
-                f.write(props_json)
+        properties = kwargs.pop('properties')
+        blueprint = super(BlueprintQuerySet, self).create(**kwargs)
+        blueprint.properties = properties
 
         # create corresonding hosts and related models
-        for host in data['hosts']:
+        for host in kwargs['hosts']:
             profile_obj = CloudProfile.objects.get(pk=host['cloud_profile'])
             size_obj = CloudInstanceSize.objects.get(instance_id=host['size'])
             spot_price = host.get('spot_config', {}).get('spot_price', None)
@@ -192,7 +176,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
     # Use our custom manager object
-    objects = BlueprintManager()
+    # objects = BlueprintQuerySet.as_manager()
 
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.id)
@@ -233,6 +217,8 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
 
         default_permissions = ()
 
+        unique_together = (('title', 'blueprint'), ('hostname_template', 'blueprint'))
+
     # The blueprint object this host is owned by
     blueprint = models.ForeignKey('blueprints.Blueprint',
                                   related_name='host_definitions')
@@ -243,7 +229,7 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
                                       related_name='host_definitions')
 
     # The default number of instances to launch for this host definition
-    count = models.IntegerField('Count')
+    count = models.PositiveIntegerField('Count')
 
     # The hostname template that will be used to generate the actual
     # hostname at launch time. Several template variables will be provided

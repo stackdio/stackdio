@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-from rest_framework.fields import SkipField
 from rest_framework.serializers import ValidationError
 
 VALID_PROTOCOLS = ('tcp', 'udp', 'icmp')
@@ -74,3 +73,19 @@ class CreateOnlyValidator(BaseValidator):
             # This is an update request - this is not allowed, so we need to
             # raise a validation error
             raise ValidationError('This field may not be updated')
+
+
+class PropertiesValidator(BaseValidator):
+    """
+    Make sure properties are a valid dict and that they don't contain `__stackdio__`
+    """
+    def validate(self, value):
+        if not isinstance(value, dict):
+            raise ValidationError({
+                'properties': ['This field must be a JSON object.']
+            })
+
+        if '__stackdio__' in value:
+            raise ValidationError({
+                'properties': ['The `__stackdio__` key is reserved for system use.']
+            })

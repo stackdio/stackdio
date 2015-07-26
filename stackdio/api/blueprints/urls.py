@@ -53,14 +53,22 @@ urlpatterns = patterns(
         api.BlueprintDetailAPIView.as_view(),
         name='blueprint-detail'),
 
+    url(r'^blueprints/(?P<pk>[0-9]+)/export/$',
+        api.BlueprintExportAPIView.as_view(),
+        name='blueprint-export'),
+
     url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
         api.BlueprintPropertiesAPIView.as_view(),
         name='blueprint-properties'),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/',
-        include(object_router.urls)),
+    url(r'^blueprints/(?P<pk>[0-9]+)/host_definitions/$',
+        api.BlueprintHostDefinitionsAPIView.as_view(),
+        name='blueprint-host-definitions'),
 
     url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
         api.BlueprintFormulaVersionsAPIView.as_view(),
         name='blueprint-formula-versions'),
+
+    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/',
+        include(object_router.urls)),
 )

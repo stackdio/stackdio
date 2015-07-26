@@ -97,7 +97,7 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs):
-        # Make sure the version (ie. tag / hash / branch) given is real
+        # TODO Make sure the version (ie. tag / hash / branch) given is real
         return attrs
 
     def create(self, validated_data):

@@ -159,7 +159,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     access_token = models.BooleanField('Access Token', default=False)
 
     def __unicode__(self):
-        return self.title
+        return '%s (%s)' % (self.title, self.uri)
 
     def get_repo_dir(self):
         return join(
