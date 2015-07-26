@@ -18,18 +18,15 @@
 
 import json
 import logging
-from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.db import models, transaction
+from django.db import models
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
 from stackdio.core.fields import DeletingFileField
-from stackdio.api.cloud.models import CloudProfile, CloudInstanceSize, CloudZone, Snapshot
-from stackdio.api.formulas.models import Formula, FormulaComponent
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -94,9 +91,6 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         blank=True,
         default=None,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
-
-    # Use our custom manager object
-    # objects = BlueprintQuerySet.as_manager()
 
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.id)
