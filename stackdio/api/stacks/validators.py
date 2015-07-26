@@ -16,7 +16,7 @@
 #
 
 
-from stackdio.core.validation import ValidationErrors, BaseValidator
+from stackdio.core.validators import ValidationErrors, BaseValidator
 from stackdio.api.blueprints.models import BlueprintHostDefinition
 
 
