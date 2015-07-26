@@ -306,31 +306,26 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
         host_definition = super(BlueprintHostDefinitionSerializer, self).create(validated_data)
 
-        try:
-            # Create the formula components
-            formula_component_field = self.fields['formula_components']
-            # Add in the host definition to all the formula components
-            for component in formula_components:
-                component['host'] = host_definition
-            formula_component_field.create(formula_components)
+        # Create the formula components
+        formula_component_field = self.fields['formula_components']
+        # Add in the host definition to all the formula components
+        for component in formula_components:
+            component['host'] = host_definition
+        formula_component_field.create(formula_components)
 
-            # Create the access rules
-            access_rule_field = self.fields['access_rules']
-            # Add in the host definition to all the access rules
-            for access_rule in access_rules:
-                access_rule['host'] = host_definition
-            access_rule_field.create(access_rules)
+        # Create the access rules
+        access_rule_field = self.fields['access_rules']
+        # Add in the host definition to all the access rules
+        for access_rule in access_rules:
+            access_rule['host'] = host_definition
+        access_rule_field.create(access_rules)
 
-            # Create the volumes
-            volume_field = self.fields['volumes']
-            # Add in the host definition to all the volumes
-            for volume in volumes:
-                volume['host'] = host_definition
-            volume_field.create(volumes)
-
-        except Exception:
-            host_definition.delete()
-            raise
+        # Create the volumes
+        volume_field = self.fields['volumes']
+        # Add in the host definition to all the volumes
+        for volume in volumes:
+            volume['host'] = host_definition
+        volume_field.create(volumes)
 
         return host_definition
 
