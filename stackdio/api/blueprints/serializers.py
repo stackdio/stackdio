@@ -334,7 +334,7 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(
         view_name='blueprint-properties')
     host_definitions = serializers.HyperlinkedIdentityField(
-        view_name='blueprint-host-definitions')
+        view_name='blueprint-host-definition-list')
     formula_versions = serializers.HyperlinkedIdentityField(
         view_name='blueprint-formula-versions')
     user_permissions = serializers.HyperlinkedIdentityField(

@@ -62,8 +62,8 @@ urlpatterns = patterns(
         name='blueprint-properties'),
 
     url(r'^blueprints/(?P<pk>[0-9]+)/host_definitions/$',
-        api.BlueprintHostDefinitionsAPIView.as_view(),
-        name='blueprint-host-definitions'),
+        api.BlueprintHostDefinitionListAPIView.as_view(),
+        name='blueprint-host-definition-list'),
 
     url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
         api.BlueprintFormulaVersionsAPIView.as_view(),

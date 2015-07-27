@@ -96,7 +96,7 @@ class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.Retrieve
     serializer_class = serializers.BlueprintPropertiesSerializer
 
 
-class BlueprintHostDefinitionsAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):
+class BlueprintHostDefinitionListAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):
     serializer_class = serializers.BlueprintHostDefinitionSerializer
 
     def get_queryset(self):
