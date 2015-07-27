@@ -57,6 +57,28 @@ _formula_object_permissions = (
 )
 
 
+class FormulaQuerySet(models.QuerySet):
+    """
+    Override create to automatically kick off a celery task to clone the formula repository.
+    """
+    def create(self, **kwargs):
+        # Should already be a PasswordStr object from the serializer
+        git_password = kwargs.pop('git_password', '')
+
+        kwargs['status'] = Formula.IMPORTING
+        kwargs['status_detail'] = 'Importing formula...this could take a while.'
+
+        formula = super(FormulaQuerySet, self).create(**kwargs)
+
+        # Fix circular import issue
+        from . import tasks
+
+        # Start up the task to import the formula
+        tasks.import_formula.si(formula.id, git_password).apply_async()
+
+        return formula
+
+
 class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     """
     The intention here is to be able to install an entire formula along
@@ -147,6 +169,8 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         ordering = ['pk']
 
         default_permissions = tuple(set(_formula_model_permissions + _formula_object_permissions))
+
+    objects = FormulaQuerySet.as_manager()
 
     # uri to the repository for this formula
     uri = models.URLField('Repository URI', unique=True)

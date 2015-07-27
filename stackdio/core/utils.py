@@ -54,6 +54,15 @@ class FakeQuerySet(object):
         return FakeQuerySet(self.model, ret)
 
 
+class PasswordStr(unicode):
+    """
+    Used so that passwords aren't logged in the celery task log
+    """
+
+    def __repr__(self):
+        return '*' * len(self)
+
+
 # Thanks Alex Martelli
 # http://goo.gl/nENTTt
 def recursive_update(d, u):

@@ -19,6 +19,9 @@ import logging
 
 from django.db import models
 from rest_framework import relations
+from rest_framework.fields import CharField
+
+from stackdio.core.utils import PasswordStr
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +52,20 @@ class DeletingFileField(models.FileField):
         elif file:
             # Otherwise, just close the file, so it doesn't tie up resources.
             file.close()
+
+
+class PasswordField(CharField):
+    def __init__(self, **kwargs):
+        # Don't allow trimming of whitespace for passwords
+        kwargs.pop('trim_whitespace', False)
+        self.trim_whitespace = False
+        super(PasswordField, self).__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        return PasswordStr(data)
+
+    def to_representation(self, value):
+        return PasswordStr(value)
 
 
 class HyperlinkedField(relations.HyperlinkedIdentityField):
