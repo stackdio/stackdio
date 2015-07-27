@@ -17,14 +17,13 @@
 
 
 import json
+import logging
 import os
 import re
-import logging
 import socket
 
 import envoy
 import yaml
-import model_utils.models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models, transaction
@@ -34,8 +33,9 @@ from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
-from guardian.shortcuts import assign_perm, get_users_with_perms
+from guardian.shortcuts import get_users_with_perms
 from model_utils import Choices
+from model_utils.models import StatusModel
 
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.utils import recursive_update
@@ -109,7 +109,7 @@ class Level(object):
     ERROR = 'ERROR'
 
 
-class StatusDetailModel(model_utils.models.StatusModel):
+class StatusDetailModel(StatusModel):
     status_detail = models.TextField(blank=True)
 
     class Meta:
@@ -123,64 +123,41 @@ class StatusDetailModel(model_utils.models.StatusModel):
         return self.save()
 
 
-class StackManager(models.Manager):
+class StackQuerySet(models.QuerySet):
 
-    @transaction.atomic
-    def create_stack(self, create_user, blueprint, **data):
-        title = data.get('title', '')
-        description = data.get('description', '')
-        create_users = data['create_users']
+    def create(self, **kwargs):
+        new_properties = kwargs.pop('properties', {})
 
-        if not title:
-            raise ValueError("Stack 'title' is a required field.")
+        with transaction.atomic(using=self.db):
+            stack = super(StackQuerySet, self).create(**kwargs)
 
-        stack = self.model(blueprint=blueprint,
-                           title=title,
-                           description=description,
-                           create_users=create_users)
-        stack.save()
+            # manage the properties
+            properties = stack.blueprint.properties
+            recursive_update(properties, new_properties)
 
-        for perm in self.model.object_permissions:
-            assign_perm('stacks.%s_stack' % perm, create_user, stack)
+            stack.properties = properties
 
-        # add the namespace
-        namespace = data.get('namespace', '').strip()
-        if not namespace:
-            namespace = 'stack{0}'.format(stack.pk)
-        stack.namespace = namespace
-        stack.save()
+            # Copy over the formula versions from the blueprint
+            for version in stack.blueprint.formula_versions.all():
+                stack.formula_versions.create(
+                    formula=version.formula,
+                    version=version.version,
+                )
 
-        # manage the properties
-        properties = blueprint.properties
-        recursive_update(properties, data.get('properties', {}))
-        props_json = json.dumps(properties, indent=4)
-        if not stack.props_file:
-            stack.props_file.save(stack.slug + '.props',
-                                  ContentFile(props_json))
-        else:
-            with open(stack.props_file.path, 'w') as f:
-                f.write(props_json)
-
-        # Copy over the formula versions from the blueprint
-        for version in stack.blueprint.formula_versions.all():
-            stack.formula_versions.create(
-                formula=version.formula,
-                version=version.version,
-            )
-
-        stack.create_security_groups()
-        stack.create_hosts()
+            # Create the appropriate hosts & security group objects
+            stack.create_security_groups()
+            stack.create_hosts()
 
         # Generate configuration files for salt and salt-cloud
         # NOTE: The order is important here. pillar must be available before
         # the map file is rendered or else we'll miss important grains that
         # need to be set at launch time
-        stack._generate_pillar_file()
-        stack._generate_global_pillar_file()
-        stack._generate_top_file()
-        stack._generate_overstate_file()
-        stack._generate_global_overstate_file()
-        stack._generate_map_file()
+        stack.generate_pillar_file()
+        stack.generate_global_pillar_file()
+        stack.generate_top_file()
+        stack.generate_overstate_file()
+        stack.generate_global_overstate_file()
+        stack.generate_map_file()
 
         return stack
 
@@ -206,7 +183,7 @@ _stack_object_permissions = (
 )
 
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.StatusModel):
+class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
     # Launch workflow:
     PENDING = 'pending'
@@ -252,6 +229,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
         default_permissions = tuple(set(_stack_model_permissions + _stack_object_permissions))
 
+        unique_together = ('title',)
+
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint', related_name='stacks')
 
@@ -259,7 +238,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
-    namespace = models.CharField('Namespace', max_length=64, blank=True)
+    namespace = models.CharField('Namespace', max_length=64)
 
     create_users = models.BooleanField('Create SSH Users')
 
@@ -332,7 +311,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
     # Use our custom manager object
-    objects = StackManager()
+    objects = StackQuerySet.as_manager()
 
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.pk)
@@ -570,7 +549,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
         return created_hosts
 
-    def _generate_map_file(self):
+    def generate_map_file(self):
         # TODO: Figure out a way to make this provider agnostic
 
         # TODO: Should we store this somewhere instead of assuming
@@ -684,7 +663,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.map_file.path, 'w') as f:
                 f.write(map_file_yaml)
 
-    def _generate_top_file(self):
+    def generate_top_file(self):
         top_file_data = {
             'base': {
                 'G@stack_id:{0}'.format(self.pk): [
@@ -702,7 +681,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.top_file.path, 'w') as f:
                 f.write(top_file_yaml)
 
-    def _generate_overstate_file(self):
+    def generate_overstate_file(self):
         hosts = self.hosts.all()
         stack_target = 'G@stack_id:{0}'.format(self.pk)
 
@@ -741,7 +720,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.overstate_file.path, 'w') as f:
                 f.write(yaml_data)
 
-    def _generate_global_overstate_file(self):
+    def generate_global_overstate_file(self):
         accounts = set(
             [host.cloud_profile.account for
                 host in self.hosts.all()])
@@ -783,7 +762,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.global_overstate_file.path, 'w') as f:
                 f.write(yaml_data)
 
-    def _generate_pillar_file(self):
+    def generate_pillar_file(self):
         from stackdio.api.blueprints.models import BlueprintHostFormulaComponent
 
         users = []
@@ -851,7 +830,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
 
-    def _generate_global_pillar_file(self):
+    def generate_global_pillar_file(self):
 
         pillar_props = {}
 
@@ -994,7 +973,7 @@ class StackHistory(TimeStampedModel, StatusDetailModel):
     ))
 
 
-class StackAction(TimeStampedModel, model_utils.models.StatusModel):
+class StackAction(TimeStampedModel, StatusModel):
     WAITING = 'waiting'
     RUNNING = 'running'
     FINISHED = 'finished'

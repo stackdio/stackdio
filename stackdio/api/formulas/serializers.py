@@ -83,7 +83,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
         )
 
         extra_kwargs = {
-            'access_token': {'default': False},
+            'access_token': {'default': serializers.CreateOnlyDefault(False)},
         }
 
     def validate(self, attrs):

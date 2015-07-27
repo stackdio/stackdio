@@ -27,12 +27,14 @@ from os.path import join, isfile
 import envoy
 import yaml
 from django.http import HttpResponse
+from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.serializers import ValidationError
 
 from stackdio.core.exceptions import BadRequest
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
@@ -64,22 +66,16 @@ class StackListAPIView(generics.ListCreateAPIView):
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.StackFilter
 
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return serializers.FullStackSerializer
+        else:
+            return serializers.StackSerializer
+
     def perform_create(self, serializer):
-        """
-        Overriding create method to build roles and metadata objects for this
-        Stack as well as generating the salt-cloud map that will be used to
-        launch machines
-        """
-
-        # make sure the user has a public key or they won't be able to SSH
-        # later
-        if not self.request.user.settings.public_key:
-            raise BadRequest('You have not added a public key to your user '
-                             'profile and will not be able to SSH in to any '
-                             'machines. Please update your user profile '
-                             'before continuing.')
-
         stack = serializer.save()
+        for perm in models.Stack.object_permissions:
+            assign_perm('stacks.%s_stack' % perm, self.request.user, stack)
 
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -91,29 +87,32 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         """
         Overriding the delete method to make sure the stack
         is taken offline before being deleted.  The default delete method
-        returns a 204 status and we want to return a 200 with the serialized
+        returns a 204 status and we want to return a 202 with the serialized
         object
         """
         instance = self.get_object()
         self.perform_destroy(instance)
         serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
-    def perform_destroy(self, stack):
-        # Update the status
+    def perform_destroy(self, instance):
+        stack = instance
+
+        # Check the status
         if stack.status not in models.Stack.SAFE_STATES:
-            raise BadRequest('You may not delete this stack in its '
-                             'current state.  Please wait until it is finished '
-                             'with the current action.')
+            err_msg = ('You may not delete this stack in its current state.  Please wait until '
+                       'it is finished with the current action.')
+            raise ValidationError({
+                'detail': err_msg
+            })
 
+        # Update the status
         msg = 'Stack will be removed upon successful termination of all machines'
         stack.set_status(models.Stack.DESTROYING,
                          models.Stack.DESTROYING, msg)
-        parallel = self.request.DATA.get('parallel', True)
 
-        # Execute the workflow
-        workflow = workflows.DestroyStackWorkflow(stack)
-        workflow.opts.parallel = parallel
+        # Execute the workflow to delete the infrastructure
+        workflow = workflows.DestroyStackWorkflow(stack, opts=self.request.data)
         workflow.execute()
 
 
@@ -297,7 +296,7 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
 
         elif action == BaseCloudProvider.ACTION_SSH:
             # Re-generate the pillar file
-            stack._generate_pillar_file()
+            stack.generate_pillar_file()
 
             tasks.propagate_ssh.si(stack.id).apply_async()
 
@@ -517,7 +516,7 @@ class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
             host_ids = [h.id for h in created_hosts]
 
             # regnerate the map file and run the standard set of launch tasks
-            stack._generate_map_file()
+            stack.generate_map_file()
             workflows.LaunchWorkflow(stack, host_ids=host_ids).execute()
 
         serializer = self.get_serializer(created_hosts, many=True)

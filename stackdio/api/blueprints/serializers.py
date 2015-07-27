@@ -21,6 +21,7 @@ import string
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
+from django.db import transaction
 from django.utils.encoding import smart_text
 from rest_framework import serializers
 from rest_framework.compat import OrderedDict
@@ -133,7 +134,7 @@ class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerial
         )
 
         extra_kwargs = {
-            'order': {'min_value': 0, 'default': 0}
+            'order': {'min_value': 0, 'default': serializers.CreateOnlyDefault(0)}
         }
 
     def to_internal_value(self, data):
@@ -252,8 +253,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
         )
 
         extra_kwargs = {
-            'spot_price': {'required': False, 'min_value': 0.0},
-            'subnet_id': {'required': False},
+            'spot_price': {'min_value': 0.0},
         }
 
     def validate(self, attrs):
@@ -361,7 +361,9 @@ class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
         )
 
         extra_kwargs = {
-            'create_users': {'default': settings.STACKDIO_CONFIG.create_ssh_users}
+            'create_users': {
+                'default': serializers.CreateOnlyDefault(settings.STACKDIO_CONFIG.create_ssh_users)
+            },
         }
 
 
@@ -402,25 +404,26 @@ class FullBlueprintSerializer(BlueprintSerializer):
         properties = validated_data.pop('properties', {})
         formula_versions = validated_data.pop('formula_versions', [])
 
-        # Create the blueprint
-        blueprint = super(FullBlueprintSerializer, self).create(validated_data)
+        with transaction.atomic(using=models.Blueprint.objects.db):
+            # Create the blueprint
+            blueprint = super(FullBlueprintSerializer, self).create(validated_data)
 
-        # Set the properties
-        blueprint.properties = properties
+            # Set the properties
+            blueprint.properties = properties
 
-        # Create the host definitions
-        host_definition_field = self.fields['host_definitions']
-        # Add in the blueprint to all the host defs
-        for host_definition in host_definitions:
-            host_definition['blueprint'] = blueprint
-        host_definition_field.create(host_definitions)
+            # Create the host definitions
+            host_definition_field = self.fields['host_definitions']
+            # Add in the blueprint to all the host defs
+            for host_definition in host_definitions:
+                host_definition['blueprint'] = blueprint
+            host_definition_field.create(host_definitions)
 
-        # Create the formula versions
-        formula_version_field = self.fields['formula_versions']
-        # Add in the blueprint to all the formula versions
-        for formula_version in formula_versions:
-            formula_version['blueprint'] = blueprint
-        formula_version_field.create(formula_versions)
+            # Create the formula versions
+            formula_version_field = self.fields['formula_versions']
+            # Add in the blueprint to all the formula versions
+            for formula_version in formula_versions:
+                formula_version['blueprint'] = blueprint
+            formula_version_field.create(formula_versions)
 
         # Add the other fields back in for deserialization
         validated_data['properties'] = properties

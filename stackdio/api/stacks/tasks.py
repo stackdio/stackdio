@@ -721,7 +721,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
             # if volume metadata was updated, regenerate the map file
             # to account for the volume_id changes
             if bdm_updated:
-                stack._generate_map_file()
+                stack.generate_map_file()
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -1851,7 +1851,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         # delete hosts
         if delete_hosts and hosts:
             hosts.delete()
-            stack._generate_map_file()
+            stack.generate_map_file()
 
         stack.set_status(destroy_hosts.name, Stack.FINALIZING,
                          'Finished destroying stack infrastructure.')
