@@ -29,6 +29,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models, transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
+from django.utils.timezone import now
 from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
@@ -314,7 +315,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
     objects = StackQuerySet.as_manager()
 
     def __unicode__(self):
-        return u'{0} (id={1})'.format(self.title, self.pk)
+        return u'{0} (id={1})'.format(self.title, self.id)
 
     def set_status(self, event, status, detail, level=Level.INFO):
         self.status = status
@@ -335,16 +336,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             with QuerySet value for the matching host objects
         """
         hosts = self.get_hosts(host_ids)
+
+        # Create an account -> hosts map
         accounts = {}
         for h in hosts:
             accounts.setdefault(h.get_account(), []).append(h)
 
+        # Convert to a driver -> hosts map
         result = {}
-        for a, hosts in accounts.iteritems():
-            result[a.get_driver()] = self.hosts.filter(
-                cloud_profile__account=a,
-                pk__in=[h.pk for h in hosts]
-            )
+        for account, hosts in accounts.items():
+            result[account.get_driver()] = hosts
+
         return result
 
     def get_hosts(self, host_ids=None):
@@ -988,7 +990,7 @@ class StackCommand(TimeStampedModel, StatusModel):
     stack = models.ForeignKey('Stack', related_name='commands')
 
     # The started executing
-    start = models.DateTimeField('Start Time')
+    start = models.DateTimeField('Start Time', blank=True, default=now)
 
     # Which hosts we want to target
     host_target = models.CharField('Host Target', max_length=255)
@@ -1002,29 +1004,34 @@ class StackCommand(TimeStampedModel, StatusModel):
     # The error output from the action
     std_err_storage = models.TextField()
 
+    @property
     def std_out(self):
         if self.std_out_storage != "":
             return json.loads(self.std_out_storage)
         else:
             return []
 
+    @property
     def std_err(self):
         return self.std_err_storage
 
+    @property
     def submit_time(self):
         return self.created
 
+    @property
     def start_time(self):
         if self.status in (self.RUNNING, self.FINISHED):
             return self.start
         else:
-            return ""
+            return ''
 
+    @property
     def finish_time(self):
         if self.status == self.FINISHED:
             return self.modified
         else:
-            return ""
+            return ''
 
 
 class Host(TimeStampedModel, StatusDetailModel):

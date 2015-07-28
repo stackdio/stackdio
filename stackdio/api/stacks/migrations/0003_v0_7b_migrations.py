@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
+import django.utils.timezone
 
 
 class Migration(migrations.Migration):
@@ -27,5 +28,15 @@ class Migration(migrations.Migration):
         migrations.RemoveField(
             model_name='stackcommand',
             name='type',
+        ),
+        migrations.AlterField(
+            model_name='stackcommand',
+            name='stack',
+            field=models.ForeignKey(related_name='commands', to='stacks.Stack'),
+        ),
+        migrations.AlterField(
+            model_name='stackcommand',
+            name='start',
+            field=models.DateTimeField(default=django.utils.timezone.now, verbose_name=b'Start Time', blank=True),
         ),
     ]

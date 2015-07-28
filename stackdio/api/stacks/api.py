@@ -19,8 +19,6 @@
 import StringIO
 import logging
 import zipfile
-from datetime import datetime
-from operator import or_
 from os import listdir
 from os.path import join, isfile
 
@@ -28,9 +26,8 @@ import envoy
 import yaml
 from django.http import HttpResponse
 from guardian.shortcuts import assign_perm
-from rest_framework import generics, status
+from rest_framework import generics, status, views
 from rest_framework.decorators import api_view
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -47,11 +44,10 @@ from stackdio.core.viewsets import (
 )
 from stackdio.api.blueprints.models import BlueprintHostDefinition
 from stackdio.api.cloud.filters import SecurityGroupFilter
-from stackdio.api.cloud.providers.base import BaseCloudProvider
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.api.volumes.serializers import VolumeSerializer
-from . import filters, mixins, models, permissions, serializers, tasks, utils, validators, workflows
+from . import filters, mixins, models, permissions, serializers, utils, validators, workflows
 
 logger = logging.getLogger(__name__)
 
@@ -180,12 +176,15 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
         return Response(serializer.data)
 
 
-class StackCommandListAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
+class StackCommandListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
     serializer_class = serializers.StackCommandSerializer
 
     def get_queryset(self):
         stack = self.get_stack()
         return models.StackCommand.objects.filter(stack=stack)
+
+    def perform_create(self, serializer):
+        serializer.save(stack=self.get_stack())
 
 
 class StackCommandDetailAPIView(generics.RetrieveDestroyAPIView):
@@ -198,39 +197,41 @@ class StackCommandDetailAPIView(generics.RetrieveDestroyAPIView):
         super(StackCommandDetailAPIView, self).check_object_permissions(request, obj.stack)
 
 
-@api_view(['GET'])
-def stack_action_zip(request, pk):
-    actions = models.StackCommand.objects.filter(pk=pk)
-    if len(actions) is 1:
-        action = actions[0]
+class StackCommandZipAPIView(generics.GenericAPIView):
+    queryset = models.StackCommand.objects.all()
+    permission_classes = (permissions.StackParentObjectPermissions,)
 
-        if len(action.std_out()) is 0:
-            return Response({"detail": "Not found"})
+    def check_object_permissions(self, request, obj):
+        # Check the permissions on the stack instead of the host
+        super(StackCommandZipAPIView, self).check_object_permissions(request, obj.stack)
+
+    def get(self, request, *args, **kwargs):
+        command = self.get_object()
 
         file_buffer = StringIO.StringIO()
         action_zip = zipfile.ZipFile(file_buffer, 'w')
 
-        filename = 'action_output_' + \
-                   action.submit_time().strftime('%Y%m%d_%H%M%S')
+        filename = 'command_output_' + command.submit_time.strftime('%Y%m%d_%H%M%S')
 
         action_zip.writestr(
             str('{0}/__command'.format(filename)),
-            str(action.command))
+            str(command.command)
+        )
 
-        for output in action.std_out():
+        for output in command.std_out:
             action_zip.writestr(
                 str('{0}/{1}.txt'.format(filename, output['host'])),
-                str(output['output']))
+                str(output['output'])
+            )
 
         action_zip.close()
 
+        # The rest_framework Response object tries to render the data you give it.  We don't
+        # want that, since this zip file we just generated is already 'rendered'.
         response = HttpResponse(file_buffer.getvalue(), content_type='application/zip')
-        response['Content-Disposition'] = (
-            'attachment; filename={0}.zip'.format(filename)
-        )
+        response['Content-Disposition'] = 'attachment; filename={0}.zip'.format(filename)
+
         return response
-    else:
-        return Response({"detail": "Not found"})
 
 
 class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListAPIView):

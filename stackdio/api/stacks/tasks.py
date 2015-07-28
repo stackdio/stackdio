@@ -1971,68 +1971,56 @@ def execute_action(stack_id, action, *args, **kwargs):
 
 
 @shared_task(name='stacks.run_command')
-def run_command(stack_id, commands):
-    stack = Stack.objects.get(id=stack_id)
-
-    new_commands = []
-
-    for command in commands:
-        command_obj = stack.commands.create(
-            host_target=command['host_target'],
-            command=command['command'],
-            start=datetime.now(),
-        )
-        new_commands.append(command_obj)
+def run_command(command_id):
+    command = StackCommand.objects.get(id=command_id)
+    stack = command.stack
 
     # Create a salt client
     salt_client = salt.client.LocalClient(os.path.join(
         settings.STACKDIO_CONFIG.salt_config_root, 'master'))
 
-    for command in new_commands:
-        command.status = StackCommand.RUNNING
-        command.start = datetime.now()
+    command.status = StackCommand.RUNNING
+    command.start = datetime.now()
+    command.save()
+
+    try:
+        res = salt_client.cmd_iter(
+            '{0} and G@stack_id:{1}'.format(command.host_target, stack.id),
+            'cmd.run',
+            [command.command],
+            expr_form='compound',
+        )
+
+        result = {}
+        for ret in res:
+            for k, v in ret.items():
+                result[k] = v
+
+        # Convert to an easier format for javascript
+        ret = []
+        for host, output in result.items():
+            ret.append({'host': host, 'output': output['ret']})
+
+        command.std_out_storage = json.dumps(ret)
+        command.status = StackCommand.FINISHED
+
         command.save()
-        command = command.command
-        host_target = command.host_target
 
-        try:
-            res = salt_client.cmd_iter(
-                '{0} and G@stack_id:{1}'.format(host_target, stack_id),
-                'cmd.run',
-                [command],
-                expr_form='compound',
-            )
+        stack.set_status(run_command.name, Stack.FINISHED,
+                         'Finished running command: {0}'.format(command))
 
-            result = {}
-            for ret in res:
-                for k, v in ret.items():
-                    result[k] = v
+    except salt.client.SaltInvocationError:
+        command.status = StackCommand.ERROR
+        command.save()
+        stack.set_status(run_command.name, Stack.FINISHED, 'Salt error')
 
-            # Convert to an easier format for javascript
-            ret = []
-            for host, output in result.items():
-                ret.append({'host': host, 'output': output['ret']})
+    except salt.client.SaltReqTimeoutError:
+        command.status = StackCommand.ERROR
+        command.save()
+        stack.set_status(run_command.name, Stack.FINISHED, 'Salt error')
 
-            command.std_out_storage = json.dumps(ret)
-            command.status = StackCommand.FINISHED
-
-            command.save()
-
-            stack.set_status(run_command.name, Stack.FINISHED,
-                             'Finished running custom action: {0}'.format(command))
-
-        except salt.client.SaltInvocationError:
-            command.status = StackCommand.ERROR
-            command.save()
-            stack.set_status(run_command.name, Stack.FINISHED, 'Salt error')
-
-        except salt.client.SaltReqTimeoutError:
-            command.status = StackCommand.ERROR
-            command.save()
-            stack.set_status(run_command.name, Stack.FINISHED, 'Salt error')
-
-        except Exception:
-            command.status = StackCommand.ERROR
-            command.save()
-            stack.set_status(run_command.name, Stack.FINISHED, 'Unhandled exception')
-            raise
+    except Exception:
+        command.status = StackCommand.ERROR
+        command.save()
+        stack.set_status(run_command.name, Stack.FINISHED, 'Unhandled exception')
+        raise

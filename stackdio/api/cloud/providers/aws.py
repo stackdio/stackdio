@@ -280,7 +280,6 @@ class AWSCloudProvider(BaseCloudProvider):
             self.ACTION_LAUNCH,
             self.ACTION_PROVISION,
             self.ACTION_ORCHESTRATE,
-            self.ACTION_COMMAND,
             self.ACTION_SSH,
         ]
 

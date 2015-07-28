@@ -17,8 +17,8 @@
 
 
 import logging
-from datetime import datetime
-from operator import or_
+
+from celery import chain
 
 from stackdio.api.cloud.providers.base import BaseCloudProvider
 from . import tasks
@@ -79,8 +79,8 @@ class BaseWorkflow(object):
         return []
 
     def execute(self):
-        task_chain = reduce(or_, self.task_list())
-        task_chain()
+        task_chain = chain(*self.task_list())
+        task_chain.apply_async()
 
 
 class LaunchWorkflow(BaseWorkflow):
@@ -185,8 +185,7 @@ class ActionWorkflow(BaseWorkflow):
         self.args = args
 
     def task_list(self):
-
-        # FIXME: not generic
+        # TODO: not generic enough
         base_tasks = {
             BaseCloudProvider.ACTION_LAUNCH: [
                 tasks.launch_hosts.si(self.stack.id),
@@ -207,9 +206,6 @@ class ActionWorkflow(BaseWorkflow):
             BaseCloudProvider.ACTION_SSH: [
                 tasks.propagate_ssh.si(self.stack.id),
             ],
-            BaseCloudProvider.ACTION_COMMAND: [
-                tasks.run_command.si(self.stack.id, self.args),
-            ],
         }
 
         # Start off with the base
@@ -224,7 +220,7 @@ class ActionWorkflow(BaseWorkflow):
 
         # Launching requires us to tag the newly available infrastructure
         if self.action in (BaseCloudProvider.ACTION_LAUNCH,):
-            tasks.tag_infrastructure.si(self.stack.id)
+            task_list.append(tasks.tag_infrastructure.si(self.stack.id))
 
         # Starting and launching requires DNS updates
         if self.action in (BaseCloudProvider.ACTION_START,

@@ -34,7 +34,7 @@ from stackdio.api.blueprints.serializers import (
 )
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
-from . import models, utils, workflows
+from . import models, tasks, utils, workflows
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,6 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.Host
         fields = (
-            'id',
             'url',
             'hostname',
             'provider_dns',
@@ -165,9 +164,6 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
         view_name='stack-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
         view_name='stack-object-group-permissions-list')
-
-    # Relation Links
-    blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
 
     class Meta:
         model = models.Stack
@@ -290,6 +286,7 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
 
 class FullStackSerializer(StackSerializer):
     properties = StackPropertiesSerializer(required=False)
+    blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
 
     def create(self, validated_data):
         # Create the stack
@@ -336,7 +333,7 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
 
 class StackActionSerializer(serializers.Serializer):
     action = serializers.CharField(write_only=True)
-    args = serializers.ListField(child=serializers.CharField(), required=False)
+    args = serializers.ListField(child=serializers.DictField(), required=False)
 
     def validate(self, attrs):
         stack = self.instance
@@ -390,7 +387,8 @@ class StackActionSerializer(serializers.Serializer):
             # XXX: Assuming that host metadata is accurate here
             for host in hosts:
                 start_stop_msg = ('{0} action requires all hosts to be in the {1} '
-                                  'state first. At least one host is reporting an invalid state: {2}')
+                                  'state first. At least one host is reporting an invalid '
+                                  'state: {2}')
 
                 if action == driver.ACTION_START and host.state != driver.STATE_STOPPED:
                     raise serializers.ValidationError({
@@ -410,8 +408,7 @@ class StackActionSerializer(serializers.Serializer):
 
                 require_running = (
                     driver.ACTION_PROVISION,
-                    driver.ACTION_ORCHESTRATE,
-                    driver.ACTION_COMMAND
+                    driver.ACTION_ORCHESTRATE
                 )
 
                 if action in require_running and host.state != driver.STATE_RUNNING:
@@ -437,14 +434,12 @@ class StackActionSerializer(serializers.Serializer):
         args = self.validated_data.get('args', [])
 
         stack.set_status(models.Stack.EXECUTING_ACTION,
-                         models.Stack.PENDING,
+                         models.Stack.EXECUTING_ACTION,
                          'Stack is executing action \'{0}\''.format(action))
 
         # Utilize our workflow to run the action
         workflow = workflows.ActionWorkflow(stack, action, args)
         workflow.execute()
-
-        stack.get_hosts().update(state='actioning')
 
         return self.instance
 
@@ -455,7 +450,6 @@ class StackCommandSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = models.StackCommand
         fields = (
-            'id',
             'url',
             'zip_url',
             'submit_time',
@@ -467,3 +461,15 @@ class StackCommandSerializer(serializers.HyperlinkedModelSerializer):
             'std_out',
             'std_err',
         )
+
+        read_only_fields = (
+            'status',
+        )
+
+    def create(self, validated_data):
+        command = super(StackCommandSerializer, self).create(validated_data)
+
+        # Start the celery task to run the command
+        tasks.run_command.si(command.id).apply_async()
+
+        return command
