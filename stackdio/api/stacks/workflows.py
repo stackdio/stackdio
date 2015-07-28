@@ -17,8 +17,10 @@
 
 
 import logging
+from datetime import datetime
 from operator import or_
 
+from stackdio.api.cloud.providers.base import BaseCloudProvider
 from . import tasks
 
 logger = logging.getLogger(__name__)
@@ -170,3 +172,85 @@ class DestroyStackWorkflow(BaseWorkflow):
             tasks.destroy_hosts.si(stack_id, parallel=self.opts.parallel),
             tasks.destroy_stack.si(stack_id),
         ]
+
+
+class ActionWorkflow(BaseWorkflow):
+    """
+    Runs an action
+    """
+
+    def __init__(self, stack, action, args):
+        super(ActionWorkflow, self).__init__(stack)
+        self.action = action
+        self.args = args
+
+    def task_list(self):
+
+        # FIXME: not generic
+        base_tasks = {
+            BaseCloudProvider.ACTION_LAUNCH: [
+                tasks.launch_hosts.si(self.stack.id),
+                tasks.update_metadata.si(self.stack.id),
+                tasks.cure_zombies.si(self.stack.id),
+            ],
+            BaseCloudProvider.ACTION_TERMINATE: [
+                tasks.unregister_dns.si(self.stack.id),
+                tasks.destroy_hosts.si(self.stack.id, delete_hosts=False,
+                                       delete_security_groups=False),
+            ],
+            BaseCloudProvider.ACTION_PROVISION: [],
+            BaseCloudProvider.ACTION_ORCHESTRATE: [],
+            BaseCloudProvider.ACTION_STOP: [
+                tasks.unregister_dns.si(self.stack.id),
+                tasks.execute_action.si(self.stack.id, self.action, *self.args),
+            ],
+            BaseCloudProvider.ACTION_SSH: [
+                tasks.propagate_ssh.si(self.stack.id),
+            ],
+            BaseCloudProvider.ACTION_COMMAND: [
+                tasks.run_command.si(self.stack.id, self.args),
+            ],
+        }
+
+        # Start off with the base
+        if self.action in base_tasks:
+            task_list = base_tasks[self.action]
+        else:
+            task_list = [tasks.execute_action.si(self.stack.id, self.action, *self.args)]
+
+        # Update the metadata after the main action has been executed
+        if self.action != BaseCloudProvider.ACTION_TERMINATE:
+            task_list.append(tasks.update_metadata.si(self.stack.id))
+
+        # Launching requires us to tag the newly available infrastructure
+        if self.action in (BaseCloudProvider.ACTION_LAUNCH,):
+            tasks.tag_infrastructure.si(self.stack.id)
+
+        # Starting and launching requires DNS updates
+        if self.action in (BaseCloudProvider.ACTION_START,
+                           BaseCloudProvider.ACTION_LAUNCH):
+            task_list.append(tasks.register_dns.si(self.stack.id))
+
+        # starting, launching, or reprovisioning requires us to execute the
+        # provisioning tasks
+        if self.action in (BaseCloudProvider.ACTION_START,
+                           BaseCloudProvider.ACTION_LAUNCH,
+                           BaseCloudProvider.ACTION_PROVISION,
+                           BaseCloudProvider.ACTION_ORCHESTRATE):
+            task_list.append(tasks.ping.si(self.stack.id))
+            task_list.append(tasks.sync_all.si(self.stack.id))
+
+        if self.action in (BaseCloudProvider.ACTION_START,
+                           BaseCloudProvider.ACTION_LAUNCH,
+                           BaseCloudProvider.ACTION_PROVISION):
+            task_list.append(tasks.highstate.si(self.stack.id))
+            task_list.append(tasks.global_orchestrate.si(self.stack.id))
+            task_list.append(tasks.orchestrate.si(self.stack.id))
+
+        if self.action == BaseCloudProvider.ACTION_ORCHESTRATE:
+            task_list.append(tasks.orchestrate.si(self.stack.id, 2))
+
+        # Always finish the stack
+        task_list.append(tasks.finish_stack.si(self.stack.id))
+
+        return task_list

@@ -94,7 +94,7 @@ class BaseCloudProvider(object):
     ACTION_LAUNCH = 'launch'
     ACTION_PROVISION = 'provision'
     ACTION_ORCHESTRATE = 'orchestrate'
-    ACTION_CUSTOM = 'custom'
+    ACTION_COMMAND = 'command'
     ACTION_SSH = 'propagate-ssh'
 
     def __init__(self, account=None, *args, **kwargs):

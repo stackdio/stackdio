@@ -973,7 +973,7 @@ class StackHistory(TimeStampedModel, StatusDetailModel):
     ))
 
 
-class StackAction(TimeStampedModel, StatusModel):
+class StackCommand(TimeStampedModel, StatusModel):
     WAITING = 'waiting'
     RUNNING = 'running'
     FINISHED = 'finished'
@@ -985,13 +985,10 @@ class StackAction(TimeStampedModel, StatusModel):
 
         default_permissions = ()
 
-    stack = models.ForeignKey('Stack', related_name='actions')
+    stack = models.ForeignKey('Stack', related_name='commands')
 
     # The started executing
     start = models.DateTimeField('Start Time')
-
-    # Type of action (custom, launch, etc)
-    type = models.CharField('Action Type', max_length=50)
 
     # Which hosts we want to target
     host_target = models.CharField('Host Target', max_length=255)

@@ -20,4 +20,12 @@ class Migration(migrations.Migration):
             name='stack',
             unique_together=set([('title',)]),
         ),
+        migrations.RenameModel(
+            old_name='StackAction',
+            new_name='StackCommand',
+        ),
+        migrations.RemoveField(
+            model_name='stackcommand',
+            name='type',
+        ),
     ]

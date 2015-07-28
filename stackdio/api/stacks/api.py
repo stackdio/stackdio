@@ -150,7 +150,7 @@ class StackHistoryAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
 
 
 class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
-    serializer_class = serializers.StackSerializer
+    serializer_class = serializers.StackActionSerializer
     permission_classes = (permissions.StackActionObjectPermissions,)
 
     def get(self, request, *args, **kwargs):
@@ -166,239 +166,41 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
             'available_actions': sorted(available_actions),
         })
 
-    # TODO: Code complexity issues are ignored for now
-    def post(self, request, *args, **kwargs):  # NOQA
+    def post(self, request, *args, **kwargs):
         """
         POST request allows RPC-like actions to be called to interact
         with the stack. Request contains JSON with an `action` parameter
         and optional `args` depending on the action being executed.
-
-        Valid actions: stop, start, restart, terminate, provision,
-        orchestrate
         """
-
         stack = self.get_stack()
 
-        if stack.status not in models.Stack.SAFE_STATES:
-            raise BadRequest('You may not perform an action while the '
-                             'stack is in its current state.')
-
-        driver_hosts_map = stack.get_driver_hosts_map()
-        total_host_count = len(stack.get_hosts().exclude(instance_id=''))
-        action = request.DATA.get('action', None)
-        args = request.DATA.get('args', [])
-
-        if not action:
-            raise BadRequest('action is a required parameter.')
-
-        available_actions = set()
-
-        # check the individual provider for available actions
-        for driver, hosts in driver_hosts_map.iteritems():
-            host_available_actions = driver.get_available_actions()
-            if action not in host_available_actions:
-                raise BadRequest('At least one of the hosts in this stack '
-                                 'does not support the requested action.')
-            available_actions.update(host_available_actions)
-
-        if action not in utils.filter_actions(request.user, stack, available_actions):
-            raise PermissionDenied(
-                'You are not authorized to execute the "{0}" action on this stack'.format(action)
-            )
-
-        # All actions other than launch require hosts to be available
-        if action != BaseCloudProvider.ACTION_LAUNCH and total_host_count == 0:
-            raise BadRequest('The submitted action requires the stack to have '
-                             'available hosts. Perhaps you meant to run the '
-                             'launch action instead.')
-
-        # Hosts may be spread accross different providers, so we need to
-        # handle them differently based on the provider and its implementation
-        driver_hosts_map = stack.get_driver_hosts_map()
-        for driver, hosts in driver_hosts_map.iteritems():
-
-            # check the action against current states (e.g., starting can't
-            # happen unless the hosts are in the stopped state.)
-            # XXX: Assuming that host metadata is accurate here
-            for host in hosts:
-                if action == driver.ACTION_START and host.state != driver.STATE_STOPPED:
-                    raise BadRequest('Start action requires all hosts to be '
-                                     'in the stopped state first. At least '
-                                     'one host is reporting an invalid state: '
-                                     '{0}'.format(host.state))
-                if action == driver.ACTION_STOP and host.state != driver.STATE_RUNNING:
-                    raise BadRequest('Stop action requires all hosts to be in '
-                                     'the running state first. At least one '
-                                     'host is reporting an invalid state: '
-                                     '{0}'.format(host.state))
-                if action == driver.ACTION_TERMINATE and host.state not in (driver.STATE_RUNNING,
-                                                                            driver.STATE_STOPPED):
-                    raise BadRequest('Terminate action requires all hosts to '
-                                     'be in the either the running or stopped '
-                                     'state first. At least one host is '
-                                     'reporting an invalid state: {0}'
-                                     .format(host.state))
-                if (
-                    action == driver.ACTION_PROVISION or
-                    action == driver.ACTION_ORCHESTRATE or
-                    action == driver.ACTION_CUSTOM
-                ) and host.state not in (driver.STATE_RUNNING,):
-                    raise BadRequest(
-                        'Provisioning actions require all hosts to be in the '
-                        'running state first. At least one host is reporting '
-                        'an invalid state: {0}'.format(host.state))
-
-        # Kick off the celery task for the given action
-        stack.set_status(models.Stack.EXECUTING_ACTION,
-                         models.Stack.PENDING,
-                         'Stack is executing action \'{0}\''.format(action))
-
-        if action == BaseCloudProvider.ACTION_CUSTOM:
-
-            task_list = []
-
-            action_ids = []
-
-            for command in args:
-                action = models.StackAction(stack=stack)
-                action.host_target = command['host_target']
-                action.command = command['command']
-                action.type = BaseCloudProvider.ACTION_CUSTOM
-                action.start = datetime.now()
-                action.save()
-
-                action_ids.append(action.id)
-
-                task_list.append(tasks.custom_action.si(
-                    action.id,
-                    command['host_target'],
-                    command['command']
-                ))
-
-            task_chain = reduce(or_, task_list)
-
-            task_chain()
-
-            ret = {
-                "results_urls": []
-            }
-
-            for action_id in action_ids:
-                ret['results_urls'].append(reverse(
-                    'stackaction-detail',
-                    kwargs={
-                        'pk': action_id,
-                    },
-                    request=request
-                ))
-
-            return Response(ret)
-
-        elif action == BaseCloudProvider.ACTION_SSH:
-            # Re-generate the pillar file
-            stack.generate_pillar_file()
-
-            tasks.propagate_ssh.si(stack.id).apply_async()
-
-            serializer = self.get_serializer(stack)
-            return Response(serializer.data)
-
-        # Keep track of the tasks we need to run for this execution
-        task_list = []
-
-        # FIXME: not generic
-        if action in (BaseCloudProvider.ACTION_STOP,
-                      BaseCloudProvider.ACTION_TERMINATE):
-            # Unregister DNS when executing the above actions
-            task_list.append(tasks.unregister_dns.si(stack.id))
-
-        # Launch is slightly different than other actions
-        if action == BaseCloudProvider.ACTION_LAUNCH:
-            task_list.append(tasks.launch_hosts.si(stack.id))
-            task_list.append(tasks.update_metadata.si(stack.id))
-            task_list.append(tasks.cure_zombies.si(stack.id))
-
-        # Terminate should leverage salt-cloud or salt gets confused about
-        # the state of things
-        elif action == BaseCloudProvider.ACTION_TERMINATE:
-            task_list.append(
-                tasks.destroy_hosts.si(stack.id,
-                                       delete_hosts=False,
-                                       delete_security_groups=False)
-            )
-
-        elif action in (BaseCloudProvider.ACTION_PROVISION,
-                        BaseCloudProvider.ACTION_ORCHESTRATE,):
-            # action that gets handled later
-            pass
-
-        # Execute other actions that may be available on the driver
-        else:
-            task_list.append(tasks.execute_action.si(stack.id, action, *args))
-
-        # Update the metadata after the action has been executed
-        if action != BaseCloudProvider.ACTION_TERMINATE:
-            task_list.append(tasks.update_metadata.si(stack.id))
-
-        # Launching requires us to tag the newly available infrastructure
-        if action in (BaseCloudProvider.ACTION_LAUNCH,):
-            tasks.tag_infrastructure.si(stack.id)
-
-        # Starting and launching requires DNS updates
-        if action in (BaseCloudProvider.ACTION_START,
-                      BaseCloudProvider.ACTION_LAUNCH):
-            task_list.append(tasks.register_dns.si(stack.id))
-
-        # starting, launching, or reprovisioning requires us to execute the
-        # provisioning tasks
-        if action in (BaseCloudProvider.ACTION_START,
-                      BaseCloudProvider.ACTION_LAUNCH,
-                      BaseCloudProvider.ACTION_PROVISION,
-                      BaseCloudProvider.ACTION_ORCHESTRATE):
-            task_list.append(tasks.ping.si(stack.id))
-            task_list.append(tasks.sync_all.si(stack.id))
-
-        if action in (BaseCloudProvider.ACTION_START,
-                      BaseCloudProvider.ACTION_LAUNCH,
-                      BaseCloudProvider.ACTION_PROVISION):
-            task_list.append(tasks.highstate.si(stack.id))
-            task_list.append(tasks.global_orchestrate.si(stack.id))
-            task_list.append(tasks.orchestrate.si(stack.id))
-
-        if action == BaseCloudProvider.ACTION_ORCHESTRATE:
-            task_list.append(tasks.orchestrate.si(stack.id, 2))
-
-        task_list.append(tasks.finish_stack.si(stack.id))
-
-        # chain together our tasks using the bitwise or operator
-        task_chain = reduce(or_, task_list)
-
-        # execute the chain
-        task_chain()
-
-        # Update all host states
-        stack.get_hosts().update(state='actioning')
-
-        serializer = self.get_serializer(stack)
+        serializer = self.get_serializer(stack, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data)
 
 
-class StackActionListAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
-    serializer_class = serializers.StackActionSerializer
+class StackCommandListAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
+    serializer_class = serializers.StackCommandSerializer
 
     def get_queryset(self):
         stack = self.get_stack()
-        return models.StackAction.objects.filter(stack=stack)
+        return models.StackCommand.objects.filter(stack=stack)
 
 
-class StackActionDetailAPIView(generics.RetrieveDestroyAPIView):
-    queryset = models.StackAction.objects.all()
-    serializer_class = serializers.StackActionSerializer
+class StackCommandDetailAPIView(generics.RetrieveDestroyAPIView):
+    queryset = models.StackCommand.objects.all()
+    serializer_class = serializers.StackCommandSerializer
+    permission_classes = (permissions.StackParentObjectPermissions,)
+
+    def check_object_permissions(self, request, obj):
+        # Check the permissions on the stack instead of the host
+        super(StackCommandDetailAPIView, self).check_object_permissions(request, obj.stack)
 
 
 @api_view(['GET'])
 def stack_action_zip(request, pk):
-    actions = models.StackAction.objects.filter(pk=pk)
+    actions = models.StackCommand.objects.filter(pk=pk)
     if len(actions) is 1:
         action = actions[0]
 
@@ -422,8 +224,7 @@ def stack_action_zip(request, pk):
 
         action_zip.close()
 
-        response = HttpResponse(file_buffer.getvalue(),
-            content_type='application/zip')
+        response = HttpResponse(file_buffer.getvalue(), content_type='application/zip')
         response['Content-Disposition'] = (
             'attachment; filename={0}.zip'.format(filename)
         )

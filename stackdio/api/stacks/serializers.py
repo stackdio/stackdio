@@ -22,6 +22,7 @@ import os
 import salt.cloud
 from django.conf import settings
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
@@ -33,7 +34,7 @@ from stackdio.api.blueprints.serializers import (
 )
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
-from . import models, workflows
+from . import models, utils, workflows
 
 logger = logging.getLogger(__name__)
 
@@ -142,8 +143,8 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
         view_name='stack-fqdns')
     action = serializers.HyperlinkedIdentityField(
         view_name='stack-action')
-    actions = serializers.HyperlinkedIdentityField(
-        view_name='stackaction-list')
+    commands = serializers.HyperlinkedIdentityField(
+        view_name='stack-command-list')
     logs = serializers.HyperlinkedIdentityField(
         view_name='stack-logs')
     orchestration_errors = serializers.HyperlinkedIdentityField(
@@ -190,7 +191,7 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
             'properties',
             'history',
             'action',
-            'actions',
+            'commands',
             'security_groups',
             'formula_versions',
             'logs',
@@ -333,11 +334,126 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
         )
 
 
-class StackActionSerializer(serializers.HyperlinkedModelSerializer):
-    zip_url = serializers.HyperlinkedIdentityField(view_name='stackaction-zip')
+class StackActionSerializer(serializers.Serializer):
+    action = serializers.CharField(write_only=True)
+    args = serializers.ListField(child=serializers.CharField(), required=False)
+
+    def validate(self, attrs):
+        stack = self.instance
+        action = attrs['action']
+        request = self.context['request']
+
+        if stack.status not in models.Stack.SAFE_STATES:
+            raise serializers.ValidationError({
+                'action': ['You may not perform an action while the stack is in its current state.']
+            })
+
+        driver_hosts_map = stack.get_driver_hosts_map()
+        total_host_count = len(stack.get_hosts().exclude(instance_id=''))
+
+        available_actions = set()
+
+        # check the individual provider for available actions
+        for driver in driver_hosts_map:
+            host_available_actions = driver.get_available_actions()
+            if action not in host_available_actions:
+                err_msg = ('At least one of the hosts in this stack does not support '
+                           'the requested action.')
+                raise serializers.ValidationError({
+                    'action': [err_msg]
+                })
+            available_actions.update(host_available_actions)
+
+        if action not in available_actions:
+            raise serializers.ValidationError({
+                'action': ['{0} is not a valid action.'.format(action)]
+            })
+
+        # Check to make sure the user is authorized to execute the action
+        if action not in utils.filter_actions(request.user, stack, available_actions):
+            raise PermissionDenied(
+                'You are not authorized to run the "{0}" action on this stack'.format(action)
+            )
+
+        # All actions other than launch require hosts to be available
+        if action != 'launch' and total_host_count == 0:
+            err_msg = ('The submitted action requires the stack to have available hosts. '
+                       'Perhaps you meant to run the launch action instead.')
+            raise serializers.ValidationError({
+                'action': [err_msg]
+            })
+
+        # Make sure the action is executable on all hosts
+        for driver, hosts in driver_hosts_map.items():
+            # check the action against current states (e.g., starting can't
+            # happen unless the hosts are in the stopped state.)
+            # XXX: Assuming that host metadata is accurate here
+            for host in hosts:
+                start_stop_msg = ('{0} action requires all hosts to be in the {1} '
+                                  'state first. At least one host is reporting an invalid state: {2}')
+
+                if action == driver.ACTION_START and host.state != driver.STATE_STOPPED:
+                    raise serializers.ValidationError({
+                        'action': [start_stop_msg.format('Start', driver.STATE_STOPPED, host.state)]
+                    })
+                if action == driver.ACTION_STOP and host.state != driver.STATE_RUNNING:
+                    raise serializers.ValidationError({
+                        'action': [start_stop_msg.format('Stop', driver.STATE_RUNNING, host.state)]
+                    })
+                if action == driver.ACTION_TERMINATE and host.state not in (driver.STATE_RUNNING,
+                                                                            driver.STATE_STOPPED):
+                    raise serializers.ValidationError({
+                        'action': [start_stop_msg.format('Terminate',
+                                                         'running or stopped',
+                                                         host.state)]
+                    })
+
+                require_running = (
+                    driver.ACTION_PROVISION,
+                    driver.ACTION_ORCHESTRATE,
+                    driver.ACTION_COMMAND
+                )
+
+                if action in require_running and host.state != driver.STATE_RUNNING:
+                    err_msg = ('Provisioning actions require all hosts to be in the '
+                               'running state first. At least one host is reporting '
+                               'an invalid state: {0}'.format(host.state))
+                    raise serializers.ValidationError({
+                        'action': [err_msg]
+                    })
+
+        return attrs
+
+    def to_representation(self, instance):
+        """
+        We just want to return a serialized stack object here.  Returning an object with
+        the action in it just doesn't make much sense.
+        """
+        return StackSerializer(instance, context=self.context).to_representation(instance)
+
+    def save(self, **kwargs):
+        stack = self.instance
+        action = self.validated_data['action']
+        args = self.validated_data.get('args', [])
+
+        stack.set_status(models.Stack.EXECUTING_ACTION,
+                         models.Stack.PENDING,
+                         'Stack is executing action \'{0}\''.format(action))
+
+        # Utilize our workflow to run the action
+        workflow = workflows.ActionWorkflow(stack, action, args)
+        workflow.execute()
+
+        stack.get_hosts().update(state='actioning')
+
+        return self.instance
+
+
+class StackCommandSerializer(serializers.HyperlinkedModelSerializer):
+    zip_url = serializers.HyperlinkedIdentityField(view_name='stackcommand-zip')
 
     class Meta:
-        model = models.StackAction
+        model = models.StackCommand
         fields = (
             'id',
             'url',
@@ -346,7 +462,6 @@ class StackActionSerializer(serializers.HyperlinkedModelSerializer):
             'start_time',
             'finish_time',
             'status',
-            'type',
             'host_target',
             'command',
             'std_out',
