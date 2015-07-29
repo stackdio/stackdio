@@ -40,7 +40,8 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
 
 class FormulaSerializer(serializers.HyperlinkedModelSerializer):
     # Non-model fields
-    git_password = PasswordField(write_only=True, required=False, allow_blank=True)
+    git_password = PasswordField(write_only=True, required=False,
+                                 allow_blank=True, label='Git Password')
 
     # Link fields
     properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
@@ -143,17 +144,12 @@ class FormulaPropertiesSerializer(serializers.Serializer):
 class FormulaActionSerializer(serializers.Serializer):
     available_actions = ('update',)
 
-    action = serializers.CharField(write_only=True)
-    git_password = PasswordField(write_only=True, required=False, allow_blank=True)
+    action = serializers.ChoiceField(available_actions, write_only=True)
+    git_password = PasswordField(write_only=True, required=False,
+                                 allow_blank=True, label='Git Password')
 
     def validate(self, attrs):
         formula = self.instance
-        action = attrs['action']
-
-        if action not in self.available_actions:
-            raise serializers.ValidationError({
-                'action': ['{0} is not a valid action.'.format(action)]
-            })
 
         git_password = attrs.get('git_password')
         if formula.private_git_repo and not formula.access_token:

@@ -178,7 +178,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     # All components in this formula should start with this prefix
     root_path = models.CharField('Root Path', max_length=64)
 
-    git_username = models.CharField('Git Username (for private repos)', max_length=64, blank=True)
+    git_username = models.CharField('Git Username', max_length=64, blank=True)
 
     access_token = models.BooleanField('Access Token', default=False)
 
