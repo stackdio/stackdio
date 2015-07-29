@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+import json
 import logging
 
 from rest_framework import renderers
@@ -30,7 +31,9 @@ class PlainTextRenderer(renderers.BaseRenderer):
     format = 'txt'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        return data.encode(self.charset)
+        if isinstance(data, (dict, list, tuple, set, frozenset)):
+            data = json.dumps(data)
+        return str(data).encode(self.charset)
 
 
 class ZipRenderer(renderers.BaseRenderer):

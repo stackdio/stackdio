@@ -290,18 +290,12 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
     # Identity links
     hosts = serializers.HyperlinkedIdentityField(
         view_name='stack-hosts')
-    fqdns = serializers.HyperlinkedIdentityField(
-        view_name='stack-fqdns')
     action = serializers.HyperlinkedIdentityField(
         view_name='stack-action')
     commands = serializers.HyperlinkedIdentityField(
         view_name='stack-command-list')
     logs = serializers.HyperlinkedIdentityField(
         view_name='stack-logs')
-    orchestration_errors = serializers.HyperlinkedIdentityField(
-        view_name='stack-orchestration-errors')
-    provisioning_errors = serializers.HyperlinkedIdentityField(
-        view_name='stack-provisioning-errors')
     volumes = serializers.HyperlinkedIdentityField(
         view_name='stack-volumes')
     properties = serializers.HyperlinkedIdentityField(
@@ -333,7 +327,6 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
             'created',
             'user_permissions',
             'group_permissions',
-            'fqdns',
             'hosts',
             'volumes',
             'properties',
@@ -343,8 +336,6 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
             'security_groups',
             'formula_versions',
             'logs',
-            'orchestration_errors',
-            'provisioning_errors',
         )
 
         create_only_fields = (

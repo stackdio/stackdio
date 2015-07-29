@@ -72,10 +72,6 @@ urlpatterns = patterns(
         api.StackHostsAPIView.as_view(),
         name='stack-hosts'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/fqdns/$',
-        api.StackFQDNListAPIView.as_view(),
-        name='stack-fqdns'),
-
     url(r'^stacks/(?P<pk>[0-9]+)/volumes/$',
         api.StackVolumesAPIView.as_view(),
         name='stack-volumes'),
@@ -87,14 +83,6 @@ urlpatterns = patterns(
     url(r'^stacks/(?P<pk>[0-9]+)/history/$',
         api.StackHistoryAPIView.as_view(),
         name='stack-history'),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/provisioning_errors/$',
-        api.StackProvisioningErrorsAPIView.as_view(),
-        name='stack-provisioning-errors'),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/orchestration_errors/$',
-        api.StackOrchestrationErrorsAPIView.as_view(),
-        name='stack-orchestration-errors'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/logs/$',
         api.StackLogsAPIView.as_view(),

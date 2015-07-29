@@ -26,6 +26,7 @@ import envoy
 import yaml
 from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
+from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -325,106 +326,55 @@ class StackVolumesAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
         return stack.volumes.all()
 
 
-class StackFQDNListAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
-
-    def get(self, request, *args, **kwargs):
-        stack = self.get_stack()
-        fqdns = [h.fqdn for h in stack.hosts.all()]
-        return Response(fqdns)
-
-
 class StackLogsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
 
+    log_types = (
+        'launch',
+        'provisioning',
+        'provisioning-error',
+        'global_orchestration',
+        'global_orchestration-error',
+        'orchestration',
+        'orchestration-error',
+    )
+
     def get(self, request, *args, **kwargs):
         stack = self.get_stack()
+        root_dir = stack.get_root_directory()
         log_dir = stack.get_log_directory()
-        return Response({
-            'latest': {
-                'launch': reverse(
+
+        latest = OrderedDict()
+
+        for log_type in self.log_types:
+            spl = log_type.split('-')
+            if len(spl) > 1 and spl[1] == 'error':
+                log_file = '%s.err.latest' % spl[0]
+            else:
+                log_file = '%s.log.latest' % log_type
+
+            if isfile(join(root_dir, log_file)):
+                latest[log_type] = reverse(
                     'stack-logs-detail',
-                    kwargs={
-                        'pk': stack.pk,
-                        'log': 'launch.log.latest'},
-                    request=request),
-                'provisioning': reverse(
-                    'stack-logs-detail',
-                    kwargs={
-                        'pk': stack.pk,
-                        'log': 'provisioning.log.latest'},
-                    request=request),
-                'provisioning-error': reverse(
-                    'stack-logs-detail',
-                    kwargs={
-                        'pk': stack.pk,
-                        'log': 'provisioning.err.latest'},
-                    request=request),
-                'global_orchestration': reverse(
-                    'stack-logs-detail',
-                    kwargs={
-                        'pk': stack.pk,
-                        'log': 'global_orchestration.log.latest'},
-                    request=request),
-                'global_orchestration-error': reverse(
-                    'stack-logs-detail',
-                    kwargs={
-                        'pk': stack.pk,
-                        'log': 'global_orchestration.err.latest'},
-                    request=request),
-                'orchestration': reverse(
-                    'stack-logs-detail',
-                    kwargs={
-                        'pk': stack.pk,
-                        'log': 'orchestration.log.latest'},
-                    request=request),
-                'orchestration-error': reverse(
-                    'stack-logs-detail',
-                    kwargs={
-                        'pk': stack.pk,
-                        'log': 'orchestration.err.latest'},
-                    request=request),
-            },
-            'historical': [
-                reverse('stack-logs-detail',
-                        kwargs={
-                            'pk': stack.pk,
-                            'log': log,
-                        },
-                        request=request)
-                for log in sorted(listdir(log_dir))
+                    kwargs={'pk': stack.pk, 'log': log_file},
+                    request=request,
+                )
 
-            ]
-        })
+        historical = [
+            reverse('stack-logs-detail',
+                    kwargs={'pk': stack.pk, 'log': log},
+                    request=request)
+            for log in sorted(listdir(log_dir))
+        ]
+
+        ret = OrderedDict((
+            ('latest', latest),
+            ('historical', historical),
+        ))
+
+        return Response(ret)
 
 
-class StackProvisioningErrorsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
-
-    def get(self, request, *args, **kwargs):
-        stack = self.get_stack()
-        err_file = join(stack.get_root_directory(), 'provisioning.err.latest')
-        if not isfile(err_file):
-            raise BadRequest('No error file found for this stack. Has '
-                             'provisioning occurred yet?')
-
-        with open(err_file) as f:
-            err_yaml = yaml.safe_load(f)
-        return Response(err_yaml)
-
-
-class StackOrchestrationErrorsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
-
-    def get(self, request, *args, **kwargs):
-        stack = self.get_stack()
-        err_file = join(stack.get_root_directory(), 'orchestration.err.latest')
-        if not isfile(err_file):
-            raise BadRequest('No error file found for this stack. Has '
-                             'orchestration occurred yet?')
-
-        with open(err_file) as f:
-            err_yaml = yaml.safe_load(f)
-        return Response(err_yaml)
-
-
-class StackLogsDetailAPIView(StackLogsAPIView):
+class StackLogsDetailAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
     renderer_classes = (PlainTextRenderer,)
 
     # TODO: Code complexity ignored for now
@@ -454,8 +404,9 @@ class StackLogsDetailAPIView(StackLogsAPIView):
             log = None
 
         if not log or not isfile(log):
-            return Response('Log file does not exist: {0}.'.format(log_file),
-                            status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({
+                'log_file': ['Log file does not exist: {0}.'.format(log_file)]
+            })
 
         if tail:
             ret = envoy.run('tail -{0} {1}'.format(tail, log)).std_out
@@ -483,22 +434,5 @@ class StackFormulaVersionsAPIView(mixins.StackRelatedMixin, generics.ListCreateA
         stack = self.get_stack()
         return stack.formula_versions.all()
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        formula = serializer.validated_data.get('formula')
-        stack = self.get_stack()
-
-        try:
-            # Setting self.instance will cause self.update() to be called instead of
-            # self.create() during save()
-            serializer.instance = stack.formula_versions.get(formula=formula)
-            response_code = status.HTTP_200_OK
-        except FormulaVersion.DoesNotExist:
-            # Return the proper response code
-            response_code = status.HTTP_201_CREATED
-
-        serializer.save(content_object=stack)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=response_code, headers=headers)
+    def perform_create(self, serializer):
+        serializer.save(content_object=self.get_stack())
