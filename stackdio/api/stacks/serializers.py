@@ -218,6 +218,8 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             workflow = workflows.LaunchWorkflow(stack, host_ids=host_ids, opts=self.initial_data)
             workflow.execute()
 
+        return hosts
+
     def do_remove(self, stack, validated_data):
         count = validated_data['count']
         hostdef = validated_data['host_definition']
@@ -242,7 +244,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
     def create(self, validated_data):
         self.create_object = True
         stack = self.context['stack']
-        action = validated_data['action']
+        action = validated_data.pop('action')
 
         action_map = {
             'add': self.do_add,
