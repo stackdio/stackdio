@@ -29,3 +29,15 @@ class StackFilter(django_filters.FilterSet):
         fields = (
             'title',
         )
+
+
+class HostFilter(django_filters.FilterSet):
+    hostname = django_filters.CharFilter(lookup_type='icontains')
+
+    class Meta:
+        model = models.Host
+        fields = (
+            'hostname',
+            'status',
+            'state',
+        )

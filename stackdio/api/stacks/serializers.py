@@ -18,10 +18,12 @@
 
 import logging
 import os
+import string
 
 import salt.cloud
 from django.conf import settings
 from rest_framework import serializers
+from rest_framework.compat import OrderedDict
 from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
@@ -80,6 +82,15 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
     formula_components = BlueprintHostFormulaComponentSerializer(many=True, read_only=True)
 
+    # Fields for adding / removing hosts
+    available_actions = ('add', 'remove')
+
+    action = serializers.ChoiceField(available_actions, write_only=True)
+    host_definition = serializers.SlugRelatedField(slug_field='slug', write_only=True,
+                                                   queryset=BlueprintHostDefinition.objects.all())
+    count = serializers.IntegerField(write_only=True, min_value=1)
+    backfill = serializers.BooleanField(default=False, write_only=True)
+
     class Meta:
         model = models.Host
         fields = (
@@ -99,7 +110,146 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'sir_id',
             'sir_price',
             'formula_components',
+            'action',
+            'host_definition',
+            'count',
+            'backfill',
         )
+
+        read_only_fields = (
+            'hostname',
+            'provider_dns',
+            'provider_private_dns',
+            'provider_private_ip',
+            'fqdn',
+            'state',
+            'state_reason',
+            'status',
+            'status_detail',
+            'sir_id',
+            'sir_price',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super(HostSerializer, self).__init__(*args, **kwargs)
+        self.create_object = False
+
+    def get_fields(self):
+        """
+        Override to insert the provider_metadata field if requested
+        """
+        fields = super(HostSerializer, self).get_fields()
+
+        request = self.context['request']
+        provider_metadata = request.query_params.get('provider_metadata', False)
+        true_values = ('true', 'True', 'yes', 'Yes', '1', '')
+
+        if provider_metadata in true_values:
+            fields['provider_metadata'] = serializers.DictField(read_only=True)
+
+        return fields
+
+    def to_representation(self, instance):
+        if self.create_object:
+            serializer = HostSerializer(context=self.context, many=True)
+            return OrderedDict((
+                ('count', len(instance)),
+                ('results', serializer.to_representation(instance)),
+            ))
+        else:
+            return super(HostSerializer, self).to_representation(instance)
+
+    def validate(self, attrs):
+        stack = self.context['stack']
+        blueprint = stack.blueprint
+
+        action = attrs['action']
+        count = attrs['count']
+        host_definition = attrs['host_definition']
+
+        current_count = stack.hosts.filter(blueprint_host_definition=host_definition).count()
+
+        errors = {}
+
+        # Make sure we aren't removing too many hosts
+        if action == 'remove':
+            if count > current_count:
+                err_msg = 'You may not remove more hosts than already exist.'
+                errors.setdefault('count', []).append(err_msg)
+
+        # Make sure the stack is in a valid state
+        if stack.status != models.Stack.FINISHED:
+            err_msg = 'You may not add hosts to the stack in its current state: {0}'
+            raise serializers.ValidationError({
+                'stack': [err_msg.format(stack.status)]
+            })
+
+        # Make sure that the host definition belongs to the proper blueprint
+        if host_definition not in blueprint.host_definitions.all():
+            err_msg = 'The host definition you provided isn\'t related to this stack'
+            raise serializers.ValidationError({
+                'host_definition': [err_msg]
+            })
+
+        formatter = string.Formatter()
+        template_vars = [x[1] for x in formatter.parse(host_definition.hostname_template) if x[1]]
+
+        # Make sure the hostname_template has an index if there will be more than 1 host
+        if (count + current_count) > 1 and 'index' not in template_vars:
+            err_msg = ('The provided host_definition has a hostname_template without an `index` '
+                       'key in it.  This is required so as not to introduce duplicate hostnames.')
+            errors.setdefault('host_definition', []).append(err_msg)
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return attrs
+
+    def do_add(self, stack, validated_data):
+        hosts = stack.create_hosts(**validated_data)
+
+        if hosts:
+            host_ids = [h.id for h in hosts]
+
+            # regenerate the map file
+            stack.generate_map_file()
+
+            # Launch celery tasks to create the hosts
+            workflow = workflows.LaunchWorkflow(stack, host_ids=host_ids, opts=self.initial_data)
+            workflow.execute()
+
+    def do_remove(self, stack, validated_data):
+        count = validated_data['count']
+        hostdef = validated_data['host_definition']
+
+        # Even though this looks like it will be a list, it's actually a QuerySet already
+        hosts = stack.hosts.filter(blueprint_host_definition=hostdef).order_by('-index')[:count]
+
+        logger.debug('Hosts to remove: {0}'.format(hosts))
+        host_ids = [h.id for h in hosts]
+        if host_ids:
+            models.Host.objects.filter(id__in=host_ids).update(
+                state=models.Host.DELETING,
+                state_reason='User initiated delete.'
+            )
+
+            # Start the celery task chain to kill the hosts
+            workflow = workflows.DestroyHostsWorkflow(stack, host_ids, opts=self.initial_data)
+            workflow.execute()
+
+        return hosts
+
+    def create(self, validated_data):
+        self.create_object = True
+        stack = self.context['stack']
+        action = validated_data['action']
+
+        action_map = {
+            'add': self.do_add,
+            'remove': self.do_remove,
+        }
+
+        return action_map[action](stack, validated_data)
 
 
 class StackHistorySerializer(serializers.HyperlinkedModelSerializer):

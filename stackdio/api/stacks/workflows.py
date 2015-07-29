@@ -148,6 +148,7 @@ class DestroyHostsWorkflow(BaseWorkflow):
                                    host_ids=host_ids,
                                    delete_security_groups=False,
                                    parallel=self.opts.parallel),
+            tasks.finish_stack.si(stack_id),
         ]
 
 

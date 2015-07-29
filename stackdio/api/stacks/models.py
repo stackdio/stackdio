@@ -22,10 +22,11 @@ import os
 import re
 import socket
 
-import envoy
+import salt.cloud
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from django.core.cache import cache
 from django.db import models, transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
@@ -335,17 +336,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         @returns (dict); each key is a provider driver implementation
             with QuerySet value for the matching host objects
         """
-        hosts = self.get_hosts(host_ids)
+        host_queryset = self.get_hosts(host_ids)
 
         # Create an account -> hosts map
         accounts = {}
-        for h in hosts:
+        for h in host_queryset:
             accounts.setdefault(h.get_account(), []).append(h)
 
         # Convert to a driver -> hosts map
         result = {}
         for account, hosts in accounts.items():
-            result[account.get_driver()] = hosts
+            result[account.get_driver()] = host_queryset.filter(id__in=[h.id for h in hosts])
 
         return result
 
@@ -870,56 +871,47 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         """
         Uses salt-cloud to query all the hosts for the given stack id.
         """
-        try:
-            if not self.map_file:
-                return {}
+        if not self.map_file:
+            return {}
 
+        CACHE_KEY = 'salt-cloud-full-query'
+
+        cached_result = cache.get(CACHE_KEY)
+
+        if cached_result:
+            logger.debug('salt-cloud query result cached')
+            result = cached_result
+        else:
+            logger.debug('salt-cloud query result not cached, retrieving')
             logger.info('get_hosts_info: {0!r}'.format(self))
 
-            # salt-cloud command to pull host information with
-            # a yaml output
-            query_cmd = ' '.join([
-                'salt-cloud',
-                '--full-query',             # execute a full query
-                '--out=yaml',               # output in yaml format
-                '--config-dir={0}',         # salt config dir
-                '--map={1}',                # map file to use
-            ]).format(
+            salt_cloud = salt.cloud.CloudClient(os.path.join(
                 settings.STACKDIO_CONFIG.salt_config_root,
-                self.map_file.path,
-            )
+                'cloud'
+            ))
+            result = salt_cloud.full_query()
 
-            result = envoy.run(query_cmd)
+            # Cache the result for a minute
+            cache.set(CACHE_KEY, result, 60)
 
-            # Run the envoy stdout through the yaml parser. The format
-            # will always be a dictionary with one key (the provider type)
-            # and a value that's a dictionary containing keys for every
-            # host in the stack.
-            yaml_result = yaml.safe_load(result.std_out)
+        # yaml_result contains all host information in the stack, but
+        # we have to dig a bit to get individual host metadata out
+        # of account and provider type dictionaries
+        host_result = {}
+        for host in self.hosts.all():
+            account = host.get_account()
+            provider = account.provider
 
-            if not yaml_result:
-                return {}
+            # each host is buried in a cloud provider type dict that's
+            # inside a cloud account name dict
 
-            # yaml_result contains all host information in the stack, but
-            # we have to dig a bit to get individual host metadata out
-            # of account and provider type dictionaries
-            host_result = {}
-            for host in self.hosts.all():
-                cloud_account = host.cloud_profile.account
-                provider = cloud_account.provider
+            # Grab the list of hosts
+            host_map = result.get(account.slug, {}).get(provider.name, {})
 
-                # each host is buried in a cloud provider type dict that's
-                # inside a cloud account name dict
-                host_result[host.hostname] = yaml_result \
-                    .get(cloud_account.slug, {}) \
-                    .get(provider.name, {}) \
-                    .get(host.hostname, None)
+            # Grab the individual host
+            host_result[host.hostname] = host_map.get(host.hostname, None)
 
-            return host_result
-
-        except Exception:
-            logger.exception('Unhandled exception')
-            raise
+        return host_result
 
     def get_root_directory(self):
         if self.map_file:
@@ -1116,6 +1108,11 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     def __unicode__(self):
         return self.hostname
+
+    @property
+    def provider_metadata(self):
+        metadata = self.stack.query_hosts()
+        return metadata[self.hostname]
 
     def get_account(self):
         return self.cloud_profile.account

@@ -1920,7 +1920,7 @@ def unregister_dns(stack_id, host_ids=None):
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
         driver_hosts = stack.get_driver_hosts_map(host_ids)
-        for driver, hosts in driver_hosts.iteritems():
+        for driver, hosts in driver_hosts.items():
             logger.debug('Unregistering DNS for hosts: {0}'.format(hosts))
             driver.unregister_dns(hosts)
 

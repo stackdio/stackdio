@@ -26,8 +26,7 @@ import envoy
 import yaml
 from django.http import HttpResponse
 from guardian.shortcuts import assign_perm
-from rest_framework import generics, status, views
-from rest_framework.decorators import api_view
+from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -42,12 +41,11 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from stackdio.api.blueprints.models import BlueprintHostDefinition
 from stackdio.api.cloud.filters import SecurityGroupFilter
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.api.volumes.serializers import VolumeSerializer
-from . import filters, mixins, models, permissions, serializers, utils, validators, workflows
+from . import filters, mixins, models, permissions, serializers, utils, workflows
 
 logger = logging.getLogger(__name__)
 
@@ -234,150 +232,58 @@ class StackCommandZipAPIView(generics.GenericAPIView):
         return response
 
 
-class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
+class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
+    """
+    Lists all hosts for the associated stack.
+
+    #### POST /api/stacks/<stack_id\>/hosts/
+    Allows users to add or remove hosts from a running stack.
+
+        {
+            "action": "add",
+            "host_definition": "<slug>",
+            "count": <int>,
+            "backfill": <bool>
+        }
+
+    OR
+
+        {
+            "action": "remove",
+            "host_definition": "<slug>",
+            "count": <int>
+        }
+
+    where:
+
+    `action` (string) REQUIRED -- either add or remove
+
+    `count` (int) REQUIRED -- how many additional hosts to add / remove
+
+    `host_definition` (string) REQUIRED -- the id of a blueprint host
+        definition that is part of the blueprint the stack was initially
+        launched from
+
+    `backfill` (bool) OPTIONAL, DEFAULT=false -- if true, the hostnames
+        will be generated in a way to fill in any gaps in the existing
+        hostnames of the stack. For example, if your stack has a host list
+        [foo-1, foo-3, foo-4] and you ask for three additional hosts, the
+        resulting set of hosts is [foo-1, foo-2, foo-3, foo4, foo-5, foo-6]
+    """
     serializer_class = serializers.HostSerializer
+    filter_class = filters.HostFilter
 
     def get_queryset(self):
         stack = self.get_stack()
         return stack.hosts.all()
 
-    def post(self, request, *args, **kwargs):
+    def get_serializer_context(self):
         """
-        Overriding POST for a stack to be able to add or remove
-        hosts from the stack. Both actions are dependent on
-        a blueprint host definition in the blueprint used to
-        launch the stack.
-
-        POST /api/stacks/<stack_id>/hosts/
-        Allows users to add or remove hosts on a running stack. The action is
-        specified along with a list of objects specifying what hosts to add or
-        remove, which implies that only a single type of action may be used
-        at one time.
-
-        {
-            "action": "<action>",
-            "args": [
-                {
-                    "host_definition": <int>,
-                    "count": <int>,
-                    "backfill": <bool>
-                },
-                ...
-                ...
-                {
-                    "host_definition": <int>,
-                    "count": <int>,
-                    "backfill": <bool>
-                }
-            ]
-        }
-
-        where:
-
-        @param action (string) REQUIRED; what type of action to take on the
-            stack, must be one of 'add' or 'remove'
-        @param count (int) REQUIRED; how many additional hosts to add or remove
-        @param host_definition (int) REQUIRED; the id of a blueprint host
-            definition that is part of the blueprint the stack was initially
-            launched from
-        @param backfill (bool) OPTIONAL DEFAULT=false; if true, the hostnames
-            will be generated in a way to fill in any gaps in the existing
-            hostnames of the stack. For example, if your stack has a host list
-            [foo-1, foo-3, foo-4] and you ask for three additional hosts, the
-            resulting set of hosts is [foo-1, foo-2, foo-3, foo4, foo-5, foo-6]
+        We need the stack during serializer validation - so we'll throw it in the context
         """
-        errors = validators.StackAddRemoveHostsValidator(request).validate()
-        if errors:
-            raise BadRequest(errors)
-
-        action = request.DATA['action']
-
-        if action == 'add':
-            return self.add_hosts(request)
-        elif action == 'remove':
-            return self.remove_hosts(request)
-
-    def add_hosts(self, request):
-        stack = self.get_stack()
-        args = request.DATA['args']
-
-        created_hosts = []
-        for arg in args:
-            hostdef = BlueprintHostDefinition.objects.get(
-                pk=arg['host_definition']
-            )
-            count = arg['count']
-            backfill = arg.get('backfill', False)
-
-            hosts = stack.create_hosts(host_definition=hostdef,
-                                       count=count,
-                                       backfill=backfill)
-            created_hosts.extend(hosts)
-
-        if created_hosts:
-            host_ids = [h.id for h in created_hosts]
-
-            # regnerate the map file and run the standard set of launch tasks
-            stack.generate_map_file()
-            workflows.LaunchWorkflow(stack, host_ids=host_ids).execute()
-
-        serializer = self.get_serializer(created_hosts, many=True)
-        return Response(serializer.data)
-
-    def remove_hosts(self, request):
-        stack = self.get_stack()
-        args = request.DATA['args']
-
-        hosts = []
-        for arg in args:
-            hostdef = BlueprintHostDefinition.objects.get(
-                pk=arg['host_definition']
-            )
-            count = arg['count']
-
-            logger.debug(arg)
-            logger.debug(hostdef)
-
-            hosts.extend(
-                stack.hosts.filter(blueprint_host_definition=hostdef).order_by('-index')[:count]
-            )
-
-        logger.debug('Hosts to remove: {0}'.format(hosts))
-        host_ids = [h.pk for h in hosts]
-        if host_ids:
-            models.Host.objects.filter(pk__in=host_ids).update(
-                state=models.Host.DELETING,
-                state_reason='User initiated delete.'
-            )
-            workflows.DestroyHostsWorkflow(stack, host_ids).execute()
-        else:
-            raise BadRequest('No hosts were found to remove.')
-        return Response({})
-
-    def get(self, request, *args, **kwargs):
-        """
-        Override get method to add additional host-specific info
-        to the result that is looked up via salt when user requests it
-        """
-        provider_metadata = request.QUERY_PARAMS.get('provider_metadata') == 'true'
-        result = super(StackHostsAPIView, self).get(request, *args, **kwargs)
-
-        if not provider_metadata or not result.data['results']:
-            return result
-
-        stack = self.get_stack()
-        query_results = stack.query_hosts()
-
-        # TODO: query_results are highly dependent on the underlying
-        # salt-cloud driver and there's no guarantee that the result
-        # format for AWS will be the same for Rackspace. In the future,
-        # we should probably pass the results off to the cloud provider
-        # implementation to format into a generic result for the user
-        for host in result.data['results']:
-            hostname = host['hostname']
-            host['provider_metadata'] = query_results[hostname]
-
-        return result
+        context = super(StackHostsAPIView, self).get_serializer_context()
+        context['stack'] = self.get_stack()
+        return context
 
 
 class HostDetailAPIView(generics.RetrieveDestroyAPIView):
@@ -390,23 +296,27 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         super(HostDetailAPIView, self).check_object_permissions(request, obj.stack)
 
     def destroy(self, request, *args, **kwargs):
-        """
-        Override the delete method to first terminate the host
-        before destroying the object.
-        """
-        # get the stack id for the host
-        host = self.get_object()
-        host.set_status(models.Host.DELETING, 'Deleting host.')
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        # Return the host while its deleting
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
-        stack = host.stack
-        host_ids = [host.pk]
+    def perform_destroy(self, instance):
+        stack = instance.stack
+
+        if stack.status != models.Stack.FINISHED:
+            err_msg = 'You may not delete hosts on this stack in its current state: {0}'
+            raise ValidationError({
+                'stack': [err_msg.format(stack.status)]
+            })
+
+        instance.set_status(models.Host.DELETING, 'Deleting host.')
+
+        host_ids = [instance.id]
 
         # unregister DNS and destroy the host
         workflows.DestroyHostsWorkflow(stack, host_ids).execute()
-
-        # Return the host while its deleting
-        serializer = self.get_serializer(host)
-        return Response(serializer.data)
 
 
 class StackVolumesAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
