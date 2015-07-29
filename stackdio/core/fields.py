@@ -58,6 +58,7 @@ class PasswordField(CharField):
     def __init__(self, **kwargs):
         # Don't allow trimming of whitespace for passwords
         kwargs.pop('trim_whitespace', False)
+        kwargs.setdefault('style', {})['input_type'] = 'password'
         self.trim_whitespace = False
         super(PasswordField, self).__init__(**kwargs)
 

@@ -24,7 +24,6 @@ from os.path import join, isfile
 
 import envoy
 import yaml
-from django.http import HttpResponse
 from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
