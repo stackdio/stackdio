@@ -19,6 +19,7 @@
 import logging
 from urlparse import urlsplit, urlunsplit
 
+import git
 from rest_framework import serializers
 
 from stackdio.core.fields import PasswordField
@@ -205,8 +206,32 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
             'version',
         )
 
+        extra_kwargs = {
+            'version': {'allow_null': True},
+        }
+
     def validate(self, attrs):
-        # TODO Make sure the version (ie. tag / hash / branch) given is real
+        formula = attrs['formula']
+        version = attrs['version']
+
+        if version is None:
+            # If it's None, this version should be deleted, so no need to do any further checks
+            return attrs
+
+        repo = git.Repo(formula.get_repo_dir())
+
+        branches = [str(b.name) for b in repo.branches]
+        tags = [str(t.name) for t in repo.tags]
+        commit_hashes = [str(c.hexsha) for c in repo.iter_commits()]
+
+        # Verify that the version is either a branch, tag, or commit hash
+
+        if version not in branches + tags + commit_hashes:
+            err_msg = '{0} cannot be found to be a branch, tag, or commit hash'.format(version)
+            raise serializers.ValidationError({
+                'version': [err_msg]
+            })
+
         return attrs
 
     def create(self, validated_data):
@@ -215,8 +240,19 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
         formula = validated_data['formula']
         try:
             version = content_obj.formula_versions.get(formula=formula)
+            # Provide a way to remove a formula version (set it to none)
+            if validated_data['version'] is None:
+                version.delete()
+                return version
+
+            # Otherwise update it
             return self.update(version, validated_data)
         except models.FormulaVersion.DoesNotExist:
             pass
+
+        if validated_data['version'] is None:
+            raise serializers.ValidationError({
+                'version': ['This field may not be null or blank.']
+            })
 
         return super(FormulaVersionSerializer, self).create(validated_data)
