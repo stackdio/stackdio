@@ -50,7 +50,7 @@ urlpatterns = patterns(
         api.StackCommandDetailAPIView.as_view(),
         name='stackcommand-detail'),
 
-    url(r'^commands/(?P<pk>[0-9]+)/zip/$',
+    url(r'^commands/(?P<pk>[0-9]+)\.zip$',
         api.StackCommandZipAPIView.as_view(),
         name='stackcommand-zip'),
 

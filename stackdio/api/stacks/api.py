@@ -34,7 +34,7 @@ from rest_framework.serializers import ValidationError
 
 from stackdio.core.exceptions import BadRequest
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from stackdio.core.renderers import PlainTextRenderer
+from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -198,6 +198,7 @@ class StackCommandDetailAPIView(generics.RetrieveDestroyAPIView):
 class StackCommandZipAPIView(generics.GenericAPIView):
     queryset = models.StackCommand.objects.all()
     permission_classes = (permissions.StackParentObjectPermissions,)
+    renderer_classes = (ZipRenderer,)
 
     def check_object_permissions(self, request, obj):
         # Check the permissions on the stack instead of the host
@@ -206,30 +207,28 @@ class StackCommandZipAPIView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         command = self.get_object()
 
-        file_buffer = StringIO.StringIO()
-        action_zip = zipfile.ZipFile(file_buffer, 'w')
-
         filename = 'command_output_' + command.submit_time.strftime('%Y%m%d_%H%M%S')
 
-        action_zip.writestr(
-            str('{0}/__command'.format(filename)),
-            str(command.command)
-        )
-
-        for output in command.std_out:
-            action_zip.writestr(
-                str('{0}/{1}.txt'.format(filename, output['host'])),
-                str(output['output'])
+        file_buffer = StringIO.StringIO()
+        with zipfile.ZipFile(file_buffer, 'w') as command_zip:
+            # Write out all the contents
+            command_zip.writestr(
+                str('{0}/__command'.format(filename)),
+                str(command.command)
             )
 
-        action_zip.close()
+            for output in command.std_out:
+                command_zip.writestr(
+                    str('{0}/{1}.txt'.format(filename, output['host'])),
+                    str(output['output'])
+                )
 
-        # The rest_framework Response object tries to render the data you give it.  We don't
-        # want that, since this zip file we just generated is already 'rendered'.
-        response = HttpResponse(file_buffer.getvalue(), content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename={0}.zip'.format(filename)
+        # Give browsers a reasonable filename to save this as
+        headers = {
+            'Content-Disposition': 'attachment; filename={0}.zip'.format(filename)
+        }
 
-        return response
+        return Response(file_buffer.getvalue(), headers=headers)
 
 
 class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
