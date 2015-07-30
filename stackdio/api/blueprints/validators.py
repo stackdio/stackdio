@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-import re
 import string
 
 from rest_framework.serializers import ValidationError
