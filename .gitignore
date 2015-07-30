@@ -23,6 +23,7 @@ parts/
 sdist/
 var/
 *.egg-info/
+stackdio-server-*/
 .installed.cfg
 *.egg
 
