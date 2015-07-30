@@ -21,24 +21,7 @@ import logging
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
-from stackdio.api.blueprints.models import Blueprint
-from stackdio.api.formulas.models import Formula
-from stackdio.api.stacks.models import Stack
-
 logger = logging.getLogger(__name__)
-
-
-class SearchResultTypeField(serializers.Field):  # pylint: disable=abstract-method
-    """
-    Tricks a read-only field into returning the value we want
-    it to return instead of leveraging a value on the model.
-    """
-    def __init__(self, result_type):
-        self.result_type = result_type
-        super(SearchResultTypeField, self).__init__(source='pk')
-
-    def to_representation(self, value):
-        return self.result_type
 
 
 class SearchSerializer(serializers.Serializer):
@@ -46,27 +29,3 @@ class SearchSerializer(serializers.Serializer):
                                                queryset=ContentType.objects.all())
     title = serializers.CharField()
     url = serializers.URLField()
-
-
-class BlueprintSearchSerializer(serializers.HyperlinkedModelSerializer):
-    result_type = SearchResultTypeField('blueprint')
-
-    class Meta:
-        model = Blueprint
-        fields = ('id', 'url', 'title', 'description', 'result_type')
-
-
-class FormulaSearchSerializer(serializers.HyperlinkedModelSerializer):
-    result_type = SearchResultTypeField('formula')
-
-    class Meta:
-        model = Formula
-        fields = ('id', 'url', 'title', 'description', 'result_type')
-
-
-class StackSearchSerializer(serializers.HyperlinkedModelSerializer):
-    result_type = SearchResultTypeField('stack')
-
-    class Meta:
-        model = Stack
-        fields = ('id', 'url', 'title', 'description', 'result_type')
