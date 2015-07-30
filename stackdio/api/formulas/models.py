@@ -165,6 +165,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     model_permissions = _formula_model_permissions
     object_permissions = _formula_object_permissions
 
+    searchable_fields = ('title', 'description', 'uri', 'components__title',
+                         'components__description')
+
     class Meta:
         ordering = ['pk']
 

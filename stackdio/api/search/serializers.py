@@ -18,6 +18,7 @@
 
 import logging
 
+from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
 from stackdio.api.blueprints.models import Blueprint
@@ -38,6 +39,13 @@ class SearchResultTypeField(serializers.Field):  # pylint: disable=abstract-meth
 
     def to_representation(self, value):
         return self.result_type
+
+
+class SearchSerializer(serializers.Serializer):
+    object_type = serializers.SlugRelatedField(slug_field='model',
+                                               queryset=ContentType.objects.all())
+    title = serializers.CharField()
+    url = serializers.URLField()
 
 
 class BlueprintSearchSerializer(serializers.HyperlinkedModelSerializer):

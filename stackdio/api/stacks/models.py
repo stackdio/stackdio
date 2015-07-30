@@ -225,6 +225,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
     model_permissions = _stack_model_permissions
     object_permissions = _stack_object_permissions
+    searchable_fields = ('title', 'description', 'history__status_detail')
 
     class Meta:
         ordering = ('title',)

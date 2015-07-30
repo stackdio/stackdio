@@ -96,6 +96,7 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
 
     model_permissions = _cloudaccount_model_permissions
     object_permissions = _cloudaccount_object_permissions
+    searchable_fields = ('title', 'description')
 
     class Meta:
         unique_together = ('title', 'provider')
@@ -280,6 +281,7 @@ class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
 
     model_permissions = _cloudprofile_model_permissions
     object_permissions = _cloudprofile_object_permissions
+    searchable_fields = ('title', 'description')
 
     class Meta:
         unique_together = ('title', 'account')

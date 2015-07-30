@@ -74,6 +74,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
     model_permissions = _blueprint_model_permissions
     object_permissions = _blueprint_object_permissions
+    searchable_fields = ('title', 'description')
 
     class Meta:
         default_permissions = tuple(set(_blueprint_model_permissions +
