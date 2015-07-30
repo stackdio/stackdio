@@ -15,33 +15,13 @@
 # limitations under the License.
 #
 
+import re
+
 from rest_framework.serializers import ValidationError
 
 VALID_PROTOCOLS = ('tcp', 'udp', 'icmp')
 
-
-class ValidationErrors(object):
-    REQUIRED_FIELD = 'Required field.'
-    BOOLEAN_REQUIRED = 'Boolean type required.'
-    OBJECT_REQUIRED = 'Object type required.'
-    LIST_REQUIRED = 'List type required.'
-    INT_REQUIRED = 'Non-negative integer required.'
-    STRING_REQUIRED = 'String required.'
-    DECIMAL_REQUIRED = 'Non-negative decimal value required.'
-
-    DUP_BLUEPRINT = 'A Blueprint with this value already exists.'
-    DUP_HOST_TITLE = 'Duplicate title. Each host title must be unique.'
-    MULTIPLE_COMPONENTS = 'Multiple components found.'
-
-    STACKDIO_RESTRICTED_KEY = ('The __stackdio__ key is reserved for '
-                               'system use.')
-
-    DOES_NOT_EXIST = 'Object does not exist.'
-    INVALID_INT = 'Value could not be converted to an integer.'
-    MIN_HOSTS = 'Must have at least one host.'
-    MIN_ONE = 'Must be greater than zero.'
-
-    UNHANDLED_ERROR = 'An unhandled error occurred.'
+HOSTNAME_REGEX = r'[a-z0-9\-]+'
 
 
 class BaseValidator(object):
@@ -89,3 +69,18 @@ class PropertiesValidator(BaseValidator):
             raise ValidationError({
                 'properties': ['The `__stackdio__` key is reserved for system use.']
             })
+
+
+def validate_hostname(value, raise_exception=False):
+    errors = []
+
+    if not re.match(HOSTNAME_REGEX, value):
+        errors.append('May only contain lowercase letters, numbers, and hyphens.')
+
+    if value[0] == '-' or value[-1] == '-':
+        errors.append('May not start or end with a hyphen.')
+
+    if errors and raise_exception:
+        raise ValidationError(errors)
+
+    return errors

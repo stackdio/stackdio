@@ -28,7 +28,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
-from stackdio.core.validators import PropertiesValidator
+from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
 from stackdio.api.blueprints.serializers import (
     BlueprintHostFormulaComponentSerializer,
@@ -382,6 +382,7 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
 
         if namespace:
             # This all has to be here vs. in its own validator b/c it needs the blueprint
+            errors.setdefault('hostname', []).extend(validate_hostname(namespace))
 
             # This is all only necessary if a namespace was provided
             #  (It may not be provided on a PATCH request)

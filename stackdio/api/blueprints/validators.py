@@ -20,7 +20,7 @@ import string
 
 from rest_framework.serializers import ValidationError
 
-from stackdio.core.validators import BaseValidator
+from stackdio.core.validators import BaseValidator, validate_hostname
 
 VAR_NAMESPACE = 'namespace'
 VAR_USERNAME = 'username'
@@ -49,13 +49,14 @@ class BlueprintHostnameTemplateValidator(BaseValidator):
         if invalid_vars:
             errors.append('Invalid variables: {0}'.format(', '.join(invalid_vars)))
 
-        raw_str = ''.join([x[0] for x in formatter.parse(value)])
+        raw_str = ''
 
-        if not re.match(HOSTNAME_TEMPLATE_REGEX, raw_str):
-            errors.append('May only contain lowercase letters, numbers, and hyphens.')
+        for parse in formatter.parse(value):
+            raw_str += parse[0]
+            if parse[1] is not None:
+                raw_str += 'placeholder'
 
-        if raw_str[0] == '-' or raw_str[-1] == '-':
-            errors.append('May not start or end with a hyphen.')
+        errors.extend(validate_hostname(raw_str))
 
         if errors:
             raise ValidationError({
