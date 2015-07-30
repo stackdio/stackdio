@@ -18,14 +18,12 @@
 
 import logging
 
-from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
 
 
 class SearchSerializer(serializers.Serializer):
-    object_type = serializers.SlugRelatedField(slug_field='model',
-                                               queryset=ContentType.objects.all())
+    object_type = serializers.SlugRelatedField(slug_field='model', read_only=True)
     title = serializers.CharField()
     url = serializers.URLField()
