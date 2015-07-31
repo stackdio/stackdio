@@ -235,7 +235,7 @@ class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
     """
     Lists all hosts for the associated stack.
 
-    #### POST /api/stacks/<stack_id\>/hosts/
+    #### POST /api/stacks/<stack_id>/hosts/
     Allows users to add or remove hosts from a running stack.
 
         {

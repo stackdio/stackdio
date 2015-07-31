@@ -38,7 +38,7 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
-class BlueprintPropertiesSerializer(serializers.Serializer):
+class BlueprintPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
         if obj is not None:
             # Make it work two different ways.. ooooh

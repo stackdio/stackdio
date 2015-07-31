@@ -41,7 +41,7 @@ from . import models, tasks, utils, workflows
 logger = logging.getLogger(__name__)
 
 
-class StackPropertiesSerializer(serializers.Serializer):
+class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
         if obj is not None:
             # Make it work two different ways.. ooooh
@@ -475,7 +475,7 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
         )
 
 
-class StackActionSerializer(serializers.Serializer):
+class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     action = serializers.CharField(write_only=True)
     args = serializers.ListField(child=serializers.DictField(), required=False)
 
