@@ -33,7 +33,7 @@ from stackdio.api.cloud.models import CloudInstanceSize, CloudProfile, CloudZone
 from stackdio.api.formulas.models import Formula, FormulaComponent
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.api.volumes.models import Volume
-from . import models
+from . import models, validators
 
 logger = logging.getLogger(__name__)
 
@@ -254,6 +254,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
         extra_kwargs = {
             'spot_price': {'min_value': 0.0},
+            'hostname_template': {'validators': [validators.BlueprintHostnameTemplateValidator()]},
         }
 
     def validate(self, attrs):
@@ -379,22 +380,51 @@ class FullBlueprintSerializer(BlueprintSerializer):
                 'host_definitions': ['You must supply at least 1 host definition.']
             })
 
-        # Validate component ordering
+        errors = {}
+
+        # Make sure the titles don't conflict
+        titles = []
+        hostnames = []
+        for host_definition in host_definitions:
+            title = host_definition['title']
+            hostname = host_definition['hostname_template']
+            if title in titles:
+                err_msg = 'Duplicate title: {0}'.format(title)
+                errors.setdefault('host_definitions', []).append(err_msg)
+            if hostname in hostnames:
+                err_msg = 'Duplicate hostname template: {0}'.format(hostname)
+                errors.setdefault('host_definitions', []).append(err_msg)
+            titles.append(title)
+            hostnames.append(hostname)
+
+        # Validate component ordering, and ensure that component ordering matches
+        # across host definitions
         order_set = set()
+        component_map = {}
 
         # Grab all the orders from each component on each host_definition
         for host_definition in host_definitions:
             formula_components = host_definition['formula_components']
-            order_set.update([c['order'] for c in formula_components])
+            for component in formula_components:
+                # Add the order to the order set
+                order_set.add(component['order'])
+                # Also add the order to the component map
+                component_map.setdefault(component['component'], set()).add(component['order'])
+
+        for component, orders in component_map.items():
+            if len(orders) > 1:
+                err_msg = 'Formula component "{0}" has inconsistent orders across host definitions.'
+                errors.setdefault('host_definitions', []).append(err_msg.format(component.sls_path))
 
         # Every number in the range [0, MAX_ORDER] should be represented
         if sorted(order_set) != range(len(order_set)):
             err_msg = ('Ordering is zero-based, may have duplicates across hosts, but '
                        'can not have any gaps in the order. '
                        'Your de-duplicated order: {0}'.format(sorted(order_set)))
-            raise serializers.ValidationError({
-                'host_definitions': [err_msg]
-            })
+            errors.setdefault('host_definitions', []).append(err_msg)
+
+        if errors:
+            raise serializers.ValidationError(errors)
 
         return attrs
 
