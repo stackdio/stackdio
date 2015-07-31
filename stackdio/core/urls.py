@@ -18,12 +18,24 @@
 
 from django.conf.urls import patterns, url
 
-from . import api
+from . import api, views
 
 urlpatterns = patterns(
-    'stackdio.core.api',
+    'stackdio.core.views',
 
-    url(r'^version/$',
+    url(r'^$',
+        views.RootView.as_view(),
+        name='index'),
+
+    url(r'^login/$',
+        views.LoginView.as_view(),
+        name='login'),
+
+    url(r'^logout/$',
+        'logout',
+        name='logout'),
+
+    url(r'^api/version/$',
         api.VersionAPIView.as_view(),
         name='version'),
 

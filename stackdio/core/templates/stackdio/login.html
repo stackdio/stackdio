@@ -1,0 +1,47 @@
+{% extends 'stackdio/base.html' %}
+{% load staticfiles %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-lg-8 col-lg-offset-2">
+            <div class="jumbotron text-center">
+                <h1>
+                    <img style="height:60px; margin-right:10px;" src="{% static 'img/logo.png' %}">
+                    stackd.io
+                </h1>
+                <p>a modern cloud provisioning and deployment framework</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-4 col-lg-offset-4">
+
+            <form class="form" role="form" action="{% url 'login' %}" method="POST">
+                {% csrf_token %}
+                <h2 class="text-center">Please sign in</h2>
+                <div class="form-group">
+                    <input id="inputUsername" type="text" name="username" class="form-control" placeholder="Username" required autofocus>
+                </div>
+                <div class="form-group">
+                    <input type="password" name="password" placeholder="Password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <div class="container">
+        <footer>
+            <p class="muted text-center">
+                <span></span>
+            </p>
+        </footer>
+    </div>
+{% endblock %}
+

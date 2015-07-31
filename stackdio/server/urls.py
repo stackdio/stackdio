@@ -26,20 +26,14 @@ admin.autodiscover()
 urlpatterns = patterns(
     '',
 
-    # Main application
-    url(r'^$', 'stackdio.core.views.index', name='index'),
-
-    # Session views
-    url(r'^login/$', 'stackdio.core.views.login', name='login'),
-    url(r'^logout/$', 'stackdio.core.views.logout', name='logout'),
-
     # Admin interface
     url(r'^__private/admin/', include(admin.site.urls)),
 
-    # API v1 root endpoint -- add additional URLs to urls.py in
-    # the api module.
+    # Grab the core URLs.  Stuff like index, login, logout, etc
+    url(r'^', include('stackdio.core.urls')),
+
+    # API v1 root endpoint -- add additional URLs to urls.py in the api module.
     url(r'^api/', include('stackdio.api.urls')),
-    # url(r'^api-docs/', include('rest_framework_swagger.urls')),
 
     # Default login/logout views. Without this you won't get the login/logout links
     # in the views.

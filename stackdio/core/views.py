@@ -19,53 +19,40 @@
 import logging
 
 from django.contrib import messages, auth
-from django.shortcuts import render_to_response, redirect
-from django.template import RequestContext
-
-DEFAULT_REDIRECT = 'index'
-APPLICATION_TEMPLATE = 'stackdio.html'
-LANDING_PAGE_TEMPLATE = 'index.html'
+from django.shortcuts import redirect
+from django.views.generic import TemplateView
 
 logger = logging.getLogger(__name__)
 
 
-def render(request, view, context=None):
-    if context is None:
-        context = {}
+class RootView(TemplateView):
+    template_name = 'stackdio/home.html'
 
-    if request:
-        return render_to_response(view,
-                                  context,
-                                  context_instance=RequestContext(request))
-    return render_to_response(view, context)
-
-
-def index(request):
-    template = LANDING_PAGE_TEMPLATE
-    if request.user.is_authenticated():
-        template = APPLICATION_TEMPLATE
-    return render(request, template)
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return super(RootView, self).get(request, *args, **kwargs)
+        else:
+            return redirect('login')
 
 
-def login(request):
-    if request.method == 'POST':
-        un = request.POST.get('username', '')
-        pw = request.POST.get('password', '')
-        user = auth.authenticate(username=un, password=pw)
+class LoginView(TemplateView):
+    template_name = 'stackdio/login.html'
+
+    def post(self, request):
+        username = request.POST.get('username', '')
+        password = request.POST.get('password', '')
+        user = auth.authenticate(username=username, password=password)
 
         if user is not None and user.is_active:
             # Login the user
             auth.login(request, user)
-            return redirect(index)
+            messages.success(request, 'Successful login!')
+            return redirect('index')
         else:
             # Failed
             messages.error(request, 'Sorry, your username and password are '
                                     'incorrect - please try again.')
-            return redirect(index)
-    else:
-        messages.error(request, 'Invalid method \'{0}\' used. Please use '
-                                'POST.'.format(request.method))
-        return redirect(index)
+            return self.get(request)
 
 
 def logout(request):

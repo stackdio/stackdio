@@ -21,11 +21,16 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="stackd.io | a modern cloud deployment and provisioning framework for everyone">
 
-    <title>{% block title %}stackd.io{% endblock %}</title>
+    <title>stackdio | {% block title %}Home{% endblock %}</title>
 
     <!-- Bootstrap -->
+    <link href='//fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
     <link href="{% static 'stackdio/bower_components/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'stackdio/bower_components/bootstrap-select/bootstrap-select.css' %}" rel="stylesheet">
+    <link href="{% static 'stackdio/bower_components/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+{#    <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">#}
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -37,7 +42,7 @@
 <body>
 {% block body %}
     {% block navbar %}
-        <nav class="navbar navbar-fixed-top navbar-inverse">
+        <nav class="navbar navbar-static-top navbar-default">
             <div class="container">
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
@@ -52,10 +57,34 @@
                     <ul class="nav navbar-nav">
                         {% block links %}{% endblock %}
                     </ul>
+                    <ul class="nav navbar-nav pull-right">
+                        <li><a href="{% url 'logout' %}">Logout</a></li>
+                    </ul>
                 </div>
             </div>
         </nav>
     {% endblock %}
+
+    <!-- Any messages if they exist -->
+    {% if messages %}
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 col-lg-offset-3">
+            {% for message in messages %}
+                <div{% if message.tags %} class="alert alert-{{ message.tags }}"{% endif %}>
+                    <a class="close" data-dismiss="alert" href="#">&times;</a>
+                    {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- the main content of the page -->
+    <div class="container">
+    {% block content %}{% endblock %}
+    </div>
 
     {% block scripts %}
         <script src="{% static 'stackdio/bower_components/jquery/jquery.min.js' %}"></script>

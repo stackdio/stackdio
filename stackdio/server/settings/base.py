@@ -29,6 +29,7 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 import logging
 import os
 
+from django.contrib.messages import constants as messages
 import dj_database_url
 
 from stackdio.core.config import StackdioConfig
@@ -199,6 +200,11 @@ MEDIA_URL = '/media/'
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"
 MEDIA_ROOT = '%s/static/media/' % BASE_DIR
+
+# Override message tags for bootstrap
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
+}
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

@@ -81,7 +81,6 @@ urlpatterns = patterns(
     # IMPORTS URLS FROM ALL APPS
     ##
     url(r'^', include('stackdio.api.users.urls')),
-    url(r'^', include('stackdio.core.urls')),
     url(r'^cloud/', include('stackdio.api.cloud.urls')),
     url(r'^', include('stackdio.api.stacks.urls')),
     url(r'^', include('stackdio.api.volumes.urls')),
