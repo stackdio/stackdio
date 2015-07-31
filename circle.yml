@@ -12,6 +12,7 @@ machine:
 ## Customize dependencies
 dependencies:
   override:
+    - pip install -U 'pip<6'
     - pip install -r requirements/testing.txt
 
 ## Customize test commands
