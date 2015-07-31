@@ -43,7 +43,7 @@ from . import utils
 from .models import (
     Stack,
     Level,
-    StackAction,
+    StackCommand,
     Host,
 )
 
@@ -721,7 +721,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
             # if volume metadata was updated, regenerate the map file
             # to account for the volume_id changes
             if bdm_updated:
-                stack._generate_map_file()
+                stack.generate_map_file()
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -1155,6 +1155,8 @@ def propagate_ssh(stack_id, max_retries=2):
     stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
+        # Regenerate the stack pillar file
+        stack.generate_pillar_file()
         num_hosts = len(stack.get_hosts())
         logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
 
@@ -1851,7 +1853,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         # delete hosts
         if delete_hosts and hosts:
             hosts.delete()
-            stack._generate_map_file()
+            stack.generate_map_file()
 
         stack.set_status(destroy_hosts.name, Stack.FINALIZING,
                          'Finished destroying stack infrastructure.')
@@ -1918,7 +1920,7 @@ def unregister_dns(stack_id, host_ids=None):
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
         driver_hosts = stack.get_driver_hosts_map(host_ids)
-        for driver, hosts in driver_hosts.iteritems():
+        for driver, hosts in driver_hosts.items():
             logger.debug('Unregistering DNS for hosts: {0}'.format(hosts))
             driver.unregister_dns(hosts)
 
@@ -1968,27 +1970,26 @@ def execute_action(stack_id, action, *args, **kwargs):
         raise
 
 
-@shared_task(name='stacks.custom_action')
-def custom_action(action_id, host_target, command):
-    action = StackAction.objects.get(id=action_id)
+@shared_task(name='stacks.run_command')
+def run_command(command_id):
+    command = StackCommand.objects.get(id=command_id)
+    stack = command.stack
 
-    action.start = datetime.now()
-    action.status = StackAction.RUNNING
-    action.save()
+    # Create a salt client
+    salt_client = salt.client.LocalClient(os.path.join(
+        settings.STACKDIO_CONFIG.salt_config_root, 'master'))
 
-    stack_id = action.stack.id
-    stack = Stack.objects.get(id=stack_id)
+    command.status = StackCommand.RUNNING
+    command.start = datetime.now()
+    command.save()
 
     try:
-
-        salt_client = salt.client.LocalClient(os.path.join(
-            settings.STACKDIO_CONFIG.salt_config_root, 'master'))
-
         res = salt_client.cmd_iter(
-            '{0} and G@stack_id:{1}'.format(host_target, stack_id),
+            '{0} and G@stack_id:{1}'.format(command.host_target, stack.id),
             'cmd.run',
-            [command],
-            expr_form='compound')
+            [command.command],
+            expr_form='compound',
+        )
 
         result = {}
         for ret in res:
@@ -2000,26 +2001,26 @@ def custom_action(action_id, host_target, command):
         for host, output in result.items():
             ret.append({'host': host, 'output': output['ret']})
 
-        action.std_out_storage = json.dumps(ret)
-        action.status = StackAction.FINISHED
+        command.std_out_storage = json.dumps(ret)
+        command.status = StackCommand.FINISHED
 
-        action.save()
+        command.save()
 
-        stack.set_status(custom_action.name, Stack.FINISHED,
-                         'Finished running custom action: {0}'.format(command))
+        stack.set_status(run_command.name, Stack.FINISHED,
+                         'Finished running command: {0}'.format(command))
 
     except salt.client.SaltInvocationError:
-        action.status = StackAction.ERROR
-        action.save()
-        stack.set_status(custom_action.name, Stack.FINISHED, 'Salt error')
+        command.status = StackCommand.ERROR
+        command.save()
+        stack.set_status(run_command.name, Stack.FINISHED, 'Salt error')
 
     except salt.client.SaltReqTimeoutError:
-        action.status = StackAction.ERROR
-        action.save()
-        stack.set_status(custom_action.name, Stack.FINISHED, 'Salt error')
+        command.status = StackCommand.ERROR
+        command.save()
+        stack.set_status(run_command.name, Stack.FINISHED, 'Salt error')
 
     except Exception:
-        action.status = StackAction.ERROR
-        action.save()
-        stack.set_status(custom_action.name, Stack.FINISHED, 'Unhandled exception')
+        command.status = StackCommand.ERROR
+        command.save()
+        stack.set_status(run_command.name, Stack.FINISHED, 'Unhandled exception')
         raise

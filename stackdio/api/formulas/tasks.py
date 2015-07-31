@@ -165,12 +165,11 @@ def validate_component(formula, repodir, component):
         )
 
 
-# TODO: Ignoring complexity issues
 @shared_task(name='formulas.import_formula')
 def import_formula(formula_id, git_password):
     formula = None
     try:
-        formula = Formula.objects.get(pk=formula_id)
+        formula = Formula.objects.get(id=formula_id)
         formula.set_status(Formula.IMPORTING, 'Cloning and importing formula.')
 
         repodir = clone_to_temp(formula, git_password)
@@ -222,9 +221,9 @@ def import_formula(formula_id, git_password):
                            'Import complete. Formula is now ready to be used.')
 
         return True
-    except Exception, e:
-        if isinstance(e, FormulaTaskException):
-            raise
+    except FormulaTaskException:
+        raise
+    except Exception as e:
         logger.exception(e)
         raise FormulaTaskException(formula, 'An unhandled exception occurred.')
 

@@ -114,10 +114,14 @@ class GroupActionSerializer(serializers.Serializer):  # pylint: disable=abstract
 
     def to_representation(self, instance):
         """
-        We just want to return a serialized group object here - that way you can see immediately
+        We just want to return a serialized group object here -
+        that way you can see immediately
         what the new users in the group are
         """
-        return GroupActionReturnSerializer(instance, context=self.context).to_representation(instance)
+        return GroupActionReturnSerializer(
+            instance,
+            context=self.context
+        ).to_representation(instance)
 
     def save(self, **kwargs):
         group = self.instance

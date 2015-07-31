@@ -22,13 +22,6 @@ from stackdio.server.settings.base import *  # pylint: disable=wildcard-import, 
 DEBUG = True
 TEMPLATE_DEBUG = True
 
-##
-# Add in additional middleware
-##
-MIDDLEWARE_CLASSES += (
-    'stackdio.core.middleware.JSONIndentAcceptHeaderMiddleware',
-)
-
 # Set the log level to DEBUG - it's WARNING by default
 LOGGING['loggers']['']['level'] = 'DEBUG'
 

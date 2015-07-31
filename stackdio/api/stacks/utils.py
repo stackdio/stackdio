@@ -39,7 +39,7 @@ def filter_actions(user, stack, actions):
     ret = []
     for action in actions:
         the_action = action
-        if action == 'custom':
+        if action == 'command':
             the_action = 'execute'
         elif action == 'propagate-ssh':
             the_action = 'admin'

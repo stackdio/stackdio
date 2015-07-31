@@ -121,10 +121,12 @@ admin.site.register(models.CloudZone, CloudZoneAdmin)
 
 class SecurityGroupAdmin(GuardedModelAdmin):
     list_display = [
-        'name',
         'group_id',
+        'name',
+        'description',
         'account',
         'is_default',
+        'is_managed',
     ]
 
 

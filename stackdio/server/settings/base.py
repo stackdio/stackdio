@@ -66,8 +66,7 @@ if not os.path.isdir(LOG_DIRECTORY):
 ##
 # Some convenience variables
 ##
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # Set DEBUG things to False here, override to True in the development.py settings
 DEBUG = False
@@ -335,7 +334,6 @@ CELERY_ROUTES = {
     'formulas.import_formula': {'queue': 'formulas'},
     'formulas.update_formula': {'queue': 'formulas'},
     'stacks.cure_zombies': {'queue': 'stacks'},
-    'stacks.custom_action': {'queue': 'stacks'},
     'stacks.destroy_hosts': {'queue': 'stacks'},
     'stacks.destroy_stack': {'queue': 'stacks'},
     'stacks.execute_action': {'queue': 'stacks'},
@@ -348,6 +346,7 @@ CELERY_ROUTES = {
     'stacks.propagate_ssh': {'queue': 'stacks'},
     'stacks.register_dns': {'queue': 'stacks'},
     'stacks.register_volume_delete': {'queue': 'stacks'},
+    'stacks.run_command': {'queue': 'stacks'},
     'stacks.sync_all': {'queue': 'stacks'},
     'stacks.tag_infrastructure': {'queue': 'stacks'},
     'stacks.unregister_dns': {'queue': 'stacks'},
