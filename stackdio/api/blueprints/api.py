@@ -19,7 +19,7 @@
 import logging
 
 from guardian.shortcuts import assign_perm
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.serializers import ValidationError
 

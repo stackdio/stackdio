@@ -194,7 +194,7 @@ class GlobalOrchestrationFormulaComponentSerializer(serializers.HyperlinkedModel
         )
 
 
-class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
+class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
         if obj is not None:
             return obj.global_orchestration_properties
@@ -559,7 +559,7 @@ class CloudAccountSecurityGroupSerializer(SecurityGroupSerializer):
         )
 
 
-class SecurityGroupRuleSerializer(serializers.Serializer):
+class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     available_actions = ('authorize', 'revoke')
 
     action = serializers.CharField(write_only=True)

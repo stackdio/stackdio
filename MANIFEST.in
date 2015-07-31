@@ -3,7 +3,6 @@ include README.md
 include LICENSE
 include MANIFEST.in
 include requirements.txt
-include links.txt
 recursive-include requirements *
 recursive-include stackdio/core/templates *
 recursive-include stackdio/core/static *

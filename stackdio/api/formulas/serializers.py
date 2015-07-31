@@ -127,7 +127,7 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
         return attrs
 
 
-class FormulaPropertiesSerializer(serializers.Serializer):
+class FormulaPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
         if obj is not None:
             # Make it work two different ways.. ooooh
@@ -141,7 +141,7 @@ class FormulaPropertiesSerializer(serializers.Serializer):
         return data
 
 
-class FormulaActionSerializer(serializers.Serializer):
+class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     available_actions = ('update',)
 
     action = serializers.ChoiceField(available_actions, write_only=True)

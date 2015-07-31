@@ -23,7 +23,7 @@ from rest_framework import serializers
 logger = logging.getLogger(__name__)
 
 
-class SearchSerializer(serializers.Serializer):
+class SearchSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     object_type = serializers.SlugRelatedField(slug_field='model', read_only=True)
     title = serializers.CharField()
     url = serializers.URLField()

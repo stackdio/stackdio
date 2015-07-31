@@ -25,7 +25,7 @@ from django.db.models import Q
 from rest_framework import generics, permissions
 from rest_framework.filters import DjangoObjectPermissionsFilter
 from rest_framework.response import Response
-from rest_framework.reverse import reverse, NoReverseMatch
+from rest_framework.reverse import reverse
 
 from . import serializers
 

@@ -16,7 +16,7 @@
 #
 
 
-from django.conf.urls import patterns, url, include
+from django.conf.urls import patterns, url
 
 from . import api
 

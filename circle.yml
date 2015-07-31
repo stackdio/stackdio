@@ -12,7 +12,7 @@ machine:
 ## Customize dependencies
 dependencies:
   override:
-    - pip install -r links.txt
+    - pip install -U 'pip<6'
     - pip install -r requirements/testing.txt
 
 ## Customize test commands
@@ -31,3 +31,11 @@ test:
     - mv cover $CIRCLE_ARTIFACTS/coverage
     - coveralls
 
+deployment:
+  artifact:
+    branch: /.*/
+    commands:
+      - bower install
+      - python setup.py sdist
+      - mkdir $CIRCLE_ARTIFACTS/dist/
+      - mv dist/stackdio-server-*.tar.gz $CIRCLE_ARTIFACTS/dist/
