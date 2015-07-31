@@ -84,7 +84,7 @@ cd /tmp
 git clone https://github.com/stackdio/stackdio.git
 cd stackdio
 bower install
-pip install --process-dependency-links .
+pip install .
 ```
 
 ### Configuration
