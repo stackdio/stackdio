@@ -18,32 +18,27 @@
 
 import logging
 
+import yaml
 from rest_framework import permissions
 from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedParentField
-from stackdio.core.mixins import SuperuserFieldsMixin
+from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
+from stackdio.core.validators import PropertiesValidator
+from stackdio.api.blueprints.models import PROTOCOL_CHOICES
+from stackdio.api.cloud.providers.base import (
+    GroupExistsException,
+    GroupNotFoundException,
+    RuleExistsException,
+    RuleNotFoundException,
+    SecurityGroupRule,
+)
 from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models
 from .utils import get_provider_driver_class
 
 logger = logging.getLogger(__name__)
-
-
-def validate_properties(properties):
-    """
-    Make sure properties are a valid dict and that they don't contain `__stackdio__`
-    """
-    if not isinstance(properties, dict):
-        raise serializers.ValidationError({
-            'properties': ['This field must be a JSON object.']
-        })
-
-    if '__stackdio__' in properties:
-        raise serializers.ValidationError({
-            'properties': ['The `__stackdio__` key is reserved for system use.']
-        })
 
 
 class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
@@ -76,7 +71,7 @@ class CloudProviderSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
+class CloudAccountSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     # Foreign Key Relations
     provider = serializers.SlugRelatedField(slug_field='name',
                                             queryset=models.CloudProvider.objects.all())
@@ -86,6 +81,8 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
     # Hyperlinks
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='cloudaccount-securitygroup-list')
+    all_security_groups = serializers.HyperlinkedIdentityField(
+        view_name='cloudaccount-fullsecuritygroup-list')
     vpc_subnets = serializers.HyperlinkedIdentityField(
         view_name='cloudaccount-vpcsubnet-list')
     global_orchestration_components = serializers.HyperlinkedIdentityField(
@@ -111,6 +108,7 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
             'account_id',
             'vpc_id',
             'security_groups',
+            'all_security_groups',
             'vpc_subnets',
             'user_permissions',
             'group_permissions',
@@ -119,48 +117,58 @@ class CloudAccountSerializer(serializers.HyperlinkedModelSerializer):
             'formula_versions',
         )
 
+        # Don't allow these to be changed after account creation
+        create_only_fields = (
+            'provider',
+            'region',
+            'account_id',
+            'vpc_id',
+        )
+
     def validate(self, attrs):
-        # validate account specific request data
-        request = self.context['request']
-
-        # patch requests only accept a few things for modification
-        if request.method == 'PATCH':
-            fields_available = ('title',
-                                'description')
-            # TODO removed default AZ for now, might add in region later
-
-            errors = {}
-            for k in self.initial_data:
-                if k not in fields_available:
-                    errors.setdefault(k, []).append(
-                        'Field may not be modified.')
-            if errors:
-                logger.debug(errors)
-                raise serializers.ValidationError(errors)
-
-        elif request.method == 'POST':
+        if self.instance is not None:
+            # This is an update request, so there's no further validation required
+            return attrs
+        else:
+            # this is a create request, so we need to do more validation
             provider = attrs['provider']
-
             provider_class = get_provider_driver_class(provider)
-
             provider_driver = provider_class()
 
-            errors = provider_driver.validate_provider_data(attrs, self.initial_data)
+            # Farm provider-specific validation out to the provider driver
+            return provider_driver.validate_provider_data(attrs, self.initial_data)
 
-            if errors:
-                logger.error('Cloud account validation errors: '
-                             '{0}'.format(errors))
-                raise serializers.ValidationError(errors)
+    def create(self, validated_data):
+        logger.debug(validated_data)
 
-        return attrs
+        account = super(CloudAccountSerializer, self).create(validated_data)
+
+        driver = account.get_driver()
+
+        # Leverage the driver to generate its required data that
+        # will be serialized down to yaml and stored in both the database
+        # and the salt cloud providers file
+        provider_data = driver.get_provider_data(validated_data)
+
+        # Generate the yaml and store in the database
+        yaml_data = {
+            account.slug: provider_data
+        }
+        account.yaml = yaml.safe_dump(yaml_data, default_flow_style=False)
+        account.save()
+
+        # Update the salt cloud providers file
+        account.update_config()
+
+        return account
 
 
 class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    vpc_id = serializers.ReadOnlyField()
-    id = serializers.ReadOnlyField()
-    availability_zone = serializers.ReadOnlyField()
-    cidr_block = serializers.ReadOnlyField()
-    tags = serializers.ReadOnlyField()
+    vpc_id = serializers.CharField()
+    id = serializers.CharField()
+    availability_zone = serializers.CharField()
+    cidr_block = serializers.CharField()
+    tags = serializers.DictField(child=serializers.CharField())
 
 
 class GlobalOrchestrationFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
@@ -196,14 +204,8 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
         return data
 
     def validate(self, attrs):
-        validate_properties(attrs)
+        PropertiesValidator().validate(attrs)
         return attrs
-
-    def create(self, validated_data):
-        """
-        We never create anything with this serializer, so just leave it as not implemented
-        """
-        return super(GlobalOrchestrationPropertiesSerializer, self).create(validated_data)
 
     def update(self, account, validated_data):
         if self.partial:
@@ -220,8 +222,7 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
         return account
 
 
-class CloudProfileSerializer(SuperuserFieldsMixin,
-                             serializers.HyperlinkedModelSerializer):
+class CloudProfileSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
     )
@@ -251,48 +252,27 @@ class CloudProfileSerializer(SuperuserFieldsMixin,
             'group_permissions',
         )
 
-        superuser_fields = ('image_id',)
+        # Don't allow these to be changed after profile creation
+        create_only_fields = (
+            'account',
+        )
 
-    # TODO: Ignoring code complexity issues
-    def validate(self, attrs):  # NOQA
-        # validate provider specific request data
-        request = self.context['request']
+    def validate(self, attrs):
+        image_id = attrs.get('image_id')
+        # Don't validate when it's a PATCH request and image_id doesn't exist
+        if not self.partial or image_id is not None:
+            account = attrs['account']
 
-        # patch requests only accept a few things for modification
-        if request.method in ('PATCH', 'PUT'):
-            fields_available = ('title',
-                                'description',
-                                'image_id',
-                                'default_instance_size',
-                                'ssh_user',)
-
-            errors = {}
-            for k in request.DATA:
-                if k not in fields_available:
-                    errors.setdefault(k, []).append(
-                        'Field may not be modified.')
-            if errors:
-                logger.debug(errors)
-                raise serializers.ValidationError(errors)
-
-        elif request.method == 'POST':
-            image_id = request.DATA.get('image_id')
-            account_id = request.DATA.get('account')
-            if not account_id:
-                raise serializers.ValidationError({
-                    'account': 'Required field.'
-                })
-
-            account = models.CloudAccount.objects.get(pk=account_id)
             driver = account.get_driver()
 
+            # Ensure that the image id is valid
             valid, exc_msg = driver.validate_image_id(image_id)
             if not valid:
                 raise serializers.ValidationError({
                     'image_id': ['Image ID does not exist on the given cloud '
                                  'account. Check that it exists and you have '
-                                 'access to it.'],
-                    'image_id_exception': [exc_msg]
+                                 'access to it.',
+                                 exc_msg],
                 })
 
         return attrs
@@ -410,48 +390,260 @@ class CloudZoneSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class SecurityGroupSerializer(SuperuserFieldsMixin,
-                              serializers.HyperlinkedModelSerializer):
-    ##
-    # Read-only fields.
-    ##
-    group_id = serializers.ReadOnlyField()
-
+class SecurityGroupSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     # Field for showing the number of active hosts using this security
     # group. It is pulled automatically from the model instance method.
     active_hosts = serializers.ReadOnlyField(source='get_active_hosts')
 
-    # Rules are defined in two places depending on the object we're dealing
-    # with. If it's a QuerySet the rules are pulled in one query to the
-    # cloud account using the SecurityGroupQuerySet::with_rules method.
-    # For single, detail objects we use the rules instance method on the
-    # SecurityGroup object
-    account_id = serializers.ReadOnlyField(source='account.id')
+    account = serializers.PrimaryKeyRelatedField(queryset=models.CloudAccount.objects.all())
 
-    rules_url = serializers.HyperlinkedIdentityField(view_name='securitygroup-rules')
+    rules = serializers.HyperlinkedIdentityField(view_name='securitygroup-rules')
+
+    default = serializers.BooleanField(source='is_default', required=False)
+    managed = serializers.BooleanField(source='is_managed', read_only=True)
+
+    default_description = 'Created by stackd.io'
 
     class Meta:
         model = models.SecurityGroup
         fields = (
             'id',
             'url',
+            'group_id',
             'name',
             'description',
-            'rules_url',
-            'group_id',
             'account',
-            'account_id',
-            'is_default',
-            'is_managed',
+            'default',
+            'managed',
             'active_hosts',
             'rules',
         )
-        superuser_fields = ('is_default', 'is_managed')
+
+        extra_kwargs = {
+            'name': {'required': False},
+            'group_id': {'required': False},
+            'description': {'required': False},
+        }
+
+        create_only_fields = (
+            'group_id',
+            'name',
+            'account',
+            'description',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super(SecurityGroupSerializer, self).__init__(*args, **kwargs)
+        self.should_create_group = None
+
+    def validate(self, attrs):
+        if self.instance is None:
+            # All of this validation only matters if we are creating a new group
+            account = attrs['account']
+            driver = account.get_driver()
+
+            name = attrs.get('name')
+            group_id = attrs.get('group_id')
+
+            if not name and not group_id:
+                err_msg = 'You must provide one of `name` or `group_id`'
+                raise serializers.ValidationError({
+                    'name': [err_msg],
+                    'group_id': [err_msg],
+                })
+
+            # check if the group exists on the account
+            if group_id:
+                try:
+                    account_group_list = driver.get_security_groups([group_id])
+
+                    if len(account_group_list) != 1:
+                        logger.info('The list of account groups doesn\'t have the right number of '
+                                    'elements (If you\'re seeing this, something has gone '
+                                    'horribly wrong): {0}'.format(account_group_list))
+                        raise GroupNotFoundException()
+
+                    account_group = account_group_list[0]
+                    logger.debug('Security group with id "{0}" and name "{1}" already exists on '
+                                 'the account.'.format(group_id, name))
+                except GroupNotFoundException:
+                    # doesn't exist on the account, we'll try to create it later
+                    account_group = None
+            else:
+                account_group = None
+
+            # Set all the appropriate data
+            if account_group:
+                # Already exists, just need to create in our database
+                attrs['group_id'] = account_group.group_id
+                attrs['description'] = account_group.description
+                attrs['is_managed'] = False
+                self.should_create_group = False
+            else:
+                # create a new group
+                self.should_create_group = True
+                attrs['is_managed'] = True
+
+        return attrs
+
+    def create(self, validated_data):
+        account = validated_data['account']
+
+        validated_data.setdefault('description', self.default_description)
+        validated_data.setdefault('is_default', False)
+
+        if self.should_create_group:
+            # Only create the group on the provider if we deemed it necessary during validation
+            name = validated_data['name']
+            description = validated_data['description']
+            driver = account.get_driver()
+
+            # create the new provider group
+            try:
+                validated_data['group_id'] = driver.create_security_group(name, description)
+            except GroupExistsException:
+                raise serializers.ValidationError({
+                    'name': ['A group with the name `{0}` already exists on this '
+                             'account.'.format(name)],
+                })
+
+        # Create the database object
+        group = super(SecurityGroupSerializer, self).create(validated_data)
+
+        logger.debug('Writing cloud accounts file because new security '
+                     'group was added with is_default flag set to True')
+        account.update_config()
+
+        return group
+
+    def update(self, instance, validated_data):
+        logger.debug(validated_data)
+
+        group = super(SecurityGroupSerializer, self).update(instance, validated_data)
+
+        account = validated_data['account']
+        logger.debug('Writing cloud accounts file because new security '
+                     'group was added with is_default flag set to True')
+        account.update_config()
+
+        return group
 
 
-class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    action = serializers.CharField(max_length=15)
-    protocol = serializers.CharField(max_length=4)
-    from_port = serializers.IntegerField()
-    to_port = serializers.IntegerField()
+class CloudAccountSecurityGroupSerializer(SecurityGroupSerializer):
+    account = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = models.SecurityGroup
+        fields = (
+            'id',
+            'url',
+            'group_id',
+            'name',
+            'description',
+            'account',
+            'default',
+            'managed',
+            'active_hosts',
+            'rules',
+        )
+
+        extra_kwargs = {
+            'group_id': {'required': False},
+            'description': {'required': False},
+        }
+
+        create_only_fields = (
+            'group_id',
+            'name',
+            'description',
+        )
+
+
+class SecurityGroupRuleSerializer(serializers.Serializer):
+    available_actions = ('authorize', 'revoke')
+
+    action = serializers.CharField(write_only=True)
+    protocol = serializers.ChoiceField(PROTOCOL_CHOICES)
+    from_port = serializers.IntegerField(min_value=0, max_value=65535)
+    to_port = serializers.IntegerField(min_value=0, max_value=65535)
     rule = serializers.CharField(max_length=255)
+
+    def __init__(self, security_group=None, *args, **kwargs):
+        self.security_group = security_group
+        super(SecurityGroupRuleSerializer, self).__init__(*args, **kwargs)
+
+    def validate(self, attrs):
+        action = attrs['action']
+
+        if action not in self.available_actions:
+            raise serializers.ValidationError({
+                'action': ['{0} is not a valid action.'.format(action)]
+            })
+
+        from_port = attrs['from_port']
+        to_port = attrs['to_port']
+
+        if from_port > to_port:
+            err_msg = '`from_port` ({0}) must be less than `to_port` ({1})'.format(from_port,
+                                                                                   to_port)
+            raise serializers.ValidationError({
+                'from_port': [err_msg],
+                'to_port': [err_msg],
+            })
+
+        group = self.security_group
+        account = group.account
+        driver = account.get_driver()
+        rule = attrs['rule']
+
+        # Check the rule to determine the "type" of the rule. This
+        # can be a CIDR or group rule. CIDR will look like an IP
+        # address and anything else will be considered a group
+        # rule, however, a group can contain the account id of
+        # the group we're dealing with. If the group rule does
+        # not contain a colon then we'll add the account's
+        # account id
+        if not driver.is_cidr_rule(rule) and ':' not in rule:
+            rule = account.account_id + ':' + rule
+            attrs['rule'] = rule
+            logger.debug('Prefixing group rule with account id. '
+                         'New rule: {0}'.format(rule))
+
+        return attrs
+
+    def save(self, **kwargs):
+        group = self.security_group
+        account = group.account
+        driver = account.get_driver()
+
+        action = self.validated_data['action']
+
+        rule_actions = {
+            'authorize': driver.authorize_security_group,
+            'revoke': driver.revoke_security_group,
+        }
+
+        try:
+            rule_actions[action](group.group_id, self.validated_data)
+        except (RuleNotFoundException, RuleExistsException, GroupNotFoundException) as e:
+            raise serializers.ValidationError({
+                'rule': e.message
+            })
+
+        self.instance = SecurityGroupRule(
+            self.validated_data['protocol'],
+            self.validated_data['from_port'],
+            self.validated_data['to_port'],
+            self.validated_data['rule'],
+        )
+
+        return self.instance
+
+
+class DirectCloudAccountSecurityGroupSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    name = serializers.CharField()
+    description = serializers.CharField()
+    group_id = serializers.CharField()
+    vpc_id = serializers.CharField()
+    rules = SecurityGroupRuleSerializer(many=True)
+    rules_egress = SecurityGroupRuleSerializer(many=True)

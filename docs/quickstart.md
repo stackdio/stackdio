@@ -67,25 +67,9 @@ The virtualenv should automatically activate when you create it. If you exit you
 workon stackdio
 ```
 
-### Install npm
-You need to have [Node.js](http://nodejs.org/) and [npm](https://npmjs.org/) installed on your system.
-
-On Ubuntu, both Node and npm can be installed from apt-get.  You will also need to symlink nodejs to node, because bower requires a node executable to be on the path.
-
-```bash
-# Ubuntu
-sudo apt-get install nodejs npm
-sudo ln -s /usr/bin/nodejs /usr/bin/node
-```
-
-Same applies to centos, except the executable is already called node, so there is no need for the symlink.
-```bash
-# Centos
-sudo yum install nodejs npm
-```
-
 ### Install bower
 In your CLI, run the following command to install bower:
+(You must have previously installed npm/node from the OS specific preparation)
 
 ```bash
 sudo npm install -g bower

@@ -53,10 +53,13 @@ urlpatterns = patterns(
         api.FormulaDetailAPIView.as_view(),
         name='formula-detail'),
 
-    # Pull the default pillar/properties defined in the SPECFILE
     url(r'^formulas/(?P<pk>[0-9]+)/properties/$',
         api.FormulaPropertiesAPIView.as_view(),
         name='formula-properties'),
+
+    url(r'^formulas/(?P<pk>[0-9]+)/components/$',
+        api.FormulaComponentListAPIView.as_view(),
+        name='formula-component-list'),
 
     url(r'^formulas/(?P<pk>[0-9]+)/action/$',
         api.FormulaActionAPIView.as_view(),
@@ -64,8 +67,4 @@ urlpatterns = patterns(
 
     url(r'^formulas/(?P<pk>[0-9]+)/permissions/',
         include(object_router.urls)),
-
-    url(r'^formula_components/(?P<pk>[0-9]+)/$',
-        api.FormulaComponentDetailAPIView.as_view(),
-        name='formulacomponent-detail'),
 )

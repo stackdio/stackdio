@@ -32,10 +32,18 @@ import boto.ec2
 import boto.vpc
 import yaml
 from boto.route53.record import ResourceRecordSets
+from rest_framework.serializers import ValidationError
 
 from stackdio.api.cloud.providers.base import (
     BaseCloudProvider,
+    DeleteGroupException,
+    GroupExistsException,
+    GroupNotFoundException,
     MaxFailuresException,
+    RuleExistsException,
+    RuleNotFoundException,
+    SecurityGroup,
+    SecurityGroupRule,
     TimeoutException,
 )
 from stackdio.core.exceptions import BadRequest, InternalServerError
@@ -254,29 +262,25 @@ class AWSCloudProvider(BaseCloudProvider):
     STATE_SHUTTING_DOWN = 'shutting-down'
     STATE_TERMINATED = 'terminated'
 
-    @classmethod
-    def get_required_fields(cls):
+    def get_required_fields(self):
         return [
-            cls.ACCOUNT_ID,
-            cls.ACCESS_KEY,
-            cls.SECRET_KEY,
-            cls.KEYPAIR,
-            cls.PRIVATE_KEY,
-            cls.ROUTE53_DOMAIN,
-            # cls.SECURITY_GROUPS
+            self.ACCOUNT_ID,
+            self.ACCESS_KEY,
+            self.SECRET_KEY,
+            self.KEYPAIR,
+            self.PRIVATE_KEY,
+            self.ROUTE53_DOMAIN,
         ]
 
-    @classmethod
-    def get_available_actions(cls):
+    def get_available_actions(self):
         return [
-            cls.ACTION_STOP,
-            cls.ACTION_START,
-            cls.ACTION_TERMINATE,
-            cls.ACTION_LAUNCH,
-            cls.ACTION_PROVISION,
-            cls.ACTION_ORCHESTRATE,
-            cls.ACTION_CUSTOM,
-            cls.ACTION_SSH,
+            self.ACTION_STOP,
+            self.ACTION_START,
+            self.ACTION_TERMINATE,
+            self.ACTION_LAUNCH,
+            self.ACTION_PROVISION,
+            self.ACTION_ORCHESTRATE,
+            self.ACTION_SSH,
         ]
 
     def get_private_key_path(self):
@@ -294,23 +298,23 @@ class AWSCloudProvider(BaseCloudProvider):
         config_data = self.get_config()
         return config_data['location'], config_data['id'], config_data['key']
 
-    def get_provider_data(self, data, files=None):
+    def get_provider_data(self, validated_data):
         # write the private key to the proper location
         private_key_path = self.get_private_key_path()
         with open(private_key_path, 'w') as f:
-            f.write(data[self.PRIVATE_KEY])
+            f.write(validated_data[self.PRIVATE_KEY])
 
         # change the file permissions of the RSA key
         os.chmod(private_key_path, stat.S_IRUSR)
 
         config_data = {
             'provider': self.SHORT_NAME,
-            'id': data[self.ACCESS_KEY],
-            'key': data[self.SECRET_KEY],
-            'keyname': data[self.KEYPAIR],
+            'id': validated_data[self.ACCESS_KEY],
+            'key': validated_data[self.SECRET_KEY],
+            'keyname': validated_data[self.KEYPAIR],
             'private_key': private_key_path,
-            'append_domain': data[self.ROUTE53_DOMAIN],
-            'location': data[self.REGION],
+            'append_domain': validated_data[self.ROUTE53_DOMAIN],
+            'location': validated_data[self.REGION],
             'ssh_interface': 'private_ips',
             'ssh_connect_timeout': 300,
             'wait_for_passwd_timeout': 5,
@@ -327,15 +331,14 @@ class AWSCloudProvider(BaseCloudProvider):
 
     # TODO: Ignoring code complexity issues...
     def validate_provider_data(self, serializer_attrs, all_data):
-        errors = super(AWSCloudProvider, self).validate_provider_data(serializer_attrs, all_data)
+        attrs = super(AWSCloudProvider, self).validate_provider_data(serializer_attrs, all_data)
 
-        if errors:
-            return errors
+        region = attrs[self.REGION].slug
+        access_key = attrs[self.ACCESS_KEY]
+        secret_key = attrs[self.SECRET_KEY]
+        keypair = attrs[self.KEYPAIR]
 
-        region = serializer_attrs[self.REGION].slug
-        access_key = all_data.get(self.ACCESS_KEY)
-        secret_key = all_data.get(self.SECRET_KEY)
-        keypair = all_data.get(self.KEYPAIR)
+        errors = {}
 
         # check authentication credentials
         ec2 = None
@@ -352,7 +355,7 @@ class AWSCloudProvider(BaseCloudProvider):
             errors.setdefault(self.SECRET_KEY, []).append(err_msg)
 
         if errors:
-            return errors
+            raise ValidationError(errors)
 
         # check keypair
         try:
@@ -363,7 +366,7 @@ class AWSCloudProvider(BaseCloudProvider):
             )
 
         # check route 53 domain
-        domain = all_data.get(self.ROUTE53_DOMAIN)
+        domain = attrs[self.ROUTE53_DOMAIN]
         if domain:
             try:
                 # connect to route53 and check that the domain is available
@@ -387,7 +390,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))
 
         # check VPC required fields
-        vpc_id = all_data.get(self.VPC_ID)
+        vpc_id = attrs[self.VPC_ID]
         if vpc_id:
 
             vpc = None
@@ -411,8 +414,10 @@ class AWSCloudProvider(BaseCloudProvider):
                         'The VPC \'{0}\' does not exist in this account.'
                         .format(vpc_id)
                     )
+        if errors:
+            raise ValidationError(errors)
 
-        return errors
+        return attrs
 
     def validate_image_id(self, image_id):
         ec2 = self.connect_ec2()
@@ -461,23 +466,17 @@ class AWSCloudProvider(BaseCloudProvider):
         """
         return CIDR_PATTERN.match(rule)
 
-    def create_security_group(self,
-                              security_group_name,
-                              description,
-                              delete_if_exists=False):
+    def create_security_group(self, security_group_name, description, delete_if_exists=False):
         """
         Returns the identifier of the group.
         """
-        if not description:
-            description = 'Default description provided by stackd.io'
 
         if delete_if_exists:
             try:
                 self.delete_security_group(security_group_name)
-                logger.warn('create_security_group has deleted existing group '
-                            '{0} prior to creating it.'.format(
-                                security_group_name))
-            except BadRequest:
+                logger.info('create_security_group has deleted existing group '
+                            '{0} prior to re-creating it.'.format(security_group_name))
+            except DeleteGroupException:
                 logger.debug('security group did not already exist')
 
         # create the group in the VPC or classic
@@ -486,22 +485,31 @@ class AWSCloudProvider(BaseCloudProvider):
             kwargs['vpc_id'] = self.account.vpc_id
 
         ec2 = self.connect_ec2()
-        group = ec2.create_security_group(security_group_name,
-                                          description,
-                                          **kwargs)
+        try:
+            group = ec2.create_security_group(
+                security_group_name,
+                description,
+                **kwargs
+            )
 
-        return group.id
+            return group.id
+        except boto.exception.EC2ResponseError as e:
+            raise GroupExistsException(e.message)
 
-    def _security_group_rule_to_kwargs(self, rule):
+    @staticmethod
+    def _security_group_rule_to_kwargs(rule):
         kwargs = {
             'ip_protocol': rule['protocol'],
             'from_port': rule['from_port'],
             'to_port': rule['to_port'],
         }
         if GROUP_PATTERN.match(rule['rule']):
-            src_owner_id, src_group_name = rule['rule'].split(':')
+            src_owner_id, src_group = rule['rule'].split(':')
             kwargs['src_security_group_owner_id'] = src_owner_id
-            kwargs['src_security_group_name'] = src_group_name
+            if src_group.startswith('sg-'):
+                kwargs['src_security_group_group_id'] = src_group
+            else:
+                kwargs['src_security_group_name'] = src_group
         elif CIDR_PATTERN.match(rule['rule']):
             kwargs['cidr_ip'] = rule['rule']
         else:
@@ -524,13 +532,11 @@ class AWSCloudProvider(BaseCloudProvider):
         ec2 = self.connect_ec2()
         try:
             ec2.delete_security_group(**kwargs)
-        except boto.exception.EC2ResponseError, e:
+        except boto.exception.EC2ResponseError as e:
             logger.exception('Error deleting security group {0}'.format(
                 group_name)
             )
-            if e.status == 400:
-                raise BadRequest(e.error_message)
-            raise InternalServerError(e.error_message)
+            raise DeleteGroupException(e.error_message)
 
     def authorize_security_group(self, group_id, rule):
         """
@@ -547,17 +553,17 @@ class AWSCloudProvider(BaseCloudProvider):
         kwargs = self._security_group_rule_to_kwargs(rule)
         kwargs['group_id'] = group_id
 
+        logger.debug(kwargs)
+
         try:
             ec2.authorize_security_group(**kwargs)
-        except boto.exception.EC2ResponseError, e:
-            if e.status == 400:
-                if e.error_message.startswith('Unable to find group'):
-                    account_id = kwargs['src_security_group_owner_id']
-                    err_msg = e.error_message + ' on account \'{0}\''.format(
-                        account_id)
-                    raise BadRequest(err_msg)
-                raise BadRequest(e.error_message)
-            raise InternalServerError(e.error_message)
+        except boto.exception.EC2ResponseError as e:
+            if e.error_message.startswith('Unable to find group'):
+                account_id = kwargs['src_security_group_owner_id']
+                err_msg = e.error_message + ' on account \'{0}\''.format(
+                    account_id)
+                raise GroupNotFoundException(err_msg)
+            raise RuleExistsException(e.error_message)
 
     def revoke_security_group(self, group_id, rule):
         """
@@ -566,19 +572,42 @@ class AWSCloudProvider(BaseCloudProvider):
         ec2 = self.connect_ec2()
         kwargs = self._security_group_rule_to_kwargs(rule)
         kwargs['group_id'] = group_id
-        ec2.revoke_security_group(**kwargs)
+        try:
+            ec2.revoke_security_group(**kwargs)
+        except boto.exception.EC2ResponseError as e:
+            raise RuleNotFoundException(e.error_message)
 
     def revoke_all_security_groups(self, group_id):
         """
         Revokes ALL rules on the security group.
         """
-        groups = self.get_security_groups(group_id)
-        for group_name, group in groups.iteritems():
-            for rule in group['rules']:
+        groups = self.get_security_groups([group_id])
+        for group in groups:
+            for rule in group.rules:
                 self.revoke_security_group(group_id, rule)
 
-    # FIXME(abe): Ignoring code complexity
-    def get_security_groups(self, group_ids=None):  # NOQA
+    @staticmethod
+    def get_rules_list(rules):
+        ret = []
+
+        for rule in rules:
+            rule_string = None
+            for grant in rule.grants:
+                if grant.cidr_ip:
+                    rule_string = grant.cidr_ip
+                elif grant.name:
+                    rule_string = '{0.owner_id}:{0.name}'.format(grant)
+
+            ret.append(SecurityGroupRule(
+                rule.ip_protocol,
+                rule.from_port,
+                rule.to_port,
+                rule_string,
+            ))
+
+        return ret
+
+    def get_security_groups(self, group_ids=None):
         if group_ids is None:
             group_ids = []
 
@@ -586,46 +615,30 @@ class AWSCloudProvider(BaseCloudProvider):
             group_ids = [group_ids]
 
         ec2 = self.connect_ec2()
-        groups = ec2.get_all_security_groups(group_ids=group_ids)
+        try:
+            groups = ec2.get_all_security_groups(group_ids=group_ids)
+        except boto.exception.EC2ResponseError as e:
+            raise GroupNotFoundException(e.message)
 
-        result = {}
+        result = []
         for group in groups:
+            # Skip the group if it's the wrong kind
             if self.account.vpc_enabled and not group.vpc_id:
                 continue
             if not self.account.vpc_enabled and group.vpc_id:
                 continue
 
-            rules_ingress, rules_egress = [], []
-            group_rules = [(0, r) for r in group.rules] + \
-                [(1, r) for r in group.rules_egress]
-            for rule_type, rule in group_rules:
-                for grant in rule.grants:
-                    if grant.cidr_ip:
-                        rule_string = grant.cidr_ip
-                    elif grant.name:
-                        rule_string = '{0.owner_id}:{0.name}'.format(grant)
-                    else:
-                        rule_string = None
+            rules = self.get_rules_list(group.rules)
+            rules_egress = self.get_rules_list(group.rules_egress)
 
-                    d = {
-                        'protocol': rule.ip_protocol,
-                        'from_port': rule.from_port,
-                        'to_port': rule.to_port,
-                        'rule': rule_string,
-                    }
-                    if rule_type == 0:
-                        rules_ingress.append(d)
-                    else:
-                        rules_egress.append(d)
-
-            result[group.name] = {
-                'group_id': group.id,
-                'name': group.name,
-                'description': group.description,
-                'rules': rules_ingress,
-                'rules_egress': rules_egress,
-                'vpc_id': group.vpc_id,
-            }
+            result.append(SecurityGroup(
+                group.name,
+                group.description,
+                group.id,
+                group.vpc_id,
+                rules,
+                rules_egress,
+            ))
 
         return result
 

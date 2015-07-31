@@ -89,3 +89,16 @@ class SnapshotRelatedMixin(object):
 
     def get_permissioned_object(self):
         return self.get_snapshot()
+
+
+class SecurityGroupRelatedMixin(object):
+
+    def get_securitygroup(self):
+        queryset = models.SecurityGroup.objects.all()
+
+        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissioned_object(self):
+        return self.get_securitygroup()

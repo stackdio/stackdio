@@ -72,9 +72,10 @@ class PermissionsMixin(object):
 
     def set_up_perms(self):
         # Create the object
-        self.obj = self.permission_tests['model'].objects.create(
+        self.obj = self.permission_tests['model'](
             **self.permission_tests.get('create_data', {})
         )
+        self.obj.save()
 
     def test_permissions(self):
         """

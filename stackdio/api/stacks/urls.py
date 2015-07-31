@@ -46,13 +46,13 @@ urlpatterns = patterns(
         api.HostDetailAPIView.as_view(),
         name='host-detail'),
 
-    url(r'^actions/(?P<pk>[0-9]+)/$',
-        api.StackActionDetailAPIView.as_view(),
-        name='stackaction-detail'),
+    url(r'^commands/(?P<pk>[0-9]+)/$',
+        api.StackCommandDetailAPIView.as_view(),
+        name='stackcommand-detail'),
 
-    url(r'^actions/(?P<pk>[0-9]+)/zip/$',
-        'stack_action_zip',
-        name='stackaction-zip'),
+    url(r'^commands/(?P<pk>[0-9]+)\.zip$',
+        api.StackCommandZipAPIView.as_view(),
+        name='stackcommand-zip'),
 
     url(r'^stacks/$',
         api.StackListAPIView.as_view(),
@@ -72,10 +72,6 @@ urlpatterns = patterns(
         api.StackHostsAPIView.as_view(),
         name='stack-hosts'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/fqdns/$',
-        api.StackFQDNListAPIView.as_view(),
-        name='stack-fqdns'),
-
     url(r'^stacks/(?P<pk>[0-9]+)/volumes/$',
         api.StackVolumesAPIView.as_view(),
         name='stack-volumes'),
@@ -87,14 +83,6 @@ urlpatterns = patterns(
     url(r'^stacks/(?P<pk>[0-9]+)/history/$',
         api.StackHistoryAPIView.as_view(),
         name='stack-history'),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/provisioning_errors/$',
-        api.StackProvisioningErrorsAPIView.as_view(),
-        name='stack-provisioning-errors'),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/orchestration_errors/$',
-        api.StackOrchestrationErrorsAPIView.as_view(),
-        name='stack-orchestration-errors'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/logs/$',
         api.StackLogsAPIView.as_view(),
@@ -108,9 +96,9 @@ urlpatterns = patterns(
         api.StackActionAPIView.as_view(),
         name='stack-action'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/actions/$',
-        api.StackActionListAPIView.as_view(),
-        name='stackaction-list'),
+    url(r'^stacks/(?P<pk>[0-9]+)/commands/$',
+        api.StackCommandListAPIView.as_view(),
+        name='stack-command-list'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/security_groups/$',
         api.StackSecurityGroupsAPIView.as_view(),

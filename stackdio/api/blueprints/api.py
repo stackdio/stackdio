@@ -21,9 +21,8 @@ import logging
 from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
-from rest_framework.response import Response
+from rest_framework.serializers import ValidationError
 
-from stackdio.core.exceptions import BadRequest
 from stackdio.core.permissions import (
     StackdioModelPermissions,
     StackdioObjectPermissions,
@@ -34,10 +33,8 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
-from stackdio.api.stacks.serializers import StackSerializer
-from . import serializers, filters, models, validators, permissions, mixins
+from . import serializers, filters, models, permissions, mixins
 
 logger = logging.getLogger(__name__)
 
@@ -47,23 +44,20 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
     Displays a list of all blueprints visible to you.
     """
     queryset = models.Blueprint.objects.all()
-    serializer_class = serializers.BlueprintSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.BlueprintFilter
 
-    # TODO redo this method
-    def create(self, request, *args, **kwargs):
-        errors = validators.BlueprintValidator(request).validate()
-        if errors:
-            raise BadRequest(errors)
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return serializers.FullBlueprintSerializer
+        else:
+            return serializers.BlueprintSerializer
 
-        blueprint = models.Blueprint.objects.create(request.DATA)
-
+    def perform_create(self, serializer):
+        blueprint = serializer.save()
         for perm in models.Blueprint.object_permissions:
             assign_perm('blueprints.%s_blueprint' % perm, self.request.user, blueprint)
-
-        return Response(self.get_serializer(blueprint).data)
 
 
 class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -71,43 +65,46 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.BlueprintSerializer
     permission_classes = (StackdioObjectPermissions,)
 
-    def update(self, request, *args, **kwargs):
-        blueprint = self.get_object()
-
-        # rebuild properties list
-        properties = request.DATA.pop('properties', None)
-        if properties and isinstance(properties, dict):
-            blueprint.properties = properties
-        else:
-            logger.warning('Invalid properties for blueprint {0}: {1}'.format(blueprint.title, properties))
-
-        return super(BlueprintDetailAPIView, self).update(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
+    def perform_destroy(self, instance):
         """
-        Override the delete method to check for ownership and prevent
-        blueprints from being removed if other resources are using
-        them.
+        Check to make sure this blueprint isn't being used by any stacks
         """
-        blueprint = self.get_object()
-
-        # Check usage
-        stacks = blueprint.stacks.all()
+        stacks = [s.title for s in instance.stacks.all()]
         if stacks:
-            stacks = StackSerializer(stacks,
-                                     context=dict(request=request)).data
-            return Response({
+            raise ValidationError({
                 'detail': 'This blueprint is in use by one or more '
                           'stacks and cannot be removed.',
                 'stacks': stacks
-            }, status=status.HTTP_400_BAD_REQUEST)
+            })
 
-        return super(BlueprintDetailAPIView, self).delete(request, *args, **kwargs)
+        # The blueprint isn't being used, so delete it
+        instance.delete()
+
+
+class BlueprintExportAPIView(generics.RetrieveAPIView):
+    """
+    This endpoint will produce a valid JSON object that you can use to create a blueprint
+    on another stackd.io server.
+    """
+    queryset = models.Blueprint.objects.all()
+    serializer_class = serializers.BlueprintExportSerializer
+    permission_classes = (StackdioObjectPermissions,)
 
 
 class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
+
+
+class BlueprintHostDefinitionListAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = serializers.BlueprintHostDefinitionSerializer
+
+    def get_queryset(self):
+        blueprint = self.get_blueprint()
+        return blueprint.host_definitions.all()
+
+    def perform_create(self, serializer):
+        serializer.save(blueprint=self.get_blueprint())
 
 
 class BlueprintModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
@@ -137,22 +134,5 @@ class BlueprintFormulaVersionsAPIView(mixins.BlueprintRelatedMixin, generics.Lis
         blueprint = self.get_blueprint()
         return blueprint.formula_versions.all()
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        formula = serializer.validated_data.get('formula')
-        blueprint = self.get_blueprint()
-
-        try:
-            # Setting self.instance will cause self.update() to be called instead of
-            # self.create() during save()
-            serializer.instance = blueprint.formula_versions.get(formula=formula)
-            response_code = status.HTTP_200_OK
-        except FormulaVersion.DoesNotExist:
-            # Return the proper response code
-            response_code = status.HTTP_201_CREATED
-
-        serializer.save(content_object=blueprint)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=response_code, headers=headers)
+    def perform_create(self, serializer):
+        serializer.save(content_object=self.get_blueprint())

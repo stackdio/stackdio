@@ -18,14 +18,17 @@
 
 import logging
 import os
-from datetime import datetime
+import string
 
 import salt.cloud
 from django.conf import settings
 from rest_framework import serializers
+from rest_framework.compat import OrderedDict
+from rest_framework.exceptions import PermissionDenied
 
-from stackdio.core.exceptions import BadRequest
+from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.utils import recursive_update
+from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
 from stackdio.api.blueprints.serializers import (
     BlueprintHostFormulaComponentSerializer,
@@ -33,44 +36,27 @@ from stackdio.api.blueprints.serializers import (
 )
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
-from . import models, workflows
+from . import models, tasks, utils, workflows
 
 logger = logging.getLogger(__name__)
-
-
-def validate_properties(properties):
-    """
-    Make sure properties are a valid dict and that they don't contain `__stackdio__`
-    """
-    if not isinstance(properties, dict):
-        raise serializers.ValidationError({
-            'properties': ['This field must be a JSON object.']
-        })
-
-    if '__stackdio__' in properties:
-        raise serializers.ValidationError({
-            'properties': ['The `__stackdio__` key is reserved for system use.']
-        })
 
 
 class StackPropertiesSerializer(serializers.Serializer):
     def to_representation(self, obj):
         if obj is not None:
-            return obj.properties
+            # Make it work two different ways.. ooooh
+            if isinstance(obj, models.Stack):
+                return obj.properties
+            else:
+                return obj
         return {}
 
     def to_internal_value(self, data):
         return data
 
     def validate(self, attrs):
-        validate_properties(attrs)
+        PropertiesValidator().validate(attrs)
         return attrs
-
-    def create(self, validated_data):
-        """
-        We never create anything with this serializer, so just leave it as not implemented
-        """
-        return super(StackPropertiesSerializer, self).create(validated_data)
 
     def update(self, stack, validated_data):
         if self.partial:
@@ -82,7 +68,10 @@ class StackPropertiesSerializer(serializers.Serializer):
             stack.properties = validated_data
 
         # Regenerate the pillar file with the new properties
-        stack._generate_pillar_file()
+        stack.generate_pillar_file()
+
+        # Be sure to save the instance
+        stack.save()
 
         return stack
 
@@ -93,10 +82,18 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
     formula_components = BlueprintHostFormulaComponentSerializer(many=True, read_only=True)
 
+    # Fields for adding / removing hosts
+    available_actions = ('add', 'remove')
+
+    action = serializers.ChoiceField(available_actions, write_only=True)
+    host_definition = serializers.SlugRelatedField(slug_field='slug', write_only=True,
+                                                   queryset=BlueprintHostDefinition.objects.all())
+    count = serializers.IntegerField(write_only=True, min_value=1)
+    backfill = serializers.BooleanField(default=False, write_only=True)
+
     class Meta:
         model = models.Host
         fields = (
-            'id',
             'url',
             'hostname',
             'provider_dns',
@@ -113,7 +110,148 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'sir_id',
             'sir_price',
             'formula_components',
+            'action',
+            'host_definition',
+            'count',
+            'backfill',
         )
+
+        read_only_fields = (
+            'hostname',
+            'provider_dns',
+            'provider_private_dns',
+            'provider_private_ip',
+            'fqdn',
+            'state',
+            'state_reason',
+            'status',
+            'status_detail',
+            'sir_id',
+            'sir_price',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super(HostSerializer, self).__init__(*args, **kwargs)
+        self.create_object = False
+
+    def get_fields(self):
+        """
+        Override to insert the provider_metadata field if requested
+        """
+        fields = super(HostSerializer, self).get_fields()
+
+        request = self.context['request']
+        provider_metadata = request.query_params.get('provider_metadata', False)
+        true_values = ('true', 'True', 'yes', 'Yes', '1', '')
+
+        if provider_metadata in true_values:
+            fields['provider_metadata'] = serializers.DictField(read_only=True)
+
+        return fields
+
+    def to_representation(self, instance):
+        if self.create_object:
+            serializer = HostSerializer(context=self.context, many=True)
+            return OrderedDict((
+                ('count', len(instance)),
+                ('results', serializer.to_representation(instance)),
+            ))
+        else:
+            return super(HostSerializer, self).to_representation(instance)
+
+    def validate(self, attrs):
+        stack = self.context['stack']
+        blueprint = stack.blueprint
+
+        action = attrs['action']
+        count = attrs['count']
+        host_definition = attrs['host_definition']
+
+        current_count = stack.hosts.filter(blueprint_host_definition=host_definition).count()
+
+        errors = {}
+
+        # Make sure we aren't removing too many hosts
+        if action == 'remove':
+            if count > current_count:
+                err_msg = 'You may not remove more hosts than already exist.'
+                errors.setdefault('count', []).append(err_msg)
+
+        # Make sure the stack is in a valid state
+        if stack.status != models.Stack.FINISHED:
+            err_msg = 'You may not add hosts to the stack in its current state: {0}'
+            raise serializers.ValidationError({
+                'stack': [err_msg.format(stack.status)]
+            })
+
+        # Make sure that the host definition belongs to the proper blueprint
+        if host_definition not in blueprint.host_definitions.all():
+            err_msg = 'The host definition you provided isn\'t related to this stack'
+            raise serializers.ValidationError({
+                'host_definition': [err_msg]
+            })
+
+        formatter = string.Formatter()
+        template_vars = [x[1] for x in formatter.parse(host_definition.hostname_template) if x[1]]
+
+        # Make sure the hostname_template has an index if there will be more than 1 host
+        if (count + current_count) > 1 and 'index' not in template_vars:
+            err_msg = ('The provided host_definition has a hostname_template without an `index` '
+                       'key in it.  This is required so as not to introduce duplicate hostnames.')
+            errors.setdefault('host_definition', []).append(err_msg)
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return attrs
+
+    def do_add(self, stack, validated_data):
+        hosts = stack.create_hosts(**validated_data)
+
+        if hosts:
+            host_ids = [h.id for h in hosts]
+
+            # regenerate the map file
+            stack.generate_map_file()
+
+            # Launch celery tasks to create the hosts
+            workflow = workflows.LaunchWorkflow(stack, host_ids=host_ids, opts=self.initial_data)
+            workflow.execute()
+
+        return hosts
+
+    def do_remove(self, stack, validated_data):
+        count = validated_data['count']
+        hostdef = validated_data['host_definition']
+
+        # Even though this looks like it will be a list, it's actually a QuerySet already
+        hosts = stack.hosts.filter(blueprint_host_definition=hostdef).order_by('-index')[:count]
+
+        logger.debug('Hosts to remove: {0}'.format(hosts))
+        host_ids = [h.id for h in hosts]
+        if host_ids:
+            models.Host.objects.filter(id__in=host_ids).update(
+                state=models.Host.DELETING,
+                state_reason='User initiated delete.'
+            )
+
+            # Start the celery task chain to kill the hosts
+            workflow = workflows.DestroyHostsWorkflow(stack, host_ids, opts=self.initial_data)
+            workflow.execute()
+
+        return hosts
+
+    def create(self, validated_data):
+        self.create_object = True
+        stack = self.context['stack']
+        action = validated_data.pop('action')
+
+        action_map = {
+            'add': self.do_add,
+            'remove': self.do_remove,
+        }
+
+        return action_map[action](stack, validated_data)
 
 
 class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
@@ -136,35 +274,28 @@ class StackCreateUserDefault(object):
         super(StackCreateUserDefault, self).__init__()
         self._context = None
 
+    def set_context(self, field):
+        self._context = field.parent
+
     def __call__(self):
         blueprint = Blueprint.objects.get(pk=self._context.initial_data['blueprint'])
         return blueprint.create_users
 
-    def set_context(self, field):
-        self._context = field.parent
 
-
-class StackSerializer(serializers.HyperlinkedModelSerializer):
+class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     # Read only fields
     host_count = serializers.ReadOnlyField(source='hosts.count')
     volume_count = serializers.ReadOnlyField(source='volumes.count')
-    status = serializers.ReadOnlyField()
 
     # Identity links
     hosts = serializers.HyperlinkedIdentityField(
         view_name='stack-hosts')
-    fqdns = serializers.HyperlinkedIdentityField(
-        view_name='stack-fqdns')
     action = serializers.HyperlinkedIdentityField(
         view_name='stack-action')
-    actions = serializers.HyperlinkedIdentityField(
-        view_name='stackaction-list')
+    commands = serializers.HyperlinkedIdentityField(
+        view_name='stack-command-list')
     logs = serializers.HyperlinkedIdentityField(
         view_name='stack-logs')
-    orchestration_errors = serializers.HyperlinkedIdentityField(
-        view_name='stack-orchestration-errors')
-    provisioning_errors = serializers.HyperlinkedIdentityField(
-        view_name='stack-provisioning-errors')
     volumes = serializers.HyperlinkedIdentityField(
         view_name='stack-volumes')
     properties = serializers.HyperlinkedIdentityField(
@@ -179,9 +310,6 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
         view_name='stack-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
         view_name='stack-object-group-permissions-list')
-
-    # Relation Links
-    blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
 
     class Meta:
         model = models.Stack
@@ -199,205 +327,119 @@ class StackSerializer(serializers.HyperlinkedModelSerializer):
             'created',
             'user_permissions',
             'group_permissions',
-            'fqdns',
             'hosts',
             'volumes',
             'properties',
             'history',
             'action',
-            'actions',
+            'commands',
             'security_groups',
             'formula_versions',
             'logs',
-            'orchestration_errors',
-            'provisioning_errors',
+        )
+
+        create_only_fields = (
+            'blueprint',
+            'namespace',
+        )
+
+        read_only_fields = (
+            'status',
         )
 
         extra_kwargs = {
-            'create_users': {'default': StackCreateUserDefault()}
+            'create_users': {'default': serializers.CreateOnlyDefault(StackCreateUserDefault())}
         }
-
-    SECRET_FIELDS = (
-        'auto_launch',
-        'auto_provision',
-        'parallel',
-        'simulate_launch_failures',
-        'simulate_zombies',
-        'simulate_ssh_failures',
-        'failure_percent',
-    )
-
-    REQUIRED_FIELDS = (
-        'blueprint',
-        'title',
-        'description',
-        'properties',
-    )
-
-    OPTIONAL_FIELDS = (
-        'namespace',
-        'max_retries',
-        'create_users',
-    )
-
-    VALID_FIELDS = SECRET_FIELDS + REQUIRED_FIELDS + OPTIONAL_FIELDS
 
     def validate(self, attrs):
         errors = {}
 
-        for k in attrs:
-            if k not in self.VALID_FIELDS:
-                errors.setdefault('unknown fields', []).append(k)
-
-        if errors:
-            raise serializers.ValidationError(errors)
-
-        properties = attrs.get('properties', {})
-
-        # Validate the properties
-        validate_properties(properties)
-
-        return attrs
-
-    def create(self, validated_data):
-        # Grab all the extra data not in the validated_data
-
-        # OPTIONAL PARAMS
-        properties = validated_data.get('properties', {})
-        max_retries = validated_data.get('max_retries', 2)
-
-        # UNDOCUMENTED PARAMS
-        # Skips launching if set to False
-        launch_stack = validated_data.get('auto_launch', True)
-        provision_stack = validated_data.get('auto_provision', True)
-
-        # Launches in parallel mode if set to True
-        parallel = validated_data.get('parallel', True)
-
-        # See stacks.tasks::launch_hosts for information on these params
-        simulate_launch_failures = validated_data.get('simulate_launch_failures', False)
-        simulate_ssh_failures = validated_data.get('simulate_ssh_failures', False)
-        simulate_zombies = validated_data.get('simulate_zombies', False)
-        failure_percent = validated_data.get('failure_percent', 0.3)
-
-        # Grab the validated stuff
-        title = validated_data['title']
-        description = validated_data['description']
-        blueprint = validated_data['blueprint']
-        create_users = validated_data['create_users']
-
-        user = self.context['request'].user
-
-        if not user.has_perm('blueprints.view_blueprint', blueprint):
-            raise serializers.ValidationError({
-                'blueprint': [
-                    'You do not have permission to launch a stack from this blueprint.'
-                ]
-            })
-
-        # Generate the title and/or description if not provided by user
-        if not title and not description:
-            extra_description = ' (Title and description'
-        elif not title:
-            extra_description = ' (Title'
-        elif not description:
-            extra_description = ' (Description'
+        # make sure the user has a public key or they won't be able to SSH
+        # later
+        request = self.context['request']
+        if 'create_users' in attrs:
+            create_users = attrs['create_users']
         else:
-            extra_description = ''
-        if extra_description:
-            extra_description += ' auto generated from Blueprint {0})'.format(blueprint.pk)
-
-        if not title:
-            validated_data['title'] = '{0} ({1})'.format(
-                blueprint.title,
-                datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+            create_users = self.instance.create_user
+        if create_users and not request.user.settings.public_key:
+            errors.setdefault('public_key', []).append(
+                'You have not added a public key to your user '
+                'profile and will not be able to SSH in to any '
+                'machines. Please update your user profile '
+                'before continuing.'
             )
 
-        if not description:
-            description = blueprint.description
-        validated_data['description'] = description + extra_description
+        # Check to see if the launching user has permission to launch from the blueprint
+        user = self.context['request'].user
+        blueprint = self.instance.blueprint if self.instance else attrs['blueprint']
 
-        # check for duplicates
-        if models.Stack.objects.filter(title=title).count():
-            raise serializers.ValidationError({
-                'title': ['A Stack with this title already exists in your account.']
-            })
+        if not user.has_perm('blueprints.view_blueprint', blueprint):
+            err_msg = 'You do not have permission to launch a stack from this blueprint.'
+            errors.setdefault('blueprint', []).append(err_msg)
 
         # check for hostname collisions if namespace is provided
-        namespace = validated_data.get('namespace')
-
-        host_definitions = blueprint.host_definitions.all()
-        hostnames = models.get_hostnames_from_hostdefs(
-            host_definitions,
-            namespace=namespace
-        )
+        namespace = attrs.get('namespace')
 
         if namespace:
-            # If the namespace was not provided, then there is no chance
-            # of collision within the database
+            # This all has to be here vs. in its own validator b/c it needs the blueprint
+            errors.setdefault('hostname', []).extend(validate_hostname(namespace))
+
+            # This is all only necessary if a namespace was provided
+            #  (It may not be provided on a PATCH request)
+            host_definitions = blueprint.host_definitions.all()
+            hostnames = models.get_hostnames_from_hostdefs(
+                host_definitions,
+                namespace=namespace
+            )
 
             # query for existing host names
             # Leave this in so that we catch errors faster if they are local,
             #    Only hit up salt cloud if there are no duplicates locally
             hosts = models.Host.objects.filter(hostname__in=hostnames)
-            if hosts.count():
-                raise serializers.ValidationError({
-                    'duplicate_hostnames': [h.hostname for h in hosts]
-                })
+            if hosts.count() > 0:
+                errors.setdefault('duplicate_hostnames', []).extend([h.hostname for h in hosts])
 
-        salt_cloud = salt.cloud.CloudClient(os.path.join(
-            settings.STACKDIO_CONFIG.salt_config_root,
-            'cloud'
-        ))
-        query = salt_cloud.query()
+            salt_cloud = salt.cloud.CloudClient(os.path.join(
+                settings.STACKDIO_CONFIG.salt_config_root,
+                'cloud'
+            ))
+            query = salt_cloud.query()
 
-        # Since a blueprint can have multiple accounts
-        accounts = set()
-        for bhd in host_definitions:
-            accounts.add(bhd.cloud_profile.account)
+            # Since a blueprint can have multiple accounts
+            accounts = set()
+            for bhd in host_definitions:
+                accounts.add(bhd.cloud_profile.account)
 
-        # Check to find duplicates
-        dups = []
-        for account in accounts:
-            provider = account.provider.name
-            for instance, details in query.get(account.slug, {}).get(provider, {}).items():
-                if instance in hostnames:
-                    if details['state'] not in ('shutting-down', 'terminated'):
-                        dups.append(instance)
+            # Check to find duplicates
+            dups = []
+            for account in accounts:
+                provider = account.provider.name
+                for instance, details in query.get(account.slug, {}).get(provider, {}).items():
+                    if instance in hostnames:
+                        if details['state'] not in ('shutting-down', 'terminated'):
+                            dups.append(instance)
 
-        if dups:
-            raise serializers.ValidationError({
-                'duplicate_hostnames': dups
-            })
+            if dups:
+                errors.setdefault('duplicate_hostnames', []).extend(dups)
 
-        # Everything is valid!  Let's create the stack in the database
-        try:
-            stack = models.Stack.objects.create_stack(
-                user,
-                blueprint,
-                title=title,
-                description=description,
-                namespace=namespace,
-                create_users=create_users,
-                properties=properties,
-            )
-        except Exception, e:
-            raise BadRequest(str(e))
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return attrs
+
+
+class FullStackSerializer(StackSerializer):
+    properties = StackPropertiesSerializer(required=False)
+    blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
+
+    def create(self, validated_data):
+        # Create the stack
+        stack = self.Meta.model.objects.create(**validated_data)
 
         # The stack was created, now let's launch it
-        if launch_stack:
-            workflow = workflows.LaunchWorkflow(stack)
-            workflow.opts.provision = provision_stack
-            workflow.opts.parallel = parallel
-            workflow.opts.max_retries = max_retries
-            workflow.opts.simulate_launch_failures = simulate_launch_failures
-            workflow.opts.simulate_ssh_failures = simulate_ssh_failures
-            workflow.opts.simulate_zombies = simulate_zombies
-            workflow.opts.failure_percent = failure_percent
-            workflow.execute()
-
-            stack.set_status('queued', models.Stack.PENDING,
-                             'Stack has been submitted to launch queue.')
+        # We'll pass the initial_data in as the opts
+        workflow = workflows.LaunchWorkflow(stack, opts=self.initial_data)
+        workflow.execute()
 
         return stack
 
@@ -433,22 +475,145 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
         )
 
 
-class StackActionSerializer(serializers.HyperlinkedModelSerializer):
-    zip_url = serializers.HyperlinkedIdentityField(view_name='stackaction-zip')
+class StackActionSerializer(serializers.Serializer):
+    action = serializers.CharField(write_only=True)
+    args = serializers.ListField(child=serializers.DictField(), required=False)
+
+    def validate(self, attrs):
+        stack = self.instance
+        action = attrs['action']
+        request = self.context['request']
+
+        if stack.status not in models.Stack.SAFE_STATES:
+            raise serializers.ValidationError({
+                'action': ['You may not perform an action while the stack is in its current state.']
+            })
+
+        driver_hosts_map = stack.get_driver_hosts_map()
+        total_host_count = len(stack.get_hosts().exclude(instance_id=''))
+
+        available_actions = set()
+
+        # check the individual provider for available actions
+        for driver in driver_hosts_map:
+            host_available_actions = driver.get_available_actions()
+            if action not in host_available_actions:
+                err_msg = ('At least one of the hosts in this stack does not support '
+                           'the requested action.')
+                raise serializers.ValidationError({
+                    'action': [err_msg]
+                })
+            available_actions.update(host_available_actions)
+
+        if action not in available_actions:
+            raise serializers.ValidationError({
+                'action': ['{0} is not a valid action.'.format(action)]
+            })
+
+        # Check to make sure the user is authorized to execute the action
+        if action not in utils.filter_actions(request.user, stack, available_actions):
+            raise PermissionDenied(
+                'You are not authorized to run the "{0}" action on this stack'.format(action)
+            )
+
+        # All actions other than launch require hosts to be available
+        if action != 'launch' and total_host_count == 0:
+            err_msg = ('The submitted action requires the stack to have available hosts. '
+                       'Perhaps you meant to run the launch action instead.')
+            raise serializers.ValidationError({
+                'action': [err_msg]
+            })
+
+        # Make sure the action is executable on all hosts
+        for driver, hosts in driver_hosts_map.items():
+            # check the action against current states (e.g., starting can't
+            # happen unless the hosts are in the stopped state.)
+            # XXX: Assuming that host metadata is accurate here
+            for host in hosts:
+                start_stop_msg = ('{0} action requires all hosts to be in the {1} '
+                                  'state first. At least one host is reporting an invalid '
+                                  'state: {2}')
+
+                if action == driver.ACTION_START and host.state != driver.STATE_STOPPED:
+                    raise serializers.ValidationError({
+                        'action': [start_stop_msg.format('Start', driver.STATE_STOPPED, host.state)]
+                    })
+                if action == driver.ACTION_STOP and host.state != driver.STATE_RUNNING:
+                    raise serializers.ValidationError({
+                        'action': [start_stop_msg.format('Stop', driver.STATE_RUNNING, host.state)]
+                    })
+                if action == driver.ACTION_TERMINATE and host.state not in (driver.STATE_RUNNING,
+                                                                            driver.STATE_STOPPED):
+                    raise serializers.ValidationError({
+                        'action': [start_stop_msg.format('Terminate',
+                                                         'running or stopped',
+                                                         host.state)]
+                    })
+
+                require_running = (
+                    driver.ACTION_PROVISION,
+                    driver.ACTION_ORCHESTRATE
+                )
+
+                if action in require_running and host.state != driver.STATE_RUNNING:
+                    err_msg = ('Provisioning actions require all hosts to be in the '
+                               'running state first. At least one host is reporting '
+                               'an invalid state: {0}'.format(host.state))
+                    raise serializers.ValidationError({
+                        'action': [err_msg]
+                    })
+
+        return attrs
+
+    def to_representation(self, instance):
+        """
+        We just want to return a serialized stack object here.  Returning an object with
+        the action in it just doesn't make much sense.
+        """
+        return StackSerializer(instance, context=self.context).to_representation(instance)
+
+    def save(self, **kwargs):
+        stack = self.instance
+        action = self.validated_data['action']
+        args = self.validated_data.get('args', [])
+
+        stack.set_status(models.Stack.EXECUTING_ACTION,
+                         models.Stack.EXECUTING_ACTION,
+                         'Stack is executing action \'{0}\''.format(action))
+
+        # Utilize our workflow to run the action
+        workflow = workflows.ActionWorkflow(stack, action, args)
+        workflow.execute()
+
+        return self.instance
+
+
+class StackCommandSerializer(serializers.HyperlinkedModelSerializer):
+    zip_url = serializers.HyperlinkedIdentityField(view_name='stackcommand-zip')
 
     class Meta:
-        model = models.StackAction
+        model = models.StackCommand
         fields = (
-            'id',
             'url',
             'zip_url',
             'submit_time',
             'start_time',
             'finish_time',
             'status',
-            'type',
             'host_target',
             'command',
             'std_out',
             'std_err',
         )
+
+        read_only_fields = (
+            'status',
+        )
+
+    def create(self, validated_data):
+        command = super(StackCommandSerializer, self).create(validated_data)
+
+        # Start the celery task to run the command
+        tasks.run_command.si(command.id).apply_async()
+
+        return command
