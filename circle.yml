@@ -32,8 +32,8 @@ test:
 
 deployment:
   artifact:
-    - branch: /.*/
-    - commands:
+    branch: /.*/
+    commands:
       - bower install
       - python setup.py sdist
       - mkdir $CIRCLE_ARTIFACTS/dist/
