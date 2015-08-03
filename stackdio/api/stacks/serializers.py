@@ -408,7 +408,7 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
             # Since a blueprint can have multiple accounts
             accounts = set()
             for bhd in host_definitions:
-                accounts.add(bhd.cloud_profile.account)
+                accounts.add(bhd.cloud_image.account)
 
             # Check to find duplicates
             dups = []

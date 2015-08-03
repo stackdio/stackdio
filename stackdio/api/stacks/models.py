@@ -392,7 +392,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             sg_description = 'stackd.io managed security group'
 
             # cloud account and driver for the host definition
-            account = hostdef.cloud_profile.account
+            account = hostdef.cloud_image.account
             driver = account.get_driver()
 
             try:
@@ -505,7 +505,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
                 kwargs = dict(
                     index=i,
-                    cloud_profile=hostdef.cloud_profile,
+                    cloud_image=hostdef.cloud_image,
                     blueprint_host_definition=hostdef,
                     instance_size=hostdef.size,
                     hostname=hostname,
@@ -513,7 +513,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                     state=Host.PENDING
                 )
 
-                if hostdef.cloud_profile.account.vpc_enabled:
+                if hostdef.cloud_image.account.vpc_enabled:
                     kwargs['subnet_id'] = hostdef.subnet_id
                 else:
                     kwargs['availability_zone'] = hostdef.zone
@@ -523,7 +523,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 # Add in the cloud account default security groups as
                 # defined by an admin.
                 account_groups = set(list(
-                    host.cloud_profile.account.security_groups.filter(
+                    host.cloud_image.account.security_groups.filter(
                         is_default=True
                     )
                 ))
@@ -560,16 +560,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         master = socket.getfqdn()
 
-        profiles = {}
+        images = {}
 
         hosts = self.hosts.all()
         cluster_size = len(hosts)
 
         for host in hosts:
             # load provider yaml to extract default security groups
-            cloud_account = host.cloud_profile.account
-            cloud_account_yaml = yaml.safe_load(
-                cloud_account.yaml)[cloud_account.slug]
+            cloud_account = host.cloud_image.account
+            cloud_account_yaml = yaml.safe_load(cloud_account.yaml)[cloud_account.slug]
 
             # pull various stuff we need for a host
             roles = [c.component.sls_path for
@@ -628,8 +627,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
                             'volumes': map_volumes,
-                            'cloud_account': host.cloud_profile.account.slug,
-                            'cloud_profile': host.cloud_profile.slug,
+                            'cloud_account': host.cloud_image.account.slug,
+                            'cloud_image': host.cloud_image.slug,
                             'namespace': self.namespace,
                         },
                     },
@@ -655,11 +654,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                     'spot_price': str(host.sir_price)  # convert to string
                 }
 
-            profiles.setdefault(host.cloud_profile.slug, []) \
-                .append(host_metadata)
+            images.setdefault(host.cloud_image.slug, []).append(host_metadata)
 
-        map_file_yaml = yaml.safe_dump(profiles,
-                                       default_flow_style=False)
+        map_file_yaml = yaml.safe_dump(images, default_flow_style=False)
 
         if not self.map_file:
             self.map_file.save(self.slug + '.map', ContentFile(map_file_yaml))
@@ -725,9 +722,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(yaml_data)
 
     def generate_global_overstate_file(self):
-        accounts = set(
-            [host.cloud_profile.account for
-                host in self.hosts.all()])
+        accounts = set([host.cloud_image.account for host in self.hosts.all()])
 
         overstate = {}
 
@@ -840,7 +835,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         # Find all of the globally used formulas for the stack
         accounts = set(
-            [host.cloud_profile.account for
+            [host.cloud_image.account for
                 host in self.hosts.all()]
         )
         global_formulas = []
@@ -1046,8 +1041,8 @@ class Host(TimeStampedModel, StatusDetailModel):
     stack = models.ForeignKey('Stack',
                               related_name='hosts')
 
-    cloud_profile = models.ForeignKey('cloud.CloudProfile',
-                                      related_name='hosts')
+    cloud_image = models.ForeignKey('cloud.CloudImage',
+                                    related_name='hosts')
 
     instance_size = models.ForeignKey('cloud.CloudInstanceSize',
                                       related_name='hosts')
@@ -1116,10 +1111,10 @@ class Host(TimeStampedModel, StatusDetailModel):
         return metadata[self.hostname]
 
     def get_account(self):
-        return self.cloud_profile.account
+        return self.cloud_image.account
 
     def get_provider(self):
         return self.get_account().provider
 
     def get_driver(self):
-        return self.cloud_profile.get_driver()
+        return self.cloud_image.get_driver()

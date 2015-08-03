@@ -60,7 +60,7 @@ class CloudRootView(APIView):
             ('accounts', reverse('cloudaccount-list',
                                  request=request,
                                  format=format)),
-            ('profiles', reverse('cloudprofile-list',
+            ('images', reverse('cloudimage-list',
                                  request=request,
                                  format=format)),
             ('snapshots', reverse('snapshot-list',
@@ -115,12 +115,12 @@ class CloudAccountDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (StackdioObjectPermissions,)
 
     def perform_destroy(self, instance):
-        # check for profiles using this account before deleting
-        profiles = [p.slug for p in instance.profiles.all()]
-        if profiles:
+        # check for images using this account before deleting
+        images = [p.slug for p in instance.images.all()]
+        if images:
             raise ValidationError({
-                'detail': 'One or more profiles are making use of this account.',
-                'profiles': profiles,
+                'detail': 'One or more images are making use of this account.',
+                'images': images,
             })
 
         # ask the driver to clean up after itself since it's no longer needed
@@ -208,55 +208,54 @@ class CloudAccountFormulaVersionsAPIView(mixins.CloudAccountRelatedMixin,
         serializer.save(content_object=self.get_cloudaccount())
 
 
-class CloudProfileListAPIView(generics.ListCreateAPIView):
-    queryset = models.CloudProfile.objects.all()
-    serializer_class = serializers.CloudProfileSerializer
+class CloudImageListAPIView(generics.ListCreateAPIView):
+    queryset = models.CloudImage.objects.all()
+    serializer_class = serializers.CloudImageSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
-    filter_class = filters.CloudProfileFilter
+    filter_class = filters.CloudImageFilter
 
     def perform_create(self, serializer):
         obj = serializer.save()
         obj.update_config()
 
 
-class CloudProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.CloudProfile.objects.all()
-    serializer_class = serializers.CloudProfileSerializer
+class CloudImageDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = models.CloudImage.objects.all()
+    serializer_class = serializers.CloudImageSerializer
     permission_classes = (StackdioObjectPermissions,)
 
     def perform_destroy(self, instance):
         # check for blueprint usage before deleting
-        blueprints = Blueprint.objects.filter(host_definitions__cloud_profile=instance).distinct()
+        blueprints = Blueprint.objects.filter(host_definitions__cloud_image=instance).distinct()
 
         if blueprints:
             raise ValidationError({
-                'detail': 'One or more blueprints are making use of this '
-                          'profile.',
+                'detail': 'One or more blueprints are making use of this image.',
                 'blueprints': [b.title for b in blueprints],
             })
 
         instance.delete()
 
 
-class CloudProfileModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.CloudProfilePermissionsModelPermissions,)
-    model_cls = models.CloudProfile
+class CloudImageModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    permission_classes = (permissions.CloudImagePermissionsModelPermissions,)
+    model_cls = models.CloudImage
 
 
-class CloudProfileModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudProfilePermissionsModelPermissions,)
-    model_cls = models.CloudProfile
+class CloudImageModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    permission_classes = (permissions.CloudImagePermissionsModelPermissions,)
+    model_cls = models.CloudImage
 
 
-class CloudProfileObjectUserPermissionsViewSet(mixins.CloudProfileRelatedMixin,
-                                               StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.CloudProfilePermissionsObjectPermissions,)
+class CloudImageObjectUserPermissionsViewSet(mixins.CloudImageRelatedMixin,
+                                             StackdioObjectUserPermissionsViewSet):
+    permission_classes = (permissions.CloudImagePermissionsObjectPermissions,)
 
 
-class CloudProfileObjectGroupPermissionsViewSet(mixins.CloudProfileRelatedMixin,
-                                                StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudProfilePermissionsObjectPermissions,)
+class CloudImageObjectGroupPermissionsViewSet(mixins.CloudImageRelatedMixin,
+                                              StackdioObjectGroupPermissionsViewSet):
+    permission_classes = (permissions.CloudImagePermissionsObjectPermissions,)
 
 
 class SnapshotListAPIView(generics.ListCreateAPIView):

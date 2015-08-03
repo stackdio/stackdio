@@ -23,6 +23,7 @@ import git
 from rest_framework import serializers
 
 from stackdio.core.fields import PasswordField
+from stackdio.core.mixins import CreateOnlyFieldsMixin
 from . import models, tasks
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class FormulaSerializer(serializers.HyperlinkedModelSerializer):
+class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     # Non-model fields
     git_password = PasswordField(write_only=True, required=False,
                                  allow_blank=True, label='Git Password')
@@ -84,45 +85,52 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'status_detail',
         )
 
+        create_only_fields = (
+            'uri',
+            'git_password',
+        )
+
         extra_kwargs = {
             'access_token': {'default': serializers.CreateOnlyDefault(False)},
         }
 
     def validate(self, attrs):
-        uri = attrs['uri']
-        git_username = attrs.get('git_username')
+        if self.instance is None:
+            uri = attrs.get('uri', self.instance.uri)
 
-        errors = {}
+            git_username = attrs.get('git_username')
 
-        if git_username:
-            # We only need validation if a non-empty username is provided
-            access_token = attrs['access_token']
-            git_password = attrs.get('git_password')
+            errors = {}
 
-            if not access_token and not git_password:
-                err_msg = 'Your git password is required if you\'re not using an access token.'
-                errors.setdefault('access_token', []).append(err_msg)
-                errors.setdefault('git_password', []).append(err_msg)
+            if git_username:
+                # We only need validation if a non-empty username is provided
+                access_token = attrs.get('access_token')
+                git_password = attrs.get('git_password')
 
-            if access_token and git_password:
-                err_msg = 'If you are using an access_token, you may not provide a password.'
-                errors.setdefault('access_token', []).append(err_msg)
-                errors.setdefault('git_password', []).append(err_msg)
+                if not access_token and not git_password:
+                    err_msg = 'Your git password is required if you\'re not using an access token.'
+                    errors.setdefault('access_token', []).append(err_msg)
+                    errors.setdefault('git_password', []).append(err_msg)
 
-            # Add the git username to the uri if necessary
-            parse_res = urlsplit(uri)
-            if '@' not in parse_res.netloc:
-                new_netloc = '{0}@{1}'.format(git_username, parse_res.netloc)
-                attrs['uri'] = urlunsplit((
-                    parse_res.scheme,
-                    new_netloc,
-                    parse_res.path,
-                    parse_res.query,
-                    parse_res.fragment
-                ))
+                if access_token and git_password:
+                    err_msg = 'If you are using an access_token, you may not provide a password.'
+                    errors.setdefault('access_token', []).append(err_msg)
+                    errors.setdefault('git_password', []).append(err_msg)
 
-        if errors:
-            raise serializers.ValidationError(errors)
+                # Add the git username to the uri if necessary
+                parse_res = urlsplit(uri)
+                if '@' not in parse_res.netloc:
+                    new_netloc = '{0}@{1}'.format(git_username, parse_res.netloc)
+                    attrs['uri'] = urlunsplit((
+                        parse_res.scheme,
+                        new_netloc,
+                        parse_res.path,
+                        parse_res.query,
+                        parse_res.fragment
+                    ))
+
+            if errors:
+                raise serializers.ValidationError(errors)
 
         return attrs
 

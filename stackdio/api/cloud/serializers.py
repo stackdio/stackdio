@@ -222,7 +222,7 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):  # pylint
         return account
 
 
-class CloudProfileSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
+class CloudImageSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
     )
@@ -232,12 +232,12 @@ class CloudProfileSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModel
     )
 
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprofile-object-user-permissions-list')
+        view_name='cloudimage-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='cloudprofile-object-group-permissions-list')
+        view_name='cloudimage-object-group-permissions-list')
 
     class Meta:
-        model = models.CloudProfile
+        model = models.CloudImage
         fields = (
             'id',
             'url',
@@ -252,7 +252,7 @@ class CloudProfileSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModel
             'group_permissions',
         )
 
-        # Don't allow these to be changed after profile creation
+        # Don't allow these to be changed after image creation
         create_only_fields = (
             'account',
         )

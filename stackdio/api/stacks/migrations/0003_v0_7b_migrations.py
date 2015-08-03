@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('stacks', '0002_v0_7_migrations'),
+        ('cloud', '0005_v0_7b_migrations'),
     ]
 
     operations = [
@@ -38,5 +39,15 @@ class Migration(migrations.Migration):
             model_name='stackcommand',
             name='start',
             field=models.DateTimeField(default=django.utils.timezone.now, verbose_name=b'Start Time', blank=True),
+        ),
+        migrations.RenameField(
+            model_name='host',
+            old_name='cloud_profile',
+            new_name='cloud_image',
+        ),
+        migrations.AlterField(
+            model_name='host',
+            name='cloud_image',
+            field=models.ForeignKey(related_name='hosts', to='cloud.CloudImage'),
         ),
     ]

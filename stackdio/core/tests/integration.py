@@ -38,7 +38,7 @@ class AuthenticationTestCase(StackdioTestCase):
         'stacks',
         'volumes',
         'cloud/accounts',
-        'cloud/profiles',
+        'cloud/images',
         'cloud/snapshots',
         'groups',
     )

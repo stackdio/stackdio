@@ -1,6 +1,6 @@
 {
     "name": "stackd.io",
-    "version": "0.7.0.dev2",
+    "version": "0.7.0.dev3",
     "dependencies": {
         "jquery": "~1.9.1",
         "bootstrap": "~3.0.1",

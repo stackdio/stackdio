@@ -45,21 +45,21 @@ account_object_router.register(r'groups',
                                api.CloudAccountObjectGroupPermissionsViewSet,
                                'cloudaccount-object-group-permissions')
 
-profile_model_router = routers.SimpleRouter()
-profile_model_router.register(r'users',
-                              api.CloudProfileModelUserPermissionsViewSet,
-                              'cloudprofile-model-user-permissions')
-profile_model_router.register(r'groups',
-                              api.CloudProfileModelGroupPermissionsViewSet,
-                              'cloudprofile-model-group-permissions')
+image_model_router = routers.SimpleRouter()
+image_model_router.register(r'users',
+                              api.CloudImageModelUserPermissionsViewSet,
+                              'cloudimage-model-user-permissions')
+image_model_router.register(r'groups',
+                              api.CloudImageModelGroupPermissionsViewSet,
+                              'cloudimage-model-group-permissions')
 
-profile_object_router = routers.SimpleRouter()
-profile_object_router.register(r'users',
-                               api.CloudProfileObjectUserPermissionsViewSet,
-                               'cloudprofile-object-user-permissions')
-profile_object_router.register(r'groups',
-                               api.CloudProfileObjectGroupPermissionsViewSet,
-                               'cloudprofile-object-group-permissions')
+image_object_router = routers.SimpleRouter()
+image_object_router.register(r'users',
+                               api.CloudImageObjectUserPermissionsViewSet,
+                               'cloudimage-object-user-permissions')
+image_object_router.register(r'groups',
+                               api.CloudImageObjectGroupPermissionsViewSet,
+                               'cloudimage-object-group-permissions')
 
 snapshot_model_router = routers.SimpleRouter()
 snapshot_model_router.register(r'users',
@@ -163,19 +163,19 @@ urlpatterns = (
         api.GlobalOrchestrationComponentDetailAPIView.as_view(),
         name='globalorchestrationformulacomponent-detail'),
 
-    url(r'^profiles/$',
-        api.CloudProfileListAPIView.as_view(),
-        name='cloudprofile-list'),
+    url(r'^images/$',
+        api.CloudImageListAPIView.as_view(),
+        name='cloudimage-list'),
 
-    url(r'^profiles/permissions/',
-        include(profile_model_router.urls)),
+    url(r'^images/permissions/',
+        include(image_model_router.urls)),
 
-    url(r'^profiles/(?P<pk>[0-9]+)/$',
-        api.CloudProfileDetailAPIView.as_view(),
-        name='cloudprofile-detail'),
+    url(r'^images/(?P<pk>[0-9]+)/$',
+        api.CloudImageDetailAPIView.as_view(),
+        name='cloudimage-detail'),
 
-    url(r'^profiles/(?P<pk>[0-9]+)/permissions/',
-        include(profile_object_router.urls)),
+    url(r'^images/(?P<pk>[0-9]+)/permissions/',
+        include(image_object_router.urls)),
 
     url(r'^snapshots/$',
         api.SnapshotListAPIView.as_view(),

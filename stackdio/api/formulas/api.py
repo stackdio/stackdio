@@ -58,7 +58,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
             assign_perm('formulas.%s_formula' % perm, self.request.user, formula)
 
 
-class FormulaDetailAPIView(generics.RetrieveDestroyAPIView):
+class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
     permission_classes = (StackdioObjectPermissions,)

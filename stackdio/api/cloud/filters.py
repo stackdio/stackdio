@@ -32,11 +32,11 @@ class CloudAccountFilter(django_filters.FilterSet):
         )
 
 
-class CloudProfileFilter(django_filters.FilterSet):
+class CloudImageFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
 
     class Meta:
-        model = models.CloudProfile
+        model = models.CloudImage
         fields = (
             'title',
         )
