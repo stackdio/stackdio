@@ -50,7 +50,7 @@ admin.site.register(models.StackHistory, StackHistoryAdmin)
 class HostAdmin(GuardedModelAdmin):
     list_display = [
         'stack',
-        'cloud_profile',
+        'cloud_image',
         'instance_size',
         'hostname',
         'provider_dns',

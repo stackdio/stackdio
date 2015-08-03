@@ -41,19 +41,10 @@ class FormulaTestCase(StackdioTestCase, PermissionsMixin):
                 'perm': 'view', 'method': 'get'
             },
             {
+                'perm': 'update', 'method': 'patch', 'data': {'git_username': 'test2'}
+            },
+            {
                 'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
             },
         ]
     }
-
-    def test_update(self):
-        endpoint = self.permission_tests['endpoint'].format(self.obj.pk)
-
-        self.client.login(username='test.user', password='1234')
-
-        # Test put and patch
-        response = self.client.put(endpoint, {'title': 'test2'})
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-
-        response = self.client.patch(endpoint, {'title': 'test2'})
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

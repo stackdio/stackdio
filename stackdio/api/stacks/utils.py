@@ -377,7 +377,7 @@ def deploy_vm(params):
     # object that will be handed to `salt.utils.cloud.deploy_script`
 
     # The SSH username we'll use for pushing files and remote execution. This
-    # should already be defined in the cloud profile this host is using.
+    # should already be defined in the cloud image this host is using.
     username = config.get_cloud_config_value(
         'ssh_username', vm_, __opts__, search_global=False, default=None
     )
@@ -388,7 +388,7 @@ def deploy_vm(params):
     )
 
     # Which deploy script will be run to bootstrap the minions. This is pre-
-    # defined in the cloud profile for the host.
+    # defined in the cloud image/profile for the host.
     deploy_script = salt.utils.cloud.os_script(
         config.get_cloud_config_value('script', vm_, __opts__),
         vm_,

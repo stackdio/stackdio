@@ -29,7 +29,7 @@ from rest_framework.settings import api_settings
 
 from stackdio.core.utils import recursive_update
 from stackdio.core.validators import PropertiesValidator
-from stackdio.api.cloud.models import CloudInstanceSize, CloudProfile, CloudZone
+from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone
 from stackdio.api.formulas.models import Formula, FormulaComponent
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.api.volumes.models import Volume
@@ -232,15 +232,15 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
                                         queryset=CloudInstanceSize.objects.all())
     zone = serializers.SlugRelatedField(slug_field='title', required=False,
                                         queryset=CloudZone.objects.all())
-    cloud_profile = serializers.SlugRelatedField(slug_field='slug',
-                                                 queryset=CloudProfile.objects.all())
+    cloud_image = serializers.SlugRelatedField(slug_field='slug',
+                                                 queryset=CloudImage.objects.all())
 
     class Meta:
         model = models.BlueprintHostDefinition
         fields = (
             'title',
             'description',
-            'cloud_profile',
+            'cloud_image',
             'count',
             'hostname_template',
             'size',
@@ -273,17 +273,17 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
             errors.setdefault('count', []).append(err_msg)
 
         # Validate zone / subnet id
-        profile = attrs['cloud_profile']
-        account = profile.account
+        image = attrs['cloud_image']
+        account = image.account
 
         if account.vpc_enabled:
             # If we're in a vpc, we need a VALID subnet id
             subnet_id = attrs.get('subnet_id')
             if subnet_id is None:
-                err_msg = 'This is a required field for a profile in a vpc enabled account.'
+                err_msg = 'This is a required field for a image in a vpc enabled account.'
                 errors.setdefault('subnet_id', []).append(err_msg)
 
-            driver = profile.get_driver()
+            driver = image.get_driver()
             subnets = driver.get_vpc_subnets([subnet_id])
             if subnets is None:
                 err_msg = '"{0}" is not a valid subnet id.'.format(subnet_id)
