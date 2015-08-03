@@ -31,8 +31,9 @@ from django_extensions.db.models import (
     TitleSlugDescriptionModel,
 )
 
-from stackdio.core.queryset_transform import TransformManager, TransformQuerySet
+from stackdio.core.queryset_transform import TransformQuerySet
 from stackdio.core.fields import DeletingFileField
+from stackdio.api.cloud.providers.base import GroupNotFoundException
 from .utils import get_cloud_provider_choices, get_provider_driver_class
 
 logger = logging.getLogger(__name__)
@@ -95,6 +96,7 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
 
     model_permissions = _cloudaccount_model_permissions
     object_permissions = _cloudaccount_object_permissions
+    searchable_fields = ('title', 'description')
 
     class Meta:
         unique_together = ('title', 'provider')
@@ -262,12 +264,12 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
         )
 
 
-_cloudprofile_model_permissions = (
+_cloudimage_model_permissions = (
     'create',
     'admin',
 )
 
-_cloudprofile_object_permissions = (
+_cloudimage_object_permissions = (
     'view',
     'update',
     'delete',
@@ -275,24 +277,25 @@ _cloudprofile_object_permissions = (
 )
 
 
-class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
+class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
 
-    model_permissions = _cloudprofile_model_permissions
-    object_permissions = _cloudprofile_object_permissions
+    model_permissions = _cloudimage_model_permissions
+    object_permissions = _cloudimage_object_permissions
+    searchable_fields = ('title', 'description')
 
     class Meta:
         unique_together = ('title', 'account')
 
-        default_permissions = tuple(set(_cloudprofile_model_permissions +
-                                        _cloudprofile_object_permissions))
+        default_permissions = tuple(set(_cloudimage_model_permissions +
+                                        _cloudimage_object_permissions))
 
     # What cloud account is this under?
-    account = models.ForeignKey('cloud.CloudAccount', related_name='profiles')
+    account = models.ForeignKey('cloud.CloudAccount', related_name='images')
 
-    # The underlying image id of this profile (e.g., ami-38df83a')
+    # The underlying image id of this image (e.g., ami-38df83a')
     image_id = models.CharField('Image ID', max_length=64)
 
-    # The default instance size of this profile, may be overridden
+    # The default instance size of this image, may be overridden
     # by the user at creation time
     default_instance_size = models.ForeignKey('CloudInstanceSize',
                                               verbose_name='Default Instance Size')
@@ -443,11 +446,6 @@ class SecurityGroupQuerySet(TransformQuerySet):
                 group.rules = account_groups[group.name]['rules']
 
 
-class SecurityGroupManager(TransformManager):
-    def get_queryset(self):
-        return SecurityGroupQuerySet(self.model)
-
-
 _securitygroup_model_permissions = (
     'create',
     'admin',
@@ -472,7 +470,7 @@ class SecurityGroup(TimeStampedModel, models.Model):
         default_permissions = tuple(set(_securitygroup_model_permissions +
                                         _snapshot_object_permissions))
 
-    objects = SecurityGroupManager()
+    objects = SecurityGroupQuerySet.as_manager()
 
     # Name of the security group (REQUIRED)
     name = models.CharField(max_length=255)
@@ -483,19 +481,22 @@ class SecurityGroup(TimeStampedModel, models.Model):
     # ID given by the provider
     # NOTE: This will be set automatically after it has been created on the
     # account and will be ignored if passed in
-    group_id = models.CharField(max_length=16, blank=True)
+    group_id = models.CharField(max_length=16)
 
     # The stack that the security group is for (this is only
     # useful if it's a managed security group)
-    stack = models.ForeignKey('stacks.Stack',
-                              null=True,
-                              related_name='security_groups')
+    stack = models.ForeignKey(
+        'stacks.Stack',
+        null=True,
+        related_name='security_groups'
+    )
 
     blueprint_host_definition = models.ForeignKey(
         'blueprints.BlueprintHostDefinition',
         null=True,
         default=None,
-        related_name='security_groups')
+        related_name='security_groups'
+    )
 
     # the cloud account for this group
     account = models.ForeignKey('cloud.CloudAccount', related_name='security_groups')
@@ -522,11 +523,10 @@ class SecurityGroup(TimeStampedModel, models.Model):
         """
         Pulls the security groups using the cloud provider
         """
-        logger.debug('SecurityGroup::rules called...')
         driver = self.account.get_driver()
-        try:
-            groups = driver.get_security_groups([self.group_id])
-            return groups[self.name]['rules']
-        except KeyError:
-            logger.debug(groups)
-            raise
+        groups = driver.get_security_groups([self.group_id])
+        if len(groups) == 1:
+            return groups[0].rules
+        else:
+            raise GroupNotFoundException('The group with id "{0}" was not '
+                                         'found.'.format(self.group_id))

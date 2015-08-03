@@ -18,23 +18,21 @@
 
 import json
 import logging
-from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.db import models, transaction
+from django.db import models
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
 from stackdio.core.fields import DeletingFileField
-from stackdio.api.cloud.models import CloudProfile, CloudInstanceSize, CloudZone, Snapshot
-from stackdio.api.formulas.models import FormulaComponent
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
     ('udp', 'UDP'),
     ('icmp', 'ICMP'),
+    ('-1', 'all'),
 ]
 
 DEVICE_ID_CHOICES = [
@@ -50,103 +48,6 @@ logger = logging.getLogger(__name__)
 
 def get_props_file_path(obj, filename):
     return 'blueprints/{0}-{1}.props'.format(obj.pk, obj.slug)
-
-
-class BlueprintManager(models.Manager):
-
-    # TODO: ignoring code complexity issues
-    @transaction.atomic  # NOQA
-    def create(self, data, **kwargs):
-        """
-        Custom blueprint creation
-        """
-
-        ##
-        # validate incoming data
-        ##
-        blueprint = self.model(
-            title=data['title'],
-            description=data['description'],
-            create_users=data['create_users'],
-        )
-
-        blueprint.save()
-
-        props_json = json.dumps(data.get('properties', {}), indent=4)
-        if not blueprint.props_file:
-            blueprint.props_file.save(blueprint.slug + '.props',
-                                      ContentFile(props_json))
-        else:
-            with open(blueprint.props_file.path, 'w') as f:
-                f.write(props_json)
-
-        # create corresonding hosts and related models
-        for host in data['hosts']:
-            profile_obj = CloudProfile.objects.get(pk=host['cloud_profile'])
-            size_obj = CloudInstanceSize.objects.get(instance_id=host['size'])
-            spot_price = host.get('spot_config', {}).get('spot_price', None)
-            formula_components = host.get('formula_components', [])
-            if spot_price is not None:
-                spot_price = Decimal(str(spot_price))
-
-            kwargs = dict(
-                title=host['title'],
-                description=host.get('description', ''),
-                count=host['count'],
-                hostname_template=host['hostname_template'],
-                cloud_profile=profile_obj,
-                size=size_obj,
-                spot_price=spot_price,
-            )
-
-            if profile_obj.account.vpc_enabled:
-                kwargs['subnet_id'] = host.get('subnet_id')
-            else:
-                zone_obj = CloudZone.objects.get(pk=host['zone'])
-                kwargs['zone'] = zone_obj
-
-            host_obj = blueprint.host_definitions.create(**kwargs)
-
-            # create extended formula components for the blueprint
-            for component in formula_components:
-                component_id = component.get('id')
-                component_title = component.get('title')
-                component_sls_path = component.get('sls_path')
-                component_order = int(component.get('order', 0) or 0)
-
-                d = {}
-                if component_id:
-                    d['pk'] = component_id
-                elif component_sls_path:
-                    d['sls_path__iexact'] = component_sls_path
-                elif component_title:
-                    d['title__icontains'] = component_title
-                component_obj = FormulaComponent.objects.get(**d)
-                host_obj.formula_components.create(
-                    component=component_obj,
-                    order=component_order
-                )
-
-            # build out the access rules
-            for access_rule in host.get('access_rules', []):
-                host_obj.access_rules.create(
-                    protocol=access_rule['protocol'],
-                    from_port=access_rule['from_port'],
-                    to_port=access_rule['to_port'],
-                    rule=access_rule['rule']
-                )
-
-            # build out the volumes
-            for volume in host.get('volumes', []):
-                logger.debug(volume)
-                snapshot = Snapshot.objects.get(pk=volume['snapshot'])
-                host_obj.volumes.create(
-                    device=volume['device'],
-                    mount_point=volume['mount_point'],
-                    snapshot=snapshot
-                )
-
-        return blueprint
 
 
 _blueprint_model_permissions = (
@@ -173,6 +74,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
     model_permissions = _blueprint_model_permissions
     object_permissions = _blueprint_object_permissions
+    searchable_fields = ('title', 'description')
 
     class Meta:
         default_permissions = tuple(set(_blueprint_model_permissions +
@@ -190,9 +92,6 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         blank=True,
         default=None,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
-
-    # Use our custom manager object
-    objects = BlueprintManager()
 
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.id)
@@ -233,17 +132,19 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
 
         default_permissions = ()
 
+        unique_together = (('title', 'blueprint'), ('hostname_template', 'blueprint'))
+
     # The blueprint object this host is owned by
     blueprint = models.ForeignKey('blueprints.Blueprint',
                                   related_name='host_definitions')
 
-    # The cloud profile object this host should use when being
+    # The cloud image object this host should use when being
     # launched
-    cloud_profile = models.ForeignKey('cloud.CloudProfile',
-                                      related_name='host_definitions')
+    cloud_image = models.ForeignKey('cloud.CloudImage',
+                                    related_name='host_definitions')
 
     # The default number of instances to launch for this host definition
-    count = models.IntegerField('Count')
+    count = models.PositiveIntegerField('Count')
 
     # The hostname template that will be used to generate the actual
     # hostname at launch time. Several template variables will be provided

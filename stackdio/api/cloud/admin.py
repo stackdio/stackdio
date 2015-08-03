@@ -68,7 +68,7 @@ admin.site.register(models.GlobalOrchestrationFormulaComponent,
                     GlobalOrchestrationFormulaComponentAdmin)
 
 
-class CloudProfileAdmin(GuardedModelAdmin):
+class CloudImageAdmin(GuardedModelAdmin):
     list_display = [
         'title',
         'account',
@@ -78,7 +78,7 @@ class CloudProfileAdmin(GuardedModelAdmin):
     ]
 
 
-admin.site.register(models.CloudProfile, CloudProfileAdmin)
+admin.site.register(models.CloudImage, CloudImageAdmin)
 
 
 class SnapshotAdmin(GuardedModelAdmin):
@@ -121,10 +121,12 @@ admin.site.register(models.CloudZone, CloudZoneAdmin)
 
 class SecurityGroupAdmin(GuardedModelAdmin):
     list_display = [
-        'name',
         'group_id',
+        'name',
+        'description',
         'account',
         'is_default',
+        'is_managed',
     ]
 
 

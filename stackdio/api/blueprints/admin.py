@@ -39,7 +39,7 @@ class BlueprintHostDefinitionAdmin(GuardedModelAdmin):
     list_display = [
         'hostname_template',
         'blueprint',
-        'cloud_profile',
+        'cloud_image',
         'count',
         'size',
         'zone',

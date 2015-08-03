@@ -103,7 +103,7 @@ To quickly get up and running, you can run the following to install the required
 sudo yum groupinstall "Development Tools"
 
 # Install the other requirements needed to install stackd.io
-sudo yum install git mysql-devel swig python-devel rabbitmq-server nginx
+sudo yum install git mysql-devel swig python-devel rabbitmq-server nginx nodejs npm
 ```
 # Next Steps
 

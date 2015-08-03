@@ -17,25 +17,27 @@
 
 
 import json
+import logging
 import os
 import re
-import logging
 import socket
 
-import envoy
+import salt.cloud
 import yaml
-import model_utils.models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from django.core.cache import cache
 from django.db import models, transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
+from django.utils.timezone import now
 from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
-from guardian.shortcuts import assign_perm, get_users_with_perms
+from guardian.shortcuts import get_users_with_perms
 from model_utils import Choices
+from model_utils.models import StatusModel
 
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.utils import recursive_update
@@ -109,7 +111,7 @@ class Level(object):
     ERROR = 'ERROR'
 
 
-class StatusDetailModel(model_utils.models.StatusModel):
+class StatusDetailModel(StatusModel):
     status_detail = models.TextField(blank=True)
 
     class Meta:
@@ -123,64 +125,41 @@ class StatusDetailModel(model_utils.models.StatusModel):
         return self.save()
 
 
-class StackManager(models.Manager):
+class StackQuerySet(models.QuerySet):
 
-    @transaction.atomic
-    def create_stack(self, create_user, blueprint, **data):
-        title = data.get('title', '')
-        description = data.get('description', '')
-        create_users = data['create_users']
+    def create(self, **kwargs):
+        new_properties = kwargs.pop('properties', {})
 
-        if not title:
-            raise ValueError("Stack 'title' is a required field.")
+        with transaction.atomic(using=self.db):
+            stack = super(StackQuerySet, self).create(**kwargs)
 
-        stack = self.model(blueprint=blueprint,
-                           title=title,
-                           description=description,
-                           create_users=create_users)
-        stack.save()
+            # manage the properties
+            properties = stack.blueprint.properties
+            recursive_update(properties, new_properties)
 
-        for perm in self.model.object_permissions:
-            assign_perm('stacks.%s_stack' % perm, create_user, stack)
+            stack.properties = properties
 
-        # add the namespace
-        namespace = data.get('namespace', '').strip()
-        if not namespace:
-            namespace = 'stack{0}'.format(stack.pk)
-        stack.namespace = namespace
-        stack.save()
+            # Copy over the formula versions from the blueprint
+            for version in stack.blueprint.formula_versions.all():
+                stack.formula_versions.create(
+                    formula=version.formula,
+                    version=version.version,
+                )
 
-        # manage the properties
-        properties = blueprint.properties
-        recursive_update(properties, data.get('properties', {}))
-        props_json = json.dumps(properties, indent=4)
-        if not stack.props_file:
-            stack.props_file.save(stack.slug + '.props',
-                                  ContentFile(props_json))
-        else:
-            with open(stack.props_file.path, 'w') as f:
-                f.write(props_json)
-
-        # Copy over the formula versions from the blueprint
-        for version in stack.blueprint.formula_versions.all():
-            stack.formula_versions.create(
-                formula=version.formula,
-                version=version.version,
-            )
-
-        stack.create_security_groups()
-        stack.create_hosts()
+            # Create the appropriate hosts & security group objects
+            stack.create_security_groups()
+            stack.create_hosts()
 
         # Generate configuration files for salt and salt-cloud
         # NOTE: The order is important here. pillar must be available before
         # the map file is rendered or else we'll miss important grains that
         # need to be set at launch time
-        stack._generate_pillar_file()
-        stack._generate_global_pillar_file()
-        stack._generate_top_file()
-        stack._generate_overstate_file()
-        stack._generate_global_overstate_file()
-        stack._generate_map_file()
+        stack.generate_pillar_file()
+        stack.generate_global_pillar_file()
+        stack.generate_top_file()
+        stack.generate_overstate_file()
+        stack.generate_global_overstate_file()
+        stack.generate_map_file()
 
         return stack
 
@@ -206,7 +185,7 @@ _stack_object_permissions = (
 )
 
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.StatusModel):
+class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
     # Launch workflow:
     PENDING = 'pending'
@@ -246,11 +225,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
     model_permissions = _stack_model_permissions
     object_permissions = _stack_object_permissions
+    searchable_fields = ('title', 'description', 'history__status_detail')
 
     class Meta:
         ordering = ('title',)
 
         default_permissions = tuple(set(_stack_model_permissions + _stack_object_permissions))
+
+        unique_together = ('title',)
 
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint', related_name='stacks')
@@ -259,7 +241,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
-    namespace = models.CharField('Namespace', max_length=64, blank=True)
+    namespace = models.CharField('Namespace', max_length=64)
 
     create_users = models.BooleanField('Create SSH Users')
 
@@ -332,10 +314,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
     # Use our custom manager object
-    objects = StackManager()
+    objects = StackQuerySet.as_manager()
 
     def __unicode__(self):
-        return u'{0} (id={1})'.format(self.title, self.pk)
+        return u'{0} (id={1})'.format(self.title, self.id)
 
     def set_status(self, event, status, detail, level=Level.INFO):
         self.status = status
@@ -355,17 +337,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
         @returns (dict); each key is a provider driver implementation
             with QuerySet value for the matching host objects
         """
-        hosts = self.get_hosts(host_ids)
+        host_queryset = self.get_hosts(host_ids)
+
+        # Create an account -> hosts map
         accounts = {}
-        for h in hosts:
+        for h in host_queryset:
             accounts.setdefault(h.get_account(), []).append(h)
 
+        # Convert to a driver -> hosts map
         result = {}
-        for a, hosts in accounts.iteritems():
-            result[a.get_driver()] = self.hosts.filter(
-                cloud_profile__account=a,
-                pk__in=[h.pk for h in hosts]
-            )
+        for account, hosts in accounts.items():
+            result[account.get_driver()] = host_queryset.filter(id__in=[h.id for h in hosts])
+
         return result
 
     def get_hosts(self, host_ids=None):
@@ -409,7 +392,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             sg_description = 'stackd.io managed security group'
 
             # cloud account and driver for the host definition
-            account = hostdef.cloud_profile.account
+            account = hostdef.cloud_image.account
             driver = account.get_driver()
 
             try:
@@ -522,7 +505,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
                 kwargs = dict(
                     index=i,
-                    cloud_profile=hostdef.cloud_profile,
+                    cloud_image=hostdef.cloud_image,
                     blueprint_host_definition=hostdef,
                     instance_size=hostdef.size,
                     hostname=hostname,
@@ -530,7 +513,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                     state=Host.PENDING
                 )
 
-                if hostdef.cloud_profile.account.vpc_enabled:
+                if hostdef.cloud_image.account.vpc_enabled:
                     kwargs['subnet_id'] = hostdef.subnet_id
                 else:
                     kwargs['availability_zone'] = hostdef.zone
@@ -540,7 +523,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                 # Add in the cloud account default security groups as
                 # defined by an admin.
                 account_groups = set(list(
-                    host.cloud_profile.account.security_groups.filter(
+                    host.cloud_image.account.security_groups.filter(
                         is_default=True
                     )
                 ))
@@ -570,23 +553,22 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
 
         return created_hosts
 
-    def _generate_map_file(self):
+    def generate_map_file(self):
         # TODO: Figure out a way to make this provider agnostic
 
         # TODO: Should we store this somewhere instead of assuming
 
         master = socket.getfqdn()
 
-        profiles = {}
+        images = {}
 
         hosts = self.hosts.all()
         cluster_size = len(hosts)
 
         for host in hosts:
             # load provider yaml to extract default security groups
-            cloud_account = host.cloud_profile.account
-            cloud_account_yaml = yaml.safe_load(
-                cloud_account.yaml)[cloud_account.slug]
+            cloud_account = host.cloud_image.account
+            cloud_account_yaml = yaml.safe_load(cloud_account.yaml)[cloud_account.slug]
 
             # pull various stuff we need for a host
             roles = [c.component.sls_path for
@@ -645,8 +627,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                             'cluster_size': cluster_size,
                             'stack_pillar_file': self.pillar_file.path,
                             'volumes': map_volumes,
-                            'cloud_account': host.cloud_profile.account.slug,
-                            'cloud_profile': host.cloud_profile.slug,
+                            'cloud_account': host.cloud_image.account.slug,
+                            'cloud_image': host.cloud_image.slug,
                             'namespace': self.namespace,
                         },
                     },
@@ -672,11 +654,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
                     'spot_price': str(host.sir_price)  # convert to string
                 }
 
-            profiles.setdefault(host.cloud_profile.slug, []) \
-                .append(host_metadata)
+            images.setdefault(host.cloud_image.slug, []).append(host_metadata)
 
-        map_file_yaml = yaml.safe_dump(profiles,
-                                       default_flow_style=False)
+        map_file_yaml = yaml.safe_dump(images, default_flow_style=False)
 
         if not self.map_file:
             self.map_file.save(self.slug + '.map', ContentFile(map_file_yaml))
@@ -684,7 +664,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.map_file.path, 'w') as f:
                 f.write(map_file_yaml)
 
-    def _generate_top_file(self):
+    def generate_top_file(self):
         top_file_data = {
             'base': {
                 'G@stack_id:{0}'.format(self.pk): [
@@ -702,7 +682,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.top_file.path, 'w') as f:
                 f.write(top_file_yaml)
 
-    def _generate_overstate_file(self):
+    def generate_overstate_file(self):
         hosts = self.hosts.all()
         stack_target = 'G@stack_id:{0}'.format(self.pk)
 
@@ -741,10 +721,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.overstate_file.path, 'w') as f:
                 f.write(yaml_data)
 
-    def _generate_global_overstate_file(self):
-        accounts = set(
-            [host.cloud_profile.account for
-                host in self.hosts.all()])
+    def generate_global_overstate_file(self):
+        accounts = set([host.cloud_image.account for host in self.hosts.all()])
 
         overstate = {}
 
@@ -783,7 +761,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.global_overstate_file.path, 'w') as f:
                 f.write(yaml_data)
 
-    def _generate_pillar_file(self):
+    def generate_pillar_file(self):
         from stackdio.api.blueprints.models import BlueprintHostFormulaComponent
 
         users = []
@@ -851,13 +829,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
             with open(self.pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
 
-    def _generate_global_pillar_file(self):
+    def generate_global_pillar_file(self):
 
         pillar_props = {}
 
         # Find all of the globally used formulas for the stack
         accounts = set(
-            [host.cloud_profile.account for
+            [host.cloud_image.account for
                 host in self.hosts.all()]
         )
         global_formulas = []
@@ -889,56 +867,47 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, model_utils.models.Stat
         """
         Uses salt-cloud to query all the hosts for the given stack id.
         """
-        try:
-            if not self.map_file:
-                return {}
+        if not self.map_file:
+            return {}
 
+        CACHE_KEY = 'salt-cloud-full-query'
+
+        cached_result = cache.get(CACHE_KEY)
+
+        if cached_result:
+            logger.debug('salt-cloud query result cached')
+            result = cached_result
+        else:
+            logger.debug('salt-cloud query result not cached, retrieving')
             logger.info('get_hosts_info: {0!r}'.format(self))
 
-            # salt-cloud command to pull host information with
-            # a yaml output
-            query_cmd = ' '.join([
-                'salt-cloud',
-                '--full-query',             # execute a full query
-                '--out=yaml',               # output in yaml format
-                '--config-dir={0}',         # salt config dir
-                '--map={1}',                # map file to use
-            ]).format(
+            salt_cloud = salt.cloud.CloudClient(os.path.join(
                 settings.STACKDIO_CONFIG.salt_config_root,
-                self.map_file.path,
-            )
+                'cloud'
+            ))
+            result = salt_cloud.full_query()
 
-            result = envoy.run(query_cmd)
+            # Cache the result for a minute
+            cache.set(CACHE_KEY, result, 60)
 
-            # Run the envoy stdout through the yaml parser. The format
-            # will always be a dictionary with one key (the provider type)
-            # and a value that's a dictionary containing keys for every
-            # host in the stack.
-            yaml_result = yaml.safe_load(result.std_out)
+        # yaml_result contains all host information in the stack, but
+        # we have to dig a bit to get individual host metadata out
+        # of account and provider type dictionaries
+        host_result = {}
+        for host in self.hosts.all():
+            account = host.get_account()
+            provider = account.provider
 
-            if not yaml_result:
-                return {}
+            # each host is buried in a cloud provider type dict that's
+            # inside a cloud account name dict
 
-            # yaml_result contains all host information in the stack, but
-            # we have to dig a bit to get individual host metadata out
-            # of account and provider type dictionaries
-            host_result = {}
-            for host in self.hosts.all():
-                cloud_account = host.cloud_profile.account
-                provider = cloud_account.provider
+            # Grab the list of hosts
+            host_map = result.get(account.slug, {}).get(provider.name, {})
 
-                # each host is buried in a cloud provider type dict that's
-                # inside a cloud account name dict
-                host_result[host.hostname] = yaml_result \
-                    .get(cloud_account.slug, {}) \
-                    .get(provider.name, {}) \
-                    .get(host.hostname, None)
+            # Grab the individual host
+            host_result[host.hostname] = host_map.get(host.hostname, None)
 
-            return host_result
-
-        except Exception:
-            logger.exception('Unhandled exception')
-            raise
+        return host_result
 
     def get_root_directory(self):
         if self.map_file:
@@ -994,7 +963,7 @@ class StackHistory(TimeStampedModel, StatusDetailModel):
     ))
 
 
-class StackAction(TimeStampedModel, model_utils.models.StatusModel):
+class StackCommand(TimeStampedModel, StatusModel):
     WAITING = 'waiting'
     RUNNING = 'running'
     FINISHED = 'finished'
@@ -1006,13 +975,10 @@ class StackAction(TimeStampedModel, model_utils.models.StatusModel):
 
         default_permissions = ()
 
-    stack = models.ForeignKey('Stack', related_name='actions')
+    stack = models.ForeignKey('Stack', related_name='commands')
 
     # The started executing
-    start = models.DateTimeField('Start Time')
-
-    # Type of action (custom, launch, etc)
-    type = models.CharField('Action Type', max_length=50)
+    start = models.DateTimeField('Start Time', blank=True, default=now)
 
     # Which hosts we want to target
     host_target = models.CharField('Host Target', max_length=255)
@@ -1026,29 +992,34 @@ class StackAction(TimeStampedModel, model_utils.models.StatusModel):
     # The error output from the action
     std_err_storage = models.TextField()
 
+    @property
     def std_out(self):
         if self.std_out_storage != "":
             return json.loads(self.std_out_storage)
         else:
             return []
 
+    @property
     def std_err(self):
         return self.std_err_storage
 
+    @property
     def submit_time(self):
         return self.created
 
+    @property
     def start_time(self):
         if self.status in (self.RUNNING, self.FINISHED):
             return self.start
         else:
-            return ""
+            return ''
 
+    @property
     def finish_time(self):
         if self.status == self.FINISHED:
             return self.modified
         else:
-            return ""
+            return ''
 
 
 class Host(TimeStampedModel, StatusDetailModel):
@@ -1070,8 +1041,8 @@ class Host(TimeStampedModel, StatusDetailModel):
     stack = models.ForeignKey('Stack',
                               related_name='hosts')
 
-    cloud_profile = models.ForeignKey('cloud.CloudProfile',
-                                      related_name='hosts')
+    cloud_image = models.ForeignKey('cloud.CloudImage',
+                                    related_name='hosts')
 
     instance_size = models.ForeignKey('cloud.CloudInstanceSize',
                                       related_name='hosts')
@@ -1134,11 +1105,16 @@ class Host(TimeStampedModel, StatusDetailModel):
     def __unicode__(self):
         return self.hostname
 
+    @property
+    def provider_metadata(self):
+        metadata = self.stack.query_hosts()
+        return metadata[self.hostname]
+
     def get_account(self):
-        return self.cloud_profile.account
+        return self.cloud_image.account
 
     def get_provider(self):
         return self.get_account().provider
 
     def get_driver(self):
-        return self.cloud_profile.get_driver()
+        return self.cloud_image.get_driver()

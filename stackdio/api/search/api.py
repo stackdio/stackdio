@@ -17,73 +17,81 @@
 
 
 import logging
+from operator import or_
 
-from django.conf import settings
+from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from rest_framework import generics, permissions
+from rest_framework.filters import DjangoObjectPermissionsFilter
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
-from stackdio.api.blueprints.models import Blueprint
-from stackdio.api.formulas.models import Formula
-from stackdio.api.stacks.models import Stack
 from . import serializers
 
 logger = logging.getLogger(__name__)
 
 
-# TODO redo this view, it's bad
-class SearchAPIView(generics.GenericAPIView):
-    # Don't accept any form of parseable input
+class SearchAPIView(generics.ListAPIView):
+    """
+    Will search the configured fields on appropriate models for the search term provided in
+    the `q` url parameter.
+
+    Ex: GET `/api/search/?q=java`
+
+    This will search for any formula, blueprint, stack, etc with a title/description/etc
+    containing 'java'
+    """
+    serializer_class = serializers.SearchSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = (DjangoObjectPermissionsFilter,)
     parser_classes = ()
 
-    def get(self, request, *args, **kwargs):
-        res = []
-        q = request.QUERY_PARAMS.get('q', '')
-        context = {'request': request}
+    def get_queryset(self):
+        # This is still kind of naive... needs to be better
 
-        # pull the pagination page index from settings/defaults or the query params
-        try:
-            page_index = int(request.QUERY_PARAMS.get('page', 1))
-        except ValueError:
-            page_index = 1
+        q = self.request.query_params.get('q', '')
 
-        # pull the pagination page size from settings/defaults or the query params
-        try:
-            page_size = int(request.QUERY_PARAMS.get(
-                settings.REST_FRAMEWORK.get('PAGINATE_BY_PARAM', 'page_size'),
-                settings.REST_FRAMEWORK.get('PAGINATE_BY', 10)
-            ))
-        except ValueError:
-            page_size = 10
+        if not q:
+            return []
 
-        if q:
-            # finds all matching blueprints that are owned by the user or
-            # have been made public
-            blueprints = Blueprint.objects.filter(
-                Q(owner=request.user) | Q(public=True),
-                Q(title__icontains=q) | Q(description__icontains=q)
-            ).order_by('created')
-            res.extend(serializers.BlueprintSearchSerializer(blueprints, many=True, context=context).data)
+        full_queryset = []
 
-            # finds all matching formulas that are owned by the user or
-            # have been made public
-            formulas = Formula.objects.filter(
-                Q(owner=request.user) | Q(public=True),
-                Q(title__icontains=q) | Q(description__icontains=q)
-            ).order_by('created')
-            res.extend(serializers.FormulaSearchSerializer(formulas, many=True, context=context).data)
+        for app, models in apps.all_models.items():
+            for model_name, model_cls in models.items():
+                if not hasattr(model_cls, 'searchable_fields'):
+                    continue
 
-            # finds all matching stacks that are owned by the user
-            stacks = Stack.objects.filter(
-                Q(title__icontains=q) | Q(description__icontains=q),
-                owner=request.user
-            ).order_by('created')
-            res.extend(serializers.StackSearchSerializer(stacks, many=True, context=context).data)
+                fields = model_cls.searchable_fields
 
-        # add in pagination and render the serialized and paginated data
-        # paginator = Paginator(res, page_size)
-        # page = paginator.page(page_index)
-        # serializer = PaginationSerializer(instance=page, context=context)
-        # serializer = PaginationSerializer(instance=page, context=context)
-        return Response(res)
+                ctype = ContentType.objects.get_for_model(model_cls)
+
+                # Pull out all the objects we don't have permission on
+                searchable = self.filter_queryset(model_cls.objects.all())
+
+                # Put together the Q args
+                qset = reduce(or_, [Q(**{'%s__icontains' % field: q}) for field in fields])
+
+                for obj in searchable.filter(qset).distinct():
+                    full_queryset.append({
+                        'object_type': ctype,
+                        'title': obj.title,
+                        'url': reverse('%s-detail' % model_name,
+                                       kwargs={'pk': obj.pk},
+                                       request=self.request),
+                    })
+
+        return full_queryset
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override so that we don't filter the queryset here, that would be bad
+        """
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

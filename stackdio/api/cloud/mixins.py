@@ -65,17 +65,17 @@ class CloudAccountRelatedMixin(object):
         return self.get_cloudaccount()
 
 
-class CloudProfileRelatedMixin(object):
+class CloudImageRelatedMixin(object):
 
-    def get_cloudprofile(self):
-        queryset = models.CloudProfile.objects.all()
+    def get_cloudimage(self):
+        queryset = models.CloudImage.objects.all()
 
         obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
         self.check_object_permissions(self.request, obj)
         return obj
 
     def get_permissioned_object(self):
-        return self.get_cloudprofile()
+        return self.get_cloudimage()
 
 
 class SnapshotRelatedMixin(object):
@@ -89,3 +89,16 @@ class SnapshotRelatedMixin(object):
 
     def get_permissioned_object(self):
         return self.get_snapshot()
+
+
+class SecurityGroupRelatedMixin(object):
+
+    def get_securitygroup(self):
+        queryset = models.SecurityGroup.objects.all()
+
+        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissioned_object(self):
+        return self.get_securitygroup()

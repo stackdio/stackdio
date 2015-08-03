@@ -15,9 +15,12 @@
 # limitations under the License.
 #
 
+import json
+import logging
 
-from django.utils.encoding import smart_unicode
 from rest_framework import renderers
+
+logger = logging.getLogger(__name__)
 
 
 class PlainTextRenderer(renderers.BaseRenderer):
@@ -27,7 +30,20 @@ class PlainTextRenderer(renderers.BaseRenderer):
     media_type = 'text/plain'
     format = 'txt'
 
-    def render(self, data, media_type=None, renderer_context=None):
-        if isinstance(data, basestring):
-            return data
-        return smart_unicode(data)
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        if isinstance(data, (dict, list, tuple, set, frozenset)):
+            data = json.dumps(data)
+        return str(data).encode(self.charset)
+
+
+class ZipRenderer(renderers.BaseRenderer):
+    """
+    Zip renderer
+    """
+    media_type = 'application/zip'
+    format = 'zip'
+    charset = None
+    render_style = 'binary'
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data

@@ -15,7 +15,9 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
 
+import json
 import os
 import sys
 
@@ -27,6 +29,19 @@ from pip.download import PipSession
 if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     print('Your Python version {0}.{1}.{2} is not supported.'.format(*sys.version_info[:3]))
     print('stackdio requires Python 2.7 or newer.')
+    sys.exit(1)
+
+# Force the user to install bower components first
+components_dir = 'bower_components'
+if os.path.exists('.bowerrc'):
+    with open('.bowerrc') as f:
+        bower_config = json.load(f)
+        if 'directory' in bower_config:
+            components_dir = os.path.join(*bower_config['directory'].split('/'))
+
+if not os.path.exists(components_dir):
+    print('It looks like you haven\'t installed the bower dependencies yet.  Please run '
+          '`bower install` before using setup.py.')
     sys.exit(1)
 
 # Grab the current version from our stackdio package
@@ -47,24 +62,10 @@ if os.path.isfile('README.md'):
 def load_pip_requirements(fp):
     return [str(r.req) for r in parse_requirements(fp, session=PipSession())]
 
-
-def load_pip_links(fp):
-    deps = []
-    for d in parse_requirements(fp, session=PipSession()):
-        # Support for all pip versions
-        if hasattr(d, 'link'):
-            # pip >= 6.0
-            deps.append(str(d.link.url))
-        else:
-            # pip < 6.0
-            deps.append(str(d.url))
-    return deps
-
 if __name__ == "__main__":
     # build our list of requirements and dependency links based on our
     # requirements.txt file
     reqs = load_pip_requirements('requirements.txt')
-    deps = load_pip_links('links.txt')
 
     # Call the setup method from setuptools that does all the heavy lifting
     # of packaging stackdio
@@ -81,11 +82,12 @@ if __name__ == "__main__":
         packages=find_packages(exclude=('tests', 'dist', 'build')),
         zip_safe=False,
         install_requires=reqs,
-        dependency_links=deps,
+        dependency_links=[],
         classifiers=[
-            'Development Status :: 3 - Alpha',
+            'Development Status :: 4 - Beta',
             'Environment :: Web Environment',
             'Framework :: Django',
+            'Framework :: Django :: 1.8',
             'Intended Audience :: Developers',
             'Intended Audience :: Information Technology',
             'Intended Audience :: System Administrators',

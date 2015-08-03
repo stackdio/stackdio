@@ -67,20 +67,24 @@ The virtualenv should automatically activate when you create it. If you exit you
 workon stackdio
 ```
 
+### Install bower
+In your CLI, run the following command to install bower:
+(You must have previously installed npm/node from the OS specific preparation)
+
+```bash
+sudo npm install -g bower
+```
+
 ### Install the stackd.io project
 
 > **NOTE** Double-check that your virtualenv is activated or else this will probably complain that you don't have permissions to install (because it's trying to install into the global python site-packages directory which we don't want!)
 
 ```bash
-pip install --process-dependency-links https://github.com/stackdio/stackdio.git
-
-# The above should install directly from github, but if
-# you'd rather install manually:
-
 cd /tmp
-git clone git@github.com:stackdio/stackdio.git
+git clone https://github.com/stackdio/stackdio.git
 cd stackdio
-pip install --process-dependency-links .
+bower install
+pip install .
 ```
 
 ### Configuration
@@ -98,7 +102,6 @@ stackdio init
 Now, let's populate are database with a schema:
 
 ```bash
-stackdio manage.py syncdb --noinput
 stackdio manage.py migrate
 ```
 
@@ -152,8 +155,6 @@ sudo ln -s /etc/nginx/sites-available/stackdio /etc/nginx/sites-enabled
 # remove the default configuration symlink
 sudo rm /etc/nginx/sites-enabled/default
 ```
-
-Before moving forward, take a minute to reference the [Javascript SPA ReadMe](js_setup.md) to make sure that you do all the necessary steps to install the needed JS libraries.
 
 After this, generate the static content we'll need to serve:
 
