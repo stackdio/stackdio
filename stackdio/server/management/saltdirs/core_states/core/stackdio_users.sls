@@ -8,13 +8,15 @@
 
 # Create the group
 {{ username }}_group:
-  group.present:
+  group:
+    - present
     - name: {{ username }}
     - gid: {{ uid }}
 
 # Create the user
 {{ username }}_user:
-  user.present:
+  user:
+    - present
     - name: {{ username }}
     - shell: /bin/bash
     - uid: {{ uid }}
@@ -34,9 +36,10 @@
 
 # Add a sudoers entry
 {{ username }}_sudoers:
-  file.managed:
-    - name: /etc/sudoers.d/{{ username }}
-    - contents: "{{ username }}  ALL=(ALL)  NOPASSWD:ALL"
+  file:
+    - managed
+    - name: /etc/sudoers.d/{{ username | replace('.', '_') }}
+    - contents: "{{ username }} ALL=(ALL) NOPASSWD:ALL"
     - mode: 400
     - user: root
     - group: root
