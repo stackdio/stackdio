@@ -17,7 +17,6 @@
 
 from __future__ import print_function
 
-import json
 import os
 import sys
 
@@ -27,8 +26,9 @@ from pip.download import PipSession
 
 
 if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
-    print('Your Python version {0}.{1}.{2} is not supported.'.format(*sys.version_info[:3]))
-    print('stackdio requires Python 2.7 or newer.')
+    err_msg = ('Your Python version {0}.{1}.{2} is not supported.\n'
+               'stackdio-server requires Python 2.7 or newer.\n'.format(*sys.version_info[:3]))
+    sys.stderr.write(err_msg)
     sys.exit(1)
 
 
@@ -46,8 +46,9 @@ components_dir = os.path.join(
 
 # Force the user to install bower components first
 if not os.path.exists(components_dir):
-    print('It looks like you haven\'t installed the bower dependencies yet.  Please run '
-          '`bower install` before using setup.py.')
+    err_msg = ('It looks like you haven\'t installed the bower dependencies yet.  Please run '
+               '`bower install` before using setup.py.\n')
+    sys.stderr.write(err_msg)
     sys.exit(1)
 
 # Grab the current version from our stackdio package
