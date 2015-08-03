@@ -232,7 +232,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         # Since a blueprint can have multiple accounts
         accounts = set()
         for host in hosts:
-            accounts.add(host.cloud_profile.account)
+            accounts.add(host.cloud_image.account)
 
         for account in accounts:
             provider = account.provider.name
@@ -1338,7 +1338,7 @@ def global_orchestrate(stack_id, max_retries=2):
         accounts = set()
 
         for host_definition in stack.blueprint.host_definitions.all():
-            account = host_definition.cloud_profile.account
+            account = host_definition.cloud_image.account
             copy_formulas(account)
             accounts.add(account)
 

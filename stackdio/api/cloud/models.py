@@ -264,12 +264,12 @@ class GlobalOrchestrationFormulaComponent(TimeStampedModel):
         )
 
 
-_cloudprofile_model_permissions = (
+_cloudimage_model_permissions = (
     'create',
     'admin',
 )
 
-_cloudprofile_object_permissions = (
+_cloudimage_object_permissions = (
     'view',
     'update',
     'delete',
@@ -277,25 +277,25 @@ _cloudprofile_object_permissions = (
 )
 
 
-class CloudProfile(TimeStampedModel, TitleSlugDescriptionModel):
+class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
 
-    model_permissions = _cloudprofile_model_permissions
-    object_permissions = _cloudprofile_object_permissions
+    model_permissions = _cloudimage_model_permissions
+    object_permissions = _cloudimage_object_permissions
     searchable_fields = ('title', 'description')
 
     class Meta:
         unique_together = ('title', 'account')
 
-        default_permissions = tuple(set(_cloudprofile_model_permissions +
-                                        _cloudprofile_object_permissions))
+        default_permissions = tuple(set(_cloudimage_model_permissions +
+                                        _cloudimage_object_permissions))
 
     # What cloud account is this under?
-    account = models.ForeignKey('cloud.CloudAccount', related_name='profiles')
+    account = models.ForeignKey('cloud.CloudAccount', related_name='images')
 
-    # The underlying image id of this profile (e.g., ami-38df83a')
+    # The underlying image id of this image (e.g., ami-38df83a')
     image_id = models.CharField('Image ID', max_length=64)
 
-    # The default instance size of this profile, may be overridden
+    # The default instance size of this image, may be overridden
     # by the user at creation time
     default_instance_size = models.ForeignKey('CloudInstanceSize',
                                               verbose_name='Default Instance Size')

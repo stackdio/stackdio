@@ -459,7 +459,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
 
             self.assertEqual(users.count(), 0)
 
-            assign_perm('cloud.%s_cloudprofile' % perm, self.user)
+            assign_perm('cloud.%s_cloudimage' % perm, self.user)
 
             users = shortcuts.get_users_with_model_perms(
                 CloudAccount,
@@ -471,7 +471,7 @@ class PermissionsShortcutsTestCase(StackdioTestCase):
             self.assertEqual(users.count(), 0)
 
             # Make sure assigning the group permissions doesn't show up here
-            assign_perm('cloud.%s_cloudprofile' % perm, self.group)
+            assign_perm('cloud.%s_cloudimage' % perm, self.group)
 
             users = shortcuts.get_users_with_model_perms(
                 CloudAccount,
@@ -566,7 +566,7 @@ class BasePermissionsViewSetTestCase(StackdioTestCase):
         self.assertCallable(tranform_func)
 
         self.assertEqual(tranform_func('blah_cloudaccount'), 'blah')
-        self.assertEqual(tranform_func('blah_cloudprofile'), 'blah_cloudprofile')
+        self.assertEqual(tranform_func('blah_cloudimage'), 'blah_cloudimage')
 
     def test_get_object(self):
         view = self.get_viewset()

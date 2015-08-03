@@ -19,4 +19,13 @@ class Migration(migrations.Migration):
             name='group_id',
             field=models.CharField(max_length=16),
         ),
+        migrations.RenameModel(
+            old_name='CloudProfile',
+            new_name='CloudAccount',
+        ),
+        migrations.AlterField(
+            model_name='cloudimage',
+            name='account',
+            field=models.ForeignKey(related_name='images', to='cloud.CloudAccount'),
+        ),
     ]

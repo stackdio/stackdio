@@ -8,6 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('blueprints', '0002_v0_7_migrations'),
+        ('cloud', '0005_v0_7b_migrations'),
     ]
 
     operations = [
@@ -24,5 +25,15 @@ class Migration(migrations.Migration):
         migrations.AlterUniqueTogether(
             name='blueprinthostdefinition',
             unique_together=set([('title', 'blueprint'), ('hostname_template', 'blueprint')]),
+        ),
+        migrations.RenameField(
+            model_name='blueprinthostdefinition',
+            old_name='cloud_profile',
+            new_name='cloud_image',
+        ),
+        migrations.AddField(
+            model_name='blueprinthostdefinition',
+            name='cloud_image',
+            field=models.ForeignKey(related_name='host_definitions', to='cloud.CloudImage'),
         ),
     ]

@@ -85,13 +85,13 @@ class CloudAccountTestCase(StackdioTestCase, PermissionsMixin):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
-class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
+class CloudImageTestCase(StackdioTestCase, PermissionsMixin):
     """
     Tests for CloudAccount things
     """
 
     permission_tests = {
-        'model': models.CloudProfile,
+        'model': models.CloudImage,
         'create_data': {
             'account_id': 1,
             'title': 'test',
@@ -100,8 +100,8 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
             'default_instance_size_id': 1,
             'ssh_user': 'root',
         },
-        'endpoint': '/api/cloud/profiles/{0}/',
-        'permission': 'cloud.%s_cloudprofile',
+        'endpoint': '/api/cloud/images/{0}/',
+        'permission': 'cloud.%s_cloudimage',
         'permission_types': [
             {
                 'perm': 'view', 'method': 'get'
@@ -117,5 +117,5 @@ class CloudProfileTestCase(StackdioTestCase, PermissionsMixin):
 
     @classmethod
     def setUpTestData(cls):
-        super(CloudProfileTestCase, cls).setUpTestData()
+        super(CloudImageTestCase, cls).setUpTestData()
         models.CloudAccount.objects.create(**CloudAccountTestCase.permission_tests['create_data'])

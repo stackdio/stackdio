@@ -44,12 +44,12 @@ class CloudAccountPermissionsObjectPermissions(StackdioPermissionsObjectPermissi
     parent_model_cls = models.CloudAccount
 
 
-class CloudProfilePermissionsModelPermissions(StackdioPermissionsModelPermissions):
-    model_cls = models.CloudProfile
+class CloudImagePermissionsModelPermissions(StackdioPermissionsModelPermissions):
+    model_cls = models.CloudImage
 
 
-class CloudProfilePermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
-    parent_model_cls = models.CloudProfile
+class CloudImagePermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
+    parent_model_cls = models.CloudImage
 
 
 class SnapshotPermissionsModelPermissions(StackdioPermissionsModelPermissions):

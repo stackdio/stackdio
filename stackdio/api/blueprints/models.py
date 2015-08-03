@@ -138,10 +138,10 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     blueprint = models.ForeignKey('blueprints.Blueprint',
                                   related_name='host_definitions')
 
-    # The cloud profile object this host should use when being
+    # The cloud image object this host should use when being
     # launched
-    cloud_profile = models.ForeignKey('cloud.CloudProfile',
-                                      related_name='host_definitions')
+    cloud_image = models.ForeignKey('cloud.CloudImage',
+                                    related_name='host_definitions')
 
     # The default number of instances to launch for this host definition
     count = models.PositiveIntegerField('Count')
