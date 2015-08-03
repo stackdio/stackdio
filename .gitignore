@@ -64,7 +64,7 @@ target/
 *.db
 *.swp
 *.un~
-stackdio/core/static/stackdio/bower_components/
+stackdio/core/static/stackdio/lib/bower_components/
 stackdio/core/static/stackdio/node_modules/
 salt/user_states/
 salt/core_states/

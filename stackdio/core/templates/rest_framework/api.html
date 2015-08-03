@@ -16,8 +16,38 @@
 -->
 
 {% extends 'rest_framework/base.html' %}
+{% load staticfiles %}
+{% load rest_framework %}
 
-{% block title %}stackd.io API{% endblock title %}
-{% block branding %}
-    <a class="navbar-brand" href="/api/">stackd.io API <span class="version">{{ api_settings.user_settings.STACKDIO_VERSION }}</span></a>
-{% endblock branding %}
+{% block bootstrap_theme %}
+    <link href="//fonts.googleapis.com/css?family=Open+Sans:400,600,300" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/bootstrap/dist/css/bootstrap.min.css' %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/css/api-tweaks.css' %}"/>
+{% endblock %}
+
+{% block navbar %}
+    <div class="navbar navbar-fixed-top navbar-inverse">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{% url 'api-root' %}" >
+                    <img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">
+                    stackd.io API <span class="version">{{ api_settings.user_settings.STACKDIO_VERSION }}</span>
+                </a>
+            </div>
+
+            <div id="navbar">
+                <ul class="nav navbar-nav navbar-right">
+                {% block userlinks %}
+                    {% if user.is_authenticated %}
+                        {% optional_logout request user %}
+                    {% else %}
+                        {% optional_login request %}
+                    {% endif %}
+                {% endblock %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block title %}stackd.io API{% endblock %}

@@ -16,16 +16,14 @@
 #
 
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 
 # Enable admin interface
 from django.contrib import admin
 admin.autodiscover()
 
 
-urlpatterns = patterns(
-    '',
-
+urlpatterns = (
     # Admin interface
     url(r'^__private/admin/', include(admin.site.urls)),
 
@@ -34,8 +32,4 @@ urlpatterns = patterns(
 
     # API v1 root endpoint -- add additional URLs to urls.py in the api module.
     url(r'^api/', include('stackdio.api.urls')),
-
-    # Default login/logout views. Without this you won't get the login/logout links
-    # in the views.
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 )

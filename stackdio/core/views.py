@@ -18,14 +18,23 @@
 
 import logging
 
-from django.contrib import messages, auth
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
+
+from stackdio.server import __version__
 
 logger = logging.getLogger(__name__)
 
 
-class RootView(TemplateView):
+class StackdioView(TemplateView):
+
+    def get_context_data(self, **kwargs):
+        context = super(StackdioView, self).get_context_data(**kwargs)
+        context['version'] = __version__
+        return context
+
+
+class RootView(StackdioView):
     template_name = 'stackdio/home.html'
 
     def get(self, request, *args, **kwargs):
@@ -33,30 +42,3 @@ class RootView(TemplateView):
             return super(RootView, self).get(request, *args, **kwargs)
         else:
             return redirect('login')
-
-
-class LoginView(TemplateView):
-    template_name = 'stackdio/login.html'
-
-    def post(self, request):
-        username = request.POST.get('username', '')
-        password = request.POST.get('password', '')
-        user = auth.authenticate(username=username, password=password)
-
-        if user is not None and user.is_active:
-            # Login the user
-            auth.login(request, user)
-            messages.success(request, 'Successful login!')
-            return redirect('index')
-        else:
-            # Failed
-            messages.error(request, 'Sorry, your username and password are '
-                                    'incorrect - please try again.')
-            return self.get(request)
-
-
-def logout(request):
-    auth.logout(request)
-    messages.success(request, 'You are now logged out. You may log in again '
-                              'below.')
-    return redirect('index')

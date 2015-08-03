@@ -23,14 +23,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="stackd.io | a modern cloud deployment and provisioning framework for everyone">
 
-    <title>stackdio | {% block title %}Home{% endblock %}</title>
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="msapplication-TileImage" content="{% static 'stackdio/img/favicons/mstile-144x144.png' %}">
+    <meta name="msapplication-config" content="{% static 'stackdio/img/favicons/browserconfig.xml' %}">
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- favicon links -->
+    <link rel="shortcut icon" type="image/png" href="{% static 'stackdio/img/favicons/favicon.ico' %}">
+    <link rel="icon" type="image/png" href="{% static 'stackdio/img/favicons/favicon-32x32.png' %}" sizes="32x32">
+    <link rel="icon" type="image/png" href="{% static 'stackdio/img/favicons/android-chrome-192x192.png' %}" sizes="192x192">
+    <link rel="icon" type="image/png" href="{% static 'stackdio/img/favicons/favicon-96x96.png' %}" sizes="96x96">
+    <link rel="icon" type="image/png" href="{% static 'stackdio/img/favicons/favicon-16x16.png' %}" sizes="16x16">
+
+    <!-- manifest -->
+    <link rel="manifest" href="{% static 'stackdio/img/favicons/manifest.json' %}">
+
+    <!-- apple touch icon links -->
+    <link rel="apple-touch-icon" sizes="57x57" href="{% static 'stackdio/img/favicons/apple-touch-icon-57x57.png' %}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{% static 'stackdio/img/favicons/apple-touch-icon-60x60.png' %}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{% static 'stackdio/img/favicons/apple-touch-icon-72x72.png' %}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{% static 'stackdio/img/favicons/apple-touch-icon-76x76.png' %}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{% static 'stackdio/img/favicons/apple-touch-icon-114x114.png' %}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{% static 'stackdio/img/favicons/apple-touch-icon-120x120.png' %}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{% static 'stackdio/img/favicons/apple-touch-icon-144x144.png' %}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{% static 'stackdio/img/favicons/apple-touch-icon-152x152.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'stackdio/img/favicons/apple-touch-icon-180x180.png' %}">
+
+    <title>stackd.io | {% block title %}Home{% endblock %}</title>
 
     <!-- Bootstrap -->
-    <link href='//fonts.googleapis.com/css?family=Open+Sans:400,600,300' rel='stylesheet' type='text/css'>
-    <link href="{% static 'stackdio/bower_components/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
-    <link href="{% static 'stackdio/bower_components/bootstrap-select/bootstrap-select.css' %}" rel="stylesheet">
-    <link href="{% static 'stackdio/bower_components/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
-{#    <link href="{% static 'css/stackdio.css' %}" rel="stylesheet">#}
+    <link href="//fonts.googleapis.com/css?family=Open+Sans:400,600,300" rel="stylesheet" type="text/css">
+    <link href="{% static 'stackdio/lib/bower_components/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'stackdio/lib/bower_components/bootstrap-select/bootstrap-select.css' %}" rel="stylesheet">
+    <link href="{% static 'stackdio/lib/bower_components/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
+    <link href="{% static 'stackdio/css/stackdio.css' %}" rel="stylesheet">
+
+    {% block stylesheets %}{% endblock %}
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -42,7 +70,7 @@
 <body>
 {% block body %}
     {% block navbar %}
-        <nav class="navbar navbar-static-top navbar-default">
+        <nav class="navbar navbar-fixed-top {% block navbar-variant %}navbar-default{% endblock %}">
             <div class="container">
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
@@ -51,44 +79,76 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="{% url 'index' %}">stackd.io</a>
+                    <a class="navbar-brand" href="{% block branding-url %}{% url 'index' %}{% endblock %}" >
+                        <img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">
+                        {% block branding %}stackd.io{% endblock %}
+                    </a>
                 </div>
+
                 <div id="navbar" class="collapse navbar-collapse">
-                    <ul class="nav navbar-nav">
+                    {% if user.is_authenticated %}
+                    <form class="navbar-form navbar-left" role="search" style="width: 100%; max-width: 430px">
+                        <div class="form-group" style="width: 100%">
+                            <input type="text" class="form-control" placeholder="Search">
+                        </div>
+                    </form>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <!-- Extra links -->
                         {% block links %}{% endblock %}
+
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                {{ user.username }} <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{% url 'logout' %}">Logout</a></li>
+                            </ul>
+                        </li>
                     </ul>
-                    <ul class="nav navbar-nav pull-right">
-                        <li><a href="{% url 'logout' %}">Logout</a></li>
-                    </ul>
+                    {% endif %}
                 </div>
             </div>
         </nav>
     {% endblock %}
 
     <!-- Any messages if they exist -->
-    {% if messages %}
     <div class="container">
         <div class="row">
-            <div class="col-lg-6 col-lg-offset-3">
+            <div class="col-lg-8 col-lg-offset-2">
             {% for message in messages %}
-                <div{% if message.tags %} class="alert alert-{{ message.tags }}"{% endif %}>
-                    <a class="close" data-dismiss="alert" href="#">&times;</a>
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     {{ message }}
                 </div>
             {% endfor %}
             </div>
         </div>
     </div>
-    {% endif %}
 
     <!-- the main content of the page -->
     <div class="container">
-    {% block content %}{% endblock %}
+        {% block content %}{% endblock %}
+        <!-- Site footer -->
+        <footer class="footer">
+            <div class="row">
+                <div class="col-lg-4">
+                    <p>&copy; Digital Reasoning 2015</p>
+                </div>
+                <div class="col-lg-4"></div>
+                <div class="col-lg-4">
+                {% block api-link %}
+                    <p class="text-right">stackd.io <span class="version">{% block version %}{{ version }}{% endblock %}</span> | <a href="{% url 'api-root' %}">api</a></p>
+                {% endblock %}
+                </div>
+            </div>
+        </footer>
     </div>
 
+    <!-- the scripts to load -->
     {% block scripts %}
-        <script src="{% static 'stackdio/bower_components/jquery/jquery.min.js' %}"></script>
-        <script src="{% static 'stackdio/bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'stackdio/lib/bower_components/jquery/jquery.min.js' %}"></script>
+        <script src="{% static 'stackdio/lib/bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
     {% endblock %}
 {% endblock %}
 </body>

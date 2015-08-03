@@ -15,28 +15,32 @@
 # limitations under the License.
 #
 
+from django.conf.urls import url
+from django.contrib.auth.views import login, logout_then_login
 
-from django.conf.urls import patterns, url
-
+from stackdio.server import __version__
 from . import api, views
 
-urlpatterns = patterns(
-    'stackdio.core.views',
+auth_kwargs = {
+    'template_name': 'stackdio/login.html',
+    'extra_context': {'version': __version__},
+}
 
+urlpatterns = (
     url(r'^$',
         views.RootView.as_view(),
         name='index'),
 
     url(r'^login/$',
-        views.LoginView.as_view(),
+        login,
+        auth_kwargs,
         name='login'),
 
     url(r'^logout/$',
-        'logout',
+        logout_then_login,
         name='logout'),
 
     url(r'^api/version/$',
         api.VersionAPIView.as_view(),
         name='version'),
-
 )

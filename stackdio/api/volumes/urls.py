@@ -39,9 +39,7 @@ object_router.register(r'groups',
                        'volume-object-group-permissions')
 
 
-urlpatterns = patterns(
-    'stackdio.api.volumes.api',
-
+urlpatterns = (
     url(r'^volumes/$',
         api.VolumeListAPIView.as_view(),
         name='volume-list'),

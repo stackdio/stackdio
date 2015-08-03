@@ -39,9 +39,7 @@ object_router.register(r'groups',
                        'blueprint-object-group-permissions')
 
 
-urlpatterns = patterns(
-    'stackdio.api.blueprints.api',
-
+urlpatterns = (
     url(r'^blueprints/$',
         api.BlueprintListAPIView.as_view(),
         name='blueprint-list'),

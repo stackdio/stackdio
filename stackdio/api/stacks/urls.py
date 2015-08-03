@@ -39,9 +39,7 @@ object_router.register(r'groups',
                        'stack-object-group-permissions')
 
 
-urlpatterns = patterns(
-    'stackdio.api.stacks.api',
-
+urlpatterns = (
     url(r'^hosts/(?P<pk>[0-9]+)/$',
         api.HostDetailAPIView.as_view(),
         name='host-detail'),
