@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         ),
         migrations.RenameModel(
             old_name='CloudProfile',
-            new_name='CloudAccount',
+            new_name='CloudImage',
         ),
         migrations.AlterField(
             model_name='cloudimage',

@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
             old_name='cloud_profile',
             new_name='cloud_image',
         ),
-        migrations.AddField(
+        migrations.AlterField(
             model_name='blueprinthostdefinition',
             name='cloud_image',
             field=models.ForeignKey(related_name='host_definitions', to='cloud.CloudImage'),
