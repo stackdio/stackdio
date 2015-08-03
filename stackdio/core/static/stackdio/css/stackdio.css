@@ -16,37 +16,38 @@
 */
 
 body {
-    font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
     line-height: 1.428571429;
     font-weight: 400;
     padding-top: 70px;
 }
 
-h1,h2,h3,h4,h5,h6 {
-    font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 img.logo {
-    height: 100px;
+    width: 100%;
+    max-width: 400px;
     margin: 0 auto;
 }
 
 .footer {
-  padding-top: 20px;
-  padding-bottom: 20px;
-  margin-top: 40px;
-  border-top: 1px solid #eee;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-top: 40px;
+    border-top: 1px solid #eee;
 }
 
 .version {
-  font-size: 70%;
+    font-size: 70%;
 }
 
 .version:before {
-  content: "v";
-  opacity: 0.6;
-  padding-right: 0.25em;
+    content: "v";
+    opacity: 0.6;
+    padding-right: 0.25em;
 }
 
 /*

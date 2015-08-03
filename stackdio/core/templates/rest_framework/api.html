@@ -20,6 +20,7 @@
 {% load rest_framework %}
 
 {% block bootstrap_theme %}
+    {% include 'stackdio/favicons.html' %}
     <link href="//fonts.googleapis.com/css?family=Open+Sans:400,600,300" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/bootstrap/dist/css/bootstrap.min.css' %}"/>
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/css/api-tweaks.css' %}"/>
