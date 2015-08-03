@@ -23,6 +23,7 @@ import git
 from rest_framework import serializers
 
 from stackdio.core.fields import PasswordField
+from stackdio.core.mixins import CreateOnlyFieldsMixin
 from . import models, tasks
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class FormulaSerializer(serializers.HyperlinkedModelSerializer):
+class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
     # Non-model fields
     git_password = PasswordField(write_only=True, required=False,
                                  allow_blank=True, label='Git Password')
@@ -84,12 +85,17 @@ class FormulaSerializer(serializers.HyperlinkedModelSerializer):
             'status_detail',
         )
 
+        create_only_fields = (
+            'uri',
+            'git_password',
+        )
+
         extra_kwargs = {
             'access_token': {'default': serializers.CreateOnlyDefault(False)},
         }
 
     def validate(self, attrs):
-        uri = attrs['uri']
+        uri = attrs.get('uri', self.instance.uri)
         git_username = attrs.get('git_username')
 
         errors = {}
