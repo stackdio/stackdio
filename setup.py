@@ -31,14 +31,20 @@ if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
     print('stackdio requires Python 2.7 or newer.')
     sys.exit(1)
 
-# Force the user to install bower components first
-components_dir = 'bower_components'
-if os.path.exists('.bowerrc'):
-    with open('.bowerrc') as f:
-        bower_config = json.load(f)
-        if 'directory' in bower_config:
-            components_dir = os.path.join(*bower_config['directory'].split('/'))
 
+root_dir = os.path.dirname(os.path.abspath(__file__))
+
+components_dir = os.path.join(
+    root_dir,
+    'stackdio',
+    'core',
+    'static',
+    'stackdio',
+    'lib',
+    'bower_components',
+)
+
+# Force the user to install bower components first
 if not os.path.exists(components_dir):
     print('It looks like you haven\'t installed the bower dependencies yet.  Please run '
           '`bower install` before using setup.py.')
