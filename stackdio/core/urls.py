@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from django.conf.urls import url
+from django.conf.urls import include, url
 from django.contrib.auth.views import login, logout_then_login
 
 from stackdio.server import __version__
@@ -43,4 +43,6 @@ urlpatterns = (
     url(r'^api/version/$',
         api.VersionAPIView.as_view(),
         name='version'),
+
+    url(r'^', include('stackdio.api.users.ui_urls')),
 )

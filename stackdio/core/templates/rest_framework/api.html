@@ -38,6 +38,7 @@
 
             <div id="navbar">
                 <ul class="nav navbar-nav navbar-right">
+                <li><a href="{% url 'index' %}">Home</a></li>
                 {% block userlinks %}
                     {% if user.is_authenticated %}
                         {% optional_logout request user %}

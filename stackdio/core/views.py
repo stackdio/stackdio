@@ -18,7 +18,8 @@
 
 import logging
 
-from django.shortcuts import redirect
+from django.shortcuts import resolve_url
+from django.http import HttpResponseRedirect
 from django.views.generic import TemplateView
 
 from stackdio.server import __version__
@@ -33,12 +34,13 @@ class StackdioView(TemplateView):
         context['version'] = __version__
         return context
 
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return super(StackdioView, self).get(request, *args, **kwargs)
+        else:
+            root_url = resolve_url('login')
+            return HttpResponseRedirect('{0}?next={1}'.format(root_url, request.path))
+
 
 class RootView(StackdioView):
     template_name = 'stackdio/home.html'
-
-    def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            return super(RootView, self).get(request, *args, **kwargs)
-        else:
-            return redirect('login')
