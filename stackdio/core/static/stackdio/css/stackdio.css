@@ -58,3 +58,31 @@ Bootstrap overrides
     padding-top: 10px;
     padding-bottom: 10px;
 }
+
+@media(max-width:767px) {
+    .navbar .navbar-form {
+        width: 185px;
+        padding-left:0;
+        padding-right:0;
+    }
+}
+
+@media(min-width:768px) {
+    .navbar .navbar-form {
+        width: 350px;
+    }
+}
+
+.navbar-header > .navbar-left {
+    float: left !important;
+}
+
+.navbar .navbar-form {
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-right: 0;
+    margin-left: 0;
+    border: 0;
+    -webkit-box-shadow: none;
+            box-shadow: none;
+}

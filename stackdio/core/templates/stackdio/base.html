@@ -55,18 +55,22 @@
                         <span class="icon-bar"></span>
                     </button>
                     <a class="navbar-brand" href="{% block branding-url %}{% url 'index' %}{% endblock %}" >
-                        {% block branding %}<img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">{% endblock %}
+                        {% block branding %}
+                        <img class="hidden-xs" alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">
+                        <img class="visible-xs" alt="Brand" style="height: 30px" src="{% static 'stackdio/img/logo-small-thumb.png' %}">
+                        {% endblock %}
                     </a>
+                    {% if user.is_authenticated %}
+                    <form class="navbar-form navbar-left" role="search">
+                        <div class="form-group" style="width: 100%">
+                            <input type="text" class="form-control" style="width: 100%" placeholder="Search">
+                        </div>
+                    </form>
+                    {% endif %}
                 </div>
 
                 <div id="navbar" class="collapse navbar-collapse">
                     {% if user.is_authenticated %}
-                    <form class="navbar-form navbar-left" role="search" style="width: 100%; max-width: 430px">
-                        <div class="form-group" style="width: 100%">
-                            <input type="text" class="form-control" placeholder="Search">
-                        </div>
-                    </form>
-
                     <ul class="nav navbar-nav navbar-right">
                         <!-- Extra links -->
                         {% block links %}{% endblock %}
@@ -120,7 +124,7 @@
     </div>
 
     <!-- jQuery / bootstrap scripts -->
-    <script src="{% static 'stackdio/lib/bower_components/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'stackdio/lib/bower_components/jquery/dist/jquery.min.js' %}"></script>
     <script src="{% static 'stackdio/lib/bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
     <script type="text/javascript">
         // Code snippet from jQuery.stayInWebApp plugin by mrmoses (https://github.com/mrmoses/jQuery.stayInWebApp)
