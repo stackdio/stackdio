@@ -26,12 +26,11 @@
     {% include 'stackdio/favicons.html' %}
 
     <!-- Bootstrap -->
-    <link href="//fonts.googleapis.com/css?family=Open+Sans:400,600,300" rel="stylesheet" type="text/css">
-    <link href="{% static 'stackdio/lib/bower_components/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
-    <link href="{% static 'stackdio/lib/bower_components/bootstrap-select/bootstrap-select.css' %}" rel="stylesheet">
-    <link href="{% static 'stackdio/lib/bower_components/font-awesome/css/font-awesome.css' %}" rel="stylesheet">
-    <link href="{% static 'stackdio/css/stackdio.css' %}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans:400,600,300">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/bootstrap/dist/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/css/stackdio.css' %}">
 
+    <!-- extra stylesheets -->
     {% block stylesheets %}{% endblock %}
 
     <meta name="description" content="stackd.io | a modern cloud deployment and provisioning framework for everyone">
@@ -86,7 +85,7 @@
                 </div>
             </div>
         </nav>
-    {% endblock %}
+    {% endblock navbar %}
 
     <!-- Any messages if they exist -->
     <div class="container">
@@ -114,17 +113,33 @@
                 <div class="col-xs-6">
                 {% block api-link %}
                     <p class="text-right">stackd.io <span class="version">{% block version %}{{ version }}{% endblock %}</span> | <a href="{% url 'api-root' %}">api</a></p>
-                {% endblock %}
+                {% endblock api-link %}
                 </div>
             </div>
         </footer>
     </div>
 
-    <!-- the scripts to load -->
-    {% block scripts %}
-        <script src="{% static 'stackdio/lib/bower_components/jquery/jquery.min.js' %}"></script>
-        <script src="{% static 'stackdio/lib/bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
-    {% endblock %}
-{% endblock %}
+    <!-- jQuery / bootstrap scripts -->
+    <script src="{% static 'stackdio/lib/bower_components/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'stackdio/lib/bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
+    <script type="text/javascript">
+        // Code snippet from jQuery.stayInWebApp plugin by mrmoses (https://github.com/mrmoses/jQuery.stayInWebApp)
+        $(document).ready(function() {
+			if(("standalone" in window.navigator) && window.navigator.standalone) {
+				var sel = 'a';
+				$("body").delegate(sel, "click", function(e) {
+					if($(this).attr("target") == undefined || $(this).attr("target") == "" || $(this).attr("target") == "_self") {
+						var d = $(this).attr("href");
+						if(!d.match(/^http(s?)/g)) { e.preventDefault(); self.location = d; }
+					}
+				});
+			}
+        });
+    </script>
+
+    <!-- Extra scripts -->
+    {% block scripts %}{% endblock %}
+
+{% endblock body %}
 </body>
 </html>
