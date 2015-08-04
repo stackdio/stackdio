@@ -15,7 +15,7 @@
 
 -->
 
-{% extends "stackdio/login.html" %}
+{% extends 'stackdio/login.html' %}
 {% load staticfiles %}
 
 {% block stylesheets %}
@@ -27,3 +27,8 @@
 {% block branding-url %}{% url 'api-root' %}{% endblock %}
 {% block login-url %}{% url 'rest_framework:login' %}{% endblock %}
 {% block api-link %}{% endblock %}
+
+{% block branding %}
+<img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-small-thumb.png' %}">
+stackd.io API
+{% endblock %}

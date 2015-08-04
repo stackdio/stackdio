@@ -56,7 +56,7 @@
                         <span class="icon-bar"></span>
                     </button>
                     <a class="navbar-brand" href="{% block branding-url %}{% url 'index' %}{% endblock %}" >
-                        <img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">
+                        {% block branding %}<img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">{% endblock %}
                     </a>
                 </div>
 
