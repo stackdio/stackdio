@@ -1,24 +1,33 @@
 {
     "name": "stackd.io",
     "version": "0.7.0.dev3",
-    "dependencies": {
-        "jquery": "~2.1.4",
-        "bootstrap": "~3.3.5",
-        "knockout": "~3.3.0",
-        "underscore": "~1.8.3"
-    },
+    "homepage": "http://www.stackd.io",
+    "authors": [
+        "Clark Perkins <clark.perkins@digitalreasoning.com>"
+    ],
+    "description": "a modern cloud deployment and provisioning framework for everyone",
+    "main": "stackdio/core/static/stackdio/app/app.js",
+    "keywords": [
+        "cloud",
+        "provisioning",
+        "deployment",
+        "infrastructure",
+        "orchestration"
+    ],
+    "license": "Apache 2",
     "ignore": [
         "**/.*",
         "node_modules",
-        "components",
         "bower_components",
+        "stackdio/core/static/stackdio/lib/bower_components",
         "test",
         "tests"
     ],
-    "authors": [
-        "Clark Perkins <r.clark.perkins@gmail.com>"
-    ],
-    "license": "Apache 2",
-    "homepage": "http://www.stackd.io",
-    "private": true
+    "dependencies": {
+        "bootstrap": "~3.3.5",
+        "jquery": "~2.1.4",
+        "knockout": "~3.3.0",
+        "moment": "~2.10.6",
+        "underscore": "~1.8.3"
+    }
 }

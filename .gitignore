@@ -64,15 +64,11 @@ target/
 *.db
 *.swp
 *.un~
-stackdio/core/static/stackdio/lib/bower_components/
-stackdio/core/static/stackdio/node_modules/
-salt/user_states/
-salt/core_states/
-salt/config/
-storage/
+**/bower_components/
+**/node_modules/
 
 
-# abe's development stuff
+# development stuff
 reload.sh
 reset_rabbitmq.sh
 salt-cloud.sh
@@ -81,11 +77,11 @@ salt-cloud.sh
 .codeintel
 
 # ldap_settings.py
-stackdio/server/settings/ldap_settings.py
+**/ldap_settings.py
 
 # collectstatic junk
 stackdio/static
 
 # OSX
 .DS_Store
-.idea
+.idea/
