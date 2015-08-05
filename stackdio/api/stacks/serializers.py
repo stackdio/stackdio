@@ -382,7 +382,9 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
 
         if namespace:
             # This all has to be here vs. in its own validator b/c it needs the blueprint
-            errors.setdefault('hostname', []).extend(validate_hostname(namespace))
+            hostname_errors = validate_hostname(namespace)
+            if hostname_errors:
+                errors.setdefault('hostname', []).extend(hostname_errors)
 
             # This is all only necessary if a namespace was provided
             #  (It may not be provided on a PATCH request)
