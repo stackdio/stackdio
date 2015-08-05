@@ -46,3 +46,22 @@ class StackdioView(TemplateView):
 
 class RootView(StackdioView):
     template_name = 'stackdio/home.html'
+
+
+class PageView(StackdioView):
+    viewmodel = None
+
+    def __init__(self, **kwargs):
+        super(PageView, self).__init__(**kwargs)
+        assert self.viewmodel is not None, ('You must specify a viewmodel via the `viewmodel` '
+                                            'attribute of your class.')
+
+    def get_context_data(self, **kwargs):
+        context = super(PageView, self).get_context_data(**kwargs)
+        context['viewmodel'] = 'stackdio/app/viewmodels/%s.js' % self.viewmodel
+        return context
+
+
+class StackListView(PageView):
+    template_name = 'stackdio/stack-list.html'
+    viewmodel = 'stack-list'

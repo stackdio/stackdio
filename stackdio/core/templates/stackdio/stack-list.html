@@ -1,0 +1,27 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Stacks{% endblock %}
+{% block page-title %}Stacks{% endblock %}
+
+{% block page-content %}
+<table class="table table-hover">
+<thead>
+<tr>
+    <th>Title</th>
+    <th>Description</th>
+    <th>Create Users</th>
+    <th>Status</th>
+    <th></th>
+</tr>
+</thead>
+<tbody data-bind="foreach: stacks">
+<tr>
+    <td data-bind="text: title"></td>
+    <td data-bind="text: description"></td>
+    <td data-bind="text: create_users"></td>
+    <td data-bind="text: status"></td>
+    <td></td>
+</tr>
+</tbody>
+</table>
+{% endblock %}

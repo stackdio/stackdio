@@ -44,5 +44,9 @@ urlpatterns = (
         api.VersionAPIView.as_view(),
         name='version'),
 
+    url(r'^stacks/$',
+        views.StackListView.as_view(),
+        name='stack-ui-list'),
+
     url(r'^', include('stackdio.api.users.ui_urls')),
 )

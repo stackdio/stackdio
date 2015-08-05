@@ -1,0 +1,24 @@
+{% extends 'stackdio/base.html' %}
+{% load staticfiles %}
+
+{% block scripts %}
+    <script src="{% static 'stackdio/lib/bower_components/knockout/dist/knockout.js' %}"></script>
+    <script src="{% static 'stackdio/lib/bower_components/knockout-mapping/knockout.mapping.js' %}"></script>
+    <script src="{% static viewmodel %}"></script>
+{% endblock %}
+
+{% block links %}
+    <li><a href="/">Blueprints</a></li>
+    <li><a href="/">Formulas</a></li>
+    <li><a href="{% url 'stack-ui-list' %}">Stacks</a></li>
+{% endblock %}
+
+{% block content %}
+    <h1>{% block page-title %}{% endblock %}</h1>
+
+    <div class="row">
+        <div class="col-md-12">
+            {% block page-content %}{% endblock %}
+        </div>
+    </div>
+{% endblock content %}

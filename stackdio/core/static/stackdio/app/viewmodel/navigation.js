@@ -16,7 +16,7 @@
 */
 
 define([
-    '../../bower_components/q/q',
+    'q',
     'settings',
     'knockout',
     'util/galaxy',

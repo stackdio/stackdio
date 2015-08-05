@@ -15,7 +15,7 @@
   *
 */
 
-define(['../../bower_components/q/q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'util/stack', 'ladda', 'store/Blueprints', 'store/Stacks', 'api/api'],
+define(['q', 'knockout', 'bootbox', 'util/galaxy', 'util/alerts', 'util/stack', 'ladda', 'store/Blueprints', 'store/Stacks', 'api/api'],
 function (Q, ko, bootbox, $galaxy, alerts, stackutils, Ladda, BlueprintStore, StackStore, API) {
     var vm = function () {
         var self = this;

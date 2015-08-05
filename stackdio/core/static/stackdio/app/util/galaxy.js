@@ -15,7 +15,7 @@
   * 
 */
 
-define(['../../bower_components/q/q', 'knockout', 'postal'], function (Q, ko, postal) {
+define(['q', 'knockout', 'postal'], function (Q, ko, postal) {
     var DuplicateViewRegistrationException = function (message) {
        this.message = message;
        this.name = "DuplicateViewRegistrationException";

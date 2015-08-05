@@ -200,3 +200,7 @@ body a:hover {
 .request-info {
   clear:both;
 }
+
+.navbar-brand > img {
+  display: inline;
+}
