@@ -28,8 +28,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 img.logo {
-    width: 100%;
-    max-width: 400px;
+    width: 400px;
+    max-width: 85%;
     margin: 0 auto;
 }
 
