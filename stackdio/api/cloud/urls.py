@@ -77,9 +77,7 @@ snapshot_object_router.register(r'groups',
                                 api.SnapshotObjectGroupPermissionsViewSet,
                                 'snapshot-object-group-permissions')
 
-urlpatterns = patterns(
-    'stackdio.api.cloud.api',
-
+urlpatterns = (
     url(r'^$',
         api.CloudRootView.as_view(),
         name='cloud-root'),

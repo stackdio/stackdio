@@ -16,7 +16,7 @@
 #
 
 
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 
 from rest_framework.compat import OrderedDict
 from rest_framework.permissions import IsAuthenticated
@@ -33,7 +33,6 @@ class APIRootView(APIView):
     and particular parameters that may discoverable by browsing directly
     to them.
     """
-    permission_classes = (IsAuthenticated,)
 
     def get(self, request, format=None):
         api = OrderedDict((
@@ -72,16 +71,13 @@ class APIRootView(APIView):
         return Response(api)
 
 
-urlpatterns = patterns(
-    '',
-
+urlpatterns = (
     url(r'^$', APIRootView.as_view(), name='api-root'),
 
     ##
     # IMPORTS URLS FROM ALL APPS
     ##
     url(r'^', include('stackdio.api.users.urls')),
-    url(r'^', include('stackdio.core.urls')),
     url(r'^cloud/', include('stackdio.api.cloud.urls')),
     url(r'^', include('stackdio.api.stacks.urls')),
     url(r'^', include('stackdio.api.volumes.urls')),
@@ -92,3 +88,7 @@ urlpatterns = patterns(
 
 # Format suffixes - this only should go on API endpoints, not everything!
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'api'])
+
+# Default login/logout views. Without this you won't get the login/logout links
+# in the browsable api.  We want to add these AFTER the format urls.
+urlpatterns += [url(r'^', include('rest_framework.urls', namespace='rest_framework'))]

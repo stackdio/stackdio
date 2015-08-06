@@ -16,7 +16,7 @@
 #
 
 
-from django.conf.urls import include, patterns, url
+from django.conf.urls import include, url
 from rest_framework import routers
 
 from . import api
@@ -40,9 +40,7 @@ object_router.register(r'groups',
                        'group-object-group-permissions')
 
 
-urlpatterns = patterns(
-    'stackdio.api.users.api',
-
+urlpatterns = (
     url(r'^users/$',
         api.UserListAPIView.as_view(),
         name='user-list'),

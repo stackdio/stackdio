@@ -1,0 +1,14 @@
+{% extends 'stackdio/base.html' %}
+{% load staticfiles %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script>window.stackdio = {}; window.stackdio.user = {}; window.stackdio.user.username = "{{ user.username }}"; window.stackdio.user.first_name = "{{ user.first_name }}"; window.stackdio.user.last_name = "{{ user.last_name }}"; window.stackdio.user.admin = "{{ user.is_superuser }}";</script>
+{#    <script data-main="{% static 'stackdio/app/application' %}" src="{% static 'stackdio/lib/bower_components/requirejs/require.js' %}"></script>#}
+{% endblock %}
+
+{% block links %}
+    <li><a href="/">Blueprints</a></li>
+    <li><a href="/">Formulas</a></li>
+    <li><a href="{% url 'stack-ui-list' %}">Stacks</a></li>
+{% endblock %}

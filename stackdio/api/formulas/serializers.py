@@ -96,7 +96,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeria
 
     def validate(self, attrs):
         if self.instance is None:
-            uri = attrs.get('uri', self.instance.uri)
+            uri = attrs.get('uri', getattr(self.instance, 'uri', None))
 
             git_username = attrs.get('git_username')
 
