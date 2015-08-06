@@ -12,14 +12,13 @@
         }
     }
 
+    // Load properly with require if necessary
     if (typeof require === "function") {
         // Load with require
         require(['jquery'], function ($) {
-            console.log('loading with require...');
             $(document).ready(mobileFix)
         });
     } else {
-        console.log('Not using require');
         $(document).ready(mobileFix);
     }
 })(window);
