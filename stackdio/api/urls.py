@@ -33,7 +33,6 @@ class APIRootView(APIView):
     and particular parameters that may discoverable by browsing directly
     to them.
     """
-    permission_classes = (IsAuthenticated,)
 
     def get(self, request, format=None):
         api = OrderedDict((

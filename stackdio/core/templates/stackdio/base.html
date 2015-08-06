@@ -123,27 +123,13 @@
         </footer>
     </div>
 
+    {% block scripts %}
+    {# load these in by default if we're not using require - otherwise we'll override this later #}
     <!-- jQuery / bootstrap scripts -->
     <script src="{% static 'stackdio/lib/bower_components/jquery/jquery.min.js' %}"></script>
     <script src="{% static 'stackdio/lib/bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
-    <script type="text/javascript">
-        // Code snippet from jQuery.stayInWebApp plugin by mrmoses (https://github.com/mrmoses/jQuery.stayInWebApp)
-        $(document).ready(function() {
-			if(("standalone" in window.navigator) && window.navigator.standalone) {
-				var sel = 'a';
-				$("body").delegate(sel, "click", function(e) {
-					if($(this).attr("target") == undefined || $(this).attr("target") == "" || $(this).attr("target") == "_self") {
-						var d = $(this).attr("href");
-						if(!d.match(/^http(s?)/g)) { e.preventDefault(); self.location = d; }
-					}
-				});
-			}
-        });
-    </script>
-
-    <!-- Extra scripts -->
-    {% block scripts %}{% endblock %}
-
+    <script src="{% static 'stackdio/app/utils/mobile-fix.js' %}"></script>
+    {% endblock scripts %}
 {% endblock body %}
 </body>
 </html>

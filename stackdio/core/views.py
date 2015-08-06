@@ -19,7 +19,7 @@
 import logging
 
 from django.shortcuts import resolve_url
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import TemplateView
 
 from stackdio.server import __version__
@@ -48,6 +48,25 @@ class RootView(StackdioView):
     template_name = 'stackdio/home.html'
 
 
+class AppMainView(TemplateView):
+    template_name = 'stackdio/js/main.js'
+
+    def __init__(self, **kwargs):
+        super(AppMainView, self).__init__(**kwargs)
+        self.viewmodel = None
+
+    def get_context_data(self, **kwargs):
+        context = super(AppMainView, self).get_context_data(**kwargs)
+        context['viewmodel'] = self.viewmodel
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.viewmodel = kwargs.get('vm')
+        if self.viewmodel is None:
+            return HttpResponse()
+        return super(AppMainView, self).get(request, *args, **kwargs)
+
+
 class PageView(StackdioView):
     viewmodel = None
 
@@ -58,10 +77,10 @@ class PageView(StackdioView):
 
     def get_context_data(self, **kwargs):
         context = super(PageView, self).get_context_data(**kwargs)
-        context['viewmodel'] = 'stackdio/app/viewmodels/%s.js' % self.viewmodel
+        context['viewmodel'] = self.viewmodel
         return context
 
 
 class StackListView(PageView):
     template_name = 'stackdio/stack-list.html'
-    viewmodel = 'stack-list'
+    viewmodel = 'viewmodels/stack-list'

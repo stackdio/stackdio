@@ -2,9 +2,7 @@
 {% load staticfiles %}
 
 {% block scripts %}
-    <script src="{% static 'stackdio/lib/bower_components/knockout/dist/knockout.js' %}"></script>
-    <script src="{% static 'stackdio/lib/bower_components/knockout-mapping/knockout.mapping.js' %}"></script>
-    <script src="{% static viewmodel %}"></script>
+    <script data-main="/js/main/{{ viewmodel }}" src="{% static 'stackdio/lib/bower_components/requirejs/require.js' %}"></script>
 {% endblock %}
 
 {% block links %}

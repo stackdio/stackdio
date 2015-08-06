@@ -44,6 +44,10 @@ urlpatterns = (
         api.VersionAPIView.as_view(),
         name='version'),
 
+    url(r'^js/main/(?P<vm>[\w/.-]+)\.js$',
+        views.AppMainView.as_view(),
+        name='js-main'),
+
     url(r'^stacks/$',
         views.StackListView.as_view(),
         name='stack-ui-list'),

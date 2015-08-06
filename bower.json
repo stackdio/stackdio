@@ -6,7 +6,7 @@
         "Clark Perkins <clark.perkins@digitalreasoning.com>"
     ],
     "description": "a modern cloud deployment and provisioning framework for everyone",
-    "main": "stackdio/core/static/stackdio/app/app.js",
+    "main": "stackdio/core/templates/js/main.js",
     "keywords": [
         "cloud",
         "provisioning",
@@ -25,10 +25,11 @@
     ],
     "dependencies": {
         "bootstrap": "~3.3.5",
-        "durandal": "~2.1.0",
         "jquery": "~1.9.1",
+        "knockout": "~3.3.0",
         "knockout-mapping": "~2.4.1",
         "moment": "~2.10.6",
+        "requirejs": "~2.1.20",
         "underscore": "~1.8.3"
     }
 }
