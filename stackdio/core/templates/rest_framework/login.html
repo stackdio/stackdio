@@ -15,7 +15,20 @@
 
 -->
 
-{% extends "rest_framework/login_base.html" %}
+{% extends 'stackdio/login.html' %}
+{% load staticfiles %}
 
-{% block title %}stackd.io API{% endblock title %}
-{% block branding %}<h3 style="margin: 0 0 20px;">stackd.io API</h3>{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" type="text/css" href="{% static 'stackdio/css/api-tweaks.css' %}"/>
+{% endblock %}
+
+{% block navbar-variant %}navbar-inverse{% endblock %}
+{% block title %}API Login{% endblock %}
+{% block branding-url %}{% url 'api-root' %}{% endblock %}
+{% block login-url %}{% url 'rest_framework:login' %}{% endblock %}
+{% block api-link %}{% endblock %}
+
+{% block branding %}
+    <img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-small-thumb.png' %}">
+    stackd.io API
+{% endblock %}

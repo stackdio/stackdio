@@ -39,9 +39,7 @@ object_router.register(r'groups',
                        'formula-object-group-permissions')
 
 
-urlpatterns = patterns(
-    'stackdio.api.formulas.api',
-
+urlpatterns = (
     url(r'^formulas/$',
         api.FormulaListAPIView.as_view(),
         name='formula-list'),

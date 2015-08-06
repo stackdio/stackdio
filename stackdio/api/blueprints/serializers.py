@@ -233,7 +233,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
     zone = serializers.SlugRelatedField(slug_field='title', required=False,
                                         queryset=CloudZone.objects.all())
     cloud_image = serializers.SlugRelatedField(slug_field='slug',
-                                                 queryset=CloudImage.objects.all())
+                                               queryset=CloudImage.objects.all())
 
     class Meta:
         model = models.BlueprintHostDefinition

@@ -18,58 +18,69 @@
 
 import logging
 
-from django.contrib import messages, auth
-from django.shortcuts import render_to_response, redirect
-from django.template import RequestContext
+from django.shortcuts import resolve_url
+from django.http import HttpResponse, HttpResponseRedirect
+from django.views.generic import TemplateView
 
-DEFAULT_REDIRECT = 'index'
-APPLICATION_TEMPLATE = 'stackdio.html'
-LANDING_PAGE_TEMPLATE = 'index.html'
+from stackdio.server import __version__
 
 logger = logging.getLogger(__name__)
 
 
-def render(request, view, context=None):
-    if context is None:
-        context = {}
+class StackdioView(TemplateView):
 
-    if request:
-        return render_to_response(view,
-                                  context,
-                                  context_instance=RequestContext(request))
-    return render_to_response(view, context)
+    def get_context_data(self, **kwargs):
+        context = super(StackdioView, self).get_context_data(**kwargs)
+        context['version'] = __version__
+        return context
 
-
-def index(request):
-    template = LANDING_PAGE_TEMPLATE
-    if request.user.is_authenticated():
-        template = APPLICATION_TEMPLATE
-    return render(request, template)
-
-
-def login(request):
-    if request.method == 'POST':
-        un = request.POST.get('username', '')
-        pw = request.POST.get('password', '')
-        user = auth.authenticate(username=un, password=pw)
-
-        if user is not None and user.is_active:
-            # Login the user
-            auth.login(request, user)
-            return redirect(index)
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return super(StackdioView, self).get(request, *args, **kwargs)
         else:
-            # Failed
-            messages.error(request, 'Sorry, your username and password are '
-                                    'incorrect - please try again.')
-            return redirect(index)
-    else:
-        messages.error(request, 'Invalid method \'{0}\' used. Please use '
-                                'POST.'.format(request.method))
-        return redirect(index)
+            redirect_url = resolve_url('login')
+            if request.path != '/':
+                redirect_url = '{0}?next={1}'.format(redirect_url, request.path)
+            return HttpResponseRedirect(redirect_url)
 
 
-def logout(request):
-    auth.logout(request)
-    messages.success(request, 'You are now logged out. You may log in again '
-                              'below.')
-    return redirect('index')
+class RootView(StackdioView):
+    template_name = 'stackdio/home.html'
+
+
+class AppMainView(TemplateView):
+    template_name = 'stackdio/js/main.js'
+
+    def __init__(self, **kwargs):
+        super(AppMainView, self).__init__(**kwargs)
+        self.viewmodel = None
+
+    def get_context_data(self, **kwargs):
+        context = super(AppMainView, self).get_context_data(**kwargs)
+        context['viewmodel'] = self.viewmodel
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.viewmodel = kwargs.get('vm')
+        if self.viewmodel is None:
+            return HttpResponse()
+        return super(AppMainView, self).get(request, *args, **kwargs)
+
+
+class PageView(StackdioView):
+    viewmodel = None
+
+    def __init__(self, **kwargs):
+        super(PageView, self).__init__(**kwargs)
+        assert self.viewmodel is not None, ('You must specify a viewmodel via the `viewmodel` '
+                                            'attribute of your class.')
+
+    def get_context_data(self, **kwargs):
+        context = super(PageView, self).get_context_data(**kwargs)
+        context['viewmodel'] = self.viewmodel
+        return context
+
+
+class StackListView(PageView):
+    template_name = 'stackdio/stack-list.html'
+    viewmodel = 'viewmodels/stack-list'

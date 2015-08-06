@@ -20,9 +20,7 @@ from django.conf.urls import patterns, url
 
 from . import api
 
-urlpatterns = patterns(
-    'stackdio.api.search.api',
-
+urlpatterns = (
     url(r'^search/$',
         api.SearchAPIView.as_view(),
         name='search'),

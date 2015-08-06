@@ -1,0 +1,206 @@
+/*!
+  * Copyright 2014,  Digital Reasoning
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
+  *
+  *     http://www.apache.org/licenses/LICENSE-2.0
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  *
+*/
+
+/*
+  Most of this is pulled from rest_framework/static/rest_framework/css/bootstrap-tweaks.css.
+  There was just a couple of things to change.
+*/
+
+.form-actions {
+  background: transparent;
+  border-top-color: transparent;
+  padding-top: 0;
+  text-align: right;
+}
+
+body {
+  font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 14px;
+  line-height: 1.428571429;
+  font-weight: 400;
+  background: url("../../rest_framework/img/grid.png") repeat-x;
+  background-attachment: fixed;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: "Open Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
+#generic-content-form textarea {
+  font-family:Consolas,Monaco,Lucida Console,Liberation Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New, monospace;
+  font-size: 80%;
+}
+
+.navbar-inverse .brand a {
+  color: #999999;
+}
+.navbar-inverse .brand:hover a {
+  color: white;
+  text-decoration: none;
+}
+
+.navbar-brand {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* custom navigation styles */
+
+.navbar {
+  background: #2C2C2C;
+  color: white;
+  border: none;
+  border-radius: 0;
+}
+
+.navbar .nav li, .navbar .nav li a, .navbar .brand:hover {
+  color: white;
+}
+
+.nav-list > .active > a, .nav-list > .active > a:hover {
+  background: #2C2C2C;
+}
+
+.navbar .dropdown-menu li a, .navbar .dropdown-menu li {
+  color: #A30000;
+}
+
+.navbar .dropdown-menu li a:hover {
+  background: #EEEEEE;
+  color: #C20000;
+}
+
+ul.breadcrumb {
+  margin: 70px 0 0 0;
+}
+
+.breadcrumb li.active a {
+  color: #777;
+}
+
+.pagination>.disabled>a,
+.pagination>.disabled>a:hover,
+.pagination>.disabled>a:focus {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.pager>.disabled>a,
+.pager>.disabled>a:hover,
+.pager>.disabled>a:focus {
+  pointer-events: none;
+}
+
+.pager .next {
+  margin-left: 10px;
+}
+
+/*=== dabapps bootstrap styles ====*/
+
+html {
+  width:100%;
+  background: none;
+}
+
+#content {
+  margin: 0;
+  padding-bottom: 60px;
+}
+
+/* sticky footer and footer */
+html, body {
+  height: 100%;
+}
+
+.wrapper {
+  position: relative;
+  top: 0;
+  left: 0;
+  padding-top: 60px;
+  margin: -60px 0;
+  min-height: 100%;
+}
+
+.form-switcher {
+  margin-bottom: 0;
+}
+
+.well {
+  -webkit-box-shadow: none;
+     -moz-box-shadow: none;
+          box-shadow: none;
+}
+
+.well .form-actions {
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.well form {
+  margin-bottom: 0;
+}
+
+.nav-tabs {
+  border: 0;
+}
+
+.nav-tabs > li {
+  float: right;
+}
+
+.nav-tabs li a {
+  margin-right: 0;
+}
+
+.nav-tabs > .active > a {
+  background: #F5F5F5;
+}
+
+.nav-tabs > .active > a:hover {
+  background: #F5F5F5;
+}
+
+.tabbable.first-tab-active .tab-content {
+  border-top-right-radius: 0;
+}
+
+.page-header {
+  border-bottom: none;
+  padding-bottom: 0px;
+  margin: 0;
+}
+
+/* custom general page styles */
+.hero-unit h1, .hero-unit h2 {
+  color: #A30000;
+}
+
+body a {
+  color: #A30000;
+}
+
+body a:hover {
+  color: #c20000;
+}
+
+.request-info {
+  clear:both;
+}
+
+.navbar-brand > img {
+  display: inline;
+}

@@ -67,6 +67,9 @@ class AuthenticationTestCase(StackdioTestCase):
                 continue
             if '(?P<' in url:
                 continue
+            if 'login' in url or 'logout' in url:
+                # We don't care about login / logout views
+                continue
             if url.endswith('/permissions/'):
                 continue
             if url.endswith('cloud/'):
