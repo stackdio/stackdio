@@ -12,8 +12,7 @@ machine:
 ## Customize dependencies
 dependencies:
   override:
-    - pip install -U 'pip<6'
-    - pip install -r requirements/testing.txt
+    - pip install file://`pwd`#egg=stackdio-server[testing]
 
 ## Customize test commands
 test:
