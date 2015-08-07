@@ -15,9 +15,23 @@
 # limitations under the License.
 #
 
+import logging
+
 from stackdio.core.views import PageView
+
+logger = logging.getLogger(__name__)
 
 
 class StackListView(PageView):
     template_name = 'stacks/stack-list.html'
     viewmodel = 'viewmodels/stack-list'
+
+
+class StackDetailView(PageView):
+    template_name = 'stacks/stack-detail.html'
+    viewmodel = 'viewmodels/stack-detail'
+
+    def get_context_data(self, **kwargs):
+        context = super(StackDetailView, self).get_context_data(**kwargs)
+        context['stack_id'] = kwargs['pk']
+        return context

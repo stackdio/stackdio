@@ -6,6 +6,8 @@ include requirements.txt
 recursive-include requirements *
 recursive-include stackdio/core/templates *
 recursive-include stackdio/core/static *
+recursive-include stackdio/api/*/templates *
+recursive-include stackdio/api/*/static *
 recursive-include stackdio/server/management *
 recursive-include stackdio/api/cloud/fixtures *.json
 recursive-include stackdio/server/fixtures *.json

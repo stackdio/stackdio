@@ -24,4 +24,8 @@ urlpatterns = (
     url(r'^$',
         views.StackListView.as_view(),
         name='stack-ui-list'),
+
+    url(r'^(?P<pk>[0-9]+)/$',
+        views.StackDetailView.as_view(),
+        name='stack-ui-detail'),
 )

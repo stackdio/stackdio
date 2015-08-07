@@ -45,6 +45,14 @@ define([
             return self.startNum() + Math.min(self.pageSize(), self.stacks().length) - 1;
         });
 
+        self.numPages = ko.computed(function () {
+            if (self.pageSize() === null) {
+                return 1;
+            }
+            var pages = self.count() / self.pageSize();
+            return self.count() % self.pageSize() == 0 ? pages : pages + 1;
+        });
+
         self.reset = function () {
             self.pageNum(1);
             self.pageSize(null);
@@ -95,8 +103,7 @@ define([
             $.ajax({
                 method: 'DELETE',
                 url: stack.url
-            }).done(function (resp) {
-                alert('deleting');
+            }).done(function () {
                 self.reloadStacks();
             }).fail(function (jqXHR, textStatus, errorThrown) {
                 console.log(jqXHR);
