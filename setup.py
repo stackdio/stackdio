@@ -21,8 +21,6 @@ import os
 import sys
 
 from setuptools import setup, find_packages
-from pip.req import parse_requirements
-from pip.download import PipSession
 
 
 if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
@@ -58,54 +56,83 @@ VERSION = __version__
 # Short and long descriptions for our package
 SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
                      'platform for everyone.')
-LONG_DESCRIPTION = SHORT_DESCRIPTION
 
-# If we have a README.md file, use its contents as the long description
-if os.path.isfile('README.md'):
-    with open('README.md') as f:
-        LONG_DESCRIPTION = f.read()
+# Grab README.md and use its contents as the long description
+with open('README.md') as f:
+    LONG_DESCRIPTION = f.read()
 
+requirements = [
+    'Django>=1.8.0,<1.9',
+    'GitPython>=1.0',
+    'Markdown>=2.6',
+    'PyYAML==3.10',
+    'boto==2.9.5',
+    'celery>=3.1',
+    'dj-database-url>=0.3',
+    'django-auth-ldap>=1.2',
+    'django-extensions>=1.5',
+    'django-filter>=0.9',
+    'django-guardian>=1.3',
+    'django-model-utils>=2.0,<2.3',
+    'djangorestframework>=3.1,<=3.2',
+    'envoy>=0.0.2',
+    'psutil>=2.1',
+    'requests>=2.4',
+    'salt==2014.1.7',
+]
 
-def load_pip_requirements(fp):
-    return [str(r.req) for r in parse_requirements(fp, session=PipSession())]
-
-if __name__ == "__main__":
-    # build our list of requirements and dependency links based on our
-    # requirements.txt file
-    reqs = load_pip_requirements('requirements.txt')
-
-    # Call the setup method from setuptools that does all the heavy lifting
-    # of packaging stackdio
-    setup(
-        name='stackdio-server',
-        version=VERSION,
-        url='http://stackd.io',
-        author='Digital Reasoning Systems, Inc.',
-        author_email='info@stackd.io',
-        description=SHORT_DESCRIPTION,
-        long_description=LONG_DESCRIPTION,
-        license='Apache 2.0',
-        include_package_data=True,
-        packages=find_packages(exclude=('tests', 'dist', 'build')),
-        zip_safe=False,
-        install_requires=reqs,
-        dependency_links=[],
-        classifiers=[
-            'Development Status :: 4 - Beta',
-            'Environment :: Web Environment',
-            'Framework :: Django',
-            'Framework :: Django :: 1.8',
-            'Intended Audience :: Developers',
-            'Intended Audience :: Information Technology',
-            'Intended Audience :: System Administrators',
-            'License :: OSI Approved :: Apache Software License',
-            'Operating System :: POSIX :: Linux',
-            'Programming Language :: Python',
-            'Programming Language :: Python :: 2.7',
-            'Topic :: System :: Clustering',
-            'Topic :: System :: Distributed Computing',
+# Call the setup method from setuptools that does all the heavy lifting
+# of packaging stackdio
+setup(
+    name='stackdio-server',
+    version=VERSION,
+    url='http://stackd.io',
+    author='Digital Reasoning Systems, Inc.',
+    author_email='info@stackd.io',
+    description=SHORT_DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
+    license='Apache 2.0',
+    include_package_data=True,
+    packages=find_packages(exclude=('tests', 'dist', 'build')),
+    zip_safe=False,
+    install_requires=requirements,
+    extras_require={
+        'production': [
+            'gunicorn<=19.1.0',
+            'supervisor>=3.0',
         ],
-        entry_points={'console_scripts': [
-            'stackdio = stackdio.server.management:main'
-        ]}
-    )
+        'mysql': [
+            'MySQL-python==1.2.5',
+        ],
+        'development': [
+            'ipython>=2.0',
+        ],
+        'testing': [
+            'coveralls',
+            'django-nose>=1.0,<=1.4',
+            'mock',
+            'pep8',
+            'pylint<=1.2.0',
+        ],
+    },
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
+        'Framework :: Django',
+        'Framework :: Django :: 1.8',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Information Technology',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: System :: Clustering',
+        'Topic :: System :: Distributed Computing',
+    ],
+    entry_points={
+        'console_scripts': [
+            'stackdio = stackdio.server.management:main',
+        ],
+    }
+)
