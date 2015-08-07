@@ -15,3 +15,9 @@
 # limitations under the License.
 #
 
+from stackdio.core.views import PageView
+
+
+class StackListView(PageView):
+    template_name = 'stacks/stack-list.html'
+    viewmodel = 'viewmodels/stack-list'

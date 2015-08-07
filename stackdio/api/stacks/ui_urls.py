@@ -15,3 +15,13 @@
 # limitations under the License.
 #
 
+from django.conf.urls import url
+
+from . import views
+
+
+urlpatterns = (
+    url(r'^$',
+        views.StackListView.as_view(),
+        name='stack-ui-list'),
+)

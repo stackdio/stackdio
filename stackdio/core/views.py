@@ -79,8 +79,3 @@ class PageView(StackdioView):
         context = super(PageView, self).get_context_data(**kwargs)
         context['viewmodel'] = self.viewmodel
         return context
-
-
-class StackListView(PageView):
-    template_name = 'stackdio/stack-list.html'
-    viewmodel = 'viewmodels/stack-list'

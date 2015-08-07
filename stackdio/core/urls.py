@@ -48,9 +48,6 @@ urlpatterns = (
         views.AppMainView.as_view(),
         name='js-main'),
 
-    url(r'^stacks/$',
-        views.StackListView.as_view(),
-        name='stack-ui-list'),
-
+    url(r'^stacks/', include('stackdio.api.stacks.ui_urls')),
     url(r'^', include('stackdio.api.users.ui_urls')),
 )
