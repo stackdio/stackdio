@@ -1,16 +1,36 @@
+/*!
+  * Copyright 2014,  Digital Reasoning
+  *
+  * Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
+  *
+  *     http://www.apache.org/licenses/LICENSE-2.0
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  *
+*/
+
 {% load staticfiles %}
 
-var bowerPath = '../lib/bower_components/';
+{# Templatize this file so that the static files always work even if the static url changes #}
+
+// Grab the bower path
+var bowerPath = '{% static 'stackdio/lib/bower_components' %}';
 
 requirejs.config({
     baseUrl: '{% static 'stackdio/app' %}',
     paths: {
-        'bootstrap': bowerPath + 'bootstrap/dist/js/bootstrap.min',
-        'jquery': bowerPath + 'jquery/jquery.min',
-        'knockout': bowerPath + 'knockout/dist/knockout',
-        'knockout-mapping': bowerPath + 'knockout-mapping/knockout.mapping',
-        'moment': bowerPath + 'moment/moment',
-        'underscore': bowerPath + 'underscore/underscore-min'
+        'bootstrap': bowerPath + '/bootstrap/dist/js/bootstrap.min',
+        'jquery': bowerPath + '/jquery/jquery.min',
+        'knockout': bowerPath + '/knockout/dist/knockout',
+        'knockout-mapping': bowerPath + '/knockout-mapping/knockout.mapping',
+        'moment': bowerPath + '/moment/moment',
+        'underscore': bowerPath + '/underscore/underscore-min'
     },
     shim: {
         bootstrap: {
@@ -31,6 +51,8 @@ require([
     'utils/mobile-fix',
     '{{ viewmodel }}'
 ], function($, bootstrap, ko, mf, vm) {
+    // Function for getting cookies
+    // pulled from Django 1.8 documentation
     function getCookie(name) {
         var cookieValue = null;
         if (document.cookie && document.cookie != '') {
@@ -47,6 +69,8 @@ require([
         return cookieValue;
     }
 
+    // Check for safe methods
+    // pulled from Django 1.8 documentation
     function csrfSafeMethod(method) {
         // these HTTP methods do not require CSRF protection
         return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
@@ -55,26 +79,19 @@ require([
     // Grab the CSRF token
     var csrftoken = getCookie('csrftoken');
 
-    // Just set by default so we never have to worry about it!
+    // Set up some basic jQuery ajax settings globally so we don't have to worry about it later
     $.ajaxSetup({
+        contentType: 'application/json',
+        headers: {
+            'Accept': 'application/json'
+        },
         beforeSend: function(xhr, settings) {
-            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+            if (!csrfSafeMethod(settings.method) && !this.crossDomain) {
                 xhr.setRequestHeader("X-CSRFToken", csrftoken);
             }
         }
     });
 
-    // Make sure our app works in view mode
-    if(("standalone" in window.navigator) && window.navigator.standalone) {
-        var sel = 'a';
-        $("body").delegate(sel, "click", function(e) {
-            if($(this).attr("target") == undefined || $(this).attr("target") == "" || $(this).attr("target") == "_self") {
-                var d = $(this).attr("href");
-                if(!d.match(/^http(s?)/g)) { e.preventDefault(); self.location = d; }
-            }
-        });
-    }
-
-    // Apply the bindings for our VM
+    // Apply the bindings for our viewmodel
     ko.applyBindings(vm);
 });

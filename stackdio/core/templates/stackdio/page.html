@@ -12,11 +12,13 @@
 {% endblock %}
 
 {% block content %}
-    <h1>{% block page-title %}{% endblock %}</h1>
-
     <div class="row">
         <div class="col-md-12">
-            {% block page-content %}{% endblock %}
+            <div class="page-header">
+                <h1>{% block page-title %}{% endblock %}</h1>
+            </div>
         </div>
     </div>
+
+    {% block page-content %}{% endblock %}
 {% endblock content %}
