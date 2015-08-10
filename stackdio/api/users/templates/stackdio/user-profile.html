@@ -1,14 +1,8 @@
-{% extends 'stackdio/base.html' %}
+{% extends 'stackdio/page.html' %}
 
-{% block content %}
-    <div class="row">
-        <div class="col-md-12">
-            <h1>User Profile</h1>
-        </div>
-    </div>
+{% block page-title %}User Profile{% endblock %}
 
-    <br>
-
+{% block page-content %}
     <div class="row">
         <div class="col-md-12">
             <p><strong>Username:</strong> {{ user.username }}</p>

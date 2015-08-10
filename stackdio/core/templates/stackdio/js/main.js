@@ -26,6 +26,7 @@ requirejs.config({
     baseUrl: '{% static 'stackdio/app' %}',
     paths: {
         'bootstrap': bowerPath + '/bootstrap/dist/js/bootstrap.min',
+        'domReady': bowerPath + '/requirejs-domReady/domReady',
         'jquery': bowerPath + '/jquery/jquery.min',
         'knockout': bowerPath + '/knockout/dist/knockout',
         'knockout-mapping': bowerPath + '/knockout-mapping/knockout.mapping',
@@ -35,9 +36,6 @@ requirejs.config({
     shim: {
         bootstrap: {
             deps: ['jquery']
-        },
-        underscore: {
-            exports: '_'
         }
     }
 });
@@ -49,7 +47,8 @@ require([
     'bootstrap',
     'knockout',
     'utils/mobile-fix',
-    '{{ viewmodel }}'
+    '{{ viewmodel }}',
+    'domReady!'
 ], function($, bootstrap, ko, mf, vm) {
     // Function for getting cookies
     // pulled from Django 1.8 documentation
@@ -93,5 +92,5 @@ require([
     });
 
     // Apply the bindings for our viewmodel
-    ko.applyBindings(vm);
+    ko.applyBindings(new vm());
 });

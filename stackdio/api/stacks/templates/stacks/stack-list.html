@@ -14,15 +14,15 @@
             </div>
 
             <nav class="pull-right">
-                <ul class="pagination" style="margin: 5px 0 10px 0">
+                <ul class="pager" style="margin: 5px 0 10px 0">
                     <li>
-                        <a href="#" aria-label="Previous" data-bind="click: goToPreviousPage">
-                            <span aria-hidden="true">&lt;</span>
+                        <a href="#" data-bind="click: goToPreviousPage">
+                            Previous
                         </a>
                     </li>
                     <li>
-                        <a href="#" aria-label="Next" data-bind="click: goToNextPage">
-                            <span aria-hidden="true">&gt;</span>
+                        <a href="#" data-bind="click: goToNextPage">
+                            Next
                         </a>
                     </li>
                 </ul>
@@ -44,13 +44,14 @@
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: stacks">
-                <tr>
+                <tr data-bind="click: $root.goToDetailPage">
                     <td data-bind="text: title"></td>
                     <td data-bind="text: description"></td>
                     <td data-bind="text: create_users"></td>
                     <td data-bind="text: host_count"></td>
                     <td data-bind="text: status"></td>
-                    <td><a class="btn btn-xs btn-danger" data-bind="click: $root.deleteStack">&times;</a>
+                    <td>
+                        <a class="btn btn-xs btn-danger" data-bind="click: $root.deleteStack">&times;</a>
                     </td>
                 </tr>
                 </tbody>

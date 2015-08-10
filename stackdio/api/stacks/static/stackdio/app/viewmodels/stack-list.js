@@ -19,8 +19,15 @@ define([
     'jquery',
     'knockout'
 ], function ($, ko) {
-    function StackListViewModel() {
+    return function() {
         var self = this;
+
+        self.breadcrumbs = [
+            {
+                active: true,
+                title: 'Stacks'
+            }
+        ];
 
         // Observable view variables
         self.pageNum = ko.observable();
@@ -62,6 +69,10 @@ define([
             self.count(0);
             self.stacks([]);
             self.reloadStacks();
+        };
+
+        self.goToDetailPage = function (stack) {
+            window.location = '/stacks/' + stack.id + '/';
         };
 
         self.goToNextPage = function () {
@@ -115,7 +126,5 @@ define([
         // Start everything up
         self.reset();
         setInterval(self.reloadStacks, 3000);
-    }
-
-    return new StackListViewModel();
+    };
 });

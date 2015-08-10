@@ -15,12 +15,87 @@
   * 
 */
 
-define(['jquery', 'knockout'], function($, ko) {
-    function StackDetailViewModel() {
+define([
+    'jquery',
+    'knockout',
+    'knockout-mapping'
+], function($, ko, komapping) {
+    return function() {
         var self = this;
 
+        self.id = ko.observable('');
+        self.title = ko.observable('');
+        self.description = ko.observable();
+        self.status = ko.observable();
+        self.namespace = ko.observable();
+        self.createUsers = ko.observable();
+        self.hostCount = ko.observable();
+        self.volumeCount = ko.observable();
+        self.created = ko.observable();
 
-    }
+        self.url = ko.computed(function() {
+            return  '/api/stacks/'+self.id()+'/';
+        });
 
-    return new StackDetailViewModel();
+        self.breadcrumbs = [
+            {
+                active: false,
+                title: 'Stacks',
+                href: '/stacks/'
+            },
+            ko.observable({
+                active: true,
+                title: ko.computed(function() { return self.title(); })
+            })
+        ];
+
+        self.reset = function() {
+            self.id(window.stackdio.stackId);
+            self.title('');
+            self.description('');
+            self.status('');
+            self.namespace('');
+            self.createUsers('');
+            self.hostCount('');
+            self.volumeCount('');
+            self.created('');
+        };
+
+        // Functions
+        self.refreshStack = function () {
+            $.ajax({
+                method: 'GET',
+                url: self.url()
+            }).done(function (stack) {
+                document.title = 'stackd.io | Stack Detail - ' + stack.title;
+                self.title(stack.title);
+                self.description(stack.description);
+                self.status(stack.status);
+                self.namespace(stack.namespace);
+                self.createUsers(stack.create_users);
+                self.hostCount(stack.host_count);
+                self.volumeCount(stack.volume_count);
+                self.created(stack.created);
+            }).fail(function () {
+                // If we get a 404 or something, reset EVERYTHING
+                self.reset();
+            });
+        };
+
+        self.updateStack = function () {
+            $.ajax({
+                method: 'PUT',
+                url: self.url(),
+                data: komapping.toJSON(self)
+            }).done(function (stack) {
+                console.debug(stack);
+            }).fail(function (xhr) {
+                console.debug(xhr);
+            });
+        };
+
+        // Start everything up
+        self.reset();
+        self.refreshStack();
+    };
 });

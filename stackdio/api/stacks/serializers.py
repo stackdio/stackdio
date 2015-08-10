@@ -360,7 +360,7 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
         if 'create_users' in attrs:
             create_users = attrs['create_users']
         else:
-            create_users = self.instance.create_user
+            create_users = self.instance.create_users
         if create_users and not request.user.settings.public_key:
             errors.setdefault('public_key', []).append(
                 'You have not added a public key to your user '

@@ -1,8 +1,71 @@
 {% extends 'stackdio/page.html' %}
 
-{% block title %}Stack Detail - {{ stack_id }}{% endblock %}
-{% block page-title %}Stack Detail - {{ stack_id }}{% endblock %}
+{% block title %}Stack Detail{% endblock %}
+{% block page-title %}Stack Detail - <span data-bind="text: title"></span>{% endblock %}
+
+{# Inject the stack id into the window so we can access it in our javascript VM #}
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        window.stackdio = {};
+        window.stackdio.stackId = {{ stack_id }};
+    </script>
+{% endblock %}
+
 
 {% block page-content %}
+    <div class="row">
+        <div class="col-md-9">
+            <div class="container-fluid">
+                <div class="row">
+                    <form class="form-horizontal" data-bind="submit: updateStack">
+                        <div class="form-group">
+                            <label for="stackTitle" class="col-sm-2">Title</label>
 
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" id="stackTitle"
+                                       data-bind="value: title, valueUpdate: 'keyup'">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="stackDescription" class="col-sm-2">Description</label>
+
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" id="stackDescription"
+                                       data-bind="value: description, valueUpdate: 'keyup'">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-2">Namespace</label>
+
+                            <div class="col-sm-10">
+                                <p class="form-control-static" data-bind="text: namespace"></p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-offset-2 col-sm-10">
+                                <div class="checkbox">
+                                    <label>
+                                        <input type="checkbox" data-bind="value: createUsers">
+                                        Create Users
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-offset-2 col-sm-10">
+                                <button type="submit" class="btn btn-primary">Save</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+        <div class="col-md-3">
+            <div class="well">
+                <h2>Sidebar</h2>
+            </div>
+        </div>
+    </div>
 {% endblock %}
