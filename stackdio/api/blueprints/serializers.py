@@ -230,7 +230,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
     size = serializers.SlugRelatedField(slug_field='instance_id',
                                         queryset=CloudInstanceSize.objects.all())
-    zone = serializers.SlugRelatedField(slug_field='title', required=False,
+    zone = serializers.SlugRelatedField(slug_field='title', required=False, allow_null=True,
                                         queryset=CloudZone.objects.all())
     cloud_image = serializers.SlugRelatedField(slug_field='slug',
                                                queryset=CloudImage.objects.all())
@@ -254,6 +254,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
 
         extra_kwargs = {
             'spot_price': {'min_value': 0.0},
+            'subnet_id': {'allow_null': True},
             'hostname_template': {'validators': [validators.BlueprintHostnameTemplateValidator()]},
         }
 
