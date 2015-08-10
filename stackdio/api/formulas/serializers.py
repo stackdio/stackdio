@@ -228,9 +228,20 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
         tags = [str(t.name) for t in repo.tags]
         commit_hashes = [str(c.hexsha) for c in repo.iter_commits()]
 
+        # Check remote branches
+        remote_branches = []
+        for remote in repo.remotes:
+            for ref in remote.refs:
+                ref_name = ref.name
+                ref_spl = ref.name.split('/')
+                if ref_spl[0] == ref.name:
+                    ref_name = '/'.join(ref_spl[1:])
+
+                remote_branches.append(ref_name)
+
         # Verify that the version is either a branch, tag, or commit hash
 
-        if version not in branches + tags + commit_hashes:
+        if version not in branches + tags + commit_hashes + remote_branches:
             err_msg = '{0} cannot be found to be a branch, tag, or commit hash'.format(version)
             raise serializers.ValidationError({
                 'version': [err_msg]
