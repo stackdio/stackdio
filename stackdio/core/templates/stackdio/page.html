@@ -16,15 +16,18 @@
     <div class="row" data-bind="if: breadcrumbs">
         <div class="col-md-12">
             <ol class="breadcrumb" data-bind="foreach: breadcrumbs">
-                <!-- ko if: active -->
-                <li class="active" data-bind="text: title"></li>
-                <!-- /ko -->
-                <!-- ko ifnot: active -->
-                <li><a data-bind="text: title, attr: {href: href}"></a></li>
-                <!-- /ko -->
+                <li data-bind="css: {active: active}">
+                    <!-- ko if: active -->
+                    <span data-bind="text: title"></span>
+                    <!-- /ko -->
+                    <!-- ko ifnot: active -->
+                    <a data-bind="text: title, attr: {href: href}"></a>
+                    <!-- /ko -->
+                </li>
             </ol>
         </div>
     </div>
+
     <div class="row">
         <div class="col-md-12">
             <div class="page-header">

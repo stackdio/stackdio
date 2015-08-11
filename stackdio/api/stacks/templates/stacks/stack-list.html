@@ -6,24 +6,23 @@
 {% block page-content %}
     <div class="row">
         <div class="col-md-12">
-            <div class="pull-left">
-                <p>
-                    Showing stacks <span data-bind="text: startNum"></span>-<span data-bind="text: endNum"></span>
-                    of <span data-bind="text: count"></span>.
-                </p>
-            </div>
+            <p> Showing stacks <span data-bind="text: startNum"></span>-<span
+                    data-bind="text: endNum"></span> of <span data-bind="text: count"></span>.
+            </p>
+        </div>
+    </div>
 
-            <nav class="pull-right">
+    <div class="row">
+        <div class="col-md-12">
+            <nav>
                 <ul class="pager" style="margin: 5px 0 10px 0">
-                    <li>
-                        <a href="#" data-bind="click: goToPreviousPage">
-                            Previous
-                        </a>
+                    <li class="previous" data-bind="css: {disabled: !previousPage()}">
+                        <a href="#" data-bind="click: goToPreviousPage"><span
+                                aria-hidden="true">&larr;</span> Previous</a>
                     </li>
-                    <li>
-                        <a href="#" data-bind="click: goToNextPage">
-                            Next
-                        </a>
+                    <li class="next" data-bind="css: {disabled: !nextPage()}">
+                        <a href="#" data-bind="click: goToNextPage">Next <span
+                                aria-hidden="true">&rarr;</span></a>
                     </li>
                 </ul>
             </nav>
@@ -44,14 +43,17 @@
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: stacks">
-                <tr data-bind="click: $root.goToDetailPage">
-                    <td data-bind="text: title"></td>
-                    <td data-bind="text: description"></td>
-                    <td data-bind="text: create_users"></td>
-                    <td data-bind="text: host_count"></td>
-                    <td data-bind="text: status"></td>
+                <tr>
+                    <td data-bind="text: title, click: $root.goToDetailPage"></td>
+                    <td data-bind="text: description, click: $root.goToDetailPage"></td>
+                    <td data-bind="text: create_users, click: $root.goToDetailPage"></td>
+                    <td data-bind="text: host_count, click: $root.goToDetailPage"></td>
+                    <td data-bind="click: $root.goToDetailPage">
+                        <span class="label" data-bind="css: labelClass, text: status"></span>
+                    </td>
                     <td>
-                        <a class="btn btn-xs btn-danger" data-bind="click: $root.deleteStack">&times;</a>
+                        <a class="btn btn-xs btn-danger"
+                           data-bind="click: $root.deleteStack">&times;</a>
                     </td>
                 </tr>
                 </tbody>

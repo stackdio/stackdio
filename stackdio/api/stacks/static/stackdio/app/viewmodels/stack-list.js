@@ -103,6 +103,35 @@ define([
                 if (stacks.next !== null) {
                     self.pageSize(stacks.results.length);
                 }
+                stacks.results.forEach(function (stack) {
+                    switch (stack.status) {
+                        case 'finished':
+                        case 'ok':
+                            stack.labelClass = 'label-success';
+                            break;
+                        case 'launching':
+                        case 'configuring':
+                        case 'syncing':
+                        case 'provisioning':
+                        case 'orchestrating':
+                        case 'finalizing':
+                        case 'destroying':
+                        case 'starting':
+                        case 'stopping':
+                        case 'executing_action':
+                        case 'terminating':
+                            stack.labelClass = 'label-warning';
+                            break;
+                        case 'pending':
+                            stack.labelClass = 'label-info';
+                            break;
+                        case 'error':
+                            stack.labelClass = 'label-danger';
+                            break;
+                        default:
+                            stack.labelClass = 'label-default';
+                    }
+                });
                 self.stacks(stacks.results);
             }).fail(function () {
                 // If we get a 404 or something, reset EVERYTHING
