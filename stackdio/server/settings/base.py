@@ -97,6 +97,7 @@ INSTALLED_APPS = (
     'stackdio.api.volumes',
     'stackdio.api.blueprints',
     'stackdio.api.formulas',
+    'stackdio.ui',
     'rest_framework',
     'rest_framework.authtoken',
 )

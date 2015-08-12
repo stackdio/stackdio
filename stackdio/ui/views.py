@@ -79,3 +79,22 @@ class PageView(StackdioView):
         context = super(PageView, self).get_context_data(**kwargs)
         context['viewmodel'] = self.viewmodel
         return context
+
+
+class UserProfileView(StackdioView):
+    template_name = 'stackdio/user-profile.html'
+
+
+class StackListView(PageView):
+    template_name = 'stacks/stack-list.html'
+    viewmodel = 'viewmodels/stack-list'
+
+
+class StackDetailView(PageView):
+    template_name = 'stacks/stack-detail.html'
+    viewmodel = 'viewmodels/stack-detail'
+
+    def get_context_data(self, **kwargs):
+        context = super(StackDetailView, self).get_context_data(**kwargs)
+        context['stack_id'] = kwargs['pk']
+        return context

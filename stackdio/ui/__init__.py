@@ -15,8 +15,3 @@
 # limitations under the License.
 #
 
-from stackdio.core.views import StackdioView
-
-
-class UserProfileView(StackdioView):
-    template_name = 'stackdio/user-profile.html'

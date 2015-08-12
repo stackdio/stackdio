@@ -37,7 +37,7 @@ root_dir = os.path.dirname(os.path.abspath(__file__))
 components_dir = os.path.join(
     root_dir,
     'stackdio',
-    'core',
+    'ui',
     'static',
     'stackdio',
     'lib',
