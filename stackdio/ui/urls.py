@@ -44,6 +44,10 @@ urlpatterns = (
         views.AppMainView.as_view(),
         name='js-main'),
 
+    url('^user/$',
+        views.UserProfileView.as_view(),
+        name='user-profile'),
+
     url(r'^stacks/$',
         views.StackListView.as_view(),
         name='stack-ui-list'),
