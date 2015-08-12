@@ -454,7 +454,7 @@ class FullBlueprintSerializer(BlueprintSerializer):
             formula_version_field = self.fields['formula_versions']
             # Add in the blueprint to all the formula versions
             for formula_version in formula_versions:
-                formula_version['blueprint'] = blueprint
+                formula_version['content_object'] = blueprint
             formula_version_field.create(formula_versions)
 
         # Add the other fields back in for deserialization
