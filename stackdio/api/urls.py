@@ -19,7 +19,6 @@
 from django.conf.urls import include, url
 
 from rest_framework.compat import OrderedDict
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.urlpatterns import format_suffix_patterns
