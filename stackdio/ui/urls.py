@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from django.conf.urls import include, url
+from django.conf.urls import url
 from django.contrib.auth.views import login, logout_then_login
 
 from stackdio.server import __version__

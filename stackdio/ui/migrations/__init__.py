@@ -15,4 +15,3 @@
 # limitations under the License.
 #
 
-# Django will complain if there's no models.py
