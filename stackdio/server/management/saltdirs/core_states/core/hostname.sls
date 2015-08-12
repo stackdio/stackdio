@@ -4,8 +4,6 @@
     {% set hostname_service = 'network' %}
 {% endif %}
 
-{%- set stack_hosts = salt['mine.get']('stack_id:' ~ grains.stack_id, 'grains.items', 'grain') -%}
-
 
 # Edit the appropriate hostname file
 {% if grains['os_family'] == 'Debian' %}
@@ -29,17 +27,17 @@ hostname_file:
 {% endif %}
 
 # Add an IP->FQDN mapping for each machine in the stack
-{#stack_hostnames:#}
-{#  file:#}
-{#    - append#}
-{#    - user: root#}
-{#    - name: /etc/hosts#}
-{#    - text:#}
-{#{%- for host, items in stack_hosts.iteritems() %}#}
-{#      - "{{ items['ip_interfaces']['eth0'][0] }} {{ items['fqdn'] }} {{ items['id'] }}"#}
-{#{% endfor %}#}
-{#    - require:#}
-{#      - file: hostname_file#}
+stack_hostnames:
+  file:
+    - managed
+    - user: root
+    - group: root
+    - mode: 644
+    - name: /etc/hosts
+    - template: jinja
+    - source: salt://core/etc/hosts
+    - require:
+      - file: hostname_file
 
 # Set the hostname of the machine based on the FQDN defined in a grain
 set_hostname:
@@ -49,8 +47,8 @@ set_hostname:
     - user: root
     - name: "hostname {{ grains['fqdn'] }}"
     - unless: "hostname | grep {{ grains['fqdn'] }}"
-{#    - require:#}
-{#      - file: stack_hostnames#}
+    - require:
+      - file: stack_hostnames
 
 # Restart the apropriate service for this change to take effect
 restart_hostname:
