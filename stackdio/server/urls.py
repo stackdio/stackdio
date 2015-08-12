@@ -27,8 +27,11 @@ urlpatterns = (
     # Admin interface
     url(r'^__private/admin/', include(admin.site.urls)),
 
-    # Grab the core URLs.  Stuff like index, login, logout, etc
+    # Grab the core URLs.  Basically just the version endpoint.
     url(r'^', include('stackdio.core.urls')),
+
+    # Grab the ui URLs.  Stuff like index, login, logout, etc
+    url(r'^', include('stackdio.ui.urls')),
 
     # API v1 root endpoint -- add additional URLs to urls.py in the api module.
     url(r'^api/', include('stackdio.api.urls')),
