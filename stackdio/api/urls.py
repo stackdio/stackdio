@@ -36,34 +36,34 @@ class APIRootView(APIView):
 
     def get(self, request, format=None):
         api = OrderedDict((
-            ('version', reverse('version',
+            ('version', reverse('stackdio:version',
                                 request=request,
                                 format=format)),
-            ('users', reverse('user-list',
+            ('users', reverse('api:users:user-list',
                               request=request,
                               format=format)),
-            ('groups', reverse('group-list',
+            ('groups', reverse('api:users:group-list',
                                request=request,
                                format=format)),
-            ('current_user', reverse('currentuser-detail',
+            ('current_user', reverse('api:users:currentuser-detail',
                                      request=request,
                                      format=format)),
-            ('cloud', reverse('cloud-root',
+            ('cloud', reverse('api:cloud:root',
                               request=request,
                               format=format)),
-            ('blueprints', reverse('blueprint-list',
+            ('blueprints', reverse('api:blueprints:blueprint-list',
                                    request=request,
                                    format=format)),
-            ('formulas', reverse('formula-list',
+            ('formulas', reverse('api:formulas:formula-list',
                                  request=request,
                                  format=format)),
-            ('stacks', reverse('stack-list',
+            ('stacks', reverse('api:stacks:stack-list',
                                request=request,
                                format=format)),
-            ('volumes', reverse('volume-list',
+            ('volumes', reverse('api:volumes:volume-list',
                                 request=request,
                                 format=format)),
-            ('search', reverse('search',
+            ('search', reverse('api:search:search',
                                request=request,
                                format=format)),
         ))
@@ -72,18 +72,18 @@ class APIRootView(APIView):
 
 
 urlpatterns = (
-    url(r'^$', APIRootView.as_view(), name='api-root'),
+    url(r'^$', APIRootView.as_view(), name='root'),
 
     ##
     # IMPORTS URLS FROM ALL APPS
     ##
-    url(r'^', include('stackdio.api.users.urls')),
-    url(r'^cloud/', include('stackdio.api.cloud.urls')),
-    url(r'^', include('stackdio.api.stacks.urls')),
-    url(r'^', include('stackdio.api.volumes.urls')),
-    url(r'^', include('stackdio.api.blueprints.urls')),
-    url(r'^', include('stackdio.api.formulas.urls')),
-    url(r'^', include('stackdio.api.search.urls')),
+    url(r'^', include('stackdio.api.users.urls', namespace='users')),
+    url(r'^cloud/', include('stackdio.api.cloud.urls', namespace='cloud')),
+    url(r'^blueprints/', include('stackdio.api.blueprints.urls', namespace='blueprints')),
+    url(r'^', include('stackdio.api.formulas.urls', namespace='formulas')),
+    url(r'^', include('stackdio.api.stacks.urls', namespace='stacks')),
+    url(r'^', include('stackdio.api.volumes.urls', namespace='volumes')),
+    url(r'^', include('stackdio.api.search.urls', namespace='search')),
 )
 
 # Format suffixes - this only should go on API endpoints, not everything!

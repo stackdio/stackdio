@@ -30,7 +30,7 @@
     <div class="navbar navbar-fixed-top navbar-inverse">
         <div class="container">
             <div class="navbar-header">
-                <a class="navbar-brand" href="{% url 'api-root' %}" >
+                <a class="navbar-brand" href="{% url 'api:root' %}" >
                     <img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-small-thumb.png' %}">
                     stackd.io API <span class="version">{{ api_settings.user_settings.STACKDIO_VERSION }}</span>
                 </a>
@@ -38,7 +38,7 @@
 
             <div id="navbar">
                 <ul class="nav navbar-nav navbar-right">
-                <li><a href="{% url 'index' %}">Home</a></li>
+                <li><a href="{% url 'ui:index' %}">Home</a></li>
                 {% block userlinks %}
                     {% if user.is_authenticated %}
                         {% optional_logout request user %}

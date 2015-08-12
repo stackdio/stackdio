@@ -27,6 +27,7 @@ from rest_framework import serializers
 from rest_framework.compat import OrderedDict
 from rest_framework.settings import api_settings
 
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from stackdio.core.utils import recursive_update
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone
@@ -110,7 +111,7 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
         )
 
 
-class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+class BlueprintHostFormulaComponentSerializer(StackdioHyperlinkedModelSerializer):
     # Read only fields
     title = serializers.ReadOnlyField(source='component.title')
     description = serializers.ReadOnlyField(source='component.description')
@@ -223,7 +224,7 @@ class BlueprintHostFormulaComponentSerializer(serializers.HyperlinkedModelSerial
         return ret
 
 
-class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
+class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
     formula_components = BlueprintHostFormulaComponentSerializer(many=True)
     access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
     volumes = BlueprintVolumeSerializer(many=True, required=False)
@@ -332,19 +333,19 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
         return host_definition
 
 
-class BlueprintSerializer(serializers.HyperlinkedModelSerializer):
+class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(
-        view_name='blueprint-properties')
+        view_name='api:blueprints:blueprint-properties')
     host_definitions = serializers.HyperlinkedIdentityField(
-        view_name='blueprint-host-definition-list')
+        view_name='api:blueprints:blueprint-host-definition-list')
     formula_versions = serializers.HyperlinkedIdentityField(
-        view_name='blueprint-formula-versions')
+        view_name='api:blueprints:blueprint-formula-versions')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='blueprint-object-user-permissions-list')
+        view_name='api:blueprints:blueprint-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='blueprint-object-group-permissions-list')
+        view_name='api:blueprints:blueprint-object-group-permissions-list')
     export = serializers.HyperlinkedIdentityField(
-        view_name='blueprint-export')
+        view_name='api:blueprints:blueprint-export')
 
     class Meta:
         model = models.Blueprint

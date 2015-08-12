@@ -50,9 +50,9 @@ urlpatterns = (
 
     url(r'^stacks/$',
         views.StackListView.as_view(),
-        name='stack-ui-list'),
+        name='stack-list'),
 
     url(r'^stacks/(?P<pk>[0-9]+)/$',
         views.StackDetailView.as_view(),
-        name='stack-ui-detail'),
+        name='stack-detail'),
 )

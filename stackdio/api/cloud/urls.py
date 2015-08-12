@@ -80,7 +80,7 @@ snapshot_object_router.register(r'groups',
 urlpatterns = (
     url(r'^$',
         api.CloudRootView.as_view(),
-        name='cloud-root'),
+        name='root'),
 
     url(r'^providers/$',
         api.CloudProviderListAPIView.as_view(),

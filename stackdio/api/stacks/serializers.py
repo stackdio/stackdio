@@ -27,6 +27,7 @@ from rest_framework.compat import OrderedDict
 from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from stackdio.core.utils import recursive_update
 from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
@@ -76,7 +77,7 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
         return stack
 
 
-class HostSerializer(serializers.HyperlinkedModelSerializer):
+class HostSerializer(StackdioHyperlinkedModelSerializer):
     # Read only fields
     subnet_id = serializers.ReadOnlyField()
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -254,7 +255,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
         return action_map[action](stack, validated_data)
 
 
-class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
+class StackHistorySerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.StackHistory
         fields = (
@@ -282,34 +283,34 @@ class StackCreateUserDefault(object):
         return blueprint.create_users
 
 
-class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
+class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     # Read only fields
     host_count = serializers.ReadOnlyField(source='hosts.count')
     volume_count = serializers.ReadOnlyField(source='volumes.count')
 
     # Identity links
     hosts = serializers.HyperlinkedIdentityField(
-        view_name='stack-hosts')
+        view_name='api:stacks:stack-hosts')
     action = serializers.HyperlinkedIdentityField(
-        view_name='stack-action')
+        view_name='api:stacks:stack-action')
     commands = serializers.HyperlinkedIdentityField(
-        view_name='stack-command-list')
+        view_name='api:stacks:stack-command-list')
     logs = serializers.HyperlinkedIdentityField(
-        view_name='stack-logs')
+        view_name='api:stacks:stack-logs')
     volumes = serializers.HyperlinkedIdentityField(
-        view_name='stack-volumes')
+        view_name='api:stacks:stack-volumes')
     properties = serializers.HyperlinkedIdentityField(
-        view_name='stack-properties')
+        view_name='api:stacks:stack-properties')
     history = serializers.HyperlinkedIdentityField(
-        view_name='stack-history')
+        view_name='api:stacks:stack-history')
     security_groups = serializers.HyperlinkedIdentityField(
-        view_name='stack-security-groups')
+        view_name='api:stacks:stack-security-groups')
     formula_versions = serializers.HyperlinkedIdentityField(
-        view_name='stack-formula-versions')
+        view_name='api:stacks:stack-formula-versions')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='stack-object-user-permissions-list')
+        view_name='api:stacks:stack-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='stack-object-group-permissions-list')
+        view_name='api:stacks:stack-object-group-permissions-list')
 
     class Meta:
         model = models.Stack
@@ -348,7 +349,8 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
         )
 
         extra_kwargs = {
-            'create_users': {'default': serializers.CreateOnlyDefault(StackCreateUserDefault())}
+            'create_users': {'default': serializers.CreateOnlyDefault(StackCreateUserDefault())},
+            'blueprint': {'view_name': 'api:blueprints:blueprint-detail'},
         }
 
     def validate(self, attrs):
@@ -465,11 +467,10 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'url',
             'name',
             'description',
-            'rules_url',
+            'rules',
             'group_id',
             'blueprint_host_definition',
             'account',
-            'account_id',
             'is_default',
             'is_managed',
             'active_hosts',
@@ -590,8 +591,8 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         return self.instance
 
 
-class StackCommandSerializer(serializers.HyperlinkedModelSerializer):
-    zip_url = serializers.HyperlinkedIdentityField(view_name='stackcommand-zip')
+class StackCommandSerializer(StackdioHyperlinkedModelSerializer):
+    zip_url = serializers.HyperlinkedIdentityField(view_name='api:stacks:stackcommand-zip')
 
     class Meta:
         model = models.StackCommand

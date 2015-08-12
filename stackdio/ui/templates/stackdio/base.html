@@ -54,7 +54,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="{% block branding-url %}{% url 'index' %}{% endblock %}" >
+                    <a class="navbar-brand" href="{% block branding-url %}{% url 'ui:index' %}{% endblock %}" >
                         {% block branding %}
                         <img class="hidden-xs" alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">
                         <img class="visible-xs" alt="Brand" style="height: 30px" src="{% static 'stackdio/img/logo-small-thumb.png' %}">
@@ -80,8 +80,8 @@
                                 {{ user.username }} <span class="caret"></span>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a href="{% url 'user-profile' %}">Profile</a></li>
-                                <li><a href="{% url 'logout' %}">Logout</a></li>
+                                <li><a href="{% url 'ui:user-profile' %}">Profile</a></li>
+                                <li><a href="{% url 'ui:logout' %}">Logout</a></li>
                             </ul>
                         </li>
                     </ul>
@@ -116,7 +116,7 @@
                 </div>
                 <div class="col-xs-6">
                 {% block api-link %}
-                    <p class="text-right">stackd.io <span class="version">{% block version %}{{ version }}{% endblock %}</span> | <a href="{% url 'api-root' %}">api</a></p>
+                    <p class="text-right">stackd.io <span class="version">{% block version %}{{ version }}{% endblock %}</span> | <a href="{% url 'api:root' %}">api</a></p>
                 {% endblock api-link %}
                 </div>
             </div>

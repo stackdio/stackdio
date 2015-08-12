@@ -51,18 +51,25 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
     def get_model_name(self):
         raise NotImplementedError('`get_model_name()` must be implemented.')
 
+    def get_app_label(self):
+        raise NotImplementedError('`get_app_label()` must be implemented.')
+
     def get_serializer_class(self):
         user_or_group = self.get_user_or_group()
         model_or_object = self.get_model_or_object()
         model_name = self.get_model_name()
+        app_label = self.get_app_label()
 
         super_cls = self.switch_model_object(serializers.StackdioModelPermissionsSerializer,
                                              serializers.StackdioObjectPermissionsSerializer)
 
         url_field_kwargs = {
-            'view_name': '{0}-{1}-{2}-permissions-detail'.format(model_name,
-                                                                 model_or_object,
-                                                                 user_or_group),
+            'view_name': 'api:{0}:{1}-{2}-{3}-permissions-detail'.format(
+                app_label,
+                model_name,
+                model_or_object,
+                user_or_group
+            ),
             'permission_lookup_field': self.lookup_field,
             'permission_lookup_url_kwarg': self.lookup_url_kwarg or self.lookup_field,
             'lookup_field': self.parent_lookup_field,
@@ -150,6 +157,9 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
     def get_model_name(self):
         return self.get_model_cls()._meta.model_name
 
+    def get_app_label(self):
+        return self.get_model_cls()._meta.app_label
+
     def get_model_permissions(self):
         return getattr(self.get_model_cls(),
                        'model_permissions',
@@ -221,6 +231,9 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
 
     def get_model_name(self):
         return self.get_permissioned_object()._meta.model_name
+
+    def get_app_label(self):
+        return self.get_permissioned_object()._meta.app_label
 
     def get_object_permissions(self):
         return getattr(self.get_permissioned_object(),

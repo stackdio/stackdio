@@ -23,6 +23,28 @@ from rest_framework import serializers
 logger = logging.getLogger(__name__)
 
 
+class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer):
+    """
+    Override to use the appropriately namespaced url
+    """
+    def build_url_field(self, field_name, model_class):
+        """
+        Create a field representing the object's own URL.
+        """
+        field_class = self.serializer_url_field
+        app_label = model_class._meta.app_label
+        model_name = model_class._meta.object_name.lower()
+
+        # Override user things
+        if model_name in ('user', 'group', 'permission'):
+            app_label = 'users'
+        field_kwargs = {
+            'view_name': 'api:%s:%s-detail' % (app_label, model_name),
+        }
+
+        return field_class, field_kwargs
+
+
 class StackdioModelPermissionsSerializer(serializers.Serializer):
 
     def validate(self, attrs):

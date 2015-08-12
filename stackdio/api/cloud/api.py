@@ -54,19 +54,19 @@ class CloudRootView(APIView):
 
     def get(self, request, format=None):
         api = OrderedDict((
-            ('providers', reverse('cloudprovider-list',
+            ('providers', reverse('api:cloud:cloudprovider-list',
                                   request=request,
                                   format=format)),
-            ('accounts', reverse('cloudaccount-list',
+            ('accounts', reverse('api:cloud:cloudaccount-list',
                                  request=request,
                                  format=format)),
-            ('images', reverse('cloudimage-list',
-                                 request=request,
-                                 format=format)),
-            ('snapshots', reverse('snapshot-list',
+            ('images', reverse('api:cloud:cloudimage-list',
+                               request=request,
+                               format=format)),
+            ('snapshots', reverse('api:cloud:snapshot-list',
                                   request=request,
                                   format=format)),
-            ('security_groups', reverse('securitygroup-list',
+            ('security_groups', reverse('api:cloud:securitygroup-list',
                                         request=request,
                                         format=format)),
         ))
