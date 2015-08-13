@@ -36,6 +36,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeria
     # Link fields
     properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
     components = serializers.HyperlinkedIdentityField(view_name='formula-component-list')
+    valid_versions = serializers.HyperlinkedIdentityField(view_name='formula-valid-version-list')
     action = serializers.HyperlinkedIdentityField(view_name='formula-action')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='formula-object-user-permissions-list')
@@ -61,6 +62,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeria
             'status_detail',
             'properties',
             'components',
+            'valid_versions',
             'action',
             'user_permissions',
             'group_permissions',
@@ -137,11 +139,6 @@ class FormulaPropertiesSerializer(serializers.Serializer):  # pylint: disable=ab
 
     def to_internal_value(self, data):
         return data
-
-
-class SpecfileFormulaComponentsSerializer(serializers.Serializer):
-    def to_representation(self, instance):
-        return instance
 
 
 class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstract-method

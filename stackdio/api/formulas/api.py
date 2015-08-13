@@ -17,6 +17,7 @@
 
 
 import logging
+from collections import OrderedDict
 
 from guardian.shortcuts import assign_perm
 from rest_framework import generics
@@ -65,8 +66,9 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_destroy(self, instance):
         # Check for Blueprints depending on this formula
+        # This should catch MOST errors
         blueprints = Blueprint.objects.filter(
-            host_definitions__formula_components__component__in=instance.components.all()
+            host_definitions__formula_components__sls_path__in=instance.components.keys()
         ).distinct()
 
         if blueprints:
@@ -85,13 +87,49 @@ class FormulaPropertiesAPIView(mixins.FormulaRelatedMixin, generics.RetrieveAPIV
 
 
 class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIView):
-    serializer_class = serializers.FormulaComponentSerializer
-
-    def get_queryset(self):
+    """
+    Returns a list of formula components available for this formula.  If the `version`
+    query parameter is specified, it will show a list for that version.
+    """
+    def list(self, request, *args, **kwargs):
         formula = self.get_formula()
-        # Be sure we're on the right branch
-        formula.repo.git.checkout(formula.default_branch)
-        return formula.components
+
+        # determine if a version was specified
+        version = request.query_params.get('version')
+
+        if version in formula.get_valid_versions():
+            components = formula.components_for_version(version)
+        else:
+            version = formula.default_branch
+            formula.repo.git.checkout(version)
+            components = formula.components
+
+        components = components.values()
+
+        data = OrderedDict((
+            ('count', len(components)),
+            ('version', version),
+            ('results', components),
+        ))
+
+        return Response(data)
+
+
+class FormulaValidVersionListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIView):
+    """
+    Returns a list of valid versions for this formula.
+    """
+    def list(self, request, *args, **kwargs):
+        formula = self.get_formula()
+
+        versions = formula.get_valid_versions()
+
+        data = OrderedDict((
+            ('count', len(versions)),
+            ('results', versions),
+        ))
+
+        return Response(data)
 
 
 class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):

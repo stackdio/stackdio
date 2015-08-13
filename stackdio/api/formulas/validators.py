@@ -85,8 +85,7 @@ def validate_component(formula, repodir, component):
     abs_init_file = os.path.join(repodir, init_file)
     abs_sls_file = os.path.join(repodir, sls_file)
 
-    if not os.path.isfile(abs_init_file) and \
-            not os.path.isfile(abs_sls_file):
+    if not os.path.isfile(abs_init_file) and not os.path.isfile(abs_sls_file):
         raise FormulaTaskException(
             formula,
             'Could not locate an SLS file for component \'{0}\'. '

@@ -121,17 +121,6 @@ def import_formula(formula_id, git_password):
         for component in components:
             validate_component(formula, repodir, component)
 
-        # all seems to be fine with the structure and mapping of the SPECFILE,
-        # so now we'll build out the individual components of the formula
-        # according to the SPECFILE
-        for component in components:
-            title = component['title']
-            description = component.get('description', '')
-            sls_path = component['sls_path']
-            formula.components.create(title=title,
-                                      sls_path=sls_path,
-                                      description=description)
-
         root_dir = formula.get_repo_dir()
 
         # move the cloned formula repository to a location known by salt
@@ -166,6 +155,10 @@ def update_formula(formula_id, git_password):
         formula = Formula.objects.get(pk=formula_id)
         formula.set_status(Formula.IMPORTING, 'Updating formula.')
 
+        # Grab the components now before we pull
+        old_components = formula.components
+
+        repodir = formula.get_repo_dir()
         repo = formula.repo
 
         current_commit = repo.head.commit
@@ -178,8 +171,7 @@ def update_formula(formula_id, git_password):
             hostname = parsed.netloc.split('@')[1]
             uri = urlunsplit((
                 parsed.scheme,
-                '{0}:{1}@{2}'.format(
-                    formula.git_username, git_password, hostname),
+                '{0}:{1}@{2}'.format(formula.git_username, git_password, hostname),
                 parsed.path,
                 parsed.query,
                 parsed.fragment
@@ -206,19 +198,15 @@ def update_formula(formula_id, git_password):
         formula_title, formula_description, root_path, components = validate_specfile(formula,
                                                                                       repodir)
 
-        old_components = formula.components.all()
-
         # Check for added or changed components
         added_components = []
         changed_components = []
-        removed_components = []
 
         for component in components:
-
             # Check to see if the component was already in the formula
             exists = False
             for old_component in old_components:
-                if component['sls_path'] == old_component.sls_path:
+                if component['sls_path'] == old_component['sls_path']:
                     # If we find a matching sls path,
                     # update the associated title and description
                     changed_components.append(component)
@@ -229,25 +217,6 @@ def update_formula(formula_id, git_password):
             if not exists:
                 added_components.append(component)
 
-        # Check for removed components
-        for old_component in old_components:
-
-            # check if the old component is in the new formula
-            exists = False
-            for component in components:
-                if component['sls_path'] == old_component.sls_path:
-                    exists = True
-                    break
-
-            if not exists:
-                removed_components.append(old_component)
-
-        # Everything was validated, update the database
-        formula.title = formula_title
-        formula.description = formula_description
-        formula.root_path = root_path
-        formula.save()
-
         # validate new components
         for component in added_components:
             validate_component(formula, repodir, component)
@@ -256,22 +225,11 @@ def update_formula(formula_id, git_password):
         for component in changed_components:
             validate_component(formula, repodir, component)
 
-        # Add the new components
-        for component in added_components:
-            title = component['title']
-            description = component.get('description', '')
-            sls_path = component['sls_path']
-            formula.components.create(title=title,
-                                      sls_path=sls_path,
-                                      description=description)
-
-        # Update the other components
-        for component in changed_components:
-            sls_path = component['sls_path']
-            to_change = formula.components.get(sls_path=sls_path)
-            to_change.title = component['title']
-            to_change.description = component.get('description', '')
-            to_change.save()
+        # Everything was validated, update the database
+        formula.title = formula_title
+        formula.description = formula_description
+        formula.root_path = root_path
+        formula.save()
 
         formula.set_status(Formula.COMPLETE,
                            'Import complete. Formula is now ready to be used.')

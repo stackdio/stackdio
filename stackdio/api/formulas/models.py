@@ -222,6 +222,8 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                 # local branch
                 refs.add(str(r.name))
 
+        refs.remove('HEAD')
+
         # Get the list of commit hashes
         commit_hashes = [str(c.hexsha) for c in self.repo.iter_commits()]
 
@@ -252,8 +254,13 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             yaml_data = yaml.safe_load(f)
             ret = OrderedDict()
             # Create a map of sls_path -> component pairs
-            for component in yaml_data.get('components', []):
-                ret[component['sls_path']] = component
+            sorted_components = sorted(yaml_data.get('components', []), key=lambda x: x['title'])
+            for component in sorted_components:
+                ret[component['sls_path']] = OrderedDict((
+                    ('title', component['title']),
+                    ('description', component['description']),
+                    ('sls_path', component['sls_path']),
+                ))
             return ret
 
     @classmethod
