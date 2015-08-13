@@ -123,6 +123,10 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
     # the account/owner id of the account
     account_id = models.CharField('Account ID', max_length=64)
 
+    # Grab the list of formula components
+    formula_components = GenericRelation('formulas.FormulaComponent')
+
+    # Grab the formula versions
     formula_versions = GenericRelation('formulas.FormulaVersion')
 
     # salt-cloud provider configuration file
@@ -226,42 +230,6 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
 
     def __unicode__(self):
         return '{0} ({1})'.format(self.description, self.instance_id)
-
-
-class GlobalOrchestrationFormulaComponent(TimeStampedModel):
-    """
-    An extension of an existing FormulaComponent to add additional metadata
-    for those components based on this account. In particular, this is how
-    we track the order in which the formula should be provisioned during
-    global orchestration.
-    """
-
-    class Meta:
-        verbose_name_plural = 'global orchestration formula components'
-        ordering = ('order',)
-
-        default_permissions = (
-            'create',
-            'view',
-            'update',
-            'delete',
-        )
-
-    # The formula component we're extending
-    component = models.ForeignKey('formulas.FormulaComponent')
-
-    # The cloud this extended formula component applies to
-    account = models.ForeignKey('cloud.CloudAccount',
-                                related_name='global_formula_components')
-
-    # The order in which the component should be provisioned
-    order = models.IntegerField(default=0)
-
-    def __unicode__(self):
-        return u'{0}:{1}'.format(
-            self.component,
-            self.account
-        )
 
 
 _cloudimage_model_permissions = (

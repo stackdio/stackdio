@@ -762,7 +762,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(yaml_data)
 
     def generate_pillar_file(self):
-        from stackdio.api.blueprints.models import BlueprintHostFormulaComponent
+        from stackdio.api.formulas.models import FormulaComponent
 
         users = []
         # pull the create_ssh_users property from the stackd.io config file.
@@ -806,9 +806,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # First get the unique set of formulas
         hosts = self.hosts.all()
         formulas = set(
-            [c.component.formula for
-             c in BlueprintHostFormulaComponent.objects.filter(
-                 hosts__in=hosts)]
+            [c.formula for c in FormulaComponent.objects.filter(content_object__in=hosts)]
         )
 
         # for each unique formula, pull the properties from the SPECFILE
@@ -1058,7 +1056,7 @@ class Host(TimeStampedModel, StatusDetailModel):
         related_name='hosts')
 
     formula_components = models.ManyToManyField(
-        'blueprints.BlueprintHostFormulaComponent',
+        'formulas.FormulaComponent',
         related_name='hosts')
 
     hostname = models.CharField('Hostname', max_length=64)

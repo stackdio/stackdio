@@ -25,10 +25,10 @@ from tempfile import mkdtemp
 from urlparse import urlsplit, urlunsplit
 
 import git
-import yaml
 from celery import shared_task
 
 from .models import Formula
+from stackdio.api.formulas.validators import validate_specfile, validate_component
 
 logger = logging.getLogger(__name__)
 
@@ -90,79 +90,6 @@ def clone_to_temp(formula, git_password):
 
     # return the path where the repo is
     return repodir
-
-
-def validate_specfile(formula, repodir):
-    specfile_path = os.path.join(repodir, 'SPECFILE')
-    if not os.path.isfile(specfile_path):
-        raise FormulaTaskException(
-            formula,
-            'Formula did not have a SPECFILE. Each formula must define a '
-            'SPECFILE in the root of the repository.')
-
-    # Load and validate the SPECFILE
-    with open(specfile_path) as f:
-        specfile = yaml.safe_load(f)
-
-    formula_title = specfile.get('title', '')
-    formula_description = specfile.get('description', '')
-    root_path = specfile.get('root_path', '')
-    components = specfile.get('components', [])
-
-    if not formula_title:
-        raise FormulaTaskException(
-            formula,
-            "Formula SPECFILE 'title' field is required.")
-
-    if not root_path:
-        raise FormulaTaskException(
-            formula,
-            "Formula SPECFILE 'root_path' field is required.")
-
-    # check root path location
-    if not os.path.isdir(os.path.join(repodir, root_path)):
-        raise FormulaTaskException(
-            formula,
-            'Formula SPECFILE \'root_path\' must exist in the formula. '
-            'Unable to locate directory: {0}'.format(root_path))
-
-    if not components:
-        raise FormulaTaskException(
-            formula,
-            'Formula SPECFILE \'components\' field must be a non-empty '
-            'list of components.')
-
-    # Give back the components
-    return formula_title, formula_description, root_path, components
-
-
-def validate_component(formula, repodir, component):
-    # check for required fields
-    if 'title' not in component or 'sls_path' not in component:
-        raise FormulaTaskException(
-            formula,
-            'Each component in the SPECFILE must contain a \'title\' '
-            'and \'sls_path\' field.')
-
-    # determine if the sls_path is valid...we're looking for either
-    # a directory with an init.sls or an sls file of the same name
-    # as the last location of the path
-    component_title = component['title']
-    sls_path = component['sls_path'].replace('.', '/')
-    init_file = os.path.join(sls_path, 'init.sls')
-    sls_file = sls_path + '.sls'
-    abs_init_file = os.path.join(repodir, init_file)
-    abs_sls_file = os.path.join(repodir, sls_file)
-
-    if not os.path.isfile(abs_init_file) and \
-            not os.path.isfile(abs_sls_file):
-        raise FormulaTaskException(
-            formula,
-            'Could not locate an SLS file for component \'{0}\'. '
-            'Expected to find either \'{1}\' or \'{2}\'.'.format(component_title,
-                                                                 init_file,
-                                                                 sls_file)
-        )
 
 
 @shared_task(name='formulas.import_formula')
@@ -239,9 +166,7 @@ def update_formula(formula_id, git_password):
         formula = Formula.objects.get(pk=formula_id)
         formula.set_status(Formula.IMPORTING, 'Updating formula.')
 
-        repodir = formula.get_repo_dir()
-
-        repo = git.Repo(repodir)
+        repo = formula.repo
 
         current_commit = repo.head.commit
 

@@ -19,7 +19,6 @@
 import logging
 from urlparse import urlsplit, urlunsplit
 
-import git
 from rest_framework import serializers
 
 from stackdio.core.fields import PasswordField
@@ -27,16 +26,6 @@ from stackdio.core.mixins import CreateOnlyFieldsMixin
 from . import models, tasks
 
 logger = logging.getLogger(__name__)
-
-
-class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = models.FormulaComponent
-        fields = (
-            'title',
-            'description',
-            'sls_path',
-        )
 
 
 class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
@@ -56,6 +45,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeria
     class Meta:
         model = models.Formula
         fields = (
+            'id',
             'url',
             'title',
             'description',
@@ -149,6 +139,11 @@ class FormulaPropertiesSerializer(serializers.Serializer):  # pylint: disable=ab
         return data
 
 
+class SpecfileFormulaComponentsSerializer(serializers.Serializer):
+    def to_representation(self, instance):
+        return instance
+
+
 class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     available_actions = ('update',)
 
@@ -216,21 +211,14 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         formula = attrs['formula']
-        version = attrs['version']
+        version = attrs.get('version')
 
         if version is None:
             # If it's None, this version should be deleted, so no need to do any further checks
             return attrs
 
-        repo = git.Repo(formula.get_repo_dir())
-
-        branches = [str(b.name) for b in repo.branches]
-        tags = [str(t.name) for t in repo.tags]
-        commit_hashes = [str(c.hexsha) for c in repo.iter_commits()]
-
         # Verify that the version is either a branch, tag, or commit hash
-
-        if version not in branches + tags + commit_hashes:
+        if version not in formula.get_valid_versions():
             err_msg = '{0} cannot be found to be a branch, tag, or commit hash'.format(version)
             raise serializers.ValidationError({
                 'version': [err_msg]
@@ -260,3 +248,48 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
             })
 
         return super(FormulaVersionSerializer, self).create(validated_data)
+
+
+class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+    # Possibly required
+    formula = serializers.SlugRelatedField(slug_field='uri',
+                                           queryset=models.Formula.objects.all(), required=False)
+
+    class Meta:
+        model = models.FormulaComponent
+        fields = (
+            'formula',
+            'sls_path',
+            'order',
+        )
+
+        extra_kwargs = {
+            'order': {'min_value': 0, 'default': serializers.CreateOnlyDefault(0)}
+        }
+
+    def validate(self, attrs):
+        formula = attrs.get('formula', None)
+        sls_path = attrs['sls_path']
+
+        if formula is None:
+            # Do some validation if the formula is done
+            all_components = models.Formula.all_components()
+
+            if sls_path not in all_components:
+                raise serializers.ValidationError({
+                    'sls_path': ['sls_path `{0}` does not exist.'.format(sls_path)]
+                })
+
+            # This means the component exists.  We'll check to make sure it doesn't
+            # span multiple formulas.
+            sls_formulas = all_components[sls_path]
+            if len(sls_formulas) > 1:
+                err_msg = 'sls_path `{0}` is contained in multiple formulas.  Please specify one.'
+                raise serializers.ValidationError({
+                    'sls_path': [err_msg.format(sls_path)]
+                })
+
+        # All other validation errors are found in the validate_formula_components validator,
+        # to be applied at the blueprint/global orch component level
+
+        return attrs

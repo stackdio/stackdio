@@ -89,7 +89,9 @@ class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIVi
 
     def get_queryset(self):
         formula = self.get_formula()
-        return formula.components.all()
+        # Be sure we're on the right branch
+        formula.repo.git.checkout(formula.default_branch)
+        return formula.components
 
 
 class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):
