@@ -17,6 +17,7 @@
 
 from django.conf.urls import url
 from django.contrib.auth.views import login, logout_then_login
+from django.views.decorators.cache import cache_page
 
 from stackdio.server import __version__
 from . import views
@@ -41,7 +42,7 @@ urlpatterns = (
         name='logout'),
 
     url(r'^js/main/(?P<vm>[\w/.-]+)\.js$',
-        views.AppMainView.as_view(),
+        cache_page(900)(views.AppMainView.as_view()),
         name='js-main'),
 
     url('^user/$',

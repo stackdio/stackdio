@@ -38,7 +38,7 @@ class StackdioView(TemplateView):
         if request.user.is_authenticated():
             return super(StackdioView, self).get(request, *args, **kwargs)
         else:
-            redirect_url = resolve_url('login')
+            redirect_url = resolve_url('ui:login')
             if request.path != '/':
                 redirect_url = '{0}?next={1}'.format(redirect_url, request.path)
             return HttpResponseRedirect(redirect_url)
