@@ -208,7 +208,7 @@ MEDIA_URL = '/media/'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"
-MEDIA_ROOT = '%s/static/media/' % BASE_DIR
+MEDIA_ROOT = '%s/media/' % STACKDIO_CONFIG.storage_root
 
 # Override message tags for bootstrap
 MESSAGE_TAGS = {
