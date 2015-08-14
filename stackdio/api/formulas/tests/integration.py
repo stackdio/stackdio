@@ -43,8 +43,8 @@ class FormulaTestCase(StackdioTestCase, PermissionsMixin):
             {
                 'perm': 'update', 'method': 'patch', 'data': {'git_username': 'test2'}
             },
-            {
-                'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
-            },
+            # {
+            #     'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT
+            # },
         ]
     }

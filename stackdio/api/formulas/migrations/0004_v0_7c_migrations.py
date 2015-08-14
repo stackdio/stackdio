@@ -11,7 +11,7 @@ def forwards(apps, schema_editor):
     GlobalOrchestrationFormulaComponent = apps.get_model('cloud',
                                                          'GlobalOrchestrationFormulaComponent')
 
-    FormulaComponent = apps.get_model('formulas', 'FormulaComponent2')
+    FormulaComponent = apps.get_model('formulas', 'FormulaComponentTEMP')
 
     ContentType = apps.get_model('contenttypes', 'ContentType')
     BlueprintHostDefinition = apps.get_model('blueprints', 'BlueprintHostDefinition')
@@ -44,7 +44,7 @@ def backwards(apps, schema_editor):
     GlobalOrchestrationFormulaComponent = apps.get_model('cloud',
                                                          'GlobalOrchestrationFormulaComponent')
 
-    FormulaComponent = apps.get_model('formulas', 'FormulaComponent2')
+    FormulaComponent = apps.get_model('formulas', 'FormulaComponentTEMP')
 
     ContentType = apps.get_model('contenttypes', 'ContentType')
     BlueprintHostDefinition = apps.get_model('blueprints', 'BlueprintHostDefinition')
@@ -64,8 +64,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Create a TEMPORARY model.
         migrations.CreateModel(
-            name='FormulaComponent2',
+            name='FormulaComponentTEMP',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('created', django_extensions.db.fields.CreationDateTimeField(default=django.utils.timezone.now, verbose_name='created', editable=False, blank=True)),

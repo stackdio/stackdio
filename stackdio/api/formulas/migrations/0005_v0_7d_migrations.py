@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             name='FormulaComponent',
         ),
         migrations.RenameModel(
-            old_name='FormulaComponent2',
+            old_name='FormulaComponentTEMP',
             new_name='FormulaComponent',
         ),
     ]
