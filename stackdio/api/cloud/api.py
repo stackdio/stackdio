@@ -157,7 +157,7 @@ class GlobalOrchestrationComponentListAPIView(mixins.CloudAccountRelatedMixin,
 
     def get_serializer_context(self):
         context = super(GlobalOrchestrationComponentListAPIView, self).get_serializer_context()
-        context['account'] = self.get_cloudaccount()
+        context['content_object'] = self.get_cloudaccount()
         return context
 
     def get_queryset(self):

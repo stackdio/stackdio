@@ -194,7 +194,7 @@ class BlueprintHostDefinitionSerializer(serializers.HyperlinkedModelSerializer):
         formula_component_field = self.fields['formula_components']
         # Add in the host definition to all the formula components
         for component in formula_components:
-            component['host'] = host_definition
+            component['content_object'] = host_definition
         formula_component_field.create(formula_components)
 
         # Create the access rules
@@ -298,7 +298,7 @@ class FullBlueprintSerializer(BlueprintSerializer):
                 # Add the order to the order set
                 order_set.add(component['order'])
                 # Also add the order to the component map
-                component_map.setdefault(component['component'], set()).add(component['order'])
+                component_map.setdefault(component['sls_path'], set()).add(component['order'])
 
         for component, orders in component_map.items():
             if len(orders) > 1:
@@ -341,7 +341,7 @@ class FullBlueprintSerializer(BlueprintSerializer):
             formula_version_field = self.fields['formula_versions']
             # Add in the blueprint to all the formula versions
             for formula_version in formula_versions:
-                formula_version['blueprint'] = blueprint
+                formula_version['content_object'] = blueprint
             formula_version_field.create(formula_versions)
 
         # Add the other fields back in for deserialization
