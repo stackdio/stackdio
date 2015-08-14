@@ -146,7 +146,7 @@ def import_formula(formula_id, git_password):
 
 # TODO: Ignoring complexity issues
 @shared_task(name='formulas.update_formula')
-def update_formula(formula_id, git_password):
+def update_formula(formula_id, git_password, version, repodir=None, raise_exception=True):
     repo = None
     current_commit = None
     formula = None
@@ -158,15 +158,21 @@ def update_formula(formula_id, git_password):
         # Grab the components now before we pull
         old_components = formula.components
 
-        repodir = formula.get_repo_dir()
-        repo = formula.repo
+        if repodir is None:
+            repodir = formula.get_repo_dir()
+            repo = formula.repo
+        else:
+            repo = git.Repo(repodir)
+
+        # Ensure that the proper version is active
+        repo.git.checkout(version)
 
         current_commit = repo.head.commit
 
         origin = repo.remotes.origin.name
 
         # Add the password for a private repo
-        if formula.private_git_repo:
+        if formula.private_git_repo and git_password is not None:
             parsed = urlsplit(formula.uri)
             hostname = parsed.netloc.split('@')[1]
             uri = urlunsplit((
@@ -186,7 +192,7 @@ def update_formula(formula_id, git_password):
                                'There were no changes to the repository.')
             return True
 
-        if formula.private_git_repo:
+        if formula.private_git_repo and git_password is not None:
             # remove the password from the config
             repo.git.remote('set-url', origin, formula.uri)
 
@@ -241,10 +247,14 @@ def update_formula(formula_id, git_password):
         if repo is not None and current_commit is not None:
             repo.git.reset('--hard', current_commit)
         if isinstance(e, FormulaTaskException):
+            if raise_exception:
+                raise FormulaTaskException(
+                    formula,
+                    e.message + ' Your formula was not changed.'
+                )
+        logger.warning(e)
+        if raise_exception:
             raise FormulaTaskException(
                 formula,
-                e.message + ' Your formula was not changed.')
-        logger.exception(e)
-        raise FormulaTaskException(
-            formula,
-            'An unhandled exception occurred.  Your formula was not changed')
+                'An unhandled exception occurred.  Your formula was not changed'
+            )

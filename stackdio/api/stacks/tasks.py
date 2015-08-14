@@ -38,6 +38,8 @@ from django.conf import settings
 from stackdio.core.exceptions import BadRequest
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.formulas.models import FormulaVersion
+from stackdio.api.formulas.tasks import update_formula
+from stackdio.api.formulas.validators import validate_specfile
 from stackdio.api.volumes.models import Volume
 from . import utils
 from .models import (
@@ -156,14 +158,17 @@ def copy_formulas(stack_or_account):
             else:
                 raise
 
+        # Default to the HEAD branch
+        version = formula.default_branch
         try:
-            # Checkout the tag
+            # Try to the version if it exists
             v = stack_or_account.formula_versions.get(formula=formula)
-            repo = git.Repo(formula_dir)
-            repo.git.checkout(v.version)
-
+            version = v.version
         except FormulaVersion.DoesNotExist:
             pass
+
+        # Update the formula, and fail silently if there was an error.
+        update_formula.si(formula.id, None, version, formula_dir, raise_exception=False)()
 
 
 @shared_task(name='stacks.handle_error')

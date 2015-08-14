@@ -178,7 +178,7 @@ class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstra
             models.Formula.IMPORTING,
             'Importing formula...this could take a while.'
         )
-        tasks.update_formula.si(formula.id, git_password).apply_async()
+        tasks.update_formula.si(formula.id, git_password, formula.default_branch).apply_async()
 
     def save(self, **kwargs):
         action = self.validated_data['action']
