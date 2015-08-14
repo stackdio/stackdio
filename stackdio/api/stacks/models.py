@@ -1055,10 +1055,6 @@ class Host(TimeStampedModel, StatusDetailModel):
         'blueprints.BlueprintHostDefinition',
         related_name='hosts')
 
-    formula_components = models.ManyToManyField(
-        'formulas.FormulaComponent',
-        related_name='hosts')
-
     hostname = models.CharField('Hostname', max_length=64)
 
     index = models.IntegerField('Index')
