@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
+
+import sys
 
 from django.db import models, migrations
 import django.utils.timezone
@@ -44,14 +46,39 @@ def backwards(apps, schema_editor):
     GlobalOrchestrationFormulaComponent = apps.get_model('cloud',
                                                          'GlobalOrchestrationFormulaComponent')
 
-    FormulaComponent = apps.get_model('formulas', 'FormulaComponentTEMP')
+    FormulaComponentNew = apps.get_model('formulas', 'FormulaComponentTEMP')
+    FormulaComponentOld = apps.get_model('formulas', 'FormulaComponent')
 
-    ContentType = apps.get_model('contenttypes', 'ContentType')
     BlueprintHostDefinition = apps.get_model('blueprints', 'BlueprintHostDefinition')
     CloudAccount = apps.get_model('cloud', 'CloudAccount')
 
-    bhd_ctype = ContentType.objects.get_for_model(BlueprintHostDefinition)
-    ca_ctype = ContentType.objects.get_for_model(CloudAccount)
+    sys.stderr.write(str(
+        '\nWill create all the FormulaComponent objects that are contained within your '
+        'blueprints, BUT the title and description will be the same as the sls_path.\n'
+        'Please run the `update` action on all of your formulas to re-populate the '
+        'title and description.\n'
+    ))
+
+    for component in FormulaComponentNew.objects.all():
+        fc, created = FormulaComponentOld.objects.get_or_create(
+            formula=component.formula,
+            sls_path=component.sls_path,
+            title=component.sls_path,
+            description=component.sls_path,
+        )
+
+        if component.content_type.model == 'blueprinthostdefinition':
+            BlueprintHostFormulaComponent.objects.create(
+                host=BlueprintHostDefinition.objects.get(id=component.object_id),
+                component=fc,
+                order=component.order,
+            )
+        elif component.content_type.model == 'cloudaccount':
+            GlobalOrchestrationFormulaComponent.objects.create(
+                account=CloudAccount.objects.get(id=component.object_id),
+                component=fc,
+                order=component.order,
+            )
 
 
 class Migration(migrations.Migration):
