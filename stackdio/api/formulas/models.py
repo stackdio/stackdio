@@ -310,6 +310,18 @@ class FormulaComponent(TimeStampedModel):
             self.content_object,
         )
 
+    @property
+    def title(self):
+        if not hasattr(self, '_full_component'):
+            self._full_component = self.formula.components[self.sls_path]
+        return self._full_component['title']
+
+    @property
+    def description(self):
+        if not hasattr(self, '_full_component'):
+            self._full_component = self.formula.components[self.sls_path]
+        return self._full_component['description']
+
 
 ##
 # Signal events and handlers

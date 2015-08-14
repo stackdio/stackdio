@@ -256,6 +256,8 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
         model = models.FormulaComponent
         fields = (
             'formula',
+            'title',
+            'description',
             'sls_path',
             'order',
         )
