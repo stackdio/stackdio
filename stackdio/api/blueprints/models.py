@@ -120,7 +120,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         formulas = set()
         for host_definition in self.host_definitions.all():
             for component in host_definition.formula_components.all():
-                formulas.add(component.component.formula)
+                formulas.add(component.formula)
 
         return list(formulas)
 

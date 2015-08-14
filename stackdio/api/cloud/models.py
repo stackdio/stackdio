@@ -206,8 +206,8 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
 
     def get_formulas(self):
         formulas = set()
-        for component in self.global_formula_components.all():
-            formulas.add(component.component.formula)
+        for component in self.formula_components.all():
+            formulas.add(component.formula)
 
         return list(formulas)
 

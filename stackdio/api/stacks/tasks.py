@@ -24,7 +24,6 @@ import time
 from datetime import datetime
 
 import envoy
-import git
 import salt.client
 import salt.cloud
 import salt.config
@@ -39,7 +38,6 @@ from stackdio.core.exceptions import BadRequest
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.tasks import update_formula
-from stackdio.api.formulas.validators import validate_specfile
 from stackdio.api.volumes.models import Volume
 from . import utils
 from .models import (
@@ -48,7 +46,6 @@ from .models import (
     StackCommand,
     Host,
 )
-
 
 logger = get_task_logger(__name__)
 salt_logger = logging.getLogger('salt')
@@ -135,11 +132,9 @@ def state_error(state_str, state_meta):
         'declaration_id': decl_id,
     }
     if 'stderr' in state_meta['changes']:
-        err['stderr'] = \
-            state_meta['changes']['stderr']
+        err['stderr'] = state_meta['changes']['stderr']
     if 'stdout' in state_meta['changes']:
-        err['stdout'] = \
-            state_meta['changes']['stdout']
+        err['stdout'] = state_meta['changes']['stdout']
     return err, is_recoverable(err)
 
 
@@ -154,7 +149,7 @@ def copy_formulas(stack_or_account):
             shutil.copytree(formula.get_repo_dir(), formula_dir)
         except OSError as e:
             if e.errno == errno.EEXIST:
-                logger.debug('Formula not copied, already exists')
+                logger.debug('Formula not copied, already exists: {0}'.format(formula.uri))
             else:
                 raise
 
@@ -168,6 +163,10 @@ def copy_formulas(stack_or_account):
             pass
 
         # Update the formula, and fail silently if there was an error.
+        if formula.private_git_repo:
+            logger.debug('Skipping private formula: {0}'.format(formula.uri))
+            continue
+
         update_formula.si(formula.id, None, version, formula_dir, raise_exception=False)()
 
 
@@ -1360,8 +1359,8 @@ def global_orchestrate(stack_id, max_retries=2):
         # Get the number of hosts for each role
         for bhd in stack.blueprint.host_definitions.all():
             for fc in bhd.formula_components.all():
-                role_host_nums.setdefault(fc.component.sls_path, 0)
-                role_host_nums[fc.component.sls_path] += bhd.count
+                role_host_nums.setdefault(fc.sls_path, 0)
+                role_host_nums[fc.sls_path] += bhd.count
 
         # we'll break out of the loop based on the given number of retries
         current_try, unrecoverable_error = 0, False
@@ -1527,8 +1526,8 @@ def orchestrate(stack_id, max_retries=2):
         # Get the number of hosts for each role
         for bhd in stack.blueprint.host_definitions.all():
             for fc in bhd.formula_components.all():
-                role_host_nums.setdefault(fc.component.sls_path, 0)
-                role_host_nums[fc.component.sls_path] += bhd.count
+                role_host_nums.setdefault(fc.sls_path, 0)
+                role_host_nums[fc.sls_path] += bhd.count
 
         # we'll break out of the loop based on the given number of retries
         current_try, unrecoverable_error = 0, False

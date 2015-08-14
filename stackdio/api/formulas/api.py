@@ -68,7 +68,7 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         # Check for Blueprints depending on this formula
         # This should catch MOST errors
         blueprints = Blueprint.objects.filter(
-            host_definitions__formula_components__sls_path__in=instance.components.keys()
+            host_definitions__formula_components__formula=instance
         ).distinct()
 
         if blueprints:

@@ -156,7 +156,7 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
         formula.set_status(Formula.IMPORTING, 'Updating formula.')
 
         # Grab the components now before we pull
-        old_components = formula.components
+        old_components = formula.components.values()
 
         if repodir is None:
             repodir = formula.get_repo_dir()
@@ -172,7 +172,7 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
         origin = repo.remotes.origin.name
 
         # Add the password for a private repo
-        if formula.private_git_repo and git_password is not None:
+        if formula.private_git_repo:
             parsed = urlsplit(formula.uri)
             hostname = parsed.netloc.split('@')[1]
             uri = urlunsplit((
@@ -192,7 +192,7 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
                                'There were no changes to the repository.')
             return True
 
-        if formula.private_git_repo and git_password is not None:
+        if formula.private_git_repo:
             # remove the password from the config
             repo.git.remote('set-url', origin, formula.uri)
 
