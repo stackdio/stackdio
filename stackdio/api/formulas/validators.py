@@ -96,6 +96,10 @@ def validate_component(formula, repodir, component):
 
 
 def validate_formula_components(components, versions):
+    """
+    Validate a LIST of formula components, where the versions DO NOT already exist
+    i.e. creating a blueprint
+    """
     version_map = {}
 
     # Build the map of formula -> version
@@ -105,9 +109,10 @@ def validate_formula_components(components, versions):
     errors = {}
 
     for component in components:
+        validated = component.pop('validated', False)
         formula = component.get('formula')
-        if formula is not None:
-            # We only care to validate here if there is a formula in the component.
+        if not validated:
+            # We only care to validate here it wasn't already validated in the other serializer.
             sls_path = component['sls_path']
 
             version = version_map.get(formula)
@@ -122,3 +127,31 @@ def validate_formula_components(components, versions):
         raise ValidationError(errors)
 
     return components
+
+
+def validate_formula_component(component, versions):
+    """
+    Validate a SINGLE formula component from versions that already exist.
+    i.e. adding a formula component to a blueprint or cloud account
+    """
+    version_map = {}
+
+    # Build the map of formula -> version
+    for version in versions:
+        version_map[version.formula] = version.formula
+
+    errors = {}
+
+    formula = component.get('formula')
+    sls_path = component['sls_path']
+    version = version_map.get(formula)
+    component_list = formula.components_for_version(version)
+
+    if sls_path not in component_list:
+        err_msg = 'formula `{0}` does not contain an sls_path called `{1}`.'
+        errors.setdefault('sls_path', []).append(err_msg.format(formula.uri, sls_path))
+
+    if errors:
+        raise ValidationError(errors)
+
+    return component

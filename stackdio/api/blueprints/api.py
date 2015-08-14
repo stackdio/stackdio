@@ -96,12 +96,19 @@ class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.Retrieve
     serializer_class = serializers.BlueprintPropertiesSerializer
 
 
+# TODO:  if / when we allow extra formula components to be created, we need to put the
+# content_object in the serializer context
 class BlueprintHostDefinitionListAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):
     serializer_class = serializers.BlueprintHostDefinitionSerializer
 
     def get_queryset(self):
         blueprint = self.get_blueprint()
         return blueprint.host_definitions.all()
+
+    def get_serializer_context(self):
+        context = super(BlueprintHostDefinitionListAPIView, self).get_serializer_context()
+        context['content_object'] = self.get_blueprint()
+        return context
 
     def perform_create(self, serializer):
         serializer.save(blueprint=self.get_blueprint())

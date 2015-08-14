@@ -23,7 +23,7 @@ from rest_framework import serializers
 
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from . import models, tasks
+from . import models, tasks, validators
 
 logger = logging.getLogger(__name__)
 
@@ -267,6 +267,7 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
     def validate(self, attrs):
         formula = attrs.get('formula', None)
         sls_path = attrs['sls_path']
+        attrs['validated'] = False
 
         if formula is None:
             # Do some validation if the formula is done
@@ -286,7 +287,21 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
                     'sls_path': [err_msg.format(sls_path)]
                 })
 
-        # All other validation errors are found in the validate_formula_components validator,
-        # to be applied at the blueprint/global orch component level
+            # Be sure to throw the formula in!
+            attrs['formula'] = sls_formulas[0]
+            attrs['validated'] = True
+        else:
+            # If they provided a formula, validate the sls_path is in that formula
+            content_object = self.context.get('content_object')
+
+            if content_object is not None:
+                # content_object should either be an account or host_definition
+                validators.validate_formula_component(attrs, content_object.formula_versions.all())
+                attrs['validated'] = True
 
         return attrs
+
+    def save(self, **kwargs):
+        # Be sure that validated doesn't end up in the final validated data
+        self.validated_data.pop('validated', None)
+        return super(FormulaComponentSerializer, self).save(**kwargs)

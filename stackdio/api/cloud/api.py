@@ -155,6 +155,11 @@ class GlobalOrchestrationComponentListAPIView(mixins.CloudAccountRelatedMixin,
                                               generics.ListCreateAPIView):
     serializer_class = FormulaComponentSerializer
 
+    def get_serializer_context(self):
+        context = super(GlobalOrchestrationComponentListAPIView, self).get_serializer_context()
+        context['account'] = self.get_cloudaccount()
+        return context
+
     def get_queryset(self):
         return self.get_cloudaccount().formula_components.all()
 
