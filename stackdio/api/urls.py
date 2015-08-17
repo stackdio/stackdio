@@ -87,7 +87,3 @@ urlpatterns = (
 
 # Format suffixes - this only should go on API endpoints, not everything!
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json', 'api'])
-
-# Default login/logout views. Without this you won't get the login/logout links
-# in the browsable api.  We want to add these AFTER the format urls.
-urlpatterns += [url(r'^', include('rest_framework.urls', namespace='rest_framework'))]

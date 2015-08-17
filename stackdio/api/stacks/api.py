@@ -357,13 +357,13 @@ class StackLogsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
 
             if isfile(join(root_dir, log_file)):
                 latest[log_type] = reverse(
-                    'stack-logs-detail',
+                    'api:stacks:stack-logs-detail',
                     kwargs={'pk': stack.pk, 'log': log_file},
                     request=request,
                 )
 
         historical = [
-            reverse('stack-logs-detail',
+            reverse('api:stacks:stack-logs-detail',
                     kwargs={'pk': stack.pk, 'log': log},
                     request=request)
             for log in sorted(listdir(log_dir))

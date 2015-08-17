@@ -35,4 +35,8 @@ urlpatterns = (
 
     # API v1 root endpoint -- add additional URLs to urls.py in the api module.
     url(r'^api/', include('stackdio.api.urls', namespace='api')),
+
+    # Default login/logout views. Without this you won't get the login/logout links
+    # in the browsable api.
+    url(r'^api/', include('rest_framework.urls', namespace='rest_framework'))
 )
