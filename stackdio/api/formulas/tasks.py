@@ -27,7 +27,7 @@ from urlparse import urlsplit, urlunsplit
 import git
 from celery import shared_task
 
-from .models import Formula
+from .models import Formula, FormulaComponent
 from stackdio.api.formulas.validators import validate_specfile, validate_component
 
 logger = logging.getLogger(__name__)
@@ -155,9 +155,6 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
         formula = Formula.objects.get(pk=formula_id)
         formula.set_status(Formula.IMPORTING, 'Updating formula.')
 
-        # Grab the components now before we pull
-        old_components = formula.components.values()
-
         if repodir is None:
             repodir = formula.get_repo_dir()
             repo = formula.repo
@@ -204,31 +201,8 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
         formula_title, formula_description, root_path, components = validate_specfile(formula,
                                                                                       repodir)
 
-        # Check for added or changed components
-        added_components = []
-        changed_components = []
-
+        # Validate all the new components
         for component in components:
-            # Check to see if the component was already in the formula
-            exists = False
-            for old_component in old_components:
-                if component['sls_path'] == old_component['sls_path']:
-                    # If we find a matching sls path,
-                    # update the associated title and description
-                    changed_components.append(component)
-                    exists = True
-                    break
-
-            # if not, set it to be added
-            if not exists:
-                added_components.append(component)
-
-        # validate new components
-        for component in added_components:
-            validate_component(formula, repodir, component)
-
-        # validate changed components
-        for component in changed_components:
             validate_component(formula, repodir, component)
 
         # Everything was validated, update the database
