@@ -49,7 +49,10 @@ define([
 
         self.blueprintTypeahead = $('#blueprints .typeahead');
 
-        self.blueprintTypeahead.typeahead(null , {
+        self.blueprintTypeahead.typeahead({
+            numLength: 3,
+            highlight: true
+        }, {
             name: 'blueprints',
             display: 'title',
             source: self.blueprints
