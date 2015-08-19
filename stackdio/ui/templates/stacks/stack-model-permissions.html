@@ -1,0 +1,65 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Stack Permissions{% endblock %}
+
+{% block page-content %}
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-hover table-bordered table-condensed">
+            <thead>
+                <tr>
+                    <th style="width: 15%">Users</th>
+                    <!-- ko foreach: availableUserPermissions -->
+                    <th style="width: 10%" data-bind="text: $data.capitalize()"></th>
+                    <!-- /ko -->
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: userPermissions">
+                <tr>
+                    <td data-bind="text: user"></td>
+                    <!-- ko foreach: $root.availableUserPermissions -->
+                    <td>
+                        <!-- ko if: $parent.permissions.indexOf($data) >= 0 -->
+                        <span class="glyphicon glyphicon-ok"></span>
+                        <!-- /ko -->
+                        <!-- ko if: $parent.permissions.indexOf($data) < 0 -->
+                        <span class="glyphicon glyphicon-remove"></span>
+                        <!-- /ko -->
+                    </td>
+                    <!-- /ko -->
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-hover table-bordered table-condensed">
+            <thead>
+                <tr>
+                    <th style="width: 15%">Groups</th>
+                    <!-- ko foreach: availableGroupPermissions -->
+                    <th style="width: 10%" data-bind="text: $data.capitalize()"></th>
+                    <!-- /ko -->
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: groupPermissions">
+                <tr>
+                    <td data-bind="text: group"></td>
+                    <!-- ko foreach: $root.availableGroupPermissions -->
+                    <td>
+                        <!-- ko if: $parent.permissions.indexOf($data) >= 0 -->
+                        <span class="glyphicon glyphicon-ok"></span>
+                        <!-- /ko -->
+                        <!-- ko if: $parent.permissions.indexOf($data) < 0 -->
+                        <span class="glyphicon glyphicon-remove"></span>
+                        <!-- /ko -->
+                    </td>
+                    <!-- /ko -->
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

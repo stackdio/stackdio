@@ -57,6 +57,10 @@ urlpatterns = (
         views.StackCreateView.as_view(),
         name='stack-create'),
 
+    url(r'^stacks/permissions/$',
+        views.StackModelPermissionsView.as_view(),
+        name='stack-model-permissions'),
+
     url(r'^stacks/(?P<pk>[0-9]+)/$',
         views.StackDetailView.as_view(),
         name='stack-detail'),

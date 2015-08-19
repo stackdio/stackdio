@@ -12,14 +12,16 @@
                 of <span data-bind="text: count"></span>.
             </p>
         </div>
-        <div class="col-md-6">
-            <a class="btn btn-success pull-right" href="{% url 'ui:stack-create' %}">New Stack</a>
+        <div class="col-md-6 text-right">
+            {% if has_admin %}
+            {# Only show the button if the user has permission to see it #}
+            <a class="btn btn-warning" href="{% url 'ui:stack-model-permissions' %}">Permissions</a>
+            {% endif %}
+            <a class="btn btn-success" href="{% url 'ui:stack-create' %}">New Stack</a>
         </div>
     </div>
 
-    <br>
-
-    <div class="row">
+    <div class="row" style="margin-top: 15px">
         <div class="col-md-12">
             <nav>
                 <ul class="pager" style="margin: 5px 0 10px 0">

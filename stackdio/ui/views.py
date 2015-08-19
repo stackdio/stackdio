@@ -19,10 +19,11 @@
 import logging
 
 from django.shortcuts import resolve_url
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.generic import TemplateView
 
 from stackdio.server import __version__
+from stackdio.api.stacks.models import Stack
 
 logger = logging.getLogger(__name__)
 
@@ -72,13 +73,34 @@ class PageView(StackdioView):
 
     def __init__(self, **kwargs):
         super(PageView, self).__init__(**kwargs)
-        assert self.viewmodel is not None, ('You must specify a viewmodel via the `viewmodel` '
-                                            'attribute of your class.')
+        assert self.viewmodel is not None, (
+            'You must specify a viewmodel via the `viewmodel` '
+            'attribute of your class.'
+        )
 
     def get_context_data(self, **kwargs):
         context = super(PageView, self).get_context_data(**kwargs)
         context['viewmodel'] = self.viewmodel
         return context
+
+
+class ModelPermissionsView(PageView):
+    model = None
+
+    def __init__(self, **kwargs):
+        super(ModelPermissionsView, self).__init__(**kwargs)
+        assert self.model is not None, (
+            'You must specify a model via the `model` '
+            'attribute of your class.'
+        )
+
+    def get(self, request, *args, **kwargs):
+        app_label = self.model._meta.app_label
+        model_name = self.model._meta.model_name
+        if not request.user.has_perm('%s.admin_%s' % (app_label, model_name)):
+            # No permission granted
+            raise Http404()
+        return super(ModelPermissionsView, self).get(request, *args, **kwargs)
 
 
 class UserProfileView(StackdioView):
@@ -93,6 +115,17 @@ class StackCreateView(PageView):
 class StackListView(PageView):
     template_name = 'stacks/stack-list.html'
     viewmodel = 'viewmodels/stack-list'
+
+    def get_context_data(self, **kwargs):
+        context = super(StackListView, self).get_context_data(**kwargs)
+        context['has_admin'] = self.request.user.has_perm('stacks.admin_stack')
+        return context
+
+
+class StackModelPermissionsView(ModelPermissionsView):
+    template_name = 'stacks/stack-model-permissions.html'
+    viewmodel = 'viewmodels/stack-model-permissions'
+    model = Stack
 
 
 class StackDetailView(PageView):

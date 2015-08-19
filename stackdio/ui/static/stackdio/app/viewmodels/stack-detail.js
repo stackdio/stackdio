@@ -18,9 +18,8 @@
 define([
     'jquery',
     'knockout',
-    'knockout-mapping',
     'models/stack'
-], function($, ko, komapping, Stack) {
+], function($, ko, Stack) {
     return function() {
         var self = this;
 
@@ -60,7 +59,7 @@ define([
             });
             self.stack.loadHistory();
 
-            // React to an open-dropdown event
+            // React to an open-dropdown event & lazy load the actions
             $('.action-dropdown').on('show.bs.dropdown', function () {
                 self.stack.loadAvailableActions();
             });
