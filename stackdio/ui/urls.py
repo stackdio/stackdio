@@ -53,6 +53,10 @@ urlpatterns = (
         views.StackListView.as_view(),
         name='stack-list'),
 
+    url(r'^stacks/create/$',
+        views.StackCreateView.as_view(),
+        name='stack-create'),
+
     url(r'^stacks/(?P<pk>[0-9]+)/$',
         views.StackDetailView.as_view(),
         name='stack-detail'),

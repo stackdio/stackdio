@@ -25,12 +25,14 @@ var bowerPath = '{% static 'stackdio/lib/bower_components' %}';
 requirejs.config({
     baseUrl: '{% static 'stackdio/app' %}',
     paths: {
+        'bloodhound': bowerPath + '/typeahead.js/dist/bloodhound.min',
         'bootstrap': bowerPath + '/bootstrap/dist/js/bootstrap.min',
         'domReady': bowerPath + '/requirejs-domReady/domReady',
         'jquery': bowerPath + '/jquery/jquery.min',
         'knockout': bowerPath + '/knockout/dist/knockout',
         'knockout-mapping': bowerPath + '/knockout-mapping/knockout.mapping',
         'moment': bowerPath + '/moment/moment',
+        'typeahead': bowerPath + '/typeahead.js/dist/typeahead.jquery.min',
         'underscore': bowerPath + '/underscore/underscore-min'
     },
     shim: {

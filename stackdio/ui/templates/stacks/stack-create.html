@@ -1,0 +1,50 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Create Stack{% endblock %}
+{% block stack-class %}active{% endblock %}
+
+{% block page-content %}
+<form data-bind="submit: createStack">
+    <div class="row">
+        <div class="col-sm-5">
+            <div class="form-group">
+                <label for="stackBlueprint">Blueprint</label>
+                <div id="blueprints">
+                    <input id="stackBlueprint" class="typeahead form-control" type="text" placeholder="Search for blueprints...">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="stackTitle">Title</label>
+                <input type="text" class="form-control" id="stackTitle"
+                       data-bind="value: title, valueUpdate: 'keyup'">
+            </div>
+            <div class="form-group">
+                <label for="stackDescription">Description</label>
+                <input type="text" class="form-control" id="stackDescription"
+                       data-bind="value: description, valueUpdate: 'keyup'">
+            </div>
+            <div class="form-group">
+                <label for="stackNamespace">Namespace</label>
+                <input type="text" class="form-control" id="stackNamespace"
+                       data-bind="value: namespace, valueUpdate: 'keyup'">
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input type="checkbox" data-bind="value: createUsers">
+                    Create Users
+                </label>
+            </div>
+            <button type="submit" class="btn btn-success hidden-xs" style="margin-top: 10px">Begin Provisioning</button>
+        </div>
+        <div class="col-sm-7">
+            <div class="form-group">
+                <label for="stackProperties">Properties</label>
+
+                <textarea class="form-control" id="stackProperties" rows="25"
+                          data-bind="value: propertiesJSON, valueUpdate: 'keyup'"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success visible-xs">Begin Provisioning</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

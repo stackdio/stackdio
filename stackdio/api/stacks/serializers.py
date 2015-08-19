@@ -279,7 +279,10 @@ class StackCreateUserDefault(object):
         self._context = field.parent
 
     def __call__(self):
-        blueprint = Blueprint.objects.get(pk=self._context.initial_data['blueprint'])
+        blueprint_id = self._context.initial_data.get('blueprint', None)
+        if blueprint_id is None:
+            return None
+        blueprint = Blueprint.objects.get(pk=blueprint_id)
         return blueprint.create_users
 
 

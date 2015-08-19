@@ -85,6 +85,11 @@ class UserProfileView(StackdioView):
     template_name = 'stackdio/user-profile.html'
 
 
+class StackCreateView(PageView):
+    template_name = 'stacks/stack-create.html'
+    viewmodel = 'viewmodels/stack-create'
+
+
 class StackListView(PageView):
     template_name = 'stacks/stack-list.html'
     viewmodel = 'viewmodels/stack-list'

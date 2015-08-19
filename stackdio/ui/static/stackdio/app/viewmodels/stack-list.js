@@ -17,8 +17,9 @@
 
 define([
     'jquery',
-    'knockout'
-], function ($, ko) {
+    'knockout',
+    'models/stack'
+], function ($, ko, Stack) {
     return function() {
         var self = this;
 
@@ -36,7 +37,11 @@ define([
         self.previousPage = ko.observable();
         self.nextPage = ko.observable();
         self.count = ko.observable();
-        self.stacks = ko.observableArray();
+        self.stacks = ko.observableArray([]);
+
+        // We need to keep track of which action dropdowns are open.  If we don't, they all close when a refresh happens.
+        self.openActionList = null;
+        self.actionMap = {};
 
         self.startNum = ko.computed(function () {
             if (self.pageSize() === null) {
@@ -68,6 +73,8 @@ define([
             self.nextPage(null);
             self.count(0);
             self.stacks([]);
+            self.openActionLists = [];
+            self.actionMap = {};
             self.reloadStacks();
         };
 
@@ -91,7 +98,29 @@ define([
             }
         };
 
-        // Functions
+        self.openDropdown = function (stack, evt) {
+            if (self.openActionList) {
+                self.openActionList.element.dropdown('toggle');
+
+                // This just means we're closing the currently open dropdown, which has already
+                // happened so just return.
+                if (stack.id === self.openActionList.id) {
+                    self.openActionList = null;
+                    return;
+                }
+            }
+
+            self.openActionList = {
+                id: stack.id,
+                element: $(evt.target.parentElement.lastChild)
+            };
+            self.openActionList.element.dropdown('toggle');
+
+            // Lazy-load the available actions for the stack
+            stack.loadAvailableActions();
+        };
+
+        // Refresh everything
         self.reloadStacks = function () {
             $.ajax({
                 method: 'GET',
@@ -103,52 +132,26 @@ define([
                 if (stacks.next !== null) {
                     self.pageSize(stacks.results.length);
                 }
-                stacks.results.forEach(function (stack) {
-                    switch (stack.status) {
-                        case 'finished':
-                        case 'ok':
-                            stack.labelClass = 'label-success';
-                            break;
-                        case 'launching':
-                        case 'configuring':
-                        case 'syncing':
-                        case 'provisioning':
-                        case 'orchestrating':
-                        case 'finalizing':
-                        case 'destroying':
-                        case 'starting':
-                        case 'stopping':
-                        case 'executing_action':
-                        case 'terminating':
-                            stack.labelClass = 'label-warning';
-                            break;
-                        case 'pending':
-                            stack.labelClass = 'label-info';
-                            break;
-                        case 'error':
-                            stack.labelClass = 'label-danger';
-                            break;
-                        default:
-                            stack.labelClass = 'label-default';
-                    }
-                });
-                self.stacks(stacks.results);
-            }).fail(function () {
-                // If we get a 404 or something, reset EVERYTHING
-                self.reset();
-            });
-        };
 
-        self.deleteStack = function (stack) {
-            $.ajax({
-                method: 'DELETE',
-                url: stack.url
-            }).done(function () {
-                self.reloadStacks();
-            }).fail(function (jqXHR, textStatus, errorThrown) {
-                console.log(jqXHR);
-                console.log(textStatus);
-                console.log(errorThrown);
+                var stackModels = [];
+                stacks.results.forEach(function (rawStack) {
+                    // Create a new stack
+                    var stackModel = new Stack(rawStack, self);
+
+                    // Check if we already have a list of actions for this stack, and inject them if so
+                    if (self.actionMap.hasOwnProperty(rawStack.id)) {
+                        stackModel.availableActions(self.actionMap[rawStack.id]);
+                    }
+
+                    // Determine if the dropdown for the actions should be open or not.
+                    stackModel.open = self.openActionList ? self.openActionList.id == rawStack.id : false;
+
+                    stackModels.push(stackModel);
+                });
+                self.stacks(stackModels);
+            }).fail(function () {
+                // If we get a 404 or something, reset EVERYTHING.
+                self.reset();
             });
         };
 

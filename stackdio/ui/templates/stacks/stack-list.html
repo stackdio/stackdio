@@ -1,15 +1,23 @@
 {% extends 'stackdio/page.html' %}
 
 {% block title %}Stacks{% endblock %}
+{% block stack-class %}active{% endblock %}
 
 {% block page-content %}
     <div class="row">
-        <div class="col-md-12">
-            <p> Showing stacks <span data-bind="text: startNum"></span>-<span
-                    data-bind="text: endNum"></span> of <span data-bind="text: count"></span>.
+        <div class="col-md-6">
+            <p>
+                Showing stacks
+                <span data-bind="text: startNum"></span>-<span data-bind="text: endNum"></span>
+                of <span data-bind="text: count"></span>.
             </p>
         </div>
+        <div class="col-md-6">
+            <a class="btn btn-success pull-right" href="{% url 'ui:stack-create' %}">New Stack</a>
+        </div>
     </div>
+
+    <br>
 
     <div class="row">
         <div class="col-md-12">
@@ -34,25 +42,37 @@
                 <thead>
                 <tr>
                     <th style="width: 15%">Title</th>
-                    <th style="width: 25%">Description</th>
-                    <th style="width: 15%">Create Users</th>
+                    <th style="width: 30%">Description</th>
+                    <th style="width: 15%">Namespace</th>
                     <th style="width: 15%">Number of Hosts</th>
-                    <th style="width: 15%">Status</th>
-                    <th style="width: 10%"></th>
+                    <th style="width: 10%">Status</th>
+                    <th style="width: 5%"></th>
+                    <th style="width: 5%"></th>
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: stacks">
                 <tr>
                     <td data-bind="text: title, click: $root.goToDetailPage"></td>
                     <td data-bind="text: description, click: $root.goToDetailPage"></td>
-                    <td data-bind="text: create_users, click: $root.goToDetailPage"></td>
-                    <td data-bind="text: host_count, click: $root.goToDetailPage"></td>
+                    <td data-bind="text: namespace, click: $root.goToDetailPage"></td>
+                    <td data-bind="text: hostCount, click: $root.goToDetailPage"></td>
                     <td data-bind="click: $root.goToDetailPage">
                         <span class="label" data-bind="css: labelClass, text: status"></span>
                     </td>
                     <td>
-                        <a class="btn btn-xs btn-danger"
-                           data-bind="click: $root.deleteStack">&times;</a>
+                        <div class="btn-group btn-group-xs" data-bind="css: {open: open}">
+                            <button type="button" class="btn btn-xs btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-bind="click: $root.openDropdown, clickBubble: false">
+                                Action <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" data-bind="foreach: availableActions">
+                                <li><a href="#" data-bind="click: function (action) { $parent.performAction(action) }, text: $data"></a></li>
+                            </ul>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <a href="#" data-bind="click: $data.delete">
+                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                        </a>
                     </td>
                 </tr>
                 </tbody>
