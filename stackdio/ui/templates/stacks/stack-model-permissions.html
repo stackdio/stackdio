@@ -5,20 +5,20 @@
 {% block page-content %}
 <div class="row">
     <div class="col-md-12">
-        <table class="table table-hover table-bordered table-condensed">
+        <table class="table table-hover table-striped table-condensed" data-bind="style: { width: (150 + 100 * availableUserPermissions().length) + 'px'}">
             <thead>
                 <tr>
                     <th style="width: 15%">Users</th>
                     <!-- ko foreach: availableUserPermissions -->
-                    <th style="width: 10%" data-bind="text: $data.capitalize()"></th>
+                    <th style="width: 10%" class="text-center" data-bind="text: $data.capitalize()"></th>
                     <!-- /ko -->
                 </tr>
             </thead>
             <tbody data-bind="foreach: userPermissions">
-                <tr>
+                <tr aria-hidden="true">
                     <td data-bind="text: user"></td>
                     <!-- ko foreach: $root.availableUserPermissions -->
-                    <td>
+                    <td class="text-center">
                         <!-- ko if: $parent.permissions.indexOf($data) >= 0 -->
                         <span class="glyphicon glyphicon-ok"></span>
                         <!-- /ko -->
@@ -33,14 +33,14 @@
     </div>
 </div>
 
-<div class="row">
+<div class="row" style="margin-top: 20px">
     <div class="col-md-12">
-        <table class="table table-hover table-bordered table-condensed">
+        <table class="table table-hover table-striped table-condensed" data-bind="style: { width: (150 + 100 * availableUserPermissions().length) + 'px'}">
             <thead>
                 <tr>
                     <th style="width: 15%">Groups</th>
                     <!-- ko foreach: availableGroupPermissions -->
-                    <th style="width: 10%" data-bind="text: $data.capitalize()"></th>
+                    <th style="width: 10%" class="text-center" data-bind="text: $data.capitalize()"></th>
                     <!-- /ko -->
                 </tr>
             </thead>
@@ -48,7 +48,7 @@
                 <tr>
                     <td data-bind="text: group"></td>
                     <!-- ko foreach: $root.availableGroupPermissions -->
-                    <td>
+                    <td class="text-center">
                         <!-- ko if: $parent.permissions.indexOf($data) >= 0 -->
                         <span class="glyphicon glyphicon-ok"></span>
                         <!-- /ko -->
