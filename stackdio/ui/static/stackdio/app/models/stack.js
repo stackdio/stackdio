@@ -28,6 +28,7 @@ define([
         // Save the parent VM
         this.parent = parent;
 
+        // Save the id
         this.id = raw.id;
 
         // Editable fields
@@ -37,14 +38,22 @@ define([
         this.status = ko.observable();
         this.hostCount = ko.observable();
         this.labelClass = ko.observable();
-        this.properties = ko.observable({});
-
-        // These aren't fields, but they are part of a stack and still need to be observable
-        this.availableActions = ko.observableArray([]);
 
         // Non-editable fields
         this.namespace = raw.namespace;
         this.blueprint = raw.blueprint;
+
+        // Lazy-loaded properties (not returned from the main stack endpoint)
+        this.properties = ko.observable({});
+        this.availableActions = ko.observableArray([]);
+        this.history = ko.observableArray([]);
+        this.hosts = ko.observableArray([]);
+        this.volumes = ko.observableArray([]);
+        this.commands = ko.observableArray([]);
+        this.securityGroups = ko.observableArray([]);
+        this.formulaVersions = ko.observableArray([]);
+        this.latestLogs = ko.observableArray([]);
+        this.historicalLogs = ko.observableArray([]);
 
         this._process(raw);
     }
@@ -90,6 +99,7 @@ define([
         }
     };
 
+    // Reload the current stack
     Stack.prototype.reload = function () {
         var self = this;
         $.ajax({
@@ -101,6 +111,7 @@ define([
         })
     };
 
+    // Lazy-load the properties
     Stack.prototype.loadProperties = function () {
         var self = this;
         $.ajax({
@@ -111,6 +122,7 @@ define([
         });
     };
 
+    // Lazy-load the available actions
     Stack.prototype.loadAvailableActions = function () {
         var self = this;
         $.ajax({
@@ -125,19 +137,16 @@ define([
         });
     };
 
-    Stack.prototype.performAction = function (action, a, b) {
+    // Peform an action
+    Stack.prototype.performAction = function (action) {
         var self = this;
-        if (self.parent.hasOwnProperty('openActionList')) {
-            // Make it work with the stack-list VM
-            self.parent.openActionList = null;
-        }
         $.ajax({
             method: 'POST',
             url: self.raw.action,
             data: JSON.stringify({
                 action: action
             })
-        }).done(function (stack) {
+        }).done(function () {
             self.reload();
         }).fail(function (jqxhr) {
             console.log(jqxhr);

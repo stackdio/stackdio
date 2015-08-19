@@ -39,8 +39,11 @@ define([
         self.count = ko.observable();
         self.stacks = ko.observableArray([]);
 
-        // We need to keep track of which action dropdowns are open.  If we don't, they all close when a refresh happens.
-        self.openActionList = null;
+        // We need to keep track of which action dropdown is open.  This way we can keep
+        // it open across a refresh.
+        self.openActionStackId = null;
+
+        // Save a copy of the actions for each stack
         self.actionMap = {};
 
         self.startNum = ko.computed(function () {
@@ -98,28 +101,6 @@ define([
             }
         };
 
-        self.openDropdown = function (stack, evt) {
-            if (self.openActionList) {
-                self.openActionList.element.dropdown('toggle');
-
-                // This just means we're closing the currently open dropdown, which has already
-                // happened so just return.
-                if (stack.id === self.openActionList.id) {
-                    self.openActionList = null;
-                    return;
-                }
-            }
-
-            self.openActionList = {
-                id: stack.id,
-                element: $(evt.target.parentElement.lastChild)
-            };
-            self.openActionList.element.dropdown('toggle');
-
-            // Lazy-load the available actions for the stack
-            stack.loadAvailableActions();
-        };
-
         // Refresh everything
         self.reloadStacks = function () {
             $.ajax({
@@ -143,12 +124,39 @@ define([
                         stackModel.availableActions(self.actionMap[rawStack.id]);
                     }
 
-                    // Determine if the dropdown for the actions should be open or not.
-                    stackModel.open = self.openActionList ? self.openActionList.id == rawStack.id : false;
-
                     stackModels.push(stackModel);
                 });
                 self.stacks(stackModels);
+
+                // Add the dropdown events.  This must happen AFTER we set the stacks observable
+                // in the previous statement.
+                var actionElement = $('.action-dropdown');
+
+                // React to an open-dropdown event
+                actionElement.on('show.bs.dropdown', function (evt) {
+                    // Grab the ID of the open element
+                    var id = parseInt(evt.target.id);
+
+                    // Set the ID of the currently open action dropdown
+                    self.openActionStackId = id;
+
+                    // Freeze a copy of the current stacks
+                    var stacks = self.stacks();
+
+                    // Find the current stack with the correct ID, and load the actions
+                    for (var i = 0, length = stacks.length; i < length; ++i) {
+                        if (stacks[i].id === id) {
+                            stacks[i].loadAvailableActions();
+                            break;
+                        }
+                    }
+                });
+
+                // React to a close dropdown event (this one is pretty simple)
+                actionElement.on('hide.bs.dropdown', function () {
+                    // Make sure that we know nothing is open
+                    self.openActionStackId = null;
+                });
             }).fail(function () {
                 // If we get a 404 or something, reset EVERYTHING.
                 self.reset();
