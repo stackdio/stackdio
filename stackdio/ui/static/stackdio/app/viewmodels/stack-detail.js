@@ -18,25 +18,19 @@
 define([
     'jquery',
     'knockout',
-    'knockout-mapping'
-], function($, ko, komapping) {
+    'knockout-mapping',
+    'models/stack'
+], function($, ko, komapping, Stack) {
     return function() {
         var self = this;
 
-        self.id = ko.observable('');
-        self.title = ko.observable('');
-        self.description = ko.observable();
-        self.status = ko.observable();
-        self.namespace = ko.observable();
-        self.createUsers = ko.observable();
-        self.hostCount = ko.observable();
-        self.volumeCount = ko.observable();
-        self.created = ko.observable();
+        // View variables
+        self.stack = null;
 
-        self.url = ko.computed(function() {
-            return  '/api/stacks/'+self.id()+'/';
-        });
+        // For the breadcrumb only
+        self.stackTitle = ko.observable('');
 
+        // Override the breadcrumbs
         self.breadcrumbs = [
             {
                 active: false,
@@ -45,57 +39,31 @@ define([
             },
             ko.observable({
                 active: true,
-                title: ko.computed(function() { return self.title(); })
+                title: ko.computed(function() {
+                    return self.stackTitle()
+                })
             })
         ];
 
         self.reset = function() {
-            self.id(window.stackdio.stackId);
-            self.title('');
-            self.description('');
-            self.status('');
-            self.namespace('');
-            self.createUsers('');
-            self.hostCount('');
-            self.volumeCount('');
-            self.created('');
+            // Create the stack object.  Pass in the stack id, and let the model load itself.
+            self.stack = new Stack(window.stackdio.stackId, self);
+            self.stack.loadHistory();
+            self.stackTitle('');
         };
 
         // Functions
         self.refreshStack = function () {
-            $.ajax({
-                method: 'GET',
-                url: self.url()
-            }).done(function (stack) {
-                document.title = 'stackd.io | Stack Detail - ' + stack.title;
-                self.title(stack.title);
-                self.description(stack.description);
-                self.status(stack.status);
-                self.namespace(stack.namespace);
-                self.createUsers(stack.create_users);
-                self.hostCount(stack.host_count);
-                self.volumeCount(stack.volume_count);
-                self.created(stack.created);
-            }).fail(function () {
-                // If we get a 404 or something, reset EVERYTHING
-                self.reset();
+            self.stack.reload().done(function () {
+                document.title = 'stackd.io | Stack Detail - ' + self.stack.title();
+                self.stackTitle(self.stack.title());
             });
-        };
-
-        self.updateStack = function () {
-            $.ajax({
-                method: 'PUT',
-                url: self.url(),
-                data: komapping.toJSON(self)
-            }).done(function (stack) {
-                console.debug(stack);
-            }).fail(function (xhr) {
-                console.debug(xhr);
-            });
+            self.stack.loadHistory();
         };
 
         // Start everything up
         self.reset();
         self.refreshStack();
+        setInterval(self.refreshStack, 3000);
     };
 });

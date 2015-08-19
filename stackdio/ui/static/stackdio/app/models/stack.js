@@ -18,10 +18,24 @@
 
 define([
     'jquery',
-    'knockout'
-], function ($, ko) {
+    'knockout',
+    'moment'
+], function ($, ko, moment) {
     // Define the stack model.
     function Stack(raw, parent) {
+        var needReload = false;
+        if (typeof raw === 'string') {
+            raw = parseInt(raw);
+        }
+        if (typeof raw === 'number') {
+            needReload = true;
+            // Set the things we need for the reload
+            raw = {
+                id: raw,
+                url: '/api/stacks/' + raw + '/'
+            }
+        }
+
         // Save the raw in order to get things like URLs
         this.raw = raw;
 
@@ -40,8 +54,8 @@ define([
         this.labelClass = ko.observable();
 
         // Non-editable fields
-        this.namespace = raw.namespace;
-        this.blueprint = raw.blueprint;
+        this.namespace = ko.observable();
+        this.blueprint = ko.observable();
 
         // Lazy-loaded properties (not returned from the main stack endpoint)
         this.properties = ko.observable({});
@@ -55,7 +69,11 @@ define([
         this.latestLogs = ko.observableArray([]);
         this.historicalLogs = ko.observableArray([]);
 
-        this._process(raw);
+        if (needReload) {
+            this.reload();
+        } else {
+            this._process(raw);
+        }
     }
 
     Stack.constructor = Stack;
@@ -66,8 +84,8 @@ define([
         this.createUsers(raw.create_users);
         this.status(raw.status);
         this.hostCount(raw.host_count);
-        this.namespace = raw.namespace;
-        this.blueprint = raw.blueprint;
+        this.namespace(raw.namespace);
+        this.blueprint(raw.blueprint);
 
         // Determine what type of label should be around the status
         switch (raw.status) {
@@ -102,13 +120,13 @@ define([
     // Reload the current stack
     Stack.prototype.reload = function () {
         var self = this;
-        $.ajax({
+        return $.ajax({
             method: 'GET',
             url: self.raw.url
         }).done(function (stack) {
             self.raw = stack;
             self._process(stack);
-        })
+        });
     };
 
     // Lazy-load the properties
@@ -150,7 +168,50 @@ define([
             self.reload();
         }).fail(function (jqxhr) {
             console.log(jqxhr);
-            alert('Failure to perform the ' + action + ' action.  Please check the log for the error.');
+            alert('Failed to perform the "' + action + '" action.  Please check the log for the error.');
+        });
+    };
+
+    Stack.prototype.loadHistory = function () {
+        var self = this;
+        $.ajax({
+            method: 'GET',
+            url: self.raw.url + 'history/'
+        }).done(function (history) {
+            history.results.forEach(function (entry) {
+                entry.timestamp = moment(entry.created);
+                switch (entry.level) {
+                    case 'ERROR':
+                        entry.itemClass = 'list-group-item-danger';
+                        break;
+                    default:
+                        entry.itemClass = '';
+                }
+                if (entry.status === 'finished') {
+                    entry.itemClass = 'list-group-item-success';
+                }
+            });
+            self.history(history.results);
+        }).fail(function (jqxhr) {
+            console.log(jqxhr);
+        });
+    };
+
+    Stack.prototype.save = function () {
+        var self = this;
+        $.ajax({
+            method: 'PUT',
+            url: self.raw.url,
+            data: JSON.stringify({
+                title: self.title(),
+                description: self.description(),
+                create_users: self.createUsers()
+            })
+        }).done(function (stack) {
+            // Not sure?
+        }).fail(function (jqxhr) {
+            console.log(jqxhr);
+            alert('Failed to save the stack.  Please check the log for the error.');
         });
     };
 
@@ -164,7 +225,7 @@ define([
             self._process(stack);
         }).fail(function (jqxhr) {
             console.log(jqxhr);
-            alert('Failure to delete the stack.  Please check the log for the error.');
+            alert('Failed to delete the stack.  Please check the log for the error.');
         });
     };
 

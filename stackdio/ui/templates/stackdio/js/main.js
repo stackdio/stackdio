@@ -58,6 +58,11 @@ requirejs.config({
     }
 });
 
+// Add our custom capitalize method
+String.prototype.capitalize = function() {
+    return this.charAt(0).toUpperCase() + this.slice(1);
+};
+
 require([
     'jquery',
     'bootstrap',

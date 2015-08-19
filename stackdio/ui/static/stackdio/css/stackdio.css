@@ -54,6 +54,19 @@ textarea {
     resize: none;
 }
 
+.history-entry {
+    padding: 10px;
+}
+
+.history-entry h5 {
+    line-height: 1;
+}
+
+.history-entry p {
+    font-size: 12px;
+    line-height: 1;
+}
+
 /*
 Bootstrap overrides
 */
