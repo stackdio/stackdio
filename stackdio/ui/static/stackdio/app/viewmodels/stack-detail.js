@@ -59,6 +59,11 @@ define([
                 self.stackTitle(self.stack.title());
             });
             self.stack.loadHistory();
+
+            // React to an open-dropdown event
+            $('.action-dropdown').on('show.bs.dropdown', function () {
+                self.stack.loadAvailableActions();
+            });
         };
 
         // Start everything up
