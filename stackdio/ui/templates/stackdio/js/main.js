@@ -38,11 +38,25 @@ requirejs.config({
     shim: {
         bootstrap: {
             deps: ['jquery']
+        },
+        typeahead: {
+            deps: ['jquery'],
+            init: function($) {
+                // This fixes an issue with typeahead.  Once this typeahead bug is fixed in a
+                // future release, this whole typeahead entry in the shim can be removed, but this
+                // is robust enough to work with OR without the bugfix.
+                var registry = require.s.contexts._.registry;
+                if (registry.hasOwnProperty('typeahead.js')) {
+                    return registry['typeahead.js'].factory($);
+                } else if (registry.hasOwnProperty('typeahead')) {
+                    return registry['typeahead'].factory($);
+                } else {
+                    console.error('Unable to load typeahead.js.');
+                }
+            }
         }
     }
 });
-
-
 
 require([
     'jquery',
