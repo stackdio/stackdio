@@ -58,7 +58,6 @@ class GroupListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.GroupSerializer
     permission_classes = (StackdioModelPermissions,)
     lookup_field = 'name'
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.GroupFilter
 
 
