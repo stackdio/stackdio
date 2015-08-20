@@ -177,7 +177,8 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
         )
 
         ret = []
-        for auth_obj, perms in perm_map.items():
+        sorted_perms = sorted(perm_map.items(), key=lambda x: getattr(x[0], self.lookup_field))
+        for auth_obj, perms in sorted_perms:
             new_perms = map(self._transform_perm(model_name), perms)
 
             ret.append({
@@ -253,7 +254,8 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
         )
 
         ret = []
-        for auth_obj, perms in perm_map.items():
+        sorted_perms = sorted(perm_map.items(), key=lambda x: getattr(x[0], self.lookup_field))
+        for auth_obj, perms in sorted_perms:
             new_perms = map(self._transform_perm(model_name), perms)
 
             ret.append({
