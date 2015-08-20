@@ -18,7 +18,7 @@
 
 import logging
 
-from django.shortcuts import resolve_url
+from django.shortcuts import get_object_or_404, resolve_url
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.generic import TemplateView
 
@@ -111,6 +111,12 @@ class StackCreateView(PageView):
     template_name = 'stacks/stack-create.html'
     viewmodel = 'viewmodels/stack-create'
 
+    def get(self, request, *args, **kwargs):
+        if not request.user.has_perm('stacks.create_stack'):
+            # No permission granted
+            raise Http404()
+        return super(StackCreateView, self).get(request, *args, **kwargs)
+
 
 class StackListView(PageView):
     template_name = 'stacks/stack-list.html'
@@ -119,6 +125,7 @@ class StackListView(PageView):
     def get_context_data(self, **kwargs):
         context = super(StackListView, self).get_context_data(**kwargs)
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack')
+        context['has_create'] = self.request.user.has_perm('stacks.create_stack')
         return context
 
 
@@ -134,5 +141,9 @@ class StackDetailView(PageView):
 
     def get_context_data(self, **kwargs):
         context = super(StackDetailView, self).get_context_data(**kwargs)
-        context['stack_id'] = kwargs['pk']
+        pk = kwargs['pk']
+        # Go ahead an raise a 404 here if the stack doesn't exist rather than waiting until later.
+        stack = get_object_or_404(Stack.objects.all(), pk=pk)
+        context['stack_id'] = pk
+        context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
         return context
