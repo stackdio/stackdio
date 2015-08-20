@@ -18,8 +18,10 @@
 
 define([
     'jquery',
-    'knockout'
-], function($, ko) {
+    'knockout',
+    'bloodhound',
+    'typeahead'
+], function($, ko, Bloodhound) {
     return function() {
         var self = this;
 
@@ -42,11 +44,61 @@ define([
         self.userPermissions = ko.observableArray([]);
         self.groupPermissions = ko.observableArray([]);
 
+        self.users = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.whitespace,
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            remote: {
+                url: '/api/users/?username=%QUERY',
+                wildcard: '%QUERY',
+                transform: function (resp) { return resp.results; }
+            }
+        });
+
+        self.groups = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.whitespace,
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            remote: {
+                url: '/api/groups/?name=%QUERY',
+                wildcard: '%QUERY',
+                transform: function (resp) { return resp.results; }
+            }
+        });
+
+        self.userTypeahead = $('#add-user .typeahead');
+        self.groupTypeahead = $('#add-group .typeahead');
+
+        self.userTypeahead.typeahead({
+            highlight: true
+        }, {
+            name: 'users',
+            display: 'username',
+            source: self.users
+        });
+
+        self.groupTypeahead.typeahead({
+            highlight: true
+        }, {
+            name: 'groups',
+            display: 'name',
+            source: self.groups
+        });
+
         self.loadPermissions = function() {
             $.ajax({
                 method: 'GET',
                 url: '/api/stacks/permissions/users/'
             }).done(function (permissions) {
+                permissions.results.forEach(function (permission) {
+                    var permObj = {};
+
+                    permissions.available_permissions.forEach(function (permissionChoice) {
+                        permObj[permissionChoice] = false;
+                    });
+                    permission.permissions.forEach(function (permissionChoice) {
+                        permObj[permissionChoice] = true;
+                    });
+                    permission.permissions = permObj;
+                });
                 self.userPermissions(permissions.results);
                 self.availableUserPermissions(permissions.available_permissions);
             });
@@ -55,6 +107,17 @@ define([
                 method: 'GET',
                 url: '/api/stacks/permissions/groups/'
             }).done(function (permissions) {
+                permissions.results.forEach(function (permission) {
+                    var permObj = {};
+
+                    permissions.available_permissions.forEach(function (permissionChoice) {
+                        permObj[permissionChoice] = false;
+                    });
+                    permission.permissions.forEach(function (permissionChoice) {
+                        permObj[permissionChoice] = true;
+                    });
+                    permission.permissions = permObj;
+                });
                 self.groupPermissions(permissions.results);
                 self.availableGroupPermissions(permissions.available_permissions);
             });
