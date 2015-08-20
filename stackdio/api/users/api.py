@@ -19,6 +19,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework import generics
+from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from stackdio.core.permissions import StackdioModelPermissions
@@ -28,13 +29,14 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from . import mixins, permissions, serializers
+from . import filters, mixins, permissions, serializers
 
 
 class UserListAPIView(generics.ListAPIView):
     queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
     serializer_class = serializers.PublicUserSerializer
     lookup_field = 'username'
+    filter_class = filters.UserFilter
 
 
 class UserDetailAPIView(generics.RetrieveAPIView):
@@ -56,6 +58,8 @@ class GroupListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.GroupSerializer
     permission_classes = (StackdioModelPermissions,)
     lookup_field = 'name'
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    filter_class = filters.GroupFilter
 
 
 class GroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

@@ -112,6 +112,25 @@ require([
         }
     });
 
+    // Make the search bar resize magically!
+    $(document).on("focus", '[data-action="grow"]', function() {
+        var width = $(window).width();
+        if (width > 767) {
+            var newWidth = width > 991 ? 350 : 250;
+            $(this).animate({
+                width: newWidth
+            });
+        }
+    });
+
+    $(document).on("blur", '[data-action="grow"]', function() {
+        if ($(window).width() > 767) {
+            $(this).animate({
+                width: 180
+            })
+        }
+    });
+
     // Apply the bindings for our viewmodel
     ko.applyBindings(new vm());
 });

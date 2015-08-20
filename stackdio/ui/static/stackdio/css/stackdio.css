@@ -78,15 +78,9 @@ Bootstrap overrides
 
 @media (max-width: 767px) {
     .navbar .navbar-form {
-        width: 185px;
+        width: 58%;
         padding-left: 0;
         padding-right: 0;
-    }
-}
-
-@media (min-width: 768px) {
-    .navbar .navbar-form {
-        width: 350px;
     }
 }
 
