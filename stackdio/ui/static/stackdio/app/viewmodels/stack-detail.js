@@ -56,6 +56,9 @@ define([
             self.stack.reload().done(function () {
                 document.title = 'stackd.io | Stack Detail - ' + self.stack.title();
                 self.stackTitle(self.stack.title());
+            }).fail(function () {
+                // Just go back to the main page if we fail
+                window.location = '/stacks/';
             });
             self.stack.loadHistory();
 

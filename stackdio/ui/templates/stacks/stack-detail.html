@@ -78,7 +78,7 @@
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation" class="active"><a href="{% url 'ui:stack-detail' pk=stack_id %}">Detail</a></li>
                 {% if has_admin %}
-                <li role="presentation"><a href="#">Permissions</a></li>
+                <li role="presentation"><a href="{% url 'ui:stack-object-permissions' pk=stack_id %}">Permissions</a></li>
                 {% endif %}
                 <li role="presentation"><a href="#">Hosts</a></li>
                 <li role="presentation"><a href="#">Volumes</a></li>

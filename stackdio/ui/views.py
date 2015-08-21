@@ -51,6 +51,7 @@ class RootView(StackdioView):
 
 class AppMainView(TemplateView):
     template_name = 'stackdio/js/main.js'
+    content_type = 'application/javascript'
 
     def __init__(self, **kwargs):
         super(AppMainView, self).__init__(**kwargs)
@@ -85,6 +86,7 @@ class PageView(StackdioView):
 
 
 class ModelPermissionsView(PageView):
+    template_name = 'stackdio/permissions.html'
     model = None
 
     def __init__(self, **kwargs):
@@ -94,6 +96,12 @@ class ModelPermissionsView(PageView):
             'attribute of your class.'
         )
 
+    def get_context_data(self, **kwargs):
+        context = super(ModelPermissionsView, self).get_context_data(**kwargs)
+        model_name = self.model._meta.model_name
+        context['object_type'] = model_name.capitalize()
+        return context
+
     def get(self, request, *args, **kwargs):
         app_label = self.model._meta.app_label
         model_name = self.model._meta.model_name
@@ -101,6 +109,28 @@ class ModelPermissionsView(PageView):
             # No permission granted
             raise Http404()
         return super(ModelPermissionsView, self).get(request, *args, **kwargs)
+
+
+class ObjectPermissionsView(PageView):
+    template_name = 'stackdio/permissions.html'
+
+    def get_object(self):
+        raise NotImplementedError()
+
+    def get_context_data(self, **kwargs):
+        context = super(ObjectPermissionsView, self).get_context_data(**kwargs)
+        context['object_type'] = self.get_object()._meta.model_name.capitalize()
+        return context
+
+    def get(self, request, *args, **kwargs):
+        obj = self.get_object()
+        app_label = obj._meta.app_label
+        model_name = obj._meta.model_name
+        # Check permissions on the object
+        if not request.user.has_perm('%s.admin_%s' % (app_label, model_name), obj):
+            # No permission granted
+            raise Http404()
+        return super(ObjectPermissionsView, self).get(request, *args, **kwargs)
 
 
 class UserProfileView(StackdioView):
@@ -130,7 +160,7 @@ class StackListView(PageView):
 
 
 class StackModelPermissionsView(ModelPermissionsView):
-    template_name = 'stacks/stack-model-permissions.html'
+    template_name = 'stackdio/permissions.html'
     viewmodel = 'viewmodels/stack-model-permissions'
     model = Stack
 
@@ -147,3 +177,10 @@ class StackDetailView(PageView):
         context['stack_id'] = pk
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
         return context
+
+
+class StackObjectPermissionsView(ObjectPermissionsView):
+    viewmodel = 'viewmodels/stack-object-permissions'
+
+    def get_object(self):
+        return get_object_or_404(Stack.objects.all(), pk=self.kwargs['pk'])
