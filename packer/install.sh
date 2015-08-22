@@ -1,57 +1,48 @@
 #!/bin/bash
 
+set -e
+
 # Create the stackdio user
 useradd -m -s/bin/bash -U stackdio
 
 # Create our directories
 mkdir /etc/stackdio
 mkdir -p /var/lib/stackdio
-mkdir -p /var/log/stackdio/supervisord
+mkdir -p /var/run/stackdio
+mkdir -p /var/log/stackdio
 chown -R stackdio:stackdio /var/lib/stackdio
+chown -R stackdio:stackdio /var/run/stackdio
 chown -R stackdio:stackdio /var/log/stackdio
 
 # Make sure everything has the right permissions
+mv /tmp/stackdio-init /etc/init.d/stackdio
+mv /tmp/stackdio-command /usr/bin/stackdio
 chown root:root /etc/init.d/stackdio
 chmod 755 /etc/init.d/stackdio
 chown root:root /usr/bin/stackdio
 chmod 755 /usr/bin/stackdio
 
 # Create the database
-mysql -hlocalhost -uroot -ppassword < cat <<EOF
-create database stackdio
-grant all on stackdio.* to stackdio@'localhost' identified by 'password'
+mysql -u root <<EOF
+create database stackdio;
+grant all on stackdio.* to stackdio@'localhost' identified by 'password';
 EOF
 
 # Create the virtualenv
 virtualenv /usr/share/stackdio
-source /usr/share/stackdio/bin/activate
+. /usr/share/stackdio/bin/activate
 
 # Install the tarball we uploaded
 pip install /tmp/stackdio-server.tar.gz
 
-stackdio init < cat <<EOF
-stackdio
-/var/lib/stackdio
-
-
-mysql://stackdio:password@localhost:3306/stackdio
-true
-EOF
-
-stackdio manage.py migrate
-
-# Somehow?
-#stackdio manage.py createsuperuser
-
-# Nginx
-stackdio config nginx | tee /etc/nginx/sites-available/stackdio > /dev/null
+# Configure Nginx
+mv /tmp/stackdio-nginx /etc/nginx/sites-available/stackdio
+chown root:root /etc/nginx/sites-available/stackdio
 ln -s /etc/nginx/sites-available/stackdio /etc/nginx/sites-enabled
 
-# remove the default configuration symlink
+# remove the default configuration symlink for nginx
 rm /etc/nginx/sites-enabled/default
 
-stackdio manage.py collectstatic --noinput
-
-service nginx restart
-
-stackdio config supervisord > /etc/stackdio/supervisord.conf
+# Configure supervisor
+mv /tmp/stackdio-supervisord /etc/stackdio/supervisord.conf
+chown root:root /etc/stackdio/supervisord.conf

@@ -1,7 +1,7 @@
 {
     "variables": {
         "version": "{{ env `STACKDIO_VERSION` }}",
-        "source_ami": "ami-427a392a",
+        "source_ami": "ami-767a391e",
         "aws_access_key": "{{ env `AWS_ACCESS_KEY` }}",
         "aws_secret_key": "{{ env `AWS_SECRET_KEY` }}",
         "packages": "python python-dev python-virtualenv mysql-server mysql-client libssl-dev libncurses5-dev swig libmysqlclient-dev rabbitmq-server git nginx libldap2-dev libsasl2-dev"
@@ -9,7 +9,7 @@
     "builders": [
         {
             "type": "amazon-ebs",
-            "ami_name": "stackd.io-server v{{ user `version` }} {{ timestamp }}",
+            "ami_name": "stackdio-server-{{ user `version` }} {{ timestamp }}",
             "source_ami": "{{ user `source_ami` }}",
             "access_key": "{{ user `aws_access_key` }}",
             "secret_key": "{{ user `aws_secret_key` }}",
@@ -19,7 +19,8 @@
             "launch_block_device_mappings": [
                 {
                     "device_name": "/dev/sda1",
-                    "delete_on_termination": true
+                    "delete_on_termination": true,
+                    "volume_size": 8
                 }
             ],
             "ami_block_device_mappings": [
@@ -37,14 +38,6 @@
     ],
     "provisioners": [
         {
-            "type": "shell-local",
-            "command": "bower install"
-        },
-        {
-            "type": "shell-local",
-            "command": "python setup.py sdist"
-        },
-        {
             "type": "file",
             "source": "dist/stackdio-server-{{ user `version` }}.tar.gz",
             "destination": "/tmp/stackdio-server.tar.gz"
@@ -52,6 +45,7 @@
         {
             "type": "shell",
             "inline": [
+                "apt-get update",
                 "apt-get install -y {{ user `packages` }}"
             ],
             "execute_command": "{{ .Vars }} sudo -E sh '{{ .Path }}'"
@@ -59,17 +53,32 @@
         {
             "type": "file",
             "source": "packer/init-script",
-            "destination": "/etc/init.d/stackdio"
+            "destination": "/tmp/stackdio-init"
         },
         {
             "type": "file",
             "source": "packer/stackdio-command",
-            "destination": "/usr/bin/stackdio"
+            "destination": "/tmp/stackdio-command"
+        },
+        {
+            "type": "file",
+            "source": "packer/nginx.conf",
+            "destination": "/tmp/stackdio-nginx"
+        },
+        {
+            "type": "file",
+            "source": "packer/supervisord.conf",
+            "destination": "/tmp/stackdio-supervisord"
         },
         {
             "type": "shell",
             "script": "packer/install.sh",
             "execute_command": "{{ .Vars }} sudo -E sh '{{ .Path }}'"
+        },
+        {
+            "type": "shell",
+            "script": "packer/configure.sh",
+            "execute_command": "{{ .Vars }} sudo su - stackdio -c \"sh '{{ .Path }}'\""
         },
         {
             "type": "shell",
