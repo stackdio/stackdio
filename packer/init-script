@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#       /etc/rc.d/init.d/stackdio
+#
+#       stackdio-server
+#
+# chkconfig: 2345 90 10
+# description: stackd.io web server
+
+. /etc/init.d/functions
+. /usr/share/stackdio/bin/activate
+
+LOCKFILE=/var/lock/subsys/stackdio
+DAEMON=/usr/share/stackdio/bin/supervisord
+CTL=/usr/share/stackdio/bin/supervisorctl
+PIDFILE=/var/run/stackdio/stackdio.pid
+USER=stackdio
+DAEMON_OPTS="-l $LOGDIR -d"
+
+stackdio_start() {
+        export PYTHON_EGG_CACHE='/tmp/.stackdio-python-eggs'
+
+        echo -n "Starting stackd.io: "
+        for dir in $(dirname $PIDFILE) ${PYTHON_EGG_CACHE}
+        do
+            mkdir -p $dir
+            chown -R $USER $dir
+        done
+
+        # Check if already running
+        if [ -e $PIDFILE ] && checkpid $(cat $PIDFILE) ; then
+            echo "already running"
+            return 0
+        fi
+        # the supervisor itself will setuid down to $USER
+        su -s /bin/bash $USER -c "$DAEMON -c /etc/stackdio/supervisord.conf"
+        ret=$?
+        base=$(basename $0)
+        if [ $ret -eq 0 ]; then
+            sleep 5
+            test -e $PIDFILE && checkpid $(cat $PIDFILE)
+            ret=$?
+        fi
+        if [ $ret -eq 0 ]; then
+            touch $LOCKFILE
+            success $"$base startup"
+        else
+            failure $"$base startup"
+        fi
+        echo
+        return $ret
+}
+
+stackdio_stop() {
+        if [ ! -e $PIDFILE ]; then
+            success "stackd.io is not running"
+            return 0
+        fi
+
+        echo -n "Shutting down stackd.io: "
+
+        su -s /bin/bash $USER -c "$CTL -c /etc/stackdio/supervisord.conf shutdown"
+        echo
+        rm -f $LOCKFILE $PIDFILE
+        return 0
+}
+
+stackdio_restart() {
+  stackdio_stop
+  stackdio_start
+}
+
+case "$1" in
+    start)
+        stackdio_start
+        ;;
+    stop)
+        stackdio_stop
+        ;;
+    status)
+        status -p $PIDFILE supervisord
+        ;;
+    restart|reload)
+        stackdio_restart
+        ;;
+    condrestart)
+        [ -f $LOCKFILE ] && restart || :
+        ;;
+    *)
+        echo "Usage: stackdio {start|stop|status|reload|restart|condrestart"
+        exit 1
+        ;;
+esac
+exit $?
