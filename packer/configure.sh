@@ -14,11 +14,7 @@ EOF
 
 stackdio manage.py migrate
 
-stackdio manage.py createsuperuser <<EOF
-admin
-stackdio@stackd.io
-stackdio
-stackdio
-EOF
+# Create our superuser
+stackdio manage.py loaddata /tmp/stackdio-data.json
 
 stackdio manage.py collectstatic --noinput

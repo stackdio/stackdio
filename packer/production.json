@@ -71,6 +71,11 @@
             "destination": "/tmp/stackdio-supervisord"
         },
         {
+            "type": "file",
+            "source": "packer/stackdio-data.json",
+            "destination": "/tmp/stackdio-data.json"
+        },
+        {
             "type": "shell",
             "script": "packer/install.sh",
             "execute_command": "{{ .Vars }} sudo -E sh '{{ .Path }}'"
