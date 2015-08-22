@@ -1,109 +1,146 @@
-#!/bin/bash
-#
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-#       /etc/rc.d/init.d/stackdio
-#
-#       stackdio-server
-#
-# chkconfig: 2345 90 10
-# description: stackd.io web server
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          stackdio
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: stackd.io web server
+# Description:       This file should be used to construct scripts to be
+#                    placed in /etc/init.d.
+### END INIT INFO
 
-. /etc/init.d/functions
-. /usr/share/stackdio/bin/activate
+# Author: Clark Perkins <clark.perkins@digitalreasoning.com>
 
-LOCKFILE=/var/lock/subsys/stackdio
-DAEMON=/usr/share/stackdio/bin/supervisord
-CTL=/usr/share/stackdio/bin/supervisorctl
-PIDFILE=/var/run/stackdio/stackdio.pid
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/usr/share/stackdio/bin:/sbin:/usr/sbin:/bin:/usr/bin
+DESC="stackd.io web server"
+NAME=stackdio
 USER=stackdio
-DAEMON_OPTS="-l $LOGDIR -d"
+DAEMON=/usr/share/stackdio/bin/supervisord
+OTHER_DAEMON=/usr/share/stackdio/bin/supervisorctl
+CONFIG=/etc/stackdio/supervisord.conf
+DAEMON_ARGS="-c $CONFIG"
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
 
-stackdio_start() {
-        export PYTHON_EGG_CACHE='/tmp/.stackdio-python-eggs'
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
 
-        echo -n "Starting stackd.io: "
-        for dir in $(dirname $PIDFILE) ${PYTHON_EGG_CACHE}
-        do
-            mkdir -p $dir
-            chown -R $USER $dir
-        done
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
-        # Check if already running
-        if [ -e $PIDFILE ] && checkpid $(cat $PIDFILE) ; then
-            echo "already running"
-            return 0
-        fi
-        # the supervisor itself will setuid down to $USER
-        su -s /bin/bash $USER -c "$DAEMON -c /etc/stackdio/supervisord.conf"
-        ret=$?
-        base=$(basename $0)
-        if [ $ret -eq 0 ]; then
-            sleep 5
-            test -e $PIDFILE && checkpid $(cat $PIDFILE)
-            ret=$?
-        fi
-        if [ $ret -eq 0 ]; then
-            touch $LOCKFILE
-            success $"$base startup"
-        else
-            failure $"$base startup"
-        fi
-        echo
-        return $ret
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+	# Return
+	#   0 if daemon has been started
+	#   1 if daemon was already running
+	#   2 if daemon could not be started
+	start-stop-daemon --start --quiet --pidfile $PIDFILE --user $USER --exec $DAEMON --test > /dev/null || return 1
+	start-stop-daemon --start --quiet --pidfile $PIDFILE --chuid $USER --exec $DAEMON -- $DAEMON_ARGS || return 2
+	# Add code here, if necessary, that waits for the process to be ready
+	# to handle requests from services started subsequently which depend
+	# on this one.  As a last resort, sleep for some time.
 }
 
-stackdio_stop() {
-        if [ ! -e $PIDFILE ]; then
-            success "stackd.io is not running"
-            return 0
-        fi
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+	# Return
+	#   0 if daemon has been stopped
+	#   1 if daemon was already stopped
+	#   2 if daemon could not be stopped
+	#   other if a failure occurred
+	$OTHER_DAEMON $DAEMON_ARGS shutdown &> /dev/null
+	RETVAL="$?"
+	# Many daemons don't delete their pidfiles when they exit.
+	rm -f $PIDFILE
 
-        echo -n "Shutting down stackd.io: "
-
-        su -s /bin/bash $USER -c "$CTL -c /etc/stackdio/supervisord.conf shutdown"
-        echo
-        rm -f $LOCKFILE $PIDFILE
-        return 0
+	# Sleep for a couple of seconds to be sure we've started
+	sleep 2;
+	return "$RETVAL"
 }
 
-stackdio_restart() {
-  stackdio_stop
-  stackdio_start
+#
+# Function that sends a SIGHUP to the daemon/service
+#
+do_reload() {
+	#
+	# If the daemon can reload its configuration without
+	# restarting (for example, when it is sent a SIGHUP),
+	# then implement that here.
+	#
+	$OTHER_DAEMON $DAEMON_ARGS reload &> /dev/null
+	return "$?"
 }
 
 case "$1" in
-    start)
-        stackdio_start
-        ;;
-    stop)
-        stackdio_stop
-        ;;
-    status)
-        status -p $PIDFILE supervisord
-        ;;
-    restart|reload)
-        stackdio_restart
-        ;;
-    condrestart)
-        [ -f $LOCKFILE ] && restart || :
-        ;;
-    *)
-        echo "Usage: stackdio {start|stop|status|reload|restart|condrestart"
-        exit 1
-        ;;
+  start)
+	log_daemon_msg "Starting $DESC"
+	do_start
+	case "$?" in
+		0|1) log_end_msg 0 ;;
+		2) log_end_msg 1 ;;
+	esac
+	;;
+  stop)
+	log_daemon_msg "Stopping $DESC"
+	do_stop
+	case "$?" in
+		0|1) log_end_msg 0 ;;
+		2) log_end_msg 1 ;;
+	esac
+	;;
+  status)
+	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	;;
+  reload|force-reload)
+	#
+	# If do_reload() is not implemented then leave this commented out
+	# and leave 'force-reload' as an alias for 'restart'.
+	#
+	log_daemon_msg "Reloading $DESC"
+	do_reload
+	log_end_msg $?
+	;;
+  restart)
+	#
+	# If the "reload" option is implemented then remove the
+	# 'force-reload' alias
+	#
+	log_daemon_msg "Restarting $DESC"
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+		# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+	exit 3
+	;;
 esac
-exit $?

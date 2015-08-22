@@ -5,9 +5,12 @@ useradd -m -s/bin/bash -U stackdio
 
 # Create our directories
 mkdir /etc/stackdio
-mkdir /var/lib/stackdio
-chown stackdio:stackdio /var/lib/stackdio
+mkdir -p /var/lib/stackdio
+mkdir -p /var/log/stackdio/supervisord
+chown -R stackdio:stackdio /var/lib/stackdio
+chown -R stackdio:stackdio /var/log/stackdio
 chown root:root /etc/init.d/stackdio
+chmod 755 /etc/init.d/stackdio
 
 # Create the database
 echo "create database stackdio; grant all on stackdio.* to stackdio@'localhost' identified by 'password';" | \
