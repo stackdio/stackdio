@@ -9,12 +9,18 @@ mkdir -p /var/lib/stackdio
 mkdir -p /var/log/stackdio/supervisord
 chown -R stackdio:stackdio /var/lib/stackdio
 chown -R stackdio:stackdio /var/log/stackdio
+
+# Make sure everything has the right permissions
 chown root:root /etc/init.d/stackdio
 chmod 755 /etc/init.d/stackdio
+chown root:root /usr/bin/stackdio
+chmod 755 /usr/bin/stackdio
 
 # Create the database
-echo "create database stackdio; grant all on stackdio.* to stackdio@'localhost' identified by 'password';" | \
-mysql -hlocalhost -uroot -ppassword
+mysql -hlocalhost -uroot -ppassword < cat <<EOF
+create database stackdio
+grant all on stackdio.* to stackdio@'localhost' identified by 'password'
+EOF
 
 # Create the virtualenv
 virtualenv /usr/share/stackdio
@@ -35,7 +41,7 @@ EOF
 stackdio manage.py migrate
 
 # Somehow?
-#  stackdio manage.py createsuperuser
+#stackdio manage.py createsuperuser
 
 # Nginx
 stackdio config nginx | tee /etc/nginx/sites-available/stackdio > /dev/null
@@ -48,7 +54,4 @@ stackdio manage.py collectstatic --noinput
 
 service nginx restart
 
-service rabbitmq-server start
-
 stackdio config supervisord > /etc/stackdio/supervisord.conf
-
