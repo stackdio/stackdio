@@ -17,55 +17,57 @@
 
 from django.conf.urls import url
 from django.contrib.auth.views import login, logout_then_login
-from django.views.decorators.cache import cache_page
 
-from stackdio.server import __version__
+from stackdio.core.utils import cached_url
 from . import views
 
 auth_kwargs = {
     'template_name': 'stackdio/login.html',
-    'extra_context': {'version': __version__},
 }
 
 urlpatterns = (
-    url(r'^$',
-        views.RootView.as_view(),
-        name='index'),
+    cached_url(r'^$',
+               views.RootView.as_view(),
+               name='index'),
 
-    url(r'^login/$',
-        login,
-        auth_kwargs,
-        name='login'),
+    cached_url(r'^login/$',
+               login,
+               auth_kwargs,
+               name='login',
+               user_sensitive=False),
 
     url(r'^logout/$',
         logout_then_login,
         name='logout'),
 
-    url(r'^js/main/(?P<vm>[\w/.-]+)\.js$',
-        cache_page(900)(views.AppMainView.as_view()),
-        name='js-main'),
+    cached_url(r'^js/main/(?P<vm>[\w/.-]+)\.js$',
+               views.AppMainView.as_view(),
+               name='js-main',
+               user_sensitive=False),
 
-    url('^user/$',
-        views.UserProfileView.as_view(),
-        name='user-profile'),
+    cached_url('^user/$',
+               views.UserProfileView.as_view(),
+               name='user-profile'),
 
-    url(r'^stacks/$',
-        views.StackListView.as_view(),
-        name='stack-list'),
+    cached_url(r'^stacks/$',
+               views.StackListView.as_view(),
+               name='stack-list',
+               timeout=30),
 
-    url(r'^stacks/create/$',
-        views.StackCreateView.as_view(),
-        name='stack-create'),
+    cached_url(r'^stacks/create/$',
+               views.StackCreateView.as_view(),
+               name='stack-create'),
 
-    url(r'^stacks/permissions/$',
-        views.StackModelPermissionsView.as_view(),
-        name='stack-model-permissions'),
+    cached_url(r'^stacks/permissions/$',
+               views.StackModelPermissionsView.as_view(),
+               name='stack-model-permissions'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/$',
-        views.StackDetailView.as_view(),
-        name='stack-detail'),
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/$',
+               views.StackDetailView.as_view(),
+               name='stack-detail',
+               timeout=30),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/permissions/$',
-        views.StackObjectPermissionsView.as_view(),
-        name='stack-object-permissions'),
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/permissions/$',
+               views.StackObjectPermissionsView.as_view(),
+               name='stack-object-permissions'),
 )

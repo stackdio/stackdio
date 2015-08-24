@@ -18,6 +18,11 @@
 
 import collections
 
+from django.conf import settings
+from django.conf.urls import url
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie
+
 
 class FakeQuerySet(object):
     """
@@ -96,3 +101,11 @@ def get_urls(urllist, pre=''):
         if hasattr(entry, 'url_patterns'):
             for subentry in get_urls(entry.url_patterns, pre + pattern):
                 yield subentry
+
+
+def cached_url(regex, view, kwargs=None, name=None, prefix='',
+               timeout=settings.CACHE_MIDDLEWARE_SECONDS, user_sensitive=True):
+    view = cache_page(timeout)(view)
+    if user_sensitive:
+        view = vary_on_cookie(view)
+    return url(regex, view, kwargs, name, prefix)
