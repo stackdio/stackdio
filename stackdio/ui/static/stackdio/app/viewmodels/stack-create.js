@@ -160,9 +160,16 @@ define([
                             resp[key].forEach(function (errMsg) {
                                 el.append('<span class="help-block">'+errMsg+'</span>');
                             });
+                        } else if (key === 'non_field_errors') {
+                            var errMsgs = resp[key];
+                            errMsgs.forEach(function (errMsg) {
+                                if (errMsg.indexOf('title') >= 0) {
+                                    var el = $('#title');
+                                    el.addClass('has-error');
+                                    el.append('<span class="help-block">A stack with this title already exists.</span>');
+                                }
+                            });
                         }
-                    } else {
-
                     }
                 }
             }).always(function () {
