@@ -108,13 +108,7 @@ define([
         };
 
         self.createStack = function() {
-            if (!self.validProperties) {
-                var el = $('#properties');
-                el.addClass('has-error');
-                el.append('<span class="help-block">Invalid JSON.</span>');
-                return;
-            }
-
+            // First remove all the old error messages
             var keys = ['blueprint', 'title', 'description',
                 'create_users', 'namespace', 'properties'];
 
@@ -124,14 +118,24 @@ define([
                 var help = el.find('.help-block');
                 help.remove();
             });
-            
-            // Grab both buttons
+
+            // Check the properties
+            if (!self.validProperties) {
+                var el = $('#properties');
+                el.addClass('has-error');
+                el.append('<span class="help-block">Invalid JSON.</span>');
+                return;
+            }
+
+            // Grab both button objects
             var createButton = Ladda.create(document.querySelector('.create-button'));
             var createButtonSm = Ladda.create(document.querySelector('.create-button-sm'));
 
+            // Start them up
             createButton.start();
             createButtonSm.start();
 
+            // Create the stack!
             $.ajax({
                 'method': 'POST',
                 'url': '/api/stacks/',
@@ -146,6 +150,7 @@ define([
             }).done(function (stack) {
                 window.location = '/stacks/';
             }).fail(function (jqxhr) {
+                // Display any error messages
                 var resp = JSON.parse(jqxhr.responseText);
                 for (var key in resp) {
                     if (resp.hasOwnProperty(key)) {
@@ -161,6 +166,7 @@ define([
                     }
                 }
             }).always(function () {
+                // Stop our spinning buttons
                 createButton.stop();
                 createButtonSm.stop();
             });
