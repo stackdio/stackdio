@@ -1,4 +1,5 @@
 {% load staticfiles %}
+{% load stackdio %}
 <!DOCTYPE html>
 <html lang="en">
 <!--
@@ -116,7 +117,7 @@
                 </div>
                 <div class="col-xs-6">
                 {% block api-link %}
-                    <p class="text-right">stackd.io <span class="version">{% block version %}{{ version }}{% endblock %}</span> | <a href="{% url 'api:root' %}">api</a></p>
+                    <p class="text-right">stackd.io {% stackdio_version %} | <a href="{% url 'api:root' %}">api</a></p>
                 {% endblock api-link %}
                 </div>
             </div>

@@ -22,18 +22,12 @@ from django.shortcuts import get_object_or_404, resolve_url
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.generic import TemplateView
 
-from stackdio.server import __version__
 from stackdio.api.stacks.models import Stack
 
 logger = logging.getLogger(__name__)
 
 
 class StackdioView(TemplateView):
-
-    def get_context_data(self, **kwargs):
-        context = super(StackdioView, self).get_context_data(**kwargs)
-        context['version'] = __version__
-        return context
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():
