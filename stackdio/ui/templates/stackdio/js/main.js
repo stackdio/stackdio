@@ -30,8 +30,9 @@ requirejs.config({
         'domReady': bowerPath + '/requirejs-domReady/domReady',
         'jquery': bowerPath + '/jquery/jquery.min',
         'knockout': bowerPath + '/knockout/dist/knockout',
-        'knockout-mapping': bowerPath + '/knockout-mapping/knockout.mapping',
+        'ladda': bowerPath + '/ladda/dist/ladda.min',
         'moment': bowerPath + '/moment/moment',
+        'spin': bowerPath + '/ladda/dist/spin.min',
         'typeahead': bowerPath + '/typeahead.js/dist/typeahead.jquery.min',
         'underscore': bowerPath + '/underscore/underscore-min'
     },

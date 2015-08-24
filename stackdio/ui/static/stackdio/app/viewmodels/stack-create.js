@@ -19,8 +19,9 @@ define([
     'jquery',
     'knockout',
     'bloodhound',
+    'ladda',
     'typeahead'
-], function ($, ko, Bloodhound) {
+], function ($, ko, Bloodhound, Ladda) {
     return function() {
         var self = this;
 
@@ -77,6 +78,7 @@ define([
         self.properties = ko.observable({});
 
         self.validProperties = true;
+        self.createButton = null;
 
         self.propertiesJSON = ko.pureComputed({
             read: function () {
@@ -102,13 +104,33 @@ define([
             self.createUsers(false);
             self.namespace('');
             self.properties({});
+
         };
 
         self.createStack = function() {
             if (!self.validProperties) {
-                alert('Your properties must be a valid JSON object');
+                var el = $('#properties');
+                el.addClass('has-error');
+                el.append('<span class="help-block">Invalid JSON.</span>');
                 return;
             }
+
+            var keys = ['blueprint', 'title', 'description',
+                'create_users', 'namespace', 'properties'];
+
+            keys.forEach(function (key) {
+                var el = $('#' + key);
+                el.removeClass('has-error');
+                var help = el.find('.help-block');
+                help.remove();
+            });
+            
+            // Grab both buttons
+            var createButton = Ladda.create(document.querySelector('.create-button'));
+            var createButtonSm = Ladda.create(document.querySelector('.create-button-sm'));
+
+            createButton.start();
+            createButtonSm.start();
 
             $.ajax({
                 'method': 'POST',
@@ -125,7 +147,22 @@ define([
                 window.location = '/stacks/';
             }).fail(function (jqxhr) {
                 var resp = JSON.parse(jqxhr.responseText);
+                for (var key in resp) {
+                    if (resp.hasOwnProperty(key)) {
+                        if (keys.indexOf(key) >= 0) {
+                            var el = $('#' + key);
+                            el.addClass('has-error');
+                            resp[key].forEach(function (errMsg) {
+                                el.append('<span class="help-block">'+errMsg+'</span>');
+                            });
+                        }
+                    } else {
 
+                    }
+                }
+            }).always(function () {
+                createButton.stop();
+                createButtonSm.stop();
             });
         };
 

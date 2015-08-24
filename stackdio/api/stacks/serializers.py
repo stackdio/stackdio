@@ -389,7 +389,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             # This all has to be here vs. in its own validator b/c it needs the blueprint
             hostname_errors = validate_hostname(namespace)
             if hostname_errors:
-                errors.setdefault('hostname', []).extend(hostname_errors)
+                errors.setdefault('namespace', []).extend(hostname_errors)
 
             # This is all only necessary if a namespace was provided
             #  (It may not be provided on a PATCH request)
@@ -404,7 +404,13 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             #    Only hit up salt cloud if there are no duplicates locally
             hosts = models.Host.objects.filter(hostname__in=hostnames)
             if hosts.count() > 0:
-                errors.setdefault('duplicate_hostnames', []).extend([h.hostname for h in hosts])
+                err_msg = 'Duplicate hostnames: {0}'.format(', '.join([h.hostname for h in hosts]))
+                errors.setdefault('namespace', []).append(err_msg)
+
+            if errors:
+                # Go ahead and raise an error here so that we don't check the provider if
+                # we don't need to
+                raise serializers.ValidationError(errors)
 
             salt_cloud = salt.cloud.CloudClient(os.path.join(
                 settings.STACKDIO_CONFIG.salt_config_root,
@@ -427,7 +433,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
                             dups.append(instance)
 
             if dups:
-                errors.setdefault('duplicate_hostnames', []).extend(dups)
+                err_msg = 'Duplicate hostnames: {0}'.format(', '.join(dups))
+                errors.setdefault('namespace', []).append(err_msg)
 
         if errors:
             raise serializers.ValidationError(errors)
