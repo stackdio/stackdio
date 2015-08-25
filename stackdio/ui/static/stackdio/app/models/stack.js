@@ -143,7 +143,6 @@ define([
             method: 'GET',
             url: self.raw.url
         }).done(function (stack) {
-            bootbox.hideAll();
             self.raw = stack;
             self._process(stack);
         });
