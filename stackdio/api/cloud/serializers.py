@@ -34,7 +34,6 @@ from stackdio.api.cloud.providers.base import (
     RuleNotFoundException,
     SecurityGroupRule,
 )
-from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models
 from .utils import get_provider_driver_class
 
@@ -169,29 +168,6 @@ class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-m
     availability_zone = serializers.CharField()
     cidr_block = serializers.CharField()
     tags = serializers.DictField(child=serializers.CharField())
-
-
-class GlobalOrchestrationFormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
-    component = serializers.PrimaryKeyRelatedField(read_only=True)
-
-    def __init__(self, *args, **kwargs):
-        super(GlobalOrchestrationFormulaComponentSerializer, self).__init__(*args, **kwargs)
-
-        # If read request, put in the component object, otherwise just pk
-        context = kwargs.get('context')
-        if context:
-            request = context.get('request')
-            if request and request.method in permissions.SAFE_METHODS:
-                self.fields['component'] = FormulaComponentSerializer()
-
-    class Meta:
-        model = models.GlobalOrchestrationFormulaComponent
-        fields = (
-            'id',
-            'url',
-            'order',
-            'component',
-        )
 
 
 class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method

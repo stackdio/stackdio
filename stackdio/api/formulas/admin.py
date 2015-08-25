@@ -36,10 +36,10 @@ admin.site.register(models.Formula, FormulaAdmin)
 
 class FormulaComponentAdmin(GuardedModelAdmin):
     list_display = [
-        'title',
-        'slug',
         'formula',
         'sls_path',
+        'order',
+        'content_object'
     ]
 
 

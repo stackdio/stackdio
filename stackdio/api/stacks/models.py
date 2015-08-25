@@ -571,8 +571,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             cloud_account_yaml = yaml.safe_load(cloud_account.yaml)[cloud_account.slug]
 
             # pull various stuff we need for a host
-            roles = [c.component.sls_path for
-                     c in host.formula_components.all()]
+            roles = [c.sls_path for c in host.formula_components.all()]
             instance_size = host.instance_size.title
             security_groups = set([
                 sg.group_id for sg in host.security_groups.all()
@@ -693,10 +692,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         groups = {}
         for host in hosts:
-            for c in host.formula_components.all():
-                groups.setdefault(
-                    c.order, set()
-                ).add(c.component.sls_path)
+            for component in host.formula_components.all():
+                groups.setdefault(component.order, set()).add(component.sls_path)
 
         overstate = {}
         for order in sorted(groups.keys()):
@@ -733,10 +730,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 account.slug)
 
             groups = {}
-            for c in account.global_formula_components.all():
-                groups.setdefault(
-                    c.order, set()
-                ).add(c.component.sls_path)
+            for component in account.formula_components.all():
+                groups.setdefault(component.order, set()).add(component.sls_path)
 
             for order in sorted(groups.keys()):
                 for role in groups[order]:
@@ -762,7 +757,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(yaml_data)
 
     def generate_pillar_file(self):
-        from stackdio.api.blueprints.models import BlueprintHostFormulaComponent
+        from stackdio.api.formulas.models import FormulaComponent
 
         users = []
         # pull the create_ssh_users property from the stackd.io config file.
@@ -806,9 +801,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # First get the unique set of formulas
         hosts = self.hosts.all()
         formulas = set(
-            [c.component.formula for
-             c in BlueprintHostFormulaComponent.objects.filter(
-                 hosts__in=hosts)]
+            [c.formula for c in FormulaComponent.objects.filter(content_object__in=hosts)]
         )
 
         # for each unique formula, pull the properties from the SPECFILE
@@ -840,8 +833,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         )
         global_formulas = []
         for account in accounts:
-            for gfc in account.global_formula_components.all():
-                global_formulas.append(gfc.component.formula)
+            global_formulas.extend(account.get_formulas())
 
         # Add the global formulas into the props
         for formula in set(global_formulas):
@@ -931,7 +923,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         roles = set()
         for bhd in self.blueprint.host_definitions.all():
             for formula_component in bhd.formula_components.all():
-                roles.add(formula_component.component.sls_path)
+                roles.add(formula_component.sls_path)
         return list(roles)
 
 
@@ -1057,10 +1049,6 @@ class Host(TimeStampedModel, StatusDetailModel):
         'blueprints.BlueprintHostDefinition',
         related_name='hosts')
 
-    formula_components = models.ManyToManyField(
-        'blueprints.BlueprintHostFormulaComponent',
-        related_name='hosts')
-
     hostname = models.CharField('Hostname', max_length=64)
 
     index = models.IntegerField('Index')
@@ -1109,6 +1097,10 @@ class Host(TimeStampedModel, StatusDetailModel):
     def provider_metadata(self):
         metadata = self.stack.query_hosts()
         return metadata[self.hostname]
+
+    @property
+    def formula_components(self):
+        return self.blueprint_host_definition.formula_components
 
     def get_account(self):
         return self.cloud_image.account
