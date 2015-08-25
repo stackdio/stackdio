@@ -19,8 +19,9 @@
 define([
     'jquery',
     'knockout',
+    'bootbox',
     'moment'
-], function ($, ko, moment) {
+], function ($, ko, bootbox, moment) {
     'use strict';
 
     // Define the stack model.
@@ -219,15 +220,26 @@ define([
 
     Stack.prototype.delete = function () {
         var self = this;
-        $.ajax({
-            method: 'DELETE',
-            url: self.raw.url
-        }).done(function (stack) {
-            self.raw = stack;
-            self._process(stack);
-        }).fail(function (jqxhr) {
-            console.log(jqxhr);
-            alert('Failed to delete the stack.  Please check the log for the error.');
+        var stackTitle =
+        bootbox.confirm({
+            title: 'Confirm delete of <strong>' + self.title() + '</strong>',
+            message: 'Are you sure you want to delete <strong>' + self.title() + '</strong>?  ' +
+                     'This will terminate all infrastructure, in addition to ' +
+                     'removing all history related to this stack.',
+            callback: function (result) {
+                if (result) {
+                    $.ajax({
+                        method: 'DELETE',
+                        url: self.raw.url
+                    }).done(function (stack) {
+                        self.raw = stack;
+                        self._process(stack);
+                    }).fail(function (jqxhr) {
+                        console.log(jqxhr);
+                        alert('Failed to delete the stack.  Please check the log for the error.');
+                    });
+                }
+            }
         });
     };
 

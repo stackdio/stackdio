@@ -26,6 +26,7 @@ requirejs.config({
     baseUrl: '{% static 'stackdio/app' %}',
     paths: {
         'bloodhound': bowerPath + '/typeahead.js/dist/bloodhound.min',
+        'bootbox': bowerPath + '/bootbox.js/bootbox',
         'bootstrap': bowerPath + '/bootstrap/dist/js/bootstrap.min',
         'domReady': bowerPath + '/requirejs-domReady/domReady',
         'jquery': bowerPath + '/jquery/jquery.min',
