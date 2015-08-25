@@ -757,7 +757,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(yaml_data)
 
     def generate_pillar_file(self):
-        from stackdio.api.formulas.models import FormulaComponent
+        from stackdio.api.formulas.models import Formula, FormulaComponent
 
         users = []
         # pull the create_ssh_users property from the stackd.io config file.
@@ -799,10 +799,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # that into our stack pillar file.
 
         # First get the unique set of formulas
-        hosts = self.hosts.all()
-        formulas = set(
-            [c.formula for c in FormulaComponent.objects.filter(content_object__in=hosts)]
-        )
+        formulas = set()
+        for host in self.hosts.all():
+            formulas.update([c.formula for c in host.formula_components.all()])
 
         # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
