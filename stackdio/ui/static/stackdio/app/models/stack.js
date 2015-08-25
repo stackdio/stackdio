@@ -21,6 +21,8 @@ define([
     'knockout',
     'moment'
 ], function ($, ko, moment) {
+    'use strict';
+
     // Define the stack model.
     function Stack(raw, parent) {
         var needReload = false;

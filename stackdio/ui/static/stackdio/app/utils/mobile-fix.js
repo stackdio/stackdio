@@ -16,6 +16,8 @@
 */
 
 (function(window, undefined) {
+    'use strict';
+
     // Code snippet from jQuery.stayInWebApp plugin by mrmoses (https://github.com/mrmoses/jQuery.stayInWebApp)
     // *Written so it works with or without using require()*
     function mobileFix() {

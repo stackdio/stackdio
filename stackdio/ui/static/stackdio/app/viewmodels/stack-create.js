@@ -22,6 +22,8 @@ define([
     'ladda',
     'typeahead'
 ], function ($, ko, Bloodhound, Ladda) {
+    'use strict';
+
     return function() {
         var self = this;
 
@@ -48,7 +50,7 @@ define([
             }
         });
 
-        self.blueprintTypeahead = $('#blueprints .typeahead');
+        self.blueprintTypeahead = $('#blueprints').find('.typeahead');
 
         self.blueprintTypeahead.typeahead({
             highlight: true
@@ -128,8 +130,8 @@ define([
             }
 
             // Grab both button objects
-            var createButton = Ladda.create(document.querySelector('.create-button'));
-            var createButtonSm = Ladda.create(document.querySelector('.create-button-sm'));
+            var createButton = Ladda.create(document.querySelector('#create-button'));
+            var createButtonSm = Ladda.create(document.querySelector('#create-button-sm'));
 
             // Start them up
             createButton.start();
@@ -148,6 +150,7 @@ define([
                     properties: self.properties()
                 })
             }).done(function (stack) {
+                // Successful creation - just redirect to the main stacks page
                 window.location = '/stacks/';
             }).fail(function (jqxhr) {
                 // Display any error messages

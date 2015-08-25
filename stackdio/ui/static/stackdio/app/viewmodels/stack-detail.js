@@ -20,6 +20,8 @@ define([
     'knockout',
     'models/stack'
 ], function($, ko, Stack) {
+    'use strict';
+
     return function() {
         var self = this;
 

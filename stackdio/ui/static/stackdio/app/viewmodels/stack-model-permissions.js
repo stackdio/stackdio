@@ -22,6 +22,8 @@ define([
     'bloodhound',
     'typeahead'
 ], function($, ko, Bloodhound) {
+    'use strict';
+
     return function() {
         var self = this;
 
