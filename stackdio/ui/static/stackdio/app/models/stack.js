@@ -18,10 +18,11 @@
 
 define([
     'jquery',
+    'underscore',
     'knockout',
     'bootbox',
     'moment'
-], function ($, ko, bootbox, moment) {
+], function ($, _, ko, bootbox, moment) {
     'use strict';
 
     // Define the stack model.
@@ -81,6 +82,21 @@ define([
 
     Stack.constructor = Stack;
 
+    Stack.prototype.actionMessages = {
+        launch: 'This will create new infrastructure, undoing a "terminate" action you may have ' +
+                'previously performed.  This will also re-launch any spot instances that have died.',
+        orchestrate: 'This will re-run all of your custom formula components.  ' +
+                     'This may overwrite anything you have manually changed on your hosts.',
+        'propagate-ssh': 'This will create new users for everyone with "ssh" permission.',
+        provision: 'This will re-run core provisioning, in addition to re-running all of your ' +
+                   'custom formula components.  This may overwrite anything you have manually ' +
+                   'changed on your hosts.',
+        start: '',
+        stop: '',
+        terminate: 'This will terminate all infrastructure related to this stack.  ' +
+                   'You can get it all back by later running the "launch" action on this stack.'
+    };
+
     Stack.prototype._process = function (raw) {
         this.title(raw.title);
         this.description(raw.description);
@@ -127,6 +143,7 @@ define([
             method: 'GET',
             url: self.raw.url
         }).done(function (stack) {
+            bootbox.hideAll();
             self.raw = stack;
             self._process(stack);
         });
@@ -161,18 +178,40 @@ define([
     // Peform an action
     Stack.prototype.performAction = function (action) {
         var self = this;
-        $.ajax({
-            method: 'POST',
-            url: self.raw.action,
-            data: JSON.stringify({
-                action: action
-            })
-        }).done(function () {
-            self.reload();
-        }).fail(function (jqxhr) {
-            console.log(jqxhr);
-            alert('Failed to perform the "' + action + '" action.  Please check the log for the error.');
+        var stackTitle = _.escape(self.title());
+        var extraMessage = this.actionMessages.hasOwnProperty(action) ? this.actionMessages[action] : '';
+        bootbox.confirm({
+            title: 'Confirm action for <strong>' + stackTitle + '</strong>',
+            message: 'Are you sure you want to perform the "' + action + '" action on ' +
+                     '<strong>' + stackTitle + '</strong>?<br>' + extraMessage,
+            callback: function (result) {
+                if (result) {
+                    $.ajax({
+                        method: 'POST',
+                        url: self.raw.action,
+                        data: JSON.stringify({
+                            action: action
+                        })
+                    }).done(function () {
+                        self.reload();
+                    }).fail(function (jqxhr) {
+                        var message;
+                        try {
+                            var resp = JSON.parse(jqxhr.responseText);
+                            message = resp.action.join('<br>');
+                        } catch (e) {
+                            message = 'Oops... there was a server error.  This has been ' +
+                                'reported to your administrators.';
+                        }
+                        bootbox.alert({
+                            title: 'Error performing the "' + action + '" action',
+                            message: message
+                        });
+                    });
+                }
+            }
         });
+
     };
 
     Stack.prototype.loadHistory = function () {
@@ -195,13 +234,20 @@ define([
                 }
             });
             self.history(history.results);
-        }).fail(function (jqxhr) {
-            console.log(jqxhr);
         });
     };
 
     Stack.prototype.save = function () {
         var self = this;
+        var keys = ['title', 'description', 'create_users', 'namespace'];
+
+        keys.forEach(function (key) {
+            var el = $('#' + key);
+            el.removeClass('has-error');
+            var help = el.find('.help-block');
+            help.remove();
+        });
+
         $.ajax({
             method: 'PUT',
             url: self.raw.url,
@@ -211,19 +257,63 @@ define([
                 create_users: self.createUsers()
             })
         }).done(function (stack) {
-            // Not sure?
+            if (self.parent.hasOwnProperty('alerts')) {
+                self.parent.alerts.push({
+                    alertClass: 'alert-success stack-detail-alert',
+                    message: 'Successfully saved stack!'
+                });
+
+                $(".stack-detail-alert").fadeTo(3000, 500).slideUp(500, function(){
+                    $(".stack-detail-alert").alert('close');
+                });
+            }
         }).fail(function (jqxhr) {
-            console.log(jqxhr);
-            alert('Failed to save the stack.  Please check the log for the error.');
+            var message = '';
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+
+                for (var key in resp) {
+                    if (resp.hasOwnProperty(key)) {
+                        if (keys.indexOf(key) >= 0) {
+                            var el = $('#' + key);
+                            el.addClass('has-error');
+                            resp[key].forEach(function (errMsg) {
+                                el.append('<span class="help-block">' + errMsg + '</span>');
+                            });
+                        } else if (key === 'non_field_errors') {
+                            resp[key].forEach(function (errMsg) {
+                                if (errMsg.indexOf('title') >= 0) {
+                                    var el = $('#title');
+                                    el.addClass('has-error');
+                                    el.append('<span class="help-block">A stack with this title already exists.</span>');
+                                }
+                            });
+                        } else {
+                            resp[key].forEach(function (errMsg) {
+                                message += key + ': ' + errMsg + '<br>';
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                message = 'Oops... there was a server error.  This has been reported to ' +
+                    'your administrators.'
+            }
+            if (message) {
+                bootbox.alert({
+                    title: 'Error saving stack',
+                    message: message
+                });
+            }
         });
     };
 
     Stack.prototype.delete = function () {
         var self = this;
-        var stackTitle =
+        var stackTitle = _.escape(self.title());
         bootbox.confirm({
-            title: 'Confirm delete of <strong>' + self.title() + '</strong>',
-            message: 'Are you sure you want to delete <strong>' + self.title() + '</strong>?  ' +
+            title: 'Confirm delete of <strong>' + stackTitle + '</strong>',
+            message: 'Are you sure you want to delete <strong>' + stackTitle + '</strong>?<br>' +
                      'This will terminate all infrastructure, in addition to ' +
                      'removing all history related to this stack.',
             callback: function (result) {
@@ -235,8 +325,19 @@ define([
                         self.raw = stack;
                         self._process(stack);
                     }).fail(function (jqxhr) {
-                        console.log(jqxhr);
-                        alert('Failed to delete the stack.  Please check the log for the error.');
+                        var message;
+                        try {
+                            var resp = JSON.parse(jqxhr.responseText);
+                            message = resp.detail.join('<br>');
+
+                        } catch (e) {
+                            message = 'Oops... there was a server error.  This has been reported ' +
+                                'to your administrators.';
+                        }
+                        bootbox.alert({
+                            title: 'Error deleting stack',
+                            message: message
+                        });
                     });
                 }
             }

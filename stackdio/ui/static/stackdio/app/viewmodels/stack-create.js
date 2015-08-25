@@ -20,8 +20,9 @@ define([
     'knockout',
     'bloodhound',
     'ladda',
+    'bootbox',
     'typeahead'
-], function ($, ko, Bloodhound, Ladda) {
+], function ($, ko, Bloodhound, Ladda, bootbox) {
     'use strict';
 
     return function() {
@@ -149,36 +150,51 @@ define([
                     namespace: self.namespace(),
                     properties: self.properties()
                 })
-            }).done(function (stack) {
+            }).always(function () {
+                // Stop our spinning buttons FIRST
+                createButton.stop();
+                createButtonSm.stop();
+            }).done(function () {
                 // Successful creation - just redirect to the main stacks page
                 window.location = '/stacks/';
             }).fail(function (jqxhr) {
                 // Display any error messages
-                var resp = JSON.parse(jqxhr.responseText);
-                for (var key in resp) {
-                    if (resp.hasOwnProperty(key)) {
-                        if (keys.indexOf(key) >= 0) {
-                            var el = $('#' + key);
-                            el.addClass('has-error');
-                            resp[key].forEach(function (errMsg) {
-                                el.append('<span class="help-block">'+errMsg+'</span>');
-                            });
-                        } else if (key === 'non_field_errors') {
-                            var errMsgs = resp[key];
-                            errMsgs.forEach(function (errMsg) {
-                                if (errMsg.indexOf('title') >= 0) {
-                                    var el = $('#title');
-                                    el.addClass('has-error');
-                                    el.append('<span class="help-block">A stack with this title already exists.</span>');
-                                }
-                            });
+                var message = '';
+                try {
+                    var resp = JSON.parse(jqxhr.responseText);
+                    for (var key in resp) {
+                        if (resp.hasOwnProperty(key)) {
+                            if (keys.indexOf(key) >= 0) {
+                                var el = $('#' + key);
+                                el.addClass('has-error');
+                                resp[key].forEach(function (errMsg) {
+                                    el.append('<span class="help-block">' + errMsg + '</span>');
+                                });
+                            } else if (key === 'non_field_errors') {
+                                resp[key].forEach(function (errMsg) {
+                                    if (errMsg.indexOf('title') >= 0) {
+                                        var el = $('#title');
+                                        el.addClass('has-error');
+                                        el.append('<span class="help-block">A stack with this title already exists.</span>');
+                                    }
+                                });
+                            } else {
+                                resp[key].forEach(function (errMsg) {
+                                    message += key + ': ' + errMsg + '<br>';
+                                });
+                            }
                         }
                     }
+                } catch (e) {
+                    message = 'Oops... there was a server error.  This has been reported to ' +
+                        'your administrators.';
                 }
-            }).always(function () {
-                // Stop our spinning buttons
-                createButton.stop();
-                createButtonSm.stop();
+                if (message) {
+                    bootbox.alert({
+                        title: 'Error creating stack',
+                        message: message
+                    });
+                }
             });
         };
 

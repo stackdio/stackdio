@@ -13,30 +13,41 @@
 
 
 {% block page-content %}
+    <!-- ko foreach: alerts -->
+    <div class="alert alert-dismissable" role="alert" data-bind="css: alertClass">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+        <span data-bind="text: message"></span>
+    </div>
+    <!-- /ko -->
+
     <div class="row">
         <div class="col-md-6">
             <div class="container-fluid">
                 <div class="row">
                     <form data-bind="submit: function() { stack.save(); }">
-                        <div class="form-group">
+                        <div id="title" class="form-group">
                             <label for="stackTitle">Title</label>
                             <input type="text" class="form-control" id="stackTitle"
                                    data-bind="value: stack.title, valueUpdate: 'keyup'">
                         </div>
-                        <div class="form-group">
+                        <div id="description" class="form-group">
                             <label for="stackDescription">Description</label>
                             <input type="text" class="form-control" id="stackDescription"
                                    data-bind="value: stack.description, valueUpdate: 'keyup'">
                         </div>
-                        <div class="form-group">
+                        <div id="namespace" class="form-group">
                             <label>Namespace</label>
                             <p class="form-control-static" data-bind="text: stack.namespace"></p>
                         </div>
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" data-bind="checked: stack.createUsers">
-                                Create Users
-                            </label>
+                        <div id="create_users">
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" data-bind="checked: stack.createUsers">
+                                    Create Users
+                                </label>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary">Save</button>
 
@@ -55,7 +66,7 @@
                             </ul>
                         </div>
 
-                        <button class="btn btn-danger" data-bind="click: $data.delete">
+                        <button class="btn btn-danger" data-bind="click: function () { stack.delete() }">
                             Delete
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                         </button>

@@ -46,11 +46,14 @@ define([
             })
         ];
 
+        self.alerts = ko.observableArray([]);
+
         self.reset = function() {
             // Create the stack object.  Pass in the stack id, and let the model load itself.
             self.stack = new Stack(window.stackdio.stackId, self);
             self.stack.loadHistory();
             self.stackTitle('');
+            self.alerts([]);
         };
 
         // Functions
