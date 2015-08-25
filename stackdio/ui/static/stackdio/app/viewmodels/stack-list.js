@@ -126,7 +126,7 @@ define([
                         stackModel.availableActions(self.actionMap[rawStack.id]);
                     }
 
-                    stackModels.push(stackModel);
+                    stackModels.push(ko.observable(stackModel));
                 });
                 self.stacks(stackModels);
 

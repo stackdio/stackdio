@@ -328,7 +328,6 @@ define([
                         try {
                             var resp = JSON.parse(jqxhr.responseText);
                             message = resp.detail.join('<br>');
-
                         } catch (e) {
                             message = 'Oops... there was a server error.  This has been reported ' +
                                 'to your administrators.';
