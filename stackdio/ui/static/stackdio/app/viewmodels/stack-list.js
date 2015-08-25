@@ -126,7 +126,7 @@ define([
                         stackModel.availableActions(self.actionMap[rawStack.id]);
                     }
 
-                    stackModels.push(ko.observable(stackModel));
+                    stackModels.push(stackModel);
                 });
                 self.stacks(stackModels);
 
@@ -147,8 +147,8 @@ define([
 
                     // Find the current stack with the correct ID, and load the actions
                     for (var i = 0, length = stacks.length; i < length; ++i) {
-                        if (stacks[i]().id === id) {
-                            stacks[i]().loadAvailableActions();
+                        if (stacks[i].id === id) {
+                            stacks[i].loadAvailableActions();
                             break;
                         }
                     }
