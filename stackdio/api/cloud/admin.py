@@ -56,18 +56,6 @@ class CloudInstanceSizeAdmin(GuardedModelAdmin):
 admin.site.register(models.CloudInstanceSize, CloudInstanceSizeAdmin)
 
 
-class GlobalOrchestrationFormulaComponentAdmin(GuardedModelAdmin):
-    list_display = [
-        'component',
-        'account',
-        'order',
-    ]
-
-
-admin.site.register(models.GlobalOrchestrationFormulaComponent,
-                    GlobalOrchestrationFormulaComponentAdmin)
-
-
 class CloudImageAdmin(GuardedModelAdmin):
     list_display = [
         'title',

@@ -31,12 +31,10 @@ from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from stackdio.core.utils import recursive_update
 from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
-from stackdio.api.blueprints.serializers import (
-    BlueprintHostFormulaComponentSerializer,
-    BlueprintHostDefinitionSerializer
-)
+from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
+from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models, tasks, utils, workflows
 
 logger = logging.getLogger(__name__)
@@ -81,7 +79,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
     # Read only fields
     subnet_id = serializers.ReadOnlyField()
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
-    formula_components = BlueprintHostFormulaComponentSerializer(many=True, read_only=True)
+    formula_components = FormulaComponentSerializer(many=True, read_only=True)
 
     # Fields for adding / removing hosts
     available_actions = ('add', 'remove')

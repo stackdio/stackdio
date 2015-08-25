@@ -59,6 +59,10 @@ urlpatterns = (
         api.FormulaComponentListAPIView.as_view(),
         name='formula-component-list'),
 
+    url(r'^formulas/(?P<pk>[0-9]+)/valid_versions/$',
+        api.FormulaValidVersionListAPIView.as_view(),
+        name='formula-valid-version-list'),
+
     url(r'^formulas/(?P<pk>[0-9]+)/action/$',
         api.FormulaActionAPIView.as_view(),
         name='formula-action'),
