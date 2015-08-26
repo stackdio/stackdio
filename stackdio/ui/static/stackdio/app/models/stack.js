@@ -291,11 +291,16 @@ define([
                                 }
                             });
                         } else {
+                            var betterKey = key.replace('_', ' ');
+
                             resp[key].forEach(function (errMsg) {
-                                message += key + ': ' + errMsg + '<br>';
+                                message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
                             });
                         }
                     }
+                }
+                if (message) {
+                    message = '<dl class="dl-horizontal">' + message + '</dl>';
                 }
             } catch (e) {
                 message = 'Oops... there was a server error.  This has been reported to ' +
