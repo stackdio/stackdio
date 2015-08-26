@@ -41,18 +41,21 @@
         </div>
     </div>
 
-    <div class="row" style="margin-top: 10px">
-        <div class="col-md-12">
-            <form class="form-inline" data-bind="submit: function () {}">
+    <div class="row" style="margin-top: 15px">
+        <div class="col-md-4">
+            <form data-bind="submit: function () {}">
                 <div class="input-group">
-                    <label class="sr-only">Search processes</label>
-                    <input class="form-control" type="text" placeholder="Search Processes" data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
+                    <input class="form-control" type="text" placeholder="Search for stacks..." data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
                     <span class="input-group-btn">
                         <button class="btn btn-success" type="submit">Search</button>
                     </span>
                 </div>
             </form>
+        </div>
+    </div>
 
+    <div class="row" style="margin-top: 10px">
+        <div class="col-md-12">
             <table class="table table-hover">
                 <thead>
                 <tr>
