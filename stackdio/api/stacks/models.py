@@ -854,7 +854,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             with open(self.global_pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
 
-    def query_hosts(self):
+    def query_hosts(self, force=False):
         """
         Uses salt-cloud to query all the hosts for the given stack id.
         """
@@ -865,7 +865,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         cached_result = cache.get(CACHE_KEY)
 
-        if cached_result:
+        if cached_result and not force:
             logger.debug('salt-cloud query result cached')
             result = cached_result
         else:
