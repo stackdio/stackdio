@@ -14,11 +14,12 @@
         </div>
         <div class="col-md-6 text-right">
             {% if has_admin %}
-            {# Only show the button if the user has permission to see it #}
-            <a class="btn btn-warning" href="{% url 'ui:stack-model-permissions' %}">Permissions</a>
+                {# Only show the button if the user has permission to see it #}
+                <a class="btn btn-warning"
+                   href="{% url 'ui:stack-model-permissions' %}">Permissions</a>
             {% endif %}
             {% if has_create %}
-            <a class="btn btn-success" href="{% url 'ui:stack-create' %}">New Stack</a>
+                <a class="btn btn-success" href="{% url 'ui:stack-create' %}">New Stack</a>
             {% endif %}
         </div>
     </div>
@@ -40,21 +41,66 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row" style="margin-top: 10px">
         <div class="col-md-12">
+            <form class="form-inline" data-bind="submit: function () {}">
+                <div class="input-group">
+                    <label class="sr-only">Search processes</label>
+                    <input class="form-control" type="text" placeholder="Search Processes" data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
+                    <span class="input-group-btn">
+                        <button class="btn btn-success" type="submit">Search</button>
+                    </span>
+                </div>
+            </form>
+
             <table class="table table-hover">
                 <thead>
                 <tr>
-                    <th style="width: 15%">Title</th>
-                    <th style="width: 30%">Description</th>
-                    <th style="width: 15%">Namespace</th>
-                    <th style="width: 15%">Number of Hosts</th>
-                    <th style="width: 10%">Status</th>
+                    <th style="width: 15%">
+                        <a href="#" data-bind="click: function() { changeSortKey('title'); }">
+                            Title
+                        </a>
+                        <span data-bind="visible: sortKey() === 'title', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <th style="width: 30%">
+                        <a href="#" data-bind="click: function() { changeSortKey('description'); }">
+                            Description
+                        </a>
+                        <span data-bind="visible: sortKey() === 'description', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <th style="width: 15%">
+                        <a href="#" data-bind="click: function() { changeSortKey('namespace'); }">
+                            Namespace
+                        </a>
+                        <span data-bind="visible: sortKey() === 'namespace', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <th style="width: 15%">
+                        <a href="#" data-bind="click: function() { changeSortKey('hostCount'); }">
+                            Hosts
+                        </a>
+                        <span data-bind="visible: sortKey() === 'hostCount', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <th style="width: 10%">
+                        <a href="#" data-bind="click: function() { changeSortKey('status'); }">
+                            Status
+                        </a>
+                        <span data-bind="visible: sortKey() === 'status', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
                     <th style="width: 5%"></th>
                     <th style="width: 5%"></th>
                 </tr>
                 </thead>
-                <tbody data-bind="foreach: stacks">
+                <tbody data-bind="foreach: sortedStacks">
                 <tr>
                     <td data-bind="text: title, click: $root.goToDetailPage"></td>
                     <td data-bind="text: description, click: $root.goToDetailPage"></td>

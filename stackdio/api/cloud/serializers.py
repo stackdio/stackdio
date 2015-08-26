@@ -19,7 +19,6 @@
 import logging
 
 import yaml
-from rest_framework import permissions
 from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedParentField

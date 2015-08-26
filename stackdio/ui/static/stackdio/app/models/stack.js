@@ -225,6 +225,9 @@ define([
                     case 'ERROR':
                         entry.itemClass = 'list-group-item-danger';
                         break;
+                    case 'WARNING':
+                        entry.itemClass = 'list-group-item-warning';
+                        break;
                     default:
                         entry.itemClass = '';
                 }

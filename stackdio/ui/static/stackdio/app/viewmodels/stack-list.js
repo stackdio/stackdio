@@ -41,6 +41,47 @@ define([
         self.count = ko.observable();
         self.stacks = ko.observableArray([]);
 
+        self.sortableFields = [
+            'title',
+            'description',
+            'namespace',
+            'status',
+            'hostCount'
+        ];
+        self.sortKey = ko.observable();
+        self.sortAsc = ko.observable(true);
+        self.searchTerm = ko.observable();
+        self.sortedStacks = ko.computed(function () {
+            var sortKey = self.sortKey();
+            var searchTerm = self.searchTerm();
+            var stacks = self.stacks().filter(function (stack) {
+                for (var i = 0; i < self.sortableFields.length; ++i) {
+                    if (stack[self.sortableFields[i]]().toString().indexOf(searchTerm) >= 0) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+            if (self.sortableFields.indexOf(sortKey) < 0) {
+                return stacks;
+            }
+            return stacks.sort(function (a, b) {
+                if (!self.sortAsc()) {
+                    var tmp = a;
+                    a = b;
+                    b = tmp;
+                }
+                if (a[sortKey]() < b[sortKey]()) {
+                    return -1;
+                } else if (a[sortKey]() > b[sortKey]()) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+        });
+
         // We need to keep track of which action dropdown is open.  This way we can keep
         // it open across a refresh.
         self.openActionStackId = null;
@@ -80,7 +121,19 @@ define([
             self.stacks([]);
             self.openActionLists = [];
             self.actionMap = {};
+            self.sortKey(null);
+            self.sortAsc(true);
+            self.searchTerm('');
             self.reloadStacks();
+        };
+
+        self.changeSortKey = function (newKey) {
+            var sortKey = self.sortKey();
+            if (newKey === sortKey) {
+                self.sortAsc(!self.sortAsc());
+            } else {
+                self.sortKey(newKey);
+            }
         };
 
         self.goToDetailPage = function (stack) {
