@@ -4,15 +4,8 @@
 {% block stack-class %}active{% endblock %}
 
 {% block page-content %}
-    <div class="row">
-        <div class="col-md-6">
-            <p>
-                Showing stacks
-                <span data-bind="text: startNum"></span>-<span data-bind="text: endNum"></span>
-                of <span data-bind="text: count"></span>.
-            </p>
-        </div>
-        <div class="col-md-6 text-right">
+    <div class="row" style="margin-top: 15px">
+        <div class="col-sm-6 col-sm-push-6 text-right" style="margin-bottom: 10px">
             {% if has_admin %}
                 {# Only show the button if the user has permission to see it #}
                 <a class="btn btn-warning"
@@ -22,10 +15,51 @@
                 <a class="btn btn-success" href="{% url 'ui:stack-create' %}">New Stack</a>
             {% endif %}
         </div>
+
+        <div class="col-sm-6 col-sm-pull-6" style="margin-bottom: 10px">
+            <form data-bind="submit: function () {}">
+                <div class="input-group">
+                    <input class="form-control" type="text" placeholder="Search for stacks..." data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
+                    <span class="input-group-btn">
+                        <button class="btn btn-success" type="submit">Search</button>
+                    </span>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="row" style="margin-top: 15px">
-        <div class="col-md-12">
+    <div class="row" style="margin-top: 10px">
+        <div class="col-sm-3 hidden-xs">
+            <nav>
+                <ul class="pager" style="margin: 5px 0 10px 0">
+                    <li class="previous" data-bind="css: {disabled: !previousPage()}">
+                        <a href="#" data-bind="click: goToPreviousPage"><span
+                                aria-hidden="true">&larr;</span> Previous</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="col-sm-6 col-xs-12" style="margin: 10px auto">
+            <p class="text-center">
+                Showing stacks
+                <span data-bind="text: startNum"></span>-<span data-bind="text: endNum"></span>
+                of <span data-bind="text: count"></span>.
+            </p>
+        </div>
+        <div class="col-sm-3 hidden-xs">
+            <nav>
+                <ul class="pager" style="margin: 5px 0 10px 0">
+                    <li class="next" data-bind="css: {disabled: !nextPage()}">
+                        <a href="#" data-bind="click: goToNextPage">Next <span
+                                aria-hidden="true">&rarr;</span></a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row visible-xs">
+        <div class="col-xs-12">
             <nav>
                 <ul class="pager" style="margin: 5px 0 10px 0">
                     <li class="previous" data-bind="css: {disabled: !previousPage()}">
@@ -38,19 +72,6 @@
                     </li>
                 </ul>
             </nav>
-        </div>
-    </div>
-
-    <div class="row" style="margin-top: 15px">
-        <div class="col-md-4">
-            <form data-bind="submit: function () {}">
-                <div class="input-group">
-                    <input class="form-control" type="text" placeholder="Search for stacks..." data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
-                    <span class="input-group-btn">
-                        <button class="btn btn-success" type="submit">Search</button>
-                    </span>
-                </div>
-            </form>
         </div>
     </div>
 

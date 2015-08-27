@@ -152,6 +152,8 @@ Bootstrap overrides
     -webkit-background-clip: padding-box;
     -moz-background-clip: padding;
     background-clip: padding-box;
+    max-height: 165px;
+    overflow-y: auto;
 }
 
 .tt-suggestion {

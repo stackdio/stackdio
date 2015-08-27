@@ -54,11 +54,13 @@ define([
         self.blueprintTypeahead = $('#blueprints').find('.typeahead');
 
         self.blueprintTypeahead.typeahead({
-            highlight: true
+            highlight: true,
+            minLength: 1
         }, {
             name: 'blueprints',
             display: 'title',
-            source: self.blueprints
+            source: self.blueprints,
+            limit: 20
         });
 
         self.blueprintTypeahead.bind('typeahead:select', function(ev, blueprint) {
