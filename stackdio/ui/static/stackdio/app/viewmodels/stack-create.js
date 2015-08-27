@@ -66,12 +66,40 @@ define([
         self.blueprintTypeahead.bind('typeahead:select', function(ev, blueprint) {
             self.createUsers(blueprint.create_users);
             self.blueprintId(blueprint.id);
+            var keys = ['blueprint', 'title', 'description',
+                'create_users', 'namespace', 'properties'];
+
+            self.removeErrors(keys);
+
             $.ajax({
                 method: 'GET',
                 url: blueprint.properties
             }).done(function (properties) {
                 self.properties(properties);
-            })
+            });
+
+            var fullVersionsList = [];
+
+            function getVersions(url) {
+                $.ajax({
+                    method: 'GET',
+                    url: url
+                }).done(function (versions) {
+                    fullVersionsList.push.apply(fullVersionsList, versions.results.map(function (version) {
+                        return {
+                            formula: version.formula,
+                            version: ko.observable(version.version)
+                        }
+                    }));
+                    if (versions.next === null) {
+                        self.formulaVersions(fullVersionsList);
+                    } else {
+                        getVersions(versions.next);
+                    }
+                });
+            }
+
+            getVersions(blueprint.formula_versions);
         });
 
         // View variables
@@ -81,6 +109,7 @@ define([
         self.createUsers = ko.observable();
         self.namespace = ko.observable();
         self.properties = ko.observable({});
+        self.formulaVersions = ko.observableArray([]);
 
         self.validProperties = true;
         self.createButton = null;
@@ -109,6 +138,16 @@ define([
             self.createUsers(false);
             self.namespace('');
             self.properties({});
+            self.formulaVersions([]);
+        };
+
+        self.removeErrors = function(keys) {
+            keys.forEach(function (key) {
+                var el = $('#' + key);
+                el.removeClass('has-error');
+                var help = el.find('.help-block');
+                help.remove();
+            });
         };
 
         self.createStack = function() {
@@ -116,12 +155,7 @@ define([
             var keys = ['blueprint', 'title', 'description',
                 'create_users', 'namespace', 'properties'];
 
-            keys.forEach(function (key) {
-                var el = $('#' + key);
-                el.removeClass('has-error');
-                var help = el.find('.help-block');
-                help.remove();
-            });
+            self.removeErrors(keys);
 
             // Check the properties
             if (!self.validProperties) {
@@ -133,11 +167,9 @@ define([
 
             // Grab both button objects
             var createButton = Ladda.create(document.querySelector('#create-button'));
-            var createButtonSm = Ladda.create(document.querySelector('#create-button-sm'));
 
             // Start them up
             createButton.start();
-            createButtonSm.start();
 
             // Create the stack!
             $.ajax({
@@ -149,12 +181,12 @@ define([
                     description: self.description(),
                     create_users: self.createUsers(),
                     namespace: self.namespace(),
-                    properties: self.properties()
+                    properties: self.properties(),
+                    formulaVersions: ko.toJS(self.formulaVersions())
                 })
             }).always(function () {
                 // Stop our spinning buttons FIRST
                 createButton.stop();
-                createButtonSm.stop();
             }).done(function () {
                 // Successful creation - just redirect to the main stacks page
                 window.location = '/stacks/';
