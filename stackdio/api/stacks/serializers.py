@@ -444,6 +444,12 @@ class FullStackSerializer(StackSerializer):
     properties = StackPropertiesSerializer(required=False)
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
 
+    def to_representation(self, instance):
+        """
+        We want to return links instead of the full object
+        """
+        return StackSerializer(instance, context=self.context).to_representation(instance)
+
     def create(self, validated_data):
         # Create the stack
         stack = self.Meta.model.objects.create(**validated_data)

@@ -258,6 +258,12 @@ class FullBlueprintSerializer(BlueprintSerializer):
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
     formula_versions = FormulaVersionSerializer(many=True, required=False)
 
+    def to_representation(self, instance):
+        """
+        We want to return a blueprint representation here with links instead of the full object
+        """
+        return BlueprintSerializer(instance, context=self.context).to_representation(instance)
+
     def validate(self, attrs):
         host_definitions = attrs['host_definitions']
         formula_versions = attrs.get('formula_versions', [])
