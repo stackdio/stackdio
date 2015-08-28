@@ -183,6 +183,12 @@ define([
             title: 'Confirm action for <strong>' + stackTitle + '</strong>',
             message: 'Are you sure you want to perform the "' + action + '" action on ' +
                      '<strong>' + stackTitle + '</strong>?<br>' + extraMessage,
+            buttons: {
+                confirm: {
+                    label: action.capitalize().replace('_', ' '),
+                    className: 'btn-primary'
+                }
+            },
             callback: function (result) {
                 if (result) {
                     $.ajax({
@@ -323,6 +329,12 @@ define([
             message: 'Are you sure you want to delete <strong>' + stackTitle + '</strong>?<br>' +
                      'This will terminate all infrastructure, in addition to ' +
                      'removing all history related to this stack.',
+            buttons: {
+                confirm: {
+                    label: 'Delete',
+                    className: 'btn-danger'
+                }
+            },
             callback: function (result) {
                 if (result) {
                     $.ajax({

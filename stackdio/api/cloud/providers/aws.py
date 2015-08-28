@@ -667,7 +667,7 @@ class AWSCloudProvider(BaseCloudProvider):
             subnets = vpc.get_all_subnets(subnet_ids)
             return subnets
         except boto.exception.EC2ResponseError:
-            logger.exception('Error looking up subnet_ids: {0}'.format(
+            logger.info('Error looking up subnet_ids: {0}'.format(
                 subnet_ids
             ))
             return None
