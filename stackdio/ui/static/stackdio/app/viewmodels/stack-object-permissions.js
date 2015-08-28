@@ -17,7 +17,7 @@
 */
 
 define([
-    'viewmodels/permissions-base'
+    'generics/permissions'
 ], function(MPBase) {
     'use strict';
     return MPBase.extend({

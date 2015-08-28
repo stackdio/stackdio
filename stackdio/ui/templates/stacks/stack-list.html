@@ -107,13 +107,13 @@
                     <th style="width: 5%"></th>
                 </tr>
                 </thead>
-                <tbody data-bind="foreach: sortedStacks">
+                <tbody data-bind="foreach: sortedObjects">
                 <tr>
-                    <td data-bind="text: title, click: $root.goToDetailPage"></td>
-                    <td data-bind="text: description, click: $root.goToDetailPage"></td>
-                    <td data-bind="text: namespace, click: $root.goToDetailPage"></td>
-                    <td data-bind="text: hostCount, click: $root.goToDetailPage"></td>
-                    <td data-bind="click: $root.goToDetailPage">
+                    <td data-bind="text: title, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                    <td data-bind="text: description, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                    <td data-bind="text: namespace, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                    <td data-bind="text: hostCount, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                    <td data-bind="click: function (stack) { $root.goToDetailPage(stack) }">
                         <span class="label" data-bind="css: labelClass, text: status"></span>
                     </td>
                     <td>
