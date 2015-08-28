@@ -20,9 +20,11 @@ define([
     'jquery',
     'knockout',
     'bloodhound',
+    'bootbox',
     'utils/class',
+    'utils/utils',
     'typeahead'
-], function($, ko, Bloodhound, Class) {
+], function($, ko, Bloodhound, bootbox, Class, utils) {
     'use strict';
 
     return Class.extend({
@@ -167,16 +169,14 @@ define([
                 method: 'GET',
                 url: this.permsUrl + 'users/'
             }).done(this.transformPermissions('user')).fail(function (jqxhr) {
-                alert('Unable to load permissions.  Please check the log.');
-                console.log(jqxhr);
+                utils.alertError(jqxhr, 'Error fetching permissions');
             });
 
             $.ajax({
                 method: 'GET',
                 url: this.permsUrl + 'groups/'
             }).done(this.transformPermissions('group')).fail(function (jqxhr) {
-                alert('Unable to load permissions.  Please check the log.');
-                console.log(jqxhr);
+                utils.alertError(jqxhr, 'Error fetching permissions');
             });
         },
         save: function () {
@@ -187,8 +187,7 @@ define([
             $.when.apply(this, ajaxList).done(function () {
                 window.location = redirectUrl;
             }).fail(function (jqxhr) {
-                alert('Failed to assign permissions.  Please check the log.');
-                console.log(jqxhr);
+                utils.alertError(jqxhr, 'Error saving permissions');
             });
 
         }
