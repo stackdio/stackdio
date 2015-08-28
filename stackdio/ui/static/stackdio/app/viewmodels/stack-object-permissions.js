@@ -21,8 +21,8 @@ define([
 ], function(MPBase) {
     'use strict';
     return MPBase.extend({
-        permsUrl: '/api/stacks/permissions/',
-        saveUrl: '/stacks/',
+        permsUrl: '/api/stacks/' + window.stackdio.objectId + '/permissions/',
+        saveUrl: '/stacks/' + window.stackdio.objectId + '/',
         init: function () {
             this._super();
 
@@ -31,6 +31,11 @@ define([
                     active: false,
                     title: 'Stacks',
                     href: '/stacks/'
+                },
+                {
+                    active: false,
+                    title: 'Stack Detail',
+                    href: this.saveUrl
                 },
                 {
                     active: true,

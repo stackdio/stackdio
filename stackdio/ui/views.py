@@ -114,6 +114,7 @@ class ObjectPermissionsView(PageView):
     def get_context_data(self, **kwargs):
         context = super(ObjectPermissionsView, self).get_context_data(**kwargs)
         context['object_type'] = self.get_object()._meta.model_name.capitalize()
+        context['object_id'] = kwargs['pk']
         return context
 
     def get(self, request, *args, **kwargs):
@@ -154,7 +155,6 @@ class StackListView(PageView):
 
 
 class StackModelPermissionsView(ModelPermissionsView):
-    template_name = 'stackdio/permissions.html'
     viewmodel = 'viewmodels/stack-model-permissions'
     model = Stack
 
