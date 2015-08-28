@@ -30,6 +30,7 @@ define([
         baseUrl: null,
         initialUrl: null,
         sortableFields: [],
+        autoRefresh: true,
 
         // Observable view variables
         pageNum: ko.observable(),
@@ -105,11 +106,13 @@ define([
                 return this.count() % this.pageSize() == 0 ? pages : pages + 1;
             }, this);
 
-            setInterval((function (self) {
-                return function() {
-                    self.reload();
-                }
-            })(this), 3000);
+            if (this.autoRefresh) {
+                setInterval((function (self) {
+                    return function() {
+                        self.reload();
+                    }
+                })(this), 3000);
+            }
         },
 
         sortKey: ko.observable(),

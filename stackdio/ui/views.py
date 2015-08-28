@@ -162,6 +162,7 @@ class StackModelPermissionsView(ModelPermissionsView):
 class StackDetailView(PageView):
     template_name = 'stacks/stack-detail.html'
     viewmodel = 'viewmodels/stack-detail'
+    page_id = 'detail'
 
     def get_context_data(self, **kwargs):
         context = super(StackDetailView, self).get_context_data(**kwargs)
@@ -172,6 +173,7 @@ class StackDetailView(PageView):
             raise Http404()
         context['stack_id'] = pk
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
+        context['page_id'] = self.page_id
         return context
 
 
@@ -180,3 +182,9 @@ class StackObjectPermissionsView(ObjectPermissionsView):
 
     def get_object(self):
         return get_object_or_404(Stack.objects.all(), pk=self.kwargs['pk'])
+
+
+class StackHostsView(StackDetailView):
+    template_name = 'stacks/stack-hosts.html'
+    viewmodel = 'viewmodels/stack-hosts'
+    page_id = 'hosts'
