@@ -63,46 +63,14 @@
             <table class="table table-hover">
                 <thead>
                 <tr>
-                    <th style="width: 15%">
-                        <a href="#" data-bind="click: function() { changeSortKey('title'); }">
-                            Title
-                        </a>
-                        <span data-bind="visible: sortKey() === 'title', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
+                    <!-- ko foreach: sortableFields -->
+                    <th data-bind="style: {width: width}">
+                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
                             <span class="caret"></span>
                         </span>
                     </th>
-                    <th style="width: 30%">
-                        <a href="#" data-bind="click: function() { changeSortKey('description'); }">
-                            Description
-                        </a>
-                        <span data-bind="visible: sortKey() === 'description', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
-                            <span class="caret"></span>
-                        </span>
-                    </th>
-                    <th style="width: 15%">
-                        <a href="#" data-bind="click: function() { changeSortKey('namespace'); }">
-                            Namespace
-                        </a>
-                        <span data-bind="visible: sortKey() === 'namespace', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
-                            <span class="caret"></span>
-                        </span>
-                    </th>
-                    <th style="width: 15%">
-                        <a href="#" data-bind="click: function() { changeSortKey('hostCount'); }">
-                            Hosts
-                        </a>
-                        <span data-bind="visible: sortKey() === 'hostCount', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
-                            <span class="caret"></span>
-                        </span>
-                    </th>
-                    <th style="width: 10%">
-                        <a href="#" data-bind="click: function() { changeSortKey('status'); }">
-                            Status
-                        </a>
-                        <span data-bind="visible: sortKey() === 'status', css: {dropdown: sortAsc(), dropup: !sortAsc()}">
-                            <span class="caret"></span>
-                        </span>
-                    </th>
+                    <!-- /ko -->
                     <th style="width: 5%"></th>
                     <th style="width: 5%"></th>
                 </tr>

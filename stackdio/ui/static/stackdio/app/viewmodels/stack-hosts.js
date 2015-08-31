@@ -44,6 +44,13 @@ define([
         model: Host,
         baseUrl: '/stacks/',
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/hosts/',
-        sortableFields: []
+        sortableFields: [
+            {name: 'hostDefinition', displayName: 'Host Type', width: '15%'},
+            {name: 'hostname', displayName: 'Hostname', width: '15%'},
+            {name: 'fqdn', displayName: 'FQDN', width: '30%'},
+            {name: 'privateDNS', displayName: 'Private DNS', width: '15%'},
+            {name: 'publicDNS', displayName: 'Public DNS', width: '15%'},
+            {name: 'state', displayName: 'State', width: '10%'}
+        ]
     });
 });

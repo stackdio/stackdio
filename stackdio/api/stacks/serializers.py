@@ -79,6 +79,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
     # Read only fields
     subnet_id = serializers.ReadOnlyField()
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
+    blueprint_host_definition = serializers.ReadOnlyField(source='blueprint_host_definition.title')
     formula_components = FormulaComponentSerializer(many=True, read_only=True)
 
     # Fields for adding / removing hosts
@@ -108,6 +109,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
             'created',
             'sir_id',
             'sir_price',
+            'blueprint_host_definition',
             'formula_components',
             'action',
             'host_definition',

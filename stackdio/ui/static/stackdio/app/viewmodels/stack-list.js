@@ -33,11 +33,11 @@ define([
         baseUrl: '/stacks/',
         initialUrl: '/api/stacks/',
         sortableFields: [
-            'title',
-            'description',
-            'namespace',
-            'status',
-            'hostCount'
+            {name: 'title', displayName: 'Title', width: '15%'},
+            {name: 'description', displayName: 'Description', width: '30%'},
+            {name: 'namespace', displayName: 'Namespace', width: '15%'},
+            {name: 'hostCount', displayName: 'Hosts', width: '15%'},
+            {name: 'status', displayName: 'Status', width: '10%'}
         ],
         openActionStackId: null,
         actionMap: {},

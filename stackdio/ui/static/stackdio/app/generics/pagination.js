@@ -48,24 +48,28 @@ define([
             // Needs to happen here so we have access to `this`
             this.sortedObjects = ko.computed(function () {
                 var sortKey = this.sortKey();
-                var searchTerm = this.searchTerm();
+                var searchTerm = this.searchTerm().toLowerCase();
 
                 // If there's nothing to sort/filter on, just return the main list
                 if (!this.sortableFields) {
                     return this.objects();
                 }
 
+                var fieldNames = this.sortableFields.map(function (field) {
+                    return field.name;
+                });
+
                 var self = this;
                 var objects = this.objects().filter(function (object) {
-                    for (var i = 0; i < self.sortableFields.length; ++i) {
-                        if (object[self.sortableFields[i]]().toString().indexOf(searchTerm) >= 0) {
+                    for (var i = 0; i < fieldNames.length; ++i) {
+                        if (object[fieldNames[i]]().toString().toLowerCase().indexOf(searchTerm) >= 0) {
                             return true;
                         }
                     }
                     return false;
                 });
 
-                if (this.sortableFields.indexOf(sortKey) < 0) {
+                if (fieldNames.indexOf(sortKey) < 0) {
                     return objects;
                 }
                 return objects.sort(function (a, b) {
@@ -141,10 +145,10 @@ define([
 
         changeSortKey: function (newKey) {
             var sortKey = this.sortKey();
-            if (newKey === sortKey) {
+            if (newKey.name === sortKey) {
                 this.sortAsc(!this.sortAsc());
             } else {
-                this.sortKey(newKey);
+                this.sortKey(newKey.name);
             }
         },
 

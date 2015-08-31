@@ -54,6 +54,7 @@ define([
         this.fqdn = ko.observable();
         this.publicDNS = ko.observable();
         this.privateDNS = ko.observable();
+        this.hostDefinition = ko.observable();
         this.status = ko.observable();
         this.state = ko.observable();
         this.labelClass = ko.observable();
@@ -72,6 +73,7 @@ define([
         this.fqdn(raw.fqdn);
         this.publicDNS(raw.provider_dns);
         this.privateDNS(raw.provider_private_dns);
+        this.hostDefinition(raw.blueprint_host_definition);
         this.status(raw.status);
         this.state(raw.state);
 

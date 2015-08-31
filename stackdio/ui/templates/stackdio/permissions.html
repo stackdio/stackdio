@@ -16,11 +16,11 @@
 {% block page-content %}
 
 {% with 'user' as user_or_group %}
-    {% include 'stackdio/permissions-table.html' %}
+    {% include 'stackdio/stubs/permissions-table.html' %}
 {% endwith %}
 
 {% with 'group' as user_or_group %}
-    {% include 'stackdio/permissions-table.html' %}
+    {% include 'stackdio/stubs/permissions-table.html' %}
 {% endwith %}
 
 <div class="row" style="margin-top: 20px">
