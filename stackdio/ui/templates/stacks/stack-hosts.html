@@ -3,6 +3,33 @@
 {% block detail-content %}
 <div class="col-sm-9 col-sm-pull-3">
     <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="well">
+                    <form class="form-inline" data-bind="submit: function () { addRemoveHosts() }">
+                        <div class="form-group">
+                            <label for="blueprint_host_definition" class="sr-only">Host Type</label>
+                            <select id="blueprint_host_definition" class="form-control"
+                                    data-bind="options: hostDefinitions,
+                                               optionsText: 'title',
+                                               value: selectedHostDef,
+                                               optionsCation: 'Choose a host type...'"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="action" class="sr-only">Action</label>
+                            <select id="action" class="form-control"
+                                    data-bind="options: actions, value: selectedAction"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="count" class="sr-only">Count</label>
+                            <input id="count" type="number" class="form-control" data-bind="value: actionCount">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Go</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <div class="row" style="margin-top: 15px">
             <div class="col-sm-6">
                 <form data-bind="submit: function () {}">

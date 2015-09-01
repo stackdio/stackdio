@@ -18,14 +18,14 @@
 
 define([
     'jquery',
-    'underscore',
     'knockout',
-    'bootbox'
-], function ($, _, ko, bootbox) {
+    'bootbox',
+    'models/host-definition'
+], function ($, ko, bootbox, HostDefinition) {
     'use strict';
 
     // Define the stack model.
-    function Host(raw, parent) {
+    function Blueprint(raw, parent) {
         var needReload = false;
         if (typeof raw === 'string') {
             raw = parseInt(raw);
@@ -49,14 +49,14 @@ define([
         this.id = raw.id;
 
         // Editable fields
-        this.hostname = ko.observable();
-        this.fqdn = ko.observable();
-        this.publicDNS = ko.observable();
-        this.privateDNS = ko.observable();
-        this.hostDefinition = ko.observable();
-        this.status = ko.observable();
-        this.state = ko.observable();
-        this.labelClass = ko.observable();
+        this.title = ko.observable();
+        this.description = ko.observable();
+        this.createUsers = ko.observable();
+
+        // Lazy-loaded properties (not returned from the main blueprint endpoint)
+        this.properties = ko.observable({});
+        this.hostDefinitions = ko.observableArray([]);
+        this.formulaVersions = ko.observableArray([]);
 
         if (needReload) {
             this.reload();
@@ -65,55 +65,70 @@ define([
         }
     }
 
-    Host.constructor = Host;
+    Blueprint.constructor = Blueprint;
 
-    Host.prototype._process = function (raw) {
-        this.hostname(raw.hostname);
-        this.fqdn(raw.fqdn);
-        this.publicDNS(raw.provider_dns);
-        this.privateDNS(raw.provider_private_dns);
-        this.hostDefinition(raw.blueprint_host_definition);
-        this.status(raw.status);
-        this.state(raw.state);
-
-        // Determine what type of label should be around the status
-        switch (raw.state) {
-            case 'running':
-                this.labelClass('label-success');
-                break;
-            case 'shutting-down':
-            case 'stopping':
-            case 'launching':
-                this.labelClass('label-warning');
-                break;
-            case 'terminated':
-            case 'stopped':
-                this.labelClass('label-danger');
-                break;
-            default:
-                this.labelClass('label-default');
-        }
+    Blueprint.prototype._process = function (raw) {
+        this.title(raw.title);
+        this.description(raw.description);
+        this.createUsers(raw.create_users);
     };
 
-    // Reload the current host
-    Host.prototype.reload = function () {
+    // Reload the current stack
+    Blueprint.prototype.reload = function () {
         var self = this;
         return $.ajax({
             method: 'GET',
             url: this.raw.url
-        }).done(function (host) {
-            self.raw = host;
-            self._process(host);
+        }).done(function (blueprint) {
+            self.raw = blueprint;
+            self._process(blueprint);
         });
     };
 
-    Host.prototype.delete = function () {
+    // Lazy-load the properties
+    Blueprint.prototype.loadProperties = function () {
         var self = this;
+        $.ajax({
+            method: 'GET',
+            url: this.raw.properties
+        }).done(function (properties) {
+            self.properties(properties);
+        });
+    };
+
+    Blueprint.prototype.loadHostDefinitions = function () {
+        var self = this;
+
+        var tmpHostDefs = [];
+
+        // Probably not the best way to do this, but I don't anticipate a blueprint having more
+        // than 50 host definitions.  Just putting this in here in case it does happen so
+        // that the UI doesn't break.
+        function doLoad(url) {
+            $.ajax({
+                method: 'GET',
+                url: url
+            }).done(function (hostDefinitions) {
+                tmpHostDefs.push.apply(tmpHostDefs, hostDefinitions.results.map(function (rawDef) {
+                    return new HostDefinition(rawDef, self.parent);
+                }));
+                if (hostDefinitions.next === null) {
+                    self.hostDefinitions(tmpHostDefs);
+                } else {
+                    doLoad(hostDefinitions.next);
+                }
+            });
+        }
+
+        doLoad(this.raw.host_definitions);
+    };
+
+    Blueprint.prototype.delete = function () {
+        var self = this;
+        var blueprintTitle = this.title();
         bootbox.confirm({
-            title: 'Confirm delete of <strong>' + stackTitle + '</strong>',
-            message: 'Are you sure you want to delete <strong>' + stackTitle + '</strong>?<br>' +
-                     'This will terminate all infrastructure, in addition to ' +
-                     'removing all history related to this stack.',
+            title: 'Confirm delete of <strong>' + blueprintTitle + '</strong>',
+            message: 'Are you sure you want to delete <strong>' + blueprintTitle + '</strong>?',
             buttons: {
                 confirm: {
                     label: 'Delete',
@@ -125,9 +140,8 @@ define([
                     $.ajax({
                         method: 'DELETE',
                         url: self.raw.url
-                    }).done(function (stack) {
-                        self.raw = stack;
-                        self._process(stack);
+                    }).done(function (blueprint) {
+                        // Nothing to do here?
                     }).fail(function (jqxhr) {
                         var message;
                         try {
@@ -138,7 +152,7 @@ define([
                                 'to your administrators.';
                         }
                         bootbox.alert({
-                            title: 'Error deleting stack',
+                            title: 'Error deleting blueprint',
                             message: message
                         });
                     });
@@ -147,5 +161,5 @@ define([
         });
     };
 
-    return Host;
+    return Blueprint;
 });

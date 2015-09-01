@@ -21,8 +21,10 @@ define([
     'underscore',
     'knockout',
     'bootbox',
-    'moment'
-], function ($, _, ko, bootbox, moment) {
+    'moment',
+    'models/host',
+    'models/blueprint'
+], function ($, _, ko, bootbox, moment, Host, Blueprint) {
     'use strict';
 
     // Define the stack model.
@@ -59,10 +61,10 @@ define([
 
         // Non-editable fields
         this.namespace = ko.observable();
-        this.blueprint = ko.observable();
 
         // Lazy-loaded properties (not returned from the main stack endpoint)
         this.properties = ko.observable({});
+        this.blueprint = ko.observable();
         this.availableActions = ko.observableArray([]);
         this.history = ko.observableArray([]);
         this.hosts = ko.observableArray([]);
@@ -74,7 +76,7 @@ define([
         this.historicalLogs = ko.observableArray([]);
 
         if (needReload) {
-            this.reload();
+            this.waiting = this.reload();
         } else {
             this._process(raw);
         }
@@ -104,7 +106,6 @@ define([
         this.status(raw.status);
         this.hostCount(raw.host_count);
         this.namespace(raw.namespace);
-        this.blueprint(raw.blueprint);
 
         // Determine what type of label should be around the status
         switch (raw.status) {
@@ -153,9 +154,40 @@ define([
         var self = this;
         $.ajax({
             method: 'GET',
-            url: self.raw.properties
+            url: this.raw.properties
         }).done(function (properties) {
             self.properties(properties);
+        });
+    };
+
+    // Lazy-load the hosts
+    Stack.prototype.loadHosts = function () {
+        var self = this;
+        $.ajax({
+            method: 'GET',
+            url: this.raw.hosts
+        }).done(function (hosts) {
+            self.hosts(hosts.results.map(function (rawHost) {
+                return new Host(rawHost, self.parent);
+            }));
+        });
+    };
+
+    Stack.prototype.addHosts = function (hostDefinition, count) {
+
+    };
+
+    Stack.prototype.removeHosts = function (hostDefinition, count) {
+
+    };
+
+    Stack.prototype.loadBlueprint = function () {
+        var self = this;
+        return $.ajax({
+            method: 'GET',
+            url: this.raw.blueprint
+        }).done(function (blueprint) {
+            self.blueprint(new Blueprint(blueprint, self.parent));
         });
     };
 
@@ -164,7 +196,7 @@ define([
         var self = this;
         $.ajax({
             method: 'GET',
-            url: self.raw.action
+            url: this.raw.action
         }).done(function (resp) {
             self.availableActions(resp.available_actions);
 

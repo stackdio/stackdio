@@ -17,9 +17,11 @@
 
 define([
     'jquery',
+    'knockout',
     'generics/pagination',
+    'models/stack',
     'models/host'
-], function ($, Pagination, Host) {
+], function ($, ko, Pagination, Stack, Host) {
     'use strict';
 
     return Pagination.extend({
@@ -40,6 +42,7 @@ define([
                 title: 'Stack Hosts'
             }
         ],
+        stack: ko.observable(),
         autoRefresh: false,
         model: Host,
         baseUrl: '/stacks/',
@@ -51,6 +54,43 @@ define([
             {name: 'privateDNS', displayName: 'Private DNS', width: '15%'},
             {name: 'publicDNS', displayName: 'Public DNS', width: '15%'},
             {name: 'state', displayName: 'State', width: '10%'}
-        ]
+        ],
+        selectedHostDef: ko.observable(null),
+        selectedAction: ko.observable(null),
+        actionCount: ko.observable(0),
+        actions: [
+            'add',
+            'remove'
+        ],
+        init: function () {
+            this._super();
+            this.stack(new Stack(window.stackdio.stackId, this));
+            var self = this;
+            // Load the blueprint & formula components
+            this.stack().waiting.done(function () {
+                self.stack().loadBlueprint().done(function () {
+                    self.stack().blueprint().loadHostDefinitions();
+                });
+            });
+
+            this.hostDefinitions = ko.computed(function () {
+                if (!self.stack().blueprint()) {
+                    return [];
+                }
+                return self.stack().blueprint().hostDefinitions();
+            });
+        },
+        addRemoveHosts: function () {
+            switch (this.selectedAction()) {
+                case 'add':
+                    this.stack().addHosts();
+                    break;
+                case 'remove':
+                    this.stack().removeHosts();
+                    break;
+                default:
+                    // Bad
+            }
+        }
     });
 });
