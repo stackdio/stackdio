@@ -24,6 +24,7 @@ from rest_framework import serializers
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.utils import recursively_sort_dict
 from . import models, tasks, validators
 
 
@@ -135,13 +136,14 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
 
 class FormulaPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
             # Make it work two different ways.. ooooh
             if isinstance(obj, models.Formula):
-                return obj.properties
+                ret = obj.properties
             else:
-                return obj
-        return {}
+                ret = obj
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data

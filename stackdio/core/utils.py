@@ -68,6 +68,16 @@ class PasswordStr(unicode):
         return '*' * len(self)
 
 
+def recursively_sort_dict(d):
+    ret = collections.OrderedDict()
+    for k, v in sorted(d.items(), key=lambda x: x[0]):
+        if isinstance(v, dict):
+            ret[k] = recursively_sort_dict(v)
+        else:
+            ret[k] = v
+    return ret
+
+
 # Thanks Alex Martelli
 # http://goo.gl/nENTTt
 def recursive_update(d, u):

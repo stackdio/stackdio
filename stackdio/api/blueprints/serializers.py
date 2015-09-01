@@ -24,7 +24,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
-from stackdio.core.utils import recursive_update
+from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone
 from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
@@ -37,13 +37,14 @@ logger = logging.getLogger(__name__)
 
 class BlueprintPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
             # Make it work two different ways.. ooooh
             if isinstance(obj, models.Blueprint):
-                return obj.properties
+                ret = obj.properties
             else:
-                return obj
-        return {}
+                ret = obj
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data

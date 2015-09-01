@@ -24,7 +24,7 @@ from rest_framework import serializers
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
-from stackdio.core.utils import recursive_update
+from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.blueprints.models import PROTOCOL_CHOICES
 from stackdio.api.cloud.providers.base import (
@@ -181,9 +181,10 @@ class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-m
 
 class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
-            return obj.global_orchestration_properties
-        return {}
+            ret = obj.global_orchestration_properties
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data

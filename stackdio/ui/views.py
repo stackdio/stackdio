@@ -184,6 +184,12 @@ class StackObjectPermissionsView(ObjectPermissionsView):
         return get_object_or_404(Stack.objects.all(), pk=self.kwargs['pk'])
 
 
+class StackPropertiesView(StackDetailView):
+    template_name = 'stacks/stack-properties.html'
+    viewmodel = 'viewmodels/stack-properties'
+    page_id = 'properties'
+
+
 class StackHostsView(StackDetailView):
     template_name = 'stacks/stack-hosts.html'
     viewmodel = 'viewmodels/stack-hosts'

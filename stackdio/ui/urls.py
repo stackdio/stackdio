@@ -67,11 +67,15 @@ urlpatterns = (
                name='stack-detail',
                timeout=30),
 
-    cached_url(r'^stacks/(?P<pk>[0-9]+)/permissions/$',
-               views.StackObjectPermissionsView.as_view(),
-               name='stack-object-permissions'),
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/properties/$',
+               views.StackPropertiesView.as_view(),
+               name='stack-properties'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/hosts/$',
                views.StackHostsView.as_view(),
                name='stack-hosts'),
+
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/permissions/$',
+               views.StackObjectPermissionsView.as_view(),
+               name='stack-object-permissions'),
 )

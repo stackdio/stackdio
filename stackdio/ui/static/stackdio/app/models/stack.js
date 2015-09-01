@@ -152,11 +152,39 @@ define([
     // Lazy-load the properties
     Stack.prototype.loadProperties = function () {
         var self = this;
-        $.ajax({
+        if (!this.raw.hasOwnProperty('properties')) {
+            this.raw.properties = this.raw.url + 'properties/';
+        }
+        return $.ajax({
             method: 'GET',
             url: this.raw.properties
         }).done(function (properties) {
             self.properties(properties);
+        });
+    };
+
+    Stack.prototype.saveProperties = function () {
+        $.ajax({
+            method: 'PUT',
+            url: this.raw.properties,
+            data: JSON.stringify(this.properties())
+        }).done(function (properties) {
+            bootbox.alert({
+                title: 'Stack properties',
+                message: 'Stack properties successfully saved.'
+            })
+        }).fail(function (jqxhr) {
+            var message;
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+                message = resp.properties.join('<br>');
+            } catch (e) {
+                message = 'Oops... there was a server error.'
+            }
+            bootbox.alert({
+                title: 'Error saving properties',
+                message: message
+            });
         });
     };
 
@@ -187,6 +215,30 @@ define([
         }).done(function () {
             // Reload the hosts
             self.loadHosts();
+        }).fail(function (jqxhr) {
+            var message;
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+                message = '';
+                for (var key in resp) {
+                    if (resp.hasOwnProperty(key)) {
+                        var betterKey = key.replace('_', ' ');
+
+                        resp[key].forEach(function (errMsg) {
+                            message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
+                        });
+                    }
+                }
+                if (message) {
+                    message = '<dl class="dl-horizontal">' + message + '</dl>';
+                }
+            } catch (e) {
+                message = 'Oops... there was a server error.'
+            }
+            bootbox.alert({
+                title: 'Error ' + addRem + 'ing hosts',
+                message: message
+            });
         });
     };
 

@@ -458,10 +458,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
             if count is None:
                 start, end = 0, hostdef.count
-                indexes = xrange(start, end)
+                indexes = range(start, end)
             elif not hosts:
                 start, end = 0, count
-                indexes = xrange(start, end)
+                indexes = range(start, end)
             else:
                 if backfill:
                     hosts = hosts.order_by('index')

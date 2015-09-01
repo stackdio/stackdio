@@ -28,19 +28,32 @@
                 <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-detail' pk=stack_id %}">Detail</a>
                 </li>
+                <li role="presentation"{% if page_id == 'properties' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-properties' pk=stack_id %}">Properties</a>
+                </li>
                 <li role="presentation"{% if page_id == 'hosts' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-hosts' pk=stack_id %}">Hosts</a>
                 </li>
-                <li role="presentation"><a href="#">Volumes</a></li>
-                <li role="presentation"><a href="#">Commands</a></li>
-                <li role="presentation"><a href="#">Access Rules</a></li>
-                <li role="presentation"><a href="#">Formula Versions</a></li>
+                <li role="presentation">
+                    <a href="#">Volumes</a>
+                </li>
+                <li role="presentation">
+                    <a href="#">Commands</a>
+                </li>
+                <li role="presentation">
+                    <a href="#">Access Rules</a>
+                </li>
+                <li role="presentation">
+                    <a href="#">Formula Versions</a>
+                </li>
                 {% if has_admin %}
                 <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-object-permissions' pk=stack_id %}">Permissions</a>
                 </li>
                 {% endif %}
-                <li role="presentation"><a href="#">Logs</a></li>
+                <li role="presentation">
+                    <a href="#">Logs</a>
+                </li>
             </ul>
         </div>
 

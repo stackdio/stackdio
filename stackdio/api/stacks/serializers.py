@@ -28,7 +28,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
-from stackdio.core.utils import recursive_update
+from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
 from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
@@ -42,13 +42,14 @@ logger = logging.getLogger(__name__)
 
 class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
             # Make it work two different ways.. ooooh
             if isinstance(obj, models.Stack):
-                return obj.properties
+                ret = obj.properties
             else:
-                return obj
-        return {}
+                ret = obj
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data
