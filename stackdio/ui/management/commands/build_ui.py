@@ -19,6 +19,7 @@ import errno
 import os
 import shutil
 import subprocess
+import sys
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -71,11 +72,19 @@ class Command(BaseCommand):
 
         # Install bower dependencies
         args = ['bower', 'install']
-        subprocess.call(args, cwd=settings.BASE_DIR)
+        ret = subprocess.call(args, cwd=settings.BASE_DIR)
+
+        if ret:
+            self.stderr.write('Bower dependencies failed to install.\n')
+            sys.exit(1)
 
         # Install r.js
         args = ['npm', 'install', 'requirejs']
-        subprocess.call(args, cwd=settings.BASE_DIR)
+        ret = subprocess.call(args, cwd=settings.BASE_DIR)
+
+        if ret:
+            self.stderr.write('Failed to install requirejs with npm.\n')
+            sys.exit(1)
 
         main_template = get_template('stackdio/js/main.js')
 
@@ -114,7 +123,10 @@ class Command(BaseCommand):
             ]
 
             # Build the optimized file
-            subprocess.call(args)
+            ret = subprocess.call(args)
+            if ret:
+                self.stderr.write('Failed to optimize JS file for {0}.  Stopping now.\n'.format(vm))
+                sys.exit(1)
 
         # Get rid of our input directory
         shutil.rmtree(INPUT_DIR)
