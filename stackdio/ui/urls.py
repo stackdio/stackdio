@@ -79,6 +79,10 @@ urlpatterns = (
                views.StackVolumesView.as_view(),
                name='stack-volumes'),
 
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/commands/$',
+               views.StackCommandsView.as_view(),
+               name='stack-commands'),
+
     cached_url(r'^stacks/(?P<pk>[0-9]+)/permissions/$',
                views.StackObjectPermissionsView.as_view(),
                name='stack-object-permissions'),

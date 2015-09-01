@@ -18,10 +18,8 @@
 
 define([
     'jquery',
-    'underscore',
-    'knockout',
-    'bootbox'
-], function ($, _, ko, bootbox) {
+    'knockout'
+], function ($, ko) {
     'use strict';
 
     // Define the volume model.

@@ -269,9 +269,9 @@ define([
         }).done(function (resp) {
             self.availableActions(resp.available_actions);
 
-            if (self.parent.hasOwnProperty('actionMap')) {
+            try {
                 self.parent.actionMap[self.id] = resp.available_actions;
-            }
+            } catch (e) {}
         });
     };
 
@@ -343,6 +343,48 @@ define([
                 }
             });
             self.history(history.results);
+        });
+    };
+
+    Stack.prototype.runCommand = function (hostTarget, command) {
+        var self = this;
+        return $.ajax({
+            method: 'POST',
+            url: this.raw.commands,
+            data: JSON.stringify({
+                host_target: hostTarget,
+                command: command
+            })
+        }).done(function () {
+            try {
+                self.parent.reload();
+            } catch (e) {
+
+            }
+        }).fail(function (jqxhr) {
+            var message;
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+                message = '';
+                for (var key in resp) {
+                    if (resp.hasOwnProperty(key)) {
+                        var betterKey = key.replace('_', ' ');
+
+                        resp[key].forEach(function (errMsg) {
+                            message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
+                        });
+                    }
+                }
+                if (message) {
+                    message = '<dl class="dl-horizontal">' + message + '</dl>';
+                }
+            } catch (e) {
+                message = 'Oops... there was a server error.'
+            }
+            bootbox.alert({
+                title: 'Failed to run command',
+                message: message
+            })
         });
     };
 

@@ -200,3 +200,9 @@ class StackVolumesView(StackDetailView):
     template_name = 'stacks/stack-volumes.html'
     viewmodel = 'viewmodels/stack-volumes'
     page_id = 'volumes'
+
+
+class StackCommandsView(StackDetailView):
+    template_name = 'stacks/stack-commands.html'
+    viewmodel = 'viewmodels/stack-commands'
+    page_id = 'commands'
