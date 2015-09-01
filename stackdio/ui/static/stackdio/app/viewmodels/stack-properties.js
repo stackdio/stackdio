@@ -20,9 +20,8 @@ define([
     'jquery',
     'knockout',
     'bootbox',
-    'jsoneditor',
     'models/stack'
-], function($, ko, bootbox, JSONEditor, Stack) {
+], function($, ko, bootbox, Stack) {
     'use strict';
     return function () {
         var self = this;
