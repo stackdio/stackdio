@@ -32,9 +32,9 @@ requirejs.config({
         'domReady': '{{ bower_path }}/requirejs-domReady/domReady',
         'jquery': '{{ bower_path }}/jquery/jquery',
         'knockout': '{{ bower_path }}/knockout/dist/knockout',
-        'ladda': '{{ bower_path }}/ladda/dist/ladda',
+        'ladda': '{{ bower_path }}/ladda/js/ladda',
         'moment': '{{ bower_path }}/moment/moment',
-        'spin': '{{ bower_path }}/ladda/dist/spin',
+        'spin': '{{ bower_path }}/ladda/js/spin',
         'typeahead': '{{ bower_path }}/typeahead.js/dist/typeahead.jquery',
         'underscore': '{{ bower_path }}/underscore/underscore'
     },
