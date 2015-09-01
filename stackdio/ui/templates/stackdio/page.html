@@ -1,9 +1,9 @@
 {% extends 'stackdio/base.html' %}
 {% load staticfiles %}
+{% load stackdio %}
 
 {% block scripts %}
-    <script data-main="/js/main/{{ viewmodel }}"
-            src="{% static 'stackdio/lib/bower_components/requirejs/require.js' %}"></script>
+    {% viewmodel viewmodel %}
 {% endblock %}
 
 {% block links %}

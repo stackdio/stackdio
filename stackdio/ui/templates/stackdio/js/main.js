@@ -19,23 +19,24 @@
 
 {# Templatize this file so that the static files always work even if the static url changes #}
 
-// Grab the bower path
-var bowerPath = '{% static 'stackdio/lib/bower_components' %}';
+{# Grab the bower path #}
+{# This is better to be templatized.  This way our optimization process works easier #}
+{% with '../lib/bower_components' as bower_path %}
 
 requirejs.config({
     baseUrl: '{% static 'stackdio/app' %}',
     paths: {
-        'bloodhound': bowerPath + '/typeahead.js/dist/bloodhound.min',
-        'bootbox': bowerPath + '/bootbox.js/bootbox',
-        'bootstrap': bowerPath + '/bootstrap/dist/js/bootstrap.min',
-        'domReady': bowerPath + '/requirejs-domReady/domReady',
-        'jquery': bowerPath + '/jquery/jquery.min',
-        'knockout': bowerPath + '/knockout/dist/knockout',
-        'ladda': bowerPath + '/ladda/dist/ladda.min',
-        'moment': bowerPath + '/moment/moment',
-        'spin': bowerPath + '/ladda/dist/spin.min',
-        'typeahead': bowerPath + '/typeahead.js/dist/typeahead.jquery.min',
-        'underscore': bowerPath + '/underscore/underscore-min'
+        'bloodhound': '{{ bower_path }}/typeahead.js/dist/bloodhound',
+        'bootbox': '{{ bower_path }}/bootbox.js/bootbox',
+        'bootstrap': '{{ bower_path }}/bootstrap/dist/js/bootstrap',
+        'domReady': '{{ bower_path }}/requirejs-domReady/domReady',
+        'jquery': '{{ bower_path }}/jquery/jquery',
+        'knockout': '{{ bower_path }}/knockout/dist/knockout',
+        'ladda': '{{ bower_path }}/ladda/dist/ladda',
+        'moment': '{{ bower_path }}/moment/moment',
+        'spin': '{{ bower_path }}/ladda/dist/spin',
+        'typeahead': '{{ bower_path }}/typeahead.js/dist/typeahead.jquery',
+        'underscore': '{{ bower_path }}/underscore/underscore'
     },
     shim: {
         bootstrap: {
@@ -59,6 +60,7 @@ requirejs.config({
         }
     }
 });
+{% endwith %}
 
 // Add our custom capitalize method
 String.prototype.capitalize = function() {

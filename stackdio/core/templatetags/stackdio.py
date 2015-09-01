@@ -19,6 +19,7 @@
 from __future__ import absolute_import
 
 from django import template
+from django.conf import settings
 
 from stackdio.server import __version__
 
@@ -28,3 +29,14 @@ register = template.Library()
 @register.simple_tag
 def stackdio_version():
     return '<span class="version">{0}</span>'.format(__version__)
+
+
+@register.simple_tag
+def viewmodel(viewmodel):
+    require = '{0}stackdio/lib/bower_components/requirejs/require.js'.format(settings.STATIC_URL)
+    if settings.DEBUG:
+        app = '/js/main/{0}'.format(viewmodel)
+        return '<script data-main="{0}" src="{1}"></script>'.format(app, require)
+    else:
+        app = '{0}stackdio/build/{1}.js'.format(settings.STATIC_URL, viewmodel)
+        return '<script data-main="{0}" src="{1}"></script>'.format(app, require)
