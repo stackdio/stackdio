@@ -17,30 +17,75 @@
 */
 
 define([
-    'knockout'
-], function (ko) {
+    'jquery',
+    'underscore',
+    'knockout',
+    'bootbox'
+], function ($, _, ko, bootbox) {
     'use strict';
 
-    // Define the stack model.
-    function Volume(raw, parent, hostDefinition) {
+    // Define the volume model.
+    function Volume(raw, parent) {
+        var needReload = false;
+        if (typeof raw === 'string') {
+            raw = parseInt(raw);
+        }
+        if (typeof raw === 'number') {
+            needReload = true;
+            // Set the things we need for the reload
+            raw = {
+                id: raw,
+                url: '/api/volumes/' + raw + '/'
+            }
+        }
+
         // Save the raw in order to get things like URLs
         this.raw = raw;
 
         // Save the parent VM
         this.parent = parent;
 
-        this.hostDefinition = hostDefinition;
+        // Save the id
+        this.id = raw.id;
 
-        // Not sure of the available fields...
-        this.title = ko.observable();
+        // Editable fields
+        this.volumeId = ko.observable();
+        this.attachTime = ko.observable();
+        this.hostname = ko.observable();
+        this.snapshotName = ko.observable();
+        this.size = ko.observable();
+        this.device = ko.observable();
+        this.mountPoint = ko.observable();
 
-        this._process(raw);
+        if (needReload) {
+            this.reload();
+        } else {
+            this._process(raw);
+        }
     }
 
     Volume.constructor = Volume;
 
     Volume.prototype._process = function (raw) {
-        this.title(raw.title);
+        this.volumeId(raw.volume_id);
+        this.attachTime(raw.attach_time);
+        this.hostname(raw.hostname);
+        this.snapshotName(raw.snapshot_name);
+        this.size(raw.size_in_gb);
+        this.device(raw.device);
+        this.mountPoint(raw.mount_point);
+    };
+
+    // Reload the current volume
+    Volume.prototype.reload = function () {
+        var self = this;
+        return $.ajax({
+            method: 'GET',
+            url: this.raw.url
+        }).done(function (volume) {
+            self.raw = volume;
+            self._process(volume);
+        });
     };
 
     return Volume;

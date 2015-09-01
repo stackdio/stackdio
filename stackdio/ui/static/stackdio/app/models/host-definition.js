@@ -20,7 +20,7 @@ define([
     'knockout',
     'models/formula-component',
     'models/access-rule',
-    'models/volume'
+    'models/blueprint-volume'
 ], function (ko, FormulaComponent, AccessRule, Volume) {
     'use strict';
 

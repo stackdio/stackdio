@@ -194,3 +194,9 @@ class StackHostsView(StackDetailView):
     template_name = 'stacks/stack-hosts.html'
     viewmodel = 'viewmodels/stack-hosts'
     page_id = 'hosts'
+
+
+class StackVolumesView(StackDetailView):
+    template_name = 'stacks/stack-volumes.html'
+    viewmodel = 'viewmodels/stack-volumes'
+    page_id = 'volumes'

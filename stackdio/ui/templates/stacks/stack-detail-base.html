@@ -34,8 +34,8 @@
                 <li role="presentation"{% if page_id == 'hosts' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-hosts' pk=stack_id %}">Hosts</a>
                 </li>
-                <li role="presentation">
-                    <a href="#">Volumes</a>
+                <li role="presentation"{% if page_id == 'volumes' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-volumes' pk=stack_id %}">Volumes</a>
                 </li>
                 <li role="presentation">
                     <a href="#">Commands</a>
