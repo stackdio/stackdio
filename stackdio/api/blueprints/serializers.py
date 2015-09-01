@@ -122,6 +122,7 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.BlueprintHostDefinition
         fields = (
+            'id',
             'title',
             'description',
             'cloud_image',

@@ -55,7 +55,7 @@ build_dir = os.path.join(
 
 # Force the user to build the ui first
 if not os.path.exists(build_dir):
-    err_msg = ('It looks like you haven\'t installed built the ui yet.  Please run '
+    err_msg = ('It looks like you haven\'t built the ui yet.  Please run '
                '`python manage.py build_ui` before using setup.py.\n')
     sys.stderr.write(err_msg)
     sys.exit(1)

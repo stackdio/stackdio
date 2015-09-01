@@ -18,10 +18,11 @@
 define([
     'jquery',
     'knockout',
+    'bootbox',
     'generics/pagination',
     'models/stack',
     'models/host'
-], function ($, ko, Pagination, Stack, Host) {
+], function ($, ko, bootbox, Pagination, Stack, Host) {
     'use strict';
 
     return Pagination.extend({
@@ -57,7 +58,7 @@ define([
         ],
         selectedHostDef: ko.observable(null),
         selectedAction: ko.observable(null),
-        actionCount: ko.observable(0),
+        actionCount: ko.observable(1),
         actions: [
             'add',
             'remove'
@@ -81,16 +82,52 @@ define([
             });
         },
         addRemoveHosts: function () {
+            var callback, title, message, count;
+            var error = false;
+            try {
+                count = parseInt(this.actionCount());
+            } catch (e) {
+                error = true;
+            }
+            if (count < 1) {
+                error = true;
+            }
+            if (error) {
+                bootbox.alert({
+                    title: 'Error adding or removing hosts',
+                    message: 'The count of hosts must be a positive non-zero integer.'
+                })
+            }
+            var hostDef = this.selectedHostDef();
+            var s = count === 1 ? '' : 's';
             switch (this.selectedAction()) {
                 case 'add':
-                    this.stack().addHosts();
+                    callback = this.stack().addHosts;
+                    title = 'Add ' + count + ' host' + s + ' to stack';
+                    message = 'Are you sure you want to add ' + count +
+                        ' <strong>' + hostDef.title() + '</strong> host' + s + ' to ' +
+                        '<strong>' + this.stack().title() + '</strong>?';
                     break;
                 case 'remove':
-                    this.stack().removeHosts();
+                    callback = this.stack().removeHosts;
+                    title = 'Remove ' + count + ' host' + s + ' from stack';
+                    message = 'Are you sure you want to remove ' + count +
+                        ' <strong>' + hostDef.title() + '</strong> host' + s + ' from ' +
+                        '<strong>' + this.stack().title() + '</strong>?';
                     break;
                 default:
-                    // Bad
+                    // Bad, this should never happen
             }
+            var self = this;
+            bootbox.confirm({
+                title: title,
+                message: message,
+                callback: function (result) {
+                    if (result) {
+                        callback.call(self.stack(), hostDef, count);
+                    }
+                }
+            });
         }
     });
 });

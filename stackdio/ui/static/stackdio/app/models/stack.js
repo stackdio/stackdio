@@ -173,12 +173,29 @@ define([
         });
     };
 
-    Stack.prototype.addHosts = function (hostDefinition, count) {
+    Stack.prototype._addRemove = function(addRem, hostDef, count) {
+        var requestObj = {
+            action: addRem,
+            host_definition: hostDef.id,
+            count: count
+        };
+        var self = this;
+        $.ajax({
+            method: 'POST',
+            url: this.raw.hosts,
+            data: JSON.stringify(requestObj)
+        }).done(function () {
+            // Reload the hosts
+            self.loadHosts();
+        });
+    };
 
+    Stack.prototype.addHosts = function (hostDefinition, count) {
+        this._addRemove('add', hostDefinition, count);
     };
 
     Stack.prototype.removeHosts = function (hostDefinition, count) {
-
+        this._addRemove('remove', hostDefinition, count);
     };
 
     Stack.prototype.loadBlueprint = function () {

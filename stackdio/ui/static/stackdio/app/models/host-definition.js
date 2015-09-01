@@ -42,6 +42,9 @@ define([
         // Save the raw in order to get things like URLs
         this.raw = raw;
 
+        // Save the id
+        this.id = raw.id;
+
         // Save the parent VM
         this.parent = parent;
 

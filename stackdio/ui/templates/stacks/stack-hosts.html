@@ -5,7 +5,8 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
-                <div class="well">
+                <h4 class="text-center">Add or remove hosts from this stack</h4>
+                <div class="well text-center">
                     <form class="form-inline" data-bind="submit: function () { addRemoveHosts() }">
                         <div class="form-group">
                             <label for="blueprint_host_definition" class="sr-only">Host Type</label>
@@ -22,7 +23,7 @@
                         </div>
                         <div class="form-group">
                             <label for="count" class="sr-only">Count</label>
-                            <input id="count" type="number" class="form-control" data-bind="value: actionCount">
+                            <input id="count" min="1" type="number" class="form-control" data-bind="value: actionCount">
                         </div>
                         <button type="submit" class="btn btn-primary">Go</button>
                     </form>

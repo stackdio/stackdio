@@ -86,8 +86,9 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
     available_actions = ('add', 'remove')
 
     action = serializers.ChoiceField(available_actions, write_only=True)
-    host_definition = serializers.SlugRelatedField(slug_field='slug', write_only=True,
-                                                   queryset=BlueprintHostDefinition.objects.all())
+    host_definition = serializers.PrimaryKeyRelatedField(
+        write_only=True, queryset=BlueprintHostDefinition.objects.all()
+    )
     count = serializers.IntegerField(write_only=True, min_value=1)
     backfill = serializers.BooleanField(default=False, write_only=True)
 

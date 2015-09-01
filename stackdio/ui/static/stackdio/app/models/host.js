@@ -90,6 +90,9 @@ define([
             case 'stopped':
                 this.labelClass('label-danger');
                 break;
+            case 'pending':
+                this.labelClass('label-info');
+                break;
             default:
                 this.labelClass('label-default');
         }
