@@ -36,7 +36,7 @@ def viewmodel(viewmodel):
     require = '{0}stackdio/lib/bower_components/requirejs/require.js'.format(settings.STATIC_URL)
     if settings.DEBUG:
         app = '/js/main/{0}'.format(viewmodel)
-        return '<script data-main="{0}" src="{1}"></script>'.format(app, require)
     else:
         app = '{0}stackdio/build/{1}.js'.format(settings.STATIC_URL, viewmodel)
-        return '<script data-main="{0}" src="{1}"></script>'.format(app, require)
+
+    return '<script data-main="{0}" src="{1}"></script>'.format(app, require)
