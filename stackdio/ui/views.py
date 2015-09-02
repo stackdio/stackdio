@@ -206,3 +206,15 @@ class StackCommandsView(StackDetailView):
     template_name = 'stacks/stack-commands.html'
     viewmodel = 'viewmodels/stack-commands'
     page_id = 'commands'
+
+
+class StackAccessRulesView(StackDetailView):
+    template_name = 'stacks/stack-access-rules.html'
+    viewmodel = 'viewmodels/stack-access-rules'
+    page_id = 'access-rules'
+
+
+class StackFormulaVersionsView(StackDetailView):
+    template_name = 'stacks/stack-formula-versions.html'
+    viewmodel = 'viewmodels/stack-formula-versions'
+    page_id = 'formula-versions'

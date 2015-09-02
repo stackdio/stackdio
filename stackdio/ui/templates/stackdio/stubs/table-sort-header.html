@@ -1,0 +1,8 @@
+<!-- ko foreach: sortableFields -->
+<th data-bind="style: {width: width}">
+    <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+    <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+        <span class="caret"></span>
+    </span>
+</th>
+<!-- /ko -->

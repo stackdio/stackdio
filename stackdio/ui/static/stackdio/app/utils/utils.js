@@ -22,10 +22,11 @@ define([
     'use strict';
 
     return {
-        alertError: function (jqxhr, title) {
+        alertError: function (jqxhr, title, customMessage) {
             var message;
             try {
                 var resp = JSON.parse(jqxhr.responseText);
+                message = '';
                 for (var key in resp) {
                     if (resp.hasOwnProperty(key)) {
                         var betterKey = key.replace('_', ' ');
@@ -34,6 +35,10 @@ define([
                             message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
                         });
                     }
+                }
+                message = '<dl class="dl-horizontal">' + message + '</dl>';
+                if (customMessage) {
+                    message = customMessage + message;
                 }
             } catch (e) {
                 message = 'Oops... there was a server error.  This has been reported ' +

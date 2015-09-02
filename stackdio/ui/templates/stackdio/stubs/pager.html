@@ -4,7 +4,8 @@
     <div class="col-sm-6 col-xs-12" style="margin-top: 15px; margin-bottom: 15px">
         <form data-bind="submit: function () {}">
             <div class="input-group">
-                <input class="form-control" type="text" placeholder="Search for {{ object_type }}..." data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
+                <input class="form-control" type="text" placeholder="Search for {{ object_type }}..."
+                       data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
                 <span class="input-group-btn">
                     <button class="btn btn-success" type="submit">Search</button>
                 </span>
@@ -13,7 +14,7 @@
     </div>
     {% endif %}
     <div class="{% if search %}col-sm-3 {% endif %}col-xs-4" style="margin-top: 15px; margin-bottom: 15px">
-        <p class="page-info" data-bind="visible: !loading()">
+        <p class="page-info" style="display: none" data-bind="visible: !loading()">
             Showing {{ object_type }}
             <span data-bind="text: startNum"></span>-<span data-bind="text: endNum"></span>
             of <span data-bind="text: count"></span>.

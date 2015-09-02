@@ -69,12 +69,12 @@ String.prototype.capitalize = function() {
 
 require([
     'jquery',
-    'bootstrap',
     'knockout',
-    'utils/mobile-fix',
     '{{ viewmodel }}',
+    'bootstrap',
+    'utils/mobile-fix',
     'domReady!'
-], function($, bootstrap, ko, mf, vm) {
+], function($, ko, vm) {
     // Function for getting cookies
     // pulled from Django 1.8 documentation
     function getCookie(name) {
