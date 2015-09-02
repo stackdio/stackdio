@@ -67,6 +67,13 @@ textarea {
     line-height: 1;
 }
 
+.page-info {
+    height: 34px;
+    display: table-cell;
+    vertical-align: middle;
+    float: none;
+}
+
 /*
 Bootstrap overrides
 */

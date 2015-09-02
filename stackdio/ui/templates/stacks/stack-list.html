@@ -4,8 +4,12 @@
 {% block stack-class %}active{% endblock %}
 
 {% block page-content %}
-    <div class="row" style="margin-top: 15px">
-        <div class="col-sm-6 col-sm-push-6 text-right" style="margin-bottom: 10px">
+    <div class="row">
+        <div class="col-md-6">
+            <h2 style="margin-top: 0">Stacks</h2>
+            <p>Manage all of your stacks here.</p>
+        </div>
+        <div class="col-md-6 text-right">
             {% if has_admin %}
                 {# Only show the button if the user has permission to see it #}
                 <a class="btn btn-warning"
@@ -15,72 +19,63 @@
                 <a class="btn btn-success" href="{% url 'ui:stack-create' %}">New Stack</a>
             {% endif %}
         </div>
-
-        <div class="col-sm-6 col-sm-pull-6" style="margin-bottom: 10px">
-            <form data-bind="submit: function () {}">
-                <div class="input-group">
-                    <input class="form-control" type="text" placeholder="Search for stacks..." data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
-                    <span class="input-group-btn">
-                        <button class="btn btn-success" type="submit">Search</button>
-                    </span>
-                </div>
-            </form>
-        </div>
     </div>
 
-    {% include 'stackdio/stubs/pager.html' with object_type='stacks' %}
+    {% include 'stackdio/stubs/pager.html' with object_type='stacks' search=True %}
 
-    <div class="row" style="margin-top: 10px">
+    <div class="row" style="margin-top: 15px">
         <div class="col-md-12">
-            <table class="table table-hover">
-                <thead>
-                <tr>
-                    <!-- ko foreach: sortableFields -->
-                    <th data-bind="style: {width: width}">
-                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
-                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
-                            <span class="caret"></span>
-                        </span>
-                    </th>
-                    <!-- /ko -->
-                    <th style="width: 5%"></th>
-                    <th style="width: 5%"></th>
-                </tr>
-                </thead>
-                <tbody data-bind="foreach: sortedObjects">
-                <tr>
-                    <td data-bind="text: title, click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="text: description, click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="text: namespace, click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="text: hostCount, click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="click: function (stack) { $root.goToDetailPage(stack) }">
-                        <span class="label" data-bind="css: labelClass, text: status"></span>
-                    </td>
-                    <td>
-                        <div class="btn-group btn-group-xs action-dropdown"
-                             data-bind="css: {open: $root.openActionStackId === id}, attr: {id: id}">
-                            <button type="button" class="btn btn-xs btn-info dropdown-toggle"
-                                    data-toggle="dropdown" aria-haspopup="true"
-                                    aria-expanded="false">
-                                Action <span class="caret"></span>
-                            </button>
-                            <ul class="dropdown-menu" data-bind="foreach: availableActions">
-                                <li>
-                                    <!-- Do this function() dance so that `this` is set properly -->
-                                    <a href="#"
-                                       data-bind="click: function (action) { $parent.performAction(action) }, text: $data"></a>
-                                </li>
-                            </ul>
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        <a href="#" data-bind="click: $data.delete">
-                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
-                        </a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        <!-- ko foreach: sortableFields -->
+                        <th data-bind="style: {width: width}">
+                            <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                            <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                                <span class="caret"></span>
+                            </span>
+                        </th>
+                        <!-- /ko -->
+                        <th style="width: 5%"></th>
+                        <th style="width: 5%"></th>
+                    </tr>
+                    </thead>
+                    <tbody data-bind="foreach: sortedObjects">
+                    <tr>
+                        <td data-bind="text: title, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                        <td data-bind="text: description, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                        <td data-bind="text: namespace, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                        <td data-bind="text: hostCount, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                        <td data-bind="click: function (stack) { $root.goToDetailPage(stack) }">
+                            <span class="label" data-bind="css: labelClass, text: status"></span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-xs action-dropdown"
+                                 data-bind="css: {open: $root.openActionStackId === id}, attr: {id: id}">
+                                <button type="button" class="btn btn-xs btn-info dropdown-toggle"
+                                        data-toggle="dropdown" aria-haspopup="true"
+                                        aria-expanded="false">
+                                    Action <span class="caret"></span>
+                                </button>
+                                <ul class="dropdown-menu" data-bind="foreach: availableActions">
+                                    <li>
+                                        <!-- Do this function() dance so that `this` is set properly -->
+                                        <a href="#"
+                                           data-bind="click: function (action) { $parent.performAction(action) }, text: $data"></a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <a href="#" data-bind="click: $data.delete">
+                                <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 {% endblock %}
