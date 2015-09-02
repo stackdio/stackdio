@@ -15,13 +15,9 @@
 
 {% block page-content %}
 
-{% with 'user' as user_or_group %}
-    {% include 'stackdio/stubs/permissions-table.html' %}
-{% endwith %}
+{% include 'stackdio/stubs/permissions-table.html' with user_or_group='user' %}
 
-{% with 'group' as user_or_group %}
-    {% include 'stackdio/stubs/permissions-table.html' %}
-{% endwith %}
+{% include 'stackdio/stubs/permissions-table.html' with user_or_group='group' %}
 
 <div class="row" style="margin-top: 20px">
     <div class="col-md-12">

@@ -358,9 +358,7 @@ define([
         }).done(function () {
             try {
                 self.parent.reload();
-            } catch (e) {
-
-            }
+            } catch (e) {}
         }).fail(function (jqxhr) {
             var message;
             try {

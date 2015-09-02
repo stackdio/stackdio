@@ -84,6 +84,7 @@ define([
             case 'shutting-down':
             case 'stopping':
             case 'launching':
+            case 'deleting':
                 this.labelClass('label-warning');
                 break;
             case 'terminated':

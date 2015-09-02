@@ -17,35 +17,8 @@
             </div>
         </div>
 
-        <div class="row" style="margin-top: 10px">
-            <div class="col-sm-6 col-sm-push-3 col-xs-12" style="margin: 10px auto">
-                <p class="text-center">
-                    Showing volumes
-                    <span data-bind="text: startNum"></span>-<span data-bind="text: endNum"></span>
-                    of <span data-bind="text: count"></span>.
-                </p>
-            </div>
-            <div class="col-sm-3 col-sm-pull-6 col-xs-6">
-                <nav>
-                    <ul class="pager" style="margin: 5px 0 10px 0">
-                        <li class="previous" data-bind="css: {disabled: !previousPage()}">
-                            <a href="#" data-bind="click: goToPreviousPage"><span
-                                    aria-hidden="true">&larr;</span> Previous</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-            <div class="col-sm-3 col-xs-6">
-                <nav>
-                    <ul class="pager" style="margin: 5px 0 10px 0">
-                        <li class="next" data-bind="css: {disabled: !nextPage()}">
-                            <a href="#" data-bind="click: goToNextPage">Next <span
-                                    aria-hidden="true">&rarr;</span></a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
+        {% include 'stackdio/stubs/pager.html' with object_type='volumes' %}
+
         <div class="row">
             <div class="col-md-12">
                 <table class="table table-hover">

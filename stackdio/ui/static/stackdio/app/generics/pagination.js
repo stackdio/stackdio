@@ -40,6 +40,7 @@ define([
         nextPage: ko.observable(),
         count: ko.observable(),
         objects: ko.observableArray([]),
+        loading: ko.observable(),
 
         init: function () {
             // Start everything up
@@ -140,7 +141,8 @@ define([
             this.sortKey(null);
             this.sortAsc(true);
             this.searchTerm('');
-            this.reload();
+            this.loading(false);
+            this.reload(true);
         },
 
         changeSortKey: function (newKey) {
@@ -160,7 +162,7 @@ define([
             if (this.nextPage() !== null) {
                 this.currentPage(this.nextPage());
                 this.pageNum(this.pageNum() + 1);
-                this.reload();
+                this.reload(true);
             }
         },
 
@@ -168,7 +170,7 @@ define([
             if (this.previousPage() !== null) {
                 this.currentPage(this.previousPage());
                 this.pageNum(this.pageNum() - 1);
-                this.reload();
+                this.reload(true);
             }
         },
 
@@ -182,7 +184,13 @@ define([
         },
 
         // Refresh everything
-        reload: function () {
+        reload: function (firstTime) {
+            if (typeof firstTime === 'undefined') {
+                firstTime = false;
+            }
+            if (firstTime) {
+                this.loading(true);
+            }
             var self = this;
             $.ajax({
                 method: 'GET',
@@ -205,6 +213,8 @@ define([
             }).fail(function () {
                 // If we get a 404 or something, reset EVERYTHING.
                 self.reset();
+            }).always(function () {
+                self.loading(false);
             });
         }
     });

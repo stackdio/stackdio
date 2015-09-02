@@ -44,7 +44,7 @@ define([
             }
         ],
         stack: ko.observable(),
-        autoRefresh: false,
+        autoRefresh: true,
         model: Host,
         baseUrl: '/stacks/',
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/hosts/',
@@ -96,7 +96,8 @@ define([
                 bootbox.alert({
                     title: 'Error adding or removing hosts',
                     message: 'The count of hosts must be a positive non-zero integer.'
-                })
+                });
+                return;
             }
             var hostDef = this.selectedHostDef();
             var s = count === 1 ? '' : 's';

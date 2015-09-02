@@ -124,5 +124,12 @@ define([
         });
     };
 
+    Command.prototype.delete = function () {
+        $.ajax({
+            method: 'DELETE',
+            url: this.raw.url
+        })
+    };
+
     return Command;
 });
