@@ -61,6 +61,9 @@ define([
                 initial = false;
             }
             if (self.selectedLogUrl) {
+                if (initial) {
+                    self.log('Loading...');
+                }
                 $.ajax({
                     method: 'GET',
                     url: self.selectedLogUrl,
