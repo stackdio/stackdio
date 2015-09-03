@@ -2,7 +2,9 @@
 
 {% block detail-content %}
 <div class="col-sm-3 col-sm-pull-3">
-
+    <ul class="nav nav-pills nav-stacked" data-bind="foreach: logs">
+        <li role="presentation"><a href="#" data-bind="text: name"></a></li>
+    </ul>
 </div>
 <div class="col-sm-6 col-sm-pull-3">
 

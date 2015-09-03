@@ -29,8 +29,6 @@ define([
     return function () {
         var self = this;
 
-        self.alerts = [];
-
         self.breadcrumbs = [
             {
                 active: false,
@@ -51,6 +49,16 @@ define([
         self.stack = ko.observable();
         self.reset = function () {
             self.stack(new Stack(window.stackdio.stackId, self));
+            self.stack().loadLogs();
         };
+
+        self.logs = ko.computed(function () {
+            if (!self.stack()) {
+                return [];
+            }
+            return self.stack().historicalLogs();
+        });
+
+        self.reset();
     };
 });

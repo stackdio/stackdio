@@ -29,6 +29,7 @@ requirejs.config({
         'bloodhound': '{{ bower_path }}/typeahead.js/dist/bloodhound',
         'bootbox': '{{ bower_path }}/bootbox.js/bootbox',
         'bootstrap': '{{ bower_path }}/bootstrap/dist/js/bootstrap',
+        'bootstrap-growl': '{{ bower_path }}/bootstrap-growl/jquery.bootstrap-growl',
         'domReady': '{{ bower_path }}/requirejs-domReady/domReady',
         'jquery': '{{ bower_path }}/jquery/jquery',
         'knockout': '{{ bower_path }}/knockout/dist/knockout',
@@ -41,6 +42,9 @@ requirejs.config({
     shim: {
         bootstrap: {
             deps: ['jquery']
+        },
+        'bootstrap-growl': {
+            deps: ['bootstrap', 'jquery']
         },
         typeahead: {
             deps: ['jquery'],

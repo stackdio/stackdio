@@ -23,7 +23,8 @@ define([
     'bootbox',
     'moment',
     'models/host',
-    'models/blueprint'
+    'models/blueprint',
+    'bootstrap-growl'
 ], function ($, _, ko, bootbox, moment, Host, Blueprint) {
     'use strict';
 
@@ -322,9 +323,12 @@ define([
 
     Stack.prototype.loadHistory = function () {
         var self = this;
+        if (!this.raw.hasOwnProperty('history')) {
+            this.raw.history = this.raw.url + 'history/';
+        }
         $.ajax({
             method: 'GET',
-            url: self.raw.url + 'history/'
+            url: this.raw.history
         }).done(function (history) {
             history.results.forEach(function (entry) {
                 entry.timestamp = moment(entry.created);
@@ -343,6 +347,40 @@ define([
                 }
             });
             self.history(history.results);
+        });
+    };
+
+    Stack.prototype.loadLogs = function () {
+        var self = this;
+        if (!this.raw.hasOwnProperty('logs')) {
+            this.raw.logs = this.raw.url + 'logs/';
+        }
+        $.ajax({
+            method: 'GET',
+            url: this.raw.logs
+        }).done(function (logs) {
+            var latestLogs = [];
+            for (var log in logs.latest) {
+                if (logs.latest.hasOwnProperty(log)) {
+                    latestLogs.push({
+                        name: log,
+                        url: logs.latest[log]
+                    });
+                }
+            }
+            self.latestLogs(latestLogs);
+
+            var historicalLogs = [];
+
+            logs.historical.forEach(function (log) {
+                var spl = log.split('/');
+                historicalLogs.push({
+                    name: spl[spl.length-1],
+                    url: log
+                })
+            });
+
+            self.historicalLogs(historicalLogs);
         });
     };
 
@@ -406,16 +444,10 @@ define([
                 create_users: self.createUsers()
             })
         }).done(function (stack) {
-            if (self.parent.hasOwnProperty('alerts')) {
-                self.parent.alerts.push({
-                    alertClass: 'alert-success stack-detail-alert',
-                    message: 'Successfully saved stack!'
-                });
-
-                $(".stack-detail-alert").fadeTo(3000, 500).slideUp(500, function(){
-                    $(".stack-detail-alert").alert('close');
-                });
-            }
+            $.bootstrapGrowl('Successfully saved stack!', {
+                type: 'success',
+                align: 'center'
+            });
         }).fail(function (jqxhr) {
             var message = '';
             try {

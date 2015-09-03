@@ -26,8 +26,6 @@ define([
     return function () {
         var self = this;
 
-        self.alerts = [];
-
         self.breadcrumbs = [
             {
                 active: false,

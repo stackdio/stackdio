@@ -26,6 +26,7 @@
     "dependencies": {
         "bootbox.js": "~4.4.0",
         "bootstrap": "~3.3.5",
+        "bootstrap-growl": "~1.1.0",
         "font-awesome": "~4.4.0",
         "jquery": "~1.9.1",
         "knockout": "~3.3.0",

@@ -21,7 +21,6 @@ define([
 ], function(MPBase) {
     'use strict';
     return MPBase.extend({
-        alerts: [],
         permsUrl: '/api/stacks/' + window.stackdio.objectId + '/permissions/',
         saveUrl: '/stacks/' + window.stackdio.objectId + '/',
         init: function () {

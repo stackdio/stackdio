@@ -26,7 +26,6 @@ define([
     'use strict';
 
     return Pagination.extend({
-        alerts: [],
         breadcrumbs: [
             {
                 active: false,
