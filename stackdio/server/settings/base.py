@@ -144,12 +144,7 @@ ROOT_URLCONF = 'stackdio.server.urls'
 ##
 # Define your admin tuples like ('full name', 'email@address.com')
 ##
-ADMINS = (
-    ('Abe Music', 'abe.music@digitalreasoning.com'),
-    ('Charlie Penner', 'charlie.penner@digitalreasoning.com'),
-    ('Steve Brownlee', 'steve.brownlee@digitalreasoning.com'),
-    ('Clark Perkins', 'clark.perkins@digitalreasoning.com'),
-)
+ADMINS = ()
 MANAGERS = ADMINS
 
 ##
