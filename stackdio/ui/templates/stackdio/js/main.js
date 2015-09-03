@@ -31,6 +31,7 @@ requirejs.config({
         'bootstrap': '{{ bower_path }}/bootstrap/dist/js/bootstrap',
         'bootstrap-growl': '{{ bower_path }}/bootstrap-growl/jquery.bootstrap-growl',
         'domReady': '{{ bower_path }}/requirejs-domReady/domReady',
+        'fuelux': '{{ bower_path }}/fuelux/dist/js/fuelux',
         'jquery': '{{ bower_path }}/jquery/jquery',
         'knockout': '{{ bower_path }}/knockout/dist/knockout',
         'ladda': '{{ bower_path }}/ladda/js/ladda',
@@ -76,6 +77,7 @@ require([
     'knockout',
     '{{ viewmodel }}',
     'bootstrap',
+    'fuelux',
     'utils/mobile-fix',
     'domReady!'
 ], function($, ko, vm) {

@@ -20,7 +20,8 @@ define([
     'knockout',
     'bootbox',
     'generics/pagination',
-    'models/stack'
+    'models/stack',
+    'bootstrap-growl'
 ], function ($, ko, bootbox, Pagination, Stack) {
     'use strict';
 
@@ -46,19 +47,84 @@ define([
             }
         ];
 
+        self.selectedLogUrl = null;
+        self.log = ko.observable();
+
         self.stack = ko.observable();
         self.reset = function () {
             self.stack(new Stack(window.stackdio.stackId, self));
-            self.stack().loadLogs();
+            self.selectedLogUrl = null;
         };
 
-        self.logs = ko.computed(function () {
-            if (!self.stack()) {
-                return [];
+        self.reload = function (initial) {
+            if (typeof initial === 'undefined') {
+                initial = false;
             }
-            return self.stack().historicalLogs();
-        });
+            if (self.selectedLogUrl) {
+                $.ajax({
+                    method: 'GET',
+                    url: self.selectedLogUrl,
+                    headers: {
+                        'Accept': 'text/plain'
+                    }
+                }).done(function (log) {
+                    var logDiv = document.getElementById('log-text');
+                    var pos = logDiv.scrollTop;
+                    var height = logDiv.scrollHeight;
+                    self.log(log);
+                    if (height - pos < 550 || initial) {
+                        logDiv.scrollTop = logDiv.scrollHeight - 498;
+                    }
+                }).fail(function (jqxhr) {
+                    $.bootstrapGrowl('Failed to load log', {
+                        type: 'danger',
+                        align: 'center'
+                    })
+                });
+            }
+        };
+
+        self.dataSource = function (parentData, callback) {
+            var ret;
+            if (parentData.text === 'Latest') {
+                ret = self.stack().latestLogs();
+            } else if (parentData.text === 'Historical') {
+                ret = self.stack().historicalLogs();
+            } else {
+                // This is the root level
+                self.stack().loadLogs();
+                ret = [
+                    {text: 'Latest', type: 'folder'},
+                    {text: 'Historical', type: 'folder'}
+                ];
+            }
+
+            callback({
+                data: ret
+            })
+        };
 
         self.reset();
+
+        var $el = $('#log-selector');
+
+        $el.tree({
+            dataSource: self.dataSource,
+            cacheItems: false,
+            folderSelect: false
+        });
+
+        self.intervalId = null;
+
+        $el.on('selected.fu.tree', function (event, data) {
+            self.selectedLogUrl = data.target.url;
+            clearInterval(self.intervalId);
+            self.reload(true);
+            if (data.target.url.indexOf('latest') >= 0) {
+                self.intervalId = setInterval(self.reload, 3000);
+            }
+        });
+
+
     };
 });

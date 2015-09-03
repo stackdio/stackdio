@@ -363,7 +363,8 @@ define([
             for (var log in logs.latest) {
                 if (logs.latest.hasOwnProperty(log)) {
                     latestLogs.push({
-                        name: log,
+                        text: log,
+                        type: 'item',
                         url: logs.latest[log]
                     });
                 }
@@ -375,7 +376,8 @@ define([
             logs.historical.forEach(function (log) {
                 var spl = log.split('/');
                 historicalLogs.push({
-                    name: spl[spl.length-1],
+                    text: spl[spl.length-1],
+                    type: 'item',
                     url: log
                 })
             });
