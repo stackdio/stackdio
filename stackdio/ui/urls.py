@@ -94,4 +94,8 @@ urlpatterns = (
     cached_url(r'^stacks/(?P<pk>[0-9]+)/permissions/$',
                views.StackObjectPermissionsView.as_view(),
                name='stack-object-permissions'),
+
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/logs/$',
+               views.StackLogsView.as_view(),
+               name='stack-logs'),
 )

@@ -178,7 +178,21 @@ class StackDetailView(PageView):
 
 
 class StackObjectPermissionsView(ObjectPermissionsView):
+    template_name = 'stacks/stack-object-permissions.html'
     viewmodel = 'viewmodels/stack-object-permissions'
+    page_id = 'permissions'
+
+    def get_context_data(self, **kwargs):
+        context = super(StackObjectPermissionsView, self).get_context_data(**kwargs)
+        pk = kwargs['pk']
+        # Go ahead an raise a 404 here if the stack doesn't exist rather than waiting until later.
+        stack = get_object_or_404(Stack.objects.all(), pk=pk)
+        if not self.request.user.has_perm('stacks.view_stack', stack):
+            raise Http404()
+        context['stack_id'] = pk
+        context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
+        context['page_id'] = self.page_id
+        return context
 
     def get_object(self):
         return get_object_or_404(Stack.objects.all(), pk=self.kwargs['pk'])
@@ -218,3 +232,9 @@ class StackFormulaVersionsView(StackDetailView):
     template_name = 'stacks/stack-formula-versions.html'
     viewmodel = 'viewmodels/stack-formula-versions'
     page_id = 'formula-versions'
+
+
+class StackLogsView(StackDetailView):
+    template_name = 'stacks/stack-logs.html'
+    viewmodel = 'viewmodels/stack-logs'
+    page_id = 'logs'

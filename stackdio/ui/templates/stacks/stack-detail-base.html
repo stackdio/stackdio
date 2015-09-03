@@ -51,8 +51,8 @@
                     <a href="{% url 'ui:stack-object-permissions' pk=stack_id %}">Permissions</a>
                 </li>
                 {% endif %}
-                <li role="presentation">
-                    <a href="#">Logs</a>
+                <li role="presentation"{% if page_id == 'logs' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-logs' pk=stack_id %}">Logs</a>
                 </li>
             </ul>
         </div>
