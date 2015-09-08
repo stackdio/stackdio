@@ -41,7 +41,7 @@
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
-                <tr>
+                <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: title, click: function (stack) { $root.goToDetailPage(stack) }"></td>
                     <td data-bind="text: description, click: function (stack) { $root.goToDetailPage(stack) }"></td>
                     <td data-bind="text: namespace, click: function (stack) { $root.goToDetailPage(stack) }"></td>

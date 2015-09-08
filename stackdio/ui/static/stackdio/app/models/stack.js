@@ -22,10 +22,10 @@ define([
     'knockout',
     'bootbox',
     'moment',
+    'utils/utils',
     'models/host',
-    'models/blueprint',
-    'bootstrap-growl'
-], function ($, _, ko, bootbox, moment, Host, Blueprint) {
+    'models/blueprint'
+], function ($, _, ko, bootbox, moment, utils, Host, Blueprint) {
     'use strict';
 
     // Define the stack model.
@@ -170,10 +170,7 @@ define([
             url: this.raw.properties,
             data: JSON.stringify(this.properties())
         }).done(function (properties) {
-            bootbox.alert({
-                title: 'Stack properties',
-                message: 'Stack properties successfully saved.'
-            })
+            utils.growlAlert('Successfully saved stack properties!', 'success');
         }).fail(function (jqxhr) {
             var message;
             try {
@@ -182,10 +179,8 @@ define([
             } catch (e) {
                 message = 'Oops... there was a server error.'
             }
-            bootbox.alert({
-                title: 'Error saving properties',
-                message: message
-            });
+            message += '  Your properties were not saved.';
+            utils.growlAlert(message, 'danger');
         });
     };
 
@@ -264,13 +259,17 @@ define([
     // Lazy-load the available actions
     Stack.prototype.loadAvailableActions = function () {
         var self = this;
+        if (!this.raw.hasOwnProperty('action')) {
+            this.raw.action = this.url + 'action/';
+        }
         $.ajax({
             method: 'GET',
             url: this.raw.action
         }).done(function (resp) {
             self.availableActions(resp.available_actions);
-
             try {
+                // Just do this and fail silently if it doesn't work since all viewmodels don't
+                // have an actionMap
                 self.parent.actionMap[self.id] = resp.available_actions;
             } catch (e) {}
         });
@@ -446,10 +445,10 @@ define([
                 create_users: self.createUsers()
             })
         }).done(function (stack) {
-            $.bootstrapGrowl('Successfully saved stack!', {
-                type: 'success',
-                align: 'center'
-            });
+            utils.growlAlert('Successfully saved stack!', 'success');
+            try {
+                self.parent.stackTitle(stack.title);
+            } catch (e) {}
         }).fail(function (jqxhr) {
             var message = '';
             try {

@@ -106,6 +106,9 @@ require([
         return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
     }
 
+    // Unhide all the things that are hidden before we do anything weird with the DOM
+    $('.stackdio-hidden-on-load').removeClass('stackdio-hidden-on-load');
+
     // Grab the CSRF token
     var csrftoken = getCookie('csrftoken');
 
@@ -141,6 +144,6 @@ require([
         }
     });
 
-    // Apply the bindings for our viewmodel
+    // Lastly, apply the bindings for our viewmodel
     ko.applyBindings(new vm());
 });

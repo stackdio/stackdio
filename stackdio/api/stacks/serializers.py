@@ -615,6 +615,7 @@ class StackCommandSerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.StackCommand
         fields = (
+            'id',
             'url',
             'zip_url',
             'submit_time',

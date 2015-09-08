@@ -23,6 +23,16 @@ define([
 ], function ($, ko, moment) {
     'use strict';
 
+    function FakeMoment () {
+        this.calendar = function () {
+            return '';
+        };
+
+        this.toString = function () {
+            return '';
+        };
+    }
+
     // Define the command model.
     function Command(raw, parent) {
         var needReload = false;
@@ -49,9 +59,9 @@ define([
 
         // Editable fields
         this.downloadUrl = ko.observable();
-        this.submitTime = ko.observable();
-        this.startTime = ko.observable();
-        this.finishTime = ko.observable();
+        this.submitTime = ko.observable(new FakeMoment());
+        this.startTime = ko.observable(new FakeMoment());
+        this.finishTime = ko.observable(new FakeMoment());
         this.status = ko.observable();
         this.labelClass = ko.observable();
         this.hostTarget = ko.observable();
@@ -72,14 +82,7 @@ define([
         if (time.length) {
             return moment(time);
         } else {
-            return new (function () {
-                this.calendar = function () {
-                    return '';
-                };
-                this.toString = function () {
-                    return '';
-                };
-            })();
+            return new FakeMoment();
         }
     }
 

@@ -45,7 +45,7 @@ define([
         stack: ko.observable(),
         autoRefresh: true,
         model: Command,
-        baseUrl: '/stacks/',
+        baseUrl: '/stacks/' + window.stackdio.stackId + '/commands/',
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/commands/',
         sortableFields: [
             {name: 'hostTarget', displayName: 'Host Target', width: '15%'},

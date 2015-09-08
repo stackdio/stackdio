@@ -74,6 +74,10 @@ textarea {
     float: none;
 }
 
+.stackdio-hidden-on-load {
+    display: none;
+}
+
 /*
 Bootstrap overrides
 */

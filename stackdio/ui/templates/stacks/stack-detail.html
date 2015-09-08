@@ -22,33 +22,36 @@
                 </div>
                 <div id="create_users">
                     <div class="checkbox">
-                        <label>
-                            <input type="checkbox" data-bind="checked: stack.createUsers">
-                            Create Users
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox"
+                                   data-bind="checked: stack.createUsers">
+                            <span class="checkbox-label">Create Users</span>
                         </label>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Save</button>
+                <div class="form-group" style="margin-top: 15px">
+                    <button type="submit" class="btn btn-primary">Save</button>
 
-                <div class="btn-group action-dropdown">
-                    <button type="button" class="btn btn-info dropdown-toggle"
-                            data-toggle="dropdown" aria-haspopup="true"
-                            aria-expanded="false">
-                        Action <span class="caret"></span>
+                    <div class="btn-group action-dropdown">
+                        <button type="button" class="btn btn-info dropdown-toggle"
+                                data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                            Action <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" data-bind="foreach: stack.availableActions">
+                            <li>
+                                <!-- Do this function() dance so that `this` is set properly -->
+                                <a href="#"
+                                   data-bind="click: function (action) { $root.stack.performAction(action) }, text: $data"></a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button class="btn btn-danger" data-bind="click: function () { stack.delete() }">
+                        Delete
+                        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                     </button>
-                    <ul class="dropdown-menu" data-bind="foreach: stack.availableActions">
-                        <li>
-                            <!-- Do this function() dance so that `this` is set properly -->
-                            <a href="#"
-                               data-bind="click: function (action) { $root.stack.performAction(action) }, text: $data"></a>
-                        </li>
-                    </ul>
                 </div>
-
-                <button class="btn btn-danger" data-bind="click: function () { stack.delete() }">
-                    Delete
-                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
-                </button>
             </form>
         </div>
     </div>

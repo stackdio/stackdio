@@ -3,15 +3,15 @@
 {% block title %}{{ object_type }} Permissions{% endblock %}
 
 {# Inject the stack id into the window so we can access it in our javascript VM #}
-{% if object_id %}
 {% block scripts %}
     {{ block.super }}
+    {% if object_id %}
     <script type="text/javascript">
         window.stackdio = {};
         window.stackdio.objectId = {{ object_id }};
     </script>
+    {% endif %}
 {% endblock %}
-{% endif %}
 
 {% block page-content %}
 

@@ -49,26 +49,25 @@ define([
         self.reset = function() {
             // Create the stack object.  Pass in the stack id, and let the model load itself.
             self.stack = new Stack(window.stackdio.stackId, self);
-            self.stack.loadHistory();
-            self.stackTitle('');
-        };
-
-        // Functions
-        self.refreshStack = function () {
-            self.stack.reload().done(function () {
+            self.stack.waiting.done(function () {
                 document.title = 'stackd.io | Stack Detail - ' + self.stack.title();
                 self.stackTitle(self.stack.title());
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/stacks/';
             });
-            self.stack.loadHistory();
-
-            // React to an open-dropdown event & lazy load the actions
-            $('.action-dropdown').on('show.bs.dropdown', function () {
-                self.stack.loadAvailableActions();
-            });
+            self.stackTitle('');
         };
+
+        // Functions
+        self.refreshStack = function () {
+            self.stack.loadHistory();
+        };
+
+        // React to an open-dropdown event & lazy load the actions
+        $('.action-dropdown').on('show.bs.dropdown', function () {
+            self.stack.loadAvailableActions();
+        });
 
         // Start everything up
         self.reset();

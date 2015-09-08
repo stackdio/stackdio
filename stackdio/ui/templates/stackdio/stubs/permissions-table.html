@@ -1,7 +1,8 @@
 <!-- Permissions for  {{ user_or_group }}s -->
 <div class="row"{% if user_or_group == 'group' %} style="margin-top: 20px"{% endif %}>
     <div class="col-md-12">
-        <table class="table table-hover table-striped table-condensed" data-bind="style: { width: (300 + 100 * available{{ user_or_group | capfirst }}Permissions().length) + 'px'}">
+        <table class="table table-hover table-striped table-condensed stackdio-hidden-on-load"
+               data-bind="style: { width: (300 + 100 * available{{ user_or_group | capfirst }}Permissions().length) + 'px'}">
             <thead>
                 <tr>
                     <th style="width: 30%">{{ user_or_group | capfirst }}s</th>
@@ -22,7 +23,7 @@
             </tbody>
         </table>
 
-        <div id="add-{{ user_or_group }}" style="width: 300px">
+        <div id="add-{{ user_or_group }}" class="stackdio-hidden-on-load" style="width: 300px">
             <input class="typeahead form-control" type="text" placeholder="Search for {{ user_or_group }}s...">
         </div>
     </div>

@@ -22,7 +22,7 @@ from django.shortcuts import get_object_or_404, resolve_url
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.views.generic import TemplateView
 
-from stackdio.api.stacks.models import Stack
+from stackdio.api.stacks.models import Stack, StackCommand
 
 logger = logging.getLogger(__name__)
 
@@ -220,6 +220,20 @@ class StackCommandsView(StackDetailView):
     template_name = 'stacks/stack-commands.html'
     viewmodel = 'viewmodels/stack-commands'
     page_id = 'commands'
+
+
+class StackCommandDetailView(StackDetailView):
+    template_name = 'stacks/stack-command-detail.html'
+    viewmodel = 'viewmodels/stack-command-detail'
+    page_id = 'commands'
+
+    def get_context_data(self, **kwargs):
+        context = super(StackCommandDetailView, self).get_context_data(**kwargs)
+        pk = kwargs['command_pk']
+        # Go ahead an raise a 404 here if the command doesn't exist rather than waiting until later.
+        get_object_or_404(StackCommand.objects.all(), pk=pk)
+        context['command_id'] = pk
+        return context
 
 
 class StackAccessRulesView(StackDetailView):

@@ -17,11 +17,20 @@
 */
 
 define([
-    'bootbox'
+    'bootbox',
+    'bootstrap-growl'
 ], function(bootbox) {
     'use strict';
 
     return {
+        growlAlert: function (message, type) {
+            $.bootstrapGrowl(message, {
+                type: type,
+                align: 'center',
+                width: 'auto',
+                offset: {from: 'top', amount: 64}
+            });
+        },
         alertError: function (jqxhr, title, customMessage) {
             var message;
             try {

@@ -42,7 +42,7 @@
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
-                    <tr>
+                    <tr class="stackdio-hidden-on-load" data-bind="click: function (command) { $root.goToDetailPage(command) }">
                         <td data-bind="text: hostTarget"></td>
                         <td data-bind="text: command"></td>
                         <td data-bind="text: finishTime().calendar()"></td>

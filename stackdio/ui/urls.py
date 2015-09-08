@@ -83,6 +83,10 @@ urlpatterns = (
                views.StackCommandsView.as_view(),
                name='stack-commands'),
 
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/commands/(?P<command_pk>[0-9]+)/$',
+               views.StackCommandDetailView.as_view(),
+               name='stack-command-detail'),
+
     cached_url(r'^stacks/(?P<pk>[0-9]+)/access_rules/$',
                views.StackAccessRulesView.as_view(),
                name='stack-access-rules'),
