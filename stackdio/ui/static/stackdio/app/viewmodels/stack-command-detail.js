@@ -55,7 +55,12 @@ define([
         };
 
         this.runAgain = function () {
-            this.stack().runCommand(this.command().hostTarget(), this.command().command());
+            this.stack().runCommand(
+                this.command().hostTarget(),
+                this.command().command()
+            ).done(function () {
+                window.location = '/stacks/' + window.stackdio.stackId + '/commands/';
+            });
         };
 
         this.reset();

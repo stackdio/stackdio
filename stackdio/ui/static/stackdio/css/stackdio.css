@@ -82,6 +82,10 @@ textarea {
 Bootstrap overrides
 */
 
+.page-header {
+    margin-top: 0;
+}
+
 .navbar-brand {
     padding-top: 10px;
     padding-bottom: 10px;
