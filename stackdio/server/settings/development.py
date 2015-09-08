@@ -24,6 +24,12 @@ DEBUG = True
 # Set the log level to DEBUG - it's WARNING by default
 LOGGING['loggers']['']['level'] = 'DEBUG'
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}
+
 ##
 # Add in additional applications
 ##
