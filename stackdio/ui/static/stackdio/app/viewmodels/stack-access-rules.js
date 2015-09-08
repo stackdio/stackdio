@@ -21,8 +21,8 @@ define([
     'bootbox',
     'generics/pagination',
     'models/stack',
-    'models/command'
-], function ($, ko, bootbox, Pagination, Stack, Command) {
+    'models/security-group'
+], function ($, ko, bootbox, Pagination, Stack, SecurityGroup) {
     'use strict';
 
     return Pagination.extend({
@@ -39,14 +39,14 @@ define([
             },
             {
                 active: true,
-                title: 'Stack Commands'
+                title: 'Stack Access Rules'
             }
         ],
         stack: ko.observable(),
         autoRefresh: true,
-        model: Command,
+        model: SecurityGroup,
         baseUrl: '/stacks/',
-        initialUrl: '/api/stacks/' + window.stackdio.stackId + '/commands/',
+        initialUrl: '/api/stacks/' + window.stackdio.stackId + '/security_groups/',
         sortableFields: [
             {name: 'hostTarget', displayName: 'Host Target', width: '15%'},
             {name: 'command', displayName: 'Command', width: '40%'},

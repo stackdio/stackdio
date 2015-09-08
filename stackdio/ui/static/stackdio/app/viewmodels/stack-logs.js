@@ -54,6 +54,7 @@ define([
         self.reset = function () {
             self.stack(new Stack(window.stackdio.stackId, self));
             self.selectedLogUrl = null;
+            self.log('Select a log...');
         };
 
         self.reload = function (initial) {
