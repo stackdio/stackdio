@@ -45,9 +45,13 @@ BOWER_PATH = os.path.join(
     'bower_components',
 )
 
-R_JS = os.path.join(
+NODE_PATH = os.path.join(
     settings.BASE_DIR,
     'node_modules',
+)
+
+R_JS = os.path.join(
+    NODE_PATH,
     '.bin',
     'r.js',
 )
@@ -130,3 +134,6 @@ class Command(BaseCommand):
 
         # Get rid of our input directory
         shutil.rmtree(INPUT_DIR)
+
+        # Get rid of our node_modules
+        shutil.rmtree(NODE_PATH)
