@@ -12,6 +12,11 @@ env:
 # So that we get a docker container
 sudo: false
 
+addons:
+  apt:
+    packages:
+      - swig
+
 ## Customize dependencies
 install:
   - pip install -U 'pip<6'
