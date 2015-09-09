@@ -17,6 +17,7 @@ env:
 # So that we get a docker container
 sudo: false
 
+# Make sure our pip install works
 addons:
   apt:
     packages:
