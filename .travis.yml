@@ -26,9 +26,8 @@ addons:
 
 ## Customize dependencies
 install:
-  - env
   - npm install -g bower
-  - pip install -U 'pip<6'
+  - pip install -U pip
   - pip install -U wheel
   - pip install -U -r requirements/testing.txt
 
