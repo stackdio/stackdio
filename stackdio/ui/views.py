@@ -18,8 +18,9 @@
 
 import logging
 
-from django.shortcuts import get_object_or_404, resolve_url
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.shortcuts import get_object_or_404, resolve_url
 from django.views.generic import TemplateView
 
 from stackdio.api.stacks.models import Stack, StackCommand
@@ -128,8 +129,14 @@ class ObjectPermissionsView(PageView):
         return super(ObjectPermissionsView, self).get(request, *args, **kwargs)
 
 
-class UserProfileView(StackdioView):
-    template_name = 'stackdio/user-profile.html'
+class UserProfileView(PageView):
+    template_name = 'users/user-profile.html'
+    viewmodel = 'viewmodels/user-profile'
+
+    def get_context_data(self, **kwargs):
+        context = super(UserProfileView, self).get_context_data(**kwargs)
+        context['ldap'] = settings.LDAP_ENABLED
+        return context
 
 
 class StackCreateView(PageView):

@@ -25,6 +25,7 @@ define([
     return {
         growlAlert: function (message, type) {
             $.bootstrapGrowl(message, {
+                ele: '#main-content',
                 type: type,
                 align: 'center',
                 width: 'auto',
