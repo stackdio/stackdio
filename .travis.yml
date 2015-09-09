@@ -1,0 +1,47 @@
+language: python
+python:
+  - "2.7"
+
+env:
+  NOSE_WITH_XUNIT: 1
+  NOSE_WITH_COVERAGE: 1
+  NOSE_COVER_BRANCHES: 1
+  NOSE_COVER_INCLUSIVE: 1
+  DJANGO_SETTINGS_MODULE: 'stackdio.server.settings.testing'
+
+# So that we get a docker container
+sudo: false
+
+## Customize dependencies
+install:
+  - pip install -U 'pip<6'
+  - pip install -U wheel
+  - pip install -U -r requirements/testing.txt
+
+## Customize test commands
+before_script:
+  - pep8 --ignore=E501,E12 --exclude='*/migrations/*,*/bower_components/*' stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
+  - pylint --rcfile=.pylintrc stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
+  - mkdir /home/travis/.stackdio
+  - cp tests/config /home/travis/.stackdio/config
+
+script:
+  - python manage.py test --cover-html
+  - python manage.py build_ui
+
+after_script:
+  - python setup.py sdist
+  - python setup.py bdist_wheel
+
+after_success:
+  - coveralls
+
+deploy:
+  provider: releases
+  api_key: ""
+  file:
+    - "dist/stackdio-server-*.tar.gz"
+    - "dist/stackdio_server-*.whl"
+  skip_cleanup: true
+  on:
+    tags: true
