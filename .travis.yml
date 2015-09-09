@@ -1,6 +1,11 @@
 language: python
+
 python:
   - "2.7"
+
+cache:
+  directories:
+    - $HOME/.cache/pip
 
 env:
   NOSE_WITH_XUNIT: 1
