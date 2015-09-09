@@ -42,13 +42,12 @@ script:
   - python manage.py test --cover-html
   - python manage.py build_ui
 
-after_script:
+# Only build artifacts on success
+after_success:
+  - coveralls
   - export STACKDIO_VERSION=`python setup.py --version`
   - python setup.py sdist
   - python setup.py bdist_wheel
-
-after_success:
-  - coveralls
 
 deploy:
   provider: releases
