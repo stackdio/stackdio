@@ -13,7 +13,7 @@ env:
   NOSE_WITH_COVERAGE: 1
   NOSE_COVER_BRANCHES: 1
   NOSE_COVER_INCLUSIVE: 1
-  DJANGO_SETTINGS_MODULE: 'stackdio.server.settings.testing'
+  DJANGO_SETTINGS_MODULE: stackdio.server.settings.testing
 
 # So that we get a docker container
 sudo: false
@@ -51,7 +51,8 @@ after_success:
 
 deploy:
   provider: releases
-  api_key: ""
+  api_key:
+    secure: bkmap6muMBDHYav/TeeT4g1KTx5Xe+dbyBb44rte/xowQykKEU7VT1a/y2AsbHrWPwM6DnhwyntJcq2YWt/Ug7uPv9SY4DUjsy94u6MHaNzoM6xfsHynMrxO10kYGx9vgEIbexhjCJuIlYfluEkMBEl3E5IIqIrRn1Vb6rXVfeiLbeeHXbFS/aVduyp6ZFeJvuHAuiihm6QKgDMRRhyn5rzWvpeflPL0AYDEh0V+5+eL3Npm7WseyDnXPw6m9O6naK+Ej3bsyA63KDfNykHuSn17ic+Yy3sOMijCbIDxDDBuQAoPn45se4zZhHS4STD00Cf1IxuA7wMaJfc0wChloj3PZ6W2g15iFo/bEnaEl+TnQdS/MMCvu6xg+mX88k8upxLliYXpsQ7tia0Mk2dshRA8corVBi9JLnM+GbLNzGkRkLPkY9L1SquVtxI8oDKUzmqcphFkiia7cJSNEgisfGMTTQ5uoeV6Pw9+MFihuqwEw9lCzREpuJ76zcO51cFugF4hnXWVekgzWFF86NqjvSo3No21OudkhCzvDLDhGq2rdqZiiqKgnSTq7R8oDoRj8ujoPGuCnc7yeAZyG+jhBdLYWcyvCYosWbBcmGLFfdqDOtKyK8skvpMVUULJKAcHAeANLJWv4Td5RIqBXDE9rU/JnPLtgy7Pgvet3TtU8Jk=
   file:
     - "dist/stackdio-server-*.tar.gz"
     - "dist/stackdio_server-*.whl"
