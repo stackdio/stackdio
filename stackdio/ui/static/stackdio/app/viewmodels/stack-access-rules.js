@@ -48,10 +48,9 @@ define([
         baseUrl: '/stacks/',
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/security_groups/',
         sortableFields: [
-            {name: 'hostTarget', displayName: 'Host Target', width: '15%'},
-            {name: 'command', displayName: 'Command', width: '40%'},
-            {name: 'finishTime', displayName: 'Finished', width: '25%'},
-            {name: 'status', displayName: 'Status', width: '10%'}
+            {name: 'name', displayName: 'Name', width: '40%'},
+            {name: 'description', displayName: 'Description', width: '40%'},
+            {name: 'groupId', displayName: 'Group ID', width: '20%'}
         ],
         hostTarget: ko.observable(null),
         command: ko.observable(null),
