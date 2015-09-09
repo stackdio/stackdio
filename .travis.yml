@@ -7,6 +7,7 @@ cache:
   directories:
     - $HOME/.cache/pip
 
+# Set up our environment
 env:
   NOSE_WITH_XUNIT: 1
   NOSE_WITH_COVERAGE: 1
