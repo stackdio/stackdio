@@ -26,7 +26,7 @@ addons:
 
 ## Customize dependencies
 install:
-  - ls $HOME/.cache/pip
+  - env
   - npm install -g bower
   - pip install -U 'pip<6'
   - pip install -U wheel
