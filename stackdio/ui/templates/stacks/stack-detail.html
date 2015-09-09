@@ -20,6 +20,10 @@
                     <label>Namespace</label>
                     <p class="form-control-static" data-bind="text: stack.namespace"></p>
                 </div>
+                <div id="created" class="form-group">
+                    <label>Launched</label>
+                    <p class="form-control-static" data-bind="text: stack.created().calendar()"></p>
+                </div>
                 <div id="create_users">
                     <div class="checkbox">
                         <label class="checkbox-custom" data-initialize="checkbox">

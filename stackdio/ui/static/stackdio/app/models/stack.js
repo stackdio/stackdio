@@ -28,6 +28,16 @@ define([
 ], function ($, _, ko, bootbox, moment, utils, Host, Blueprint) {
     'use strict';
 
+    function FakeMoment() {
+        this.calendar = function () {
+            return '';
+        }
+
+        this.toString = function () {
+            return '';
+        }
+    }
+
     // Define the stack model.
     function Stack(raw, parent) {
         var needReload = false;
@@ -62,6 +72,7 @@ define([
 
         // Non-editable fields
         this.namespace = ko.observable();
+        this.created = ko.observable(new FakeMoment());
 
         // Lazy-loaded properties (not returned from the main stack endpoint)
         this.properties = ko.observable({});
@@ -107,6 +118,7 @@ define([
         this.status(raw.status);
         this.hostCount(raw.host_count);
         this.namespace(raw.namespace);
+        this.created(moment(raw.created));
 
         // Determine what type of label should be around the status
         switch (raw.status) {

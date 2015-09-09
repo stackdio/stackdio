@@ -45,6 +45,7 @@
                     <td data-bind="text: title, click: function (stack) { $root.goToDetailPage(stack) }"></td>
                     <td data-bind="text: description, click: function (stack) { $root.goToDetailPage(stack) }"></td>
                     <td data-bind="text: namespace, click: function (stack) { $root.goToDetailPage(stack) }"></td>
+                    <td data-bind="text: created().calendar(), click: function (stack) { $root.goToDetailPage(stack) }"></td>
                     <td data-bind="text: hostCount, click: function (stack) { $root.goToDetailPage(stack) }"></td>
                     <td data-bind="click: function (stack) { $root.goToDetailPage(stack) }">
                         <span class="label" data-bind="css: labelClass, text: status"></span>

@@ -34,9 +34,10 @@ define([
         initialUrl: '/api/stacks/',
         sortableFields: [
             {name: 'title', displayName: 'Title', width: '15%'},
-            {name: 'description', displayName: 'Description', width: '30%'},
+            {name: 'description', displayName: 'Description', width: '20%'},
             {name: 'namespace', displayName: 'Namespace', width: '15%'},
-            {name: 'hostCount', displayName: 'Hosts', width: '15%'},
+            {name: 'created', displayName: 'Launched', width: '15%'},
+            {name: 'hostCount', displayName: 'Hosts', width: '10%'},
             {name: 'status', displayName: 'Status', width: '10%'}
         ],
         openActionStackId: null,
