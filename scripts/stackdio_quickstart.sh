@@ -98,7 +98,7 @@ if [ $OS == "ubuntu" ]; then
     sudo apt-get install -y virtualenvwrapper
     source /etc/bash_completion.d/virtualenvwrapper
 
-    sudo apt-get install -y python-dev libssl-dev libncurses5-dev swig nodejs npm libmysqlclient-dev rabbitmq-server git nginx libldap2-dev libsasl2-dev
+    sudo apt-get install -y python-dev libssl-dev libncurses5-dev libyaml-dev swig nodejs npm libmysqlclient-dev rabbitmq-server git nginx libldap2-dev libsasl2-dev
 
     # Link nodejs over to node - bower will complain otherwise
     sudo ln -s /usr/bin/nodejs /usr/bin/node
