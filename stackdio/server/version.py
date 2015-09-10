@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-VERSION = (0, 7, 0, 'dev', 4)
+VERSION = (0, 7, 0, 'a', 4)
 
 
 def get_version(version):
