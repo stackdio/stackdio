@@ -611,7 +611,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
         # Use salt-cloud to look up host information we need now that
         # the machines are running
-        query_results = stack.query_hosts()
+        query_results = stack.query_hosts(force=True)
 
         # keep track of terminated hosts for future removal
         hosts_to_remove = []
@@ -631,7 +631,10 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                 # FIXME: This is cloud provider specific. Should farm it out to
                 # the right implementation
                 host_data = query_results[host.hostname]
-                is_absent = host_data == 'Absent'
+                is_absent = host_data is None
+
+                if isinstance(host_data, basestring):
+                    raise TypeError('Expected dict, received {0}'.format(type(host_data)))
 
                 # Check for terminated host state
                 if is_absent or ('state' in host_data and host_data['state'] in bad_states):

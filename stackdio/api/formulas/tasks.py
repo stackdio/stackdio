@@ -27,7 +27,7 @@ from urlparse import urlsplit, urlunsplit
 import git
 from celery import shared_task
 
-from .models import Formula, FormulaComponent
+from .models import Formula
 from stackdio.api.formulas.validators import validate_specfile, validate_component
 
 logger = logging.getLogger(__name__)

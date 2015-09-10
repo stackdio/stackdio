@@ -16,7 +16,7 @@
 #
 
 
-from django.conf.urls import include, patterns, url
+from django.conf.urls import include, url
 from rest_framework import routers
 
 from . import api
@@ -80,7 +80,7 @@ snapshot_object_router.register(r'groups',
 urlpatterns = (
     url(r'^$',
         api.CloudRootView.as_view(),
-        name='cloud-root'),
+        name='root'),
 
     url(r'^providers/$',
         api.CloudProviderListAPIView.as_view(),

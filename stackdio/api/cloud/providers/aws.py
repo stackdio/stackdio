@@ -667,7 +667,7 @@ class AWSCloudProvider(BaseCloudProvider):
             subnets = vpc.get_all_subnets(subnet_ids)
             return subnets
         except boto.exception.EC2ResponseError:
-            logger.exception('Error looking up subnet_ids: {0}'.format(
+            logger.info('Error looking up subnet_ids: {0}'.format(
                 subnet_ids
             ))
             return None
@@ -755,7 +755,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 record_type = 'CNAME'
 
             if not record_value:
-                logger.warn(
+                logger.info(
                     'Host {0} has no provider_dns or provider_private_ip...'
                     'skipping DNS deregister.'.format(host)
                 )
@@ -786,7 +786,7 @@ class AWSCloudProvider(BaseCloudProvider):
         # volume deletion automatically when the host is terminated
         for h in hosts:
             if not h.instance_id:
-                logger.warn('Host {0} has no instance ID...skipping volume '
+                logger.info('Host {0} has no instance ID...skipping volume '
                             'delete.'.format(h))
                 continue
 

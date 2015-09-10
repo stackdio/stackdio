@@ -20,28 +20,27 @@ import logging
 
 from rest_framework import serializers
 
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from . import models
 
 logger = logging.getLogger(__name__)
 
 
-class VolumeSerializer(serializers.HyperlinkedModelSerializer):
-    owner = serializers.ReadOnlyField(source='owner.username')
+class VolumeSerializer(StackdioHyperlinkedModelSerializer):
     snapshot_name = serializers.ReadOnlyField(source='snapshot.snapshot_id')
     size_in_gb = serializers.ReadOnlyField(source='snapshot.size_in_gb')
 
     # Link fields
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='volume-object-user-permissions-list')
+        view_name='api:volumes:volume-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='volume-object-group-permissions-list')
+        view_name='api:volumes:volume-object-group-permissions-list')
 
     class Meta:
         model = models.Volume
         fields = (
             'id',
             'url',
-            'owner',
             'volume_id',
             'attach_time',
             'stack',

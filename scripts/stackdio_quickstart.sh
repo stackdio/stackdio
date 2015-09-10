@@ -54,6 +54,20 @@ fi
 # CENTOS PREPARATION
 ###
 if [ $OS == "centos" ]; then
+    selinuxenabled
+    if [[ "$?" != "1" ]]; then
+        echo "It looks like selinux is enabled.  Please disable it before installing stackd.io, unless you know what you're doing."
+        echo -n "Continue? (y|n) "
+        read yn
+        if [[ "$yn" != "y" ]]; then
+            exit 1
+        fi
+    fi
+
+    sudo service iptables stop
+    sudo service ip6tables stop
+    sudo chkconfig iptables off
+    sudo chkconfig ip6tables off
 
     sudo yum install -y mysql-server
     sudo service mysqld start
@@ -64,11 +78,10 @@ if [ $OS == "centos" ]; then
 
     sudo yum install -y python-virtualenvwrapper
     echo "source /usr/bin/virtualenvwrapper.sh" >> ~/.bash_profile
-    . ~/.bash_profile
+    source /usr/bin/virtualenvwrapper.sh
 
     sudo yum groupinstall -y "Development Tools"
-    sudo yum install -y git mysql-devel swig python-devel rabbitmq-server nginx
-
+    sudo yum install -y git mysql-devel swig python-devel rabbitmq-server nginx nodejs npm
 fi
 
 ###
@@ -85,8 +98,10 @@ if [ $OS == "ubuntu" ]; then
     sudo apt-get install -y virtualenvwrapper
     source /etc/bash_completion.d/virtualenvwrapper
 
-    sudo apt-get install -y python-dev libssl-dev libncurses5-dev swig libmysqlclient-dev rabbitmq-server git nginx
+    sudo apt-get install -y python-dev libssl-dev libncurses5-dev libyaml-dev swig nodejs npm libmysqlclient-dev rabbitmq-server git nginx libldap2-dev libsasl2-dev
 
+    # Link nodejs over to node - bower will complain otherwise
+    sudo ln -s /usr/bin/nodejs /usr/bin/node
 fi
 
 ###
@@ -97,14 +112,27 @@ fi
 mkvirtualenv stackdio
 workon stackdio
 
+# Install bower
+sudo npm install -g bower
+
 # Install directly from GitHub
-pip install git+ssh://git@github.com/stackdio/stackdio.git
+tmp_dir=/tmp/stackdio-`date -Iseconds`
+
+cd ${tmp_dir}
+git clone https://github.com/stackdio/stackdio.git
+cd stackdio
+
+# install bower dependencies
+bower install
+
+# Install stackdio!
+pip install .
+rm -rf ${tmp_dir}
 
 # Run through stackdio init to create ~/.stackdio/confg
 stackdio init
 
 # Set up the database
-stackdio manage.py syncdb --noinput
 stackdio manage.py migrate
 
 if [ $OS == "centos" ]; then
@@ -138,5 +166,3 @@ sudo service rabbitmq-server start
 # Generate supervisord config and start services
 stackdio config supervisord > ~/.stackdio/supervisord.conf
 supervisord -c ~/.stackdio/supervisord.conf
-supervisorctl -c ~/.stackdio/supervisord.conf start all
-
