@@ -120,7 +120,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         formulas = set()
         for host_definition in self.host_definitions.all():
             for component in host_definition.formula_components.all():
-                formulas.add(component.component.formula)
+                formulas.add(component.formula)
 
         return list(formulas)
 
@@ -169,43 +169,15 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
                                      blank=True,
                                      null=True)
 
+    # Grab the list of formula components
+    formula_components = GenericRelation('formulas.FormulaComponent')
+
     @property
     def formula_components_count(self):
         return self.formula_components.count()
 
     def __unicode__(self):
         return self.title
-
-
-class BlueprintHostFormulaComponent(TimeStampedModel):
-    """
-    An extension of an existing FormulaComponent to add additional metadata
-    for those components based on this blueprint. In particular, this is how
-    we track the order in which the formula should be provisioned in a
-    blueprint.
-    """
-
-    class Meta:
-        verbose_name_plural = 'formula components'
-        ordering = ['order']
-
-        default_permissions = ()
-
-    # The formula component we're extending
-    component = models.ForeignKey('formulas.FormulaComponent')
-
-    # The host definition this extended formula component applies to
-    host = models.ForeignKey('blueprints.BlueprintHostDefinition',
-                             related_name='formula_components')
-
-    # The order in which the component should be provisioned
-    order = models.IntegerField('Order', default=0)
-
-    def __unicode__(self):
-        return u'{0}:{1}'.format(
-            self.component,
-            self.host
-        )
 
 
 class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):

@@ -13,7 +13,8 @@ machine:
 dependencies:
   override:
     - pip install -U 'pip<6'
-    - pip install -r requirements/testing.txt
+    - pip install -U wheel
+    - pip install -U -r requirements/testing.txt
 
 ## Customize test commands
 test:
@@ -35,7 +36,7 @@ deployment:
   artifact:
     branch: /.*/
     commands:
-      - bower install
+      - python manage.py build_ui
       - python setup.py sdist
-      - mkdir $CIRCLE_ARTIFACTS/dist/
-      - mv dist/stackdio-server-*.tar.gz $CIRCLE_ARTIFACTS/dist/
+      - python setup.py bdist_wheel
+      - mv dist/ $CIRCLE_ARTIFACTS/dist/

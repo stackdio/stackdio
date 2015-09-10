@@ -76,7 +76,7 @@ class SearchAPIView(generics.ListAPIView):
                     full_queryset.append({
                         'object_type': ctype,
                         'title': obj.title,
-                        'url': reverse('%s-detail' % model_name,
+                        'url': reverse('api:%s:%s-detail' % (app, model_name),
                                        kwargs={'pk': obj.pk},
                                        request=self.request),
                     })

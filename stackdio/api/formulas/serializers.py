@@ -19,43 +19,41 @@
 import logging
 from urlparse import urlsplit, urlunsplit
 
-import git
 from rest_framework import serializers
 
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from . import models, tasks
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.utils import recursively_sort_dict
+from . import models, tasks, validators
+
 
 logger = logging.getLogger(__name__)
 
 
-class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = models.FormulaComponent
-        fields = (
-            'title',
-            'description',
-            'sls_path',
-        )
-
-
-class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
+class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     # Non-model fields
     git_password = PasswordField(write_only=True, required=False,
                                  allow_blank=True, label='Git Password')
 
     # Link fields
-    properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
-    components = serializers.HyperlinkedIdentityField(view_name='formula-component-list')
-    action = serializers.HyperlinkedIdentityField(view_name='formula-action')
+    properties = serializers.HyperlinkedIdentityField(
+        view_name='api:formulas:formula-properties')
+    components = serializers.HyperlinkedIdentityField(
+        view_name='api:formulas:formula-component-list')
+    valid_versions = serializers.HyperlinkedIdentityField(
+        view_name='api:formulas:formula-valid-version-list')
+    action = serializers.HyperlinkedIdentityField(
+        view_name='api:formulas:formula-action')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='formula-object-user-permissions-list')
+        view_name='api:formulas:formula-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='formula-object-group-permissions-list')
+        view_name='api:formulas:formula-object-group-permissions-list')
 
     class Meta:
         model = models.Formula
         fields = (
+            'id',
             'url',
             'title',
             'description',
@@ -71,6 +69,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeria
             'status_detail',
             'properties',
             'components',
+            'valid_versions',
             'action',
             'user_permissions',
             'group_permissions',
@@ -137,13 +136,14 @@ class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeria
 
 class FormulaPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
             # Make it work two different ways.. ooooh
             if isinstance(obj, models.Formula):
-                return obj.properties
+                ret = obj.properties
             else:
-                return obj
-        return {}
+                ret = obj
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data
@@ -186,7 +186,7 @@ class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstra
             models.Formula.IMPORTING,
             'Importing formula...this could take a while.'
         )
-        tasks.update_formula.si(formula.id, git_password).apply_async()
+        tasks.update_formula.si(formula.id, git_password, formula.default_branch).apply_async()
 
     def save(self, **kwargs):
         action = self.validated_data['action']
@@ -216,21 +216,14 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         formula = attrs['formula']
-        version = attrs['version']
+        version = attrs.get('version')
 
         if version is None:
             # If it's None, this version should be deleted, so no need to do any further checks
             return attrs
 
-        repo = git.Repo(formula.get_repo_dir())
-
-        branches = [str(b.name) for b in repo.branches]
-        tags = [str(t.name) for t in repo.tags]
-        commit_hashes = [str(c.hexsha) for c in repo.iter_commits()]
-
         # Verify that the version is either a branch, tag, or commit hash
-
-        if version not in branches + tags + commit_hashes:
+        if version not in formula.get_valid_versions():
             err_msg = '{0} cannot be found to be a branch, tag, or commit hash'.format(version)
             raise serializers.ValidationError({
                 'version': [err_msg]
@@ -260,3 +253,65 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
             })
 
         return super(FormulaVersionSerializer, self).create(validated_data)
+
+
+class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+    # Possibly required
+    formula = serializers.SlugRelatedField(slug_field='uri',
+                                           queryset=models.Formula.objects.all(), required=False)
+
+    class Meta:
+        model = models.FormulaComponent
+        fields = (
+            'formula',
+            'title',
+            'description',
+            'sls_path',
+            'order',
+        )
+
+        extra_kwargs = {
+            'order': {'min_value': 0, 'default': serializers.CreateOnlyDefault(0)}
+        }
+
+    def validate(self, attrs):
+        formula = attrs.get('formula', None)
+        sls_path = attrs['sls_path']
+        attrs['validated'] = False
+
+        if formula is None:
+            # Do some validation if the formula is done
+            all_components = models.Formula.all_components()
+
+            if sls_path not in all_components:
+                raise serializers.ValidationError({
+                    'sls_path': ['sls_path `{0}` does not exist.'.format(sls_path)]
+                })
+
+            # This means the component exists.  We'll check to make sure it doesn't
+            # span multiple formulas.
+            sls_formulas = all_components[sls_path]
+            if len(sls_formulas) > 1:
+                err_msg = 'sls_path `{0}` is contained in multiple formulas.  Please specify one.'
+                raise serializers.ValidationError({
+                    'sls_path': [err_msg.format(sls_path)]
+                })
+
+            # Be sure to throw the formula in!
+            attrs['formula'] = sls_formulas[0]
+            attrs['validated'] = True
+        else:
+            # If they provided a formula, validate the sls_path is in that formula
+            content_object = self.context.get('content_object')
+
+            if content_object is not None:
+                # content_object should either be an account or host_definition
+                validators.validate_formula_component(attrs, content_object.formula_versions.all())
+                attrs['validated'] = True
+
+        return attrs
+
+    def save(self, **kwargs):
+        # Be sure that validated doesn't end up in the final validated data
+        self.validated_data.pop('validated', None)
+        return super(FormulaComponentSerializer, self).save(**kwargs)

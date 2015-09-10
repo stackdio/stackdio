@@ -16,7 +16,7 @@
 #
 
 
-from django.conf.urls import include, patterns, url
+from django.conf.urls import include, url
 from rest_framework import routers
 
 from . import api
@@ -58,6 +58,10 @@ urlpatterns = (
     url(r'^formulas/(?P<pk>[0-9]+)/components/$',
         api.FormulaComponentListAPIView.as_view(),
         name='formula-component-list'),
+
+    url(r'^formulas/(?P<pk>[0-9]+)/valid_versions/$',
+        api.FormulaValidVersionListAPIView.as_view(),
+        name='formula-valid-version-list'),
 
     url(r'^formulas/(?P<pk>[0-9]+)/action/$',
         api.FormulaActionAPIView.as_view(),

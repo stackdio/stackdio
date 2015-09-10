@@ -1,0 +1,72 @@
+{% extends 'stackdio/page.html' %}
+{% load staticfiles %}
+
+{% block title %}Create Stack{% endblock %}
+{% block stack-class %}active{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/ladda/dist/ladda-themeless.min.css' %}">
+{% endblock %}
+
+{% block page-content %}
+    <form data-bind="submit: createStack">
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group" id="blueprint">
+                    <label for="stackBlueprint">Blueprint</label>
+
+                    <div id="blueprints">
+                        <input id="stackBlueprint" class="typeahead form-control" type="text"
+                               placeholder="Search for blueprints...">
+                    </div>
+                </div>
+                <div class="form-group" id="title">
+                    <label for="stackTitle">Title</label>
+                    <input type="text" class="form-control" id="stackTitle"
+                           data-bind="value: title, valueUpdate: 'keyup'">
+                </div>
+                <div class="form-group" id="description">
+                    <label for="stackDescription">Description</label>
+                    <input type="text" class="form-control" id="stackDescription"
+                           data-bind="value: description, valueUpdate: 'keyup'">
+                </div>
+                <div class="form-group" id="namespace">
+                    <label for="stackNamespace">Namespace</label>
+                    <input type="text" class="form-control" id="stackNamespace"
+                           data-bind="value: namespace, valueUpdate: 'keyup'">
+                </div>
+                <div id="create_users">
+                    <div class="checkbox">
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox" data-bind="checked: createUsers">
+                            <span class="checkbox-label">Create Users</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" id="properties">
+                    <label for="stackProperties">Properties</label>
+
+                    <textarea class="form-control" id="stackProperties" rows="25"
+                              data-bind="value: propertiesJSON, valueUpdate: 'keyup'"></textarea>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <h3>Formula Versions</h3>
+                <hr>
+                <div id="formula_versions" data-bind="foreach: formulaVersions">
+                    <div class="form-group">
+                        <label data-bind="text: formula"></label>
+                        <input type="text" class="form-control" data-bind="value: version, valueUpdate: 'keyup'">
+                    </div>
+                </div>
+                <p data-bind="visible: !blueprintId()">Please select a blueprint</p>
+                <button type="submit" id="create-button" data-style="slide-left"
+                        data-bind="enable: blueprintId"
+                        class="btn btn-success ladda-button pull-right" style="margin-top: 10px">
+                    <span class="ladda-label">Begin Provisioning</span>
+                </button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

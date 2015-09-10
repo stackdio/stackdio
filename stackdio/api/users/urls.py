@@ -21,7 +21,6 @@ from rest_framework import routers
 
 from . import api
 
-
 model_router = routers.SimpleRouter()
 model_router.register(r'users',
                       api.GroupModelUserPermissionsViewSet,
