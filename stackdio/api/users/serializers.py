@@ -24,6 +24,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedField
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from . import models
 
 
@@ -38,7 +39,7 @@ LDAP_MANAGED_FIELDS = (
 )
 
 
-class UserGroupSerializer(serializers.HyperlinkedModelSerializer):
+class UserGroupSerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = Group
         lookup_field = 'name'
@@ -48,9 +49,9 @@ class UserGroupSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class PublicUserSerializer(serializers.HyperlinkedModelSerializer):
+class PublicUserSerializer(StackdioHyperlinkedModelSerializer):
     groups = serializers.HyperlinkedIdentityField(
-        view_name='user-grouplist',
+        view_name='api:users:user-grouplist',
         lookup_field='username'
     )
 
@@ -67,7 +68,7 @@ class PublicUserSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class GroupUserSerializer(serializers.HyperlinkedModelSerializer):
+class GroupUserSerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = get_user_model()
         lookup_field = 'username'
@@ -77,15 +78,17 @@ class GroupUserSerializer(serializers.HyperlinkedModelSerializer):
         )
 
 
-class GroupSerializer(serializers.HyperlinkedModelSerializer):
-    users = serializers.HyperlinkedIdentityField(view_name='group-userlist', lookup_field='name')
-    action = serializers.HyperlinkedIdentityField(view_name='group-action', lookup_field='name')
+class GroupSerializer(StackdioHyperlinkedModelSerializer):
+    users = serializers.HyperlinkedIdentityField(
+        view_name='api:users:group-userlist', lookup_field='name')
+    action = serializers.HyperlinkedIdentityField(
+        view_name='api:users:group-action', lookup_field='name')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='group-object-user-permissions-list',
+        view_name='api:users:group-object-user-permissions-list',
         lookup_field='name',
     )
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='group-object-group-permissions-list',
+        view_name='api:users:group-object-group-permissions-list',
         lookup_field='name',
     )
 
@@ -141,6 +144,7 @@ class UserSettingsSerializer(serializers.ModelSerializer):
         model = models.UserSettings
         fields = (
             'public_key',
+            'advanced_view',
         )
 
 
@@ -148,13 +152,13 @@ class UserSerializer(serializers.ModelSerializer):
     superuser = serializers.BooleanField(source='is_superuser', read_only=True)
 
     groups = serializers.HyperlinkedIdentityField(
-        view_name='user-grouplist',
+        view_name='api:users:user-grouplist',
         lookup_field='username'
     )
 
     settings = UserSettingsSerializer()
 
-    change_password = HyperlinkedField(view_name='currentuser-password')
+    change_password = HyperlinkedField(view_name='api:users:currentuser-password')
 
     class Meta:
         model = get_user_model()

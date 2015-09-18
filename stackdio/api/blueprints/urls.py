@@ -16,7 +16,7 @@
 #
 
 
-from django.conf.urls import include, patterns, url
+from django.conf.urls import include, url
 from rest_framework import routers
 
 from . import api
@@ -40,33 +40,33 @@ object_router.register(r'groups',
 
 
 urlpatterns = (
-    url(r'^blueprints/$',
+    url(r'^$',
         api.BlueprintListAPIView.as_view(),
         name='blueprint-list'),
 
-    url(r'^blueprints/permissions/',
+    url(r'^permissions/',
         include(model_router.urls)),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/$',
+    url(r'^(?P<pk>[0-9]+)/$',
         api.BlueprintDetailAPIView.as_view(),
         name='blueprint-detail'),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/export/$',
+    url(r'^(?P<pk>[0-9]+)/export/$',
         api.BlueprintExportAPIView.as_view(),
         name='blueprint-export'),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
+    url(r'^(?P<pk>[0-9]+)/properties/$',
         api.BlueprintPropertiesAPIView.as_view(),
         name='blueprint-properties'),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/host_definitions/$',
+    url(r'^(?P<pk>[0-9]+)/host_definitions/$',
         api.BlueprintHostDefinitionListAPIView.as_view(),
         name='blueprint-host-definition-list'),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
+    url(r'^(?P<pk>[0-9]+)/formula_versions/$',
         api.BlueprintFormulaVersionsAPIView.as_view(),
         name='blueprint-formula-versions'),
 
-    url(r'^blueprints/(?P<pk>[0-9]+)/permissions/',
+    url(r'^(?P<pk>[0-9]+)/permissions/',
         include(object_router.urls)),
 )

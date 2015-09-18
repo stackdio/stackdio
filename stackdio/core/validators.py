@@ -15,13 +15,16 @@
 # limitations under the License.
 #
 
+import logging
 import re
 
 from rest_framework.serializers import ValidationError
 
+logger = logging.getLogger(__name__)
+
 VALID_PROTOCOLS = ('tcp', 'udp', 'icmp')
 
-HOSTNAME_REGEX = r'[a-z0-9\-]+'
+HOSTNAME_REGEX = r'^[a-z0-9\-]+$'
 
 
 class BaseValidator(object):
@@ -82,5 +85,8 @@ def validate_hostname(value, raise_exception=False):
 
     if errors and raise_exception:
         raise ValidationError(errors)
+
+    logger.debug(value)
+    logger.debug(errors)
 
     return errors

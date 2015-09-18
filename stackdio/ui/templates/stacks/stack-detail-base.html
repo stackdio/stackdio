@@ -1,0 +1,53 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Stack Detail{% endblock %}
+
+{# Inject the stack id into the window so we can access it in our javascript VM #}
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        window.stackdio = {};
+        window.stackdio.stackId = {{ stack_id }};
+    </script>
+{% endblock %}
+
+
+{% block page-content %}
+    <div class="row">
+        <div class="col-sm-3 col-sm-push-9">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-detail' pk=stack_id %}">Detail</a>
+                </li>
+                <li role="presentation"{% if page_id == 'properties' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-properties' pk=stack_id %}">Properties</a>
+                </li>
+                <li role="presentation"{% if page_id == 'hosts' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-hosts' pk=stack_id %}">Hosts</a>
+                </li>
+                <li role="presentation"{% if page_id == 'volumes' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-volumes' pk=stack_id %}">Volumes</a>
+                </li>
+                <li role="presentation"{% if page_id == 'commands' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-commands' pk=stack_id %}">Commands</a>
+                </li>
+                <li role="presentation"{% if page_id == 'access-rules' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-access-rules' pk=stack_id %}">Access Rules</a>
+                </li>
+                <li role="presentation"{% if page_id == 'formula-versions' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-formula-versions' pk=stack_id %}">Formula Versions</a>
+                </li>
+                {% if has_admin %}
+                <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-object-permissions' pk=stack_id %}">Permissions</a>
+                </li>
+                {% endif %}
+                <li role="presentation"{% if page_id == 'logs' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-logs' pk=stack_id %}">Logs</a>
+                </li>
+            </ul>
+        </div>
+
+        {% block detail-content %}{% endblock %}
+    </div>
+{% endblock %}

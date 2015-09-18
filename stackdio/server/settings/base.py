@@ -33,7 +33,6 @@ from django.contrib.messages import constants as messages
 import dj_database_url
 
 from stackdio.core.config import StackdioConfig
-from stackdio.server.version import __version__
 
 
 logger = logging.getLogger(__name__)
@@ -71,7 +70,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.pa
 
 # Set DEBUG things to False here, override to True in the development.py settings
 DEBUG = False
-TEMPLATE_DEBUG = DEBUG
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
@@ -97,6 +95,7 @@ INSTALLED_APPS = (
     'stackdio.api.volumes',
     'stackdio.api.blueprints',
     'stackdio.api.formulas',
+    'stackdio.ui',
     'rest_framework',
     'rest_framework.authtoken',
 )
@@ -123,10 +122,11 @@ ANONYMOUS_USER_ID = -1
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
+            'debug': DEBUG,
             'context_processors': [
+                'django.template.context_processors.csrf',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
@@ -144,12 +144,7 @@ ROOT_URLCONF = 'stackdio.server.urls'
 ##
 # Define your admin tuples like ('full name', 'email@address.com')
 ##
-ADMINS = (
-    ('Abe Music', 'abe.music@digitalreasoning.com'),
-    ('Charlie Penner', 'charlie.penner@digitalreasoning.com'),
-    ('Steve Brownlee', 'steve.brownlee@digitalreasoning.com'),
-    ('Clark Perkins', 'clark.perkins@digitalreasoning.com'),
-)
+ADMINS = ()
 MANAGERS = ADMINS
 
 ##
@@ -207,7 +202,7 @@ MEDIA_URL = '/media/'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"
-MEDIA_ROOT = '%s/static/media/' % BASE_DIR
+MEDIA_ROOT = '%s/media/' % STACKDIO_CONFIG.storage_root
 
 # Override message tags for bootstrap
 MESSAGE_TAGS = {
@@ -257,7 +252,7 @@ LOGGING = {
         },
     },
     'loggers': {
-        'django': {
+        'django.db.backends': {
             'handlers': ['null'],
             'level': 'ERROR',
             'propagate': True,
@@ -289,8 +284,6 @@ LOGGING = {
 # Django REST Framework configuration
 ##
 REST_FRAMEWORK = {
-    'STACKDIO_VERSION': __version__,
-
     'PAGE_SIZE': 50,
 
     # Filtering

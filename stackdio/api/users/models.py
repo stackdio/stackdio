@@ -36,11 +36,13 @@ class UserSettings(models.Model):
         default_permissions = ()
 
     # which user the settings below
-    user = models.OneToOneField(settings.AUTH_USER_MODEL,
-                                related_name='settings')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='settings')
 
     # public RSA key for the user
     public_key = models.TextField(blank=True)
+
+    # Is the advanced view on?
+    advanced_view = models.BooleanField('Advanced View', default=False)
 
     def __unicode__(self):
         return self.user.username

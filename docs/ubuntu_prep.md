@@ -52,7 +52,7 @@ To quickly get up and running, you can run the following to install the required
 
 ```bash
 # Install requirements needed to install stackd.io
-sudo apt-get install python-dev libssl-dev libncurses5-dev swig nodejs npm \
+sudo apt-get install python-dev libssl-dev libncurses5-dev libyaml-dev swig nodejs npm \
     libmysqlclient-dev rabbitmq-server git nginx libldap2-dev libsasl2-dev
 ```
 

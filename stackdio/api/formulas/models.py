@@ -25,6 +25,7 @@ import git
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.core.cache import cache
 from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
@@ -250,6 +251,13 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     @property
     def components(self):
+        cache_key = 'formula-components-{0}'.format(self.id)
+
+        cached_components = cache.get(cache_key)
+
+        if cached_components:
+            return cached_components
+
         with open(join(self.get_repo_dir(), 'SPECFILE')) as f:
             yaml_data = yaml.safe_load(f)
             ret = OrderedDict()
@@ -261,6 +269,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     ('description', component['description']),
                     ('sls_path', component['sls_path']),
                 ))
+            cache.set(cache_key, ret, 10)
             return ret
 
     @classmethod

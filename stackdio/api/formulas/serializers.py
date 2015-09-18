@@ -23,25 +23,32 @@ from rest_framework import serializers
 
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.utils import recursively_sort_dict
 from . import models, tasks, validators
+
 
 logger = logging.getLogger(__name__)
 
 
-class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
+class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     # Non-model fields
     git_password = PasswordField(write_only=True, required=False,
                                  allow_blank=True, label='Git Password')
 
     # Link fields
-    properties = serializers.HyperlinkedIdentityField(view_name='formula-properties')
-    components = serializers.HyperlinkedIdentityField(view_name='formula-component-list')
-    valid_versions = serializers.HyperlinkedIdentityField(view_name='formula-valid-version-list')
-    action = serializers.HyperlinkedIdentityField(view_name='formula-action')
+    properties = serializers.HyperlinkedIdentityField(
+        view_name='api:formulas:formula-properties')
+    components = serializers.HyperlinkedIdentityField(
+        view_name='api:formulas:formula-component-list')
+    valid_versions = serializers.HyperlinkedIdentityField(
+        view_name='api:formulas:formula-valid-version-list')
+    action = serializers.HyperlinkedIdentityField(
+        view_name='api:formulas:formula-action')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='formula-object-user-permissions-list')
+        view_name='api:formulas:formula-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='formula-object-group-permissions-list')
+        view_name='api:formulas:formula-object-group-permissions-list')
 
     class Meta:
         model = models.Formula
@@ -129,13 +136,14 @@ class FormulaSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeria
 
 class FormulaPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
             # Make it work two different ways.. ooooh
             if isinstance(obj, models.Formula):
-                return obj.properties
+                ret = obj.properties
             else:
-                return obj
-        return {}
+                ret = obj
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data

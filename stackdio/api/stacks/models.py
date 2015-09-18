@@ -458,10 +458,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
             if count is None:
                 start, end = 0, hostdef.count
-                indexes = xrange(start, end)
+                indexes = range(start, end)
             elif not hosts:
                 start, end = 0, count
-                indexes = xrange(start, end)
+                indexes = range(start, end)
             else:
                 if backfill:
                     hosts = hosts.order_by('index')
@@ -757,7 +757,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(yaml_data)
 
     def generate_pillar_file(self):
-        from stackdio.api.formulas.models import FormulaComponent
+        from stackdio.api.formulas.models import Formula, FormulaComponent
 
         users = []
         # pull the create_ssh_users property from the stackd.io config file.
@@ -799,10 +799,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # that into our stack pillar file.
 
         # First get the unique set of formulas
-        hosts = self.hosts.all()
-        formulas = set(
-            [c.formula for c in FormulaComponent.objects.filter(content_object__in=hosts)]
-        )
+        formulas = set()
+        for host in self.hosts.all():
+            formulas.update([c.formula for c in host.formula_components.all()])
 
         # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
@@ -855,7 +854,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             with open(self.global_pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
 
-    def query_hosts(self):
+    def query_hosts(self, force=False):
         """
         Uses salt-cloud to query all the hosts for the given stack id.
         """
@@ -866,7 +865,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         cached_result = cache.get(CACHE_KEY)
 
-        if cached_result:
+        if cached_result and not force:
             logger.debug('salt-cloud query result cached')
             result = cached_result
         else:
