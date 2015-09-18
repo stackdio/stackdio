@@ -17,154 +17,72 @@
 
 define([
     'jquery',
-    'knockout',
+    'generics/pagination',
     'models/stack'
-], function ($, ko, Stack) {
-    return function() {
-        var self = this;
+], function ($, Pagination, Stack) {
+    'use strict';
 
-        self.breadcrumbs = [
+    return Pagination.extend({
+        breadcrumbs: [
             {
                 active: true,
                 title: 'Stacks'
             }
-        ];
-
-        // Observable view variables
-        self.pageNum = ko.observable();
-        self.pageSize = ko.observable();
-        self.currentPage = ko.observable();
-        self.previousPage = ko.observable();
-        self.nextPage = ko.observable();
-        self.count = ko.observable();
-        self.stacks = ko.observableArray([]);
-
-        // We need to keep track of which action dropdown is open.  This way we can keep
-        // it open across a refresh.
-        self.openActionStackId = null;
-
-        // Save a copy of the actions for each stack
-        self.actionMap = {};
-
-        self.startNum = ko.computed(function () {
-            if (self.pageSize() === null) {
-                return self.count() > 0 ? 1 : 0;
+        ],
+        model: Stack,
+        baseUrl: '/stacks/',
+        initialUrl: '/api/stacks/',
+        sortableFields: [
+            {name: 'title', displayName: 'Title', width: '15%'},
+            {name: 'description', displayName: 'Description', width: '20%'},
+            {name: 'namespace', displayName: 'Namespace', width: '15%'},
+            {name: 'created', displayName: 'Launched', width: '15%'},
+            {name: 'hostCount', displayName: 'Hosts', width: '10%'},
+            {name: 'status', displayName: 'Status', width: '10%'}
+        ],
+        openActionStackId: null,
+        actionMap: {},
+        reset: function() {
+            this.openActionStackId = null;
+            this.actionMap = {};
+            this._super();
+        },
+        processObject: function (stack) {
+            if (this.actionMap.hasOwnProperty(stack.id)) {
+                stack.availableActions(this.actionMap[stack.id]);
             }
-            return (self.pageNum() - 1) * self.pageSize() + 1;
-        });
+        },
+        extraReloadSteps: function () {
+            // Add the dropdown events.  This must happen AFTER we set the stacks observable
+            // in the previous statement.
+            var actionElement = $('.action-dropdown');
 
-        self.endNum = ko.computed(function () {
-            if (self.pageSize() === null) {
-                return self.stacks().length;
-            }
-            return self.startNum() + Math.min(self.pageSize(), self.stacks().length) - 1;
-        });
+            var self = this;
+            // React to an open-dropdown event
+            actionElement.on('show.bs.dropdown', function (evt) {
+                // Grab the ID of the open element
+                var id = parseInt(evt.target.id);
 
-        self.numPages = ko.computed(function () {
-            if (self.pageSize() === null) {
-                return 1;
-            }
-            var pages = self.count() / self.pageSize();
-            return self.count() % self.pageSize() == 0 ? pages : pages + 1;
-        });
+                // Set the ID of the currently open action dropdown
+                self.openActionStackId = id;
 
-        self.reset = function () {
-            self.pageNum(1);
-            self.pageSize(null);
-            self.currentPage('/api/stacks/');
-            self.previousPage(null);
-            self.nextPage(null);
-            self.count(0);
-            self.stacks([]);
-            self.openActionLists = [];
-            self.actionMap = {};
-            self.reloadStacks();
-        };
+                // Freeze a copy of the current stacks
+                var stacks = self.objects();
 
-        self.goToDetailPage = function (stack) {
-            window.location = '/stacks/' + stack.id + '/';
-        };
-
-        self.goToNextPage = function () {
-            if (self.nextPage() !== null) {
-                self.currentPage(self.nextPage());
-                self.pageNum(self.pageNum() + 1);
-                self.reloadStacks();
-            }
-        };
-
-        self.goToPreviousPage = function() {
-            if (self.previousPage() !== null) {
-                self.currentPage(self.previousPage());
-                self.pageNum(self.pageNum() - 1);
-                self.reloadStacks();
-            }
-        };
-
-        // Refresh everything
-        self.reloadStacks = function () {
-            $.ajax({
-                method: 'GET',
-                url: self.currentPage()
-            }).done(function (stacks) {
-                self.count(stacks.count);
-                self.previousPage(stacks.previous);
-                self.nextPage(stacks.next);
-                if (stacks.next !== null) {
-                    self.pageSize(stacks.results.length);
+                // Find the current stack with the correct ID, and load the actions
+                for (var i = 0, length = stacks.length; i < length; ++i) {
+                    if (stacks[i].id === id) {
+                        stacks[i].loadAvailableActions();
+                        break;
+                    }
                 }
-
-                var stackModels = [];
-                stacks.results.forEach(function (rawStack) {
-                    // Create a new stack
-                    var stackModel = new Stack(rawStack, self);
-
-                    // Check if we already have a list of actions for this stack, and inject them if so
-                    if (self.actionMap.hasOwnProperty(rawStack.id)) {
-                        stackModel.availableActions(self.actionMap[rawStack.id]);
-                    }
-
-                    stackModels.push(stackModel);
-                });
-                self.stacks(stackModels);
-
-                // Add the dropdown events.  This must happen AFTER we set the stacks observable
-                // in the previous statement.
-                var actionElement = $('.action-dropdown');
-
-                // React to an open-dropdown event
-                actionElement.on('show.bs.dropdown', function (evt) {
-                    // Grab the ID of the open element
-                    var id = parseInt(evt.target.id);
-
-                    // Set the ID of the currently open action dropdown
-                    self.openActionStackId = id;
-
-                    // Freeze a copy of the current stacks
-                    var stacks = self.stacks();
-
-                    // Find the current stack with the correct ID, and load the actions
-                    for (var i = 0, length = stacks.length; i < length; ++i) {
-                        if (stacks[i].id === id) {
-                            stacks[i].loadAvailableActions();
-                            break;
-                        }
-                    }
-                });
-
-                // React to a close dropdown event (this one is pretty simple)
-                actionElement.on('hide.bs.dropdown', function () {
-                    // Make sure that we know nothing is open
-                    self.openActionStackId = null;
-                });
-            }).fail(function () {
-                // If we get a 404 or something, reset EVERYTHING.
-                self.reset();
             });
-        };
 
-        // Start everything up
-        self.reset();
-        setInterval(self.reloadStacks, 3000);
-    };
+            // React to a close dropdown event (this one is pretty simple)
+            actionElement.on('hide.bs.dropdown', function () {
+                // Make sure that we know nothing is open
+                self.openActionStackId = null;
+            });
+        }
+    });
 });

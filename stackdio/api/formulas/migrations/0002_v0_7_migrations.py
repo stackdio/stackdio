@@ -7,7 +7,7 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contenttypes', '__latest__'),
+        ('contenttypes', '0002_remove_content_type_name'),
         ('formulas', '0001_initial'),
     ]
 

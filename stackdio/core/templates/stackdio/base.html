@@ -1,0 +1,138 @@
+{% load staticfiles %}
+{% load stackdio %}
+<!DOCTYPE html>
+<html lang="en">
+<!--
+	Copyright 2014,  Digital Reasoning
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+	    http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+
+-->
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>stackd.io | {% block title %}Home{% endblock %}</title>
+
+    {% include 'stackdio/favicons.html' %}
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans:400,600,300">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/bootstrap/dist/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/fuelux/dist/css/fuelux.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/css/stackdio.css' %}">
+
+    <!-- extra stylesheets -->
+    {% block stylesheets %}{% endblock %}
+
+    <meta name="description" content="stackd.io | a modern cloud deployment and provisioning framework for everyone">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="//oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="//oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body class="fuelux">
+{% block body %}
+    {% block navbar %}
+        <nav class="navbar navbar-fixed-top {% block navbar-variant %}navbar-default{% endblock %}">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="{% block branding-url %}{% url 'ui:index' %}{% endblock %}" >
+                        {% block branding %}
+                        <img class="hidden-xs" alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">
+                        <img class="visible-xs" alt="Brand" style="height: 30px" src="{% static 'stackdio/img/logo-small-thumb.png' %}">
+                        {% endblock %}
+                    </a>
+                    {% if user.is_authenticated %}
+                    <form class="navbar-form navbar-left text-center" role="search">
+                        <div class="form-group" style="width: 100%">
+                            <input type="text" class="form-control" data-action="grow" style="width: 100%" placeholder="Search">
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <div id="navbar" class="collapse navbar-collapse">
+                    {% if user.is_authenticated %}
+                    <ul class="nav navbar-nav navbar-right">
+                        <!-- Extra links -->
+                        {% block links %}{% endblock %}
+
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                {{ user.username }} <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="{% url 'ui:user-profile' %}">Profile</a></li>
+                                <li><a href="{% url 'ui:logout' %}">Logout</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+    {% endblock navbar %}
+
+    <!-- Any messages if they exist -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    {{ message }}
+                </div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- the main content of the page -->
+    <div id="main-content" class="container">
+        {% block content %}{% endblock %}
+        <!-- Site footer -->
+        <footer class="footer">
+            <div class="row">
+                <div class="col-xs-6">
+                    <p>&copy; Digital Reasoning 2015</p>
+                </div>
+                <div class="col-xs-6">
+                {% block api-link %}
+                    <p class="text-right">stackd.io {% stackdio_version %} | <a href="{% url 'api:root' %}">api</a></p>
+                {% endblock api-link %}
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    {% block scripts %}
+    {# load these in by default if we're not using require - otherwise we'll override this later #}
+    <!-- jQuery / bootstrap scripts -->
+    <script src="{% static 'stackdio/lib/bower_components/jquery/jquery.min.js' %}"></script>
+    <script src="{% static 'stackdio/lib/bower_components/bootstrap/dist/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'stackdio/lib/bower_components/fuelux/dist/js/fuelux.min.js' %}"></script>
+    <script src="{% static 'stackdio/app/utils/mobile-fix.js' %}"></script>
+    {% endblock scripts %}
+{% endblock body %}
+</body>
+</html>

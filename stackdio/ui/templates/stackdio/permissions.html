@@ -2,19 +2,26 @@
 
 {% block title %}{{ object_type }} Permissions{% endblock %}
 
+{# Inject the stack id into the window so we can access it in our javascript VM #}
+{% block scripts %}
+    {{ block.super }}
+    {% if object_id %}
+    <script type="text/javascript">
+        window.stackdio = {};
+        window.stackdio.objectId = {{ object_id }};
+    </script>
+    {% endif %}
+{% endblock %}
+
 {% block page-content %}
 
-{% with 'user' as user_or_group %}
-    {% include 'stackdio/permissions-table.html' %}
-{% endwith %}
+{% include 'stackdio/stubs/permissions-table.html' with user_or_group='user' %}
 
-{% with 'group' as user_or_group %}
-    {% include 'stackdio/permissions-table.html' %}
-{% endwith %}
+{% include 'stackdio/stubs/permissions-table.html' with user_or_group='group' %}
 
 <div class="row" style="margin-top: 20px">
     <div class="col-md-12">
-        <button class="btn btn-primary" data-bind="click: save">Save</button>
+        <button class="btn btn-primary" data-bind="click: function() { save() }">Save</button>
         <button class="btn btn-info" data-bind="click: loadPermissions">Refresh</button>
     </div>
 </div>

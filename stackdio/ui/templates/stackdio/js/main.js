@@ -19,25 +19,33 @@
 
 {# Templatize this file so that the static files always work even if the static url changes #}
 
-// Grab the bower path
-var bowerPath = '{% static 'stackdio/lib/bower_components' %}';
+{# Grab the bower path #}
+{# This is better to be templatized.  This way our optimization process works easier #}
+{% with '../lib/bower_components' as bower_path %}
 
 requirejs.config({
     baseUrl: '{% static 'stackdio/app' %}',
     paths: {
-        'bloodhound': bowerPath + '/typeahead.js/dist/bloodhound.min',
-        'bootstrap': bowerPath + '/bootstrap/dist/js/bootstrap.min',
-        'domReady': bowerPath + '/requirejs-domReady/domReady',
-        'jquery': bowerPath + '/jquery/jquery.min',
-        'knockout': bowerPath + '/knockout/dist/knockout',
-        'knockout-mapping': bowerPath + '/knockout-mapping/knockout.mapping',
-        'moment': bowerPath + '/moment/moment',
-        'typeahead': bowerPath + '/typeahead.js/dist/typeahead.jquery.min',
-        'underscore': bowerPath + '/underscore/underscore-min'
+        'bloodhound': '{{ bower_path }}/typeahead.js/dist/bloodhound',
+        'bootbox': '{{ bower_path }}/bootbox.js/bootbox',
+        'bootstrap': '{{ bower_path }}/bootstrap/dist/js/bootstrap',
+        'bootstrap-growl': '{{ bower_path }}/bootstrap-growl/jquery.bootstrap-growl',
+        'domReady': '{{ bower_path }}/requirejs-domReady/domReady',
+        'fuelux': '{{ bower_path }}/fuelux/dist/js/fuelux',
+        'jquery': '{{ bower_path }}/jquery/jquery',
+        'knockout': '{{ bower_path }}/knockout/dist/knockout',
+        'ladda': '{{ bower_path }}/ladda/js/ladda',
+        'moment': '{{ bower_path }}/moment/moment',
+        'spin': '{{ bower_path }}/ladda/js/spin',
+        'typeahead': '{{ bower_path }}/typeahead.js/dist/typeahead.jquery',
+        'underscore': '{{ bower_path }}/underscore/underscore'
     },
     shim: {
         bootstrap: {
             deps: ['jquery']
+        },
+        'bootstrap-growl': {
+            deps: ['bootstrap', 'jquery']
         },
         typeahead: {
             deps: ['jquery'],
@@ -57,6 +65,7 @@ requirejs.config({
         }
     }
 });
+{% endwith %}
 
 // Add our custom capitalize method
 String.prototype.capitalize = function() {
@@ -65,12 +74,13 @@ String.prototype.capitalize = function() {
 
 require([
     'jquery',
-    'bootstrap',
     'knockout',
-    'utils/mobile-fix',
     '{{ viewmodel }}',
+    'bootstrap',
+    'fuelux',
+    'utils/mobile-fix',
     'domReady!'
-], function($, bootstrap, ko, mf, vm) {
+], function($, ko, vm) {
     // Function for getting cookies
     // pulled from Django 1.8 documentation
     function getCookie(name) {
@@ -95,6 +105,9 @@ require([
         // these HTTP methods do not require CSRF protection
         return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
     }
+
+    // Unhide all the things that are hidden before we do anything weird with the DOM
+    $('.stackdio-hidden-on-load').removeClass('stackdio-hidden-on-load');
 
     // Grab the CSRF token
     var csrftoken = getCookie('csrftoken');
@@ -131,6 +144,6 @@ require([
         }
     });
 
-    // Apply the bindings for our viewmodel
+    // Lastly, apply the bindings for our viewmodel
     ko.applyBindings(new vm());
 });

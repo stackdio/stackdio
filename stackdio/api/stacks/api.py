@@ -100,7 +100,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             err_msg = ('You may not delete this stack in its current state.  Please wait until '
                        'it is finished with the current action.')
             raise ValidationError({
-                'detail': err_msg
+                'detail': [err_msg]
             })
 
         # Update the status

@@ -44,6 +44,22 @@ components_dir = os.path.join(
     'bower_components',
 )
 
+build_dir = os.path.join(
+    root_dir,
+    'stackdio',
+    'ui',
+    'static',
+    'stackdio',
+    'build',
+)
+
+# Force the user to build the ui first
+if not os.path.exists(build_dir):
+    err_msg = ('It looks like you haven\'t built the ui yet.  Please run '
+               '`python manage.py build_ui` before using setup.py.\n')
+    sys.stderr.write(err_msg)
+    sys.exit(1)
+
 # Force the user to install bower components first
 if not os.path.exists(components_dir):
     err_msg = ('It looks like you haven\'t installed the bower dependencies yet.  Please run '

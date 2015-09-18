@@ -20,19 +20,15 @@ import logging
 import string
 
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.db import transaction
-from django.utils.encoding import smart_text
 from rest_framework import serializers
-from rest_framework.compat import OrderedDict
-from rest_framework.settings import api_settings
 
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
-from stackdio.core.utils import recursive_update
+from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone
-from stackdio.api.formulas.models import Formula, FormulaComponent
-from stackdio.api.formulas.serializers import FormulaVersionSerializer
+from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
+from stackdio.api.formulas.validators import validate_formula_components
 from stackdio.api.volumes.models import Volume
 from . import models, validators
 
@@ -41,13 +37,14 @@ logger = logging.getLogger(__name__)
 
 class BlueprintPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
             # Make it work two different ways.. ooooh
             if isinstance(obj, models.Blueprint):
-                return obj.properties
+                ret = obj.properties
             else:
-                return obj
-        return {}
+                ret = obj
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data
@@ -111,121 +108,8 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
         )
 
 
-class BlueprintHostFormulaComponentSerializer(StackdioHyperlinkedModelSerializer):
-    # Read only fields
-    title = serializers.ReadOnlyField(source='component.title')
-    description = serializers.ReadOnlyField(source='component.description')
-
-    # Possibly required
-    formula = serializers.SlugRelatedField(source='component.formula', slug_field='uri',
-                                           queryset=Formula.objects.all(), required=False)
-
-    # Definitely required
-    sls_path = serializers.SlugRelatedField(source='component', slug_field='sls_path',
-                                            queryset=FormulaComponent.objects.all())
-
-    class Meta:
-        model = models.BlueprintHostFormulaComponent
-        fields = (
-            'title',
-            'description',
-            'formula',
-            'sls_path',
-            'order',
-        )
-
-        extra_kwargs = {
-            'order': {'min_value': 0, 'default': serializers.CreateOnlyDefault(0)}
-        }
-
-    def to_internal_value(self, data):
-        """
-        Dict of native values <- Dict of primitive datatypes.
-        """
-        if not isinstance(data, dict):
-            message = self.error_messages['invalid'].format(
-                datatype=type(data).__name__
-            )
-            raise serializers.ValidationError({
-                api_settings.NON_FIELD_ERRORS_KEY: [message]
-            })
-
-        ret = OrderedDict()
-        errors = OrderedDict()
-
-        def _get_field_value(field):
-            # Pulled from the for loop in rest_framework.serializers:Serializer.to_internal_value()
-            validate_method = getattr(self, 'validate_' + field.field_name, None)
-            primitive_value = field.get_value(data)
-            try:
-                validated_value = field.run_validation(primitive_value)
-                if validate_method is not None:
-                    validated_value = validate_method(validated_value)
-            except serializers.ValidationError as e:
-                errors[field.field_name] = e.detail
-            except serializers.DjangoValidationError as e:
-                errors[field.field_name] = list(e.messages)
-            except serializers.SkipField:
-                pass
-            else:
-                # Everything looks ok, just return the value
-                return validated_value
-
-            # Something went wrong, just return None
-            return None
-
-        # We only need two things - the component and the order
-
-        # First get the component from some combination of the sls_path and the formula
-        sls_field = self.fields['sls_path']
-        formula_field = self.fields['formula']
-
-        try:
-            # The sls_path field should just return the component the say it's set up
-            component = _get_field_value(sls_field)
-            if component is not None:
-                ret['component'] = component
-        except MultipleObjectsReturned:
-            # The _get_field_value() method won't catch this exception, so we handle it here
-            # If there were multiple objects for the sls_path, then they must provide a formula
-            # to disambiguate the component
-            formula = _get_field_value(formula_field)
-            sls_primitive_value = sls_field.get_value(data)
-            if formula is None:
-                # Ambiguous sls_path with no formula specified.
-                err_msg = ('The sls_path "{0}" is contained in multiple formulas. '
-                           'Please specify a formula uri.'.format(sls_primitive_value))
-                errors.setdefault('sls_path', []).append(err_msg)
-            else:
-                try:
-                    # Grab the component from the formula's list of components
-                    ret['component'] = formula.components.get(sls_path=sls_primitive_value)
-                except ObjectDoesNotExist:
-                    msg = sls_field.error_messages['does_not_exist'].format(
-                        slug_name='sls_path',
-                        value=smart_text(sls_primitive_value)
-                    )
-                    errors.setdefault('sls_path', []).append(msg)
-                except (TypeError, ValueError):
-                    msg = sls_field.error_messages['invalid']
-                    errors.setdefault('sls_path', []).append(msg)
-
-        # Next do the order.  Nothing special here, just simple
-        order_field = self.fields['order']
-        order_value = _get_field_value(order_field)
-        if order_value is not None:
-            # Only if it's not None.  If it was None, something went wrong
-            serializers.set_value(ret, order_field.source_attrs, order_value)
-
-        # Check for errors, and raise the exception
-        if errors:
-            raise serializers.ValidationError(errors)
-
-        return ret
-
-
 class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
-    formula_components = BlueprintHostFormulaComponentSerializer(many=True)
+    formula_components = FormulaComponentSerializer(many=True)
     access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
     volumes = BlueprintVolumeSerializer(many=True, required=False)
 
@@ -239,6 +123,7 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.BlueprintHostDefinition
         fields = (
+            'id',
             'title',
             'description',
             'cloud_image',
@@ -313,7 +198,7 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
         formula_component_field = self.fields['formula_components']
         # Add in the host definition to all the formula components
         for component in formula_components:
-            component['host'] = host_definition
+            component['content_object'] = host_definition
         formula_component_field.create(formula_components)
 
         # Create the access rules
@@ -375,8 +260,15 @@ class FullBlueprintSerializer(BlueprintSerializer):
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
     formula_versions = FormulaVersionSerializer(many=True, required=False)
 
+    def to_representation(self, instance):
+        """
+        We want to return a blueprint representation here with links instead of the full object
+        """
+        return BlueprintSerializer(instance, context=self.context).to_representation(instance)
+
     def validate(self, attrs):
         host_definitions = attrs['host_definitions']
+        formula_versions = attrs.get('formula_versions', [])
         if len(host_definitions) < 1:
             raise serializers.ValidationError({
                 'host_definitions': ['You must supply at least 1 host definition.']
@@ -407,11 +299,16 @@ class FullBlueprintSerializer(BlueprintSerializer):
         # Grab all the orders from each component on each host_definition
         for host_definition in host_definitions:
             formula_components = host_definition['formula_components']
+
+            # Validate the components (i.e. make sure they exist in the formula on the
+            # specified version)
+            formula_components = validate_formula_components(formula_components, formula_versions)
+
             for component in formula_components:
                 # Add the order to the order set
                 order_set.add(component['order'])
                 # Also add the order to the component map
-                component_map.setdefault(component['component'], set()).add(component['order'])
+                component_map.setdefault(component['sls_path'], set()).add(component['order'])
 
         for component, orders in component_map.items():
             if len(orders) > 1:

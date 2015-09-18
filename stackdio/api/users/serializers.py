@@ -144,6 +144,7 @@ class UserSettingsSerializer(serializers.ModelSerializer):
         model = models.UserSettings
         fields = (
             'public_key',
+            'advanced_view',
         )
 
 

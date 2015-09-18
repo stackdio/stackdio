@@ -29,7 +29,8 @@ from rest_framework.views import APIView
 
 from stackdio.api.blueprints.models import Blueprint
 from stackdio.api.cloud.providers.base import DeleteGroupException
-from stackdio.api.formulas.serializers import FormulaVersionSerializer
+from stackdio.api.formulas.models import FormulaComponent
+from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.utils import FakeQuerySet
 from stackdio.core.viewsets import (
@@ -152,30 +153,24 @@ class CloudAccountObjectGroupPermissionsViewSet(mixins.CloudAccountRelatedMixin,
 
 class GlobalOrchestrationComponentListAPIView(mixins.CloudAccountRelatedMixin,
                                               generics.ListCreateAPIView):
-    serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
+    serializer_class = FormulaComponentSerializer
+
+    def get_serializer_context(self):
+        context = super(GlobalOrchestrationComponentListAPIView, self).get_serializer_context()
+        context['content_object'] = self.get_cloudaccount()
+        return context
 
     def get_queryset(self):
-        return self.get_cloudaccount().global_formula_components.all()
+        return self.get_cloudaccount().formula_components.all()
 
     def perform_create(self, serializer):
-        serializer.save(account=self.get_cloudaccount())
-
-    def create(self, request, *args, **kwargs):
-        component_id = request.DATA.get('component')
-        try:
-            # Delete an existing component if there is one
-            component = self.get_queryset().get(component__id=component_id)
-            component.delete()
-        except models.GlobalOrchestrationFormulaComponent.DoesNotExist:
-            pass
-
-        return super(GlobalOrchestrationComponentListAPIView, self).create(request, *args, **kwargs)
+        serializer.save(content_object=self.get_cloudaccount())
 
 
-class GlobalOrchestrationComponentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = models.GlobalOrchestrationFormulaComponent.objects.all()
-    serializer_class = serializers.GlobalOrchestrationFormulaComponentSerializer
-    permission_classes = (StackdioObjectPermissions,)
+class GlobalOrchestrationComponentDetailAPIView(mixins.CloudAccountRelatedMixin,
+                                                generics.RetrieveUpdateDestroyAPIView):
+    queryset = FormulaComponent.objects.all()
+    serializer_class = FormulaComponentSerializer
 
 
 class GlobalOrchestrationPropertiesAPIView(mixins.CloudAccountRelatedMixin,

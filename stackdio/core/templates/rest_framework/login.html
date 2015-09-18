@@ -17,6 +17,7 @@
 
 {% extends 'stackdio/login.html' %}
 {% load staticfiles %}
+{% load stackdio %}
 
 {% block stylesheets %}
 <link rel="stylesheet" type="text/css" href="{% static 'stackdio/css/api-tweaks.css' %}"/>
@@ -30,5 +31,5 @@
 
 {% block branding %}
     <img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-small-thumb.png' %}">
-    stackd.io API
+    stackd.io API {% stackdio_version %}
 {% endblock %}

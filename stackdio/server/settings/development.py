@@ -17,13 +17,18 @@
 
 
 # Grab the base settings
-from stackdio.server.settings.base import *  # pylint: disable=wildcard-import, unused-wildcard-import
+from stackdio.server.settings.testing import *  # pylint: disable=wildcard-import, unused-wildcard-import
 
 DEBUG = True
-TEMPLATE_DEBUG = True
 
 # Set the log level to DEBUG - it's WARNING by default
 LOGGING['loggers']['']['level'] = 'DEBUG'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}
 
 ##
 # Add in additional applications

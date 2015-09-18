@@ -28,15 +28,13 @@ from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
-from stackdio.core.utils import recursive_update
+from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
-from stackdio.api.blueprints.serializers import (
-    BlueprintHostFormulaComponentSerializer,
-    BlueprintHostDefinitionSerializer
-)
+from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
+from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models, tasks, utils, workflows
 
 logger = logging.getLogger(__name__)
@@ -44,13 +42,14 @@ logger = logging.getLogger(__name__)
 
 class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
             # Make it work two different ways.. ooooh
             if isinstance(obj, models.Stack):
-                return obj.properties
+                ret = obj.properties
             else:
-                return obj
-        return {}
+                ret = obj
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data
@@ -81,14 +80,16 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
     # Read only fields
     subnet_id = serializers.ReadOnlyField()
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
-    formula_components = BlueprintHostFormulaComponentSerializer(many=True, read_only=True)
+    blueprint_host_definition = serializers.ReadOnlyField(source='blueprint_host_definition.title')
+    formula_components = FormulaComponentSerializer(many=True, read_only=True)
 
     # Fields for adding / removing hosts
     available_actions = ('add', 'remove')
 
     action = serializers.ChoiceField(available_actions, write_only=True)
-    host_definition = serializers.SlugRelatedField(slug_field='slug', write_only=True,
-                                                   queryset=BlueprintHostDefinition.objects.all())
+    host_definition = serializers.PrimaryKeyRelatedField(
+        write_only=True, queryset=BlueprintHostDefinition.objects.all()
+    )
     count = serializers.IntegerField(write_only=True, min_value=1)
     backfill = serializers.BooleanField(default=False, write_only=True)
 
@@ -110,6 +111,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
             'created',
             'sir_id',
             'sir_price',
+            'blueprint_host_definition',
             'formula_components',
             'action',
             'host_definition',
@@ -389,7 +391,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             # This all has to be here vs. in its own validator b/c it needs the blueprint
             hostname_errors = validate_hostname(namespace)
             if hostname_errors:
-                errors.setdefault('hostname', []).extend(hostname_errors)
+                errors.setdefault('namespace', []).extend(hostname_errors)
 
             # This is all only necessary if a namespace was provided
             #  (It may not be provided on a PATCH request)
@@ -404,7 +406,13 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             #    Only hit up salt cloud if there are no duplicates locally
             hosts = models.Host.objects.filter(hostname__in=hostnames)
             if hosts.count() > 0:
-                errors.setdefault('duplicate_hostnames', []).extend([h.hostname for h in hosts])
+                err_msg = 'Duplicate hostnames: {0}'.format(', '.join([h.hostname for h in hosts]))
+                errors.setdefault('namespace', []).append(err_msg)
+
+            if errors:
+                # Go ahead and raise an error here so that we don't check the provider if
+                # we don't need to
+                raise serializers.ValidationError(errors)
 
             salt_cloud = salt.cloud.CloudClient(os.path.join(
                 settings.STACKDIO_CONFIG.salt_config_root,
@@ -427,7 +435,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
                             dups.append(instance)
 
             if dups:
-                errors.setdefault('duplicate_hostnames', []).extend(dups)
+                err_msg = 'Duplicate hostnames: {0}'.format(', '.join(dups))
+                errors.setdefault('namespace', []).append(err_msg)
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -438,6 +447,12 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
 class FullStackSerializer(StackSerializer):
     properties = StackPropertiesSerializer(required=False)
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
+
+    def to_representation(self, instance):
+        """
+        We want to return links instead of the full object
+        """
+        return StackSerializer(instance, context=self.context).to_representation(instance)
 
     def create(self, validated_data):
         # Create the stack
@@ -600,6 +615,7 @@ class StackCommandSerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.StackCommand
         fields = (
+            'id',
             'url',
             'zip_url',
             'submit_time',

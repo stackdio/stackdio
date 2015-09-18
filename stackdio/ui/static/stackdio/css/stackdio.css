@@ -67,9 +67,24 @@ textarea {
     line-height: 1;
 }
 
+.page-info {
+    height: 34px;
+    display: table-cell;
+    vertical-align: middle;
+    float: none;
+}
+
+.stackdio-hidden-on-load {
+    display: none;
+}
+
 /*
 Bootstrap overrides
 */
+
+.page-header {
+    margin-top: 0;
+}
 
 .navbar-brand {
     padding-top: 10px;
@@ -98,8 +113,35 @@ Bootstrap overrides
     box-shadow: none;
 }
 
+.alert {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1049;
+    -webkit-overflow-scrolling: touch;
+    outline: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 65px auto;
+    height: 50px;
+}
+
+@media (max-width: 767px) {
+    .alert {
+        margin: 65px 15px;
+    }
+}
+
+@media (min-width: 768px) {
+    .alert {
+        width: 600px;
+    }
+}
+
 /* Typeahead stuff */
-.twitter-typeahead,.tt-hint,.tt-input,.tt-menu {
+.twitter-typeahead, .tt-hint, .tt-input, .tt-menu {
     width: 100%;
 }
 
@@ -125,6 +167,8 @@ Bootstrap overrides
     -webkit-background-clip: padding-box;
     -moz-background-clip: padding;
     background-clip: padding-box;
+    max-height: 165px;
+    overflow-y: auto;
 }
 
 .tt-suggestion {

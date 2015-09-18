@@ -18,9 +18,26 @@
 
 define([
     'jquery',
+    'underscore',
     'knockout',
-    'moment'
-], function ($, ko, moment) {
+    'bootbox',
+    'moment',
+    'utils/utils',
+    'models/host',
+    'models/blueprint'
+], function ($, _, ko, bootbox, moment, utils, Host, Blueprint) {
+    'use strict';
+
+    function FakeMoment() {
+        this.calendar = function () {
+            return '';
+        }
+
+        this.toString = function () {
+            return '';
+        }
+    }
+
     // Define the stack model.
     function Stack(raw, parent) {
         var needReload = false;
@@ -55,10 +72,11 @@ define([
 
         // Non-editable fields
         this.namespace = ko.observable();
-        this.blueprint = ko.observable();
+        this.created = ko.observable(new FakeMoment());
 
         // Lazy-loaded properties (not returned from the main stack endpoint)
         this.properties = ko.observable({});
+        this.blueprint = ko.observable();
         this.availableActions = ko.observableArray([]);
         this.history = ko.observableArray([]);
         this.hosts = ko.observableArray([]);
@@ -70,13 +88,28 @@ define([
         this.historicalLogs = ko.observableArray([]);
 
         if (needReload) {
-            this.reload();
+            this.waiting = this.reload();
         } else {
             this._process(raw);
         }
     }
 
     Stack.constructor = Stack;
+
+    Stack.prototype.actionMessages = {
+        launch: 'This will create new infrastructure, undoing a "terminate" action you may have ' +
+                'previously performed.  This will also re-launch any spot instances that have died.',
+        orchestrate: 'This will re-run all of your custom formula components.  ' +
+                     'This may overwrite anything you have manually changed on your hosts.',
+        'propagate-ssh': 'This will create new users for everyone with "ssh" permission.',
+        provision: 'This will re-run core provisioning, in addition to re-running all of your ' +
+                   'custom formula components.  This may overwrite anything you have manually ' +
+                   'changed on your hosts.',
+        start: '',
+        stop: '',
+        terminate: 'This will terminate all infrastructure related to this stack.  ' +
+                   'You can get it all back by later running the "launch" action on this stack.'
+    };
 
     Stack.prototype._process = function (raw) {
         this.title(raw.title);
@@ -85,7 +118,7 @@ define([
         this.status(raw.status);
         this.hostCount(raw.host_count);
         this.namespace(raw.namespace);
-        this.blueprint(raw.blueprint);
+        this.created(moment(raw.created));
 
         // Determine what type of label should be around the status
         switch (raw.status) {
@@ -132,57 +165,190 @@ define([
     // Lazy-load the properties
     Stack.prototype.loadProperties = function () {
         var self = this;
-        $.ajax({
+        if (!this.raw.hasOwnProperty('properties')) {
+            this.raw.properties = this.raw.url + 'properties/';
+        }
+        return $.ajax({
             method: 'GET',
-            url: self.raw.properties
+            url: this.raw.properties
         }).done(function (properties) {
             self.properties(properties);
+        });
+    };
+
+    Stack.prototype.saveProperties = function () {
+        $.ajax({
+            method: 'PUT',
+            url: this.raw.properties,
+            data: JSON.stringify(this.properties())
+        }).done(function (properties) {
+            utils.growlAlert('Successfully saved stack properties!', 'success');
+        }).fail(function (jqxhr) {
+            var message;
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+                message = resp.properties.join('<br>');
+            } catch (e) {
+                message = 'Oops... there was a server error.'
+            }
+            message += '  Your properties were not saved.';
+            utils.growlAlert(message, 'danger');
+        });
+    };
+
+    // Lazy-load the hosts
+    Stack.prototype.loadHosts = function () {
+        var self = this;
+        $.ajax({
+            method: 'GET',
+            url: this.raw.hosts
+        }).done(function (hosts) {
+            self.hosts(hosts.results.map(function (rawHost) {
+                return new Host(rawHost, self.parent);
+            }));
+        });
+    };
+
+    Stack.prototype._addRemove = function(addRem, hostDef, count) {
+        var requestObj = {
+            action: addRem,
+            host_definition: hostDef.id,
+            count: count
+        };
+        var self = this;
+        $.ajax({
+            method: 'POST',
+            url: this.raw.hosts,
+            data: JSON.stringify(requestObj)
+        }).done(function () {
+            // Reload the hosts
+            self.loadHosts();
+        }).fail(function (jqxhr) {
+            var message;
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+                message = '';
+                for (var key in resp) {
+                    if (resp.hasOwnProperty(key)) {
+                        var betterKey = key.replace('_', ' ');
+
+                        resp[key].forEach(function (errMsg) {
+                            message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
+                        });
+                    }
+                }
+                if (message) {
+                    message = '<dl class="dl-horizontal">' + message + '</dl>';
+                }
+            } catch (e) {
+                message = 'Oops... there was a server error.'
+            }
+            bootbox.alert({
+                title: 'Error ' + addRem + 'ing hosts',
+                message: message
+            });
+        });
+    };
+
+    Stack.prototype.addHosts = function (hostDefinition, count) {
+        this._addRemove('add', hostDefinition, count);
+    };
+
+    Stack.prototype.removeHosts = function (hostDefinition, count) {
+        this._addRemove('remove', hostDefinition, count);
+    };
+
+    Stack.prototype.loadBlueprint = function () {
+        var self = this;
+        return $.ajax({
+            method: 'GET',
+            url: this.raw.blueprint
+        }).done(function (blueprint) {
+            self.blueprint(new Blueprint(blueprint, self.parent));
         });
     };
 
     // Lazy-load the available actions
     Stack.prototype.loadAvailableActions = function () {
         var self = this;
+        if (!this.raw.hasOwnProperty('action')) {
+            this.raw.action = this.url + 'action/';
+        }
         $.ajax({
             method: 'GET',
-            url: self.raw.action
+            url: this.raw.action
         }).done(function (resp) {
             self.availableActions(resp.available_actions);
-
-            if (self.parent.hasOwnProperty('actionMap')) {
+            try {
+                // Just do this and fail silently if it doesn't work since all viewmodels don't
+                // have an actionMap
                 self.parent.actionMap[self.id] = resp.available_actions;
-            }
+            } catch (e) {}
         });
     };
 
     // Peform an action
     Stack.prototype.performAction = function (action) {
         var self = this;
-        $.ajax({
-            method: 'POST',
-            url: self.raw.action,
-            data: JSON.stringify({
-                action: action
-            })
-        }).done(function () {
-            self.reload();
-        }).fail(function (jqxhr) {
-            console.log(jqxhr);
-            alert('Failed to perform the "' + action + '" action.  Please check the log for the error.');
+        var stackTitle = _.escape(self.title());
+        var extraMessage = this.actionMessages.hasOwnProperty(action) ? this.actionMessages[action] : '';
+        bootbox.confirm({
+            title: 'Confirm action for <strong>' + stackTitle + '</strong>',
+            message: 'Are you sure you want to perform the "' + action + '" action on ' +
+                     '<strong>' + stackTitle + '</strong>?<br>' + extraMessage,
+            buttons: {
+                confirm: {
+                    label: action.capitalize().replace('_', ' '),
+                    className: 'btn-primary'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    $.ajax({
+                        method: 'POST',
+                        url: self.raw.action,
+                        data: JSON.stringify({
+                            action: action
+                        })
+                    }).done(function () {
+                        self.reload();
+                    }).fail(function (jqxhr) {
+                        var message;
+                        try {
+                            var resp = JSON.parse(jqxhr.responseText);
+                            message = resp.action.join('<br>');
+                        } catch (e) {
+                            message = 'Oops... there was a server error.  This has been ' +
+                                'reported to your administrators.';
+                        }
+                        bootbox.alert({
+                            title: 'Error performing the "' + action + '" action',
+                            message: message
+                        });
+                    });
+                }
+            }
         });
+
     };
 
     Stack.prototype.loadHistory = function () {
         var self = this;
+        if (!this.raw.hasOwnProperty('history')) {
+            this.raw.history = this.raw.url + 'history/';
+        }
         $.ajax({
             method: 'GET',
-            url: self.raw.url + 'history/'
+            url: this.raw.history
         }).done(function (history) {
             history.results.forEach(function (entry) {
                 entry.timestamp = moment(entry.created);
                 switch (entry.level) {
                     case 'ERROR':
                         entry.itemClass = 'list-group-item-danger';
+                        break;
+                    case 'WARNING':
+                        entry.itemClass = 'list-group-item-warning';
                         break;
                     default:
                         entry.itemClass = '';
@@ -192,13 +358,96 @@ define([
                 }
             });
             self.history(history.results);
+        });
+    };
+
+    Stack.prototype.loadLogs = function () {
+        var self = this;
+        if (!this.raw.hasOwnProperty('logs')) {
+            this.raw.logs = this.raw.url + 'logs/';
+        }
+        $.ajax({
+            method: 'GET',
+            url: this.raw.logs
+        }).done(function (logs) {
+            var latestLogs = [];
+            for (var log in logs.latest) {
+                if (logs.latest.hasOwnProperty(log)) {
+                    latestLogs.push({
+                        text: log,
+                        type: 'item',
+                        url: logs.latest[log]
+                    });
+                }
+            }
+            self.latestLogs(latestLogs);
+
+            var historicalLogs = [];
+
+            logs.historical.forEach(function (log) {
+                var spl = log.split('/');
+                historicalLogs.push({
+                    text: spl[spl.length-1],
+                    type: 'item',
+                    url: log
+                })
+            });
+
+            self.historicalLogs(historicalLogs);
+        });
+    };
+
+    Stack.prototype.runCommand = function (hostTarget, command) {
+        var self = this;
+        return $.ajax({
+            method: 'POST',
+            url: this.raw.commands,
+            data: JSON.stringify({
+                host_target: hostTarget,
+                command: command
+            })
+        }).done(function () {
+            try {
+                self.parent.reload();
+            } catch (e) {}
         }).fail(function (jqxhr) {
-            console.log(jqxhr);
+            var message;
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+                message = '';
+                for (var key in resp) {
+                    if (resp.hasOwnProperty(key)) {
+                        var betterKey = key.replace('_', ' ');
+
+                        resp[key].forEach(function (errMsg) {
+                            message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
+                        });
+                    }
+                }
+                if (message) {
+                    message = '<dl class="dl-horizontal">' + message + '</dl>';
+                }
+            } catch (e) {
+                message = 'Oops... there was a server error.'
+            }
+            bootbox.alert({
+                title: 'Failed to run command',
+                message: message
+            })
         });
     };
 
     Stack.prototype.save = function () {
         var self = this;
+        var keys = ['title', 'description', 'create_users', 'namespace'];
+
+        keys.forEach(function (key) {
+            var el = $('#' + key);
+            el.removeClass('has-error');
+            var help = el.find('.help-block');
+            help.remove();
+        });
+
         $.ajax({
             method: 'PUT',
             url: self.raw.url,
@@ -208,24 +457,94 @@ define([
                 create_users: self.createUsers()
             })
         }).done(function (stack) {
-            // Not sure?
+            utils.growlAlert('Successfully saved stack!', 'success');
+            try {
+                self.parent.stackTitle(stack.title);
+            } catch (e) {}
         }).fail(function (jqxhr) {
-            console.log(jqxhr);
-            alert('Failed to save the stack.  Please check the log for the error.');
+            var message = '';
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+
+                for (var key in resp) {
+                    if (resp.hasOwnProperty(key)) {
+                        if (keys.indexOf(key) >= 0) {
+                            var el = $('#' + key);
+                            el.addClass('has-error');
+                            resp[key].forEach(function (errMsg) {
+                                el.append('<span class="help-block">' + errMsg + '</span>');
+                            });
+                        } else if (key === 'non_field_errors') {
+                            resp[key].forEach(function (errMsg) {
+                                if (errMsg.indexOf('title') >= 0) {
+                                    var el = $('#title');
+                                    el.addClass('has-error');
+                                    el.append('<span class="help-block">A stack with this title already exists.</span>');
+                                }
+                            });
+                        } else {
+                            var betterKey = key.replace('_', ' ');
+
+                            resp[key].forEach(function (errMsg) {
+                                message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
+                            });
+                        }
+                    }
+                }
+                if (message) {
+                    message = '<dl class="dl-horizontal">' + message + '</dl>';
+                }
+            } catch (e) {
+                message = 'Oops... there was a server error.  This has been reported to ' +
+                    'your administrators.'
+            }
+            if (message) {
+                bootbox.alert({
+                    title: 'Error saving stack',
+                    message: message
+                });
+            }
         });
     };
 
     Stack.prototype.delete = function () {
         var self = this;
-        $.ajax({
-            method: 'DELETE',
-            url: self.raw.url
-        }).done(function (stack) {
-            self.raw = stack;
-            self._process(stack);
-        }).fail(function (jqxhr) {
-            console.log(jqxhr);
-            alert('Failed to delete the stack.  Please check the log for the error.');
+        var stackTitle = _.escape(self.title());
+        bootbox.confirm({
+            title: 'Confirm delete of <strong>' + stackTitle + '</strong>',
+            message: 'Are you sure you want to delete <strong>' + stackTitle + '</strong>?<br>' +
+                     'This will terminate all infrastructure, in addition to ' +
+                     'removing all history related to this stack.',
+            buttons: {
+                confirm: {
+                    label: 'Delete',
+                    className: 'btn-danger'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    $.ajax({
+                        method: 'DELETE',
+                        url: self.raw.url
+                    }).done(function (stack) {
+                        self.raw = stack;
+                        self._process(stack);
+                    }).fail(function (jqxhr) {
+                        var message;
+                        try {
+                            var resp = JSON.parse(jqxhr.responseText);
+                            message = resp.detail.join('<br>');
+                        } catch (e) {
+                            message = 'Oops... there was a server error.  This has been reported ' +
+                                'to your administrators.';
+                        }
+                        bootbox.alert({
+                            title: 'Error deleting stack',
+                            message: message
+                        });
+                    });
+                }
+            }
         });
     };
 

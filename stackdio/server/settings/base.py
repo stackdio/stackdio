@@ -33,7 +33,6 @@ from django.contrib.messages import constants as messages
 import dj_database_url
 
 from stackdio.core.config import StackdioConfig
-from stackdio.server.version import __version__
 
 
 logger = logging.getLogger(__name__)
@@ -145,12 +144,7 @@ ROOT_URLCONF = 'stackdio.server.urls'
 ##
 # Define your admin tuples like ('full name', 'email@address.com')
 ##
-ADMINS = (
-    ('Abe Music', 'abe.music@digitalreasoning.com'),
-    ('Charlie Penner', 'charlie.penner@digitalreasoning.com'),
-    ('Steve Brownlee', 'steve.brownlee@digitalreasoning.com'),
-    ('Clark Perkins', 'clark.perkins@digitalreasoning.com'),
-)
+ADMINS = ()
 MANAGERS = ADMINS
 
 ##
@@ -290,8 +284,6 @@ LOGGING = {
 # Django REST Framework configuration
 ##
 REST_FRAMEWORK = {
-    'STACKDIO_VERSION': __version__,
-
     'PAGE_SIZE': 50,
 
     # Filtering

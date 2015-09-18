@@ -18,22 +18,17 @@
 
 import logging
 
-from django.shortcuts import get_object_or_404, resolve_url
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.shortcuts import get_object_or_404, resolve_url
 from django.views.generic import TemplateView
 
-from stackdio.server import __version__
-from stackdio.api.stacks.models import Stack
+from stackdio.api.stacks.models import Stack, StackCommand
 
 logger = logging.getLogger(__name__)
 
 
 class StackdioView(TemplateView):
-
-    def get_context_data(self, **kwargs):
-        context = super(StackdioView, self).get_context_data(**kwargs)
-        context['version'] = __version__
-        return context
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():
@@ -120,6 +115,7 @@ class ObjectPermissionsView(PageView):
     def get_context_data(self, **kwargs):
         context = super(ObjectPermissionsView, self).get_context_data(**kwargs)
         context['object_type'] = self.get_object()._meta.model_name.capitalize()
+        context['object_id'] = kwargs['pk']
         return context
 
     def get(self, request, *args, **kwargs):
@@ -133,8 +129,14 @@ class ObjectPermissionsView(PageView):
         return super(ObjectPermissionsView, self).get(request, *args, **kwargs)
 
 
-class UserProfileView(StackdioView):
-    template_name = 'stackdio/user-profile.html'
+class UserProfileView(PageView):
+    template_name = 'users/user-profile.html'
+    viewmodel = 'viewmodels/user-profile'
+
+    def get_context_data(self, **kwargs):
+        context = super(UserProfileView, self).get_context_data(**kwargs)
+        context['ldap'] = settings.LDAP_ENABLED
+        return context
 
 
 class StackCreateView(PageView):
@@ -160,7 +162,6 @@ class StackListView(PageView):
 
 
 class StackModelPermissionsView(ModelPermissionsView):
-    template_name = 'stackdio/permissions.html'
     viewmodel = 'viewmodels/stack-model-permissions'
     model = Stack
 
@@ -168,19 +169,93 @@ class StackModelPermissionsView(ModelPermissionsView):
 class StackDetailView(PageView):
     template_name = 'stacks/stack-detail.html'
     viewmodel = 'viewmodels/stack-detail'
+    page_id = 'detail'
 
     def get_context_data(self, **kwargs):
         context = super(StackDetailView, self).get_context_data(**kwargs)
         pk = kwargs['pk']
         # Go ahead an raise a 404 here if the stack doesn't exist rather than waiting until later.
         stack = get_object_or_404(Stack.objects.all(), pk=pk)
+        if not self.request.user.has_perm('stacks.view_stack', stack):
+            raise Http404()
         context['stack_id'] = pk
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
+        context['page_id'] = self.page_id
         return context
 
 
 class StackObjectPermissionsView(ObjectPermissionsView):
+    template_name = 'stacks/stack-object-permissions.html'
     viewmodel = 'viewmodels/stack-object-permissions'
+    page_id = 'permissions'
+
+    def get_context_data(self, **kwargs):
+        context = super(StackObjectPermissionsView, self).get_context_data(**kwargs)
+        pk = kwargs['pk']
+        # Go ahead an raise a 404 here if the stack doesn't exist rather than waiting until later.
+        stack = get_object_or_404(Stack.objects.all(), pk=pk)
+        if not self.request.user.has_perm('stacks.view_stack', stack):
+            raise Http404()
+        context['stack_id'] = pk
+        context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
+        context['page_id'] = self.page_id
+        return context
 
     def get_object(self):
         return get_object_or_404(Stack.objects.all(), pk=self.kwargs['pk'])
+
+
+class StackPropertiesView(StackDetailView):
+    template_name = 'stacks/stack-properties.html'
+    viewmodel = 'viewmodels/stack-properties'
+    page_id = 'properties'
+
+
+class StackHostsView(StackDetailView):
+    template_name = 'stacks/stack-hosts.html'
+    viewmodel = 'viewmodels/stack-hosts'
+    page_id = 'hosts'
+
+
+class StackVolumesView(StackDetailView):
+    template_name = 'stacks/stack-volumes.html'
+    viewmodel = 'viewmodels/stack-volumes'
+    page_id = 'volumes'
+
+
+class StackCommandsView(StackDetailView):
+    template_name = 'stacks/stack-commands.html'
+    viewmodel = 'viewmodels/stack-commands'
+    page_id = 'commands'
+
+
+class StackCommandDetailView(StackDetailView):
+    template_name = 'stacks/stack-command-detail.html'
+    viewmodel = 'viewmodels/stack-command-detail'
+    page_id = 'commands'
+
+    def get_context_data(self, **kwargs):
+        context = super(StackCommandDetailView, self).get_context_data(**kwargs)
+        pk = kwargs['command_pk']
+        # Go ahead an raise a 404 here if the command doesn't exist rather than waiting until later.
+        get_object_or_404(StackCommand.objects.all(), pk=pk)
+        context['command_id'] = pk
+        return context
+
+
+class StackAccessRulesView(StackDetailView):
+    template_name = 'stacks/stack-access-rules.html'
+    viewmodel = 'viewmodels/stack-access-rules'
+    page_id = 'access-rules'
+
+
+class StackFormulaVersionsView(StackDetailView):
+    template_name = 'stacks/stack-formula-versions.html'
+    viewmodel = 'viewmodels/stack-formula-versions'
+    page_id = 'formula-versions'
+
+
+class StackLogsView(StackDetailView):
+    template_name = 'stacks/stack-logs.html'
+    viewmodel = 'viewmodels/stack-logs'
+    page_id = 'logs'

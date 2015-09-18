@@ -1,91 +1,73 @@
-{% extends 'stackdio/page.html' %}
-
-{% block title %}Stack Detail{% endblock %}
-
-{# Inject the stack id into the window so we can access it in our javascript VM #}
-{% block scripts %}
-    {{ block.super }}
-    <script type="text/javascript">
-        window.stackdio = {};
-        window.stackdio.stackId = {{ stack_id }};
-    </script>
-{% endblock %}
+{% extends 'stacks/stack-detail-base.html' %}
 
 
-{% block page-content %}
-    <div class="row">
-        <div class="col-md-6">
-            <div class="container-fluid">
-                <div class="row">
-                    <form data-bind="submit: function() { stack.save(); }">
-                        <div class="form-group">
-                            <label for="stackTitle">Title</label>
-                            <input type="text" class="form-control" id="stackTitle"
-                                   data-bind="value: stack.title, valueUpdate: 'keyup'">
-                        </div>
-                        <div class="form-group">
-                            <label for="stackDescription">Description</label>
-                            <input type="text" class="form-control" id="stackDescription"
-                                   data-bind="value: stack.description, valueUpdate: 'keyup'">
-                        </div>
-                        <div class="form-group">
-                            <label>Namespace</label>
-                            <p class="form-control-static" data-bind="text: stack.namespace"></p>
-                        </div>
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" data-bind="checked: stack.createUsers">
-                                Create Users
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Save</button>
-
-                        <div class="btn-group action-dropdown">
-                            <button type="button" class="btn btn-info dropdown-toggle"
-                                    data-toggle="dropdown" aria-haspopup="true"
-                                    aria-expanded="false">
-                                Action <span class="caret"></span>
-                            </button>
-                            <ul class="dropdown-menu" data-bind="foreach: stack.availableActions">
-                                <li>
-                                    <!-- Do this function() dance so that `this` is set properly -->
-                                    <a href="#"
-                                       data-bind="click: function (action) { $root.stack.performAction(action) }, text: $data"></a>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <button class="btn btn-danger" data-bind="click: $data.delete">
-                            Delete
-                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
-                        </button>
-                    </form>
+{% block detail-content %}
+<div class="col-sm-6 col-sm-pull-3">
+    <div class="container-fluid">
+        <div class="row">
+            <form data-bind="submit: function() { stack.save(); }">
+                <div id="title" class="form-group">
+                    <label for="stackTitle">Title</label>
+                    <input type="text" class="form-control" id="stackTitle"
+                           data-bind="value: stack.title, valueUpdate: 'keyup'">
                 </div>
-            </div>
-        </div>
+                <div id="description" class="form-group">
+                    <label for="stackDescription">Description</label>
+                    <input type="text" class="form-control" id="stackDescription"
+                           data-bind="value: stack.description, valueUpdate: 'keyup'">
+                </div>
+                <div id="namespace" class="form-group">
+                    <label>Namespace</label>
+                    <p class="form-control-static" data-bind="text: stack.namespace"></p>
+                </div>
+                <div id="created" class="form-group">
+                    <label>Launched</label>
+                    <p class="form-control-static" data-bind="text: stack.created().calendar()"></p>
+                </div>
+                <div id="create_users">
+                    <div class="checkbox">
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox"
+                                   data-bind="checked: stack.createUsers">
+                            <span class="checkbox-label">Create Users</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 15px">
+                    <button type="submit" class="btn btn-primary">Save</button>
 
-        <div class="col-md-3">
-            <div class="list-group" data-bind="foreach: stack.history" style="height: 500px; overflow-y: scroll">
-                <a class="list-group-item history-entry" data-bind="css: itemClass">
-                    <h5><strong data-bind="text: status.capitalize()"></strong></h5>
-                    <p data-bind="text: status_detail"></p>
-                    <p data-bind="text: timestamp.calendar()"></p>
-                </a>
-            </div>
-        </div>
+                    <div class="btn-group action-dropdown">
+                        <button type="button" class="btn btn-info dropdown-toggle"
+                                data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                            Action <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" data-bind="foreach: stack.availableActions">
+                            <li>
+                                <!-- Do this function() dance so that `this` is set properly -->
+                                <a href="#"
+                                   data-bind="click: function (action) { $root.stack.performAction(action) }, text: $data"></a>
+                            </li>
+                        </ul>
+                    </div>
 
-        <div class="col-md-3">
-            <ul class="nav nav-pills nav-stacked">
-                <li role="presentation" class="active"><a href="{% url 'ui:stack-detail' pk=stack_id %}">Detail</a></li>
-                {% if has_admin %}
-                <li role="presentation"><a href="{% url 'ui:stack-object-permissions' pk=stack_id %}">Permissions</a></li>
-                {% endif %}
-                <li role="presentation"><a href="#">Hosts</a></li>
-                <li role="presentation"><a href="#">Volumes</a></li>
-                <li role="presentation"><a href="#">Commands</a></li>
-                <li role="presentation"><a href="#">Access Rules</a></li>
-                <li role="presentation"><a href="#">Logs</a></li>
-            </ul>
+                    <button class="btn btn-danger" data-bind="click: function () { stack.delete() }">
+                        Delete
+                        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+
+<div class="col-sm-3 col-sm-pull-3">
+    <div class="list-group" data-bind="foreach: stack.history" style="height: 500px; overflow-y: scroll">
+        <a class="list-group-item history-entry" data-bind="css: itemClass">
+            <h5><strong data-bind="text: status.capitalize()"></strong></h5>
+            <p data-bind="text: status_detail"></p>
+            <p data-bind="text: timestamp.calendar()"></p>
+        </a>
+    </div>
+</div>
 {% endblock %}

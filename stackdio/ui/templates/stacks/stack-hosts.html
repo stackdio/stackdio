@@ -1,0 +1,76 @@
+{% extends 'stacks/stack-detail-base.html' %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    <div class="container-fluid">
+        <h4 class="text-center">Add or remove hosts from this stack</h4>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="well">
+                    <div class="container-fluid">
+                        <form class="form-inline" data-bind="submit: function () { addRemoveHosts() }">
+                            <div class="row">
+                                <div class="form-group col-md-5">
+                                    <label for="blueprint_host_definition" class="sr-only">Host Type</label>
+                                    <select id="blueprint_host_definition" class="form-control"
+                                            style="width: 100%"
+                                            data-bind="options: hostDefinitions,
+                                                       optionsText: 'title',
+                                                       value: selectedHostDef,
+                                                       optionsCation: 'Choose a host type...'"></select>
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <label for="action" class="sr-only">Action</label>
+                                    <select id="action" class="form-control" style="width: 100%"
+                                            data-bind="options: actions, value: selectedAction"></select>
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <label for="count" class="sr-only">Count</label>
+                                    <input id="count" min="1" type="number" class="form-control"
+                                           style="width: 100%" data-bind="value: actionCount">
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary btn-block">Go</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% include 'stackdio/stubs/pager.html' with object_type='hosts' search=True %}
+
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <!-- ko foreach: sortableFields -->
+                        <th data-bind="style: {width: width}">
+                            <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                            <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                                <span class="caret"></span>
+                            </span>
+                        </th>
+                        <!-- /ko -->
+                    </tr>
+                </thead>
+                <tbody data-bind="foreach: sortedObjects">
+                    <tr class="stackdio-hidden-on-load">
+                        <td data-bind="text: hostDefinition"></td>
+                        <td data-bind="text: hostname"></td>
+                        <td data-bind="text: fqdn"></td>
+                        <td data-bind="text: privateDNS"></td>
+                        <td data-bind="text: publicDNS"></td>
+                        <td><span class="label" data-bind="css: labelClass, text: state"></span></td>
+                    </tr>
+                </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -19,8 +19,12 @@ define([
     'jquery',
     'knockout',
     'bloodhound',
+    'ladda',
+    'bootbox',
     'typeahead'
-], function ($, ko, Bloodhound) {
+], function ($, ko, Bloodhound, Ladda, bootbox) {
+    'use strict';
+
     return function() {
         var self = this;
 
@@ -47,25 +51,55 @@ define([
             }
         });
 
-        self.blueprintTypeahead = $('#blueprints .typeahead');
+        self.blueprintTypeahead = $('#blueprints').find('.typeahead');
 
         self.blueprintTypeahead.typeahead({
-            highlight: true
+            highlight: true,
+            minLength: 1
         }, {
             name: 'blueprints',
             display: 'title',
-            source: self.blueprints
+            source: self.blueprints,
+            limit: 20
         });
 
         self.blueprintTypeahead.bind('typeahead:select', function(ev, blueprint) {
             self.createUsers(blueprint.create_users);
             self.blueprintId(blueprint.id);
+            var keys = ['blueprint', 'title', 'description',
+                'create_users', 'namespace', 'properties'];
+
+            self.removeErrors(keys);
+
             $.ajax({
                 method: 'GET',
                 url: blueprint.properties
             }).done(function (properties) {
                 self.properties(properties);
-            })
+            });
+
+            var fullVersionsList = [];
+
+            function getVersions(url) {
+                $.ajax({
+                    method: 'GET',
+                    url: url
+                }).done(function (versions) {
+                    fullVersionsList.push.apply(fullVersionsList, versions.results.map(function (version) {
+                        return {
+                            formula: version.formula,
+                            version: ko.observable(version.version)
+                        }
+                    }));
+                    if (versions.next === null) {
+                        self.formulaVersions(fullVersionsList);
+                    } else {
+                        getVersions(versions.next);
+                    }
+                });
+            }
+
+            getVersions(blueprint.formula_versions);
         });
 
         // View variables
@@ -75,8 +109,10 @@ define([
         self.createUsers = ko.observable();
         self.namespace = ko.observable();
         self.properties = ko.observable({});
+        self.formulaVersions = ko.observableArray([]);
 
         self.validProperties = true;
+        self.createButton = null;
 
         self.propertiesJSON = ko.pureComputed({
             read: function () {
@@ -102,14 +138,40 @@ define([
             self.createUsers(false);
             self.namespace('');
             self.properties({});
+            self.formulaVersions([]);
+        };
+
+        self.removeErrors = function(keys) {
+            keys.forEach(function (key) {
+                var el = $('#' + key);
+                el.removeClass('has-error');
+                var help = el.find('.help-block');
+                help.remove();
+            });
         };
 
         self.createStack = function() {
+            // First remove all the old error messages
+            var keys = ['blueprint', 'title', 'description',
+                'create_users', 'namespace', 'properties'];
+
+            self.removeErrors(keys);
+
+            // Check the properties
             if (!self.validProperties) {
-                alert('Your properties must be a valid JSON object');
+                var el = $('#properties');
+                el.addClass('has-error');
+                el.append('<span class="help-block">Invalid JSON.</span>');
                 return;
             }
 
+            // Grab both button objects
+            var createButton = Ladda.create(document.querySelector('#create-button'));
+
+            // Start them up
+            createButton.start();
+
+            // Create the stack!
             $.ajax({
                 'method': 'POST',
                 'url': '/api/stacks/',
@@ -119,13 +181,58 @@ define([
                     description: self.description(),
                     create_users: self.createUsers(),
                     namespace: self.namespace(),
-                    properties: self.properties()
+                    properties: self.properties(),
+                    formulaVersions: ko.toJS(self.formulaVersions())
                 })
-            }).done(function (stack) {
+            }).always(function () {
+                // Stop our spinning buttons FIRST
+                createButton.stop();
+            }).done(function () {
+                // Successful creation - just redirect to the main stacks page
                 window.location = '/stacks/';
             }).fail(function (jqxhr) {
-                var resp = JSON.parse(jqxhr.responseText);
+                // Display any error messages
+                var message = '';
+                try {
+                    var resp = JSON.parse(jqxhr.responseText);
+                    for (var key in resp) {
+                        if (resp.hasOwnProperty(key)) {
+                            if (keys.indexOf(key) >= 0) {
+                                var el = $('#' + key);
+                                el.addClass('has-error');
+                                resp[key].forEach(function (errMsg) {
+                                    el.append('<span class="help-block">' + errMsg + '</span>');
+                                });
+                            } else if (key === 'non_field_errors') {
+                                resp[key].forEach(function (errMsg) {
+                                    if (errMsg.indexOf('title') >= 0) {
+                                        var el = $('#title');
+                                        el.addClass('has-error');
+                                        el.append('<span class="help-block">A stack with this title already exists.</span>');
+                                    }
+                                });
+                            } else {
+                                var betterKey = key.replace('_', ' ');
 
+                                resp[key].forEach(function (errMsg) {
+                                    message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
+                                });
+                            }
+                        }
+                    }
+                    if (message) {
+                        message = '<dl class="dl-horizontal">' + message + '</dl>';
+                    }
+                } catch (e) {
+                    message = 'Oops... there was a server error.  This has been reported to ' +
+                        'your administrators.';
+                }
+                if (message) {
+                    bootbox.alert({
+                        title: 'Error creating stack',
+                        message: message
+                    });
+                }
             });
         };
 

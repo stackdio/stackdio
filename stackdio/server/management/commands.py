@@ -275,7 +275,7 @@ class InitCommand(WizardCommand):
             'long_desc': ('Root directory for stackdio to store its files, logs, '
                           'salt configuration, etc. We will attempt to create '
                           'this path if it does not already exist.'),
-            'default': '/home/{user}/.stackdio',
+            'default': self.CONFIG_DIR,
         }, {
             'attr': 'salt_bootstrap_script',
             'short_desc': ('Which bootstrap script should salt-cloud use when '

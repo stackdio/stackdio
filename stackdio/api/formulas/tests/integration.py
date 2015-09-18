@@ -32,7 +32,7 @@ class FormulaTestCase(StackdioTestCase, PermissionsMixin):
             'title': 'test',
             'description': 'test',
             'uri': 'https://github.com/stackdio-formulas/java-formula.git',
-            'root_path': '~/.stackdio/storage/formulas/java-formula',
+            'root_path': 'java',
         },
         'endpoint': '/api/formulas/{0}/',
         'permission': 'formulas.%s_formula',
