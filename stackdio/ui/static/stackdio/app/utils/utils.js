@@ -25,7 +25,6 @@ define([
     return {
         growlAlert: function (message, type) {
             $.bootstrapGrowl(message, {
-                delay: 100000,
                 ele: '#growl-alerts',
                 type: type
             });
