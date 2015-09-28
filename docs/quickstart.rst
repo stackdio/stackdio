@@ -73,6 +73,7 @@ OS-specific preparation
 =======================
 
 .. warning:: warning
+
     You must follow the steps in one of the following prep guides for
     the OS you're installing stackd.io in.
 
