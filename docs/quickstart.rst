@@ -6,8 +6,8 @@ installing and running stackd.io and its dependencies. We're not
 intending to be complete or provide you with everything needed for a
 production-ready install, we may make some assumptions you don't agree
 with, and there may be things we missed. If you feel anything is out of
-the ordinary, a bit confusing, or just plain missing, please `contact
-us <../README.md>`__.
+the ordinary, a bit confusing, or just plain missing, please :doc:`contact
+us<contact>`.
 
 Quick Start Script
 ------------------
