@@ -46,7 +46,14 @@ define([
             })
         ];
 
+        self.subscription = null;
+
         self.reset = function() {
+            // Make sure we don't have more than 1 subscription
+            if (self.subscription) {
+                self.subscription.dispose();
+            }
+
             // Create the stack object.  Pass in the stack id, and let the model load itself.
             self.stack = new Stack(window.stackdio.stackId, self);
             self.stack.waiting.done(function () {
@@ -55,6 +62,14 @@ define([
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/stacks/';
+            });
+            var $el = $('.checkbox-custom');
+            self.subscription = self.stack.createUsers.subscribe(function (newVal) {
+                if (newVal) {
+                    $el.checkbox('check');
+                } else {
+                    $el.checkbox('uncheck');
+                }
             });
             self.stackTitle('');
         };
