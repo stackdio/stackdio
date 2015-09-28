@@ -3,9 +3,8 @@ Preparing CentOS for stackd.io installation
 
 The steps below were written using CentOS 6.4 from a CentOS-provided AMI
 on Amazon Web Services (AWS). The exact AMI we used is ``ami-bf5021d6``,
-and you should be able to easily launch an EC2 instance using this AMI
-from the `AWS
-Marketplace <https://aws.amazon.com/marketplace/pp/B00DGYP804/ref=sp_mpg_product_title?ie=UTF8&sr=0-4>`__.
+and you should be able to easily launch an EC2 instance using this AMI from the
+`AWS Marketplace <https://aws.amazon.com/marketplace/pp/B00DGYP804/ref=sp_mpg_product_title?ie=UTF8&sr=0-4>`__.
 
 Prerequisites
 =============
@@ -37,8 +36,9 @@ Getting things working using SELinux could be an entirely separate
 guide. For our purposes, it's completely out of scope, so we're going to
 disable it.
 
-    **NOTE**: You will be required to restart the machine during this
-    step.
+.. note::
+
+    You will be required to restart the machine during this step.
 
 .. code:: bash
 
@@ -71,9 +71,10 @@ EPEL
 MySQL
 -----
 
-    **NOTE**: Please skip this section if you are using a different
-    database or already have a supported database server running
-    elsewhere.
+.. note::
+
+    Please skip this section if you are using a different database or
+    already have a supported database server running elsewhere.
 
 Install MySQL server:
 
@@ -90,7 +91,9 @@ Start MySQL server:
 Below we'll create a ``stackdio`` database and grant permissions to the
 ``stackdio`` user for that database.
 
-    **WARNING**: we're not focusing on security here, so the default
+.. warning::
+
+    We're not focusing on security here, so the default
     MySQL setup definitely needs to be tweaked, passwords changed, etc.,
     but for a quick-start guide this is out of scope. Please, don't run
     this as-is in production :)

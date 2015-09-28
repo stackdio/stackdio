@@ -67,7 +67,9 @@ directory.
 
     chmod +x ~/
 
-    NOTE: You may pass --with-ssl to generate boilerplate for serving
+.. note::
+
+    You may pass --with-ssl to generate boilerplate for serving
     over SSL, but you will need to add your certs and point to them in
     the configuration file. You may also need to remove the existing
     ssl.conf from within conf.d.
@@ -95,7 +97,9 @@ configuration file into the correct location:
 
     stackdio config apache | sudo tee /etc/apache2/sites-enabled/stackdio.conf > /dev/null
 
-    NOTE: You may pass --with-ssl to generate boilerplate for serving
+.. note::
+
+    You may pass --with-ssl to generate boilerplate for serving
     over SSL, but you will need to add your certs and point to them in
     the configuration file.
 

@@ -4,8 +4,8 @@ Preparing Ubuntu for stackd.io installation
 The steps below were written using Ubuntu 13.10 from a Ubuntu-provided
 AMI on Amazon Web Services (AWS). The exact AMI we used is
 ``ami-2f252646``, and you should be able to easily launch an EC2
-instance using this AMI from the `AWS EC2
-Console <https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-2f252646>`__.
+instance using this AMI from the
+`AWS EC2 Console <https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-2f252646>`__.
 
 Prerequisites
 =============
@@ -17,7 +17,9 @@ Prerequisites
 MySQL
 -----
 
-    **NOTE**: Please skip this section if you are using a different
+.. note::
+
+    Please skip this section if you are using a different
     database or already have a supported database server running
     elsewhere.
 

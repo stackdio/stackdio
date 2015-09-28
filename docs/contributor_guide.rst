@@ -73,7 +73,7 @@ Code style and quality
 ----------------------
 
 PEP8 compatibility
-~~~~~~~~~~~~~~~~~~
+------------------
 
 All pull requests must meet PEP8 compatibility
 

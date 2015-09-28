@@ -124,7 +124,9 @@ Install bower
 Install the stackd.io project
 -----------------------------
 
-    **NOTE** Double-check that your virtualenv is activated or else this
+.. note::
+
+    Double-check that your virtualenv is activated or else this
     will probably complain that you don't have permissions to install
     (because it's trying to install into the global python site-packages
     directory which we don't want!)
@@ -187,8 +189,9 @@ platform. For example, only admin users are allowed to create and modify
 cloud providers and profiles that other users can use to spin up their
 stacks.
 
-    NOTE: You will need at least one admin user to configure some key
-    areas of the system.
+.. note::
+
+    You will need at least one admin user to configure some key areas of the system.
 
 .. code:: bash
 
@@ -283,7 +286,9 @@ groups, or login with the admin user you created earlier.
 Creating additional users
 =========================
 
-    NOTE: If you're using LDAP, you can skip this step.
+.. note::
+
+    If you're using LDAP, you can skip this step.
 
 The superuser we created earlier will give us admin access to stackd.io,
 however, you probably want at least one non-superuser. Point your
