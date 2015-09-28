@@ -84,6 +84,8 @@ on.
 -  :doc:`centos_prep`
 -  :doc:`ubuntu_prep`
 
+.. _installing:
+
 Installing stackd.io
 ====================
 
