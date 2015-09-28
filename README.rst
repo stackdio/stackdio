@@ -1,8 +1,7 @@
 stackd.io
 =========
 
-| |Circle CI|
-| |Coverage Status|
+| |Circle CI||Coverage Status|
 
 | stackd.io is a web-based tool for managing, provisioning, and
   orchestrating cloud infrastructure
