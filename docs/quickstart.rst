@@ -115,9 +115,11 @@ command:
 Install bower
 -------------
 
-| In your CLI, run the following command to install bower:
-| (You must have previously installed npm/node from the OS specific
-  preparation)
+In your terminal, run the following command to install bower:
+
+.. note::
+
+    You must have previously installed npm/node from the OS specific preparation
 
 .. code:: bash
 
