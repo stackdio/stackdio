@@ -1,7 +1,7 @@
 stackd.io
 =========
 
-| |Circle CI||Coverage Status|
+| |Circle CI| |Coverage Status|
 
 | stackd.io is a web-based tool for managing, provisioning, and
   orchestrating cloud infrastructure
@@ -10,7 +10,7 @@ stackd.io
 Getting started
 ===============
 
-Please see our `Quick Start Guide <docs/quickstart.md>`__ for a fast
+Please see our `Quick Start Guide <docs/quickstart.rst>`__ for a fast
 track to installing stackd.io
 
 Contributing
@@ -24,7 +24,7 @@ make stackd.io that more awesome, kindly drop us a note or submit an
 issue. If you do know how to code and you want to get your hands dirty,
 take a shot at one of our outstanding issues and submit a pull request.
 Please take a look at our `contributor
-guidelines <docs/contributor_guide.md>`__ before submitting pull
+guidelines <docs/contributor_guide.rst>`__ before submitting pull
 requests though.
 
 Contact us
