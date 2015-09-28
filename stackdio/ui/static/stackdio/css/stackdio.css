@@ -113,31 +113,12 @@ Bootstrap overrides
     box-shadow: none;
 }
 
-.alert {
+.growl-alerts {
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
+    top: 62px;
     left: 0;
-    z-index: 1049;
-    -webkit-overflow-scrolling: touch;
-    outline: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    margin: 65px auto;
-    height: 50px;
-}
-
-@media (max-width: 767px) {
-    .alert {
-        margin: 65px 15px;
-    }
-}
-
-@media (min-width: 768px) {
-    .alert {
-        width: 600px;
-    }
+    right: 0;
+    z-index: 1075;
 }
 
 /* Typeahead stuff */

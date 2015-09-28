@@ -19,13 +19,10 @@ define([
     'jquery',
     'knockout',
     'bootbox',
-    'generics/pagination',
-    'models/stack',
-    'bootstrap-growl'
-], function ($, ko, bootbox, Pagination, Stack) {
+    'utils/utils',
+    'models/stack'
+], function ($, ko, bootbox, utils, Stack) {
     'use strict';
-
-
 
     return function () {
         var self = this;
@@ -80,10 +77,7 @@ define([
                         logDiv.scrollTop = logDiv.scrollHeight - 498;
                     }
                 }).fail(function (jqxhr) {
-                    $.bootstrapGrowl('Failed to load log', {
-                        type: 'danger',
-                        align: 'center'
-                    })
+                    utils.growlAlert('Failed to load log', 'danger');
                 });
             }
         };

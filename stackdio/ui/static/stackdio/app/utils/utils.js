@@ -18,18 +18,16 @@
 
 define([
     'bootbox',
-    'bootstrap-growl'
+    'utils/bootstrap-growl'
 ], function(bootbox) {
     'use strict';
 
     return {
         growlAlert: function (message, type) {
             $.bootstrapGrowl(message, {
-                ele: '#main-content',
-                type: type,
-                align: 'center',
-                width: 'auto',
-                offset: {from: 'top', amount: 64}
+                delay: 100000,
+                ele: '#growl-alerts',
+                type: type
             });
         },
         alertError: function (jqxhr, title, customMessage) {
