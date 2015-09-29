@@ -173,7 +173,7 @@ Now, let's populate are database with a schema:
     stackdio manage.py migrate
 
 stackd.io users
-~~~~~~~~~~~~~~~
+---------------
 
 LDAP
 ~~~~
