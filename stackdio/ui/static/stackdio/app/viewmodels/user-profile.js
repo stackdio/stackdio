@@ -36,9 +36,24 @@ define([
             }
         ];
 
+        self.subscription = null;
+
         self.reset = function() {
-            // Create the stack object.  Pass in the stack id, and let the model load itself.
+            // Make sure we don't have more than 1 subscription
+            if (self.subscription) {
+                self.subscription.dispose();
+            }
+
+            // Create the user object.
             self.user = new User(null, self);
+            var $el = $('.checkbox-custom');
+            self.subscription = self.user.advanced.subscribe(function (newVal) {
+                if (newVal) {
+                    $el.checkbox('check');
+                } else {
+                    $el.checkbox('uncheck');
+                }
+            });
         };
 
 
