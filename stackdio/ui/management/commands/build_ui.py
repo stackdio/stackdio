@@ -61,6 +61,17 @@ class Command(BaseCommand):
     help = 'Optimizes all the javascript files'
 
     def handle(self, *args, **options):
+        try:
+            self._handle(*args, **options)
+        except (KeyboardInterrupt, EOFError):
+            # Clean up after ourselves if somebody quits
+            try:
+                shutil.rmtree(INPUT_DIR)
+                shutil.rmtree(NODE_PATH)
+            except:
+                pass
+
+    def _handle(self, *args, **options):
         base_cls = ui_views.PageView
 
         viewmodels = set()
@@ -74,12 +85,11 @@ class Command(BaseCommand):
                 # We don't care if it wasn't a class
                 pass
 
-        # Install bower dependencies
-        args = ['bower', 'install']
-        ret = subprocess.call(args, cwd=settings.BASE_DIR)
-
-        if ret:
-            self.stderr.write('Bower dependencies failed to install.\n')
+        # Force the user to install bower components first
+        if not os.path.exists(BOWER_PATH):
+            err_msg = ('It looks like you haven\'t installed the bower dependencies yet.  '
+                       'Please run `bower install` before using this command.\n')
+            self.stderr.write(err_msg)
             sys.exit(1)
 
         # Install r.js
