@@ -1,11 +1,10 @@
 stackd.io
 =========
 
-| |Circle CI| |Coverage Status|
+|Circle CI| |Coverage Status| |Docs Status|
 
-| stackd.io is a web-based tool for managing, provisioning, and
-  orchestrating cloud infrastructure
-| without the need for a background in systems engineering.
+stackd.io is a web-based tool for managing, provisioning, and orchestrating cloud
+infrastructure without the need for a background in systems engineering.
 
 Getting started
 ===============
@@ -43,5 +42,10 @@ glad to help!
 
 .. |Circle CI| image:: https://circleci.com/gh/stackdio/stackdio/tree/develop.svg?style=svg
    :target: https://circleci.com/gh/stackdio/stackdio/tree/develop
+   :alt: Build Status
 .. |Coverage Status| image:: https://coveralls.io/repos/stackdio/stackdio/badge.svg?branch=develop
    :target: https://coveralls.io/r/stackdio/stackdio?branch=develop
+   :alt: Coverage Status
+.. |Docs Status| image:: https://readthedocs.org/projects/stackdio/badge/?version=latest
+   :target: http://stackdio.readthedocs.org/en/latest/?badge=latest
+   :alt: Documentation Status
