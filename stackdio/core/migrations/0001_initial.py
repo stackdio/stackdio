@@ -21,4 +21,8 @@ class Migration(migrations.Migration):
                 ('content_type', models.ForeignKey(to='contenttypes.ContentType')),
             ],
         ),
+        migrations.AlterUniqueTogether(
+            name='label',
+            unique_together=set([('content_type', 'object_id', 'key')]),
+        ),
     ]

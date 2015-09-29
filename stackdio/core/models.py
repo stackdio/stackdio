@@ -24,6 +24,9 @@ class Label(models.Model):
     Allows us to add arbitrary key/value pairs to any object
     """
 
+    class Meta:
+        unique_together = ('content_type', 'object_id', 'key')
+
     # the key
     key = models.CharField('Key', max_length=255)
 
