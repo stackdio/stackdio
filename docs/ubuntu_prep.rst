@@ -8,7 +8,7 @@ instance using this AMI from the
 `AWS EC2 Console <https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-2f252646>`__.
 
 Prerequisites
-=============
+-------------
 
 | All of these steps require ``root`` or ``sudo`` access. Before
   installing anything
@@ -81,7 +81,7 @@ required packages.
     sudo ln -s /usr/bin/nodejs /usr/bin/node
 
 Next Steps
-==========
+----------
 
 You're now finished with the Ubuntu-specific requirements for stackd.io.
 You can head back over to the :ref:`Quickstart Guide <installing>` and

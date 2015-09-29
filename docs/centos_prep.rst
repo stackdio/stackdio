@@ -7,7 +7,7 @@ and you should be able to easily launch an EC2 instance using this AMI from the
 `AWS Marketplace <https://aws.amazon.com/marketplace/pp/B00DGYP804/ref=sp_mpg_product_title?ie=UTF8&sr=0-4>`__.
 
 Prerequisites
-=============
+-------------
 
 All of the CentOS-provided AMIs have SELinux and iptables enabled. We
 disabled both of these to be as straight forward as possible during this
@@ -142,7 +142,7 @@ required packages.
     sudo yum install git mysql-devel swig python-devel rabbitmq-server nginx nodejs npm
 
 Next Steps
-==========
+----------
 
 You're now finished with the CentOS-specific requirements for stackd.io.
 You can head back over to the :ref:`Quickstart Guide <installing>` and

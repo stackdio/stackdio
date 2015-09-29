@@ -15,7 +15,7 @@ recommend using whichever you feel more comfortable with. Some of us
 here like Apache, while others like Nginx. Your mileage may vary :)
 
 Common Steps
-============
+------------
 
 To do some of the steps below you will need to have already installed
 stackdio and be in the virtual environment. To make sure you're in the
@@ -39,7 +39,7 @@ be run before proceeding with configuring the web server.
     stackdio manage.py collectstatic --noinput
 
 Apache
-======
+------
 
 CentOS Installation
 -------------------
@@ -110,7 +110,7 @@ and finally, start the server:
     sudo service apache2 restart
 
 Nginx
-=====
+-----
 
 In our configuration, Nginx will be used to serve static files and as a
 proxy to send requests down to the Django application running via

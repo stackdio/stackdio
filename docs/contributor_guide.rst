@@ -18,13 +18,13 @@ easier.
     :)
 
 Filing issues and feature requests
-==================================
+----------------------------------
 
 The process for filing issues and feature requests is described in the
 :doc:`contact` page.
 
 Contributing Code
-=================
+-----------------
 
 Since we're using Github, the recommended workflow for fixing bugs,
 adding features, or modifying documentation is to fork and submit pull
@@ -52,7 +52,7 @@ In a nutshell, we'll need you to:
     stackd.io as well
 
 Pull request guidelines
-=======================
+-----------------------
 
 CLA
 ---
@@ -61,8 +61,8 @@ Contribution to stackd.io requires a CLA before pull requests will be
 merged. This is currently handled manually by the repo admins, but may
 be handled by a bot in the future.
 
-Branch name
------------
+Branch naming
+-------------
 
 The branch name that the pull request originates from should start with
 either ``feature/`` or ``bugfix/``, depending on its contents. The rest

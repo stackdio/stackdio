@@ -8,7 +8,7 @@ Contact Information
 -  Github - https://github.com/stackdio/stackdio
 
 Filing issues and feature requests
-==================================
+----------------------------------
 
 We want stackd.io to be solid, but there's always going to be issues to
 fix and new features to enhance the product. If you find any problems or

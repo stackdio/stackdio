@@ -50,7 +50,7 @@ It's highly recommend to install stackd.io into a Python virtualenv, and
 we recommend using virtualenv wrapper.
 
 stackd.io user and sudo access
-==============================
+------------------------------
 
 Some of the coming steps in the Quick Start Guide require sudo/root
 access, but once those are handled, the rest of stackd.io should work
@@ -70,7 +70,7 @@ of this guide.
     sudo su - stackdio
 
 OS-specific preparation
-=======================
+-----------------------
 
 .. warning::
 
@@ -87,7 +87,7 @@ on.
 .. _installing:
 
 Installing stackd.io
-====================
+--------------------
 
 Below we're going to create our virtualenv named ``stackdio`` and
 install it directy from github. You can name your virtualenv whatever
@@ -173,7 +173,7 @@ Now, let's populate are database with a schema:
     stackdio manage.py migrate
 
 stackd.io users
-===============
+---------------
 
 LDAP
 ----
@@ -212,7 +212,7 @@ up and running so keep following the steps below and we'll come back to
 adding users later.
 
 Web server configuration
-========================
+------------------------
 
 For the quickstart, we'll use the ``stackdio`` command to generate the
 necessary configuration for Nginx to serve our static content as well as
@@ -255,8 +255,8 @@ and finally, start Nginx:
 
     sudo service nginx restart
 
-Rabbitmq, celery, and salt
-==========================
+RabbitMQ, celery, and salt
+--------------------------
 
 Start the rabbitmq server:
 
@@ -279,7 +279,7 @@ supervisor and start the services.
     supervisorctl -c ~/.stackdio/supervisord.conf start all
 
 Try it out!
-===========
+-----------
 
 At this point, you should have everything configured and running, so
 fire up a web browser and point it to your hostname and you should see
@@ -288,7 +288,7 @@ user that is a member of the ``stackdio-admin`` and ``stackdio-user``
 groups, or login with the admin user you created earlier.
 
 Creating additional users
-=========================
+-------------------------
 
 .. note::
 
