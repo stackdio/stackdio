@@ -129,9 +129,24 @@ define([
             }
         });
 
+        self.subscription = null;
 
         // Necessary functions
         self.reset = function() {
+            // Make sure we don't have more than 1 subscription
+            if (self.subscription) {
+                self.subscription.dispose();
+            }
+
+            var $el = $('.checkbox-custom');
+            self.subscription = self.createUsers.subscribe(function (newVal) {
+                if (newVal) {
+                    $el.checkbox('check');
+                } else {
+                    $el.checkbox('uncheck');
+                }
+            });
+
             self.blueprintId(null);
             self.title('');
             self.description('');
