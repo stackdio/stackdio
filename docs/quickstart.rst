@@ -49,8 +49,8 @@ Python virtual environments
 It's highly recommend to install stackd.io into a Python virtualenv, and
 we recommend using virtualenv wrapper.
 
-stackd.io user and sudo access
-------------------------------
+stackdio user and sudo access
+-----------------------------
 
 Some of the coming steps in the Quick Start Guide require sudo/root
 access, but once those are handled, the rest of stackd.io should work
@@ -84,17 +84,17 @@ on.
 -  :doc:`centos_prep`
 -  :doc:`ubuntu_prep`
 
-.. _installing:
+.. _installation:
 
-Installing stackd.io
---------------------
+Installation
+------------
 
 Below we're going to create our virtualenv named ``stackdio`` and
 install it directy from github. You can name your virtualenv whatever
 you like, but remember to modify the steps accordingly.
 
 Creating the virtualenv
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Let's create a virtualenv to install stackd.io into:
 
@@ -113,7 +113,7 @@ command:
     workon stackdio
 
 Install bower
--------------
+~~~~~~~~~~~~~
 
 In your terminal, run the following command to install bower:
 
@@ -126,7 +126,7 @@ In your terminal, run the following command to install bower:
     sudo npm install -g bower
 
 Install the stackd.io project
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. note::
 
@@ -173,10 +173,10 @@ Now, let's populate are database with a schema:
     stackdio manage.py migrate
 
 stackd.io users
----------------
+~~~~~~~~~~~~~~~
 
 LDAP
-----
+~~~~
 
 stackd.io can easily integrate with an LDAP server. See our `LDAP
 guide <ldap_guide.md>`__ for more information on configuring stackd.io
@@ -186,7 +186,7 @@ members of the right groups via LDAP will automatically be created in
 stackd.io.
 
 Non-LDAP admin user
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 Admin users in stackd.io have less restriction to various pieces of the
 platform. For example, only admin users are allowed to create and modify
@@ -204,7 +204,7 @@ stacks.
     # and follow prompts...
 
 Non-LDAP regular users
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 When not using LDAP, the easiest way to create new non-admin users is to
 use the built-in Django admin interface. First we need the server to be

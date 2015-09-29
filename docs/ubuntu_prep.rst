@@ -10,8 +10,7 @@ instance using this AMI from the
 Prerequisites
 -------------
 
-| All of these steps require ``root`` or ``sudo`` access. Before
-  installing anything
+| All of these steps require ``root`` or ``sudo`` access. Before installing anything
 | with ``apt-get`` you should run ``apt-get update`` first.
 
 MySQL
@@ -84,5 +83,5 @@ Next Steps
 ----------
 
 You're now finished with the Ubuntu-specific requirements for stackd.io.
-You can head back over to the :ref:`Quickstart Guide <installing>` and
+You can head back over to the :ref:`Quickstart Guide <installation>` and
 continue the installation of stackd.io.
