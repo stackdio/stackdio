@@ -24,10 +24,12 @@ from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
 
-
-if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
+major = sys.version_info.major
+minor = sys.version_info.minor
+micro = sys.version_info.micro
+if major != 2 or minor != 7:
     err_msg = ('Your Python version {0}.{1}.{2} is not supported.\n'
-               'stackdio-server requires Python 2.7 or newer.\n'.format(*sys.version_info[:3]))
+               'stackdio-server requires Python 2.7.\n'.format(major, minor, micro))
     sys.stderr.write(err_msg)
     sys.exit(1)
 
@@ -43,22 +45,6 @@ components_dir = os.path.join(
     'lib',
     'bower_components',
 )
-
-build_dir = os.path.join(
-    root_dir,
-    'stackdio',
-    'ui',
-    'static',
-    'stackdio',
-    'build',
-)
-
-# Force the user to build the ui first
-if not os.path.exists(build_dir):
-    err_msg = ('It looks like you haven\'t built the ui yet.  Please run '
-               '`python manage.py build_ui` before using setup.py.\n')
-    sys.stderr.write(err_msg)
-    sys.exit(1)
 
 # Force the user to install bower components first
 if not os.path.exists(components_dir):

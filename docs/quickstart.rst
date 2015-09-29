@@ -135,8 +135,19 @@ Install the stackd.io project
     (because it's trying to install into the global python site-packages
     directory which we don't want!)
 
+There's two options for installing here.  We recommend pulling the latest version from our
+`releases page <https://github.com/stackdio/stackdio/releases>`__, like this:
+
 .. code:: bash
 
+    workon stackdio  # Activate the virtualenv
+    pip install https://github.com/stackdio/stackdio/releases/download/0.7.0a4/stackdio_server-0.7.0a4-py2-none-any.whl
+
+If you'd rather have the most up to date code, you can install from our develop branch:
+
+.. code:: bash
+
+    workon stackdio  # Activate the virtualenv
     cd /tmp
     git clone https://github.com/stackdio/stackdio.git
     cd stackdio
@@ -171,6 +182,14 @@ Now, let's populate are database with a schema:
 .. code:: bash
 
     stackdio manage.py migrate
+
+**IF** you installed from our github repository, you'll need to build the minified javascript files:
+
+.. code::
+
+    # ONLY DO THIS IF YOU INSTALLED FROM THE GITHUB REPOSITORY.
+    stackdio manage.py build_ui
+
 
 stackd.io users
 ---------------
