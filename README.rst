@@ -9,7 +9,7 @@ infrastructure without the need for a background in systems engineering.
 Getting started
 ===============
 
-Please see our `Quick Start Guide <docs/quickstart.rst>`__ for a fast
+Please see our `Quick Start Guide <http://docs.stackd.io/en/latest/quickstart.html>`__ for a fast
 track to installing stackd.io
 
 Contributing
@@ -22,7 +22,7 @@ encounter bugs, or see some missing piece of functionality that would
 make stackd.io that more awesome, kindly drop us a note or submit an
 issue. If you do know how to code and you want to get your hands dirty,
 take a shot at one of our outstanding issues and submit a pull request.
-Please take a look at our `contributor guidelines <docs/contributor-guide.rst>`__
+Please take a look at our `contributor guidelines <http://docs.stackd.io/en/latest/contributor-guide.html>`__
 before submitting pull requests though.
 
 Contact us
@@ -47,5 +47,5 @@ glad to help!
    :target: https://coveralls.io/r/stackdio/stackdio?branch=develop
    :alt: Coverage Status
 .. |Docs Status| image:: https://readthedocs.org/projects/stackdio/badge/?version=latest
-   :target: https://docs.stackd.io/en/latest/?badge=latest
+   :target: http://docs.stackd.io/en/latest/?badge=latest
    :alt: Documentation Status
