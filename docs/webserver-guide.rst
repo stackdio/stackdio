@@ -42,7 +42,7 @@ Apache
 ------
 
 CentOS Installation
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 Install required packages:
 
@@ -82,7 +82,7 @@ the hostname on port 80 (use https if you decided to serve over SSL.)
     sudo service httpd restart
 
 Ubuntu Installation
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 Install required packages:
 
@@ -119,7 +119,7 @@ a quick start mechanism to get you up and running behind Nginx/gunicorn
 very quickly.
 
 CentOS Installation
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 Install required packaged, generate and write configuration file, and
 restart server:
@@ -136,7 +136,7 @@ restart server:
     sudo service nginx restart
 
 Ubuntu Installation
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 .. code:: bash
 
