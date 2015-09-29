@@ -47,5 +47,5 @@ glad to help!
    :target: https://coveralls.io/r/stackdio/stackdio?branch=develop
    :alt: Coverage Status
 .. |Docs Status| image:: https://readthedocs.org/projects/stackdio/badge/?version=latest
-   :target: http://stackdio.readthedocs.org/en/latest/?badge=latest
+   :target: https://docs.stackd.io/en/latest/?badge=latest
    :alt: Documentation Status
