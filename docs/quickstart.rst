@@ -81,8 +81,8 @@ Follow one of the individual guides below to prepare your particular
 environment for stackd.io. Once you finish, come back here and continue
 on.
 
--  :doc:`centos_prep`
--  :doc:`ubuntu_prep`
+-  :doc:`centos-prep`
+-  :doc:`ubuntu-prep`
 
 .. _installation:
 
@@ -178,9 +178,9 @@ stackd.io users
 LDAP
 ~~~~
 
-stackd.io can easily integrate with an LDAP server. See our `LDAP
-guide <ldap_guide.md>`__ for more information on configuring stackd.io
-to work with LDAP. If you choose to go the LDAP route, you can skip this
+stackd.io can easily integrate with an LDAP server. See our :doc:`ldap-guide`
+for more information on configuring stackd.io to work with LDAP.
+If you choose to go the LDAP route, you can skip this
 entire section because users who successfully authenticate and are
 members of the right groups via LDAP will automatically be created in
 stackd.io.

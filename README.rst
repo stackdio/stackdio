@@ -23,9 +23,8 @@ encounter bugs, or see some missing piece of functionality that would
 make stackd.io that more awesome, kindly drop us a note or submit an
 issue. If you do know how to code and you want to get your hands dirty,
 take a shot at one of our outstanding issues and submit a pull request.
-Please take a look at our `contributor
-guidelines <docs/contributor_guide.rst>`__ before submitting pull
-requests though.
+Please take a look at our `contributor guidelines <docs/contributor-guide.rst>`__
+before submitting pull requests though.
 
 Contact us
 ==========
@@ -37,12 +36,10 @@ an issue <https://github.com/stackdio/stackdio/issues>`__ and we'll be
 glad to help!
 
 -  Email - info@stackd.io
--  IRC - `#stackdio on
-   irc.freenode.net <http://webchat.freenode.net/?channels=stackdio>`__
+-  IRC - `#stackdio on irc.freenode.net <http://webchat.freenode.net/?channels=stackdio>`__
 -  Twitter: `@stackdio <http://twitter.com/stackdio>`__
--  StackExchange: Ask a question on any `StackExchange
-   site <http://stackexchange.com/sites>`__ and tag it with
-   ``stackd.io`` or ``stackdio``
+-  StackExchange: Ask a question on any `StackExchange site <http://stackexchange.com/sites>`__
+   and tag it with ``stackd.io`` or ``stackdio``
 
 .. |Circle CI| image:: https://circleci.com/gh/stackdio/stackdio/tree/develop.svg?style=svg
    :target: https://circleci.com/gh/stackdio/stackdio/tree/develop
