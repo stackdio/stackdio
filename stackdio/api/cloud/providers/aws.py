@@ -307,7 +307,7 @@ class AWSCloudProvider(BaseCloudProvider):
         os.chmod(private_key_path, stat.S_IRUSR)
 
         config_data = {
-            'provider': self.SHORT_NAME,
+            'driver': self.SHORT_NAME,
             'id': validated_data[self.ACCESS_KEY],
             'key': validated_data[self.SECRET_KEY],
             'keyname': validated_data[self.KEYPAIR],

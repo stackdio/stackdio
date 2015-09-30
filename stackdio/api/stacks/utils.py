@@ -28,11 +28,26 @@ import salt.cloud
 import salt.config as config
 import salt.key
 import salt.utils
+import salt.utils.cloud
 import yaml
 from django.conf import settings
 
 
 logger = logging.getLogger(__name__)
+
+
+class StackdioSaltCloudClient(salt.cloud.CloudClient):
+
+    def launch(self, cloud_map, **kwargs):
+        """
+        Runs a map from an already in-memory representation rather than an file on disk.
+        """
+        mapper = salt.cloud.Map(self._opts_defaults(**kwargs))
+        mapper.rendered_map = cloud_map
+        dmap = mapper.map_data()
+        return salt.utils.cloud.simple_types_filter(
+            mapper.run_map(dmap)
+        )
 
 
 def filter_actions(user, stack, actions):

@@ -563,7 +563,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         return created_hosts
 
-    def generate_map_file(self):
+    def generate_cloud_map(self):
         # TODO: Figure out a way to make this provider agnostic
 
         # TODO: Should we store this somewhere instead of assuming
@@ -611,59 +611,62 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 map_volumes.append(v)
 
             host_metadata = {
-                host.hostname: {
-                    # The parameters in the minion dict will be passed on
-                    # to the minion and set in its default configuration
-                    # at /etc/salt/minion. This is where you would override
-                    # any default values set by salt-minion
-                    'minion': {
-                        'master': master,
-                        'log_level': 'debug',
-                        'log_level_logfile': 'debug',
-                        'mine_functions': {
-                            'grains.items': []
-                        },
-
-                        # Grains are very useful when you need to set some
-                        # static information about a machine (e.g., what stack
-                        # id its registered under or how many total machines
-                        # are in the cluster)
-                        'grains': {
-                            'roles': roles,
-                            'stack_id': int(self.pk),
-                            'fqdn': fqdn,
-                            'domain': domain,
-                            'cluster_size': cluster_size,
-                            'stack_pillar_file': self.pillar_file.path,
-                            'volumes': map_volumes,
-                            'cloud_account': host.cloud_image.account.slug,
-                            'cloud_image': host.cloud_image.slug,
-                            'namespace': self.namespace,
-                        },
+                'name': host.hostname,
+                # The parameters in the minion dict will be passed on
+                # to the minion and set in its default configuration
+                # at /etc/salt/minion. This is where you would override
+                # any default values set by salt-minion
+                'minion': {
+                    'master': master,
+                    'log_level': 'debug',
+                    'log_level_logfile': 'debug',
+                    'mine_functions': {
+                        'grains.items': []
                     },
 
-                    # The rest of the settings in the map are salt-cloud
-                    # specific and control the VM in various ways
-                    # depending on the cloud account being used.
-                    'size': instance_size,
-                    'securitygroupid': list(security_groups),
-                    'volumes': map_volumes,
-                }
+                    # Grains are very useful when you need to set some
+                    # static information about a machine (e.g., what stack
+                    # id its registered under or how many total machines
+                    # are in the cluster)
+                    'grains': {
+                        'roles': roles,
+                        'stack_id': int(self.pk),
+                        'fqdn': fqdn,
+                        'domain': domain,
+                        'cluster_size': cluster_size,
+                        'stack_pillar_file': self.pillar_file.path,
+                        'volumes': map_volumes,
+                        'cloud_account': host.cloud_image.account.slug,
+                        'cloud_image': host.cloud_image.slug,
+                        'namespace': self.namespace,
+                    },
+                },
+
+                # The rest of the settings in the map are salt-cloud
+                # specific and control the VM in various ways
+                # depending on the cloud account being used.
+                'size': instance_size,
+                'securitygroupid': list(security_groups),
+                'volumes': map_volumes,
             }
 
             if cloud_account.vpc_enabled:
-                host_metadata[host.hostname]['subnetid'] = host.subnet_id
+                host_metadata['subnetid'] = host.subnet_id
             else:
-                host_metadata[host.hostname]['availability_zone'] \
-                    = host.availability_zone.title
+                host_metadata['availability_zone'] = host.availability_zone.title
 
             # Add in spot instance config if needed
             if host.sir_price:
-                host_metadata[host.hostname]['spot_config'] = {
+                host_metadata['spot_config'] = {
                     'spot_price': str(host.sir_price)  # convert to string
                 }
 
-            images.setdefault(host.cloud_image.slug, []).append(host_metadata)
+            images.setdefault(host.cloud_image.slug, {})[host.hostname] = host_metadata
+
+        return images
+
+    def generate_map_file(self):
+        images = self.generate_cloud_map()
 
         map_file_yaml = yaml.safe_dump(images, default_flow_style=False)
 

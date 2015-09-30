@@ -227,8 +227,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
         logger.info('Log file: {0}'.format(log_file))
 
-        salt_cloud = salt.cloud.CloudClient(
-            os.path.join(settings.STACKDIO_CONFIG.salt_config_root, 'cloud'))
+        salt_cloud = utils.StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
         query = salt_cloud.query()
 
         hostnames = [host.hostname for host in hosts]
@@ -299,21 +298,13 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                                     n,
                                     private_key=bogus_key)
 
-            cmd = utils.get_launch_command(stack,
-                                           log_file,
-                                           parallel=parallel)
-
             if parallel:
                 logger.info('Launching hosts in PARALLEL mode.')
             else:
                 logger.info('Launching hosts in SERIAL mode.')
 
-            logger.debug('Executing command: {0}'.format(cmd))
-            launch_result = envoy.run(str(cmd))
-            logger.debug('Command results:')
-            logger.debug('status_code = {0}'.format(launch_result.status_code))
-            logger.debug('std_out = {0}'.format(launch_result.std_out))
-            logger.debug('std_err = {0}'.format(launch_result.std_err))
+            # Launch everything!
+            ret = salt_cloud.launch(stack.generate_cloud_map(), parallel=parallel)
 
             # Remove the failure modifications if necessary
             if simulate_launch_failures:
