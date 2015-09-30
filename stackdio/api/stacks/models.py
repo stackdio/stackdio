@@ -239,6 +239,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
     formula_versions = GenericRelation('formulas.FormulaVersion')
 
+    labels = GenericRelation('core.Label')
+
     # An arbitrary namespace for this stack. Mainly useful for Blueprint
     # hostname templates
     namespace = models.CharField('Namespace', max_length=64)
@@ -364,6 +366,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
     def get_formulas(self):
         return self.blueprint.get_formulas()
+
+    def get_tags(self):
+        tags = {}
+        for label in self.labels.all():
+            tags[label.key] = label.value
+
+        tags['stack_id'] = self.id
+        return tags
 
     @property
     def properties(self):

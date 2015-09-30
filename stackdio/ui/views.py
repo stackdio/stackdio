@@ -211,6 +211,12 @@ class StackPropertiesView(StackDetailView):
     page_id = 'properties'
 
 
+class StackLabelsView(StackDetailView):
+    template_name = 'stacks/stack-labels.html'
+    viewmodel = 'viewmodels/stack-labels'
+    page_id = 'labels'
+
+
 class StackHostsView(StackDetailView):
     template_name = 'stacks/stack-hosts.html'
     viewmodel = 'viewmodels/stack-hosts'

@@ -304,6 +304,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         view_name='api:stacks:stack-logs')
     volumes = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-volumes')
+    labels = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-label-list')
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-properties')
     history = serializers.HyperlinkedIdentityField(
@@ -335,6 +337,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'group_permissions',
             'hosts',
             'volumes',
+            'labels',
             'properties',
             'history',
             'action',
