@@ -178,7 +178,11 @@ def process_orchestrate_result(result, stack, log_file, err_file):
         # Process the data for this sls
         with open(err_file, 'a') as f:
             f.write(yaml.safe_dump(sls_result['comment']))
-        failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
+        local_failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
+
+        if local_failed:
+            # Do it this way to ensure we don't set it BACK to false after a failure.
+            failed = True
         failed_hosts.update(local_failed_hosts)
 
     return failed, failed_hosts
