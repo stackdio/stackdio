@@ -24,9 +24,7 @@ import shutil
 import sys
 import textwrap
 
-import envoy
 import jinja2
-import psutil
 import yaml
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
