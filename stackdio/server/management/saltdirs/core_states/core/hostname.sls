@@ -8,16 +8,15 @@
 # Edit the appropriate hostname file
 hostname_file:
   file:
-    - sed
-    - user: root
+    - replace
 {% if grains['os_family'] == 'Debian' %}
     - name: /etc/hostname
-    - before: "^.*$"
-    - after: "{{ grains['fqdn'] }}"
+    - pattern: "^.*$"
+    - repl: "{{ grains['fqdn'] }}"
 {% elif grains['os_family'] == 'RedHat' %}
     - name: /etc/sysconfig/network
-    - before: "^HOSTNAME=.*$"
-    - after: "HOSTNAME={{ grains['fqdn'] }}"
+    - pattern: "^HOSTNAME=.*$"
+    - repl: "HOSTNAME={{ grains['fqdn'] }}"
 {% endif %}
 
 # Add an IP->FQDN mapping for each machine in the stack

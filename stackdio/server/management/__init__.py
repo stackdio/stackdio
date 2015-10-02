@@ -91,10 +91,7 @@ def main():
 
     upgrade_salt_parser = subparsers.add_parser(
         'upgrade-salt',
-        help='upgrade your salt version')
-    upgrade_salt_parser.add_argument('version',
-                                     help=('The version of salt you would like '
-                                           'to upgrade to'))
+        help='upgrade your salt version in config files')
     upgrade_salt_parser.set_defaults(command=commands.UpgradeSaltCommand)
     upgrade_salt_parser.set_defaults(raw_args=False)
 

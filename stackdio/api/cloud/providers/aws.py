@@ -307,7 +307,7 @@ class AWSCloudProvider(BaseCloudProvider):
         os.chmod(private_key_path, stat.S_IRUSR)
 
         config_data = {
-            'provider': self.SHORT_NAME,
+            'driver': self.SHORT_NAME,
             'id': validated_data[self.ACCESS_KEY],
             'key': validated_data[self.SECRET_KEY],
             'keyname': validated_data[self.KEYPAIR],
@@ -849,10 +849,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
         if resource_ids:
             logger.info('tagging {0!r}'.format(resource_ids))
-            # ec2.create_tags(resource_ids, {
-            #     'stack_id': str(stack.id),
-            #     'owner': stack.owner.username,
-            # })
+            ec2.create_tags(resource_ids, stack.get_tags())
 
     def get_ec2_instances(self, hosts):
         ec2 = self.connect_ec2()

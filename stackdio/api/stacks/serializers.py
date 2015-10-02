@@ -67,9 +67,6 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
             # This is a PUT, so just add the data directly
             stack.properties = validated_data
 
-        # Regenerate the pillar file with the new properties
-        stack.generate_pillar_file()
-
         # Be sure to save the instance
         stack.save()
 
@@ -214,9 +211,6 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
         if hosts:
             host_ids = [h.id for h in hosts]
 
-            # regenerate the map file
-            stack.generate_map_file()
-
             # Launch celery tasks to create the hosts
             workflow = workflows.LaunchWorkflow(stack, host_ids=host_ids, opts=self.initial_data)
             workflow.execute()
@@ -304,6 +298,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         view_name='api:stacks:stack-logs')
     volumes = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-volumes')
+    labels = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-label-list')
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-properties')
     history = serializers.HyperlinkedIdentityField(
@@ -335,6 +331,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'group_permissions',
             'hosts',
             'volumes',
+            'labels',
             'properties',
             'history',
             'action',

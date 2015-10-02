@@ -71,6 +71,10 @@ urlpatterns = (
                views.StackPropertiesView.as_view(),
                name='stack-properties'),
 
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/labels/$',
+               views.StackLabelsView.as_view(),
+               name='stack-labels'),
+
     cached_url(r'^stacks/(?P<pk>[0-9]+)/hosts/$',
                views.StackHostsView.as_view(),
                name='stack-hosts'),

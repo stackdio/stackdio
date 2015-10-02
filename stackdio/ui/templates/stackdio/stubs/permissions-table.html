@@ -1,13 +1,12 @@
 <!-- Permissions for  {{ user_or_group }}s -->
 <div class="row"{% if user_or_group == 'group' %} style="margin-top: 20px"{% endif %}>
     <div class="col-md-12">
-        <table class="table table-hover table-striped table-condensed stackdio-hidden-on-load"
-               data-bind="style: { width: (300 + 100 * available{{ user_or_group | capfirst }}Permissions().length) + 'px'}">
+        <table class="table table-hover table-striped table-condensed stackdio-hidden-on-load">
             <thead>
                 <tr>
-                    <th style="width: 30%">{{ user_or_group | capfirst }}s</th>
+                    <th style="width: 20%">{{ user_or_group | capfirst }}s</th>
                     <!-- ko foreach: available{{ user_or_group | capfirst }}Permissions -->
-                    <th style="width: 10%" class="text-center" data-bind="text: $data.capitalize()"></th>
+                    <th class="text-center" data-bind="text: $data.capitalize(), style: {width: (80 / $root.available{{ user_or_group | capfirst }}Permissions().length) + '%' }"></th>
                     <!-- /ko -->
                 </tr>
             </thead>

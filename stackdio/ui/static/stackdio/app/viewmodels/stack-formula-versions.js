@@ -74,10 +74,7 @@ define([
             });
 
             $.when.apply(this, ajaxCalls).done(function () {
-                bootbox.alert({
-                    title: 'Formula versions saved',
-                    message: 'Successfully saved formula versions.'
-                });
+                utils.growlAlert('Successfully saved formula versions.', 'success');
             });
 
         }

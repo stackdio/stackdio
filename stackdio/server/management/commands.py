@@ -45,13 +45,13 @@ def get_salt_version():
 
 
 class Colors(object):
-    ENDC = SALT_COLORS['ENDC']
-    BLACK = SALT_COLORS['DEFAULT_COLOR']
-    ERROR = SALT_COLORS['RED_BOLD']
-    WARN = SALT_COLORS['BROWN']
-    INFO = SALT_COLORS['CYAN']
-    PROMPT = SALT_COLORS['GREEN']
-    VALUE = SALT_COLORS['BLUE']
+    ENDC = str(SALT_COLORS['ENDC'])
+    BLACK = str(SALT_COLORS['DEFAULT_COLOR'])
+    ERROR = str(SALT_COLORS['LIGHT_RED'])
+    WARN = str(SALT_COLORS['YELLOW'])
+    INFO = str(SALT_COLORS['CYAN'])
+    PROMPT = str(SALT_COLORS['GREEN'])
+    VALUE = str(SALT_COLORS['BLUE'])
 
 
 class BaseCommand(object):
@@ -543,16 +543,9 @@ class UpgradeSaltCommand(BaseCommand):
 
     def run(self):
 
-        # Check to see if the master is running
-        for proc in psutil.process_iter():
-            if 'salt-master' in proc.cmdline():
-                # It's running
-                self.out('ERROR: Your salt-master is running.  Please shut it down before you '
-                         'attempt to upgrade salt.', Colors.ERROR)
-                return
-
-        self.out('NOTE: This command will upgrade your version of salt-master '
-                 'in addition to changing your bootstrap args so that all '
+        self.out('NOTE: This command WILL NOT upgrade your version of salt-master.  '
+                 'It will only upgrade the version of salt that is '
+                 'installed on minions by changing your bootstrap args so that all '
                  'minions match the master version. You are highly advised NOT '
                  'to upgrade your salt version while you have running stacks, '
                  'as this may cause minion-master compatibility issues.  This '
@@ -566,31 +559,7 @@ class UpgradeSaltCommand(BaseCommand):
                      Colors.ERROR)
             return
 
-        current_version = get_salt_version()
-
-        new_version = self.args.version
-
-        if current_version == new_version:
-            self.out('Salt version {0} is already installed.'.format(new_version))
-            return
-
-        self.out('Upgrading salt master...', nl=0)
-        sys.stdout.flush()
-
-        result = envoy.run('pip install -U \'salt=={0}\''.format(new_version))
-
-        if result.status_code != 0:
-            self.out('Error upgrading salt:', Colors.ERROR)
-            self.out(result.std_out, Colors.ERROR)
-            return
-
-        self.out('Done!')
-
-        installed_version = get_salt_version()
-
-        if installed_version != new_version:
-            self.out('WARNING: salt version {0} was actually installed'.format(
-                installed_version), Colors.WARN)
+        new_version = get_salt_version()
 
         self.out('Updating config files...', nl=0)
         sys.stdout.flush()
@@ -608,10 +577,10 @@ class UpgradeSaltCommand(BaseCommand):
             # Add to the config
             self.out('WARNING: salt version was not previously in the config file')
             spl.append('git')
-            spl.append('v{0}'.format(installed_version))
+            spl.append('v{0}'.format(new_version))
         else:
             # Change the config
-            spl[idx + 1] = 'v{0}'.format(installed_version)
+            spl[idx + 1] = 'v{0}'.format(new_version)
 
         config.salt_bootstrap_args = ' '.join(spl)
 
@@ -635,10 +604,10 @@ class UpgradeSaltCommand(BaseCommand):
                 # Add to the config
                 self.out('WARNING: salt version was not previously in the config file')
                 spl.append('git')
-                spl.append('v{0}'.format(installed_version))
+                spl.append('v{0}'.format(new_version))
             else:
                 # Change the config
-                spl[idx + 1] = 'v{0}'.format(installed_version)
+                spl[idx + 1] = 'v{0}'.format(new_version)
 
             profile_yaml[slug]['script_args'] = ' '.join(spl)
 
@@ -646,10 +615,6 @@ class UpgradeSaltCommand(BaseCommand):
                 yaml.safe_dump(profile_yaml, f, default_flow_style=False)
 
         self.out('Done!')
-
-        self.out('WARNING: You MUST manually restart the salt master in order '
-                 'for this change to take effect.  Do this now to avoid later '
-                 'issues.', Colors.WARN)
 
 
 class SaltWrapperCommand(BaseCommand):

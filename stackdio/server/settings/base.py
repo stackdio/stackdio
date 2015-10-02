@@ -345,6 +345,7 @@ CELERY_ROUTES = {
     'stacks.destroy_stack': {'queue': 'stacks'},
     'stacks.execute_action': {'queue': 'stacks'},
     'stacks.finish_stack': {'queue': 'stacks'},
+    'stacks.global_orchestrate': {'queue': 'stacks'},
     'stacks.handle_error': {'queue': 'stacks'},
     'stacks.highstate': {'queue': 'stacks'},
     'stacks.launch_hosts': {'queue': 'stacks'},
