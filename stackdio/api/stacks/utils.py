@@ -21,6 +21,7 @@ import logging
 import multiprocessing
 import os
 import random
+import socket
 from datetime import datetime
 
 import salt.client
@@ -35,10 +36,12 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+ERROR_REQUISITE = 'One or more requisite failed'
+
 
 class StackdioSaltCloudClient(salt.cloud.CloudClient):
 
-    def launch(self, cloud_map, **kwargs):
+    def launch_map(self, cloud_map, **kwargs):
         """
         Runs a map from an already in-memory representation rather than an file on disk.
         """
@@ -48,6 +51,137 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
         return salt.utils.cloud.simple_types_filter(
             mapper.run_map(dmap)
         )
+
+
+def state_to_dict(state_string):
+    """
+    Takes the state string and transforms it into a dict of key/value
+    pairs that are a bit easier to handle.
+
+    Before: group_|-stackdio_group_|-abe_|-present
+
+    After: {
+        'module': 'group',
+        'function': 'present',
+        'name': 'abe',
+        'declaration_id': 'stackdio_group'
+    }
+    """
+    state_labels = settings.STATE_EXECUTION_FIELDS
+    state_fields = state_string.split(settings.STATE_EXECUTION_DELIMITER)
+    return dict(zip(state_labels, state_fields))
+
+
+def is_requisite_error(state_meta):
+    """
+    Is the state error because of a requisite state failure?
+    """
+    return ERROR_REQUISITE in state_meta['comment']
+
+
+def is_recoverable(err):
+    """
+    Checks the provided error against a blacklist of errors
+    determined to be unrecoverable. This should be used to
+    prevent retrying of provisioning or orchestration because
+    the error will continue to occur.
+    """
+    # TODO: determine the blacklist of errors that
+    # will trigger a return of False here
+    return True
+
+
+def state_error(state_str, state_meta):
+    """
+    Takes the given state result string and the metadata
+    of the state execution result and returns a consistent
+    dict for the error along with whether or not the error
+    is recoverable.
+    """
+    state = state_to_dict(state_str)
+    func = '{module}.{func}'.format(**state)
+    decl_id = state['declaration_id']
+    err = {
+        'error': state_meta['comment'],
+        'function': func,
+        'declaration_id': decl_id,
+    }
+    if 'stderr' in state_meta['changes']:
+        err['stderr'] = state_meta['changes']['stderr']
+    if 'stdout' in state_meta['changes']:
+        err['stdout'] = state_meta['changes']['stdout']
+    return err, is_recoverable(err)
+
+
+def process_sls_result(sls_result, err_file):
+    if 'out' in sls_result and sls_result['out'] != 'highstate':
+        logger.debug('This isn\'t highstate data... it may not process correctly.')
+
+        from .tasks import StackTaskException
+        raise StackTaskException('Missing highstate data from the orchestrate runner.')
+
+    if 'ret' not in sls_result:
+        return True, set()
+
+    failed = False
+    failed_hosts = set()
+
+    for host, state_results in sls_result['ret'].items():
+        sorted_result = sorted(state_results.items(), key=lambda x: x[1]['__run_num__'])
+        for stage_label, stage_result in sorted_result:
+
+            if stage_result.get('result', False):
+                continue
+
+            # We have failed
+            failed = True
+
+            # Check to see if it's a requisite error - if so, we don't want to clutter the
+            # logs, so we'll continue on.
+            if is_requisite_error(stage_result):
+                continue
+
+            failed_hosts.add(host)
+
+            # Write to the error log
+            with open(err_file, 'a') as f:
+                f.write(yaml.safe_dump(stage_result))
+
+    return failed, failed_hosts
+
+
+def process_orchestrate_result(result, stack, log_file, err_file):
+    result = result['{0}_master'.format(socket.gethostname())]
+
+    failed = False
+    failed_hosts = set()
+
+    for sls, sls_result in sorted(result.items(), key=lambda x: x[1]['__run_num__']):
+        sls_dict = state_to_dict(sls)
+
+        logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'],
+                                                                stack.title))
+
+        if 'changes' in sls_result and 'ret' in sls_result['changes']:
+            with open(err_file, 'a') as f:
+                f.write(
+                    'Stage {0} returned {1} host info object(s)\n\n'.format(
+                        sls_dict['name'],
+                        len(sls_result['changes']['ret'])
+                    )
+                )
+
+        if sls_result.get('result', False):
+            # This whole sls is good!  Just continue on with the next one.
+            continue
+
+        # Process the data for this sls
+        with open(err_file, 'a') as f:
+            f.write(yaml.safe_dump(sls_result['comment']))
+        failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
+        failed_hosts.update(local_failed_hosts)
+
+    return failed, failed_hosts
 
 
 def filter_actions(user, stack, actions):
@@ -87,29 +221,6 @@ def get_salt_cloud_log_file(stack, suffix):
     return log_file
 
 
-def get_launch_command(stack, log_file, parallel=False):
-    cmd_args = [
-        'salt-cloud',
-        '--assume-yes',
-        '--log-level=quiet',        # no logging on console
-        '--log-file={0}',           # where to log
-        '--log-file-level=debug',   # full logging
-        '--config-dir={1}',         # salt config dir
-        '--out=yaml',               # return YAML formatted results
-        '--map={2}',                # the map file to use for launching
-    ]
-
-    # parallize the salt-cloud launch
-    if parallel:
-        cmd_args.append('--parallel')
-
-    return ' '.join(cmd_args).format(
-        log_file,
-        settings.STACKDIO_CONFIG.salt_config_root,
-        stack.map_file.path,
-    )
-
-
 def get_salt_cloud_opts():
     return config.cloud_config(
         settings.STACKDIO_CONFIG.salt_cloud_config
@@ -122,22 +233,23 @@ def get_salt_master_opts():
     )
 
 
-def get_stack_mapper(stack):
+def get_stack_mapper(cloud_map):
     opts = get_salt_cloud_opts()
     opts.update({
-        'map': stack.map_file.path,
         'hard': False,
     })
-    return salt.cloud.Map(opts)
+    ret = salt.cloud.Map(opts)
+    ret.rendered_map = cloud_map
+    return ret
 
 
-def get_stack_map_data(stack):
-    mapper = get_stack_mapper(stack)
+def get_stack_map_data(cloud_map):
+    mapper = get_stack_mapper(cloud_map)
     return mapper.map_data()
 
 
-def get_stack_vm_map(stack):
-    dmap = get_stack_map_data(stack)
+def get_stack_vm_map(cloud_map):
+    dmap = get_stack_map_data(cloud_map)
     vms = {}
     for k in ('create', 'existing',):
         if k in dmap:
@@ -203,14 +315,13 @@ def ping_stack_hosts(stack):
     NOTE: This specifically targets the hosts in a stack instead of
     pinging all available hosts that salt is managing.
     """
-    client = salt.client.LocalClient(
-        settings.STACKDIO_CONFIG.salt_master_config
-    )
-    target = ' or '.join(
-        [hd.hostname_template.format(namespace=stack.namespace,
-                                     index='*')
-         for hd in stack.blueprint.host_definitions.all()])
-    return set(client.cmd(target, 'test.ping', expr_form='compound'))
+    client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
+    target = [host.hostname for host in stack.hosts.all()]
+
+    ret = set()
+    for val in client.cmd_iter(target, 'test.ping', expr_form='list'):
+        ret.update(val.keys())
+    return ret
 
 
 def find_zombie_hosts(stack):
@@ -219,14 +330,14 @@ def find_zombie_hosts(stack):
     reachable via a ping request.
     """
     pinged_hosts = ping_stack_hosts(stack)
-    hostnames = set([h[0] for h in stack.hosts.all().values_list('hostname')])
+    hostnames = set([host.hostname for host in stack.hosts.all()])
     zombies = hostnames - pinged_hosts
     if not zombies:
         return None
     return stack.hosts.filter(hostname__in=zombies)
 
 
-def check_for_ssh(stack, hosts):
+def check_for_ssh(cloud_map, hosts):
     """
     Attempts to SSH to the given hosts.
 
@@ -236,8 +347,8 @@ def check_for_ssh(stack, hosts):
     True if we could connect to Host over SSH, False otherwise
     """
     opts = get_salt_cloud_opts()
-    vms = get_stack_vm_map(stack)
-    mapper = get_stack_mapper(stack)
+    vms = get_stack_vm_map(cloud_map)
+    mapper = get_stack_mapper(cloud_map)
     result = []
 
     # Iterate over the given hosts. If the host hasn't been assigned a
@@ -320,7 +431,7 @@ def bootstrap_hosts(stack, hosts, parallel=True):
     the `find_zombie_hosts` method)
     """
     __opts__ = get_salt_cloud_opts()
-    dmap = get_stack_map_data(stack)
+    dmap = get_stack_map_data(stack.generate_cloud_map())
 
     # Params list holds the dict objects that will be used during
     # the deploy process; this will be handed off to the multiprocessing
@@ -485,55 +596,33 @@ def deploy_vm(params):
     return deployed
 
 
-def load_map_file(stack):
-    with open(stack.map_file.path, 'r') as f:
-        map_yaml = yaml.safe_load(f)
-    return map_yaml
-
-
-def write_map_file(stack, data):
-    with open(stack.map_file.path, 'w') as f:
-        f.write(yaml.safe_dump(data, default_flow_style=False))
-
-
-def mod_hosts_map(stack, n, **kwargs):
+def mod_hosts_map(cloud_map, n, **kwargs):
     """
     Selects n random hosts for the given stack and modifies/adds
-    the map entry for thoses hosts with the kwargs.
+    the map entry for those hosts with the kwargs.
     """
-    map_yaml = load_map_file(stack)
-
-    population = []
-    for k, v in map_yaml.iteritems():
-        population.extend(v)
+    population = cloud_map.keys()
 
     # randomly select n hosts
     hosts = random.sample(population, n)
 
     # modify the hosts
     for host in hosts:
-        host[host.keys()[0]].update(kwargs)
+        cloud_map[host].update(kwargs)
 
-    write_map_file(stack, map_yaml)
+    return cloud_map
 
 
-def unmod_hosts_map(stack, *args):
+def unmod_hosts_map(cloud_map, *args):
     """
     For debug method purpose only
     """
-    map_yaml = load_map_file(stack)
-
-    population = []
-    for k, v in map_yaml.iteritems():
-        population.extend(v)
-
-    for host in population:
-        host_data = host[host.keys()[0]]
+    for host, host_data in cloud_map.items():
         for k in args:
             if k in host_data:
                 del host_data[k]
 
-    write_map_file(stack, map_yaml)
+    return cloud_map
 
 
 def create_zombies(stack, n):
@@ -554,10 +643,10 @@ def create_zombies(stack, n):
     client = salt.client.LocalClient(
         settings.STACKDIO_CONFIG.salt_master_config
     )
-    result = client.cmd(
-        ' or '.join([h.hostname for h in hosts]),
+    result = list(client.cmd_iter(
+        [h.hostname for h in hosts],
         'service.stop',
         arg=('salt-minion',),
-        expr_form='compound'
-    )
-    print(result)
+        expr_form='list'
+    ))
+    logger.info(result)

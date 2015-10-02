@@ -20,10 +20,10 @@ import json
 import logging
 import os
 import shutil
+import subprocess
 import time
 from datetime import datetime
 
-import envoy
 import salt.client
 import salt.cloud
 import salt.config
@@ -55,7 +55,6 @@ ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
 ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found ' \
                           'already running'
 ERROR_ALREADY_RUNNING = 'Already running'
-ERROR_REQUISITE = 'One or more requisite failed'
 
 
 class StackTaskException(Exception):
@@ -76,66 +75,6 @@ def is_state_error(state_meta):
     Determines if the state resulted in an error.
     """
     return not state_meta['result']
-
-
-def is_requisite_error(state_meta):
-    """
-    Is the state error because of a requisite state failure?
-    """
-    return state_meta['comment'] == ERROR_REQUISITE
-
-
-def state_to_dict(state_string):
-    """
-    Takes the state string and transforms it into a dict of key/value
-    pairs that are a bit easier to handle.
-
-    Before: group_|-stackdio_group_|-abe_|-present
-
-    After: {
-        'module': 'group',
-        'function': 'present',
-        'name': 'abe',
-        'declaration_id': 'stackdio_group'
-    }
-    """
-    state_labels = settings.STATE_EXECUTION_FIELDS
-    state_fields = state_string.split(settings.STATE_EXECUTION_DELIMITER)
-    return dict(zip(state_labels, state_fields))
-
-
-def is_recoverable(err):
-    """
-    Checks the provided error against a blacklist of errors
-    determined to be unrecoverable. This should be used to
-    prevent retrying of provisioning or orchestration because
-    the error will continue to occur.
-    """
-    # TODO: determine the blacklist of errors that
-    # will trigger a return of False here
-    return True
-
-
-def state_error(state_str, state_meta):
-    """
-    Takes the given state result string and the metadata
-    of the state execution result and returns a consistent
-    dict for the error along with whether or not the error
-    is recoverable.
-    """
-    state = state_to_dict(state_str)
-    func = '{module}.{func}'.format(**state)
-    decl_id = state['declaration_id']
-    err = {
-        'error': state_meta['comment'],
-        'function': func,
-        'declaration_id': decl_id,
-    }
-    if 'stderr' in state_meta['changes']:
-        err['stderr'] = state_meta['changes']['stderr']
-    if 'stdout' in state_meta['changes']:
-        err['stdout'] = state_meta['changes']['stdout']
-    return err, is_recoverable(err)
 
 
 def copy_formulas(stack_or_account):
@@ -168,6 +107,22 @@ def copy_formulas(stack_or_account):
             continue
 
         update_formula.si(formula.id, None, version, formula_dir, raise_exception=False)()
+
+
+def copy_global_orchestrate(stack):
+    stack.generate_global_orchestrate_file()
+
+    src_file = stack.global_orchestrate_file.path
+
+    accounts = set([host.cloud_image.account for host in stack.hosts.all()])
+
+    for account in accounts:
+        dest_dir = os.path.join(account.get_root_directory(), 'formulas', '__stackdio__')
+
+        if not os.path.isdir(dest_dir):
+            os.mkdir(dest_dir, 0o755)
+
+        shutil.copyfile(src_file, '{0}/stack_{1}_global_orchestrate.sls'.format(dest_dir, stack.id))
 
 
 @shared_task(name='stacks.handle_error')
@@ -217,12 +172,15 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         is ignored if all of the above failure flags are set to False.
         Defaults to 0.3 (30%).
     """
-
+    stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
         hosts = stack.get_hosts()
         num_hosts = len(hosts)
         log_file = utils.get_salt_cloud_log_file(stack, 'launch')
+
+        # Generate the pillar file.  We need it!
+        stack.generate_pillar_file()
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
         logger.info('Log file: {0}'.format(log_file))
@@ -240,8 +198,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         for account in accounts:
             provider = account.provider.name
 
-            for instance, details in query.get(account.slug, {}) \
-                    .get(provider, {}).items():
+            for instance, details in query.get(account.slug, {}).get(provider, {}).items():
                 if instance in hostnames:
                     if details['state'] in ('shutting-down', 'terminated'):
                         salt_cloud.action(
@@ -275,14 +232,14 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                     current_try,
                     max_retries + 1))
 
+            cloud_map = stack.generate_cloud_map()
+
             # Modify the stack's map to inject a private key that does not
             # exist, which will fail immediately and the host will not launch
             if simulate_launch_failures:
                 n = int(len(hosts) * failure_percent)
                 logger.info('Simulating failures on {0} host(s).'.format(n))
-                utils.mod_hosts_map(stack,
-                                    n,
-                                    private_key='/tmp/bogus-key-file')
+                utils.mod_hosts_map(cloud_map, n, private_key='/tmp/bogus-key-file')
 
             # Modify the map file to inject a real key file, but one that
             # will not auth via SSH
@@ -290,13 +247,10 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 bogus_key = '/tmp/id_rsa-bogus-key'
                 if os.path.isfile(bogus_key):
                     os.remove(bogus_key)
-                envoy.run("ssh-keygen -f {0} -N \"''\"".format(bogus_key))
+                subprocess.call(['ssh-keygen', '-f', bogus_key, '-N', ''])
                 n = int(len(hosts) * failure_percent)
-                logger.info('Simulating SSH failures on {0} host(s).'
-                            ''.format(n))
-                utils.mod_hosts_map(stack,
-                                    n,
-                                    private_key=bogus_key)
+                logger.info('Simulating SSH failures on {0} host(s).'.format(n))
+                utils.mod_hosts_map(cloud_map, n, private_key=bogus_key)
 
             if parallel:
                 logger.info('Launching hosts in PARALLEL mode.')
@@ -304,18 +258,24 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 logger.info('Launching hosts in SERIAL mode.')
 
             # Launch everything!
-            ret = salt_cloud.launch(stack.generate_cloud_map(), parallel=parallel)
+            launch_result = salt_cloud.launch_map(
+                cloud_map=cloud_map,
+                parallel=parallel,
+                log_level='quiet',
+                log_file=log_file,
+                log_level_logfile='debug'
+            )
+
+            if not launch_result:
+                # This means nothing was launched b/c everything is already running
+                break
 
             # Remove the failure modifications if necessary
             if simulate_launch_failures:
-                logger.debug('Removing failure simulation modifications.')
-                utils.unmod_hosts_map(stack, 'private_key')
                 simulate_launch_failures = False
 
             # Start verifying hosts were launched and all are available
             try:
-                launch_yaml = yaml.safe_load(launch_result.std_out)
-
                 # Check for launch failures...a couple things happen here:
                 #
                 # 1) We'll query salt-cloud looking for hosts that salt
@@ -333,8 +293,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 zombies = utils.find_zombie_hosts(stack)
                 terminate_list = []
                 if zombies is not None and zombies.count() > 0:
-                    check_ssh_results = utils.check_for_ssh(
-                        stack, zombies)
+                    check_ssh_results = utils.check_for_ssh(cloud_map, zombies)
                     if check_ssh_results:
                         for ssh_ok, host in check_ssh_results:
                             if not ssh_ok:
@@ -368,7 +327,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 if simulate_ssh_failures:
                     logger.debug('Reverting SSH failure simulation '
                                  'modifications.')
-                    utils.unmod_hosts_map(stack,
+                    utils.unmod_hosts_map(cloud_map,
                                           'private_key')
                     simulate_ssh_failures = False
 
@@ -378,7 +337,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 # we don't have to actually wait for those hosts to die
                 # because salt-cloud renames them and will not consider
                 # them available.
-                dmap = utils.get_stack_map_data(stack)
+                dmap = utils.get_stack_map_data(cloud_map)
 
                 if 'create' in dmap and len(dmap['create']) > 0:
                     failed_hosts = dmap['create'].keys()
@@ -423,7 +382,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
 
                 # Look for errors if we got valid JSON
                 errors = set()
-                for h, v in launch_yaml.iteritems():
+                for h, v in launch_result.items():
                     logger.debug('Checking host {0} for errors.'.format(h))
 
                     # Error format #1
@@ -467,26 +426,9 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 logger.exception(err_msg)
                 raise StackTaskException(err_msg)
 
-            if launch_result.status_code > 0:
-                if ERROR_ALL_NODES_EXIST not in launch_result.std_err and \
-                        ERROR_ALL_NODES_EXIST not in launch_result.std_out and \
-                        ERROR_ALL_NODES_RUNNING not in launch_result.std_err and \
-                        ERROR_ALL_NODES_RUNNING not in launch_result.std_out:
-
-                    if launch_result.std_err:
-                        err_msg = launch_result.std_err
-                    else:
-                        err_msg = launch_result.std_out
-                    stack.set_status(launch_hosts.name, Stack.ERROR,
-                                     err_msg, Level.ERROR)
-                    raise StackTaskException('Error launching stack {0} with '
-                                             'salt-cloud: {1!r}'.format(
-                                                 stack_id,
-                                                 err_msg))
-
-            # Seems good...let's set the status and allow other tasks to
-            # go through
-            stack.set_status(launch_hosts.name, Stack.FINISHED, 'Finished launching hosts.')
+        # Seems good...let's set the status and allow other tasks to
+        # go through
+        stack.set_status(launch_hosts.name, Stack.FINISHED, 'Finished launching hosts.')
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown stack id {0}'.format(stack_id)
@@ -545,7 +487,7 @@ def cure_zombies(stack_id, max_retries=2):
                 # them again, up to the max retries
                 stack.set_status(
                     launch_hosts.name,
-                    Stack.ERROR,
+                    Stack.LAUNCHING,
                     '{0} detected. Attempting try {1} of {2} to '
                     'bootstrap. This may take a while.'
                     ''.format(
@@ -607,9 +549,6 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         # keep track of terminated hosts for future removal
         hosts_to_remove = []
 
-        # also keep track if volume information was updated
-        bdm_updated = False
-
         driver_hosts = stack.get_driver_hosts_map(host_ids)
 
         for driver, hosts in driver_hosts.iteritems():
@@ -621,7 +560,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
                 # FIXME: This is cloud provider specific. Should farm it out to
                 # the right implementation
-                host_data = query_results[host.hostname]
+                host_data = query_results.get(host.hostname)
                 is_absent = host_data is None
 
                 if isinstance(host_data, basestring):
@@ -715,11 +654,6 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
             for h in hosts_to_remove:
                 h.delete()
-
-            # if volume metadata was updated, regenerate the map file
-            # to account for the volume_id changes
-            if bdm_updated:
-                stack.generate_map_file()
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
@@ -815,15 +749,13 @@ def register_dns(stack_id, host_ids=None):
 
 # TODO: Ignoring code complexity issues for now
 @shared_task(name='stacks.ping')
-def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
+def ping(stack_id, interval=5, max_failures=10):
     """
     Attempts to use salt's test.ping module to ping the entire stack
     and confirm that all hosts are reachable by salt.
 
     @stack_id: The id of the stack to ping. We will use salt's grain
                system to target the hosts with this stack id
-    @timeout: The maximum amount of time (in seconds) to wait for ping
-              to return valid JSON.
     @interval: The looping interval, ie, the amount of time to sleep
                before the next iteration.
     @max_failures: Number of ping failures before giving up completely.
@@ -833,67 +765,46 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
     stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
-        required_hosts = set([h.hostname for h in stack.get_hosts()])
+        required_hosts = [h.hostname for h in stack.get_hosts()]
         stack.set_status(ping.name,
                          Stack.CONFIGURING,
                          'Attempting to ping all hosts.',
                          Level.INFO)
 
-        # Ping
-        cmd_args = [
-            'salt',
-            '--config-dir={0}'.format(
-                settings.STACKDIO_CONFIG.salt_config_root),
-            '--out=yaml',
-            '-G stack_id:{0}'.format(stack_id),  # target the nodes in this
-            # stack only
-            'test.ping',  # ping all VMs
-        ]
+        client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
         # Execute until successful, failing after a few attempts
-        cmd = ' '.join(cmd_args)
         failures = 0
-        duration = timeout
 
-        result_yaml = {}
+        false_hosts = []
 
         while True:
-            result = envoy.run(str(cmd))
-            logger.debug('Executing command: {0}'.format(cmd))
-            logger.debug('Command results:')
-            logger.debug('status_code = {0}'.format(result.status_code))
-            logger.debug('std_out = {0}'.format(result.std_out))
-            logger.debug('std_err = {0}'.format(result.std_err))
+            ret = client.cmd_iter(required_hosts, 'test.ping', expr_form='list')
 
-            if result.status_code == 0:
-                try:
-                    result_yaml = yaml.safe_load(result.std_out)
+            result = {}
+            for res in ret:
+                for host, data in res.items():
+                    result[host] = data
 
-                    # check that we got a report back for all hosts
-                    pinged_hosts = set(result_yaml.keys())
-                    missing_hosts = required_hosts.difference(pinged_hosts)
-                    if missing_hosts:
-                        failures += 1
-                        logger.debug('The following hosts did not respond to '
-                                     'the ping request: {0}; Total failures: '
-                                     '{1}'.format(missing_hosts,
-                                                  failures))
+            # check that we got a report back for all hosts
+            pinged_hosts = set(result.keys())
+            missing_hosts = set(required_hosts).difference(pinged_hosts)
+            if missing_hosts:
+                failures += 1
+                logger.debug('The following hosts did not respond to '
+                             'the ping request: {0}; Total failures: '
+                             '{1}'.format(missing_hosts,
+                                          failures))
 
-                    if result_yaml:
-                        break
-
-                except Exception:
+            false_hosts = []
+            for host, data in result.items():
+                if data['ret'] is not True or data['retcode'] != 0:
                     failures += 1
-                    logger.debug('Unable to parse YAML from envoy results. '
-                                 'Total failures: {0}'.format(failures))
+                    false_hosts.append(host)
 
-            if timeout < 0:
-                err_msg = 'Unable to ping hosts in 00:{0:02d}:{1:02d}'.format(
-                    duration // 60,
-                    duration % 60,
-                )
-                stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
-                raise StackTaskException(err_msg)
+            if not missing_hosts and not false_hosts:
+                # Successful ping.
+                break
 
             if failures > max_failures:
                 err_msg = 'Max failures ({0}) reached while pinging ' \
@@ -902,16 +813,9 @@ def ping(stack_id, timeout=5 * 60, interval=5, max_failures=25):
                 raise StackTaskException(err_msg)
 
             time.sleep(interval)
-            timeout -= interval
-
-        # make sure all hosts reported a successful ping
-        false_hosts = []
-        for host, value in result_yaml.items():
-            if isinstance(value, bool) and not value:
-                false_hosts.append(host)
 
         if false_hosts:
-            err_msg = 'Unable to ping hosts: {0}'.format(','.join(false_hosts))
+            err_msg = 'Unable to ping hosts: {0}'.format(', '.join(false_hosts))
             stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
             raise StackTaskException(err_msg)
 
@@ -938,35 +842,34 @@ def sync_all(stack_id):
         stack = Stack.objects.get(id=stack_id)
         logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
+        # Generate all the files before we sync
+        stack.generate_pillar_file()
+        stack.generate_global_pillar_file()
+        stack.generate_top_file()
+        stack.generate_orchestrate_file()
+        stack.generate_global_orchestrate_file()
+
         # Update status
         stack.set_status(sync_all.name, Stack.SYNCING,
                          'Synchronizing salt systems on all hosts.')
 
-        # build up the command for salt
-        cmd_args = [
-            'salt',
-            '--config-dir={0}'.format(
-                settings.STACKDIO_CONFIG.salt_config_root),
-            '-G stack_id:{0}'.format(stack_id),  # target the nodes in this
-            # stack only
-            'saltutil.sync_all',  # sync all systems
-        ]
+        target = [h.hostname for h in stack.get_hosts()]
+        client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
-        # Execute
-        cmd = ' '.join(cmd_args)
-        logger.debug('Executing command: {0}'.format(cmd))
-        result = envoy.run(str(cmd))
-        logger.debug('Command results:')
-        logger.debug('status_code = {0}'.format(result.status_code))
-        logger.debug('std_out = {0}'.format(result.std_out))
-        logger.debug('std_err = {0}'.format(result.std_err))
+        ret = client.cmd_iter(target, 'saltutil.sync_all', expr_form='list')
 
-        if result.status_code > 0:
-            err_msg = result.std_err if result.std_err else result.std_out
-            stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
-            raise StackTaskException('Error syncing salt data on stack {0}: '
-                                     '{1!r}'.format(stack_id,
-                                                    err_msg))
+        result = {}
+        for res in ret:
+            for host, data in res.items():
+                result[host] = data
+
+        for host, data in result.items():
+            if data['retcode'] != 0:
+                err_msg = str(data['ret'])
+                stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
+                raise StackTaskException('Error syncing salt data on stack {0}: '
+                                         '{1!r}'.format(stack_id,
+                                                        err_msg))
 
         stack.set_status(sync_all.name, Stack.CONFIGURING,
                          'Finished synchronizing salt systems on all hosts.')
@@ -981,6 +884,30 @@ def sync_all(stack_id):
         stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
+
+
+def change_pillar(stack, new_pillar_file):
+    salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
+
+    target = [h.hostname for h in stack.get_hosts()]
+
+    # From the testing I've done, this also automatically refreshes the pillar
+    ret = salt_client.cmd_iter(
+        target,
+        'grains.setval',
+        [
+            'stack_pillar_file',
+            new_pillar_file
+        ],
+        expr_form='list',
+    )
+
+    # TODO Want to do error checking, but don't know what errors look
+    result = {}
+
+    for res in ret:
+        for minion, state_ret in res.items():
+            result[minion] = state_ret
 
 
 # TODO: Ignoring code complexity issues for now
@@ -1002,7 +929,11 @@ def highstate(stack_id, max_retries=2):
     try:
         stack = Stack.objects.get(id=stack_id)
         num_hosts = len(stack.get_hosts())
+        target = [h.hostname for h in stack.get_hosts()]
         logger.info('Running core provisioning for stack: {0!r}'.format(stack))
+
+        # Make sure the pillar is properly set
+        change_pillar(stack, stack.pillar_file.path)
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
@@ -1043,8 +974,7 @@ def highstate(stack_id, max_retries=2):
             file_log_handler.setFormatter(salt_formatter)
             salt_logger.addHandler(file_log_handler)
 
-            salt_client = salt.client.LocalClient(os.path.join(
-                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
             old_handler = None
             for handler in salt_logger.handlers:
@@ -1053,10 +983,10 @@ def highstate(stack_id, max_retries=2):
                     salt_logger.removeHandler(handler)
 
             ret = salt_client.cmd_iter(
-                'stack_id:{0}'.format(stack_id),
+                target,
                 'state.top',
                 [stack.top_file.name],
-                expr_form='grain'
+                expr_form='list'
             )
 
             result = {}
@@ -1099,9 +1029,8 @@ def highstate(stack_id, max_retries=2):
                         if not is_state_error(state_meta):
                             continue
 
-                        if not is_requisite_error(state_meta):
-                            err, recoverable = state_error(state_str,
-                                                           state_meta)
+                        if not utils.is_requisite_error(state_meta):
+                            err, recoverable = utils.state_error(state_str, state_meta)
                             if not recoverable:
                                 unrecoverable_error = True
                             errors.setdefault(host, []).append(err)
@@ -1153,10 +1082,14 @@ def propagate_ssh(stack_id, max_retries=2):
     stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
+        target = [h.hostname for h in stack.get_hosts()]
         # Regenerate the stack pillar file
         stack.generate_pillar_file()
         num_hosts = len(stack.get_hosts())
         logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
+
+        # Make sure the pillar is properly set
+        change_pillar(stack, stack.pillar_file.path)
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
@@ -1197,8 +1130,7 @@ def propagate_ssh(stack_id, max_retries=2):
             file_log_handler.setFormatter(salt_formatter)
             salt_logger.addHandler(file_log_handler)
 
-            salt_client = salt.client.LocalClient(os.path.join(
-                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
             old_handler = None
             for handler in salt_logger.handlers:
@@ -1207,10 +1139,10 @@ def propagate_ssh(stack_id, max_retries=2):
                     salt_logger.removeHandler(handler)
 
             ret = salt_client.cmd_iter(
-                'stack_id:{0}'.format(stack_id),
+                target,
                 'state.sls',
                 ['core.stackdio_users'],
-                expr_form='grain'
+                expr_form='list'
             )
 
             result = {}
@@ -1253,9 +1185,8 @@ def propagate_ssh(stack_id, max_retries=2):
                         if not is_state_error(state_meta):
                             continue
 
-                        if not is_requisite_error(state_meta):
-                            err, recoverable = state_error(state_str,
-                                                           state_meta)
+                        if not utils.is_requisite_error(state_meta):
+                            err, recoverable = utils.state_error(state_str, state_meta)
                             if not recoverable:
                                 unrecoverable_error = True
                             errors.setdefault(host, []).append(err)
@@ -1265,7 +1196,7 @@ def propagate_ssh(stack_id, max_retries=2):
                     with open(err_file, 'a') as f:
                         f.write(yaml.safe_dump(errors))
 
-                    if not unrecoverable_error and current_try <= max_retries:  # NOQA
+                    if not unrecoverable_error and current_try <= max_retries:
                         continue
 
                     err_msg = 'SSH key propagation errors on hosts: ' \
@@ -1297,34 +1228,12 @@ def propagate_ssh(stack_id, max_retries=2):
         raise
 
 
-def change_pillar(stack_id, new_pillar_file):
-    salt_client = salt.client.LocalClient(os.path.join(
-        settings.STACKDIO_CONFIG.salt_config_root, 'master'))
-
-    # From the testing I've done, this also automatically refreshes the pillar
-    salt_client.cmd_iter(
-        'stack_id:{0}'.format(stack_id),
-        'grains.setval',
-        [
-            'stack_pillar_file',
-            new_pillar_file
-        ],
-        expr_form='grain',
-    )
-
-    # TODO Want to do error checking, but don't know what errors look
-    # like in this case
-    # for res in ret:
-    #     for minion, state_ret in res.items():
-    #         pass
-
-
 # TODO: Ignoring code complexity issues
 @shared_task(name='stacks.global_orchestrate')
 def global_orchestrate(stack_id, max_retries=2):
     """
-    Executes the runners.state.over function with the custom overstate
-    file  generated via the stacks.models._generate_global_overstate_file. This
+    Executes the runners.state.over function with the custom orchestrate
+    file  generated via the stacks.models._generate_global_orchestrate_file. This
     will target the __stackdio__ user's environment and provision the hosts with
     the formulas defined in the global orchestration.
     """
@@ -1343,7 +1252,10 @@ def global_orchestrate(stack_id, max_retries=2):
         accounts = list(accounts)
 
         # Set the pillar file to the global pillar data file
-        change_pillar(stack_id, stack.global_pillar_file.path)
+        change_pillar(stack, stack.global_pillar_file.path)
+
+        # Copy the global orchestrate file into the cloud directory
+        copy_global_orchestrate(stack)
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
@@ -1357,7 +1269,7 @@ def global_orchestrate(stack_id, max_retries=2):
                 role_host_nums[fc.sls_path] += bhd.count
 
         # we'll break out of the loop based on the given number of retries
-        current_try, unrecoverable_error = 0, False
+        current_try = 0
         while True:
             current_try += 1
             logger.info('Task {0} try #{1} for stack {2!r}'.format(
@@ -1390,8 +1302,7 @@ def global_orchestrate(stack_id, max_retries=2):
             file_log_handler.setFormatter(salt_formatter)
             salt_logger.addHandler(file_log_handler)
 
-            opts = salt.config.client_config(os.path.join(
-                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+            opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
             salt_runner = salt.runner.RunnerClient(opts)
 
@@ -1400,67 +1311,26 @@ def global_orchestrate(stack_id, max_retries=2):
             result = salt_runner.cmd(
                 'stackdio.orchestrate',
                 [
+                    'stack_{0}_global_orchestrate'.format(stack_id),
                     'cloud.{0}'.format(accounts[0].slug),
-                    stack.global_overstate_file.path
                 ]
             )
 
-            errors = {}
-            to_print = {}
-            for ret in result:
-                with open(err_file, 'a') as f:
-                    f.write('{0}\n\n'.format(len(ret)))
-                for host, stage_result in ret.items():
-                    to_print.setdefault(host, []).append(stage_result)
-                    if isinstance(stage_result, list):
-                        for err in stage_result:
-                            errors.setdefault(host, []).append({
-                                'error': err
-                            })
-                        continue
-
-                    # iterate over the individual states in the
-                    # host looking for states that had a result
-                    # of false
-                    for state_str, state_meta in stage_result.items():  # NOQA
-                        if state_str == '__FAILHARD__':
-                            continue
-
-                        if not is_state_error(state_meta):
-                            continue
-
-                        if not is_requisite_error(state_meta):
-                            err, recoverable = state_error(state_str,
-                                                           state_meta)
-                            if not recoverable:
-                                unrecoverable_error = True
-                            errors.setdefault(host, []).append(err)
-
-                if errors:
-                    with open(err_file, 'a') as f:
-                        f.write('Found error - stopping global orchestration NOW to retry\n\n')
-                    # Stop orchestration hard if there were errors
-                    break
+            failed, failed_hosts = utils.process_orchestrate_result(result, stack,
+                                                                    log_file, err_file)
 
             # Stop logging
             salt_logger.removeHandler(file_log_handler)
 
-            # Write the log file
-            with open(log_file, 'a') as f:
-                f.write(yaml.safe_dump(to_print))
-
-            if errors:
-                with open(err_file, 'a') as f:
-                    f.write(yaml.safe_dump(errors))
-
-                if not unrecoverable_error and current_try <= max_retries:  # NOQA
+            if failed:
+                if current_try <= max_retries:  # NOQA
                     continue
 
                 err_msg = 'Global Orchestration errors on hosts: ' \
                           '{0}. Please see the global orchestration errors ' \
                           'API or the global orchestration log file for more ' \
                           'details: {1}'.format(
-                              ', '.join(errors.keys()),
+                              ', '.join(failed_hosts),
                               os.path.basename(log_file))
                 stack.set_status(global_orchestrate.name,
                                  Stack.ERROR,
@@ -1490,15 +1360,15 @@ def global_orchestrate(stack_id, max_retries=2):
 @shared_task(name='stacks.orchestrate')
 def orchestrate(stack_id, max_retries=2):
     """
-    Executes the runners.state.over function with the custom overstate
-    file  generated via the stacks.models._generate_overstate_file. This
+    Executes the runners.state.over function with the custom orchestrate
+    file  generated via the stacks.models._generate_orchestrate_file. This
     will only target the user's environment and provision the hosts with
     the formulas defined in the blueprint and in the order specified.
 
     TODO: We aren't allowing users to provision from formulas owned by
     others at the moment, but if we do want to support that without
     forcing them to clone those formulas into their own account, we
-    will need to support executing multiple overstate files in different
+    will need to support executing multiple orchestrate files in different
     environments.
     """
     stack = None
@@ -1510,7 +1380,7 @@ def orchestrate(stack_id, max_retries=2):
         copy_formulas(stack)
 
         # Set the pillar file back to the regular pillar
-        change_pillar(stack_id, stack.pillar_file.path)
+        change_pillar(stack, stack.pillar_file.path)
 
         # Set up logging for this task
         root_dir = stack.get_root_directory()
@@ -1524,7 +1394,7 @@ def orchestrate(stack_id, max_retries=2):
                 role_host_nums[fc.sls_path] += bhd.count
 
         # we'll break out of the loop based on the given number of retries
-        current_try, unrecoverable_error = 0, False
+        current_try = 0
         while True:
             current_try += 1
             logger.info('Task {0} try #{1} for stack {2!r}'.format(
@@ -1557,83 +1427,33 @@ def orchestrate(stack_id, max_retries=2):
             file_log_handler.setFormatter(salt_formatter)
             salt_logger.addHandler(file_log_handler)
 
-            opts = salt.config.client_config(os.path.join(
-                settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+            opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
             salt_runner = salt.runner.RunnerClient(opts)
 
             result = salt_runner.cmd(
                 'stackdio.orchestrate',
                 [
+                    'orchestrate',
                     'stacks.{0}-{1}'.format(stack.pk, stack.slug),
-                    stack.overstate_file.path
                 ]
             )
 
-            errors = {}
-            # to_print = {}
-            for ret in result:
-                with open(log_file, 'a') as f:
-                    f.write(yaml.safe_dump(ret))
-                with open(err_file, 'a') as f:
-                    f.write('{0}\n\n'.format(len(ret)))
-                for host, stage_result in ret.items():
-                    # to_print.setdefault(host, []).append(stage_result)
-                    if isinstance(stage_result, list):
-                        for err in stage_result:
-                            errors.setdefault(host, []).append({
-                                'error': err
-                            })
-                        continue
-
-                    if 'result' in stage_result and not stage_result['result']:
-                        errors.setdefault(host, []).append({
-                            'error': stage_result['comment']
-                        })
-                        continue
-
-                    # iterate over the individual states in the
-                    # host looking for states that had a result
-                    # of false
-                    for state_str, state_meta in stage_result.items():  # NOQA
-                        if state_str == '__FAILHARD__':
-                            continue
-
-                        if not is_state_error(state_meta):
-                            continue
-
-                        if not is_requisite_error(state_meta):
-                            err, recoverable = state_error(state_str,
-                                                           state_meta)
-                            if not recoverable:
-                                unrecoverable_error = True
-                            errors.setdefault(host, []).append(err)
-
-                if errors:
-                    with open(err_file, 'a') as f:
-                        f.write('Found error - stopping orchestration NOW to retry\n\n')
-                    # Stop orchestration hard if there were errors
-                    break
+            failed, failed_hosts = utils.process_orchestrate_result(result, stack,
+                                                                    log_file, err_file)
 
             # Stop logging
             salt_logger.removeHandler(file_log_handler)
 
-            # Write the log file
-            # with open(log_file, 'a') as f:
-            #     f.write(yaml.safe_dump(to_print))
-
-            if errors:
-                with open(err_file, 'a') as f:
-                    f.write(yaml.safe_dump(errors))
-
-                if not unrecoverable_error and current_try <= max_retries:  # NOQA
+            if failed:
+                if current_try <= max_retries:  # NOQA
                     continue
 
                 err_msg = 'Orchestration errors on hosts: ' \
                           '{0}. Please see the orchestration errors ' \
                           'API or the orchestration log file for more ' \
                           'details: {1}'.format(
-                              ', '.join(errors.keys()),
+                              ', '.join(failed_hosts),
                               os.path.basename(log_file))
                 stack.set_status(orchestrate.name,
                                  Stack.ERROR,
@@ -1725,8 +1545,7 @@ def register_volume_delete(stack_id, host_ids=None):
 
 # TODO: Ignoring code complexity issues for now
 @shared_task(name='stacks.destroy_hosts')
-def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
-                  delete_security_groups=True, parallel=True):
+def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_groups=True):
     """
     Destroy the given stack id or a subset of the stack if host_ids
     is set. After all hosts have been destroyed we must also clean
@@ -1741,19 +1560,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         hosts = stack.get_hosts(host_ids)
 
         if hosts:
-            # Build up the salt-cloud command
-            cmd_args = [
-                'salt-cloud',
-                '-y',  # assume yes
-                '-d',  # destroy argument
-                '--out=yaml',  # output in JSON
-                '--config-dir={0}'.format(
-                    settings.STACKDIO_CONFIG.salt_config_root
-                )
-            ]
-
-            if parallel:
-                cmd_args.append('-P')
+            salt_cloud = utils.StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
 
             # if host ids are given, we're going to terminate only those hosts
             if host_ids:
@@ -1762,44 +1569,22 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
                     stack
                 ))
 
-                # add the machines to destroy on to the cmd_args list
-                cmd_args.extend([h.hostname for h in hosts])
-
             # or we'll destroy the entire stack by giving the map file with all
             # hosts defined
             else:
                 logger.info('Destroying complete stack: {0!r}'.format(stack))
 
-                # Check for map file, and if it doesn't exist just remove
-                # the stack and return
-                map_file = stack.map_file
-                if not map_file or not os.path.isfile(map_file.path):
-                    logger.warn('Map file for stack {0} does not exist. '
-                                'Deleting stack anyway.'.format(stack))
-                    return
+            names = [h.hostname for h in hosts]
 
-                # Add the location to the map to destroy the entire stack
-                cmd_args.append('-m {0}'.format(stack.map_file.path))
+            result = salt_cloud.destroy(names)
 
-            cmd = ' '.join(cmd_args)
-
-            logger.debug('Executing command: {0}'.format(cmd))
-            result = envoy.run(str(cmd))
-            logger.debug('Command results:')
-            logger.debug('status_code = {0}'.format(result.status_code))
-            logger.debug('std_out = {0}'.format(result.std_out))
-            logger.debug('std_err = {0}'.format(result.std_err))
-
-            if result.status_code > 0:
-                err_msg = result.std_err if result.std_err else result.std_out
-                stack.set_status(destroy_hosts.name, Stack.ERROR,
-                                 err_msg, Stack.ERROR)
-                raise StackTaskException(
-                    'Error destroying hosts on stack {0}: {1!r}'.format(
-                        stack_id,
-                        err_msg
-                    )
-                )
+            # Error checking?
+            for profile, provider in result.items():
+                for name, hosts in provider.items():
+                    for host, data in hosts.items():
+                        if data.get('currentState', {}).get('name') != 'shutting-down':
+                            logger.info('Host {0} does not appear to be '
+                                        'shutting down.'.format(host))
 
         # wait for all hosts to finish terminating so we can
         # destroy security groups
@@ -1851,7 +1636,6 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True,
         # delete hosts
         if delete_hosts and hosts:
             hosts.delete()
-            stack.generate_map_file()
 
         stack.set_status(destroy_hosts.name, Stack.FINALIZING,
                          'Finished destroying stack infrastructure.')
