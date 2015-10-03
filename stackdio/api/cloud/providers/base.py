@@ -159,7 +159,7 @@ class BaseCloudProvider(object):
         raise NotImplementedError()
 
     @classmethod
-    def get_provider_data(cls, validated_data):
+    def get_provider_data(cls, validated_data, all_data):
         """
         Takes a dict of values provided by the user (most likely from the
         request data) and returns a new dict of info that's specific to
@@ -190,10 +190,10 @@ class BaseCloudProvider(object):
                 errors.setdefault(key, []).append(
                     '{0} is a required field.'.format(key)
                 )
-            else:
+            # else:
                 # If it's valid, we'll throw it into the attrs so it
                 # ends up in the validated data
-                serializer_attrs[key] = value
+                # serializer_attrs[key] = value
 
         if errors:
             raise ValidationError(errors)

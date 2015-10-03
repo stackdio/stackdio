@@ -297,23 +297,23 @@ class AWSCloudProvider(BaseCloudProvider):
         config_data = self.get_config()
         return config_data['location'], config_data['id'], config_data['key']
 
-    def get_provider_data(self, validated_data):
+    def get_provider_data(self, validated_data, all_data):
         # write the private key to the proper location
         private_key_path = self.get_private_key_path()
         with open(private_key_path, 'w') as f:
-            f.write(validated_data[self.PRIVATE_KEY])
+            f.write(all_data[self.PRIVATE_KEY])
 
         # change the file permissions of the RSA key
         os.chmod(private_key_path, stat.S_IRUSR)
 
         config_data = {
             'driver': self.SHORT_NAME,
-            'id': validated_data[self.ACCESS_KEY],
-            'key': validated_data[self.SECRET_KEY],
-            'keyname': validated_data[self.KEYPAIR],
+            'id': all_data[self.ACCESS_KEY],
+            'key': all_data[self.SECRET_KEY],
+            'keyname': all_data[self.KEYPAIR],
             'private_key': private_key_path,
-            'append_domain': validated_data[self.ROUTE53_DOMAIN],
-            'location': validated_data[self.REGION],
+            'append_domain': all_data[self.ROUTE53_DOMAIN],
+            'location': validated_data[self.REGION].slug,
             'ssh_interface': 'private_ips',
             'ssh_connect_timeout': 300,
             'wait_for_passwd_timeout': 5,
@@ -333,9 +333,9 @@ class AWSCloudProvider(BaseCloudProvider):
         attrs = super(AWSCloudProvider, self).validate_provider_data(serializer_attrs, all_data)
 
         region = attrs[self.REGION].slug
-        access_key = attrs[self.ACCESS_KEY]
-        secret_key = attrs[self.SECRET_KEY]
-        keypair = attrs[self.KEYPAIR]
+        access_key = all_data[self.ACCESS_KEY]
+        secret_key = all_data[self.SECRET_KEY]
+        keypair = all_data[self.KEYPAIR]
 
         errors = {}
 
@@ -365,7 +365,7 @@ class AWSCloudProvider(BaseCloudProvider):
             )
 
         # check route 53 domain
-        domain = attrs[self.ROUTE53_DOMAIN]
+        domain = all_data[self.ROUTE53_DOMAIN]
         if domain:
             try:
                 # connect to route53 and check that the domain is available

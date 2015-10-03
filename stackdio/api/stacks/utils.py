@@ -153,6 +153,13 @@ def process_sls_result(sls_result, err_file):
 def process_orchestrate_result(result, stack, log_file, err_file):
     result = result['{0}_master'.format(socket.gethostname())]
 
+    if not isinstance(result, dict):
+        with open(err_file, 'a') as f:
+            f.write(str(result))
+
+        from .tasks import StackTaskException
+        raise StackTaskException(result)
+
     failed = False
     failed_hosts = set()
 
