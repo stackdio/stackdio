@@ -32,11 +32,68 @@ import salt.utils
 import salt.utils.cloud
 import yaml
 from django.conf import settings
+from salt.exceptions import SaltCloudSystemExit
 
 
 logger = logging.getLogger(__name__)
 
 ERROR_REQUISITE = 'One or more requisite failed'
+
+
+class StackdioSaltCloudMap(salt.cloud.Map):
+
+    def interpolated_map(self, query='list_nodes', cached=False):
+        """
+        Override this to use the in-memory map instead of on disk.
+        """
+        rendered_map = self.rendered_map.copy()
+        interpolated_map = {}
+
+        for profile, mapped_vms in rendered_map.items():
+            names = set(mapped_vms)
+            if profile not in self.opts['profiles']:
+                if 'Errors' not in interpolated_map:
+                    interpolated_map['Errors'] = {}
+                msg = (
+                    'No provider for the mapped {0!r} profile was found. '
+                    'Skipped VMS: {1}'.format(
+                        profile, ', '.join(names)
+                    )
+                )
+                logger.info(msg)
+                interpolated_map['Errors'][profile] = msg
+                continue
+
+            matching = self.get_running_by_names(names, query, cached)
+            for alias, drivers in matching.items():
+                for driver, vms in drivers.items():
+                    for vm_name, vm_details in vms.items():
+                        if alias not in interpolated_map:
+                            interpolated_map[alias] = {}
+                        if driver not in interpolated_map[alias]:
+                            interpolated_map[alias][driver] = {}
+                        interpolated_map[alias][driver][vm_name] = vm_details
+                        names.remove(vm_name)
+
+            if not names:
+                continue
+
+            profile_details = self.opts['profiles'][profile]
+            alias, driver = profile_details['provider'].split(':')
+            for vm_name in names:
+                if alias not in interpolated_map:
+                    interpolated_map[alias] = {}
+                if driver not in interpolated_map[alias]:
+                    interpolated_map[alias][driver] = {}
+                interpolated_map[alias][driver][vm_name] = 'Absent'
+
+        return interpolated_map
+
+    def delete_map(self, query='list_nodes'):
+        """
+        Change the default value to something reasonable.
+        """
+        return super(StackdioSaltCloudMap, self).delete_map(query)
 
 
 class StackdioSaltCloudClient(salt.cloud.CloudClient):
@@ -45,12 +102,41 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
         """
         Runs a map from an already in-memory representation rather than an file on disk.
         """
-        mapper = salt.cloud.Map(self._opts_defaults(**kwargs))
+        mapper = StackdioSaltCloudMap(self._opts_defaults(**kwargs))
         mapper.rendered_map = cloud_map
         dmap = mapper.map_data()
         return salt.utils.cloud.simple_types_filter(
             mapper.run_map(dmap)
         )
+
+    def destroy_map(self, cloud_map, **kwargs):
+        """
+        Destroy the named VMs
+        """
+        kwarg = kwargs.copy()
+        kwarg['destroy'] = True
+        mapper = StackdioSaltCloudMap(self._opts_defaults(**kwarg))
+        mapper.rendered_map = cloud_map
+        dmap = mapper.delete_map()
+
+        msg = 'The following VMs are set to be destroyed:\n'
+        names = set()
+        for alias, drivers in dmap.items():
+            msg += '  {0}:\n'.format(alias)
+            for driver, vms in drivers.items():
+                msg += '    {0}:\n'.format(driver)
+                for name in vms:
+                    msg += '      {0}\n'.format(name)
+                    names.add(name)
+
+        if names:
+            logger.info(msg)
+            return salt.utils.cloud.simple_types_filter(
+                mapper.destroy(names)
+            )
+        else:
+            logger.info('There are no VMs to be destroyed.')
+            return {}
 
 
 def state_to_dict(state_string):

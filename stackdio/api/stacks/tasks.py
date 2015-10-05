@@ -1545,7 +1545,8 @@ def register_volume_delete(stack_id, host_ids=None):
 
 # TODO: Ignoring code complexity issues for now
 @shared_task(name='stacks.destroy_hosts')
-def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_groups=True):
+def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_groups=True,
+                  parallel=True):
     """
     Destroy the given stack id or a subset of the stack if host_ids
     is set. After all hosts have been destroyed we must also clean
@@ -1574,9 +1575,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
             else:
                 logger.info('Destroying complete stack: {0!r}'.format(stack))
 
-            names = [h.hostname for h in hosts]
-
-            result = salt_cloud.destroy(names)
+            result = salt_cloud.destroy_map(stack.generate_cloud_map(), parallel=parallel)
 
             # Error checking?
             for profile, provider in result.items():

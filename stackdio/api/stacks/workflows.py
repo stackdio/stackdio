@@ -60,7 +60,9 @@ class LaunchWorkflowOptions(WorkflowOptions):
 
 
 class DestroyWorkflowOptions(WorkflowOptions):
-    DEFAULTS = {}
+    DEFAULTS = {
+        'parallel': True,
+    }
 
 
 class BaseWorkflow(object):
@@ -167,7 +169,7 @@ class DestroyStackWorkflow(BaseWorkflow):
             tasks.update_metadata.si(stack_id, remove_absent=False),
             tasks.register_volume_delete.si(stack_id),
             tasks.unregister_dns.si(stack_id),
-            tasks.destroy_hosts.si(stack_id),
+            tasks.destroy_hosts.si(stack_id, parallel=self.opts.parallel),
             tasks.destroy_stack.si(stack_id),
         ]
 
