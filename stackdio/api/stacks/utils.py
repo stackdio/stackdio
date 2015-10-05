@@ -21,6 +21,7 @@ import logging
 import multiprocessing
 import os
 import random
+import re
 import socket
 from datetime import datetime
 
@@ -32,12 +33,13 @@ import salt.utils
 import salt.utils.cloud
 import yaml
 from django.conf import settings
-from salt.exceptions import SaltCloudSystemExit
 
 
 logger = logging.getLogger(__name__)
 
 ERROR_REQUISITE = 'One or more requisite failed'
+
+COLOR_REGEX = re.compile(r'\[0;[\d]+m')
 
 
 class StackdioSaltCloudMap(salt.cloud.Map):
@@ -255,12 +257,22 @@ def process_orchestrate_result(result, stack, log_file, err_file):
         logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'],
                                                                 stack.title))
 
-        if 'changes' in sls_result and 'ret' in sls_result['changes']:
-            with open(err_file, 'a') as f:
+        with open(err_file, 'a') as f:
+            if 'changes' in sls_result and 'ret' in sls_result['changes']:
                 f.write(
                     'Stage {0} returned {1} host info object(s)\n\n'.format(
                         sls_dict['name'],
                         len(sls_result['changes']['ret'])
+                    )
+                )
+            elif sls_result.get('result', False):
+                f.write('Stage {0} appears to have no changes, and it succeeded.\n\n'.format(
+                    sls_dict['name']
+                ))
+            else:
+                f.write(
+                    'Stage {0} appears to have no changes, but it failed.  See below.\n\n'.format(
+                        sls_dict['name']
                     )
                 )
 
@@ -270,7 +282,11 @@ def process_orchestrate_result(result, stack, log_file, err_file):
 
         # Process the data for this sls
         with open(err_file, 'a') as f:
-            f.write(yaml.safe_dump(sls_result['comment']))
+            comment = sls_result['comment']
+            if isinstance(comment, basestring):
+                f.write(COLOR_REGEX.sub('', comment))
+            else:
+                f.write(yaml.safe_dump(comment))
         local_failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
 
         if local_failed:
