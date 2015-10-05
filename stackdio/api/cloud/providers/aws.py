@@ -339,6 +339,22 @@ class AWSCloudProvider(BaseCloudProvider):
 
         errors = {}
 
+        from stackdio.api.cloud.models import CloudAccount
+
+        # Check for duplicates
+        accounts = CloudAccount.objects.filter(provider__name=self.SHORT_NAME)
+
+        for account in accounts:
+            account_yaml = yaml.safe_load(account.yaml)
+            if account.region.slug == region and account_yaml[account.slug]['id'] == access_key:
+                err_msg = ('You may not have multiple cloud accounts with the same access key '
+                           'in the same region.  Please generate a new access key if you would '
+                           'like to have 2 cloud accounts in the same AWS account.')
+                errors.setdefault(self.REGION, []).append(err_msg)
+
+        if errors:
+            raise ValidationError(errors)
+
         # check authentication credentials
         ec2 = None
         try:
