@@ -7,13 +7,13 @@ stackd.io is a web-based tool for managing, provisioning, and orchestrating clou
 infrastructure without the need for a background in systems engineering.
 
 Getting started
-===============
+---------------
 
 Please see our `Quick Start Guide <http://docs.stackd.io/en/latest/quickstart.html>`__ for a fast
 track to installing stackd.io
 
 Contributing
-============
+------------
 
 We are an open-source project and we depend on folks like you to help
 move the project forward. You don't even have to know how to code to
@@ -26,7 +26,7 @@ Please take a look at our `contributor guidelines <http://docs.stackd.io/en/late
 before submitting pull requests though.
 
 Contact us
-==========
+----------
 
 As always, we are constantly working to improve the usability and
 usefulness of stackd.io. If you ever have any questions, comments, or
