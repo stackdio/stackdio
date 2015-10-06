@@ -22,8 +22,8 @@ define([
     'utils/utils',
     'generics/pagination',
     'models/stack',
-    'models/formula-version'
-], function ($, ko, bootbox, utils, Pagination, Stack, FormulaVersion) {
+    'models/label'
+], function ($, ko, bootbox, utils, Pagination, Stack, Label) {
     'use strict';
 
     return Pagination.extend({
@@ -40,41 +40,40 @@ define([
             },
             {
                 active: true,
-                title: 'Stack Formula Versions'
+                title: 'Stack Labels'
             }
         ],
         stack: ko.observable(),
         autoRefresh: false,
-        model: FormulaVersion,
+        model: Label,
         baseUrl: '/stacks/',
-        initialUrl: '/api/stacks/' + window.stackdio.stackId + '/formula_versions/',
+        initialUrl: '/api/stacks/' + window.stackdio.stackId + '/labels/',
         sortableFields: [
-            {name: 'formula', displayName: 'Formula', width: '60%'},
-            {name: 'version', displayName: 'Version', width: '40%'}
+            {name: 'key', displayName: 'Key', width: '50%'},
+            {name: 'value', displayName: 'Value', width: '50%'}
         ],
         init: function () {
             this._super();
             this.stack(new Stack(window.stackdio.stackId, this));
         },
-        saveVersions: function () {
+        saveLabels: function () {
             var ajaxCalls = [];
             var self = this;
-            this.objects().forEach(function (version) {
+            this.objects().forEach(function (label) {
                 ajaxCalls.push($.ajax({
-                    method: 'POST',
-                    url: self.stack().raw.formula_versions,
+                    method: 'PUT',
+                    url: self.stack().raw.labels + label.key() + '/',
                     data: JSON.stringify({
-                        formula: version.formula(),
-                        version: version.version()
+                        value: label.value()
                     })
                 }).fail(function (jqxhr) {
-                    utils.alertError(jqxhr, 'Error saving formula version',
-                        'Errors saving version for ' + version.formula() + ':<br>');
+                    utils.alertError(jqxhr, 'Error saving label',
+                        'Errors saving label for ' + label.key() + ':<br>');
                 }));
             });
 
             $.when.apply(this, ajaxCalls).done(function () {
-                utils.growlAlert('Successfully saved formula versions.', 'success');
+                utils.growlAlert('Successfully saved labels!', 'success');
             });
 
         }

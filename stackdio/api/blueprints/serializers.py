@@ -373,3 +373,11 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
             'host_definitions',
             'formula_versions',
         )
+
+    def to_representation(self, instance):
+        """
+        We want the full object here, not links.  That's the purpose of the export
+        """
+        # We can't use super() here, because FullBlueprintSerializer only returns links.  We
+        # need to skip over it all the way to BlueprintSerializer's implementation
+        return BlueprintSerializer.to_representation(self, instance)
