@@ -27,15 +27,14 @@ from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
-
 from rest_framework.response import Response
-
 from rest_framework.reverse import reverse
-
 from rest_framework.serializers import ValidationError
 
+from stackdio.core.models import Label
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
+from stackdio.core.serializers import StackdioLabelSerializer
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -74,6 +73,8 @@ class StackListAPIView(generics.ListCreateAPIView):
         # (I know this probably isn't the best way to handle this, but it works for now)
         stack.generate_pillar_file()
 
+        stack.labels.create(key='owner', value=self.request.user.username)
+
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Stack.objects.all()
@@ -100,7 +101,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             err_msg = ('You may not delete this stack in its current state.  Please wait until '
                        'it is finished with the current action.')
             raise ValidationError({
-                'detail': err_msg
+                'detail': [err_msg]
             })
 
         # Update the status
@@ -234,6 +235,55 @@ class StackCommandZipAPIView(generics.GenericAPIView):
         return Response(file_buffer.getvalue(), headers=headers)
 
 
+class StackLabelListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = StackdioLabelSerializer
+
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.labels.all()
+
+    def get_serializer_context(self):
+        context = super(StackLabelListAPIView, self).get_serializer_context()
+        context['content_object'] = self.get_stack()
+        return context
+
+    def perform_create(self, serializer):
+        serializer.save(content_object=self.get_stack())
+
+
+class StackLabelDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateDestroyAPIView):
+    queryset = Label.objects.all()
+    serializer_class = StackdioLabelSerializer
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Lookup with both object ids
+        filter_kwargs = {
+            'object_id': self.kwargs['pk'],
+            'key': self.kwargs['label_name']
+        }
+        obj = generics.get_object_or_404(queryset, **filter_kwargs)
+
+        # May raise a permission denied
+        self.check_object_permissions(self.request, obj)
+
+        return obj
+
+    def get_serializer_context(self):
+        context = super(StackLabelDetailAPIView, self).get_serializer_context()
+        context['content_object'] = self.get_stack()
+        return context
+
+    def check_object_permissions(self, request, obj):
+        check_perms = super(StackLabelDetailAPIView, self).check_object_permissions
+        if isinstance(obj, models.Stack):
+            check_perms(request, obj)
+        else:
+            # Check the permissions on the stack instead of the label
+            check_perms(request, obj.content_object)
+
+
 class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
     """
     Lists all hosts for the associated stack.
@@ -357,13 +407,13 @@ class StackLogsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
 
             if isfile(join(root_dir, log_file)):
                 latest[log_type] = reverse(
-                    'stack-logs-detail',
+                    'api:stacks:stack-logs-detail',
                     kwargs={'pk': stack.pk, 'log': log_file},
                     request=request,
                 )
 
         historical = [
-            reverse('stack-logs-detail',
+            reverse('api:stacks:stack-logs-detail',
                     kwargs={'pk': stack.pk, 'log': log},
                     request=request)
             for log in sorted(listdir(log_dir))

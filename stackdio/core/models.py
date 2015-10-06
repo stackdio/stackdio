@@ -15,4 +15,25 @@
 # limitations under the License.
 #
 
-# Django will complain if there's no models.py
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.db import models
+
+
+class Label(models.Model):
+    """
+    Allows us to add arbitrary key/value pairs to any object
+    """
+
+    class Meta:
+        unique_together = ('content_type', 'object_id', 'key')
+
+    # the key
+    key = models.CharField('Key', max_length=255)
+
+    # the value
+    value = models.CharField('Value', max_length=255)
+
+    # the labeled object
+    content_type = models.ForeignKey('contenttypes.ContentType')
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()

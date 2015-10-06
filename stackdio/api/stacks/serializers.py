@@ -27,15 +27,14 @@ from rest_framework.compat import OrderedDict
 from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from stackdio.core.utils import recursive_update
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
-from stackdio.api.blueprints.serializers import (
-    BlueprintHostFormulaComponentSerializer,
-    BlueprintHostDefinitionSerializer
-)
+from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
+from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models, tasks, utils, workflows
 
 logger = logging.getLogger(__name__)
@@ -43,13 +42,14 @@ logger = logging.getLogger(__name__)
 
 class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     def to_representation(self, obj):
+        ret = {}
         if obj is not None:
             # Make it work two different ways.. ooooh
             if isinstance(obj, models.Stack):
-                return obj.properties
+                ret = obj.properties
             else:
-                return obj
-        return {}
+                ret = obj
+        return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
         return data
@@ -76,18 +76,20 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
         return stack
 
 
-class HostSerializer(serializers.HyperlinkedModelSerializer):
+class HostSerializer(StackdioHyperlinkedModelSerializer):
     # Read only fields
     subnet_id = serializers.ReadOnlyField()
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
-    formula_components = BlueprintHostFormulaComponentSerializer(many=True, read_only=True)
+    blueprint_host_definition = serializers.ReadOnlyField(source='blueprint_host_definition.title')
+    formula_components = FormulaComponentSerializer(many=True, read_only=True)
 
     # Fields for adding / removing hosts
     available_actions = ('add', 'remove')
 
     action = serializers.ChoiceField(available_actions, write_only=True)
-    host_definition = serializers.SlugRelatedField(slug_field='slug', write_only=True,
-                                                   queryset=BlueprintHostDefinition.objects.all())
+    host_definition = serializers.PrimaryKeyRelatedField(
+        write_only=True, queryset=BlueprintHostDefinition.objects.all()
+    )
     count = serializers.IntegerField(write_only=True, min_value=1)
     backfill = serializers.BooleanField(default=False, write_only=True)
 
@@ -109,6 +111,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
             'created',
             'sir_id',
             'sir_price',
+            'blueprint_host_definition',
             'formula_components',
             'action',
             'host_definition',
@@ -254,7 +257,7 @@ class HostSerializer(serializers.HyperlinkedModelSerializer):
         return action_map[action](stack, validated_data)
 
 
-class StackHistorySerializer(serializers.HyperlinkedModelSerializer):
+class StackHistorySerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.StackHistory
         fields = (
@@ -278,38 +281,43 @@ class StackCreateUserDefault(object):
         self._context = field.parent
 
     def __call__(self):
-        blueprint = Blueprint.objects.get(pk=self._context.initial_data['blueprint'])
+        blueprint_id = self._context.initial_data.get('blueprint', None)
+        if blueprint_id is None:
+            return None
+        blueprint = Blueprint.objects.get(pk=blueprint_id)
         return blueprint.create_users
 
 
-class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSerializer):
+class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     # Read only fields
     host_count = serializers.ReadOnlyField(source='hosts.count')
     volume_count = serializers.ReadOnlyField(source='volumes.count')
 
     # Identity links
     hosts = serializers.HyperlinkedIdentityField(
-        view_name='stack-hosts')
+        view_name='api:stacks:stack-hosts')
     action = serializers.HyperlinkedIdentityField(
-        view_name='stack-action')
+        view_name='api:stacks:stack-action')
     commands = serializers.HyperlinkedIdentityField(
-        view_name='stack-command-list')
+        view_name='api:stacks:stack-command-list')
     logs = serializers.HyperlinkedIdentityField(
-        view_name='stack-logs')
+        view_name='api:stacks:stack-logs')
     volumes = serializers.HyperlinkedIdentityField(
-        view_name='stack-volumes')
+        view_name='api:stacks:stack-volumes')
+    labels = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-label-list')
     properties = serializers.HyperlinkedIdentityField(
-        view_name='stack-properties')
+        view_name='api:stacks:stack-properties')
     history = serializers.HyperlinkedIdentityField(
-        view_name='stack-history')
+        view_name='api:stacks:stack-history')
     security_groups = serializers.HyperlinkedIdentityField(
-        view_name='stack-security-groups')
+        view_name='api:stacks:stack-security-groups')
     formula_versions = serializers.HyperlinkedIdentityField(
-        view_name='stack-formula-versions')
+        view_name='api:stacks:stack-formula-versions')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='stack-object-user-permissions-list')
+        view_name='api:stacks:stack-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='stack-object-group-permissions-list')
+        view_name='api:stacks:stack-object-group-permissions-list')
 
     class Meta:
         model = models.Stack
@@ -329,6 +337,7 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
             'group_permissions',
             'hosts',
             'volumes',
+            'labels',
             'properties',
             'history',
             'action',
@@ -348,7 +357,8 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
         )
 
         extra_kwargs = {
-            'create_users': {'default': serializers.CreateOnlyDefault(StackCreateUserDefault())}
+            'create_users': {'default': serializers.CreateOnlyDefault(StackCreateUserDefault())},
+            'blueprint': {'view_name': 'api:blueprints:blueprint-detail'},
         }
 
     def validate(self, attrs):
@@ -360,7 +370,7 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
         if 'create_users' in attrs:
             create_users = attrs['create_users']
         else:
-            create_users = self.instance.create_user
+            create_users = self.instance.create_users
         if create_users and not request.user.settings.public_key:
             errors.setdefault('public_key', []).append(
                 'You have not added a public key to your user '
@@ -384,7 +394,7 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
             # This all has to be here vs. in its own validator b/c it needs the blueprint
             hostname_errors = validate_hostname(namespace)
             if hostname_errors:
-                errors.setdefault('hostname', []).extend(hostname_errors)
+                errors.setdefault('namespace', []).extend(hostname_errors)
 
             # This is all only necessary if a namespace was provided
             #  (It may not be provided on a PATCH request)
@@ -399,7 +409,13 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
             #    Only hit up salt cloud if there are no duplicates locally
             hosts = models.Host.objects.filter(hostname__in=hostnames)
             if hosts.count() > 0:
-                errors.setdefault('duplicate_hostnames', []).extend([h.hostname for h in hosts])
+                err_msg = 'Duplicate hostnames: {0}'.format(', '.join([h.hostname for h in hosts]))
+                errors.setdefault('namespace', []).append(err_msg)
+
+            if errors:
+                # Go ahead and raise an error here so that we don't check the provider if
+                # we don't need to
+                raise serializers.ValidationError(errors)
 
             salt_cloud = salt.cloud.CloudClient(os.path.join(
                 settings.STACKDIO_CONFIG.salt_config_root,
@@ -422,7 +438,8 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
                             dups.append(instance)
 
             if dups:
-                errors.setdefault('duplicate_hostnames', []).extend(dups)
+                err_msg = 'Duplicate hostnames: {0}'.format(', '.join(dups))
+                errors.setdefault('namespace', []).append(err_msg)
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -433,6 +450,12 @@ class StackSerializer(CreateOnlyFieldsMixin, serializers.HyperlinkedModelSeriali
 class FullStackSerializer(StackSerializer):
     properties = StackPropertiesSerializer(required=False)
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
+
+    def to_representation(self, instance):
+        """
+        We want to return links instead of the full object
+        """
+        return StackSerializer(instance, context=self.context).to_representation(instance)
 
     def create(self, validated_data):
         # Create the stack
@@ -465,11 +488,10 @@ class StackSecurityGroupSerializer(SecurityGroupSerializer):
             'url',
             'name',
             'description',
-            'rules_url',
+            'rules',
             'group_id',
             'blueprint_host_definition',
             'account',
-            'account_id',
             'is_default',
             'is_managed',
             'active_hosts',
@@ -590,12 +612,13 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         return self.instance
 
 
-class StackCommandSerializer(serializers.HyperlinkedModelSerializer):
-    zip_url = serializers.HyperlinkedIdentityField(view_name='stackcommand-zip')
+class StackCommandSerializer(StackdioHyperlinkedModelSerializer):
+    zip_url = serializers.HyperlinkedIdentityField(view_name='api:stacks:stackcommand-zip')
 
     class Meta:
         model = models.StackCommand
         fields = (
+            'id',
             'url',
             'zip_url',
             'submit_time',

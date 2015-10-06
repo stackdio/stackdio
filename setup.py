@@ -22,10 +22,12 @@ import sys
 
 from setuptools import setup, find_packages
 
-
-if float('{0}.{1}'.format(*sys.version_info[:2])) < 2.7:
+major = sys.version_info.major
+minor = sys.version_info.minor
+micro = sys.version_info.micro
+if major != 2 or minor != 7:
     err_msg = ('Your Python version {0}.{1}.{2} is not supported.\n'
-               'stackdio-server requires Python 2.7 or newer.\n'.format(*sys.version_info[:3]))
+               'stackdio-server requires Python 2.7.\n'.format(major, minor, micro))
     sys.stderr.write(err_msg)
     sys.exit(1)
 
@@ -35,7 +37,7 @@ root_dir = os.path.dirname(os.path.abspath(__file__))
 components_dir = os.path.join(
     root_dir,
     'stackdio',
-    'core',
+    'ui',
     'static',
     'stackdio',
     'lib',

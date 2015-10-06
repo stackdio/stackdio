@@ -17,12 +17,15 @@
 
 
 import logging
+from collections import OrderedDict
 from os.path import join, isdir, split, splitext
 from shutil import rmtree
 
+import git
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.core.cache import cache
 from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
@@ -203,36 +206,136 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return self.git_username != ''
 
     @property
+    def repo(self):
+        # Cache the repo obj
+        if getattr(self, '_repo', None) is None:
+            self._repo = git.Repo(self.get_repo_dir())
+        return self._repo
+
+    def get_valid_versions(self):
+        # This will grab all the tags, remote branches, and local branches
+        refs = set()
+        for r in self.repo.refs:
+            if r.is_remote():
+                # This is a remote branch
+                refs.add(str(r.remote_head))
+            else:
+                # local branch
+                refs.add(str(r.name))
+
+        refs.remove('HEAD')
+
+        # Get the list of commit hashes
+        commit_hashes = [str(c.hexsha) for c in self.repo.iter_commits()]
+
+        # Combine them
+        return list(refs) + commit_hashes
+
+    @property
+    def default_branch(self):
+        # This will be the name of the default branch.
+        return str(self.repo.remotes.origin.refs.HEAD.ref.remote_head)
+
+    def components_for_version(self, version):
+        if version in self.get_valid_versions():
+            # Checkout version, but only if it's valid
+            self.repo.git.checkout(version)
+
+        # Grab the components
+        components = self.components
+
+        # Go back to HEAD
+        self.repo.git.checkout(self.default_branch)
+
+        return components
+
+    @property
+    def components(self):
+        cache_key = 'formula-components-{0}'.format(self.id)
+
+        cached_components = cache.get(cache_key)
+
+        if cached_components:
+            return cached_components
+
+        with open(join(self.get_repo_dir(), 'SPECFILE')) as f:
+            yaml_data = yaml.safe_load(f)
+            ret = OrderedDict()
+            # Create a map of sls_path -> component pairs
+            sorted_components = sorted(yaml_data.get('components', []), key=lambda x: x['title'])
+            for component in sorted_components:
+                ret[component['sls_path']] = OrderedDict((
+                    ('title', component['title']),
+                    ('description', component['description']),
+                    ('sls_path', component['sls_path']),
+                ))
+            cache.set(cache_key, ret, 10)
+            return ret
+
+    @classmethod
+    def all_components(cls):
+        ret = {}
+        for formula in cls.objects.all():
+            for component in formula.components:
+                ret.setdefault(component, []).append(formula)
+        return ret
+
+    @property
     def properties(self):
         with open(join(self.get_repo_dir(), 'SPECFILE')) as f:
             yaml_data = yaml.safe_load(f)
             return yaml_data.get('pillar_defaults', {})
 
 
-class FormulaComponent(TitleSlugDescriptionModel):
+class FormulaComponent(TimeStampedModel):
     """
-    Mapping of individual components of a formula
+    An extension of an existing FormulaComponent to add additional metadata
+    for those components based on this blueprint. In particular, this is how
+    we track the order in which the formula should be provisioned in a
+    blueprint.
     """
 
     class Meta:
-        ordering = ['pk']
+        verbose_name_plural = 'formula components'
+        ordering = ['order']
 
         default_permissions = ()
 
-    formula = models.ForeignKey('formulas.Formula',
-                                related_name='components')
-
-    # Formula packaging is a convention set by saltstack directly, so
-    # please see the URL above on the documentation for Formulas
+    # The formula component we're extending
+    formula = models.ForeignKey('formulas.Formula')
     sls_path = models.CharField(max_length=255)
 
+    # The host definition / cloud account this formula component is associated with
+    content_type = models.ForeignKey('contenttypes.ContentType')
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+
+    # The order in which the component should be provisioned
+    order = models.IntegerField('Order', default=0)
+
     def __unicode__(self):
-        return u'{0} : {1}'.format(self.title, self.sls_path)
+        return u'{0}:{1}'.format(
+            self.sls_path,
+            self.content_object,
+        )
+
+    @property
+    def title(self):
+        if not hasattr(self, '_full_component'):
+            self._full_component = self.formula.components[self.sls_path]
+        return self._full_component['title']
+
+    @property
+    def description(self):
+        if not hasattr(self, '_full_component'):
+            self._full_component = self.formula.components[self.sls_path]
+        return self._full_component['description']
 
 
 ##
 # Signal events and handlers
 ##
+
 
 @receiver(models.signals.post_delete, sender=Formula)
 def cleanup_formula(sender, instance, **kwargs):

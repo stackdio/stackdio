@@ -12,7 +12,6 @@ machine:
 ## Customize dependencies
 dependencies:
   override:
-    - bower install
     - pip install file://`pwd`#egg=stackdio-server[testing]
 
 ## Customize test commands
@@ -35,6 +34,8 @@ deployment:
   artifact:
     branch: /.*/
     commands:
+      - bower install
+      - python manage.py build_ui
       - python setup.py sdist
-      - mkdir $CIRCLE_ARTIFACTS/dist/
-      - mv dist/stackdio-server-*.tar.gz $CIRCLE_ARTIFACTS/dist/
+      - python setup.py bdist_wheel
+      - mv dist/ $CIRCLE_ARTIFACTS/dist/

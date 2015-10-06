@@ -27,9 +27,16 @@ urlpatterns = (
     # Admin interface
     url(r'^__private/admin/', include(admin.site.urls)),
 
-    # Grab the core URLs.  Stuff like index, login, logout, etc
-    url(r'^', include('stackdio.core.urls')),
+    # Grab the core URLs.  Basically just the version endpoint.
+    url(r'^', include('stackdio.core.urls', namespace='stackdio')),
+
+    # Grab the ui URLs.  Stuff like index, login, logout, etc
+    url(r'^', include('stackdio.ui.urls', namespace='ui')),
 
     # API v1 root endpoint -- add additional URLs to urls.py in the api module.
-    url(r'^api/', include('stackdio.api.urls')),
+    url(r'^api/', include('stackdio.api.urls', namespace='api')),
+
+    # Default login/logout views. Without this you won't get the login/logout links
+    # in the browsable api.
+    url(r'^api/', include('rest_framework.urls', namespace='rest_framework'))
 )

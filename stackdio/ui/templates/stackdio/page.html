@@ -1,0 +1,30 @@
+{% extends 'stackdio/base.html' %}
+{% load staticfiles %}
+{% load stackdio %}
+
+{% block scripts %}
+    {% viewmodel viewmodel %}
+{% endblock %}
+
+{% block links %}
+    <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
+{% endblock %}
+
+{% block content %}
+    <div class="row" data-bind="if: breadcrumbs">
+        <div class="col-md-12">
+            <ol class="breadcrumb" data-bind="foreach: breadcrumbs">
+                <li data-bind="css: {active: active}">
+                    <!-- ko if: active -->
+                    <span data-bind="text: title"></span>
+                    <!-- /ko -->
+                    <!-- ko ifnot: active -->
+                    <a data-bind="text: title, attr: {href: href}"></a>
+                    <!-- /ko -->
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    {% block page-content %}{% endblock %}
+{% endblock content %}

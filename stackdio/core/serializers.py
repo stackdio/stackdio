@@ -20,7 +20,85 @@ import logging
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
+from stackdio.core import mixins, models
+
 logger = logging.getLogger(__name__)
+
+
+class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer):
+    """
+    Override to use the appropriately namespaced url
+    """
+    def build_url_field(self, field_name, model_class):
+        """
+        Create a field representing the object's own URL.
+        """
+        field_class = self.serializer_url_field
+        app_label = getattr(self.Meta, 'app_label', model_class._meta.app_label)
+        model_name = getattr(self.Meta, 'model_name', model_class._meta.object_name.lower())
+
+        # Override user things
+        if model_name in ('user', 'group', 'permission'):
+            app_label = 'users'
+        field_kwargs = {
+            'view_name': 'api:%s:%s-detail' % (app_label, model_name),
+        }
+
+        return field_class, field_kwargs
+
+
+class LabelUrlField(serializers.HyperlinkedIdentityField):
+
+    def get_url(self, obj, view_name, request, format):
+        """
+        Given an object, return the URL that hyperlinks to the object.
+
+        May raise a `NoReverseMatch` if the `view_name` and `lookup_field`
+        attributes are not configured to correctly match the URL conf.
+        """
+        # Unsaved objects will not yet have a valid URL.
+        if hasattr(obj, 'pk') and obj.pk is None:
+            return None
+
+        kwargs = {
+            'pk': obj.object_id,
+            'label_name': obj.key,
+        }
+        return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+
+class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
+
+    serializer_url_field = LabelUrlField
+
+    class Meta:
+        model = models.Label
+        app_label = 'stacks'
+        model_name = 'stack-label'
+
+        fields = (
+            'url',
+            'key',
+            'value',
+        )
+
+        create_only_fields = (
+            'key',
+        )
+
+    def validate(self, attrs):
+        content_object = self.context['content_object']
+        key = attrs.get('key')
+
+        if key:
+            labels = content_object.labels.filter(key=key)
+
+            if labels.count() > 0:
+                raise serializers.ValidationError({
+                    'key': ['Label keys must be unique.']
+                })
+
+        return attrs
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):

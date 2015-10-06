@@ -1,0 +1,87 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}User Profile{% endblock %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+    window.stackdio = {};
+    window.stackdio.ldapEnabled = {{ ldap | lower }};
+    </script>
+{% endblock %}
+
+{% block page-content %}
+    <form data-bind="submit: function () { user.save() }">
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group" id="username">
+                    <label for="userUsername">Username</label>
+                    {% if ldap %}
+                    <p class="form-control-static" id="userUsername"
+                           data-bind="text: user.username"></p>
+                    {% else %}
+                    <input type="text" class="form-control" id="userUsername"
+                           data-bind="value: user.username, valueUpdate: 'keyup'">
+                    {% endif %}
+                </div>
+                <div class="form-group" id="first_name">
+                    <label for="userFirstName">First Name</label>
+                    {% if ldap %}
+                    <p class="form-control-static" id="userFirstName"
+                           data-bind="text: user.firstName"></p>
+                    {% else %}
+                    <input type="text" class="form-control" id="userFirstName"
+                           data-bind="value: user.firstName, valueUpdate: 'keyup'">
+                    {% endif %}
+                </div>
+                <div class="form-group" id="last_name">
+                    <label for="userLastName">Last Name</label>
+                    {% if ldap %}
+                    <p class="form-control-static" id="userLastName"
+                           data-bind="text: user.lastName"></p>
+                    {% else %}
+                    <input type="text" class="form-control" id="userLastName"
+                           data-bind="value: user.lastName, valueUpdate: 'keyup'">
+                    {% endif %}
+                </div>
+                <div class="form-group" id="email">
+                    <label for="userEmail">Email Address</label>
+                    {% if ldap %}
+                    <p class="form-control-static" id="userEmail"
+                           data-bind="text: user.email"></p>
+                    {% else %}
+                    <input type="text" class="form-control" id="userEmail"
+                           data-bind="value: user.email, valueUpdate: 'keyup'">
+                    {% endif %}
+                </div>
+                <div class="form-group" id="last_login">
+                    <label for="userLastLogin">Last Login</label>
+                    <p class="form-control-static" id="userLastLogin"
+                       data-bind="text: user.lastLogin().calendar()"></p>
+                </div>
+
+            </div>
+            <div class="col-md-6">
+                <div class="form-group" id="public_key">
+                    <label for="userPublicKey">Public Key</label>
+                    <textarea class="form-control" id="userPublicKey" rows="10"
+                              data-bind="value: user.publicKey, valueUpdate: 'keyup'">
+                    </textarea>
+                </div>
+                <div id="advanced_view">
+                    <div class="checkbox">
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox" data-bind="checked: user.advanced">
+                            <span class="checkbox-label">Advanced View</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}
