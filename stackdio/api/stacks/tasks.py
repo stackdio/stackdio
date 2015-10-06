@@ -1496,6 +1496,9 @@ def finish_stack(stack_id):
         stack.set_status(finish_stack.name, Stack.FINISHED,
                          'Finished executing tasks.')
 
+        for host in stack.get_hosts():
+            host.set_status(Host.OK, 'Host ready.')
+
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)
         raise StackTaskException(err_msg)
