@@ -31,6 +31,9 @@ define([
         // For the breadcrumb only
         self.stackTitle = ko.observable('');
 
+        self.blueprintTitle = ko.observable('');
+        self.blueprintUrl = ko.observable('');
+
         // Override the breadcrumbs
         self.breadcrumbs = [
             {
@@ -59,6 +62,10 @@ define([
             self.stack.waiting.done(function () {
                 document.title = 'stackd.io | Stack Detail - ' + self.stack.title();
                 self.stackTitle(self.stack.title());
+                self.stack.loadBlueprint().done(function () {
+                    self.blueprintTitle(self.stack.blueprint().title() + '  --  ' + self.stack.blueprint().description());
+                    self.blueprintUrl('/blueprints/' + self.stack.blueprint().id + '/');
+                });
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/stacks/';
@@ -71,7 +78,6 @@ define([
                     $el.checkbox('uncheck');
                 }
             });
-            self.stackTitle('');
         };
 
         // Functions
