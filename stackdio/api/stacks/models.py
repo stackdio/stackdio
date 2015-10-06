@@ -360,6 +360,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             tags[label.key] = label.value
 
         tags['stack_id'] = self.id
+
+        # No name allowed.  salt-cloud uses this and it would break everything.
+        if 'Name' in tags:
+            del tags['Name']
+
         return tags
 
     @property

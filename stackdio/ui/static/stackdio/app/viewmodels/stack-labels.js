@@ -44,6 +44,8 @@ define([
             }
         ],
         stack: ko.observable(),
+        newLabels: ko.observableArray([]),
+        newLabelKey: ko.observable(),
         autoRefresh: false,
         model: Label,
         baseUrl: '/stacks/',
@@ -54,7 +56,39 @@ define([
         ],
         init: function () {
             this._super();
+            this.newLabelKey(null);
             this.stack(new Stack(window.stackdio.stackId, this));
+        },
+        addNewLabel: function () {
+            var $el = $('#new-label-form');
+
+            $el.removeClass('has-error');
+
+            var self = this;
+            var dup = false;
+            this.sortedObjects().forEach(function (label) {
+                if (label.key() === self.newLabelKey()) {
+                    dup = true;
+                }
+            });
+
+            this.newLabels().forEach(function (label) {
+                if (label.key === self.newLabelKey()) {
+                    dup = true;
+                }
+            });
+
+            if (dup) {
+                utils.growlAlert('You may not have two labels with the same key.', 'danger');
+                $el.addClass('has-error');
+                return;
+            }
+
+            this.newLabels.push({
+                key: this.newLabelKey(),
+                value: ko.observable(null)
+            });
+            this.newLabelKey(null);
         },
         saveLabels: function () {
             var ajaxCalls = [];
@@ -64,6 +98,20 @@ define([
                     method: 'PUT',
                     url: self.stack().raw.labels + label.key() + '/',
                     data: JSON.stringify({
+                        value: label.value()
+                    })
+                }).fail(function (jqxhr) {
+                    utils.alertError(jqxhr, 'Error saving label',
+                        'Errors saving label for ' + label.key() + ':<br>');
+                }));
+            });
+
+            this.newLabels().forEach(function (label) {
+                ajaxCalls.push($.ajax({
+                    method: 'POST',
+                    url: self.stack().raw.labels,
+                    data: JSON.stringify({
+                        key: label.key,
                         value: label.value()
                     })
                 }).fail(function (jqxhr) {
