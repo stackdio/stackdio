@@ -18,11 +18,10 @@
 define([
     'jquery',
     'knockout',
-    'bloodhound',
     'ladda',
     'bootbox',
-    'typeahead'
-], function ($, ko, Bloodhound, Ladda, bootbox) {
+    'select2'
+], function ($, ko, Ladda, bootbox) {
     'use strict';
 
     return function() {
@@ -40,30 +39,38 @@ define([
             }
         ];
 
-        // Create the blueprint typeahead
-        self.blueprints = new Bloodhound({
-            datumTokenizer: Bloodhound.tokenizers.whitespace,
-            queryTokenizer: Bloodhound.tokenizers.whitespace,
-            remote: {
-                url: '/api/blueprints/?title=%QUERY',
-                wildcard: '%QUERY',
-                transform: function (resp) { return resp.results; }
-            }
+        // Create the blueprint selector
+        self.blueprintSelector = $('#stackBlueprint');
+
+        self.blueprintSelector.select2({
+            ajax: {
+                url: '/api/blueprints/',
+                dataType: 'json',
+                delay: 100,
+                data: function (params) {
+                    return {
+                        title: params.term
+                    };
+                },
+                processResults: function (data) {
+                    data.results.forEach(function (blueprint) {
+                        blueprint.text = blueprint.title;
+                    });
+                    return data;
+                },
+                cache: true
+            },
+            theme: 'bootstrap',
+            placeholder: 'Select a blueprint...',
+            templateResult: function (blueprint) {
+                return $('<span>' + blueprint.title + '  --  ' + blueprint.description + '</span>');
+            },
+            minimumInputLength: 0
         });
 
-        self.blueprintTypeahead = $('#blueprints').find('.typeahead');
+        self.blueprintSelector.on('select2:select', function(ev) {
+            var blueprint = ev.params.data;
 
-        self.blueprintTypeahead.typeahead({
-            highlight: true,
-            minLength: 1
-        }, {
-            name: 'blueprints',
-            display: 'title',
-            source: self.blueprints,
-            limit: 20
-        });
-
-        self.blueprintTypeahead.bind('typeahead:select', function(ev, blueprint) {
             self.createUsers(blueprint.create_users);
             self.blueprintId(blueprint.id);
             var keys = ['blueprint', 'title', 'description',

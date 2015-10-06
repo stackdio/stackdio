@@ -7,6 +7,8 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/ladda/dist/ladda-themeless.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2/dist/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
 {% endblock %}
 
 {% block page-content %}
@@ -15,11 +17,7 @@
             <div class="col-sm-6">
                 <div class="form-group" id="blueprint">
                     <label for="stackBlueprint">Blueprint</label>
-
-                    <div id="blueprints">
-                        <input id="stackBlueprint" class="typeahead form-control" type="text"
-                               placeholder="Search for blueprints...">
-                    </div>
+                    <select id="stackBlueprint" style="width: 100%"></select>
                 </div>
                 <div class="form-group" id="title">
                     <label for="stackTitle">Title</label>
