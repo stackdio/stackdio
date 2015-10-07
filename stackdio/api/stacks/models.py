@@ -70,32 +70,33 @@ def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
 
 # Map, pillar, and properties files go into storage
 def get_map_file_path(obj, filename):
-    return "stacks/{0}-{1}/stack.map".format(obj.pk, obj.slug)
+    return 'stacks/{0}-{1}/stack.map'.format(obj.pk, obj.slug)
 
 
 def get_pillar_file_path(obj, filename):
-    return "stacks/{0}-{1}/stack.pillar".format(obj.pk, obj.slug)
+    return 'stacks/{0}-{1}/stack.pillar'.format(obj.pk, obj.slug)
 
 
 def get_global_pillar_file_path(obj, filename):
-    return "stacks/{0}-{1}/stack.global_pillar".format(obj.pk, obj.slug)
+    return 'stacks/{0}-{1}/stack.global_pillar'.format(obj.pk, obj.slug)
 
 
 def get_props_file_path(obj, filename):
-    return "stacks/{0}-{1}/stack.props".format(obj.pk, obj.slug)
+    return 'stacks/{0}-{1}/stack.props'.format(obj.pk, obj.slug)
 
 
-# Top and overstate files go into salt root
+# Top file goes into salt root
 def get_top_file_path(obj, filename):
     return "stack_{0}_top.sls".format(obj.pk)
 
 
-def get_overstate_file_path(obj, filename):
-    return "stack_{0}_overstate.sls".format(obj.pk)
+# Orchestrate files go in storage
+def get_orchestrate_file_path(obj, filename):
+    return 'stacks/{0}-{1}/formulas/__stackdio__/orchestrate.sls'.format(obj.pk, obj.slug)
 
 
-def get_global_overstate_file_path(obj, filename):
-    return "stack_{0}_global_overstate.sls".format(obj.pk)
+def get_global_orchestrate_file_path(obj, filename):
+    return 'stacks/{0}-{1}/formulas/__stackdio__/global_orchestrate.sls'.format(obj.pk, obj.slug)
 
 
 class StackCreationException(Exception):
@@ -149,17 +150,6 @@ class StackQuerySet(models.QuerySet):
             # Create the appropriate hosts & security group objects
             stack.create_security_groups()
             stack.create_hosts()
-
-        # Generate configuration files for salt and salt-cloud
-        # NOTE: The order is important here. pillar must be available before
-        # the map file is rendered or else we'll miss important grains that
-        # need to be set at launch time
-        stack.generate_pillar_file()
-        stack.generate_global_pillar_file()
-        stack.generate_top_file()
-        stack.generate_overstate_file()
-        stack.generate_global_overstate_file()
-        stack.generate_map_file()
 
         return stack
 
@@ -263,28 +253,25 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(
-            location=settings.STACKDIO_CONFIG.salt_core_states))
+        storage=FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_core_states))
 
-    # Where on disk is the custom overstate file stored
-    overstate_file = DeletingFileField(
+    # Where on disk is the custom orchestrate file stored
+    orchestrate_file = DeletingFileField(
         max_length=255,
-        upload_to=get_overstate_file_path,
+        upload_to=get_orchestrate_file_path,
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(
-            location=settings.STACKDIO_CONFIG.salt_core_states))
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
-    # Where on disk is the global overstate file stored
-    global_overstate_file = DeletingFileField(
+    # Where on disk is the global orchestrate file stored
+    global_orchestrate_file = DeletingFileField(
         max_length=255,
-        upload_to=get_global_overstate_file_path,
+        upload_to=get_global_orchestrate_file_path,
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(
-            location=settings.STACKDIO_CONFIG.salt_core_states))
+        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
     # Where on disk is the custom pillar file for custom configuration for
     # all salt states used by the top file
@@ -563,7 +550,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         return created_hosts
 
-    def generate_map_file(self):
+    def generate_cloud_map(self):
         # TODO: Figure out a way to make this provider agnostic
 
         # TODO: Should we store this somewhere instead of assuming
@@ -611,59 +598,62 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 map_volumes.append(v)
 
             host_metadata = {
-                host.hostname: {
-                    # The parameters in the minion dict will be passed on
-                    # to the minion and set in its default configuration
-                    # at /etc/salt/minion. This is where you would override
-                    # any default values set by salt-minion
-                    'minion': {
-                        'master': master,
-                        'log_level': 'debug',
-                        'log_level_logfile': 'debug',
-                        'mine_functions': {
-                            'grains.items': []
-                        },
-
-                        # Grains are very useful when you need to set some
-                        # static information about a machine (e.g., what stack
-                        # id its registered under or how many total machines
-                        # are in the cluster)
-                        'grains': {
-                            'roles': roles,
-                            'stack_id': int(self.pk),
-                            'fqdn': fqdn,
-                            'domain': domain,
-                            'cluster_size': cluster_size,
-                            'stack_pillar_file': self.pillar_file.path,
-                            'volumes': map_volumes,
-                            'cloud_account': host.cloud_image.account.slug,
-                            'cloud_image': host.cloud_image.slug,
-                            'namespace': self.namespace,
-                        },
+                'name': host.hostname,
+                # The parameters in the minion dict will be passed on
+                # to the minion and set in its default configuration
+                # at /etc/salt/minion. This is where you would override
+                # any default values set by salt-minion
+                'minion': {
+                    'master': master,
+                    'log_level': 'debug',
+                    'log_level_logfile': 'debug',
+                    'mine_functions': {
+                        'grains.items': []
                     },
 
-                    # The rest of the settings in the map are salt-cloud
-                    # specific and control the VM in various ways
-                    # depending on the cloud account being used.
-                    'size': instance_size,
-                    'securitygroupid': list(security_groups),
-                    'volumes': map_volumes,
-                }
+                    # Grains are very useful when you need to set some
+                    # static information about a machine (e.g., what stack
+                    # id its registered under or how many total machines
+                    # are in the cluster)
+                    'grains': {
+                        'roles': roles,
+                        'stack_id': int(self.pk),
+                        'fqdn': fqdn,
+                        'domain': domain,
+                        'cluster_size': cluster_size,
+                        'stack_pillar_file': self.pillar_file.path,
+                        'volumes': map_volumes,
+                        'cloud_account': host.cloud_image.account.slug,
+                        'cloud_image': host.cloud_image.slug,
+                        'namespace': self.namespace,
+                    },
+                },
+
+                # The rest of the settings in the map are salt-cloud
+                # specific and control the VM in various ways
+                # depending on the cloud account being used.
+                'size': instance_size,
+                'securitygroupid': list(security_groups),
+                'volumes': map_volumes,
             }
 
             if cloud_account.vpc_enabled:
-                host_metadata[host.hostname]['subnetid'] = host.subnet_id
+                host_metadata['subnetid'] = host.subnet_id
             else:
-                host_metadata[host.hostname]['availability_zone'] \
-                    = host.availability_zone.title
+                host_metadata['availability_zone'] = host.availability_zone.title
 
             # Add in spot instance config if needed
             if host.sir_price:
-                host_metadata[host.hostname]['spot_config'] = {
+                host_metadata['spot_config'] = {
                     'spot_price': str(host.sir_price)  # convert to string
                 }
 
-            images.setdefault(host.cloud_image.slug, []).append(host_metadata)
+            images.setdefault(host.cloud_image.slug, {})[host.hostname] = host_metadata
+
+        return images
+
+    def generate_map_file(self):
+        images = self.generate_cloud_map()
 
         map_file_yaml = yaml.safe_dump(images, default_flow_style=False)
 
@@ -691,7 +681,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             with open(self.top_file.path, 'w') as f:
                 f.write(top_file_yaml)
 
-    def generate_overstate_file(self):
+    def generate_orchestrate_file(self):
         hosts = self.hosts.all()
         stack_target = 'G@stack_id:{0}'.format(self.pk)
 
@@ -705,33 +695,38 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             for component in host.formula_components.all():
                 groups.setdefault(component.order, set()).add(component.sls_path)
 
-        overstate = {}
+        orchestrate = {}
         for order in sorted(groups.keys()):
             for role in groups[order]:
-                overstate[role] = {
-                    'match': _matcher([role]),
-                    'sls': list([role]),
+                orchestrate[role] = {
+                    'salt.state': [
+                        {'tgt': _matcher([role])},
+                        {'tgt_type': 'compound'},
+                        {'sls': role},
+                    ]
                 }
                 depend = order - 1
                 while depend >= 0:
                     if depend in groups.keys():
-                        overstate[role]['require'] = list(groups[depend])
+                        orchestrate[role]['salt.state'].append(
+                            {'require': [{'salt': req} for req in groups[depend]]}
+                        )
                         break
                     depend -= 1
 
-        yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
-        if not self.overstate_file:
-            self.overstate_file.save(
-                'stack_{0}_overstate.sls'.format(self.pk),
+        yaml_data = yaml.safe_dump(orchestrate, default_flow_style=False)
+        if not self.orchestrate_file:
+            self.orchestrate_file.save(
+                get_orchestrate_file_path(self, None),
                 ContentFile(yaml_data))
         else:
-            with open(self.overstate_file.path, 'w') as f:
+            with open(self.orchestrate_file.path, 'w') as f:
                 f.write(yaml_data)
 
-    def generate_global_overstate_file(self):
+    def generate_global_orchestrate_file(self):
         accounts = set([host.cloud_image.account for host in self.hosts.all()])
 
-        overstate = {}
+        orchestrate = {}
 
         for account in accounts:
             # Target the stack_id and cloud account
@@ -746,29 +741,32 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             for order in sorted(groups.keys()):
                 for role in groups[order]:
                     state_title = '{0}_{1}'.format(account.slug, role)
-                    overstate[state_title] = {
-                        'match': target,
-                        'sls': list([role]),
+                    orchestrate[state_title] = {
+                        'salt.state': [
+                            {'tgt': target},
+                            {'tgt_type': 'compound'},
+                            {'sls': role},
+                        ]
                     }
                     depend = order - 1
                     while depend >= 0:
                         if depend in groups.keys():
-                            overstate[role]['require'] = list(groups[depend])
+                            orchestrate[role]['salt.state'].append(
+                                {'require': [{'salt': req} for req in groups[depend]]}
+                            )
                             break
                         depend -= 1
 
-        yaml_data = yaml.safe_dump(overstate, default_flow_style=False)
-        if not self.global_overstate_file:
-            self.global_overstate_file.save(
-                get_global_overstate_file_path(self, None),
+        yaml_data = yaml.safe_dump(orchestrate, default_flow_style=False)
+        if not self.global_orchestrate_file:
+            self.global_orchestrate_file.save(
+                get_global_orchestrate_file_path(self, None),
                 ContentFile(yaml_data))
         else:
-            with open(self.global_overstate_file.path, 'w') as f:
+            with open(self.global_orchestrate_file.path, 'w') as f:
                 f.write(yaml_data)
 
     def generate_pillar_file(self):
-        from stackdio.api.formulas.models import Formula, FormulaComponent
-
         users = []
         # pull the create_ssh_users property from the stackd.io config file.
         # If it's False, we won't create ssh users on the box.
@@ -868,9 +866,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         """
         Uses salt-cloud to query all the hosts for the given stack id.
         """
-        if not self.map_file:
-            return {}
-
         CACHE_KEY = 'salt-cloud-full-query'
 
         cached_result = cache.get(CACHE_KEY)
@@ -882,10 +877,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             logger.debug('salt-cloud query result not cached, retrieving')
             logger.info('get_hosts_info: {0!r}'.format(self))
 
-            salt_cloud = salt.cloud.CloudClient(os.path.join(
-                settings.STACKDIO_CONFIG.salt_config_root,
-                'cloud'
-            ))
+            salt_cloud = salt.cloud.CloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
             result = salt_cloud.full_query()
 
             # Cache the result for a minute
