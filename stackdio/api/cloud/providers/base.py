@@ -190,10 +190,6 @@ class BaseCloudProvider(object):
                 errors.setdefault(key, []).append(
                     '{0} is a required field.'.format(key)
                 )
-            # else:
-                # If it's valid, we'll throw it into the attrs so it
-                # ends up in the validated data
-                # serializer_attrs[key] = value
 
         if errors:
             raise ValidationError(errors)
