@@ -60,7 +60,7 @@ SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
                      'platform for everyone.')
 
 # Grab README.md and use its contents as the long description
-with open('README.md') as f:
+with open('README.rst') as f:
     LONG_DESCRIPTION = f.read()
 
 requirements = [
