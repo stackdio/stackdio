@@ -1,3 +1,0 @@
-# Pull in our production requirements, which will in turn
-# grab our base requirements
--r requirements/production.txt
