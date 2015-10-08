@@ -76,7 +76,7 @@ requirements = [
     'django-filter>=0.9',
     'django-guardian>=1.3',
     'django-model-utils>=2.0,<2.3',
-    'djangorestframework>=3.1,<=3.2',
+    'djangorestframework>=3.1,<3.2',
     'envoy>=0.0.2',
     'psutil>=2.1',
     'requests>=2.4',

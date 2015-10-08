@@ -30,7 +30,7 @@ install:
   - bower install
   - pip install -U pip
   - pip install -U wheel
-  - pip install file://`pwd`#egg=stackdio-server[testing]
+  - pip install -e .[testing]
 
 ## Customize test commands
 before_script:
