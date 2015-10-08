@@ -69,9 +69,6 @@ class StackListAPIView(generics.ListCreateAPIView):
         stack = serializer.save()
         for perm in models.Stack.object_permissions:
             assign_perm('stacks.%s_stack' % perm, self.request.user, stack)
-        # Re-generate the pillar file after adding permissions
-        # (I know this probably isn't the best way to handle this, but it works for now)
-        stack.generate_pillar_file()
 
         stack.labels.create(key='owner', value=self.request.user.username)
 
