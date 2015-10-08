@@ -106,6 +106,9 @@ setup(
         'mysql': [
             'MySQL-python==1.2.5',
         ],
+        'postgresql': [
+            'psycopg2==2.6.1'
+        ],
         'development': [
             'ipython>=2.0',
         ],

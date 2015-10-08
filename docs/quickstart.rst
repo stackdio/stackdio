@@ -152,7 +152,10 @@ If you'd rather have the most up to date code, you can install from our develop 
     git clone https://github.com/stackdio/stackdio.git
     cd stackdio
     bower install
-    pip install .
+    pip install .[production]
+
+    # For mysql only
+    pip install .[mysql]
 
 Configuration
 -------------
