@@ -143,7 +143,7 @@ There's two options for installing here.  We recommend pulling the latest versio
     workon stackdio  # Activate the virtualenv
     pip install https://github.com/stackdio/stackdio/releases/download/0.7.0a4/stackdio_server-0.7.0a4-py2-none-any.whl
 
-If you'd rather have the most up to date code, you can install from our develop branch:
+If you'd rather have the most up to date code, you can install from our repository instead:
 
 .. code:: bash
 
@@ -152,10 +152,10 @@ If you'd rather have the most up to date code, you can install from our develop 
     git clone https://github.com/stackdio/stackdio.git
     cd stackdio
     bower install
-    pip install .[production]
+    pip install -e .[production]
 
     # For mysql only
-    pip install .[mysql]
+    pip install -e .[mysql]
 
 Configuration
 -------------
