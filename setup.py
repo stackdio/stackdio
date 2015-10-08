@@ -72,7 +72,7 @@ requirements = [
     'celery>=3.1',
     'dj-database-url>=0.3',
     'django-auth-ldap>=1.2',
-    'django-extensions>=1.5',
+    'django-extensions>=1.5,<1.5.6',
     'django-filter>=0.9',
     'django-guardian>=1.3',
     'django-model-utils>=2.0,<2.3',
@@ -80,7 +80,7 @@ requirements = [
     'envoy>=0.0.2',
     'psutil>=2.1',
     'requests>=2.4',
-    'salt==2014.1.7',
+    'salt>=2015.8.0,<2015.9',
 ]
 
 # Call the setup method from setuptools that does all the heavy lifting
@@ -100,7 +100,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'production': [
-            'gunicorn<=19.1.0',
+            'gunicorn>=19.0',
             'supervisor>=3.0',
         ],
         'mysql': [
