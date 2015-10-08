@@ -27,9 +27,10 @@ addons:
 ## Customize dependencies
 install:
   - npm install -g bower
+  - bower install
   - pip install -U pip
   - pip install -U wheel
-  - pip install -U -r requirements/testing.txt
+  - pip install file://`pwd`#egg=stackdio-server[testing]
 
 ## Customize test commands
 before_script:
@@ -40,7 +41,6 @@ before_script:
 
 script:
   - python manage.py test --cover-html
-  - bower install
   - python manage.py build_ui
 
 # Only build artifacts on success

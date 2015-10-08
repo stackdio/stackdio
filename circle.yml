@@ -12,6 +12,9 @@ machine:
 ## Customize dependencies
 dependencies:
   override:
+    - bower install
+    - pip install -U pip
+    - pip install -U wheel
     - pip install file://`pwd`#egg=stackdio-server[testing]
 
 ## Customize test commands
@@ -34,7 +37,6 @@ deployment:
   artifact:
     branch: /.*/
     commands:
-      - bower install
       - python manage.py build_ui
       - python setup.py sdist
       - python setup.py bdist_wheel
