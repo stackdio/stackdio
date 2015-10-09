@@ -61,7 +61,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'stackd.io'
 copyright = u'2015, Digital Reasoning'
-author = u'Clark Perkins'
+author = u'Digital Reasoning'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

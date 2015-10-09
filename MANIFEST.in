@@ -1,5 +1,6 @@
-include AUTHORS.md
-include README.md
+include AUTHORS.rst
+include CONTRIBUTING.rst
+include README.rst
 include LICENSE
 include MANIFEST.in
 include requirements.txt
