@@ -41,15 +41,42 @@ define([
         count: ko.observable(),
         objects: ko.observableArray([]),
         loading: ko.observable(),
+        sortKey: ko.observable(),
+        sortAsc: ko.observable(true),
+
+        // Computed observables, to be created in init()
+        sortedObjects: null,
+        startNum: null,
+        endNum: null,
+        numPages: null,
+
+        searchInput: $('#search-input'),
+
+        shouldReset: true,
 
         init: function () {
             // Start everything up
             this.reset();
 
+            var self = this;
+
+            var $searchBar = $('#pagination-search');
+
+            $searchBar.search();
+
+            $searchBar.on('searched.fu.search', function () {
+                self.currentPage(self.initialUrl + '?title=' + self.searchInput.val());
+                self.shouldReset = false;
+                self.reset();
+            });
+
+            $searchBar.on('cleared.fu.search', function () {
+                self.reset();
+            });
+
             // Needs to happen here so we have access to `this`
             this.sortedObjects = ko.computed(function () {
                 var sortKey = this.sortKey();
-                var searchTerm = this.searchTerm().toLowerCase();
 
                 // If there's nothing to sort/filter on, just return the main list
                 if (!this.sortableFields) {
@@ -61,14 +88,7 @@ define([
                 });
 
                 var self = this;
-                var objects = this.objects().filter(function (object) {
-                    for (var i = 0; i < fieldNames.length; ++i) {
-                        if (object[fieldNames[i]]().toString().toLowerCase().indexOf(searchTerm) >= 0) {
-                            return true;
-                        }
-                    }
-                    return false;
-                });
+                var objects = self.objects();
 
                 if (fieldNames.indexOf(sortKey) < 0) {
                     return objects;
@@ -120,28 +140,21 @@ define([
             }
         },
 
-        sortKey: ko.observable(),
-        sortAsc: ko.observable(true),
-        searchTerm: ko.observable(),
-
-        // Computed observables, to be created in init()
-        sortedObjects: null,
-        startNum: null,
-        endNum: null,
-        numPages: null,
-
         reset: function () {
             this.pageNum(1);
             this.pageSize(null);
-            this.currentPage(this.initialUrl);
+
+            if (this.shouldReset) {
+                this.currentPage(this.initialUrl);
+                this.sortKey(null);
+                this.sortAsc(true);
+            }
             this.previousPage(null);
             this.nextPage(null);
             this.count(0);
             this.objects([]);
-            this.sortKey(null);
-            this.sortAsc(true);
-            this.searchTerm('');
             this.loading(false);
+            this.shouldReset = true;
             this.reload(true);
         },
 
