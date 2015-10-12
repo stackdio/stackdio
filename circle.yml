@@ -38,6 +38,6 @@ deployment:
     branch: /.*/
     commands:
       - python manage.py build_ui
-      - python setup.py egg_info -d sdist
-      - python setup.py egg_info -d bdist_wheel
+      - python setup.py sdist
+      - python setup.py bdist_wheel
       - mv dist/ $CIRCLE_ARTIFACTS/dist/
