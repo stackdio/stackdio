@@ -22,9 +22,9 @@ import sys
 
 from setuptools import setup, find_packages
 
-major = sys.version_info.major
-minor = sys.version_info.minor
-micro = sys.version_info.micro
+major = sys.version_info[0]
+minor = sys.version_info[1]
+micro = sys.version_info[2]
 if major != 2 or minor != 7:
     err_msg = ('Your Python version {0}.{1}.{2} is not supported.\n'
                'stackdio-server requires Python 2.7.\n'.format(major, minor, micro))
@@ -95,7 +95,7 @@ setup(
     long_description=LONG_DESCRIPTION,
     license='Apache 2.0',
     include_package_data=True,
-    packages=find_packages(exclude=('tests', 'dist', 'build')),
+    packages=find_packages(exclude=('tests', 'dist', 'build', 'docs')),
     zip_safe=False,
     install_requires=requirements,
     extras_require={
