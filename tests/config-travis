@@ -5,7 +5,7 @@ storage_root: /home/travis/.stackdio
 user: travis
 
 salt_bootstrap_script: bootstrap-salt
-salt_bootstrap_args: -K -D git v2014.1.7
+salt_bootstrap_args: -K -D git v2018.8.0
 
 django_secret_key: "$c0mmag@6zppv3l+unbynv7p1ajb$0(yodk-b)axsgsixhlm2^"
 

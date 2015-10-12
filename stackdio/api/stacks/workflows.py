@@ -146,8 +146,7 @@ class DestroyHostsWorkflow(BaseWorkflow):
             tasks.unregister_dns.si(stack_id, host_ids=host_ids),
             tasks.destroy_hosts.si(stack_id,
                                    host_ids=host_ids,
-                                   delete_security_groups=False,
-                                   parallel=self.opts.parallel),
+                                   delete_security_groups=False),
             tasks.finish_stack.si(stack_id),
         ]
 

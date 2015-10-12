@@ -2,15 +2,16 @@
 <div class="row">
     {% if search %}
     <div class="col-sm-6 col-xs-12" style="margin-top: 15px; margin-bottom: 15px">
-        <form data-bind="submit: function () {}">
-            <div class="input-group">
-                <input class="form-control" type="text" placeholder="Search for {{ object_type }}..."
-                       data-bind="value: searchTerm, valueUpdate: 'keyup'"/>
-                <span class="input-group-btn">
-                    <button class="btn btn-success" type="submit">Search</button>
-                </span>
-            </div>
-        </form>
+        <div class="search input-group" role="search" id="pagination-search">
+            <input id="search-input" type="search" class="form-control"
+                   placeholder="Search for {{ object_type }}..."/>
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button">
+                    <span class="glyphicon glyphicon-search"></span>
+                    <span class="sr-only">Search</span>
+                </button>
+            </span>
+        </div>
     </div>
     {% endif %}
     <div class="{% if search %}col-sm-3 {% endif %}col-xs-4" style="margin-top: 15px; margin-bottom: 15px">

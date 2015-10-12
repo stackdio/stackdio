@@ -78,6 +78,14 @@ urlpatterns = (
         api.StackPropertiesAPIView.as_view(),
         name='stack-properties'),
 
+    url(r'^stacks/(?P<pk>[0-9]+)/labels/$',
+        api.StackLabelListAPIView.as_view(),
+        name='stack-label-list'),
+
+    url(r'^stacks/(?P<pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
+        api.StackLabelDetailAPIView.as_view(),
+        name='stack-label-detail'),
+
     url(r'^stacks/(?P<pk>[0-9]+)/history/$',
         api.StackHistoryAPIView.as_view(),
         name='stack-history'),

@@ -5,30 +5,54 @@
         <div class="container-fluid">
             {% include 'stackdio/stubs/pager.html' with object_type='formula versions' search=True %}
 
-            <form data-bind="submit: function () { saveVersions() }">
-                <div class="row">
-                    <div class="col-md-12">
-                        <table class="table table-hover">
-                            <thead>
-                            <tr>
-                                {% include 'stackdio/stubs/table-sort-header.html' %}
-                            </tr>
-                            </thead>
-                            <tbody data-bind="foreach: sortedObjects">
-                            <tr class="stackdio-hidden-on-load">
-                                <td data-bind="text: formula"></td>
-                                <td>
-                                    <input type="text" class="form-control"
-                                           data-bind="value: version, valueUpdate: 'keyup'">
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <table class="table table-hover">
+                        <thead>
+                        <tr>
+                            {% include 'stackdio/stubs/table-sort-header.html' %}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <!-- ko foreach: sortedObjects -->
+                        <tr class="stackdio-hidden-on-load">
+                            <td data-bind="text: formula"></td>
+                            <td>
+                                <input type="text" class="form-control"
+                                       data-bind="value: version, valueUpdate: 'keyup'">
+                            </td>
+                        </tr>
+                        <!-- /ko -->
+                        <!-- ko foreach: newVersions -->
+                        <tr class="stackdio-hidden-on-load">
+                            <td data-bind="text: formula"></td>
+                            <td>
+                                <input type="text" class="form-control"
+                                       data-bind="value: version, valueUpdate: 'keyup'">
+                            </td>
+                        </tr>
+                        <!-- /ko -->
+                        </tbody>
+                    </table>
                 </div>
+            </div>
 
-                <button type="submit" class="btn btn-primary">Save</button>
-            </form>
+            <div class="row">
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary" data-bind="click: function () { saveVersions() }">Save</button>
+                </div>
+                <div class="col-md-8">
+                    <form data-bind="submit: function () { addNewVersion() }">
+                        <div id="new-version-form" class="input-group">
+                            <input type="text" class="form-control" placeholder="New Version"
+                                   data-bind="value: newVersionFormula, valueUpdate: 'keyup'">
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn btn-success">Add</button>
+                            </span>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

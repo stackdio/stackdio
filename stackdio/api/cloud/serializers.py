@@ -156,7 +156,7 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
         # Leverage the driver to generate its required data that
         # will be serialized down to yaml and stored in both the database
         # and the salt cloud providers file
-        provider_data = driver.get_provider_data(validated_data)
+        provider_data = driver.get_provider_data(validated_data, self.initial_data)
 
         # Generate the yaml and store in the database
         yaml_data = {

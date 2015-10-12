@@ -18,7 +18,7 @@
 
 define([
     'bootbox',
-    'bootstrap-growl'
+    'utils/bootstrap-growl'
 ], function(bootbox) {
     'use strict';
 
@@ -26,10 +26,8 @@ define([
         growlAlert: function (message, type) {
             $.bootstrapGrowl(message, {
                 ele: '#main-content',
-                type: type,
-                align: 'center',
-                width: 'auto',
-                offset: {from: 'top', amount: 64}
+                width: '450px',
+                type: type
             });
         },
         alertError: function (jqxhr, title, customMessage) {
