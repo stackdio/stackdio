@@ -24,6 +24,7 @@ import random
 import re
 import socket
 from datetime import datetime
+from logging.handlers import WatchedFileHandler
 
 import salt.client
 import salt.cloud
@@ -33,9 +34,11 @@ import salt.utils
 import salt.utils.cloud
 import yaml
 from django.conf import settings
+from salt.log.setup import LOG_LEVELS
 
 
 logger = logging.getLogger(__name__)
+root_logger = logging.getLogger()
 
 ERROR_REQUISITE = 'One or more requisite failed'
 
@@ -115,6 +118,71 @@ class StackdioSaltCloudMap(salt.cloud.Map):
         """
         return super(StackdioSaltCloudMap, self).delete_map(query)
 
+    def get_running_by_names(self, names, query='list_nodes', cached=False, profile=None):
+        """
+        Override this so we only get appropriate things for our map
+        """
+        if isinstance(names, basestring):
+            names = [names]
+
+        matches = {}
+        handled_drivers = {}
+        mapped_providers = self.map_providers_parallel(query, cached=cached)
+        for alias, drivers in mapped_providers.items():
+            for driver, vms in drivers.items():
+                if driver not in handled_drivers:
+                    handled_drivers[driver] = alias
+                # When a profile is specified, only return an instance
+                # that matches the provider specified in the profile.
+                # This solves the issues when many providers return the
+                # same instance. For example there may be one provider for
+                # each availability zone in amazon in the same region, but
+                # the search returns the same instance for each provider
+                # because amazon returns all instances in a region, not
+                # availability zone.
+                if profile:
+                    if alias not in self.opts['profiles'][profile]['provider'].split(':')[0]:
+                        continue
+
+                for vm_name, details in vms.items():
+                    # XXX: The logic below can be removed once the aws driver
+                    # is removed
+                    if vm_name not in names:
+                        continue
+
+                    elif driver == 'ec2' and 'aws' in handled_drivers and \
+                            'aws' in matches[handled_drivers['aws']] and \
+                            vm_name in matches[handled_drivers['aws']]['aws']:
+                        continue
+                    elif driver == 'aws' and 'ec2' in handled_drivers and \
+                            'ec2' in matches[handled_drivers['ec2']] and \
+                            vm_name in matches[handled_drivers['ec2']]['ec2']:
+                        continue
+
+                    # This little addition makes everything not break :)
+                    # Without this, if you have 2 providers attaching to the same AWS account,
+                    # salt-cloud will try to kill / rename instances twice.  This snippet below
+                    # removes those duplicates, and only kills the ones you actually want killed.
+                    should_continue = False
+                    for profile, data in self.rendered_map.items():
+                        provider = self.opts['profiles'][profile]['provider'].split(':')[0]
+                        if vm_name in data and alias != provider:
+                            should_continue = True
+                            break
+
+                    if should_continue:
+                        continue
+
+                    # End inserted snippet #
+
+                    if alias not in matches:
+                        matches[alias] = {}
+                    if driver not in matches[alias]:
+                        matches[alias][driver] = {}
+                    matches[alias][driver][vm_name] = details
+
+        return matches
+
 
 class StackdioSaltCloudClient(salt.cloud.CloudClient):
 
@@ -122,12 +190,28 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
         """
         Runs a map from an already in-memory representation rather than an file on disk.
         """
-        mapper = StackdioSaltCloudMap(self._opts_defaults(**kwargs))
+        opts = self._opts_defaults(**kwargs)
+
+        handler = setup_logfile_logger(
+            opts['log_file'],
+            opts['log_level_logfile'],
+            log_format=opts['log_fmt_logfile'],
+            date_format=opts['log_datefmt_logfile'],
+        )
+
+        mapper = StackdioSaltCloudMap(opts)
         mapper.rendered_map = cloud_map
         dmap = mapper.map_data()
-        return salt.utils.cloud.simple_types_filter(
+
+        # Do the launch
+        ret = salt.utils.cloud.simple_types_filter(
             mapper.run_map(dmap)
         )
+
+        # Cancel the logging
+        root_logger.removeHandler(handler)
+
+        return ret
 
     def destroy_map(self, cloud_map, **kwargs):
         """
@@ -158,6 +242,32 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
         else:
             logger.info('There are no VMs to be destroyed.')
             return {}
+
+
+def setup_logfile_logger(log_path, log_level='error', log_format=None, date_format=None):
+    """
+    Set up logging to a file.
+    """
+    # Grab the level
+    level = LOG_LEVELS.get(log_level.lower(), logging.ERROR)
+
+    # Create the handler
+    handler = WatchedFileHandler(log_path, mode='a', encoding='utf-8', delay=0)
+
+    handler.setLevel(level)
+
+    # Set the default console formatter config
+    if not log_format:
+        log_format = '%(asctime)s [%(name)-15s][%(levelname)-8s] %(message)s'
+    if not date_format:
+        date_format = '%Y-%m-%d %H:%M:%S'
+
+    formatter = logging.Formatter(log_format, datefmt=date_format)
+
+    handler.setFormatter(formatter)
+    root_logger.addHandler(handler)
+
+    return handler
 
 
 def state_to_dict(state_string):
