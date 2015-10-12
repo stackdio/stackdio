@@ -66,9 +66,27 @@ class StackdioSaltCloudMap(salt.cloud.Map):
                 interpolated_map['Errors'][profile] = msg
                 continue
 
+            # Grab the provider name
+            provider_info = self.opts['profiles'][profile]['provider'].split(':')
+
+            provider = provider_info[0]
+            driver_name = provider_info[1]
+
             matching = self.get_running_by_names(names, query, cached)
+
             for alias, drivers in matching.items():
+                if alias != provider:
+                    # If the alias doesn't match the provider of the profile we're looking at,
+                    # skip it.
+                    continue
+
                 for driver, vms in drivers.items():
+                    if driver != driver_name:
+                        logger.warning(
+                            'The driver in the matching info doesn\'t match the provider '
+                            'specified in the config... Something fishy is going on'
+                        )
+
                     for vm_name, vm_details in vms.items():
                         if alias not in interpolated_map:
                             interpolated_map[alias] = {}
@@ -121,6 +139,7 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
         mapper.rendered_map = cloud_map
         dmap = mapper.delete_map()
 
+        # This is pulled from the salt-cloud ec2 driver code.
         msg = 'The following VMs are set to be destroyed:\n'
         names = set()
         for alias, drivers in dmap.items():

@@ -36,6 +36,7 @@ from django.conf import settings
 
 from stackdio.core.exceptions import BadRequest
 from stackdio.api.cloud.models import SecurityGroup
+from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.tasks import update_formula
 from stackdio.api.volumes.models import Volume
@@ -1614,20 +1615,21 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
                     driver.delete_security_group(security_group.name)
                     logger.debug('Managed security group {0} '
                                  'deleted...'.format(security_group.name))
-                except BadRequest, e:
-                    if 'does not exist' in e.detail:
+                except DeleteGroupException, e:
+                    if 'does not exist' in e.message:
                         # The group didn't exist in the first place - just throw out a warning
-                        logger.warn(e.detail)
-                    elif 'instances using security group' in e.detail:
+                        logger.warn(e.message)
+                    elif 'instances using security group' in e.message:
                         # The group has running instances in it - we can't delete it
                         instances = driver.get_instances_for_group(security_group.group_id)
-                        err_msg = 'There are active instances using security group \'{0}\': {1}.  ' \
-                                  'Please remove these instances before attempting to delete this ' \
-                                  'stack again.'.format(security_group.name,
-                                                        ', '.join([i['id'] for i in instances]))
+                        err_msg = (
+                            'There are active instances using security group \'{0}\': {1}.  '
+                            'Please remove these instances before attempting to delete this '
+                            'stack again.'.format(security_group.name,
+                                                  ', '.join([i['id'] for i in instances]))
+                        )
 
-                        stack.set_status(destroy_hosts.name, Stack.ERROR,
-                                         err_msg, level='ERROR')
+                        stack.set_status(destroy_hosts.name, Stack.ERROR, err_msg, level='ERROR')
                         logger.error(err_msg)
 
                         raise StackTaskException(err_msg)
