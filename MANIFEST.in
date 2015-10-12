@@ -2,8 +2,6 @@ include AUTHORS.md
 include README.md
 include LICENSE
 include MANIFEST.in
-include requirements.txt
-recursive-include requirements *
 recursive-include stackdio/api/cloud/fixtures *.json
 recursive-include stackdio/core/templates *
 recursive-include stackdio/server/management *
