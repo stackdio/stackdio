@@ -34,8 +34,8 @@ from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from django.conf import settings
 
-from stackdio.core.exceptions import BadRequest
 from stackdio.api.cloud.models import SecurityGroup
+from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.tasks import update_formula
 from stackdio.api.volumes.models import Volume
@@ -419,7 +419,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                 # Everything worked?
                 break
 
-            except Exception, e:
+            except Exception as e:
                 if isinstance(e, StackTaskException):
                     raise
                 err_msg = 'Unhandled exception while launching hosts.'
@@ -438,7 +438,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(launch_hosts.name, stack.ERROR, err_msg, Level.ERROR)
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(launch_hosts.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -519,7 +519,7 @@ def cure_zombies(stack_id, max_retries=2):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(cure_zombies.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -660,7 +660,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(update_metadata.name, Stack.ERROR,
                          err_msg, Level.ERROR)
@@ -704,7 +704,7 @@ def tag_infrastructure(stack_id, host_ids=None):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(tag_infrastructure.name, Stack.ERROR,
                          err_msg, Level.ERROR)
@@ -740,7 +740,7 @@ def register_dns(stack_id, host_ids=None):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(register_dns.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -828,7 +828,7 @@ def ping(stack_id, interval=5, max_failures=10):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(ping.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -879,7 +879,7 @@ def sync_all(stack_id):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -1065,7 +1065,7 @@ def highstate(stack_id, max_retries=2):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(highstate.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -1221,7 +1221,7 @@ def propagate_ssh(stack_id, max_retries=2):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(propagate_ssh.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -1349,7 +1349,7 @@ def global_orchestrate(stack_id, max_retries=2):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(global_orchestrate.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -1472,7 +1472,7 @@ def orchestrate(stack_id, max_retries=2):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(orchestrate.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -1504,7 +1504,7 @@ def finish_stack(stack_id):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(finish_stack.name, Stack.ERROR, err_msg, Level.ERROR)
         logger.exception(err_msg)
@@ -1539,7 +1539,7 @@ def register_volume_delete(stack_id, host_ids=None):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
@@ -1614,20 +1614,21 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
                     driver.delete_security_group(security_group.name)
                     logger.debug('Managed security group {0} '
                                  'deleted...'.format(security_group.name))
-                except BadRequest, e:
-                    if 'does not exist' in e.detail:
+                except DeleteGroupException as e:
+                    if 'does not exist' in e.message:
                         # The group didn't exist in the first place - just throw out a warning
-                        logger.warn(e.detail)
-                    elif 'instances using security group' in e.detail:
+                        logger.warn(e.message)
+                    elif 'instances using security group' in e.message:
                         # The group has running instances in it - we can't delete it
                         instances = driver.get_instances_for_group(security_group.group_id)
-                        err_msg = 'There are active instances using security group \'{0}\': {1}.  ' \
-                                  'Please remove these instances before attempting to delete this ' \
-                                  'stack again.'.format(security_group.name,
-                                                        ', '.join([i['id'] for i in instances]))
+                        err_msg = (
+                            'There are active instances using security group \'{0}\': {1}.  '
+                            'Please remove these instances before attempting to delete this '
+                            'stack again.'.format(security_group.name,
+                                                  ', '.join([i['id'] for i in instances]))
+                        )
 
-                        stack.set_status(destroy_hosts.name, Stack.ERROR,
-                                         err_msg, level='ERROR')
+                        stack.set_status(destroy_hosts.name, Stack.ERROR, err_msg, level='ERROR')
                         logger.error(err_msg)
 
                         raise StackTaskException(err_msg)
@@ -1647,7 +1648,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(destroy_hosts.name, Stack.ERROR,
                          err_msg, level='ERROR')
@@ -1679,7 +1680,7 @@ def destroy_stack(stack_id):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
@@ -1716,7 +1717,7 @@ def unregister_dns(stack_id, host_ids=None):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)
@@ -1747,7 +1748,7 @@ def execute_action(stack_id, action, *args, **kwargs):
         raise StackTaskException(err_msg)
     except StackTaskException:
         raise
-    except Exception, e:
+    except Exception as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(Stack.ERROR, Stack.ERROR, err_msg)
         logger.exception(err_msg)

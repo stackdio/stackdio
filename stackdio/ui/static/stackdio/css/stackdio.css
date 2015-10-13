@@ -113,12 +113,8 @@ Bootstrap overrides
     box-shadow: none;
 }
 
-.growl-alerts {
-    position: fixed;
-    top: 63px;
-    left: 0;
-    right: 0;
-    z-index: 1075;
+#main-content {
+    position: relative;
 }
 
 /* Typeahead stuff */

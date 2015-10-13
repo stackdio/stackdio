@@ -68,7 +68,7 @@ class Command(BaseCommand):
             try:
                 shutil.rmtree(INPUT_DIR)
                 shutil.rmtree(NODE_PATH)
-            except:
+            except Exception:
                 pass
 
     def _handle(self, *args, **options):

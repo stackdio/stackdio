@@ -75,6 +75,7 @@
                     {% if user.is_authenticated %}
                     <ul class="nav navbar-nav navbar-right">
                         <!-- Extra links -->
+                        <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
                         {% block links %}{% endblock %}
 
                         <li class="dropdown">
@@ -92,13 +93,6 @@
             </div>
         </nav>
     {% endblock navbar %}
-
-    <!-- for alerts -->
-    <div class="growl-alerts">
-        <div class="container">
-            <div id="growl-alerts" class="col-md-4 col-md-offset-8"></div>
-        </div>
-    </div>
 
     <!-- Any messages if they exist -->
     <div class="container">

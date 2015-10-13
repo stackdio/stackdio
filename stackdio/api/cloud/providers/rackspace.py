@@ -55,7 +55,7 @@ class RackspaceCloudProvider(BaseCloudProvider):
     API_KEY = 'api_key'
 
     @classmethod
-    def get_provider_data(cls, validated_data):
+    def get_provider_data(cls, validated_data, all_data):
         yaml_data = {
             'provider': cls.SHORT_NAME,
             'identity_url': validated_data[cls.IDENTITY_URL],

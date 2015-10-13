@@ -17,10 +17,14 @@
 
 import logging
 
+from celery import chain
+from django.contrib.contenttypes.models import ContentType
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
 from stackdio.core import mixins, models
+from stackdio.api.stacks.tasks import tag_infrastructure, finish_stack
+from stackdio.api.stacks.models import Stack
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +103,24 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
                 })
 
         return attrs
+
+    def save(self, **kwargs):
+        label = super(StackdioLabelSerializer, self).save(**kwargs)
+
+        stack_ctype = ContentType.objects.get_for_model(Stack)
+
+        if label.content_type == stack_ctype:
+            logger.info('Tagging infrastructure...')
+
+            # Spin up the task to tag everything
+            task_chain = chain(
+                tag_infrastructure.si(label.object_id),
+                finish_stack.si(label.object_id),
+            )
+
+            task_chain.apply_async()
+
+        return label
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):

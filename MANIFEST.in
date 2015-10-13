@@ -1,11 +1,11 @@
-include AUTHORS.md
-include README.md
+include AUTHORS.rst
+include CONTRIBUTING.rst
+include README.rst
 include LICENSE
 include MANIFEST.in
 recursive-include stackdio/api/cloud/fixtures *.json
 recursive-include stackdio/core/templates *
 recursive-include stackdio/server/management *
-recursive-include stackdio/server/fixtures *.json
 recursive-include stackdio/ui/templates *
 recursive-include stackdio/ui/static *
 recursive-exclude * *.py[co]

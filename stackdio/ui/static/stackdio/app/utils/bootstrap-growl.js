@@ -15,7 +15,7 @@
 
 })(this, function ($) {
     $.bootstrapGrowl = function (message, options) {
-        var $alert, css;
+        var $alert, css, offsetAmount;
 
         options = $.extend({}, $.bootstrapGrowl.default_options, options);
         $alert = $("<div>");
@@ -24,15 +24,29 @@
             $alert.addClass("alert-" + options.type);
         }
         if (options.allow_dismiss) {
-            $alert.append("<a class=\"close\" data-dismiss=\"alert\" href=\"#\">&times;</a>");
+            $alert.append('<a class="close" data-dismiss="alert" href="#">&times;</a>');
         }
         $alert.append(message);
+
+        var mobile = $(window).width() <= 767;
+
+        if (mobile) {
+            offsetAmount = 63;
+        } else {
+            offsetAmount = -10;
+        }
+        $(".bootstrap-growl").each(function() {
+            return offsetAmount = Math.max(offsetAmount, parseInt($(this).css('top')) + $(this).outerHeight() + options.stackup_spacing);
+        });
         css = {
-            "position": "static",
-            "margin": "0 0 " + options.stackup_spacing + "px 0",
-            "z-index": "9999",
+            "position": mobile ? "fixed" : "absolute",
+            "margin": "0",
+            "z-index": 9999,
             "display": "none",
-            "width": options.width
+            "width": options.width,
+            "max-width": $(window).width() - 50,
+            "top": offsetAmount + "px",
+            "right": "25px"
         };
         $alert.css(css);
         $(options.ele).append($alert);

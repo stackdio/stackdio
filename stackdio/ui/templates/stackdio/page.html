@@ -6,10 +6,6 @@
     {% viewmodel viewmodel %}
 {% endblock %}
 
-{% block links %}
-    <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
-{% endblock %}
-
 {% block content %}
     <div class="row" data-bind="if: breadcrumbs">
         <div class="col-md-12">
