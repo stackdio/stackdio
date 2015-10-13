@@ -388,8 +388,10 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             accounts.add(host_definition.cloud_image.account)
 
         for account in accounts:
-            if not account.create_security_groups and \
-                            account.security_groups.filter(is_default=True).count() < 1:
+            if (
+                not account.create_security_groups and
+                account.security_groups.filter(is_default=True).count() < 1
+            ):
                 errors.setdefault('security_groups', []).append(
                     'Account `{0}` has per-stack security groups disabled, but doesn\'t define any '
                     'default security groups.  You must define at least 1 default security group '
