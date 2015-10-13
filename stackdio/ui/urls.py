@@ -106,4 +106,9 @@ urlpatterns = (
     cached_url(r'^stacks/(?P<pk>[0-9]+)/logs/$',
                views.StackLogsView.as_view(),
                name='stack-logs'),
+
+    cached_url(r'^blueprints/$',
+               views.BlueprintListView.as_view(),
+               name='blueprint-list',
+               timeout=30),
 )

@@ -265,3 +265,14 @@ class StackLogsView(StackDetailView):
     template_name = 'stacks/stack-logs.html'
     viewmodel = 'viewmodels/stack-logs'
     page_id = 'logs'
+
+
+class BlueprintListView(PageView):
+    template_name = 'blueprints/blueprint-list.html'
+    viewmodel = 'viewmodels/blueprint-list'
+
+    def get_context_data(self, **kwargs):
+        context = super(BlueprintListView, self).get_context_data(**kwargs)
+        context['has_admin'] = self.request.user.has_perm('blueprints.admin_blueprint')
+        context['has_create'] = self.request.user.has_perm('blueprints.create_blueprint')
+        return context
