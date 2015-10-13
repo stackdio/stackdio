@@ -63,7 +63,10 @@ define([
             theme: 'bootstrap',
             placeholder: 'Select a blueprint...',
             templateResult: function (blueprint) {
-                return $('<span>' + blueprint.title + '  --  ' + blueprint.description + '</span>');
+                if (blueprint.loading) {
+                    return blueprint.text;
+                }
+                return blueprint.title + '  --  ' + blueprint.description;
             },
             minimumInputLength: 0
         });
