@@ -17,11 +17,13 @@
 
 import logging
 
+from django.conf import settings
 from django.contrib.auth.models import Group
 from django.http import Http404
+from django_auth_ldap.backend import LDAPBackend
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms, remove_perm
 from rest_framework import viewsets
-from rest_framework.serializers import ListField, SlugRelatedField
+from rest_framework.serializers import ListField, SlugRelatedField, ValidationError
 
 from stackdio.api.users.models import get_user_queryset
 from .shortcuts import get_groups_with_model_perms, get_users_with_model_perms
@@ -36,6 +38,21 @@ def _filter_perms(available_perms, perms):
         if perm in available_perms:
             ret.append(perm)
     return ret
+
+
+class UserSlugRelatedField(SlugRelatedField):
+
+    def to_internal_value(self, data):
+        try:
+            return super(UserSlugRelatedField, self).to_internal_value(data)
+        except ValidationError:
+            if settings.LDAP_ENABLED:
+                # Grab the ldap user and try again
+                user = LDAPBackend().populate_user(data)
+                if user is not None:
+                    return super(UserSlugRelatedField, self).to_internal_value(data)
+            # Nothing worked, just re-raise the exception
+            raise
 
 
 class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
@@ -83,7 +100,7 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
 
         # Create a class
         class StackdioUserPermissionsSerializer(super_cls):
-            user = SlugRelatedField(slug_field='username', queryset=get_user_queryset())
+            user = UserSlugRelatedField(slug_field='username', queryset=get_user_queryset())
             url = url_field
             permissions = ListField()
 

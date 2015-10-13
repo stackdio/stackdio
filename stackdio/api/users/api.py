@@ -32,7 +32,7 @@ from . import filters, mixins, permissions, serializers
 
 
 class UserListAPIView(generics.ListAPIView):
-    queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
+    queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID).order_by('username')
     serializer_class = serializers.PublicUserSerializer
     lookup_field = 'username'
     filter_class = filters.UserFilter
