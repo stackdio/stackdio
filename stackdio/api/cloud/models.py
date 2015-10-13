@@ -123,6 +123,9 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
     # the account/owner id of the account
     account_id = models.CharField('Account ID', max_length=64)
 
+    # If this is false, we won't create security groups on a per-stack basis.
+    create_security_groups = models.BooleanField('Create Security Groups', default=True)
+
     # Grab the list of formula components
     formula_components = GenericRelation('formulas.FormulaComponent')
 
