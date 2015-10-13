@@ -18,7 +18,7 @@
 
 import logging
 
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.permissions import IsAuthenticated
