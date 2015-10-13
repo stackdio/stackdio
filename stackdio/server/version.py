@@ -15,7 +15,21 @@
 # limitations under the License.
 #
 
-VERSION = (0, 7, 0, 'dev', 5)
+import datetime
+import os
+import subprocess
+
+try:
+    from django.utils.lru_cache import lru_cache
+except ImportError:
+    # Sometimes we might not have django yet (like when we're pip installing :))
+
+    def lru_cache():
+        def wrapped_func(func):
+            return func
+        return wrapped_func
+
+VERSION = (0, 7, 0, 'dev', 0)
 
 
 def get_version(version):
@@ -31,24 +45,52 @@ def get_version(version):
     #     | {a|b|rc}N - for alpha, beta and rc releases
     #     | .postN - for post-release releases
 
+    assert len(version) == 5
+
     # Build the first part of the version
     major = '.'.join(str(x) for x in version[:3])
 
-    # Just return it if this isn't a pre- or post- release
-    if len(version) <= 3:
+    # Just return it if this is a final release version
+    if version[3] == 'final':
         return major
 
     # Add the rest
     sub = ''.join(str(x) for x in version[3:5])
 
-    if version[3] in ('dev', 'post'):
-        # We need a dot for these
+    if version[3] == 'dev':
+        # Override the sub part.  Add in a timestamp
+        timestamp = get_git_changeset()
+        sub = 'dev%s' % (timestamp if timestamp else '')
+        return '%s.%s' % (major, sub)
+    if version[3] == 'post':
+        # We need a dot for post
         return '%s.%s' % (major, sub)
     elif version[3] in ('a', 'b', 'rc'):
         # No dot for these
         return '%s%s' % (major, sub)
     else:
         raise ValueError('Invalid version: %s' % str(version))
+
+
+# Borrowed directly from django
+@lru_cache()
+def get_git_changeset():
+    """Returns a numeric identifier of the latest git changeset.
+
+    The result is the UTC timestamp of the changeset in YYYYMMDDHHMMSS format.
+    This value isn't guaranteed to be unique, but collisions are very unlikely,
+    so it's sufficient for generating the development version numbers.
+    """
+    repo_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    git_log = subprocess.Popen('git log --pretty=format:%ct --quiet -1 HEAD',
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               shell=True, cwd=repo_dir, universal_newlines=True)
+    timestamp = git_log.communicate()[0]
+    try:
+        timestamp = datetime.datetime.utcfromtimestamp(int(timestamp))
+    except ValueError:
+        return None
+    return timestamp.strftime('%Y%m%d%H%M%S')
 
 
 __version__ = get_version(VERSION)

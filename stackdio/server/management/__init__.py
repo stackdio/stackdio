@@ -26,6 +26,7 @@
 import argparse
 import sys
 
+from stackdio.server.version import __version__
 from . import commands
 
 if sys.stdout.isatty():
@@ -42,6 +43,11 @@ SALT_COMMANDS = (
 
 def main():
     parser = argparse.ArgumentParser(prog='stackdio')
+
+    parser.add_argument('-v', '--version',
+                        action='version',
+                        version=__version__)
+
     subparsers = parser.add_subparsers(title='subcommands',
                                        description='available subcommands')
 
