@@ -150,13 +150,19 @@ class StackdioSaltCloudMap(salt.cloud.Map):
                     if vm_name not in names:
                         continue
 
-                    elif driver == 'ec2' and 'aws' in handled_drivers and \
-                            'aws' in matches[handled_drivers['aws']] and \
-                            vm_name in matches[handled_drivers['aws']]['aws']:
+                    elif (
+                        driver == 'ec2' and
+                        'aws' in handled_drivers and
+                        'aws' in matches[handled_drivers['aws']] and
+                        vm_name in matches[handled_drivers['aws']]['aws']
+                    ):
                         continue
-                    elif driver == 'aws' and 'ec2' in handled_drivers and \
-                            'ec2' in matches[handled_drivers['ec2']] and \
-                            vm_name in matches[handled_drivers['ec2']]['ec2']:
+                    elif (
+                        driver == 'aws' and
+                        'ec2' in handled_drivers and
+                        'ec2' in matches[handled_drivers['ec2']] and
+                        vm_name in matches[handled_drivers['ec2']]['ec2']
+                    ):
                         continue
 
                     # This little addition makes everything not break :)
