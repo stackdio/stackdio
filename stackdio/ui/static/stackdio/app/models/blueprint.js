@@ -20,11 +20,12 @@ define([
     'jquery',
     'knockout',
     'bootbox',
+    'utils/utils',
     'models/host-definition'
-], function ($, ko, bootbox, HostDefinition) {
+], function ($, ko, bootbox, utils, HostDefinition) {
     'use strict';
 
-    // Define the stack model.
+    // Define the blueprint model.
     function Blueprint(raw, parent) {
         var needReload = false;
         if (typeof raw === 'string') {
@@ -35,7 +36,7 @@ define([
             // Set the things we need for the reload
             raw = {
                 id: raw,
-                url: '/api/stacks/' + raw + '/hosts/'
+                url: '/api/blueprints/' + raw + '/'
             }
         }
 
@@ -59,7 +60,7 @@ define([
         this.formulaVersions = ko.observableArray([]);
 
         if (needReload) {
-            this.reload();
+            this.waiting = this.reload();
         } else {
             this._process(raw);
         }
@@ -73,7 +74,7 @@ define([
         this.createUsers(raw.create_users);
     };
 
-    // Reload the current stack
+    // Reload the current blueprint
     Blueprint.prototype.reload = function () {
         var self = this;
         return $.ajax({
@@ -121,6 +122,76 @@ define([
         }
 
         doLoad(this.raw.host_definitions);
+    };
+
+    Blueprint.prototype.save = function () {
+        var self = this;
+        var keys = ['title', 'description', 'create_users'];
+
+        keys.forEach(function (key) {
+            var el = $('#' + key);
+            el.removeClass('has-error');
+            var help = el.find('.help-block');
+            help.remove();
+        });
+
+        $.ajax({
+            method: 'PUT',
+            url: self.raw.url,
+            data: JSON.stringify({
+                title: self.title(),
+                description: self.description(),
+                create_users: self.createUsers()
+            })
+        }).done(function (blueprint) {
+            utils.growlAlert('Successfully saved blueprint!', 'success');
+            try {
+                self.parent.blueprintTitle(blueprint.title);
+            } catch (e) {}
+        }).fail(function (jqxhr) {
+            var message = '';
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+
+                for (var key in resp) {
+                    if (resp.hasOwnProperty(key)) {
+                        if (keys.indexOf(key) >= 0) {
+                            var el = $('#' + key);
+                            el.addClass('has-error');
+                            resp[key].forEach(function (errMsg) {
+                                el.append('<span class="help-block">' + errMsg + '</span>');
+                            });
+                        } else if (key === 'non_field_errors') {
+                            resp[key].forEach(function (errMsg) {
+                                if (errMsg.indexOf('title') >= 0) {
+                                    var el = $('#title');
+                                    el.addClass('has-error');
+                                    el.append('<span class="help-block">A blueprint with this title already exists.</span>');
+                                }
+                            });
+                        } else {
+                            var betterKey = key.replace('_', ' ');
+
+                            resp[key].forEach(function (errMsg) {
+                                message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
+                            });
+                        }
+                    }
+                }
+                if (message) {
+                    message = '<dl class="dl-horizontal">' + message + '</dl>';
+                }
+            } catch (e) {
+                message = 'Oops... there was a server error.  This has been reported to ' +
+                    'your administrators.'
+            }
+            if (message) {
+                bootbox.alert({
+                    title: 'Error saving blueprint',
+                    message: message
+                });
+            }
+        });
     };
 
     Blueprint.prototype.delete = function () {

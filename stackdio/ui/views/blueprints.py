@@ -15,6 +15,9 @@
 # limitations under the License.
 #
 
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+
 from stackdio.api.blueprints.models import Blueprint
 from stackdio.ui.views import PageView, ModelPermissionsView
 
@@ -33,3 +36,22 @@ class BlueprintListView(PageView):
 class BlueprintModelPermissionsView(ModelPermissionsView):
     viewmodel = 'viewmodels/blueprint-model-permissions'
     model = Blueprint
+
+
+class BlueprintDetailView(PageView):
+    template_name = 'blueprints/blueprint-detail.html'
+    viewmodel = 'viewmodels/blueprint-detail'
+    page_id = 'detail'
+
+    def get_context_data(self, **kwargs):
+        context = super(BlueprintDetailView, self).get_context_data(**kwargs)
+        pk = kwargs['pk']
+        # Go ahead an raise a 404 here if the blueprint doesn't exist rather
+        # than waiting until later.
+        blueprint = get_object_or_404(Blueprint.objects.all(), pk=pk)
+        if not self.request.user.has_perm('blueprints.view_blueprint', blueprint):
+            raise Http404()
+        context['blueprint_id'] = pk
+        context['has_admin'] = self.request.user.has_perm('blueprints.admin_blueprint', blueprint)
+        context['page_id'] = self.page_id
+        return context

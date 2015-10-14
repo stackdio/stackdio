@@ -117,4 +117,9 @@ urlpatterns = (
     cached_url(r'^blueprints/permissions/$',
                blueprints.BlueprintModelPermissionsView.as_view(),
                name='blueprint-model-permissions'),
+
+    cached_url(r'^blueprints/(?P<pk>[0-9]+)/$',
+               blueprints.BlueprintDetailView.as_view(),
+               name='blueprint-detail',
+               timeout=30),
 )
