@@ -30,7 +30,7 @@
                     <a href="">Access Rules</a>
                 </li>
                 <li role="presentation"{% if page_id == 'formula-versions' %} class="active"{% endif %}>
-                    <a href="">Formula Versions</a>
+                    <a href="{% url 'ui:blueprint-formula-versions' pk=blueprint_id %}">Formula Versions</a>
                 </li>
                 {% if has_admin %}
                 <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>

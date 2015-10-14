@@ -83,3 +83,9 @@ class BlueprintPropertiesView(BlueprintDetailView):
     template_name = 'blueprints/blueprint-properties.html'
     viewmodel = 'viewmodels/blueprint-properties'
     page_id = 'properties'
+
+
+class BlueprintFormulaVersionsView(BlueprintDetailView):
+    template_name = 'blueprints/blueprint-formula-versions.html'
+    viewmodel = 'viewmodels/blueprint-formula-versions'
+    page_id = 'formula-versions'
