@@ -10,11 +10,11 @@
             <p>Manage all of your blueprints here.</p>
         </div>
         <div class="col-md-6 text-right">
-{#            {% if has_admin %}#}
-                {# Only show the button if the user has permission to see it #}
-{#                <a class="btn btn-warning"#}
-{#                   href="{% url 'ui:blueprint-model-permissions' %}">Permissions</a>#}
-{#            {% endif %}#}
+            {% if has_admin %}
+                <!-- Only show the button if the user has permission to see it-->
+                <a class="btn btn-warning"
+                   href="{% url 'ui:blueprint-model-permissions' %}">Permissions</a>
+            {% endif %}
 {#            {% if has_create %}#}
 {#                <a class="btn btn-success" href="{% url 'ui:blueprint-create' %}">New Stack</a>#}
 {#            {% endif %}#}

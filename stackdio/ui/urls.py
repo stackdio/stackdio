@@ -20,6 +20,8 @@ from django.contrib.auth.views import login, logout_then_login
 
 from stackdio.core.utils import cached_url
 from . import views
+from .views import blueprints
+from .views import stacks
 
 auth_kwargs = {
     'template_name': 'stackdio/login.html',
@@ -50,65 +52,69 @@ urlpatterns = (
                name='user-profile'),
 
     cached_url(r'^stacks/$',
-               views.StackListView.as_view(),
+               stacks.StackListView.as_view(),
                name='stack-list',
                timeout=30),
 
     cached_url(r'^stacks/create/$',
-               views.StackCreateView.as_view(),
+               stacks.StackCreateView.as_view(),
                name='stack-create'),
 
     cached_url(r'^stacks/permissions/$',
-               views.StackModelPermissionsView.as_view(),
+               stacks.StackModelPermissionsView.as_view(),
                name='stack-model-permissions'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/$',
-               views.StackDetailView.as_view(),
+               stacks.StackDetailView.as_view(),
                name='stack-detail',
                timeout=30),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/properties/$',
-               views.StackPropertiesView.as_view(),
+               stacks.StackPropertiesView.as_view(),
                name='stack-properties'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/labels/$',
-               views.StackLabelsView.as_view(),
+               stacks.StackLabelsView.as_view(),
                name='stack-labels'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/hosts/$',
-               views.StackHostsView.as_view(),
+               stacks.StackHostsView.as_view(),
                name='stack-hosts'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/volumes/$',
-               views.StackVolumesView.as_view(),
+               stacks.StackVolumesView.as_view(),
                name='stack-volumes'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/commands/$',
-               views.StackCommandsView.as_view(),
+               stacks.StackCommandsView.as_view(),
                name='stack-commands'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/commands/(?P<command_pk>[0-9]+)/$',
-               views.StackCommandDetailView.as_view(),
+               stacks.StackCommandDetailView.as_view(),
                name='stack-command-detail'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/access_rules/$',
-               views.StackAccessRulesView.as_view(),
+               stacks.StackAccessRulesView.as_view(),
                name='stack-access-rules'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/formula_versions/$',
-               views.StackFormulaVersionsView.as_view(),
+               stacks.StackFormulaVersionsView.as_view(),
                name='stack-formula-versions'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/permissions/$',
-               views.StackObjectPermissionsView.as_view(),
+               stacks.StackObjectPermissionsView.as_view(),
                name='stack-object-permissions'),
 
     cached_url(r'^stacks/(?P<pk>[0-9]+)/logs/$',
-               views.StackLogsView.as_view(),
+               stacks.StackLogsView.as_view(),
                name='stack-logs'),
 
     cached_url(r'^blueprints/$',
-               views.BlueprintListView.as_view(),
+               blueprints.BlueprintListView.as_view(),
                name='blueprint-list',
                timeout=30),
+
+    cached_url(r'^blueprints/permissions/$',
+               blueprints.BlueprintModelPermissionsView.as_view(),
+               name='blueprint-model-permissions'),
 )
