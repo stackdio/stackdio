@@ -32,6 +32,7 @@ define([
         model: Blueprint,
         baseUrl: '/blueprints/',
         initialUrl: '/api/blueprints/',
+        detailRequiresAdvanced: true,
         sortableFields: [
             {name: 'title', displayName: 'Title', width: '25%'},
             {name: 'description', displayName: 'Description', width: '65%'}
