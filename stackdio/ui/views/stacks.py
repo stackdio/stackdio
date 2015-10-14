@@ -77,7 +77,7 @@ class StackObjectPermissionsView(ObjectPermissionsView):
         pk = kwargs['pk']
         # Go ahead an raise a 404 here if the stack doesn't exist rather than waiting until later.
         stack = get_object_or_404(Stack.objects.all(), pk=pk)
-        if not self.request.user.has_perm('stacks.view_stack', stack):
+        if not self.request.user.has_perm('stacks.admin_stack', stack):
             raise Http404()
         context['stack_id'] = pk
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)

@@ -34,7 +34,7 @@
                 </li>
                 {% if has_admin %}
                 <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
-                    <a href="">Permissions</a>
+                    <a href="{% url 'ui:blueprint-object-permissions' pk=blueprint_id %}">Permissions</a>
                 </li>
                 {% endif %}
             </ul>

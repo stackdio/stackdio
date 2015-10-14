@@ -19,7 +19,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from stackdio.api.blueprints.models import Blueprint
-from stackdio.ui.views import PageView, ModelPermissionsView
+from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
 
 
 class BlueprintListView(PageView):
@@ -55,6 +55,28 @@ class BlueprintDetailView(PageView):
         context['has_admin'] = self.request.user.has_perm('blueprints.admin_blueprint', blueprint)
         context['page_id'] = self.page_id
         return context
+
+
+class BlueprintObjectPermissionsView(ObjectPermissionsView):
+    template_name = 'blueprints/blueprint-object-permissions.html'
+    viewmodel = 'viewmodels/blueprint-object-permissions'
+    page_id = 'permissions'
+
+    def get_context_data(self, **kwargs):
+        context = super(BlueprintObjectPermissionsView, self).get_context_data(**kwargs)
+        pk = kwargs['pk']
+        # Go ahead an raise a 404 here if the blueprint doesn't exist rather
+        # than waiting until later.
+        blueprint = get_object_or_404(Blueprint.objects.all(), pk=pk)
+        if not self.request.user.has_perm('blueprints.admin_blueprint', blueprint):
+            raise Http404()
+        context['blueprint_id'] = pk
+        context['has_admin'] = self.request.user.has_perm('blueprints.admin_blueprint', blueprint)
+        context['page_id'] = self.page_id
+        return context
+
+    def get_object(self):
+        return get_object_or_404(Blueprint.objects.all(), pk=self.kwargs['pk'])
 
 
 class BlueprintPropertiesView(BlueprintDetailView):
