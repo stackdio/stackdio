@@ -122,4 +122,8 @@ urlpatterns = (
                blueprints.BlueprintDetailView.as_view(),
                name='blueprint-detail',
                timeout=30),
+
+    cached_url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
+               blueprints.BlueprintPropertiesView.as_view(),
+               name='blueprint-properties'),
 )

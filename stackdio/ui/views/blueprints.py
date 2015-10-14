@@ -55,3 +55,9 @@ class BlueprintDetailView(PageView):
         context['has_admin'] = self.request.user.has_perm('blueprints.admin_blueprint', blueprint)
         context['page_id'] = self.page_id
         return context
+
+
+class BlueprintPropertiesView(BlueprintDetailView):
+    template_name = 'blueprints/blueprint-properties.html'
+    viewmodel = 'viewmodels/blueprint-properties'
+    page_id = 'properties'

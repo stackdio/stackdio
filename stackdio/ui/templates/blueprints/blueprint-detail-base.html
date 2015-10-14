@@ -1,6 +1,7 @@
 {% extends 'stackdio/page.html' %}
 
 {% block title %}Blueprint Detail{% endblock %}
+{% block blueprint-class %}active{% endblock %}
 
 {# Inject the blueprint id into the window so we can access it in our javascript VM #}
 {% block scripts %}
@@ -20,7 +21,7 @@
                     <a href="{% url 'ui:blueprint-detail' pk=blueprint_id %}">Detail</a>
                 </li>
                 <li role="presentation"{% if page_id == 'properties' %} class="active"{% endif %}>
-                    <a href="">Properties</a>
+                    <a href="{% url 'ui:blueprint-properties' pk=blueprint_id %}">Properties</a>
                 </li>
                 <li role="presentation"{% if page_id == 'host_definitions' %} class="active"{% endif %}>
                     <a href="">Host Definitions</a>

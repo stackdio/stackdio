@@ -89,11 +89,34 @@ define([
     // Lazy-load the properties
     Blueprint.prototype.loadProperties = function () {
         var self = this;
-        $.ajax({
+        if (!this.raw.hasOwnProperty('properties')) {
+            this.raw.properties = this.raw.url + 'properties/';
+        }
+        return $.ajax({
             method: 'GET',
             url: this.raw.properties
         }).done(function (properties) {
             self.properties(properties);
+        });
+    };
+
+    Blueprint.prototype.saveProperties = function () {
+        $.ajax({
+            method: 'PUT',
+            url: this.raw.properties,
+            data: JSON.stringify(this.properties())
+        }).done(function (properties) {
+            utils.growlAlert('Successfully saved blueprint properties!', 'success');
+        }).fail(function (jqxhr) {
+            var message;
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+                message = resp.properties.join('<br>');
+            } catch (e) {
+                message = 'Oops... there was a server error.'
+            }
+            message += '  Your properties were not saved.';
+            utils.growlAlert(message, 'danger');
         });
     };
 
@@ -149,48 +172,7 @@ define([
                 self.parent.blueprintTitle(blueprint.title);
             } catch (e) {}
         }).fail(function (jqxhr) {
-            var message = '';
-            try {
-                var resp = JSON.parse(jqxhr.responseText);
-
-                for (var key in resp) {
-                    if (resp.hasOwnProperty(key)) {
-                        if (keys.indexOf(key) >= 0) {
-                            var el = $('#' + key);
-                            el.addClass('has-error');
-                            resp[key].forEach(function (errMsg) {
-                                el.append('<span class="help-block">' + errMsg + '</span>');
-                            });
-                        } else if (key === 'non_field_errors') {
-                            resp[key].forEach(function (errMsg) {
-                                if (errMsg.indexOf('title') >= 0) {
-                                    var el = $('#title');
-                                    el.addClass('has-error');
-                                    el.append('<span class="help-block">A blueprint with this title already exists.</span>');
-                                }
-                            });
-                        } else {
-                            var betterKey = key.replace('_', ' ');
-
-                            resp[key].forEach(function (errMsg) {
-                                message += '<dt>' + betterKey + '</dt><dd>' + errMsg + '</dd>';
-                            });
-                        }
-                    }
-                }
-                if (message) {
-                    message = '<dl class="dl-horizontal">' + message + '</dl>';
-                }
-            } catch (e) {
-                message = 'Oops... there was a server error.  This has been reported to ' +
-                    'your administrators.'
-            }
-            if (message) {
-                bootbox.alert({
-                    title: 'Error saving blueprint',
-                    message: message
-                });
-            }
+            utils.parseSaveError(jqxhr, 'blueprint', keys);
         });
     };
 
