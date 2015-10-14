@@ -172,7 +172,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                          'components__description')
 
     class Meta:
-        ordering = ['pk']
+        ordering = ['title']
 
         default_permissions = tuple(set(_formula_model_permissions + _formula_object_permissions))
 

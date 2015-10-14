@@ -42,6 +42,9 @@
                 <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: title, click: function (formula) { $root.goToDetailPage(formula) }"></td>
                     <td data-bind="text: uri, click: function (formula) { $root.goToDetailPage(formula) }"></td>
+                    <td data-bind="click: function (formula) { $root.goToDetailPage(formula) }">
+                        <span class="label" data-bind="css: labelClass, text: status"></span>
+                    </td>
                     <td data-bind="text: privateGitRepo, click: function (formula) { $root.goToDetailPage(formula) }"></td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete">

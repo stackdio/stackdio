@@ -60,6 +60,8 @@ define([
         this.status = ko.observable();
         this.statusDetail = ko.observable();
 
+        this.labelClass = ko.observable();
+
         // Lazy-loaded properties (not returned from the main formula endpoint)
         this.properties = ko.observable({});
         this.components = ko.observableArray([]);
@@ -84,6 +86,21 @@ define([
         this.rootPath(raw.root_path);
         this.status(raw.status);
         this.statusDetail(raw.status_detail);
+
+        // Determine what type of label should be around the status
+        switch (raw.status) {
+            case 'complete':
+                this.labelClass('label-success');
+                break;
+            case 'importing':
+                this.labelClass('label-warning');
+                break;
+            case 'error':
+                this.labelClass('label-danger');
+                break;
+            default:
+                this.labelClass('label-default');
+        }
     };
 
     // Reload the current formula
