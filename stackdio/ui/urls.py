@@ -140,4 +140,8 @@ urlpatterns = (
                formulas.FormulaListView.as_view(),
                name='formula-list',
                timeout=30),
+    
+    cached_url(r'^formulas/permissions/$',
+               formulas.FormulaModelPermissionsView.as_view(),
+               name='formula-model-permissions'),
 )
