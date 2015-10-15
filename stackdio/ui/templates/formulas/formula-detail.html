@@ -8,7 +8,14 @@
         <div class="row">
             <div class="col-md-12">
                 <h2 data-bind="text: formula.title" style="margin-top: 0"></h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
                 <p data-bind="text: formula.description"></p>
+            </div>
+            <div class="col-md-6">
+                <a data-bind="text: formula.uri, attr: {href: formula.uri}"></a>
             </div>
         </div>
         <div class="row">
