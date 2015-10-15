@@ -144,4 +144,17 @@ urlpatterns = (
     cached_url(r'^formulas/permissions/$',
                formulas.FormulaModelPermissionsView.as_view(),
                name='formula-model-permissions'),
+
+    cached_url(r'^formulas/(?P<pk>[0-9]+)/$',
+               formulas.FormulaDetailView.as_view(),
+               name='formula-detail',
+               timeout=30),
+
+    cached_url(r'^formulas/(?P<pk>[0-9]+)/properties/$',
+               formulas.FormulaPropertiesView.as_view(),
+               name='formula-properties'),
+
+    cached_url(r'^formulas/(?P<pk>[0-9]+)/permissions/$',
+               formulas.FormulaObjectPermissionsView.as_view(),
+               name='formula-object-permissions'),
 )
