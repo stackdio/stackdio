@@ -22,6 +22,17 @@ from stackdio.api.formulas.models import Formula
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
 
 
+class FormulaImportView(PageView):
+    template_name = 'formulas/formula-import.html'
+    viewmodel = 'viewmodels/formula-import'
+
+    def get(self, request, *args, **kwargs):
+        if not request.user.has_perm('formulas.create_formula'):
+            # No permission granted
+            raise Http404()
+        return super(FormulaImportView, self).get(request, *args, **kwargs)
+
+
 class FormulaListView(PageView):
     template_name = 'formulas/formula-list.html'
     viewmodel = 'viewmodels/formula-list'

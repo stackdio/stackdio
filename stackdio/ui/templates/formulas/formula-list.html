@@ -14,9 +14,9 @@
             <!-- Only show the button if the user has permission to see it-->
             <a class="btn btn-warning" href="{% url 'ui:formula-model-permissions' %}">Permissions</a>
             {% endif %}
-{#            {% if has_create %}#}
-{#                <a class="btn btn-success" href="{% url 'ui:formula-import' %}">Import Formula</a>#}
-{#            {% endif %}#}
+            {% if has_create %}
+                <a class="btn btn-success" href="{% url 'ui:formula-import' %}">Import Formula</a>
+            {% endif %}
         </div>
     </div>
 
