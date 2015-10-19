@@ -107,6 +107,11 @@ define([
                 self.shouldReset = false;
                 self.reset();
             });
+
+            // React to an open-dropdown event & lazy load the actions
+            $('.action-dropdown').on('show.bs.dropdown', function () {
+                self.formula.loadAvailableActions();
+            });
         }
     });
 });

@@ -26,9 +26,32 @@
             </div>
         </div>
 
+        <div class="row">
+            <div class="col-md-12">
+                <p><span class="label" data-bind="css: formula.labelClass, text: formula.status"></span> -
+                    <span data-bind="text: formula.statusDetail"></span></p>
+            </div>
+        </div>
+
         <div class="row" style="margin-top: 15px">
             <div class="col-md-6">
                 <select id="formulaVersion" style="width: 100%" class="stackdio-hidden-on-load"></select>
+            </div>
+            <div class="col-md-6 text-right">
+                <div class="btn-group action-dropdown">
+                    <button type="button" class="btn btn-info dropdown-toggle"
+                            data-toggle="dropdown" aria-haspopup="true"
+                            aria-expanded="false">
+                        Action <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" data-bind="foreach: formula.availableActions">
+                        <li>
+                            <!-- Do this function() dance so that `this` is set properly -->
+                            <a href="#"
+                               data-bind="click: function (action) { $root.formula.performAction(action) }, text: $data"></a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
 
