@@ -37,6 +37,50 @@ define([
             {name: 'uri', displayName: 'Repo URL', width: '50%'},
             {name: 'status', displayName: 'Status', width: '10%'},
             {name: 'privateGitRepo', displayName: 'Private', width: '5%'}
-        ]
+        ],
+        openActionFormulaId: null,
+        actionMap: {},
+        reset: function() {
+            this.openActionFormulaId = null;
+            this.actionMap = {};
+            this._super();
+        },
+        processObject: function (formula) {
+            if (this.actionMap.hasOwnProperty(formula.id)) {
+                formula.availableActions(this.actionMap[formula.id]);
+            }
+        },
+        extraReloadSteps: function () {
+            // Add the dropdown events.  This must happen AFTER we set the formula observable
+            // in the previous statement.
+            var actionElement = $('.action-dropdown');
+
+            var self = this;
+            // React to an open-dropdown event
+            actionElement.on('show.bs.dropdown', function (evt) {
+                // Grab the ID of the open element
+                var id = parseInt(evt.target.id);
+
+                // Set the ID of the currently open action dropdown
+                self.openActionFormulaId = id;
+
+                // Freeze a copy of the current formulas
+                var formulas = self.objects();
+
+                // Find the current formula with the correct ID, and load the actions
+                for (var i = 0, length = formulas.length; i < length; ++i) {
+                    if (formulas[i].id === id) {
+                        formulas[i].loadAvailableActions();
+                        break;
+                    }
+                }
+            });
+
+            // React to a close dropdown event (this one is pretty simple)
+            actionElement.on('hide.bs.dropdown', function () {
+                // Make sure that we know nothing is open
+                self.openActionFormulaId = null;
+            });
+        }
     });
 });

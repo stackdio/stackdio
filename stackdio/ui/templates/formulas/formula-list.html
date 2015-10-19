@@ -35,7 +35,8 @@
                         </span>
                     </th>
                     <!-- /ko -->
-                    <th style="width: 10%"></th>
+                    <th style="width: 5%"></th>
+                    <th style="width: 5%"></th>
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
@@ -46,6 +47,23 @@
                         <span class="label" data-bind="css: labelClass, text: status"></span>
                     </td>
                     <td data-bind="text: privateGitRepo, click: function (formula) { $root.goToDetailPage(formula) }"></td>
+                    <td>
+                        <div class="btn-group btn-group-xs action-dropdown"
+                             data-bind="css: {open: $root.openActionFormulaId === id}, attr: {id: id}">
+                            <button type="button" class="btn btn-xs btn-info dropdown-toggle"
+                                    data-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">
+                                Action <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" data-bind="foreach: availableActions">
+                                <li>
+                                    <!-- Do this function() dance so that `this` is set properly -->
+                                    <a href="#"
+                                       data-bind="click: function (action) { $parent.performAction(action) }, text: $data"></a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>

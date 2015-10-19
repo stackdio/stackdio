@@ -18,11 +18,12 @@
 
 define([
     'jquery',
+    'underscore',
     'knockout',
     'bootbox',
     'utils/utils',
     'models/component'
-], function ($, ko, bootbox, utils, Component) {
+], function ($, _, ko, bootbox, utils, Component) {
     'use strict';
 
     // Define the formula model.
@@ -67,6 +68,7 @@ define([
         this.properties = ko.observable({});
         this.components = ko.observableArray([]);
         this.validVersions = ko.observableArray([]);
+        this.availableActions = ko.observableArray([]);
 
         if (needReload) {
             this.waiting = this.reload();
@@ -76,6 +78,10 @@ define([
     }
 
     Formula.constructor = Formula;
+
+    Formula.prototype.actionMessages = {
+        update: 'This will update your formula to the most recent commit on the main branch.'
+    };
 
     Formula.prototype._process = function (raw) {
         this.title(raw.title);
@@ -156,6 +162,90 @@ define([
         }).done(function (versions) {
             self.validVersions(versions.results);
         });
+    };
+
+    // Lazy-load the available actions
+    Formula.prototype.loadAvailableActions = function () {
+        var self = this;
+        if (!this.raw.hasOwnProperty('action')) {
+            this.raw.action = this.url + 'action/';
+        }
+        $.ajax({
+            method: 'GET',
+            url: this.raw.action
+        }).done(function (resp) {
+            self.availableActions(resp.available_actions);
+            try {
+                // Just do this and fail silently if it doesn't work since all viewmodels don't
+                // have an actionMap
+                self.parent.actionMap[self.id] = resp.available_actions;
+            } catch (e) {}
+        });
+    };
+
+    // Peform an action
+    Formula.prototype.performAction = function (action) {
+        var self = this;
+        var formulaTitle = _.escape(self.title());
+        var extraMessage = this.actionMessages.hasOwnProperty(action) ? this.actionMessages[action] : '';
+        bootbox.confirm({
+            title: 'Confirm action for <strong>' + formulaTitle + '</strong>',
+            message: 'Are you sure you want to perform the "' + action + '" action on ' +
+                     '<strong>' + formulaTitle + '</strong>?<br>' + extraMessage,
+            buttons: {
+                confirm: {
+                    label: action.capitalize().replace('_', ' '),
+                    className: 'btn-primary'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    var doAction = function(gitPassword) {
+                        if (typeof gitPassword === 'undefined') {
+                            gitPassword = '';
+                        }
+
+                        $.ajax({
+                            method: 'POST',
+                            url: self.raw.action,
+                            data: JSON.stringify({
+                                action: action,
+                                git_password: gitPassword
+                            })
+                        }).done(function () {
+                            self.reload();
+                        }).fail(function (jqxhr) {
+                            var message;
+                            try {
+                                var resp = JSON.parse(jqxhr.responseText);
+                                message = resp.action.join('<br>');
+                            } catch (e) {
+                                message = 'Oops... there was a server error.  This has been ' +
+                                    'reported to your administrators.';
+                            }
+                            bootbox.alert({
+                                title: 'Error performing the "' + action + '" action',
+                                message: message
+                            });
+                        });
+                    };
+
+                    if (self.privateGitRepo() && !self.accessToken()) {
+                        bootbox.prompt({
+                            title: 'Password for private repo',
+                            callback: function (result) {
+                                if (result) {
+                                    doAction(result);
+                                }
+                            }
+                        });
+                    } else {
+                        doAction();
+                    }
+                }
+            }
+        });
+
     };
 
     Formula.prototype.save = function () {
