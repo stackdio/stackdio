@@ -17,9 +17,11 @@
 
 import errno
 import os
+import pkgutil
 import shutil
 import subprocess
 import sys
+from importlib import import_module
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -76,14 +78,21 @@ class Command(BaseCommand):
 
         viewmodels = set()
 
-        for view in ui_views.__dict__.values():
-            try:
-                if issubclass(view, base_cls):
-                    if view.viewmodel is not None:
-                        viewmodels.add(view.viewmodel)
-            except TypeError:
-                # We don't care if it wasn't a class
-                pass
+        def collect_vms(module_name):
+            module = import_module(module_name)
+            for view in module.__dict__.values():
+                try:
+                    if issubclass(view, base_cls):
+                        if view.viewmodel is not None:
+                            viewmodels.add(view.viewmodel)
+                except TypeError:
+                    # We don't care if it wasn't a class
+                    pass
+
+        collect_vms('stackdio.ui.views')
+
+        for _, name, _ in pkgutil.iter_modules(['stackdio/ui/views']):
+            collect_vms('stackdio.ui.views.' + name)
 
         # Force the user to install bower components first
         if not os.path.exists(BOWER_PATH):
