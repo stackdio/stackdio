@@ -12,58 +12,77 @@
 {% endblock %}
 
 {% block page-content %}
-    <form data-bind="submit: import Formula">
-        <div class="row">
-            <div class="col-md-12">
-                <h2>Import Formula</h2>
-            </div>
-        </div>
+    <form data-bind="submit: importFormula">
         <div class="row">
             <div class="col-md-12">
                 <p>Formulas are imported from external repositories where you can build up an
                     entire ecosystem of components to be installed on a Stack.</p>
                 <p>stackd.io has a set of supported formulas located at
                     <a href="https://github.com/stackdio-formulas">https://github.com/stackdio-formulas</a>.
-                    To import one or more of the formulas, go into the formula repository you
-                    want to import and copy-and-paste the HTTPS clone URL that GitHub provides.
-                    For example, the java-formula's clone URL is
-                    <code>https://github.com/stackdio-formulas/java-formula.git</code>.</p>
+                    Either select one of these formulas from the dropdown, or copy-and-paste the
+                    clone URL from a different repository.</p>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="form-group" id="uri">
+                    <input data-bind="value: uri" type="text" class="form-control" placeholder="Enter repository URL">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label for="formulaUri" class="sr-only">Choose a formula</label>
+                <select id="formulaUri" class="form-control"
+                        data-bind="options: repos,
+                        optionsText: function (repo) {return repo.name + '  (' + repo.description + ')' },
+                        value: selectedRepo, optionsCaption: 'Select a formula...'"></select>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 15px">
+            <div class="col-md-12">
+                <label>Git authentication required for private repositories only.
+                    Your password will NOT be stored.</label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-5 col-lg-3">
+                <div id="git_username" class="form-group">
+                    <label for="formulaUsername" class="sr-only">Git username required for private repositories only</label>
+                    <input id="formulaUsername" data-bind="value: username, attr: {placeholder: usernameText}" class="form-control" type="text">
+                </div>
+            </div>
+            <div class="col-md-5 col-lg-3" data-bind="visible: !accessToken()">
+                <div id="git_password" class="form-group">
+                    <label for="formulaPassword" class="sr-only">Git password required for private repositories only</label>
+                    <input id="formulaPassword" data-bind="value: password" type="password" class="form-control" placeholder="Git password">
+                </div>
+            </div>
+            <div id="access_token" class="col-md-2 col-lg-2">
+                <div class="checkbox">
+                    <label class="checkbox-custom" data-initialize="checkbox">
+                        <input class="sr-only" type="checkbox" data-bind="checked: accessToken">
+                        <span class="checkbox-label">Use access token</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-md-12">
-                <div class="form-group">
-                    <input data-bind="value: uri" type="text" class="form-control" placeholder="Enter repository URL...">
-                </div>
-
-                <label>Git authentication required for private repositories only.&nbsp;&nbsp;Your password will NOT be stored.</label>
-                <div class="row">
-                    <div class="col-md-5 col-lg-3">
-                        <div class="form-group">
-                            <label for="git_username" class="sr-only">Git username required for private repositories only</label>
-                            <input data-bind="value: username, attr: {placeholder: $root.usernameText}" class="form-control" type="text">
-                        </div>
-                    </div>
-                    <div class="col-md-5 col-lg-3" data-bind="visible: !accessToken()">
-                        <div class="form-group">
-                            <label for="git_password" class="sr-only">Git password required for private repositories only</label>
-                            <input data-bind="value: password" type="password" class="form-control" placeholder="Git password">
-                        </div>
-                    </div>
-                    <div class="col-md-2 col-lg-2 checkbox">
-                        <label>
-                            <input type="checkbox" id="access_token" data-bind="checked: accessToken"> Use access token
-                        </label>
-                    </div>
-                </div>
                 <div>
-                    <p><strong>Tip:</strong> If using GitHub, you can generate a personal access token in your user settings and use it here by checking the 'Use access token' box.<br>
-                       If you have GitHub two-factor authentication enabled, you <strong>MUST</strong> use a personal access token.</p>
+                    <p><strong>Tip:</strong> If using GitHub, you can generate a personal access
+                        token in your user settings and use it here by checking the 'Use access
+                        token' box.<br> If you have GitHub two-factor authentication enabled,
+                        you <strong>MUST</strong> use a personal access token.</p>
                 </div>
 
                 <div>
-                    <button class="btn btn-danger" data-bind="click: $root.cancelChanges">Cancel</button>
-                    <button class="btn btn-primary" data-bind="click: $root.importFormula">Import</button>
+                    <button type="submit" id="import-button" data-style="slide-left"
+                        class="btn btn-success ladda-button" style="margin-top: 10px">
+                        <span class="ladda-label">Import</span>
+                    </button>
                 </div>
             </div>
         </div>

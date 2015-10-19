@@ -20,8 +20,9 @@ define([
     'knockout',
     'ladda',
     'bootbox',
+    'utils/utils',
     'select2'
-], function ($, ko, Ladda, bootbox) {
+], function ($, ko, Ladda, bootbox, utils) {
     'use strict';
 
     return function() {
@@ -45,15 +46,49 @@ define([
         self.username = ko.observable();
         self.password = ko.observable();
         self.accessToken = ko.observable();
+        self.usernameText = ko.observable();
 
         self.subscription = null;
+
+        self.repos = ko.observableArray([]);
+        self.selectedRepo = ko.observable();
+
+        self.loadRepos = function () {
+            $.ajax({
+                method: 'GET',
+                url: 'https://api.github.com/orgs/stackdio-formulas/repos'
+            }).done(function (repos) {
+                self.repos(repos.sort(function (a, b) {
+                    return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+                }));
+            }).fail(function () {
+                utils.growlAlert('GitHub API rate limit exceeded.  Could not load default set ' +
+                    'of formulas.  Please enter the full url instead.', 'warning')
+            });
+        };
 
         // Necessary functions
         self.reset = function() {
             self.uri('');
             self.username('');
             self.password('');
+
+            self.accessToken.subscribe(function (newVal) {
+                if (newVal) {
+                    self.usernameText('GitHub access token');
+                } else {
+                    self.usernameText('Git username');
+                }
+            });
+
             self.accessToken(false);
+
+            // Change the url when
+            self.selectedRepo.subscribe(function (newVal) {
+                if (newVal) {
+                    self.uri(newVal.clone_url);
+                }
+            });
         };
 
         self.removeErrors = function(keys) {
@@ -140,5 +175,6 @@ define([
         };
 
         self.reset();
+        self.loadRepos();
     };
 });
