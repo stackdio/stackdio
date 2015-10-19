@@ -128,7 +128,7 @@ urlpatterns = (
     cached_url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
                blueprints.BlueprintPropertiesView.as_view(),
                name='blueprint-properties'),
-    
+
     cached_url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
                blueprints.BlueprintFormulaVersionsView.as_view(),
                name='blueprint-formula-versions'),
@@ -145,7 +145,7 @@ urlpatterns = (
     cached_url(r'^formulas/import/$',
                formulas.FormulaImportView.as_view(),
                name='formula-import'),
-    
+
     cached_url(r'^formulas/permissions/$',
                formulas.FormulaModelPermissionsView.as_view(),
                name='formula-model-permissions'),

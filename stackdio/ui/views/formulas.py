@@ -88,7 +88,7 @@ class FormulaObjectPermissionsView(ObjectPermissionsView):
 
     def get_object(self):
         return get_object_or_404(Formula.objects.all(), pk=self.kwargs['pk'])
-    
+
 
 class FormulaPropertiesView(FormulaDetailView):
     template_name = 'formulas/formula-properties.html'
