@@ -22,6 +22,7 @@ from stackdio.core.utils import cached_url
 from . import views
 from .views import blueprints
 from .views import formulas
+from .views import snapshots
 from .views import stacks
 
 auth_kwargs = {
@@ -161,4 +162,26 @@ urlpatterns = (
     cached_url(r'^formulas/(?P<pk>[0-9]+)/permissions/$',
                formulas.FormulaObjectPermissionsView.as_view(),
                name='formula-object-permissions'),
+
+    cached_url(r'^snapshots/$',
+               snapshots.SnapshotListView.as_view(),
+               name='snapshot-list',
+               timeout=30),
+
+    cached_url(r'^snapshots/create/$',
+               snapshots.SnapshotCreateView.as_view(),
+               name='snapshot-create'),
+
+    cached_url(r'^snapshots/permissions/$',
+               snapshots.SnapshotModelPermissionsView.as_view(),
+               name='snapshot-model-permissions'),
+
+    cached_url(r'^snapshots/(?P<pk>[0-9]+)/$',
+               snapshots.SnapshotDetailView.as_view(),
+               name='snapshot-detail',
+               timeout=30),
+
+    cached_url(r'^snapshots/(?P<pk>[0-9]+)/permissions/$',
+               snapshots.SnapshotObjectPermissionsView.as_view(),
+               name='snapshot-object-permissions'),
 )

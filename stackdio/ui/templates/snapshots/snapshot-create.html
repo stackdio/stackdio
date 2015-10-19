@@ -1,0 +1,61 @@
+{% extends 'stackdio/page.html' %}
+{% load staticfiles %}
+
+{% block title %}Create Snapshot{% endblock %}
+{% block snapshot-class %}active{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/ladda/dist/ladda-themeless.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2/dist/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
+{% endblock %}
+
+{% block page-content %}
+    <form data-bind="submit: createSnapshot">
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group" id="account">
+                    <label for="snapshotAccount">Account</label>
+                    <select id="snapshotAccount" style="width: 100%" class="stackdio-hidden-on-load"></select>
+                </div>
+                <div class="form-group" id="title">
+                    <label for="snapshotTitle">Title</label>
+                    <input type="text" class="form-control" id="snapshotTitle"
+                           data-bind="value: title, valueUpdate: 'keyup'">
+                </div>
+                <div class="form-group" id="description">
+                    <label for="snapshotDescription">Description</label>
+                    <input type="text" class="form-control" id="snapshotDescription"
+                           data-bind="value: description, valueUpdate: 'keyup'">
+                </div>
+                <div id="snapshot_id" class="form-group">
+                    <label for="snapshotId">Snapshot ID</label>
+                    <input type="text" class="form-control" id="snapshotId"
+                           data-bind="value: snapshotId, valueUpdate: 'keyup'">
+                </div>
+                <div id="size_in_gb" class="form-group">
+                    <label for="snapshotSize">Size</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control"
+                               id="snapshotSize" aria-describedby="gb-addon"
+                               data-bind="value: sizeInGB, valueUpdate: 'keyup'">
+                        <span class="input-group-addon" id="gb-addon">GB</span>
+                    </div>
+                </div>
+                <div id="filesystem_type" class="form-group">
+                    <label for="snapshotFilesystemType">Filesystem Type</label>
+                    <input type="text" class="form-control" id="snapshotFilesystemType"
+                           data-bind="value: filesystemType, valueUpdate: 'keyup'">
+                </div>
+
+                <p data-bind="visible: !accountId()">Please select an account</p>
+                <button type="submit" id="create-button" data-style="slide-left"
+                        data-bind="enable: accountId"
+                        class="btn btn-success ladda-button pull-right" style="margin-top: 10px">
+                    <span class="ladda-label">Create</span>
+                </button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

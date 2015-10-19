@@ -103,6 +103,7 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
     class Meta:
         model = models.CloudAccount
         fields = (
+            'id',
             'url',
             'title',
             'slug',
@@ -265,7 +266,7 @@ class CloudImageSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerial
         return attrs
 
 
-class SnapshotSerializer(StackdioHyperlinkedModelSerializer):
+class SnapshotSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
     )
@@ -291,17 +292,24 @@ class SnapshotSerializer(StackdioHyperlinkedModelSerializer):
             'group_permissions',
         )
 
+        create_only_fields = (
+            'account',
+        )
+
     def validate(self, attrs):
-        request = self.context['request']
+        if 'snapshot_id' in attrs:
+            if self.instance:
+                account = self.instance.account
+            else:
+                account = attrs['account']
 
-        # validate that the snapshot exists by looking it up in the cloud
-        # account
-        account_id = request.DATA.get('account')
-        driver = models.CloudAccount.objects.get(pk=account_id).get_driver()
+            # validate that the snapshot exists by looking it up in the cloud
+            # account
+            driver = account.get_driver()
 
-        result, error = driver.has_snapshot(request.DATA['snapshot_id'])
-        if not result:
-            raise serializers.ValidationError({'errors': [error]})
+            result, error = driver.has_snapshot(attrs['snapshot_id'])
+            if not result:
+                raise serializers.ValidationError({'snapshot_id': [error]})
         return attrs
 
 
