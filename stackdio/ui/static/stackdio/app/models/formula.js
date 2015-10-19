@@ -233,6 +233,7 @@ define([
                     if (self.privateGitRepo() && !self.accessToken()) {
                         bootbox.prompt({
                             title: 'Password for private repo',
+                            inputType: 'password',
                             callback: function (result) {
                                 if (result) {
                                     doAction(result);
