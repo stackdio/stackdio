@@ -33,6 +33,10 @@ img.logo {
     margin: 0 auto;
 }
 
+a {
+    word-wrap: break-word;
+}
+
 .footer {
     padding-top: 20px;
     padding-bottom: 20px;
