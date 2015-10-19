@@ -40,6 +40,21 @@ define([
             }
         ];
 
+        // Create the version selector
+        self.uriSelector = $('#formulaUri');
+
+        self.uriSelector.select2({
+            data: [],
+            theme: 'bootstrap',
+            placeholder: 'Select a formula...',
+            disabled: true
+        });
+
+        self.uriSelector.on('select2:select', function(ev) {
+            var formula = ev.params.data;
+
+            self.uri(formula.clone_url);
+        });
 
         // View variables
         self.uri = ko.observable();
@@ -50,17 +65,34 @@ define([
 
         self.subscription = null;
 
-        self.repos = ko.observableArray([]);
-        self.selectedRepo = ko.observable();
-
         self.loadRepos = function () {
             $.ajax({
                 method: 'GET',
                 url: 'https://api.github.com/orgs/stackdio-formulas/repos'
             }).done(function (repos) {
-                self.repos(repos.sort(function (a, b) {
-                    return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
-                }));
+                repos.forEach(function (repo) {
+                    repo.text = repo.name;
+                });
+
+                self.uriSelector.select2({
+                    data: repos.sort(function (a, b) {
+                        return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+                    }),
+                    theme: 'bootstrap',
+                    placeholder: 'Select a formula...',
+                    disabled: false,
+                    minimumInputLength: 0,
+                    templateResult: function (repo) {
+                        if (repo.loading) {
+                            return repo.text;
+                        }
+                        if (repo.description) {
+                            return repo.name + ' (' + repo.description + ')';
+                        } else {
+                            return repo.name;
+                        }
+                    }
+                });
             }).fail(function () {
                 utils.growlAlert('GitHub API rate limit exceeded.  Could not load default set ' +
                     'of formulas.  Please enter the full url instead.', 'warning')
@@ -82,13 +114,6 @@ define([
             });
 
             self.accessToken(false);
-
-            // Change the url when
-            self.selectedRepo.subscribe(function (newVal) {
-                if (newVal) {
-                    self.uri(newVal.clone_url);
-                }
-            });
         };
 
         self.removeErrors = function(keys) {

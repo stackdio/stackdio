@@ -7,6 +7,8 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/ladda/dist/ladda-themeless.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2/dist/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
 {% endblock %}
 
 {% block page-content %}
@@ -30,10 +32,7 @@
             </div>
             <div class="col-md-4">
                 <label for="formulaUri" class="sr-only">Choose a formula</label>
-                <select id="formulaUri" class="form-control"
-                        data-bind="options: repos,
-                        optionsText: function (repo) {return repo.name + '  (' + repo.description + ')' },
-                        value: selectedRepo, optionsCaption: 'Select a formula...'"></select>
+                <select id="formulaUri" style="width: 100%" class="stackdio-hidden-on-load"></select>
             </div>
         </div>
 

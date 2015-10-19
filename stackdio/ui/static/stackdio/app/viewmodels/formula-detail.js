@@ -88,8 +88,6 @@ define([
                             });
                         });
 
-                        console.log(res);
-
                         return {
                             count: data.count,
                             results: res
