@@ -20,7 +20,8 @@ define([
     'knockout',
     'generics/pagination',
     'models/formula',
-    'models/component'
+    'models/component',
+    'select2'
 ], function($, ko, Pagination, Formula, Component) {
     'use strict';
 
@@ -34,6 +35,7 @@ define([
             {name: 'description', displayName: 'Description', width: '50%'},
             {name: 'slsPath', displayName: 'SLS Path', width: '20%'}
         ],
+        autoRefresh: false,
         formula: null,
         formulaTitle: ko.observable(''),
         formulaUrl: ko.observable(''),
@@ -61,6 +63,51 @@ define([
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/formulas/';
+            });
+
+            // Create the version selector
+            this.versionSelector = $('#formulaVersion');
+
+            this.versionSelector.select2({
+                ajax: {
+                    url: this.formula.raw.valid_versions,
+                    dataType: 'json',
+                    delay: 100,
+                    data: function (params) {
+                        return {
+                            version: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        var res = [];
+                        data.results.forEach(function (version) {
+                            res.push({
+                                id: version,
+                                version: version,
+                                text: version
+                            });
+                        });
+
+                        console.log(res);
+
+                        return {
+                            count: data.count,
+                            results: res
+                        };
+                    },
+                    cache: true
+                },
+                theme: 'bootstrap',
+                placeholder: 'Select a version...',
+                minimumInputLength: 0
+            });
+
+            this.versionSelector.on('select2:select', function(ev) {
+                var version = ev.params.data;
+
+                self.currentPage(self.initialUrl + '?version=' + version.version);
+                self.shouldReset = false;
+                self.reset();
             });
         }
     });

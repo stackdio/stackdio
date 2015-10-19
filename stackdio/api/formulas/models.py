@@ -225,11 +225,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
         refs.remove('HEAD')
 
-        # Get the list of commit hashes
-        commit_hashes = [str(c.hexsha) for c in self.repo.iter_commits()]
-
-        # Combine them
-        return list(refs) + commit_hashes
+        return list(refs)
 
     @property
     def default_branch(self):

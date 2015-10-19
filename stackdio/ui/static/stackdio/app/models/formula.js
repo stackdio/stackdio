@@ -36,7 +36,8 @@ define([
             // Set the things we need for the reload
             raw = {
                 id: raw,
-                url: '/api/formulas/' + raw + '/'
+                url: '/api/formulas/' + raw + '/',
+                valid_versions: '/api/formulas/' + raw + '/valid_versions/'
             }
         }
 
