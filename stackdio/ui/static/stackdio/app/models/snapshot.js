@@ -136,7 +136,7 @@ define([
                         method: 'DELETE',
                         url: self.raw.url
                     }).done(function (snapshot) {
-                        // Nothing to do here?
+                        window.location = '/snapshots/';
                     }).fail(function (jqxhr) {
                         var message;
                         try {
