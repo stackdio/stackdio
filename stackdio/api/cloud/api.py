@@ -365,10 +365,16 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     ### POST
 
     Creates a new security group given the following properties
-    in the JSON request:
+    in the JSON request.
+
+    `group_id` -- the security group ID as defined py the cloud provider.
+                  You may only provide either the group_id or the name, but
+                  not both.  Using this property will **NOT** create a new group in the provider
 
     `name` -- The name of the security group. This will also be
               used to create the security group on the account.
+              You may only provide either the group_id or the name, but
+              not both.  Using this property **WILL** create a new group in the provider
 
     `description` -- The description or purpose of the group.
 
@@ -427,10 +433,12 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             try:
                 driver.delete_security_group(instance.name)
             except DeleteGroupException as e:
-                raise ValidationError({
-                    'detail': ['Could not delete this security group.',
-                               e.message]
-                })
+                if 'does not exist' in e.message:
+                    logger.info('Security group already deleted.')
+                else:
+                    raise ValidationError({
+                        'detail': ['Could not delete this security group.', e.message]
+                    })
 
         # Save this before we delete
         is_default = instance.is_default
@@ -519,18 +527,26 @@ class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
     `active_hosts` fields will be populated like with the full
     list.
 
-    ### PUT / PATCH
+    ### POST
 
-    Updates an existing security group's details. Currently, only
-    the `default` field may be modified.
+    Creates a new security group given the following properties
+    in the JSON request.
 
-    ### DELETE
+    `group_id` -- the security group ID as defined py the cloud provider.
+                  You may only provide either the group_id or the name, but
+                  not both.  Using this property will **NOT** create a new group in the provider
 
-    Removes the corresponding security group from stackd.io, as well as
-    from the underlying cloud account if `managed` is true.
-    **NOTE** that if the security group is currently being used, then
-    it can not be removed. You must first terminate all machines depending
-    on the security group and then delete it.
+    `name` -- The name of the security group. This will also be
+              used to create the security group on the account.
+              You may only provide either the group_id or the name, but
+              not both.  Using this property **WILL** create a new group in the provider
+
+    `description` -- The description or purpose of the group.
+
+    `default` -- Boolean representing if this group, for this
+                    account, is set to automatically be added
+                    to all hosts launched on the account. **NOTE**
+                    this property may only be set by an admin.
     """
     serializer_class = serializers.CloudAccountSecurityGroupSerializer
     filter_class = filters.SecurityGroupFilter
@@ -539,8 +555,10 @@ class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
         account = self.get_cloudaccount()
         return account.security_groups.all()
 
-    def perform_create(self, serializer):
-        serializer.save(account=self.get_cloudaccount())
+    def get_serializer_context(self):
+        context = super(CloudAccountSecurityGroupListAPIView, self).get_serializer_context()
+        context['account'] = self.get_cloudaccount()
+        return context
 
 
 class FullCloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,

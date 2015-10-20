@@ -390,11 +390,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             # and assign the rules to the group
             sg_name = 'stackdio-managed-{0}-stack-{1}'.format(
                 hostdef.slug,
-                self.pk)
+                self.pk
+            )
             sg_description = 'stackd.io managed security group'
 
             # cloud account and driver for the host definition
             account = hostdef.cloud_image.account
+
+            if not account.create_security_groups:
+                logger.debug('Skipping creation of {0} because security group creation is turned '
+                             'off for the account'.format(sg_name))
+                continue
+
             driver = account.get_driver()
 
             try:
@@ -522,22 +529,26 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
                 host = self.hosts.create(**kwargs)
 
+                account = host.cloud_image.account
+
                 # Add in the cloud account default security groups as
                 # defined by an admin.
                 account_groups = set(list(
-                    host.cloud_image.account.security_groups.filter(
+                    account.security_groups.filter(
                         is_default=True
                     )
                 ))
 
                 host.security_groups.add(*account_groups)
 
-                # Add in the security group provided by this host definition
-                security_group = SecurityGroup.objects.get(
-                    stack=self,
-                    blueprint_host_definition=hostdef
-                )
-                host.security_groups.add(security_group)
+                if account.create_security_groups:
+                    # Add in the security group provided by this host definition,
+                    # but only if this functionality is enabled on the account
+                    security_group = SecurityGroup.objects.get(
+                        stack=self,
+                        blueprint_host_definition=hostdef
+                    )
+                    host.security_groups.add(security_group)
 
                 # add formula components
                 host.formula_components.add(*components)
