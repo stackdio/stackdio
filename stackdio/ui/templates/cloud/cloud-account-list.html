@@ -14,9 +14,9 @@
             <!-- Only show the button if the user has permission to see it-->
             <a class="btn btn-warning" href="{% url 'ui:cloud-account-model-permissions' %}">Permissions</a>
             {% endif %}
-            {% if has_create %}
-            <a class="btn btn-success" href="{% url 'ui:cloud-account-create' %}">Create Cloud Account</a>
-            {% endif %}
+{#            {% if has_create %}#}
+{#            <a class="btn btn-success" href="{% url 'ui:cloud-account-create' %}">Create Cloud Account</a>#}
+{#            {% endif %}#}
         </div>
     </div>
 
@@ -35,17 +35,15 @@
                         </span>
                     </th>
                     <!-- /ko -->
-                    <th style="width: 5%"></th>
+                    <th style="width: 10%"></th>
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
                 <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: title, click: function (account) { $root.goToDetailPage(account) }"></td>
-                    <td data-bind="text: uri, click: function (account) { $root.goToDetailPage(account) }"></td>
-                    <td data-bind="click: function (account) { $root.goToDetailPage(account) }">
-                        <span class="label" data-bind="css: labelClass, text: status"></span>
-                    </td>
-                    <td data-bind="text: privateGitRepo, click: function (account) { $root.goToDetailPage(account) }"></td>
+                    <td data-bind="text: description, click: function (account) { $root.goToDetailPage(account) }"></td>
+                    <td data-bind="text: vpcId, click: function (account) { $root.goToDetailPage(account) }">
+                    <td data-bind="text: createSecurityGroups, click: function (account) { $root.goToDetailPage(account) }"></td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>

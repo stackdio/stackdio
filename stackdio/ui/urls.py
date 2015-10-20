@@ -20,6 +20,7 @@ from django.contrib.auth.views import login, logout_then_login
 
 from stackdio.core.utils import cached_url
 from . import views
+from .views import accounts
 from .views import blueprints
 from .views import formulas
 from .views import snapshots
@@ -184,4 +185,13 @@ urlpatterns = (
     cached_url(r'^snapshots/(?P<pk>[0-9]+)/permissions/$',
                snapshots.SnapshotObjectPermissionsView.as_view(),
                name='snapshot-object-permissions'),
+
+    cached_url(r'^accounts/$',
+               accounts.AccountListView.as_view(),
+               name='cloud-account-list',
+               timeout=30),
+
+    cached_url(r'^accounts/permissions/$',
+               accounts.AccountModelPermissionsView.as_view(),
+               name='cloud-account-model-permissions'),
 )
