@@ -51,6 +51,8 @@ define([
         // Editable fields
         this.title = ko.observable();
         this.description = ko.observable();
+        this.region = ko.observable();
+        this.provider = ko.observable();
         this.vpcId = ko.observable();
         this.createSecurityGroups = ko.observable();
 
@@ -58,8 +60,6 @@ define([
         this.properties = ko.observable({});
         this.hostDefinitions = ko.observableArray([]);
         this.formulaVersions = ko.observableArray([]);
-        this.region = ko.observable();
-        this.provider = ko.observable();
 
         if (needReload) {
             this.waiting = this.reload();
@@ -73,6 +73,8 @@ define([
     CloudAccount.prototype._process = function (raw) {
         this.title(raw.title);
         this.description(raw.description);
+        this.region(raw.region);
+        this.provider(raw.provider);
         this.vpcId(raw.vpc_id);
         this.createSecurityGroups(raw.create_security_groups);
     };

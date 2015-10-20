@@ -34,9 +34,9 @@ define([
         initialUrl: '/api/cloud/accounts/',
         sortableFields: [
             {name: 'title', displayName: 'Title', width: '20%'},
-            {name: 'description', displayName: 'Description', width: '40%'},
+            {name: 'description', displayName: 'Description', width: '44%'},
             {name: 'vpcId', displayName: 'VPC ID', width: '15%'},
-            {name: 'createSecurityGroups', displayName: 'Security Groups', width: '15%'}
+            {name: 'createSecurityGroups', displayName: 'Security Groups', width: '11%'}
         ]
     });
 });

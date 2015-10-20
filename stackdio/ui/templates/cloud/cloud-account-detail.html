@@ -16,6 +16,22 @@
                     <input type="text" class="form-control" id="accountDescription"
                            data-bind="value: account.description, valueUpdate: 'keyup'">
                 </div>
+
+                <div id="provider" class="form-group">
+                    <label>Provider</label>
+                    <p class="form-control-static" data-bind="text:account.provider"></p>
+                </div>
+
+                <div id="region" class="form-group">
+                    <label>Region</label>
+                    <p class="form-control-static" data-bind="text:account.region"></p>
+                </div>
+
+                <div id="vpc_id" class="form-group">
+                    <label>VPC ID</label>
+                    <p class="form-control-static" data-bind="text:account.vpcId"></p>
+                </div>
+
                 <div id="create_security_groups">
                     <div class="checkbox">
                         <label class="checkbox-custom" data-initialize="checkbox">

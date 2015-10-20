@@ -191,6 +191,10 @@ urlpatterns = (
                name='cloud-account-list',
                timeout=30),
 
+    cached_url(r'^accounts/create/$',
+               accounts.AccountCreateView.as_view(),
+               name='cloud-account-create'),
+
     cached_url(r'^accounts/permissions/$',
                accounts.AccountModelPermissionsView.as_view(),
                name='cloud-account-model-permissions'),

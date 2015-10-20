@@ -22,6 +22,17 @@ from stackdio.api.cloud.models import CloudAccount
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
 
 
+class AccountCreateView(PageView):
+    template_name = 'cloud/cloud-account-create.html'
+    viewmodel = 'viewmodels/cloud-account-create'
+
+    def get(self, request, *args, **kwargs):
+        if not request.user.has_perm('cloud.create_cloudaccount'):
+            # No permission granted
+            raise Http404()
+        return super(AccountCreateView, self).get(request, *args, **kwargs)
+
+
 class AccountListView(PageView):
     template_name = 'cloud/cloud-account-list.html'
     viewmodel = 'viewmodels/cloud-account-list'

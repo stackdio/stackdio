@@ -14,9 +14,9 @@
             <!-- Only show the button if the user has permission to see it-->
             <a class="btn btn-warning" href="{% url 'ui:cloud-account-model-permissions' %}">Permissions</a>
             {% endif %}
-{#            {% if has_create %}#}
-{#            <a class="btn btn-success" href="{% url 'ui:cloud-account-create' %}">Create Cloud Account</a>#}
-{#            {% endif %}#}
+            {% if has_create %}
+            <a class="btn btn-success" href="{% url 'ui:cloud-account-create' %}">New Cloud Account</a>
+            {% endif %}
         </div>
     </div>
 
@@ -43,7 +43,10 @@
                     <td data-bind="text: title, click: function (account) { $root.goToDetailPage(account) }"></td>
                     <td data-bind="text: description, click: function (account) { $root.goToDetailPage(account) }"></td>
                     <td data-bind="text: vpcId, click: function (account) { $root.goToDetailPage(account) }">
-                    <td data-bind="text: createSecurityGroups, click: function (account) { $root.goToDetailPage(account) }"></td>
+                    <td data-bind="click: function (account) { $root.goToDetailPage(account) }">
+                        <i class="fa fa-lg fa-check text-success" data-bind="visible: createSecurityGroups"></i>
+                        <i class="fa fa-lg fa-times text-danger" data-bind="visible: !createSecurityGroups()"></i>
+                    </td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
