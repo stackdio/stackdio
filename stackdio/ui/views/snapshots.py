@@ -27,7 +27,7 @@ class SnapshotCreateView(PageView):
     viewmodel = 'viewmodels/snapshot-create'
 
     def get(self, request, *args, **kwargs):
-        if not request.user.has_perm('snapshots.create_snapshot'):
+        if not request.user.has_perm('cloud.create_snapshot'):
             # No permission granted
             raise Http404()
         return super(SnapshotCreateView, self).get(request, *args, **kwargs)
@@ -39,8 +39,8 @@ class SnapshotListView(PageView):
 
     def get_context_data(self, **kwargs):
         context = super(SnapshotListView, self).get_context_data(**kwargs)
-        context['has_admin'] = self.request.user.has_perm('snapshots.admin_snapshot')
-        context['has_create'] = self.request.user.has_perm('snapshots.create_snapshot')
+        context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot')
+        context['has_create'] = self.request.user.has_perm('cloud.create_snapshot')
         return context
 
 
@@ -60,10 +60,10 @@ class SnapshotDetailView(PageView):
         # Go ahead an raise a 404 here if the snapshot doesn't exist rather
         # than waiting until later.
         snapshot = get_object_or_404(Snapshot.objects.all(), pk=pk)
-        if not self.request.user.has_perm('snapshots.view_snapshot', snapshot):
+        if not self.request.user.has_perm('cloud.view_snapshot', snapshot):
             raise Http404()
         context['snapshot_id'] = pk
-        context['has_admin'] = self.request.user.has_perm('snapshots.admin_snapshot', snapshot)
+        context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot', snapshot)
         context['page_id'] = self.page_id
         return context
 
@@ -79,10 +79,10 @@ class SnapshotObjectPermissionsView(ObjectPermissionsView):
         # Go ahead an raise a 404 here if the snapshot doesn't exist rather
         # than waiting until later.
         snapshot = get_object_or_404(Snapshot.objects.all(), pk=pk)
-        if not self.request.user.has_perm('snapshots.admin_snapshot', snapshot):
+        if not self.request.user.has_perm('cloud.admin_snapshot', snapshot):
             raise Http404()
         context['snapshot_id'] = pk
-        context['has_admin'] = self.request.user.has_perm('snapshots.admin_snapshot', snapshot)
+        context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot', snapshot)
         context['page_id'] = self.page_id
         return context
 

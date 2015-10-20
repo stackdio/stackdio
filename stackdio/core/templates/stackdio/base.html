@@ -71,6 +71,7 @@
                         {% if user.settings.advanced_view %}
                         <li class="{% block formula-class %}{% endblock %}"><a href="{% url 'ui:formula-list' %}">Formulas</a></li>
                         <li class="{% block snapshot-class %}{% endblock %}"><a href="{% url 'ui:snapshot-list' %}">Snapshots</a></li>
+                        <li class="{% block account-class %}{% endblock %}"><a href="">Cloud Accounts</a></li>
                         {% endif %}
                         <!-- Extra links -->
                         {% block links %}{% endblock %}
@@ -81,6 +82,9 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a href="{% url 'ui:user-profile' %}">Profile</a></li>
+                                <li><a href="">Users</a></li>
+                                <li><a href="">Groups</a></li>
+                                <li class="divider"></li>
                                 <li><a href="{% url 'ui:logout' %}">Logout</a></li>
                             </ul>
                         </li>
