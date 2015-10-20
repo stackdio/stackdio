@@ -88,15 +88,3 @@ class AccountObjectPermissionsView(ObjectPermissionsView):
 
     def get_object(self):
         return get_object_or_404(CloudAccount.objects.all(), pk=self.kwargs['pk'])
-
-
-class AccountPropertiesView(AccountDetailView):
-    template_name = 'cloud/cloud-account-properties.html'
-    viewmodel = 'viewmodels/cloud-account-properties'
-    page_id = 'properties'
-
-
-class AccountFormulaVersionsView(AccountDetailView):
-    template_name = 'cloud/cloud-account-formula-versions.html'
-    viewmodel = 'viewmodels/cloud-account-formula-versions'
-    page_id = 'formula-versions'
