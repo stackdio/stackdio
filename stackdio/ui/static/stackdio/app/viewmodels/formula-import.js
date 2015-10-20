@@ -94,8 +94,18 @@ define([
                     }
                 });
             }).fail(function () {
-                utils.growlAlert('GitHub API rate limit exceeded.  Could not load default set ' +
-                    'of formulas.  Please enter the full url instead.', 'warning')
+                console.warn('Could not load default list of formulas: Github API rate ' +
+                    'limit exceeded');
+
+                // Add the tooltip
+                var $container = $('.select2-container');
+                $container.attr({
+                    'data-toggle': 'tooltip',
+                    'data-placement': 'top',
+                    'title': 'Could not load default list of formulas: Github API rate ' +
+                    'limit exceeded'
+                });
+                $container.tooltip();
             });
         };
 
