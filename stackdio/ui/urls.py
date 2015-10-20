@@ -194,4 +194,13 @@ urlpatterns = (
     cached_url(r'^accounts/permissions/$',
                accounts.AccountModelPermissionsView.as_view(),
                name='cloud-account-model-permissions'),
+
+    cached_url(r'^accounts/(?P<pk>[0-9]+)/$',
+               accounts.AccountDetailView.as_view(),
+               name='cloud-account-detail',
+               timeout=30),
+
+    cached_url(r'^accounts/(?P<pk>[0-9]+)/permissions/$',
+               accounts.AccountObjectPermissionsView.as_view(),
+               name='cloud-account-object-permissions'),
 )
