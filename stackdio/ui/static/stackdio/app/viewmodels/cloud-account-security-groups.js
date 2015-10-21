@@ -79,7 +79,16 @@ define([
                         data.results.forEach(function (group) {
                             group.text = group.name;
                             group.id = group.name;
-                            realData.push(group);
+
+                            var shouldAdd = true;
+                            self.objects().forEach(function (realGroup) {
+                                if (realGroup.groupId() === group.group_id) {
+                                    shouldAdd = false;
+                                }
+                            });
+                            if (shouldAdd) {
+                                realData.push(group);
+                            }
                         });
                         return { results: realData };
                     },
