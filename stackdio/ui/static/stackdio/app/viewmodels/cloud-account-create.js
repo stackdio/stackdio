@@ -43,6 +43,8 @@ define([
         self.providerSelector = $('#accountProvider');
         self.regionSelector = $('#accountRegion');
         self.vpcSelector = $('#accountVpcId');
+        self.sgSelector = $('#accountSecurityGroups');
+        self.newsgSelector = $('#accountSecurityGroupsNew');
 
         self.providerSelector.select2({
             ajax: {
@@ -126,8 +128,6 @@ define([
 
         self.wizard = $('#accountWizard');
 
-        self.previousProvider = null;
-
         self.wizard.on('actionclicked.fu.wizard', function (ev, data) {
             if (data.direction !== 'next') {
                 return;
@@ -196,7 +196,10 @@ define([
 
                     // We have all the data now, create the account.  If it fails, go back to
                     // first page
-                    self.createCloudAccount().fail(function (jqxhr) {
+                    self.createCloudAccount().done(function (account) {
+                        self.selectedAccount = account;
+                        self.makeSGSelector(account);
+                    }).fail(function (jqxhr) {
                         try {
                             var resp = JSON.parse(jqxhr.responseText);
                             var firstPage = false;
@@ -219,6 +222,43 @@ define([
 
                 case 3:
                     // Security Groups
+
+                    var groups = self.sgSelector.select2('data');
+                    var newGroups = self.newsgSelector.select2('data');
+
+                    console.log(groups);
+                    console.log(newGroups);
+
+                    var ajaxList = [];
+
+                    groups.forEach(function (group) {
+                        ajaxList.push($.ajax({
+                            method: 'POST',
+                            url: self.selectedAccount.security_groups,
+                            data: JSON.stringify({
+                                'group_id': group.group_id,
+                                'default': true
+                            })
+                        }));
+                    });
+
+                    newGroups.forEach(function (group) {
+                        ajaxList.push($.ajax({
+                            method: 'POST',
+                            url: self.selectedAccount.security_groups,
+                            data: JSON.stringify({
+                                'name': group.text,
+                                'default': true
+                            })
+                        }));
+                    });
+
+                    $.when.apply(this, ajaxList).done(function () {
+                        window.location = '/accounts/';
+                    }).fail(function (jqxhr) {
+                        utils.alertError(jqxhr, 'Error saving permissions');
+                    });
+
                     break;
             }
 
@@ -239,6 +279,8 @@ define([
             route53_domain: 'Route 53 Domain'
         };
 
+        self.previousProvider = null;
+
         // View variables
         self.provider = ko.observable();
         self.title = ko.observable();
@@ -250,9 +292,45 @@ define([
         self.privateKey = ko.observable();
 
         self.extraFields = ko.observableArray([]);
+        self.securityGroups = ko.observableArray([]);
+        self.selectedAccount = null;
 
         self.sgSubscription = null;
         self.vpcSubscription = null;
+
+        self.makeSGSelector = function (account) {
+            self.sgSelector.select2({
+                ajax: {
+                    url: account.all_security_groups,
+                    dataType: 'json',
+                    delay: 100,
+                    data: function (params) {
+                        return {
+                            name: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        var realData = [];
+                        data.results.forEach(function (group) {
+                            group.text = group.name;
+                            group.id = group.name;
+                            realData.push(group);
+                        });
+                        return { results: realData };
+                    },
+                    cache: true
+                },
+                theme: 'bootstrap',
+                disabled: false,
+                placeholder: 'Select a security group...',
+                minimumInputLength: 0
+            });
+
+            self.newsgSelector.select2({
+                tags: true,
+                tokenSeparators: [',']
+            });
+        };
 
         // Necessary functions
         self.reset = function() {
@@ -291,6 +369,7 @@ define([
             self.vpcId('');
             self.region(null);
             self.extraFields([]);
+            self.securityGroups([]);
         };
 
         self.removeErrors = function(keys) {

@@ -18,6 +18,7 @@
 
 import logging
 
+from django.core.cache import cache
 from rest_framework import generics
 from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
@@ -598,7 +599,14 @@ class FullCloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
 
     def get_queryset(self):
         account = self.get_cloudaccount()
-        driver = account.get_driver()
-        account_groups = driver.get_security_groups()
+
+        cache_key = 'accounts:{0}:all_security_groups'.format(account.id)
+
+        account_groups = cache.get(cache_key)
+
+        if account_groups is None:
+            driver = account.get_driver()
+            account_groups = driver.get_security_groups()
+            cache.set(cache_key, account_groups, 30)
 
         return FakeQuerySet(models.SecurityGroup, sorted(account_groups, key=lambda x: x.name))
