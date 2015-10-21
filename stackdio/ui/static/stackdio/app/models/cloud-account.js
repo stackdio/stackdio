@@ -169,7 +169,7 @@ define([
             data: JSON.stringify({
                 title: self.title(),
                 description: self.description(),
-                create_users: self.createUsers()
+                create_security_groups: self.createSecurityGroups()
             })
         }).done(function (account) {
             utils.growlAlert('Successfully saved cloud account!', 'success');

@@ -333,9 +333,6 @@ define([
                 'method': 'POST',
                 'url': '/api/cloud/accounts/',
                 'data': JSON.stringify(createData)
-            }).done(function () {
-                // Successful creation - just redirect to the main accounts page
-                window.location = '/accounts/';
             }).fail(function (jqxhr) {
                 // Display any error messages
                 var message = '';
