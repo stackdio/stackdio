@@ -200,6 +200,13 @@ define([
             // been populated
         },
 
+        filterObject: function (object) {
+            // Override this if certain objects need to be filtered out of the list.  Just
+            // return true if the object should stay, or false if it should be removed.
+            // By default, don't remove anything
+            return true;
+        },
+
         // Refresh everything
         reload: function (firstTime) {
             if (typeof firstTime === 'undefined') {
@@ -220,7 +227,8 @@ define([
                     self.pageSize(objects.results.length);
                 }
 
-                self.objects(objects.results.map(function (object) {
+                // Filter and create the models.
+                self.objects(objects.results.filter(self.filterObject).map(function (object) {
                     var objectModel = new self.model(object, self);
                     self.processObject(objectModel);
                     return objectModel;

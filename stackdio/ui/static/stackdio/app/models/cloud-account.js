@@ -51,6 +51,7 @@ define([
         // Editable fields
         this.title = ko.observable();
         this.description = ko.observable();
+        this.slug = ko.observable();
         this.region = ko.observable();
         this.provider = ko.observable();
         this.vpcId = ko.observable();
@@ -73,6 +74,7 @@ define([
     CloudAccount.prototype._process = function (raw) {
         this.title(raw.title);
         this.description(raw.description);
+        this.slug(raw.slug);
         this.region(raw.region);
         this.provider(raw.provider);
         this.vpcId(raw.vpc_id);

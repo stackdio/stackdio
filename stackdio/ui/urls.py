@@ -207,4 +207,8 @@ urlpatterns = (
     cached_url(r'^accounts/(?P<pk>[0-9]+)/permissions/$',
                accounts.AccountObjectPermissionsView.as_view(),
                name='cloud-account-object-permissions'),
+
+    cached_url(r'^accounts/(?P<pk>[0-9]+)/security_groups/$',
+               accounts.AccountSecurityGroupsView.as_view(),
+               name='cloud-account-security-groups'),
 )

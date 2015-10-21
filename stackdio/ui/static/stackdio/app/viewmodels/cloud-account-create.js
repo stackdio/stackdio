@@ -126,6 +126,19 @@ define([
             self.region(region.title);
         });
 
+        self.sgSelector.select2({
+            data: [],
+            theme: 'bootstrap',
+            placeholder: 'Select a security group...',
+            disabled: true
+        });
+
+        self.newsgSelector.select2({
+            data: [],
+            theme: 'bootstrap',
+            disabled: true
+        });
+
         self.wizard = $('#accountWizard');
 
         self.wizard.on('actionclicked.fu.wizard', function (ev, data) {
@@ -327,6 +340,7 @@ define([
             });
 
             self.newsgSelector.select2({
+                theme: 'bootstrap',
                 tags: true,
                 tokenSeparators: [',']
             });
