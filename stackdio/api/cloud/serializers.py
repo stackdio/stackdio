@@ -44,6 +44,9 @@ class CloudProviderSerializer(StackdioHyperlinkedModelSerializer):
     title = serializers.ReadOnlyField(source='get_type_name_display')
 
     # Links
+    required_fields = serializers.HyperlinkedIdentityField(
+        view_name='api:cloud:cloudprovider-required',
+        lookup_field='name')
     instance_sizes = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudinstancesize-list',
         lookup_field='name')
@@ -67,6 +70,7 @@ class CloudProviderSerializer(StackdioHyperlinkedModelSerializer):
             'url',
             'title',
             'name',
+            'required_fields',
             'instance_sizes',
             'regions',
             'zones',

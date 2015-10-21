@@ -23,6 +23,13 @@ define([
     'use strict';
 
     return {
+        addError: function  (el, msgs) {
+            var $el = $(el);
+            $el.addClass('has-error');
+            msgs.forEach(function (errMsg) {
+                $el.append('<span class="help-block">' + errMsg + '</span>');
+            });
+        },
         growlAlert: function (message, type) {
             $.bootstrapGrowl(message, {
                 ele: '#main-content',

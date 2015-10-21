@@ -18,10 +18,10 @@
 define([
     'jquery',
     'knockout',
-    'ladda',
     'bootbox',
+    'utils/utils',
     'select2'
-], function ($, ko, Ladda, bootbox) {
+], function ($, ko, bootbox, utils) {
     'use strict';
 
     return function() {
@@ -41,6 +41,8 @@ define([
 
         // Create the provider selector
         self.providerSelector = $('#accountProvider');
+        self.regionSelector = $('#accountRegion');
+        self.vpcSelector = $('#accountVpcId');
 
         self.providerSelector.select2({
             ajax: {
@@ -72,38 +74,223 @@ define([
             minimumInputLength: 0
         });
 
+        self.regionSelector.select2({
+            data: [],
+            theme: 'bootstrap',
+            placeholder: 'Select a region...',
+            disabled: true
+        });
+
         self.providerSelector.on('select2:select', function(ev) {
             var provider = ev.params.data;
 
             self.provider(provider);
+
+            self.regionSelector.select2({
+                ajax: {
+                    url: provider.regions,
+                    dataType: 'json',
+                    delay: 100,
+                    data: function (params) {
+                        return {
+                            title: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        data.results.forEach(function (provider) {
+                            provider.text = provider.title;
+                            provider.id = provider.title;
+                        });
+                        return data;
+                    },
+                    cache: true
+                },
+                theme: 'bootstrap',
+                disabled: false,
+                placeholder: 'Select a region...',
+                templateResult: function (provider) {
+                    if (provider.loading) {
+                        return provider.text;
+                    }
+                    return provider.title;
+                },
+                minimumInputLength: 0
+            });
         });
 
+        self.regionSelector.on('select2:select', function (ev) {
+            var region = ev.params.data;
+
+            self.region(region.title);
+        });
+
+        self.wizard = $('#accountWizard');
+
+        self.previousProvider = null;
+
+        self.wizard.on('actionclicked.fu.wizard', function (ev, data) {
+            if (data.direction !== 'next') {
+                return;
+            }
+
+            self.removeErrors(self.keys);
+
+            var error = false;
+
+            switch (data.step) {
+                case 1:
+                    // Basics
+                    if (!self.provider()) {
+                        utils.addError('#provider', ['May not be blank']);
+                        error = true;
+                    }
+
+                    if (!self.title()) {
+                        utils.addError('#title', ['May not be blank']);
+                        error = true;
+                    }
+
+                    if (self.vpcEnabled() && !self.vpcId()) {
+                        utils.addError('#vpc_id', ['May not be blank']);
+                        error = true;
+                    }
+
+                    if (!self.region()) {
+                        utils.addError('#region', ['May not be blank']);
+                        error = true;
+                    }
+
+                    if (!error && self.previousProvider !== self.provider().name) {
+                        self.previousProvider = self.provider().name;
+
+                        $.ajax({
+                            method: 'GET',
+                            url: self.provider().required_fields
+                        }).done(function (fields) {
+                            var extras = [];
+                            fields.results.forEach(function (field) {
+                                if (field !== 'private_key') {
+                                    var fieldObj = {
+                                        apiName: field,
+                                        displayName: self.extrasMap[field],
+                                        fieldValue: ko.observable()
+                                    };
+
+                                    if (field === 'secret_access_key') {
+                                        fieldObj.type = 'password';
+                                    } else {
+                                        fieldObj.type = 'text';
+                                    }
+
+                                    extras.push(fieldObj);
+                                }
+                            });
+                            self.extraFields(extras);
+                        });
+                    }
+
+                    break;
+
+                case 2:
+                    // Extras
+
+                    // We have all the data now, create the account.  If it fails, go back to
+                    // first page
+                    self.createCloudAccount().fail(function (jqxhr) {
+                        try {
+                            var resp = JSON.parse(jqxhr.responseText);
+                            var firstPage = false;
+                            self.keys.forEach(function (key) {
+                                if (resp.hasOwnProperty(key)) {
+                                    firstPage = true;
+                                }
+                            });
+                            if (firstPage) {
+                                self.wizard.wizard('selectedItem', {step: 1});
+                            } else {
+                                self.wizard.wizard('selectedItem', {step: 2});
+                            }
+                        } catch (e) {
+                            self.wizard.wizard('selectedItem', {step: 1});
+                        }
+                    });
+
+                    break;
+
+                case 3:
+                    // Security Groups
+                    break;
+            }
+
+            if (error) {
+                ev.preventDefault();
+            }
+        });
+
+        self.keys = ['provider', 'title', 'description',
+            'create_security_groups', 'vpc_id', 'region'];
+
+        self.extrasMap = {
+            account_id: 'Account ID',
+            access_key_id: 'Access Key ID',
+            secret_access_key: 'Secret Access Key',
+            keypair: 'Keypair Name',
+            private_key: 'Private Key',
+            route53_domain: 'Route 53 Domain'
+        };
+
         // View variables
-        self.providerId = ko.observable();
+        self.provider = ko.observable();
         self.title = ko.observable();
         self.description = ko.observable();
+        self.vpcEnabled = ko.observable();
+        self.vpcId = ko.observable();
+        self.region = ko.observable();
+        self.createSecurityGroups = ko.observable();
+        self.privateKey = ko.observable();
 
-        self.subscription = null;
+        self.extraFields = ko.observableArray([]);
+
+        self.sgSubscription = null;
+        self.vpcSubscription = null;
 
         // Necessary functions
         self.reset = function() {
             // Make sure we don't have more than 1 subscription
-            if (self.subscription) {
-                self.subscription.dispose();
+            if (self.sgSubscription) {
+                self.sgSubscription.dispose();
             }
 
-            var $el = $('.checkbox-custom');
-            self.subscription = self.createUsers.subscribe(function (newVal) {
+            if (self.vpcSubscription) {
+                self.vpcSubscription.dispose();
+            }
+
+            var $sg = $('#sg-checkbox');
+            self.sgSubscription = self.createSecurityGroups.subscribe(function (newVal) {
                 if (newVal) {
-                    $el.checkbox('check');
+                    $sg.checkbox('check');
                 } else {
-                    $el.checkbox('uncheck');
+                    $sg.checkbox('uncheck');
                 }
             });
 
-            self.providerId(null);
+            var $vpc = $('#vpc-checkbox');
+            self.vpcSubscription = self.createSecurityGroups.subscribe(function (newVal) {
+                if (newVal) {
+                    $vpc.checkbox('check');
+                } else {
+                    $vpc.checkbox('uncheck');
+                }
+            });
+
+            self.provider(null);
             self.title('');
             self.description('');
+            self.vpcEnabled(true);
+            self.createSecurityGroups(true);
+            self.vpcId('');
+            self.region(null);
+            self.extraFields([]);
         };
 
         self.removeErrors = function(keys) {
@@ -116,38 +303,36 @@ define([
         };
 
         self.createCloudAccount = function() {
-            // First remove all the old error messages
-            var keys = ['provider', 'title', 'description',
-                'create_users', 'namespace', 'properties'];
+            var keys = self.keys.slice();
 
-            self.removeErrors(keys);
+            var createData = {
+                provider: self.provider().name,
+                title: self.title(),
+                description: self.description(),
+                create_security_groups: self.createSecurityGroups(),
+                private_key: self.privateKey(),
+                region: self.region()
+            };
 
-            // Check the properties
-            if (!self.validProperties) {
-                var el = $('#properties');
-                el.addClass('has-error');
-                el.append('<span class="help-block">Invalid JSON.</span>');
-                return;
+            if (self.vpcEnabled()) {
+                createData.vpc_id = self.vpcId();
+            } else {
+                createData.vpc_id = '';
             }
 
-            // Grab both button objects
-            var createButton = Ladda.create(document.querySelector('#create-button'));
+            self.extraFields().forEach(function (field) {
+                createData[field.apiName] = field.fieldValue();
+                keys.push(field.apiName);
+            });
 
-            // Start them up
-            createButton.start();
+            // First remove all the old error messages
+            self.removeErrors(keys);
 
             // Create the account!
-            $.ajax({
+            return $.ajax({
                 'method': 'POST',
                 'url': '/api/cloud/accounts/',
-                'data': JSON.stringify({
-                    provider: self.providerId(),
-                    title: self.title(),
-                    description: self.description()
-                })
-            }).always(function () {
-                // Stop our spinning buttons FIRST
-                createButton.stop();
+                'data': JSON.stringify(createData)
             }).done(function () {
                 // Successful creation - just redirect to the main accounts page
                 window.location = '/accounts/';

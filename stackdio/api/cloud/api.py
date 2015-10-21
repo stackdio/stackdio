@@ -102,6 +102,30 @@ class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderRelatedMixi
     parent_lookup_field = 'name'
 
 
+class CloudProviderRequiredFieldsAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
+    """
+    This endpoint lists all the extra fields required when creating an account for this provider.
+    """
+
+    def get_queryset(self):
+        provider = self.get_cloudprovider()
+        driver = provider.get_driver()
+
+        return driver.get_required_fields()
+
+    def list(self, request, *args, **kwargs):
+        """
+        Rewrite to get rid of using a serializer
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            return self.get_paginated_response(page)
+
+        return Response(queryset)
+
+
 class CloudAccountListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudAccount.objects.all()
     serializer_class = serializers.CloudAccountSerializer
