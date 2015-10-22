@@ -90,6 +90,12 @@ class AccountObjectPermissionsView(ObjectPermissionsView):
         return get_object_or_404(CloudAccount.objects.all(), pk=self.kwargs['pk'])
 
 
+class AccountImagesView(AccountDetailView):
+    template_name = 'cloud/cloud-account-images.html'
+    viewmodel = 'viewmodels/cloud-account-images'
+    page_id = 'images'
+
+
 class AccountSecurityGroupsView(AccountDetailView):
     template_name = 'cloud/cloud-account-security-groups.html'
     viewmodel = 'viewmodels/cloud-account-security-groups'

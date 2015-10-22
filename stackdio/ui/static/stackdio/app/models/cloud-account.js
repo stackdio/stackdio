@@ -156,7 +156,7 @@ define([
 
     CloudAccount.prototype.save = function () {
         var self = this;
-        var keys = ['title', 'description', 'create_users'];
+        var keys = ['title', 'description', 'create_security_groups'];
 
         keys.forEach(function (key) {
             var el = $('#' + key);

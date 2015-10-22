@@ -208,6 +208,10 @@ urlpatterns = (
                accounts.AccountObjectPermissionsView.as_view(),
                name='cloud-account-object-permissions'),
 
+    cached_url(r'^accounts/(?P<pk>[0-9]+)/images/$',
+               accounts.AccountImagesView.as_view(),
+               name='cloud-account-images'),
+
     cached_url(r'^accounts/(?P<pk>[0-9]+)/security_groups/$',
                accounts.AccountSecurityGroupsView.as_view(),
                name='cloud-account-security-groups'),

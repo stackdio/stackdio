@@ -136,6 +136,10 @@ urlpatterns = (
         api.CloudAccountDetailAPIView.as_view(),
         name='cloudaccount-detail'),
 
+    url(r'^accounts/(?P<pk>[0-9]+)/images/$',
+        api.CloudAccountImageListAPIView.as_view(),
+        name='cloudaccount-cloudimage-list'),
+
     url(r'^accounts/(?P<pk>[0-9]+)/security_groups/$',
         api.CloudAccountSecurityGroupListAPIView.as_view(),
         name='cloudaccount-securitygroup-list'),

@@ -228,6 +228,15 @@ class CloudAccountFormulaVersionsAPIView(mixins.CloudAccountRelatedMixin,
         serializer.save(content_object=self.get_cloudaccount())
 
 
+class CloudAccountImageListAPIView(mixins.CloudAccountRelatedMixin, generics.ListAPIView):
+    serializer_class = serializers.CloudImageSerializer
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    filter_class = filters.CloudImageFilter
+
+    def get_queryset(self):
+        return models.CloudImage.objects.filter(account=self.get_cloudaccount())
+
+
 class CloudImageListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudImage.objects.all()
     serializer_class = serializers.CloudImageSerializer

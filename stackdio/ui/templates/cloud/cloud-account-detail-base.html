@@ -20,6 +20,9 @@
                 <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
                     <a href="{% url 'ui:cloud-account-detail' pk=account_id %}">Detail</a>
                 </li>
+                <li role="presentation"{% if page_id == 'images' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:cloud-account-images' pk=account_id %}">Images</a>
+                </li>
                 <li role="presentation"{% if page_id == 'security-groups' %} class="active"{% endif %}>
                     <a href="{% url 'ui:cloud-account-security-groups' pk=account_id %}">Security Groups</a>
                 </li>
