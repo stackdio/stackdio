@@ -20,4 +20,8 @@ class Migration(migrations.Migration):
             old_name='FormulaComponentTEMP',
             new_name='FormulaComponent',
         ),
+        migrations.AlterModelOptions(
+            name='formula',
+            options={'ordering': ['title'], 'default_permissions': ('admin', 'create', 'delete', 'update', 'view')},
+        ),
     ]

@@ -69,7 +69,7 @@
                         <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
                         <li class="{% block blueprint-class %}{% endblock %}"><a href="{% url 'ui:blueprint-list' %}">Blueprints</a></li>
                         {% if user.settings.advanced_view %}
-                        <li class="{% block formula-class %}{% endblock %}"><a href="">Formulas</a></li>
+                        <li class="{% block formula-class %}{% endblock %}"><a href="{% url 'ui:formula-list' %}">Formulas</a></li>
                         <li class="{% block snapshot-class %}{% endblock %}"><a href="">Snapshots</a></li>
                         {% endif %}
                         <!-- Extra links -->

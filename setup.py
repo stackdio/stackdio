@@ -83,6 +83,14 @@ requirements = [
     'salt>=2015.8.0,<2015.9',
 ]
 
+testing_requirements = [
+    'coveralls',
+    'django-nose>=1.0,<=1.4',
+    'mock',
+    'pep8',
+    'pylint<=1.2.0',
+]
+
 # Call the setup method from setuptools that does all the heavy lifting
 # of packaging stackdio
 setup(
@@ -109,16 +117,8 @@ setup(
         'postgresql': [
             'psycopg2==2.6.1'
         ],
-        'development': [
-            'ipython>=2.0',
-        ],
-        'testing': [
-            'coveralls',
-            'django-nose>=1.0,<=1.4',
-            'mock',
-            'pep8',
-            'pylint<=1.2.0',
-        ],
+        'development': testing_requirements + ['ipython>=2.0'],
+        'testing': testing_requirements,
     },
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -131,7 +131,9 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 2 :: Only',
         'Topic :: System :: Clustering',
         'Topic :: System :: Distributed Computing',
     ],

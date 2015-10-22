@@ -21,6 +21,7 @@ from django.contrib.auth.views import login, logout_then_login
 from stackdio.core.utils import cached_url
 from . import views
 from .views import blueprints
+from .views import formulas
 from .views import stacks
 
 auth_kwargs = {
@@ -134,4 +135,30 @@ urlpatterns = (
     cached_url(r'^blueprints/(?P<pk>[0-9]+)/permissions/$',
                blueprints.BlueprintObjectPermissionsView.as_view(),
                name='blueprint-object-permissions'),
+
+    cached_url(r'^formulas/$',
+               formulas.FormulaListView.as_view(),
+               name='formula-list',
+               timeout=30),
+
+    cached_url(r'^formulas/import/$',
+               formulas.FormulaImportView.as_view(),
+               name='formula-import'),
+    
+    cached_url(r'^formulas/permissions/$',
+               formulas.FormulaModelPermissionsView.as_view(),
+               name='formula-model-permissions'),
+
+    cached_url(r'^formulas/(?P<pk>[0-9]+)/$',
+               formulas.FormulaDetailView.as_view(),
+               name='formula-detail',
+               timeout=30),
+
+    cached_url(r'^formulas/(?P<pk>[0-9]+)/properties/$',
+               formulas.FormulaPropertiesView.as_view(),
+               name='formula-properties'),
+
+    cached_url(r'^formulas/(?P<pk>[0-9]+)/permissions/$',
+               formulas.FormulaObjectPermissionsView.as_view(),
+               name='formula-object-permissions'),
 )
