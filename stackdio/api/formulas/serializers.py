@@ -116,10 +116,10 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
                     errors.setdefault('access_token', []).append(err_msg)
                     errors.setdefault('git_password', []).append(err_msg)
 
-                # Add the git username to the uri if necessary
+                # Remove the git username from the uri if necessary
                 parse_res = urlsplit(uri)
-                if '@' not in parse_res.netloc:
-                    new_netloc = '{0}@{1}'.format(git_username, parse_res.netloc)
+                if '@' in parse_res.netloc:
+                    new_netloc = parse_res.netloc.split('@')[-1]
                     attrs['uri'] = urlunsplit((
                         parse_res.scheme,
                         new_netloc,
