@@ -104,8 +104,10 @@ define([
                         value: label.value()
                     })
                 }).fail(function (jqxhr) {
-                    utils.alertError(jqxhr, 'Error saving label',
-                        'Errors saving label for ' + label.key() + ':<br>');
+                    if (jqxhr.status !== 404) {
+                        utils.alertError(jqxhr, 'Error saving label',
+                            'Errors saving label for ' + label.key() + ':<br>');
+                    }
                 }));
             });
 
@@ -119,12 +121,14 @@ define([
                     })
                 }).fail(function (jqxhr) {
                     utils.alertError(jqxhr, 'Error saving label',
-                        'Errors saving label for ' + label.key() + ':<br>');
+                        'Errors saving label for ' + label.key + ':<br>');
                 }));
             });
 
             $.when.apply(this, ajaxCalls).done(function () {
                 utils.growlAlert('Successfully saved labels!', 'success');
+                self.newLabels([]);
+                self.reload();
             });
 
         }
