@@ -18,6 +18,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django_auth_ldap.backend import LDAPBackend
 from rest_framework import generics
 from rest_framework.response import Response
 
@@ -32,10 +33,16 @@ from . import filters, mixins, permissions, serializers
 
 
 class UserListAPIView(generics.ListAPIView):
-    queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
+    queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID).order_by('username')
     serializer_class = serializers.PublicUserSerializer
     lookup_field = 'username'
     filter_class = filters.UserFilter
+
+    def get_queryset(self):
+        if settings.LDAP_ENABLED and 'username' in self.request.query_params:
+            # Try populating the user first
+            LDAPBackend().populate_user(self.request.query_params['username'])
+        return super(UserListAPIView, self).get_queryset()
 
 
 class UserDetailAPIView(generics.RetrieveAPIView):
