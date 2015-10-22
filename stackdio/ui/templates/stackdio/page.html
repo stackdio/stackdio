@@ -4,6 +4,10 @@
 
 {% block scripts %}
     {% viewmodel viewmodel %}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.advancedView = {{ user.settings.advanced_view | lower }};
+    </script>
 {% endblock %}
 
 {% block content %}

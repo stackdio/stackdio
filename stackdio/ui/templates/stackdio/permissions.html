@@ -7,7 +7,7 @@
     {{ block.super }}
     {% if object_id %}
     <script type="text/javascript">
-        window.stackdio = {};
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
         window.stackdio.objectId = {{ object_id }};
     </script>
     {% endif %}

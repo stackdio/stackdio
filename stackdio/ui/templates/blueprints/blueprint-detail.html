@@ -1,0 +1,42 @@
+{% extends 'blueprints/blueprint-detail-base.html' %}
+
+
+{% block detail-content %}
+<div class="col-sm-6 col-sm-pull-3">
+    <div class="container-fluid">
+        <div class="row">
+            <form data-bind="submit: function() { blueprint.save(); }">
+                <div id="title" class="form-group">
+                    <label for="blueprintTitle">Title</label>
+                    <input type="text" class="form-control" id="blueprintTitle"
+                           data-bind="value: blueprint.title, valueUpdate: 'keyup'">
+                </div>
+                <div id="description" class="form-group">
+                    <label for="blueprintDescription">Description</label>
+                    <input type="text" class="form-control" id="blueprintDescription"
+                           data-bind="value: blueprint.description, valueUpdate: 'keyup'">
+                </div>
+                <div id="create_users">
+                    <div class="checkbox">
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox"
+                                   data-bind="checked: blueprint.createUsers">
+                            <span class="checkbox-label">Create Users</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 15px">
+                    <button type="submit" class="btn btn-primary">Save</button>
+
+                    <button class="btn btn-danger" data-bind="click: function () { blueprint.delete() }">
+                        Delete
+                        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="col-sm-3 col-sm-pull-3"></div>
+{% endblock %}

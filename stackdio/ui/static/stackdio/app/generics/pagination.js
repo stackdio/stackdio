@@ -31,6 +31,7 @@ define([
         initialUrl: null,
         sortableFields: [],
         autoRefresh: true,
+        detailRequiresAdvanced: false,
 
         // Observable view variables
         pageNum: ko.observable(),
@@ -168,6 +169,9 @@ define([
         },
 
         goToDetailPage: function (object) {
+            if (this.detailRequiresAdvanced && !window.stackdio.advancedView) {
+                return;
+            }
             window.location = this.baseUrl + object.id + '/';
         },
 

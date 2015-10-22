@@ -5,7 +5,7 @@
 {% block scripts %}
     {{ block.super }}
     <script type="text/javascript">
-    window.stackdio = {};
+    if (typeof window.stackdio == 'undefined') window.stackdio = {};
     window.stackdio.ldapEnabled = {{ ldap | lower }};
     </script>
 {% endblock %}

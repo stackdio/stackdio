@@ -20,11 +20,12 @@ define([
     'jquery',
     'knockout',
     'bootbox',
+    'utils/utils',
     'models/host-definition'
-], function ($, ko, bootbox, HostDefinition) {
+], function ($, ko, bootbox, utils, HostDefinition) {
     'use strict';
 
-    // Define the stack model.
+    // Define the blueprint model.
     function Blueprint(raw, parent) {
         var needReload = false;
         if (typeof raw === 'string') {
@@ -35,7 +36,7 @@ define([
             // Set the things we need for the reload
             raw = {
                 id: raw,
-                url: '/api/stacks/' + raw + '/hosts/'
+                url: '/api/blueprints/' + raw + '/'
             }
         }
 
@@ -59,7 +60,7 @@ define([
         this.formulaVersions = ko.observableArray([]);
 
         if (needReload) {
-            this.reload();
+            this.waiting = this.reload();
         } else {
             this._process(raw);
         }
@@ -73,7 +74,7 @@ define([
         this.createUsers(raw.create_users);
     };
 
-    // Reload the current stack
+    // Reload the current blueprint
     Blueprint.prototype.reload = function () {
         var self = this;
         return $.ajax({
@@ -88,11 +89,34 @@ define([
     // Lazy-load the properties
     Blueprint.prototype.loadProperties = function () {
         var self = this;
-        $.ajax({
+        if (!this.raw.hasOwnProperty('properties')) {
+            this.raw.properties = this.raw.url + 'properties/';
+        }
+        return $.ajax({
             method: 'GET',
             url: this.raw.properties
         }).done(function (properties) {
             self.properties(properties);
+        });
+    };
+
+    Blueprint.prototype.saveProperties = function () {
+        $.ajax({
+            method: 'PUT',
+            url: this.raw.properties,
+            data: JSON.stringify(this.properties())
+        }).done(function (properties) {
+            utils.growlAlert('Successfully saved blueprint properties!', 'success');
+        }).fail(function (jqxhr) {
+            var message;
+            try {
+                var resp = JSON.parse(jqxhr.responseText);
+                message = resp.properties.join('<br>');
+            } catch (e) {
+                message = 'Oops... there was a server error.'
+            }
+            message += '  Your properties were not saved.';
+            utils.growlAlert(message, 'danger');
         });
     };
 
@@ -121,6 +145,35 @@ define([
         }
 
         doLoad(this.raw.host_definitions);
+    };
+
+    Blueprint.prototype.save = function () {
+        var self = this;
+        var keys = ['title', 'description', 'create_users'];
+
+        keys.forEach(function (key) {
+            var el = $('#' + key);
+            el.removeClass('has-error');
+            var help = el.find('.help-block');
+            help.remove();
+        });
+
+        $.ajax({
+            method: 'PUT',
+            url: self.raw.url,
+            data: JSON.stringify({
+                title: self.title(),
+                description: self.description(),
+                create_users: self.createUsers()
+            })
+        }).done(function (blueprint) {
+            utils.growlAlert('Successfully saved blueprint!', 'success');
+            try {
+                self.parent.blueprintTitle(blueprint.title);
+            } catch (e) {}
+        }).fail(function (jqxhr) {
+            utils.parseSaveError(jqxhr, 'blueprint', keys);
+        });
     };
 
     Blueprint.prototype.delete = function () {

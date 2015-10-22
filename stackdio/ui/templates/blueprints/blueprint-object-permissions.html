@@ -1,8 +1,8 @@
-{% extends 'stacks/stack-detail-base.html' %}
+{% extends 'blueprints/blueprint-detail-base.html' %}
 
 {% block title %}{{ object_type }} Permissions{% endblock %}
 
-{# Inject the stack id into the window so we can access it in our javascript VM #}
+{# Inject the blueprint id into the window so we can access it in our javascript VM #}
 {% if object_id %}
 {% block scripts %}
     {{ block.super }}
