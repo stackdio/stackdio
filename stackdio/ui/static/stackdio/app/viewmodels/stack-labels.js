@@ -51,8 +51,8 @@ define([
         baseUrl: '/stacks/',
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/labels/',
         sortableFields: [
-            {name: 'key', displayName: 'Key', width: '50%'},
-            {name: 'value', displayName: 'Value', width: '50%'}
+            {name: 'key', displayName: 'Key', width: '45%'},
+            {name: 'value', displayName: 'Value', width: '45%'}
         ],
         init: function () {
             this._super();
@@ -89,6 +89,9 @@ define([
                 value: ko.observable(null)
             });
             this.newLabelKey(null);
+        },
+        deleteNewLabel: function (label) {
+            this.newLabels.remove(label);
         },
         saveLabels: function () {
             var ajaxCalls = [];
