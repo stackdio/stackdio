@@ -94,17 +94,18 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
         }
 
     def validate(self, attrs):
-        if self.instance is None:
-            uri = attrs.get('uri', getattr(self.instance, 'uri', None))
+        git_username = attrs.get('git_username')
 
-            git_username = attrs.get('git_username')
+        errors = {}
 
-            errors = {}
+        if git_username:
+            # We only need validation if a non-empty username is provided
 
-            if git_username:
-                # We only need validation if a non-empty username is provided
+            if self.instance is None:
+                # We only care about this if we're importing
                 access_token = attrs.get('access_token')
                 git_password = attrs.get('git_password')
+                uri = attrs['uri']
 
                 if not access_token and not git_password:
                     err_msg = 'Your git password is required if you\'re not using an access token.'
@@ -115,21 +116,23 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
                     err_msg = 'If you are using an access_token, you may not provide a password.'
                     errors.setdefault('access_token', []).append(err_msg)
                     errors.setdefault('git_password', []).append(err_msg)
+            else:
+                uri = self.instance.uri
 
-                # Remove the git username from the uri if necessary
-                parse_res = urlsplit(uri)
-                if '@' in parse_res.netloc:
-                    new_netloc = parse_res.netloc.split('@')[-1]
-                    attrs['uri'] = urlunsplit((
-                        parse_res.scheme,
-                        new_netloc,
-                        parse_res.path,
-                        parse_res.query,
-                        parse_res.fragment
-                    ))
+            # Remove the git username from the uri if necessary
+            parse_res = urlsplit(uri)
+            if '@' in parse_res.netloc:
+                new_netloc = parse_res.netloc.split('@')[-1]
+                attrs['uri'] = urlunsplit((
+                    parse_res.scheme,
+                    new_netloc,
+                    parse_res.path,
+                    parse_res.query,
+                    parse_res.fragment
+                ))
 
-            if errors:
-                raise serializers.ValidationError(errors)
+        if errors:
+            raise serializers.ValidationError(errors)
 
         return attrs
 
