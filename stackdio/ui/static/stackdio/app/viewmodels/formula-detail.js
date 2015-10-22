@@ -120,6 +120,13 @@ define([
             $('.action-dropdown').on('show.bs.dropdown', function () {
                 self.formula.loadAvailableActions();
             });
+
+            function refreshFormula() {
+                self.formula.reload();
+                self.formula.loadComponents();
+            }
+
+            setInterval(refreshFormula, 3000);
         }
     });
 });
