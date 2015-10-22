@@ -39,7 +39,7 @@ define([
             },
             {
                 active: true,
-                title: 'Cloud Account Security Groups'
+                title: 'Default Security Groups'
             }
         ],
         model: SecurityGroup,

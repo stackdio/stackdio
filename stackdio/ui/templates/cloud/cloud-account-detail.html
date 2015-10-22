@@ -3,60 +3,58 @@
 
 {% block detail-content %}
 <div class="col-sm-9 col-sm-pull-3">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-6" style="padding-left: 0">
-                <form data-bind="submit: function() { account.save(); }">
-                    <div id="title" class="form-group">
-                        <label for="accountTitle">Title</label>
-                        <input type="text" class="form-control" id="accountTitle"
-                               data-bind="value: account.title, valueUpdate: 'keyup'">
-                    </div>
-                    <div id="description" class="form-group">
-                        <label for="accountDescription">Description</label>
-                        <input type="text" class="form-control" id="accountDescription"
-                               data-bind="value: account.description, valueUpdate: 'keyup'">
-                    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <form data-bind="submit: function() { account.save(); }">
+                <div id="title" class="form-group">
+                    <label for="accountTitle">Title</label>
+                    <input type="text" class="form-control" id="accountTitle"
+                           data-bind="value: account.title, valueUpdate: 'keyup'">
+                </div>
+                <div id="description" class="form-group">
+                    <label for="accountDescription">Description</label>
+                    <input type="text" class="form-control" id="accountDescription"
+                           data-bind="value: account.description, valueUpdate: 'keyup'">
+                </div>
 
-                    <div id="slug" class="form-group">
-                        <label>Slug</label>
-                        <p class="form-control-static" data-bind="text:account.slug"></p>
-                    </div>
+                <div id="slug" class="form-group">
+                    <label>Slug</label>
+                    <p class="form-control-static" data-bind="text:account.slug"></p>
+                </div>
 
-                    <div id="create_security_groups">
-                        <div class="checkbox">
-                            <label class="checkbox-custom" data-initialize="checkbox">
-                                <input class="sr-only" type="checkbox"
-                                       data-bind="checked: account.createSecurityGroups">
-                                <span class="checkbox-label">Create Security Groups</span>
-                            </label>
-                        </div>
+                <div id="create_security_groups">
+                    <div class="checkbox">
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox"
+                                   data-bind="checked: account.createSecurityGroups">
+                            <span class="checkbox-label">Create Security Groups</span>
+                        </label>
                     </div>
-                    <div class="form-group" style="margin-top: 15px">
-                        <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+                <div class="form-group" style="margin-top: 15px">
+                    <button type="submit" class="btn btn-primary">Save</button>
 
-                        <button class="btn btn-danger" data-bind="click: function () { account.delete() }">
-                            Delete
-                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
-                        </button>
-                    </div>
-                </form>
+                    <button class="btn btn-danger" data-bind="click: function () { account.delete() }">
+                        Delete
+                        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <div id="provider" class="form-group">
+                <label>Provider</label>
+                <p class="form-control-static" data-bind="text:account.provider"></p>
             </div>
-            <div class="col-md-6" style="padding-right: 0">
-                <div id="provider" class="form-group">
-                    <label>Provider</label>
-                    <p class="form-control-static" data-bind="text:account.provider"></p>
-                </div>
 
-                <div id="region" class="form-group">
-                    <label>Region</label>
-                    <p class="form-control-static" data-bind="text:account.region"></p>
-                </div>
+            <div id="region" class="form-group">
+                <label>Region</label>
+                <p class="form-control-static" data-bind="text:account.region"></p>
+            </div>
 
-                <div id="vpc_id" class="form-group">
-                    <label>VPC ID</label>
-                    <p class="form-control-static" data-bind="text:account.vpcId"></p>
-                </div>
+            <div id="vpc_id" class="form-group">
+                <label>VPC ID</label>
+                <p class="form-control-static" data-bind="text:account.vpcId"></p>
             </div>
         </div>
     </div>
