@@ -236,4 +236,3 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
             log_dir = os.path.join(repodir, '.git', 'logs')
             if os.path.isdir(log_dir):
                 shutil.rmtree(log_dir)
-
