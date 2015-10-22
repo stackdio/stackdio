@@ -69,11 +69,22 @@
                     <ul class="nav navbar-nav navbar-right">
                         <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
                         <li class="{% block blueprint-class %}{% endblock %}"><a href="{% url 'ui:blueprint-list' %}">Blueprints</a></li>
+
                         {% if user.settings.advanced_view %}
                         <li class="{% block formula-class %}{% endblock %}"><a href="{% url 'ui:formula-list' %}">Formulas</a></li>
                         <li class="{% block snapshot-class %}{% endblock %}"><a href="{% url 'ui:snapshot-list' %}">Snapshots</a></li>
-                        <li class="{% block account-class %}{% endblock %}"><a href="{% url 'ui:cloud-account-list' %}">Cloud Accounts</a></li>
+
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                Cloud <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li class="{% block account-class %}{% endblock %}"><a href="{% url 'ui:cloud-account-list' %}">Cloud Accounts</a></li>
+                                <li class="{% block image-class %}{% endblock %}"><a href="{% url 'ui:cloud-image-list' %}">Cloud Images</a></li>
+                            </ul>
+                        </li>
                         {% endif %}
+
                         <!-- Extra links -->
                         {% block links %}{% endblock %}
 
@@ -82,9 +93,9 @@
                                 {{ user.username }} <span class="caret"></span>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a href="{% url 'ui:user-profile' %}">Profile</a></li>
-                                <li><a href="">Users</a></li>
-                                <li><a href="">Groups</a></li>
+                                <li class="{% block profile-class %}{% endblock %}"><a href="{% url 'ui:user-profile' %}">Profile</a></li>
+                                <li class="{% block user-class %}{% endblock %}"><a href="">Users</a></li>
+                                <li class="{% block group-class %}{% endblock %}"><a href="">Groups</a></li>
                                 <li class="divider"></li>
                                 <li><a href="{% url 'ui:logout' %}">Logout</a></li>
                             </ul>

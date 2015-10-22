@@ -1,0 +1,60 @@
+{% extends 'cloud/cloud-image-detail-base.html' %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    <div class="row">
+        <form data-bind="submit: function() { image.save(); }">
+            <div class="col-md-6">
+                <div id="title" class="form-group">
+                    <label for="imageTitle">Title</label>
+                    <input type="text" class="form-control" id="imageTitle"
+                           data-bind="value: image.title, valueUpdate: 'keyup'">
+                </div>
+                <div id="description" class="form-group">
+                    <label for="imageDescription">Description</label>
+                    <input type="text" class="form-control" id="imageDescription"
+                           data-bind="value: image.description, valueUpdate: 'keyup'">
+                </div>
+
+                <div id="slug" class="form-group">
+                    <label>Slug</label>
+                    <p class="form-control-static" data-bind="text:image.slug"></p>
+                </div>
+
+                <div id="account" class="form-group">
+                    <label>Account</label>
+                    <p class="form-control-static"><a data-bind="text: accountTitle, attr: {href: accountUrl}"></a></p>
+                </div>
+
+                <div class="form-group" style="margin-top: 15px">
+                    <button type="submit" class="btn btn-primary">Save</button>
+
+                    <button class="btn btn-danger" data-bind="click: function () { image.delete() }">
+                        Delete
+                        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div id="image_id" class="form-group">
+                    <label for="imageImageId">Image ID</label>
+                    <input type="text" class="form-control" id="imageImageId"
+                           data-bind="value: image.imageId, valueUpdate: 'keyup'">
+                </div>
+
+                <div id="default_instance_size" class="form-group">
+                    <label for="imageDefaultInstanceSize">Default Instance Size</label>
+                    <input type="text" class="form-control" id="imageDefaultInstanceSize"
+                           data-bind="value: image.defaultInstanceSize, valueUpdate: 'keyup'">
+                </div>
+
+                <div id="ssh_user" class="form-group">
+                    <label for="imageSshUser">SSH User</label>
+                    <input type="text" class="form-control" id="imageSshUser"
+                           data-bind="value: image.sshUser, valueUpdate: 'keyup'">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

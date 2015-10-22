@@ -71,7 +71,7 @@ define([
         this.slug(raw.slug);
         this.imageId(raw.image_id);
         this.defaultInstanceSize(raw.default_instance_size);
-        this.sshUser(raw.sshUser);
+        this.sshUser(raw.ssh_user);
     };
 
     // Reload the current cloud image
@@ -103,7 +103,9 @@ define([
             data: JSON.stringify({
                 title: self.title(),
                 description: self.description(),
-                create_security_groups: self.createSecurityGroups()
+                image_id: self.imageId(),
+                default_instance_size: self.defaultInstanceSize(),
+                ssh_user: self.sshUser()
             })
         }).done(function (image) {
             utils.growlAlert('Successfully saved cloud image!', 'success');
