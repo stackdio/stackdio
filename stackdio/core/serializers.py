@@ -95,6 +95,11 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
         key = attrs.get('key')
 
         if key:
+            if key in ('Name', 'stack_id'):
+                raise serializers.ValidationError({
+                    'key': ['The keys `Name` and `stack_id` are reserved for system use.']
+                })
+
             labels = content_object.labels.filter(key=key)
 
             if labels.count() > 0:

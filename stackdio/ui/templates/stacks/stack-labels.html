@@ -10,6 +10,7 @@
                     <thead>
                     <tr>
                         {% include 'stackdio/stubs/table-sort-header.html' %}
+                        <th style="width: 10%"></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -20,6 +21,11 @@
                             <input type="text" class="form-control"
                                    data-bind="value: value, valueUpdate: 'keyup'">
                         </td>
+                        <td class="text-center">
+                            <a href="#" data-bind="click: $data.delete">
+                                <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                            </a>
+                        </td>
                     </tr>
                     <!-- /ko -->
                     <!-- ko foreach: newLabels -->
@@ -29,16 +35,19 @@
                             <input type="text" class="form-control"
                                    data-bind="value: value, valueUpdate: 'keyup'">
                         </td>
+                        <td class="text-center">
+                            <a href="#" data-bind="click: function (label) { $root.deleteNewLabel(label) }">
+                                <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                            </a>
+                        </td>
                     </tr>
                     <!-- /ko -->
                     </tbody>
                 </table>
             </div>
         </div>
+
         <div class="row">
-            <div class="col-md-6">
-                <button type="submit" class="btn btn-primary" data-bind="click: function () { saveLabels() }">Save</button>
-            </div>
             <div class="col-md-6">
                 <form data-bind="submit: function () { addNewLabel() }">
                     <div id="new-label-form" class="input-group">
@@ -49,6 +58,9 @@
                         </span>
                     </div>
                 </form>
+            </div>
+            <div class="col-md-6 text-right">
+                <button type="submit" class="btn btn-primary" data-bind="click: function () { saveLabels() }">Save</button>
             </div>
         </div>
     </div>

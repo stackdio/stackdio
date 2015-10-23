@@ -51,8 +51,8 @@ define([
         baseUrl: '/stacks/',
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/labels/',
         sortableFields: [
-            {name: 'key', displayName: 'Key', width: '50%'},
-            {name: 'value', displayName: 'Value', width: '50%'}
+            {name: 'key', displayName: 'Key', width: '45%'},
+            {name: 'value', displayName: 'Value', width: '45%'}
         ],
         init: function () {
             this._super();
@@ -90,6 +90,9 @@ define([
             });
             this.newLabelKey(null);
         },
+        deleteNewLabel: function (label) {
+            this.newLabels.remove(label);
+        },
         saveLabels: function () {
             var ajaxCalls = [];
             var self = this;
@@ -101,8 +104,10 @@ define([
                         value: label.value()
                     })
                 }).fail(function (jqxhr) {
-                    utils.alertError(jqxhr, 'Error saving label',
-                        'Errors saving label for ' + label.key() + ':<br>');
+                    if (jqxhr.status !== 404) {
+                        utils.alertError(jqxhr, 'Error saving label',
+                            'Errors saving label for ' + label.key() + ':<br>');
+                    }
                 }));
             });
 
@@ -116,12 +121,14 @@ define([
                     })
                 }).fail(function (jqxhr) {
                     utils.alertError(jqxhr, 'Error saving label',
-                        'Errors saving label for ' + label.key() + ':<br>');
+                        'Errors saving label for ' + label.key + ':<br>');
                 }));
             });
 
             $.when.apply(this, ajaxCalls).done(function () {
                 utils.growlAlert('Successfully saved labels!', 'success');
+                self.newLabels([]);
+                self.reload();
             });
 
         }
