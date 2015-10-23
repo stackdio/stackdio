@@ -65,6 +65,14 @@ define([
                 window.location = '/formulas/';
             });
 
+            this.usernameText = ko.computed(function () {
+                if (self.formula.accessToken()) {
+                    return 'GitHub access token';
+                } else {
+                    return 'Git username';
+                }
+            });
+
             // Create the version selector
             this.versionSelector = $('#formulaVersion');
 
@@ -112,6 +120,13 @@ define([
             $('.action-dropdown').on('show.bs.dropdown', function () {
                 self.formula.loadAvailableActions();
             });
+
+            function refreshFormula() {
+                self.formula.reload();
+                self.formula.loadComponents();
+            }
+
+            setInterval(refreshFormula, 3000);
         }
     });
 });

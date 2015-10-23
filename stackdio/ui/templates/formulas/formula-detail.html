@@ -31,7 +31,35 @@
         </div>
     </div>
 
-    <div class="row" style="margin-top: 15px">
+    <div class="row" style="margin-top: 15px; margin-bottom: 15px">
+        <form data-bind="submit: function() { formula.save(); }">
+            <div class="col-sm-6">
+                <div id="git_username" class="form-group">
+                    <label for="formulaUsername" class="sr-only">Git username required for private repositories only</label>
+                    <input id="formulaUsername" data-bind="value: formula.gitUsername, attr: {placeholder: usernameText}" class="form-control" type="text">
+                </div>
+            </div>
+            <div id="access_token" class="col-sm-4">
+                <div class="checkbox">
+                    <label class="checkbox-custom" data-initialize="checkbox">
+                        <input class="sr-only" type="checkbox" data-bind="checked: formula.accessToken">
+                        <span class="checkbox-label">Use access token</span>
+                    </label>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <button type="submit" class="btn btn-success">Save</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="row" style="border-top: 1px solid #eee">
+        <div class="col-md-12">
+            <h3>Components</h3>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-md-6">
             <select id="formulaVersion" style="width: 100%" class="stackdio-hidden-on-load"></select>
         </div>

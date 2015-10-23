@@ -23,12 +23,12 @@
                 <li role="presentation"{% if page_id == 'properties' %} class="active"{% endif %}>
                     <a href="{% url 'ui:blueprint-properties' pk=blueprint_id %}">Properties</a>
                 </li>
-                <li role="presentation"{% if page_id == 'host_definitions' %} class="active"{% endif %}>
-                    <a href="">Host Definitions</a>
-                </li>
-                <li role="presentation"{% if page_id == 'access-rules' %} class="active"{% endif %}>
-                    <a href="">Access Rules</a>
-                </li>
+{#                <li role="presentation"{% if page_id == 'host_definitions' %} class="active"{% endif %}>#}
+{#                    <a href="">Host Definitions</a>#}
+{#                </li>#}
+{#                <li role="presentation"{% if page_id == 'access-rules' %} class="active"{% endif %}>#}
+{#                    <a href="">Access Rules</a>#}
+{#                </li>#}
                 <li role="presentation"{% if page_id == 'formula-versions' %} class="active"{% endif %}>
                     <a href="{% url 'ui:blueprint-formula-versions' pk=blueprint_id %}">Formula Versions</a>
                 </li>
