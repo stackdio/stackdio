@@ -44,6 +44,7 @@ class CloudImageFilter(django_filters.FilterSet):
 
 class CloudInstanceSizeFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
+    instance_id = django_filters.CharFilter(lookup_type='icontains')
 
     class Meta:
         model = models.CloudInstanceSize

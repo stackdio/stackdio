@@ -23,6 +23,7 @@ from . import views
 from .views import accounts
 from .views import blueprints
 from .views import formulas
+from .views import images
 from .views import snapshots
 from .views import stacks
 
@@ -215,4 +216,26 @@ urlpatterns = (
     cached_url(r'^accounts/(?P<pk>[0-9]+)/security_groups/$',
                accounts.AccountSecurityGroupsView.as_view(),
                name='cloud-account-security-groups'),
+
+    cached_url(r'^images/$',
+               images.ImageListView.as_view(),
+               name='cloud-image-list',
+               timeout=30),
+
+    cached_url(r'^images/create/$',
+               images.ImageCreateView.as_view(),
+               name='cloud-image-create'),
+
+    cached_url(r'^images/permissions/$',
+               images.ImageModelPermissionsView.as_view(),
+               name='cloud-image-model-permissions'),
+
+    cached_url(r'^images/(?P<pk>[0-9]+)/$',
+               images.ImageDetailView.as_view(),
+               name='cloud-image-detail',
+               timeout=30),
+
+    cached_url(r'^images/(?P<pk>[0-9]+)/permissions/$',
+               images.ImageObjectPermissionsView.as_view(),
+               name='cloud-image-object-permissions'),
 )

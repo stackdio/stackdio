@@ -39,7 +39,14 @@ class StackdioView(TemplateView):
 
 
 class RootView(StackdioView):
-    template_name = 'stackdio/home.html'
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return HttpResponseRedirect('/stacks/')
+        else:
+            redirect_url = resolve_url('ui:login')
+            if request.path != '/':
+                redirect_url = '{0}?next={1}'.format(redirect_url, request.path)
+            return HttpResponseRedirect(redirect_url)
 
 
 class AppMainView(TemplateView):

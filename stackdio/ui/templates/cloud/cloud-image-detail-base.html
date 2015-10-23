@@ -1,0 +1,33 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Cloud Image Detail{% endblock %}
+{% block image-class %}active{% endblock %}
+
+{# Inject the image id into the window so we can access it in our javascript VM #}
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.imageId = {{ image_id }};
+    </script>
+{% endblock %}
+
+
+{% block page-content %}
+    <div class="row">
+        <div class="col-sm-3 col-sm-push-9">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:cloud-image-detail' pk=image_id %}">Detail</a>
+                </li>
+                {% if has_admin %}
+                <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:cloud-image-object-permissions' pk=image_id %}">Permissions</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        {% block detail-content %}{% endblock %}
+    </div>
+{% endblock %}
