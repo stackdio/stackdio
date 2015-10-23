@@ -212,6 +212,8 @@ define([
                     self.createCloudAccount().done(function (account) {
                         self.selectedAccount = account;
                         self.makeSGSelector(account);
+                    }).done(function () {
+                        self.wizard.wizard('selectedItem', {step: 3});
                     }).fail(function (jqxhr) {
                         try {
                             var resp = JSON.parse(jqxhr.responseText);
@@ -230,6 +232,9 @@ define([
                             self.wizard.wizard('selectedItem', {step: 1});
                         }
                     });
+
+                    // Do this so we don't have weird jumping around
+                    ev.preventDefault();
 
                     break;
 
