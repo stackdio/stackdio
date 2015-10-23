@@ -40,20 +40,48 @@ define([
         self.accountTitle = ko.observable();
         self.accountUrl = '/accounts/' + window.stackdio.accountId + '/';
 
+        self.accountId = ko.observable('');
+
         // Override the breadcrumbs
-        self.breadcrumbs = [
-            {
-                active: false,
-                title: 'Cloud Images',
-                href: '/images/'
-            },
-            ko.observable({
-                active: true,
-                title: ko.computed(function() {
-                    return self.imageTitle()
-                })
-            })
-        ];
+        if (document.referrer.indexOf('account') >= 0) {
+            self.breadcrumbs = [
+                {
+                    active: false,
+                    title: 'Cloud Accounts',
+                    href: '/accounts/'
+                },
+                {
+                    active: false,
+                    title: 'Cloud Account Detail',
+                    href: ko.computed(function () { return '/accounts/' + self.accountId() + '/';})
+                },
+                {
+                    active: false,
+                    title: 'Cloud Account Images',
+                    href: ko.computed(function () { return '/accounts/' + self.accountId() + '/images/';})
+                },
+                {
+                    active: true,
+                    title: ko.computed(function() {
+                        return self.imageTitle()
+                    })
+                }
+            ];
+        } else {
+            self.breadcrumbs = [
+                {
+                    active: false,
+                    title: 'Cloud Images',
+                    href: '/images/'
+                },
+                {
+                    active: true,
+                    title: ko.computed(function() {
+                        return self.imageTitle()
+                    })
+                }
+            ];
+        }
 
         self.sizeSelector = $('#imageDefaultInstanceSize');
 
@@ -94,6 +122,7 @@ define([
             self.image.waiting.done(function () {
                 document.title = 'stackd.io | Cloud Image Detail - ' + self.image.title();
                 self.imageTitle(self.image.title());
+                self.accountId(self.image.raw.account);
 
                 // Set the default size
                 var size = self.image.defaultInstanceSize();
