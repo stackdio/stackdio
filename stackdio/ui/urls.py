@@ -20,6 +20,7 @@ from django.contrib.auth.views import login, logout_then_login
 
 from stackdio.core.utils import cached_url
 from . import views
+from .views import accounts
 from .views import blueprints
 from .views import formulas
 from .views import snapshots
@@ -128,7 +129,7 @@ urlpatterns = (
     cached_url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
                blueprints.BlueprintPropertiesView.as_view(),
                name='blueprint-properties'),
-    
+
     cached_url(r'^blueprints/(?P<pk>[0-9]+)/formula_versions/$',
                blueprints.BlueprintFormulaVersionsView.as_view(),
                name='blueprint-formula-versions'),
@@ -145,7 +146,7 @@ urlpatterns = (
     cached_url(r'^formulas/import/$',
                formulas.FormulaImportView.as_view(),
                name='formula-import'),
-    
+
     cached_url(r'^formulas/permissions/$',
                formulas.FormulaModelPermissionsView.as_view(),
                name='formula-model-permissions'),
@@ -184,4 +185,34 @@ urlpatterns = (
     cached_url(r'^snapshots/(?P<pk>[0-9]+)/permissions/$',
                snapshots.SnapshotObjectPermissionsView.as_view(),
                name='snapshot-object-permissions'),
+
+    cached_url(r'^accounts/$',
+               accounts.AccountListView.as_view(),
+               name='cloud-account-list',
+               timeout=30),
+
+    cached_url(r'^accounts/create/$',
+               accounts.AccountCreateView.as_view(),
+               name='cloud-account-create'),
+
+    cached_url(r'^accounts/permissions/$',
+               accounts.AccountModelPermissionsView.as_view(),
+               name='cloud-account-model-permissions'),
+
+    cached_url(r'^accounts/(?P<pk>[0-9]+)/$',
+               accounts.AccountDetailView.as_view(),
+               name='cloud-account-detail',
+               timeout=30),
+
+    cached_url(r'^accounts/(?P<pk>[0-9]+)/permissions/$',
+               accounts.AccountObjectPermissionsView.as_view(),
+               name='cloud-account-object-permissions'),
+
+    cached_url(r'^accounts/(?P<pk>[0-9]+)/images/$',
+               accounts.AccountImagesView.as_view(),
+               name='cloud-account-images'),
+
+    cached_url(r'^accounts/(?P<pk>[0-9]+)/security_groups/$',
+               accounts.AccountSecurityGroupsView.as_view(),
+               name='cloud-account-security-groups'),
 )

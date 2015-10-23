@@ -1,0 +1,73 @@
+{% extends 'cloud/cloud-account-detail-base.html' %}
+{% load staticfiles %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2/dist/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
+{% endblock %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Add Existing Security Group</h4>
+
+            <div class="form-group" id="security_groups">
+                <label for="accountSecurityGroups" class="sr-only">Security Groups</label>
+                <select id="accountSecurityGroups" style="width: 100%" class="stackdio-hidden-on-load"></select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h4>Add New Security Group</h4>
+
+            <form data-bind="submit: addNewGroup">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="New Group name"
+                           data-bind="value: newGroupName, valueUpdate: 'keyup'">
+                    <span class="input-group-btn">
+                        <button class="btn btn-success" type="submit">Add</button>
+                    </span>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="row" style="margin-top: 15px">
+        <div class="col-md-12">
+            <h4>Default Security Groups</h4>
+
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <!-- ko foreach: sortableFields -->
+                    <th data-bind="style: {width: width}">
+                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <!-- /ko -->
+                    <th style="width: 10%"></th>
+                </tr>
+                </thead>
+                <tbody data-bind="foreach: sortedObjects">
+                <tr class="stackdio-hidden-on-load">
+                    <td data-bind="text: name"></td>
+                    <td data-bind="text: description"></td>
+                    <td>
+                        <i class="fa fa-lg fa-check text-success" data-bind="visible: managed"></i>
+                        <i class="fa fa-lg fa-times text-danger" data-bind="visible: !managed()"></i>
+                    </td>
+                    <td data-bind="text: groupId">
+                    <td class="text-center">
+                        <a href="#" data-bind="click: $data.delete">
+                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

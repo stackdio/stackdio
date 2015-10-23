@@ -19,12 +19,13 @@
 define([
     'jquery',
     'knockout',
-    'bootbox'
-], function ($, ko, bootbox) {
+    'bootbox',
+    'utils/utils'
+], function ($, ko, bootbox, utils) {
     'use strict';
 
-    // Define the security group model.
-    function SecurityGroup(raw, parent) {
+    // Define the cloud image model.
+    function CloudImage(raw, parent) {
         var needReload = false;
         if (typeof raw === 'string') {
             raw = parseInt(raw);
@@ -34,7 +35,7 @@ define([
             // Set the things we need for the reload
             raw = {
                 id: raw,
-                url: '/api/commands/' + raw + '/'
+                url: '/api/cloud/images/' + raw + '/'
             }
         }
 
@@ -48,58 +49,78 @@ define([
         this.id = raw.id;
 
         // Editable fields
-        this.name = ko.observable();
+        this.title = ko.observable();
         this.description = ko.observable();
-        this.groupId = ko.observable();
-        this.default = ko.observable();
-        this.managed = ko.observable();
+        this.slug = ko.observable();
+        this.imageId = ko.observable();
+        this.defaultInstanceSize = ko.observable();
+        this.sshUser = ko.observable();
 
         if (needReload) {
-            this.reload();
+            this.waiting = this.reload();
         } else {
             this._process(raw);
         }
     }
 
-    SecurityGroup.constructor = SecurityGroup;
+    CloudImage.constructor = CloudImage;
 
-    SecurityGroup.prototype._process = function (raw) {
-        this.name(raw.name);
+    CloudImage.prototype._process = function (raw) {
+        this.title(raw.title);
         this.description(raw.description);
-        this.groupId(raw.group_id);
-        this.default(raw.default);
-        this.managed(raw.managed);
+        this.slug(raw.slug);
+        this.imageId(raw.image_id);
+        this.defaultInstanceSize(raw.default_instance_size);
+        this.sshUser(raw.sshUser);
     };
 
-    // Reload the current security group
-    SecurityGroup.prototype.reload = function () {
+    // Reload the current cloud image
+    CloudImage.prototype.reload = function () {
         var self = this;
         return $.ajax({
             method: 'GET',
             url: this.raw.url
-        }).done(function (group) {
-            self.raw = group;
-            self._process(group);
+        }).done(function (image) {
+            self.raw = image;
+            self._process(image);
         });
     };
 
-    SecurityGroup.prototype.delete = function () {
+    CloudImage.prototype.save = function () {
         var self = this;
-        var securityGroupName = this.name();
+        var keys = ['title', 'description', 'image_id', 'default_instance_size', 'ssh_user'];
 
-        var message = 'Are you sure you want to delete <strong>' + securityGroupName + '</strong>?';
+        keys.forEach(function (key) {
+            var el = $('#' + key);
+            el.removeClass('has-error');
+            var help = el.find('.help-block');
+            help.remove();
+        });
 
-        if (this.managed()) {
-            message += '<br>This <strong>will</strong> delete the group from the provider in ' +
-                'addition to locally.';
-        } else {
-            message += '<br>This will <strong>not</strong> delete the group on the provider, it ' +
-                'will only delete stackd.io\'s record of it.';
-        }
+        $.ajax({
+            method: 'PUT',
+            url: self.raw.url,
+            data: JSON.stringify({
+                title: self.title(),
+                description: self.description(),
+                create_security_groups: self.createSecurityGroups()
+            })
+        }).done(function (image) {
+            utils.growlAlert('Successfully saved cloud image!', 'success');
+            try {
+                self.parent.imageTitle(image.title);
+            } catch (e) {}
+        }).fail(function (jqxhr) {
+            utils.parseSaveError(jqxhr, 'cloud image', keys);
+        });
+    };
 
+    CloudImage.prototype.delete = function () {
+        var self = this;
+        var imageTitle = this.title();
         bootbox.confirm({
-            title: 'Confirm delete of <strong>' + securityGroupName + '</strong>',
-            message: message,
+            title: 'Confirm delete of <strong>' + imageTitle + '</strong>',
+            message: 'Are you sure you want to delete <strong>' + imageTitle + '</strong>?',
             buttons: {
                 confirm: {
                     label: 'Delete',
@@ -111,10 +132,8 @@ define([
                     $.ajax({
                         method: 'DELETE',
                         url: self.raw.url
-                    }).done(function () {
-                        if (self.parent.reload) {
-                            self.parent.reload();
-                        }
+                    }).done(function (image) {
+                        // Nothing to do here?
                     }).fail(function (jqxhr) {
                         var message;
                         try {
@@ -125,7 +144,7 @@ define([
                                 'to your administrators.';
                         }
                         bootbox.alert({
-                            title: 'Error deleting security group',
+                            title: 'Error deleting cloud image',
                             message: message
                         });
                     });
@@ -134,5 +153,5 @@ define([
         });
     };
 
-    return SecurityGroup;
+    return CloudImage;
 });

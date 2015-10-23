@@ -1,8 +1,8 @@
-{% extends 'snapshots/snapshot-detail-base.html' %}
+{% extends 'cloud/cloud-account-detail-base.html' %}
 
 {% block title %}{{ object_type }} Permissions{% endblock %}
 
-{# Inject the snapshot id into the window so we can access it in our javascript VM #}
+{# Inject the account id into the window so we can access it in our javascript VM #}
 {% if object_id %}
 {% block scripts %}
     {{ block.super }}
