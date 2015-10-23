@@ -17,8 +17,9 @@
 */
 
 define([
-    'knockout'
-], function (ko) {
+    'knockout',
+    'bootbox'
+], function (ko, bootbox) {
     'use strict';
 
     // Define the label model.
@@ -42,6 +43,46 @@ define([
     Label.prototype._process = function (raw) {
         this.key(raw.key);
         this.value(raw.value);
+    };
+
+    Label.prototype.delete = function () {
+        var self = this;
+        var labelKey = _.escape(self.key());
+        bootbox.confirm({
+            title: 'Confirm delete of <strong>' + labelKey + '</strong>',
+            message: 'Are you sure you want to delete the label <strong>' + labelKey + '</strong>?',
+            buttons: {
+                confirm: {
+                    label: 'Delete',
+                    className: 'btn-danger'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    $.ajax({
+                        method: 'DELETE',
+                        url: self.raw.url
+                    }).done(function () {
+                        if (self.parent.reload) {
+                            self.parent.reload();
+                        }
+                    }).fail(function (jqxhr) {
+                        var message;
+                        try {
+                            var resp = JSON.parse(jqxhr.responseText);
+                            message = resp.detail.join('<br>');
+                        } catch (e) {
+                            message = 'Oops... there was a server error.  This has been reported ' +
+                                'to your administrators.';
+                        }
+                        bootbox.alert({
+                            title: 'Error deleting label',
+                            message: message
+                        });
+                    });
+                }
+            }
+        });
     };
 
     return Label;

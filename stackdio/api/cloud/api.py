@@ -19,6 +19,7 @@
 import logging
 
 from django.core.cache import cache
+from guardian.shortcuts import assign_perm
 from rest_framework import generics
 from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
@@ -134,6 +135,12 @@ class CloudAccountListAPIView(generics.ListCreateAPIView):
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudAccountFilter
 
+    def perform_create(self, serializer):
+        account = serializer.save()
+
+        for perm in models.CloudAccount.object_permissions:
+            assign_perm('cloud.%s_cloudaccount' % perm, self.request.user, account)
+
 
 class CloudAccountDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudAccount.objects.all()
@@ -245,8 +252,11 @@ class CloudImageListAPIView(generics.ListCreateAPIView):
     filter_class = filters.CloudImageFilter
 
     def perform_create(self, serializer):
-        obj = serializer.save()
-        obj.update_config()
+        image = serializer.save()
+        image.update_config()
+
+        for perm in models.CloudImage.object_permissions:
+            assign_perm('cloud.%s_cloudimage' % perm, self.request.user, image)
 
 
 class CloudImageDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -292,6 +302,12 @@ class SnapshotListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+
+    def perform_create(self, serializer):
+        snapshot = serializer.save()
+
+        for perm in models.Snapshot.object_permissions:
+            assign_perm('cloud.%s_snapshot' % perm, self.request.user, snapshot)
 
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
