@@ -26,6 +26,7 @@ from .views import formulas
 from .views import images
 from .views import snapshots
 from .views import stacks
+from .views import users
 
 auth_kwargs = {
     'template_name': 'stackdio/login.html',
@@ -54,6 +55,11 @@ urlpatterns = (
     cached_url('^user/$',
                views.UserProfileView.as_view(),
                name='user-profile'),
+
+    cached_url(r'^users/$',
+               users.UserListView.as_view(),
+               name='user-list',
+               timeout=30),
 
     cached_url(r'^stacks/$',
                stacks.StackListView.as_view(),

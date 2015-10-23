@@ -94,7 +94,7 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li class="{% block profile-class %}{% endblock %}"><a href="{% url 'ui:user-profile' %}">Profile</a></li>
-                                <li class="{% block user-class %}{% endblock %}"><a href="">Users</a></li>
+                                <li class="{% block user-class %}{% endblock %}"><a href="{% url 'ui:user-list' %}">Users</a></li>
                                 <li class="{% block group-class %}{% endblock %}"><a href="">Groups</a></li>
                                 <li class="divider"></li>
                                 <li><a href="{% url 'ui:logout' %}">Logout</a></li>

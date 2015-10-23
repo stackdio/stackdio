@@ -71,7 +71,7 @@ define([
     User.constructor = User;
 
     function processTime(time) {
-        if (time.length) {
+        if (time && time.length) {
             return moment(time);
         } else {
             return new FakeMoment();
@@ -85,8 +85,10 @@ define([
         this.email(raw.email);
         this.superuser(raw.superuser);
         this.lastLogin(processTime(raw.last_login));
-        this.publicKey(raw.settings.public_key);
-        this.advanced(raw.settings.advanced_view);
+        if (raw.settings) {
+            this.publicKey(raw.settings.public_key);
+            this.advanced(raw.settings.advanced_view);
+        }
     };
 
     // Reload the current volume
