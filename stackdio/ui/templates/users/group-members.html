@@ -1,0 +1,33 @@
+{% extends 'users/group-detail-base.html' %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    {% include 'stackdio/stubs/pager.html' with object_type='members' search=True %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-hover">
+            <thead>
+                <tr>
+                    <!-- ko foreach: sortableFields -->
+                    <th data-bind="style: {width: width}">
+                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <!-- /ko -->
+                    <th style="width: 10%"></th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: sortedObjects">
+                <tr class="stackdio-hidden-on-load">
+                    <td data-bind="text: username"></td>
+                    <td>DELETE BUTTON</td>
+                </tr>
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

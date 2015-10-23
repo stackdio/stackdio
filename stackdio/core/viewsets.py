@@ -175,7 +175,11 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
         return self.get_model_cls()._meta.model_name
 
     def get_app_label(self):
-        return self.get_model_cls()._meta.app_label
+        ret = self.get_model_cls()._meta.app_label
+        if ret == 'auth':
+            # one-off thing, since users/groups are in the `users` app, not `auth`
+            return 'users'
+        return ret
 
     def get_model_permissions(self):
         return getattr(self.get_model_cls(),
@@ -251,7 +255,11 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
         return self.get_permissioned_object()._meta.model_name
 
     def get_app_label(self):
-        return self.get_permissioned_object()._meta.app_label
+        ret = self.get_permissioned_object()._meta.app_label
+        if ret == 'auth':
+            # one-off thing, since users/groups are in the `users` app, not `auth`
+            return 'users'
+        return ret
 
     def get_object_permissions(self):
         return getattr(self.get_permissioned_object(),

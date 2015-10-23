@@ -15,9 +15,11 @@
 # limitations under the License.
 #
 
-# from django.http import Http404
+from django.contrib.auth.models import Group
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 
-from stackdio.ui.views import PageView
+from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
 
 
 # class UserCreateView(PageView):
@@ -40,3 +42,65 @@ class UserListView(PageView):
         context['has_admin'] = self.request.user.has_perm('auth.admin_user')
         context['has_create'] = self.request.user.has_perm('auth.create_user')
         return context
+
+
+class GroupListView(PageView):
+    template_name = 'users/group-list.html'
+    viewmodel = 'viewmodels/group-list'
+
+    def get_context_data(self, **kwargs):
+        context = super(GroupListView, self).get_context_data(**kwargs)
+        context['has_admin'] = self.request.user.has_perm('auth.admin_group')
+        context['has_create'] = self.request.user.has_perm('auth.create_group')
+        return context
+
+
+class GroupModelPermissionsView(ModelPermissionsView):
+    viewmodel = 'viewmodels/group-model-permissions'
+    model = Group
+
+
+class GroupDetailView(PageView):
+    template_name = 'users/group-detail.html'
+    viewmodel = 'viewmodels/group-detail'
+    page_id = 'detail'
+
+    def get_context_data(self, **kwargs):
+        context = super(GroupDetailView, self).get_context_data(**kwargs)
+        name = kwargs['name']
+        # Go ahead an raise a 404 here if the group doesn't exist rather than waiting until later.
+        group = get_object_or_404(Group.objects.all(), name=name)
+        if not self.request.user.has_perm('auth.view_group', group):
+            raise Http404()
+        context['group_name'] = name
+        context['has_admin'] = self.request.user.has_perm('auth.admin_group', group)
+        context['page_id'] = self.page_id
+        return context
+
+
+class GroupObjectPermissionsView(ObjectPermissionsView):
+    template_name = 'users/group-object-permissions.html'
+    viewmodel = 'viewmodels/group-object-permissions'
+    page_id = 'permissions'
+
+    def get_context_data(self, **kwargs):
+        context = super(GroupObjectPermissionsView, self).get_context_data(**kwargs)
+        name = kwargs['name']
+        # Go ahead an raise a 404 here if the group doesn't exist rather than waiting until later.
+        group = get_object_or_404(Group.objects.all(), name=name)
+        if not self.request.user.has_perm('auth.admin_group', group):
+            raise Http404()
+        context['group_name'] = name
+        context['object_id'] = name
+        context['has_admin'] = self.request.user.has_perm('auth.admin_group', group)
+        context['page_id'] = self.page_id
+        return context
+
+    def get_object(self):
+        return get_object_or_404(Group.objects.all(), name=self.kwargs['name'])
+
+
+class GroupMembersView(GroupDetailView):
+    template_name = 'users/group-members.html'
+    viewmodel = 'viewmodels/group-members'
+    page_id = 'members'

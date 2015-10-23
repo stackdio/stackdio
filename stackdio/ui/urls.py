@@ -61,6 +61,28 @@ urlpatterns = (
                name='user-list',
                timeout=30),
 
+    cached_url(r'^groups/$',
+               users.GroupListView.as_view(),
+               name='group-list',
+               timeout=30),
+
+    cached_url(r'^groups/permissions/$',
+               users.GroupModelPermissionsView.as_view(),
+               name='group-model-permissions'),
+
+    cached_url(r'^groups/(?P<name>[\w.@+-]+)/$',
+               users.GroupDetailView.as_view(),
+               name='group-detail',
+               timeout=30),
+
+    cached_url(r'^groups/(?P<name>[\w.@+-]+)/members/$',
+               users.GroupMembersView.as_view(),
+               name='group-members'),
+
+    cached_url(r'^groups/(?P<name>[\w.@+-]+)/permissions/$',
+               users.GroupObjectPermissionsView.as_view(),
+               name='group-object-permissions'),
+
     cached_url(r'^stacks/$',
                stacks.StackListView.as_view(),
                name='stack-list',
