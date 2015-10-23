@@ -64,6 +64,7 @@ class ImageDetailView(PageView):
             raise Http404()
         context['image_id'] = pk
         context['account_id'] = image.account.id
+        context['provider_name'] = image.account.provider.name
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudimage', image)
         context['page_id'] = self.page_id
         return context

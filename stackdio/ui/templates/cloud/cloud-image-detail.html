@@ -1,4 +1,20 @@
 {% extends 'cloud/cloud-image-detail-base.html' %}
+{% load staticfiles %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.accountId = {{ account_id }};
+        window.stackdio.providerName = '{{ provider_name }}';
+    </script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2/dist/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
+{% endblock %}
 
 {% block detail-content %}
 <div class="col-sm-9 col-sm-pull-3">
@@ -10,6 +26,7 @@
                     <input type="text" class="form-control" id="imageTitle"
                            data-bind="value: image.title, valueUpdate: 'keyup'">
                 </div>
+
                 <div id="description" class="form-group">
                     <label for="imageDescription">Description</label>
                     <input type="text" class="form-control" id="imageDescription"
@@ -42,10 +59,9 @@
                            data-bind="value: image.imageId, valueUpdate: 'keyup'">
                 </div>
 
-                <div id="default_instance_size" class="form-group">
+                <div class="form-group" id="default_instance_size">
                     <label for="imageDefaultInstanceSize">Default Instance Size</label>
-                    <input type="text" class="form-control" id="imageDefaultInstanceSize"
-                           data-bind="value: image.defaultInstanceSize, valueUpdate: 'keyup'">
+                    <select id="imageDefaultInstanceSize" style="width: 100%" class="stackdio-hidden-on-load"></select>
                 </div>
 
                 <div id="ssh_user" class="form-group">

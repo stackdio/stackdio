@@ -1,0 +1,29 @@
+{% extends 'cloud/cloud-image-detail-base.html' %}
+
+{% block title %}{{ object_type }} Permissions{% endblock %}
+
+{# Inject the image id into the window so we can access it in our javascript VM #}
+{% if object_id %}
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.objectId = {{ object_id }};
+    </script>
+{% endblock %}
+{% endif %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    {% include 'stackdio/stubs/permissions-table.html' with user_or_group='user' %}
+
+    {% include 'stackdio/stubs/permissions-table.html' with user_or_group='group' %}
+
+    <div class="row" style="margin-top: 20px">
+        <div class="col-md-12">
+            <button class="btn btn-primary" data-bind="click: function() { save() }">Save</button>
+            <button class="btn btn-info" data-bind="click: loadPermissions">Refresh</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

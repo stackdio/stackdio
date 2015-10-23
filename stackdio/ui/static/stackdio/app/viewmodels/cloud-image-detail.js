@@ -19,7 +19,8 @@ define([
     'jquery',
     'knockout',
     'models/cloud-image',
-    'models/cloud-account'
+    'models/cloud-account',
+    'select2'
 ], function($, ko, CloudImage, CloudAccount) {
     'use strict';
 
@@ -54,6 +55,38 @@ define([
             })
         ];
 
+        self.sizeSelector = $('#imageDefaultInstanceSize');
+
+        self.sizeSelector.select2({
+            ajax: {
+                url: '/api/cloud/providers/' + window.stackdio.providerName + '/instance_sizes/',
+                dataType: 'json',
+                delay: 100,
+                data: function (params) {
+                    return {
+                        instance_id: params.term
+                    };
+                },
+                processResults: function (data) {
+                    data.results.forEach(function (size) {
+                        size.id = size.instance_id;
+                        size.text = size.instance_id;
+                    });
+                    return data;
+                },
+                cache: true
+            },
+            theme: 'bootstrap',
+            placeholder: 'Select an instance size...',
+            minimumInputLength: 0
+        });
+
+        self.sizeSelector.on('select2:select', function (ev) {
+            var size = ev.params.data;
+
+            self.image.defaultInstanceSize(size.instance_id);
+        });
+
         self.reset = function() {
             // Create the image object.  Pass in the image id, and let the model load itself.
             self.image = new CloudImage(window.stackdio.imageId, self);
@@ -61,6 +94,12 @@ define([
             self.image.waiting.done(function () {
                 document.title = 'stackd.io | Cloud Image Detail - ' + self.image.title();
                 self.imageTitle(self.image.title());
+
+                // Set the default size
+                var size = self.image.defaultInstanceSize();
+                // We have to add it into the DOM before we can select it programmatically
+                self.sizeSelector.append('<option value="' + size + '" title="' + size + '">' + size + '</option>');
+                self.sizeSelector.val(size).trigger('change');
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/images/';
