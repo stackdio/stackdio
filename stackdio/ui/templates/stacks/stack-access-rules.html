@@ -2,35 +2,32 @@
 
 {% block detail-content %}
 <div class="col-sm-9 col-sm-pull-3">
-    <div class="container-fluid">
-        {% include 'stackdio/stubs/pager.html' with object_type='access rules' search=False %}
+    {% include 'stackdio/stubs/pager.html' with object_type='access rules' search=False %}
 
-        <div class="row">
-            <div class="col-md-12">
-                <table class="table table-hover">
-                <thead>
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-hover">
+            <thead>
+            <tr>
+                <!-- ko foreach: sortableFields -->
+                <th data-bind="style: {width: width}">
+                    <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                    <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                        <span class="caret"></span>
+                    </span>
+                </th>
+                <!-- /ko -->
+            </tr>
+            </thead>
+            <tbody data-bind="foreach: sortedObjects">
                 <tr>
-                    <!-- ko foreach: sortableFields -->
-                    <th data-bind="style: {width: width}">
-                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
-                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
-                            <span class="caret"></span>
-                        </span>
-                    </th>
-                    <!-- /ko -->
+                    <td data-bind="text: name"></td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: groupId"></td>
                 </tr>
-                </thead>
-                <tbody data-bind="foreach: sortedObjects">
-                    <tr>
-                        <td data-bind="text: name"></td>
-                        <td data-bind="text: description"></td>
-                        <td data-bind="text: groupId"></td>
-                    </tr>
-                </tbody>
-            </table>
-            </div>
+            </tbody>
+        </table>
         </div>
-
     </div>
 </div>
 {% endblock %}

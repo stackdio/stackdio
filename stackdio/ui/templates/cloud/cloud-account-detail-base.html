@@ -1,0 +1,45 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Cloud Account Detail{% endblock %}
+{% block account-class %}active{% endblock %}
+
+{# Inject the account id into the window so we can access it in our javascript VM #}
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.accountId = {{ account_id }};
+    </script>
+{% endblock %}
+
+
+{% block page-content %}
+    <div class="row">
+        <div class="col-sm-3 col-sm-push-9">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:cloud-account-detail' pk=account_id %}">Detail</a>
+                </li>
+                <li role="presentation"{% if page_id == 'images' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:cloud-account-images' pk=account_id %}">Images</a>
+                </li>
+                <li role="presentation"{% if page_id == 'security-groups' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:cloud-account-security-groups' pk=account_id %}">Security Groups</a>
+                </li>
+{#                <li role="presentation"{% if page_id == 'global-orchestration' %} class="active"{% endif %}>#}
+{#                    <a href="">Global Orchestration</a>#}
+{#                </li>#}
+{#                <li role="presentation"{% if page_id == 'formula-versions' %} class="active"{% endif %}>#}
+{#                    <a href="{% url 'ui:cloud-account-formula-versions' pk=account_id %}">Formula Versions</a>#}
+{#                </li>#}
+                {% if has_admin %}
+                <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:cloud-account-object-permissions' pk=account_id %}">Permissions</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        {% block detail-content %}{% endblock %}
+    </div>
+{% endblock %}

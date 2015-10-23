@@ -78,6 +78,13 @@ class CloudProvider(models.Model):
     def __unicode__(self):
         return self.name
 
+    def get_driver(self):
+        # determine the provider driver class
+        provider_class = get_provider_driver_class(self)
+
+        # Return an instance of the provider driver
+        return provider_class()
+
 
 _cloudaccount_model_permissions = (
     'create',

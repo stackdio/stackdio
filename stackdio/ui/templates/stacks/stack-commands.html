@@ -2,58 +2,55 @@
 
 {% block detail-content %}
 <div class="col-sm-9 col-sm-pull-3">
-    <div class="container-fluid">
-        <form class="form-inline" data-bind="submit: function () { runCommand() }">
-            <div class="row" style="margin-top: 15px">
-                <div class="form-group col-sm-3">
-                    <label for="host_target" class="sr-only">Host Target</label>
-                    <input id="host_target" class="form-control" type="text"
-                           placeholder="Host Target" style="width: 100%"
-                           data-bind="value: hostTarget, valueUpdate: 'keyup'">
-                </div>
-                <div class="form-group col-sm-7">
-                    <label for="command" class="sr-only">Command</label>
-                    <input id="command" class="form-control" type="text"
-                           placeholder="Command" style="width: 100%"
-                           data-bind="value: command, valueUpdate: 'keyup'">
-                </div>
-                <div class="col-sm-2 text-right">
-                    <button type="submit" class="btn btn-success btn-block">Run</button>
-                </div>
+    <form class="form-inline" data-bind="submit: function () { runCommand() }">
+        <div class="row" style="margin-top: 15px">
+            <div class="form-group col-sm-3">
+                <label for="host_target" class="sr-only">Host Target</label>
+                <input id="host_target" class="form-control" type="text"
+                       placeholder="Host Target" style="width: 100%"
+                       data-bind="value: hostTarget, valueUpdate: 'keyup'">
             </div>
-        </form>
-
-        {% include 'stackdio/stubs/pager.html' with object_type='commands' search=False %}
-
-        <div class="row">
-            <div class="col-md-12">
-                <table class="table table-hover">
-                <thead>
-                <tr>
-                    <!-- ko foreach: sortableFields -->
-                    <th data-bind="style: {width: width}">
-                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
-                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
-                            <span class="caret"></span>
-                        </span>
-                    </th>
-                    <!-- /ko -->
-                    <th style="width: 10%"></th>
-                </tr>
-                </thead>
-                <tbody data-bind="foreach: sortedObjects">
-                    <tr class="stackdio-hidden-on-load" data-bind="click: function (command) { $root.goToDetailPage(command) }">
-                        <td data-bind="text: hostTarget"></td>
-                        <td data-bind="text: command"></td>
-                        <td data-bind="text: finishTime().calendar()"></td>
-                        <td><span class="label" data-bind="css: labelClass, text: status"></span></td>
-                        <td><button class="btn btn-xs btn-info" data-bind="click: function (command) { $root.runAgain(command) }">Run Again</button></td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class="form-group col-sm-7">
+                <label for="command" class="sr-only">Command</label>
+                <input id="command" class="form-control" type="text"
+                       placeholder="Command" style="width: 100%"
+                       data-bind="value: command, valueUpdate: 'keyup'">
+            </div>
+            <div class="col-sm-2 text-right">
+                <button type="submit" class="btn btn-success btn-block">Run</button>
             </div>
         </div>
+    </form>
 
+    {% include 'stackdio/stubs/pager.html' with object_type='commands' search=False %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-hover">
+            <thead>
+            <tr>
+                <!-- ko foreach: sortableFields -->
+                <th data-bind="style: {width: width}">
+                    <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                    <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                        <span class="caret"></span>
+                    </span>
+                </th>
+                <!-- /ko -->
+                <th style="width: 10%"></th>
+            </tr>
+            </thead>
+            <tbody data-bind="foreach: sortedObjects">
+                <tr class="stackdio-hidden-on-load" data-bind="click: function (command) { $root.goToDetailPage(command) }">
+                    <td data-bind="text: hostTarget"></td>
+                    <td data-bind="text: command"></td>
+                    <td data-bind="text: finishTime().calendar()"></td>
+                    <td><span class="label" data-bind="css: labelClass, text: status"></span></td>
+                    <td><button class="btn btn-xs btn-info" data-bind="click: function (command) { $root.runAgain(command) }">Run Again</button></td>
+                </tr>
+            </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

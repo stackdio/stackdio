@@ -93,6 +93,10 @@ urlpatterns = (
     url(r'^providers/(?P<name>[\w.@+-]+)/permissions/',
         include(provider_object_router.urls)),
 
+    url(r'^providers/(?P<name>[\w.@+-]+)/required_fields/$',
+        api.CloudProviderRequiredFieldsAPIView.as_view(),
+        name='cloudprovider-required'),
+
     url(r'^providers/(?P<name>[\w.@+-]+)/instance_sizes/$',
         api.CloudInstanceSizeListAPIView.as_view(),
         name='cloudinstancesize-list'),
@@ -131,6 +135,10 @@ urlpatterns = (
     url(r'^accounts/(?P<pk>[0-9]+)/$',
         api.CloudAccountDetailAPIView.as_view(),
         name='cloudaccount-detail'),
+
+    url(r'^accounts/(?P<pk>[0-9]+)/images/$',
+        api.CloudAccountImageListAPIView.as_view(),
+        name='cloudaccount-cloudimage-list'),
 
     url(r'^accounts/(?P<pk>[0-9]+)/security_groups/$',
         api.CloudAccountSecurityGroupListAPIView.as_view(),

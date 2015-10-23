@@ -44,6 +44,9 @@ class CloudProviderSerializer(StackdioHyperlinkedModelSerializer):
     title = serializers.ReadOnlyField(source='get_type_name_display')
 
     # Links
+    required_fields = serializers.HyperlinkedIdentityField(
+        view_name='api:cloud:cloudprovider-required',
+        lookup_field='name')
     instance_sizes = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudinstancesize-list',
         lookup_field='name')
@@ -67,6 +70,7 @@ class CloudProviderSerializer(StackdioHyperlinkedModelSerializer):
             'url',
             'title',
             'name',
+            'required_fields',
             'instance_sizes',
             'regions',
             'zones',
@@ -83,6 +87,8 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
                                           queryset=models.CloudRegion.objects.all())
 
     # Hyperlinks
+    images = serializers.HyperlinkedIdentityField(
+        view_name='api:cloud:cloudaccount-cloudimage-list')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudaccount-securitygroup-list')
     all_security_groups = serializers.HyperlinkedIdentityField(
@@ -113,6 +119,7 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
             'account_id',
             'vpc_id',
             'create_security_groups',
+            'images',
             'security_groups',
             'all_security_groups',
             'vpc_subnets',
