@@ -56,11 +56,11 @@ class UserGroupListAPIView(mixins.UserRelatedMixin, generics.ListAPIView):
     lookup_field = 'username'
 
     def get_queryset(self):
-        return self.get_user().groups.all()
+        return self.get_user().groups.order_by('name')
 
 
 class GroupListAPIView(generics.ListCreateAPIView):
-    queryset = Group.objects.all()
+    queryset = Group.objects.order_by('name')
     serializer_class = serializers.GroupSerializer
     permission_classes = (StackdioModelPermissions,)
     lookup_field = 'name'
@@ -79,7 +79,7 @@ class GroupUserListAPIView(mixins.GroupRelatedMixin, generics.ListAPIView):
     lookup_field = 'name'
 
     def get_queryset(self):
-        return self.get_group().user_set.all()
+        return self.get_group().user_set.order_by('username')
 
 
 class GroupActionAPIView(mixins.GroupRelatedMixin, generics.GenericAPIView):

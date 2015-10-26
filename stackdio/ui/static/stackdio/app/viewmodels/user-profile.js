@@ -54,6 +54,10 @@ define([
                     $el.checkbox('uncheck');
                 }
             });
+
+            self.user.waiting.done(function () {
+                self.user.loadGroups();
+            });
         };
 
 

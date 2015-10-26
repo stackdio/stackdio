@@ -21,8 +21,9 @@ define([
     'knockout',
     'moment',
     'bootbox',
-    'utils/utils'
-], function ($, ko, moment, bootbox, utils) {
+    'utils/utils',
+    'models/group'
+], function ($, ko, moment, bootbox, utils, Group) {
     'use strict';
 
     function FakeMoment() {
@@ -62,7 +63,7 @@ define([
         this.groups = ko.observableArray();
 
         if (needReload) {
-            this.reload();
+            this.waiting = this.reload();
         } else {
             this._process(raw);
         }
@@ -100,6 +101,22 @@ define([
         }).done(function (user) {
             self.raw = user;
             self._process(user);
+        });
+    };
+
+    User.prototype.loadGroups = function () {
+        var self = this;
+        return $.ajax({
+            method: 'GET',
+            url: this.raw.groups
+        }).done(function (groups) {
+            var groupModels = [];
+
+            groups.results.forEach(function (group) {
+                groupModels.push(new Group(group));
+            });
+
+            self.groups(groupModels);
         });
     };
 
