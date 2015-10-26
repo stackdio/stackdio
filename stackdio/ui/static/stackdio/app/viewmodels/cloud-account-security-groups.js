@@ -60,6 +60,29 @@ define([
             this._super();
 
             this.createSelector();
+
+            var self = this;
+
+            // Make sure we don't have multiple event listeners
+            this.sgSelector.on('select2:select', function (ev) {
+                var group = ev.params.data;
+
+                $.ajax({
+                    method: 'POST',
+                    url: self.accountUrl + 'security_groups/',
+                    data: JSON.stringify({
+                        'group_id': group.group_id,
+                        'default': true
+                    })
+                }).done(function () {
+                    self.sgSelector.select2('destroy');
+                    self.sgSelector.empty();
+                    self.createSelector();
+                    self.reload();
+                }).fail(function (jqxhr) {
+                    utils.alertError(jqxhr, 'Error saving permissions');
+                });
+            });
         },
         createSelector: function () {
             this.sgSelector = $('#accountSecurityGroups');
@@ -98,28 +121,6 @@ define([
                 disabled: false,
                 placeholder: 'Select a security group...',
                 minimumInputLength: 0
-            });
-
-            var self = this;
-
-            this.sgSelector.on('select2:select', function (ev) {
-                var group = ev.params.data;
-
-                $.ajax({
-                    method: 'POST',
-                    url: self.accountUrl + 'security_groups/',
-                    data: JSON.stringify({
-                        'group_id': group.group_id,
-                        'default': true
-                    })
-                }).done(function () {
-                    self.sgSelector.select2('destroy');
-                    self.sgSelector.empty();
-                    self.createSelector();
-                    self.reload();
-                }).fail(function (jqxhr) {
-                    utils.alertError(jqxhr, 'Error saving permissions');
-                });
             });
         },
         addNewGroup: function () {

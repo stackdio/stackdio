@@ -19,9 +19,10 @@
 define([
     'jquery',
     'knockout',
+    'underscore',
     'bootbox',
     'utils/utils'
-], function ($, ko, bootbox, utils) {
+], function ($, ko, _, bootbox, utils) {
     'use strict';
 
     // Define the command model.
@@ -68,6 +69,68 @@ define([
             self.raw = group;
             self._process(group);
         });
+    };
+
+    Group.prototype._actionGroup = function (action, user) {
+        if (!this.raw.action) {
+            this.raw.action = this.raw.url + 'action/';
+        }
+
+        var username;
+
+        // Make it work with both models and raw objects
+        if (typeof user.username === 'function') {
+            username = user.username();
+        } else {
+            username = user.username;
+        }
+
+        var self = this;
+
+        return $.ajax({
+            method: 'POST',
+            url: this.raw.action,
+            data: JSON.stringify({
+                action: action,
+                user: username
+            })
+        }).done(function (group) {
+            var message = '';
+            switch (action) {
+                case 'add-user':
+                    message = 'Added ' + username + ' to ' + group.name;
+                    break;
+                case 'remove-user':
+                    message = 'Removed ' + username + ' from ' + group.name;
+                    break;
+                default:
+                    break;
+            }
+
+            utils.growlAlert(message, 'success');
+
+            if (self.parent.reload) {
+                self.parent.reload();
+            }
+        }).fail(function (jqxhr) {
+            console.log(jqxhr);
+
+            var message = 'Error changing membership of group';
+            if (message) {
+                bootbox.alert({
+                    title: 'Error updating group',
+                    message: message
+                });
+            }
+        });
+    };
+
+    Group.prototype.addUser = function (user) {
+        return this._actionGroup('add-user', user);
+    };
+
+    Group.prototype.removeUser = function (user) {
+        return this._actionGroup('remove-user', user);
     };
 
     Group.prototype.save = function () {
@@ -127,10 +190,46 @@ define([
     };
 
     Group.prototype.delete = function () {
-        $.ajax({
-            method: 'DELETE',
-            url: this.raw.url
-        })
+        var self = this;
+        var groupName = _.escape(self.name());
+        bootbox.confirm({
+            title: 'Confirm delete of <strong>' + groupName + '</strong>',
+            message: 'Are you sure you want to delete <strong>' + groupName + '</strong>?',
+            buttons: {
+                confirm: {
+                    label: 'Delete',
+                    className: 'btn-danger'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    $.ajax({
+                        method: 'DELETE',
+                        url: self.raw.url
+                    }).done(function () {
+                        if (self.parent.reload) {
+                            self.parent.reload();
+                        }
+
+                        // Go back to the list page
+                        window.location = '/groups/';
+                    }).fail(function (jqxhr) {
+                        var message;
+                        try {
+                            var resp = JSON.parse(jqxhr.responseText);
+                            message = resp.detail.join('<br>');
+                        } catch (e) {
+                            message = 'Oops... there was a server error.  This has been reported ' +
+                                'to your administrators.';
+                        }
+                        bootbox.alert({
+                            title: 'Error deleting group',
+                            message: message
+                        });
+                    });
+                }
+            }
+        });
     };
 
     return Group;

@@ -44,6 +44,17 @@ class UserListView(PageView):
         return context
 
 
+class GroupCreateView(PageView):
+    template_name = 'users/group-create.html'
+    viewmodel = 'viewmodels/group-create'
+
+    def get(self, request, *args, **kwargs):
+        if not request.user.has_perm('auth.create_group'):
+            # No permission granted
+            raise Http404()
+        return super(GroupCreateView, self).get(request, *args, **kwargs)
+
+
 class GroupListView(PageView):
     template_name = 'users/group-list.html'
     viewmodel = 'viewmodels/group-list'

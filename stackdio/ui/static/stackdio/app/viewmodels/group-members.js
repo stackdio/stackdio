@@ -20,8 +20,10 @@ define([
     'knockout',
     'bootbox',
     'generics/pagination',
-    'models/user'
-], function ($, ko, bootbox, Pagination, User) {
+    'models/user',
+    'models/group',
+    'select2'
+], function ($, ko, bootbox, Pagination, User, Group) {
     'use strict';
 
     return Pagination.extend({
@@ -41,13 +43,72 @@ define([
                 title: 'Group Members'
             }
         ],
-        group: ko.observable(),
+        group: null,
         autoRefresh: true,
+        userSelector: $('#groupUser'),
         model: User,
         baseUrl: '/groups/',
         initialUrl: '/api/groups/' + window.stackdio.groupName + '/users/',
         sortableFields: [
             {name: 'username', displayName: 'Username', width: '90%'}
-        ]
+        ],
+        createSelector: function () {
+            var self = this;
+
+            // Create the user selector
+            this.userSelector.select2({
+                ajax: {
+                    url: '/api/users/',
+                    dataType: 'json',
+                    delay: 100,
+                    data: function (params) {
+                        return {
+                            username: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        data.results = data.results.filter(function (user) {
+                            user.id = user.username;
+                            user.text = user.username;
+
+                            var duplicate = false;
+                            self.objects().forEach(function (memberUser) {
+                                if (memberUser.username() === user.username) {
+                                    duplicate = true;
+                                }
+                            });
+
+                            return !duplicate;
+                        });
+
+                        return data;
+                    },
+                    cache: true
+                },
+                theme: 'bootstrap',
+                placeholder: 'Add a user to this group...',
+                minimumInputLength: 0
+            });
+        },
+        init: function () {
+            this._super();
+            this.group = new Group(window.stackdio.groupName, this);
+            this.createSelector();
+
+            var self = this;
+
+            // Do this here so we don't get a bunch of selectors
+            this.userSelector.on('select2:select', function(ev) {
+                var user = ev.params.data;
+                self.group.addUser(user).done(function () {
+                    self.userSelector.select2('destroy');
+                    self.userSelector.empty();
+                    self.createSelector();
+                });
+            });
+        },
+        addUser: function () {
+
+        }
     });
 });

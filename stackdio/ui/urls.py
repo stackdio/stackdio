@@ -66,6 +66,10 @@ urlpatterns = (
                name='group-list',
                timeout=30),
 
+    cached_url(r'^groups/create/$',
+               users.GroupCreateView.as_view(),
+               name='group-create'),
+
     cached_url(r'^groups/permissions/$',
                users.GroupModelPermissionsView.as_view(),
                name='group-model-permissions'),

@@ -14,9 +14,9 @@
             <!-- Only show the button if the group has permission to see it-->
             <a class="btn btn-warning" href="{% url 'ui:group-model-permissions' %}">Permissions</a>
             {% endif %}
-{#            {% if has_create %}#}
-{#                <a class="btn btn-success" href="{% url 'ui:group-create' %}">New Group</a>#}
-{#            {% endif %}#}
+            {% if has_create %}
+                <a class="btn btn-success" href="{% url 'ui:group-create' %}">New Group</a>
+            {% endif %}
         </div>
     </div>
 
@@ -35,11 +35,17 @@
                         </span>
                     </th>
                     <!-- /ko -->
+                    <th style="width: 10%"></th>
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
                 <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: name, click: function (group) { $root.goToDetailPage(group) }"></td>
+                    <td class="text-center">
+                        <a href="#" data-bind="click: $data.delete">
+                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                        </a>
+                    </td>
                 </tr>
                 </tbody>
             </table>
