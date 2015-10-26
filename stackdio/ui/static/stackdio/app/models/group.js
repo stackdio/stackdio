@@ -215,13 +215,18 @@ define([
                         window.location = '/groups/';
                     }).fail(function (jqxhr) {
                         var message;
-                        try {
-                            var resp = JSON.parse(jqxhr.responseText);
-                            message = resp.detail.join('<br>');
-                        } catch (e) {
-                            message = 'Oops... there was a server error.  This has been reported ' +
-                                'to your administrators.';
+                        if (jqxhr.status === 403) {
+                            message = 'You are unauthorized to delete this group.'
+                        } else {
+                            try {
+                                var resp = JSON.parse(jqxhr.responseText);
+                                message = resp.detail.join('<br>');
+                            } catch (e) {
+                                message = 'Oops... there was a server error.  This has been reported ' +
+                                    'to your administrators.';
+                            }
                         }
+
                         bootbox.alert({
                             title: 'Error deleting group',
                             message: message
