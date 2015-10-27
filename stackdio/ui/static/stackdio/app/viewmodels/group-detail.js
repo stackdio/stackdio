@@ -28,9 +28,6 @@ define([
         // View variables
         self.group = null;
 
-        // For the breadcrumb only
-        self.groupName = ko.observable('');
-
         // Override the breadcrumbs
         self.breadcrumbs = [
             {
@@ -38,12 +35,10 @@ define([
                 title: 'Groups',
                 href: '/groups/'
             },
-            ko.observable({
+            {
                 active: true,
-                title: ko.computed(function() {
-                    return self.groupName()
-                })
-            })
+                title: window.stackdio.groupName
+            }
         ];
 
         self.reset = function() {
@@ -52,7 +47,6 @@ define([
             self.group = new Group(window.stackdio.groupName, self);
             self.group.waiting.done(function () {
                 document.title = 'stackd.io | Group Detail - ' + self.group.name();
-                self.groupName(self.group.name());
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/groups/';

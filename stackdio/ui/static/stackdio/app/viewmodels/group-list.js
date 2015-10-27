@@ -40,7 +40,7 @@ define([
             if (this.detailRequiresAdvanced && !window.stackdio.advancedView) {
                 return;
             }
-            window.location = this.baseUrl + object.name() + '/';
+            window.location = this.baseUrl + object.name() + '/members/';
         }
     });
 });

@@ -35,12 +35,12 @@ define([
             },
             {
                 active: false,
-                title: 'Group Detail',
+                title: window.stackdio.groupName,
                 href: '/groups/' + window.stackdio.groupName + '/'
             },
             {
                 active: true,
-                title: 'Group Members'
+                title: 'Members'
             }
         ],
         group: null,
