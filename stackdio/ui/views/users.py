@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -22,15 +24,17 @@ from django.shortcuts import get_object_or_404
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
 
 
-# class UserCreateView(PageView):
-#     template_name = 'users/user-create.html'
-#     viewmodel = 'viewmodels/user-create'
-#
-#     def get(self, request, *args, **kwargs):
-#         if not request.user.has_perm('auth.create_user'):
-#             # No permission granted
-#             raise Http404()
-#         return super(UserCreateView, self).get(request, *args, **kwargs)
+class UserCreateView(PageView):
+    template_name = 'users/user-create.html'
+    viewmodel = 'viewmodels/user-create'
+
+    def get(self, request, *args, **kwargs):
+        if not request.user.has_perm('auth.create_user'):
+            # No permission granted
+            raise Http404()
+        if settings.LDAP_ENABLED:
+            self.template_name = 'users/ldap-managed.html'
+        return super(UserCreateView, self).get(request, *args, **kwargs)
 
 
 class UserListView(PageView):
@@ -41,7 +45,13 @@ class UserListView(PageView):
         context = super(UserListView, self).get_context_data(**kwargs)
         context['has_admin'] = self.request.user.has_perm('auth.admin_user')
         context['has_create'] = self.request.user.has_perm('auth.create_user')
+        context['ldap_enabled'] = settings.LDAP_ENABLED
         return context
+
+
+class UserModelPermissionsView(ModelPermissionsView):
+    viewmodel = 'viewmodels/user-model-permissions'
+    model = get_user_model()
 
 
 class GroupCreateView(PageView):

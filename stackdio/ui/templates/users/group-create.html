@@ -1,12 +1,12 @@
 {% extends 'stackdio/page.html' %}
 {% load staticfiles %}
 
-{% block title %}Create Stack{% endblock %}
-{% block stack-class %}active{% endblock %}
+{% block title %}Create Group{% endblock %}
+{% block group-class %}active{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/ladda/dist/ladda-themeless.min.css' %}">
 {% endblock %}
 
 {% block page-content %}

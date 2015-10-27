@@ -34,9 +34,10 @@ define([
         initialUrl: '/api/users/',
         detailRequiresAdvanced: true,
         sortableFields: [
-            {name: 'username', displayName: 'Username', width: '30%'},
-            {name: 'firstName', displayName: 'First Name', width: '35%'},
-            {name: 'lastName', displayName: 'Last Name', width: '35%'}
+            {name: 'username', displayName: 'Username', width: '25%'},
+            {name: 'firstName', displayName: 'First Name', width: '20%'},
+            {name: 'lastName', displayName: 'Last Name', width: '20%'},
+            {name: 'email', displayName: 'Email', width: '35%'}
         ]
     });
 });

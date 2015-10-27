@@ -52,6 +52,20 @@ class UserDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'username'
 
 
+class UserModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    permission_classes = (permissions.UserPermissionsModelPermissions,)
+    model_permissions = ('create', 'admin')
+    parent_lookup_field = 'username'
+    model_cls = get_user_model()
+
+
+class UserModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    permission_classes = (permissions.UserPermissionsModelPermissions,)
+    model_permissions = ('create', 'admin')
+    parent_lookup_field = 'username'
+    model_cls = get_user_model()
+
+
 class UserGroupListAPIView(mixins.UserRelatedMixin, generics.ListAPIView):
     serializer_class = serializers.UserGroupSerializer
     lookup_field = 'username'

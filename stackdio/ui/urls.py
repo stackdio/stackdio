@@ -80,6 +80,14 @@ urlpatterns = (
                name='user-list',
                timeout=30),
 
+    cached_url(r'^users/create/$',
+               users.UserCreateView.as_view(),
+               name='user-create'),
+
+    cached_url(r'^users/permissions/$',
+               users.UserModelPermissionsView.as_view(),
+               name='user-model-permissions'),
+
     cached_url(r'^groups/$',
                users.GroupListView.as_view(),
                name='group-list',
