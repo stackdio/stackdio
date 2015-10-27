@@ -16,7 +16,7 @@
 #
 
 from django.conf.urls import url
-from django.contrib.auth.views import login, logout_then_login
+from django.contrib.auth import views as auth_views
 
 from stackdio.core.utils import cached_url
 from . import views
@@ -28,8 +28,17 @@ from .views import snapshots
 from .views import stacks
 from .views import users
 
-auth_kwargs = {
+auth_login_kwargs = {
     'template_name': 'stackdio/login.html',
+}
+
+auth_reset_confirm_kwargs = {
+    'post_reset_redirect': 'ui:password_reset_complete',
+    'template_name': 'stackdio/auth/password_reset_confirm.html',
+}
+
+auth_reset_complete_kwargs = {
+    'template_name': 'stackdio/auth/password_reset_complete.html',
 }
 
 urlpatterns = (
@@ -38,14 +47,24 @@ urlpatterns = (
                name='index'),
 
     cached_url(r'^login/$',
-               login,
-               auth_kwargs,
+               auth_views.login,
+               auth_login_kwargs,
                name='login',
                user_sensitive=False),
 
     url(r'^logout/$',
-        logout_then_login,
+        auth_views.logout_then_login,
         name='logout'),
+
+    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        auth_views.password_reset_confirm,
+        auth_reset_confirm_kwargs,
+        name='password_reset_confirm'),
+
+    url(r'^reset/done/$',
+        auth_views.password_reset_complete,
+        auth_reset_complete_kwargs,
+        name='password_reset_complete'),
 
     cached_url(r'^js/main/(?P<vm>[\w/.-]+)\.js$',
                views.AppMainView.as_view(),

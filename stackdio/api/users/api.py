@@ -32,9 +32,10 @@ from stackdio.core.viewsets import (
 from . import filters, mixins, permissions, serializers
 
 
-class UserListAPIView(generics.ListAPIView):
+class UserListAPIView(generics.ListCreateAPIView):
     queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID).order_by('username')
     serializer_class = serializers.PublicUserSerializer
+    permission_classes = (StackdioModelPermissions,)
     lookup_field = 'username'
     filter_class = filters.UserFilter
 
