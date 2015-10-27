@@ -118,12 +118,7 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
             logger.info('Tagging infrastructure...')
 
             # Spin up the task to tag everything
-            task_chain = chain(
-                tag_infrastructure.si(label.object_id),
-                finish_stack.si(label.object_id),
-            )
-
-            task_chain.apply_async()
+            tag_infrastructure.si(label.object_id, None, False).apply_async()
 
         return label
 
