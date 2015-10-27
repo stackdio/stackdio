@@ -205,6 +205,8 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
             'user': user,
             'token': default_token_generator.make_token(user),
             'protocol': request.scheme,
+            'intro_line': 'You\'re receiving this email because one of the administrators at {0} '
+                          'has created an account for you.'.format(site_name)
         }
 
         utils.send_mail(subject_template_name, email_template_name, context, from_email, user.email)
