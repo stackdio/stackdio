@@ -204,7 +204,7 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
             'uid': urlsafe_base64_encode(force_bytes(user.pk)),
             'user': user,
             'token': default_token_generator.make_token(user),
-            'protocol': request.scheme,
+            'protocol': 'https' if request.is_secure() else 'http',
             'intro_line': 'You\'re receiving this email because one of the administrators at {0} '
                           'has created an account for you.'.format(site_name)
         }
