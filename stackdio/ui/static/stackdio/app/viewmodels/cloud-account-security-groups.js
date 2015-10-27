@@ -75,9 +75,8 @@ define([
                         'default': true
                     })
                 }).done(function () {
-                    self.sgSelector.select2('destroy');
                     self.sgSelector.empty();
-                    self.createSelector();
+                    self.sgSelector.val(null).trigger('change');
                     self.reload();
                 }).fail(function (jqxhr) {
                     utils.alertError(jqxhr, 'Error saving permissions');
@@ -86,6 +85,8 @@ define([
         },
         createSelector: function () {
             this.sgSelector = $('#accountSecurityGroups');
+
+            var self = this;
 
             this.sgSelector.select2({
                 ajax: {

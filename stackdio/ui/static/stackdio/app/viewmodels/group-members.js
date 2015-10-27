@@ -101,9 +101,9 @@ define([
             this.userSelector.on('select2:select', function(ev) {
                 var user = ev.params.data;
                 self.group.addUser(user).done(function () {
-                    self.userSelector.select2('destroy');
                     self.userSelector.empty();
-                    self.createSelector();
+                    self.userSelector.val(null).trigger('change');
+                    self.userSelector.select2('open');
                 });
             });
         },
