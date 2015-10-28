@@ -73,7 +73,8 @@ urlpatterns = (
 
     cached_url('^user/$',
                views.UserProfileView.as_view(),
-               name='user-profile'),
+               name='user-profile',
+               timeout=10),
 
     cached_url(r'^users/$',
                users.UserListView.as_view(),

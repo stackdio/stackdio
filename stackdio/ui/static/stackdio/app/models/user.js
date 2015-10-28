@@ -138,6 +138,10 @@ define([
             })
         }).done(function (user) {
             utils.growlAlert('Successfully saved user!', 'success');
+            if (self.raw.settings.advanced_view !== self.advanced()) {
+                window.location.reload(true);
+            }
+            self._process(user);
         }).fail(function (jqxhr) {
             var message = '';
             try {

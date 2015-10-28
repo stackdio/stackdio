@@ -18,6 +18,7 @@
 import logging
 from collections import OrderedDict
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.tokens import default_token_generator
@@ -130,6 +131,22 @@ class UserSettingsSerializer(serializers.ModelSerializer):
             'public_key',
             'advanced_view',
         )
+
+    def update(self, instance, validated_data):
+        previous_value = instance.advanced_view
+        instance = super(UserSettingsSerializer, self).update(instance, validated_data)
+        new_value = instance.advanced_view
+
+        request = self.context['request']._request
+
+        if previous_value and not new_value:
+            messages.info(request, 'You have disabled the advanced view.  It may take a minute '
+                                   'for all of the advanced links to be disabled.')
+        elif not previous_value and new_value:
+            messages.info(request, 'You have enabled the advanced view.  It may take a minute '
+                                   'for all of the advanced links to be enabled.')
+
+        return instance
 
 
 class UserSerializer(StackdioHyperlinkedModelSerializer):
