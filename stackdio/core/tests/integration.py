@@ -40,6 +40,7 @@ class AuthenticationTestCase(StackdioTestCase):
         'cloud/accounts',
         'cloud/images',
         'cloud/snapshots',
+        'users',
         'groups',
     )
 

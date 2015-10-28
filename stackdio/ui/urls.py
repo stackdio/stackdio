@@ -16,7 +16,7 @@
 #
 
 from django.conf.urls import url
-from django.contrib.auth.views import login, logout_then_login
+from django.contrib.auth import views as auth_views
 
 from stackdio.core.utils import cached_url
 from . import views
@@ -26,9 +26,19 @@ from .views import formulas
 from .views import images
 from .views import snapshots
 from .views import stacks
+from .views import users
 
-auth_kwargs = {
+auth_login_kwargs = {
     'template_name': 'stackdio/login.html',
+}
+
+auth_reset_confirm_kwargs = {
+    'post_reset_redirect': 'ui:password_reset_complete',
+    'template_name': 'stackdio/auth/password_reset_confirm.html',
+}
+
+auth_reset_complete_kwargs = {
+    'template_name': 'stackdio/auth/password_reset_complete.html',
 }
 
 urlpatterns = (
@@ -37,14 +47,24 @@ urlpatterns = (
                name='index'),
 
     cached_url(r'^login/$',
-               login,
-               auth_kwargs,
+               auth_views.login,
+               auth_login_kwargs,
                name='login',
                user_sensitive=False),
 
     url(r'^logout/$',
-        logout_then_login,
+        auth_views.logout_then_login,
         name='logout'),
+
+    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        auth_views.password_reset_confirm,
+        auth_reset_confirm_kwargs,
+        name='password_reset_confirm'),
+
+    url(r'^reset/done/$',
+        auth_views.password_reset_complete,
+        auth_reset_complete_kwargs,
+        name='password_reset_complete'),
 
     cached_url(r'^js/main/(?P<vm>[\w/.-]+)\.js$',
                views.AppMainView.as_view(),
@@ -53,7 +73,47 @@ urlpatterns = (
 
     cached_url('^user/$',
                views.UserProfileView.as_view(),
-               name='user-profile'),
+               name='user-profile',
+               timeout=10),
+
+    cached_url(r'^users/$',
+               users.UserListView.as_view(),
+               name='user-list',
+               timeout=30),
+
+    cached_url(r'^users/create/$',
+               users.UserCreateView.as_view(),
+               name='user-create'),
+
+    cached_url(r'^users/permissions/$',
+               users.UserModelPermissionsView.as_view(),
+               name='user-model-permissions'),
+
+    cached_url(r'^groups/$',
+               users.GroupListView.as_view(),
+               name='group-list',
+               timeout=30),
+
+    cached_url(r'^groups/create/$',
+               users.GroupCreateView.as_view(),
+               name='group-create'),
+
+    cached_url(r'^groups/permissions/$',
+               users.GroupModelPermissionsView.as_view(),
+               name='group-model-permissions'),
+
+    cached_url(r'^groups/(?P<name>[\w.@+-]+)/$',
+               users.GroupDetailView.as_view(),
+               name='group-detail',
+               timeout=30),
+
+    cached_url(r'^groups/(?P<name>[\w.@+-]+)/members/$',
+               users.GroupMembersView.as_view(),
+               name='group-members'),
+
+    cached_url(r'^groups/(?P<name>[\w.@+-]+)/permissions/$',
+               users.GroupObjectPermissionsView.as_view(),
+               name='group-object-permissions'),
 
     cached_url(r'^stacks/$',
                stacks.StackListView.as_view(),

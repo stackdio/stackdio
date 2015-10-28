@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
 from stackdio.core.permissions import (
@@ -22,6 +23,10 @@ from stackdio.core.permissions import (
     StackdioPermissionsModelPermissions,
     StackdioPermissionsObjectPermissions,
 )
+
+
+class UserPermissionsModelPermissions(StackdioPermissionsModelPermissions):
+    model_cls = get_user_model()
 
 
 class GroupObjectPermissions(StackdioObjectPermissions):

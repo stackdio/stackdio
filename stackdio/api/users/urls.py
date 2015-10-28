@@ -21,6 +21,16 @@ from rest_framework import routers
 
 from . import api
 
+
+user_model_router = routers.SimpleRouter()
+user_model_router.register(r'users',
+                           api.UserModelUserPermissionsViewSet,
+                           'user-model-user-permissions')
+user_model_router.register(r'groups',
+                           api.UserModelGroupPermissionsViewSet,
+                           'user-model-group-permissions')
+
+
 model_router = routers.SimpleRouter()
 model_router.register(r'users',
                       api.GroupModelUserPermissionsViewSet,
@@ -43,6 +53,9 @@ urlpatterns = (
     url(r'^users/$',
         api.UserListAPIView.as_view(),
         name='user-list'),
+
+    url(r'^users/permissions/',
+        include(user_model_router.urls)),
 
     url(r'^users/(?P<username>[\w.@+-]+)/$',
         api.UserDetailAPIView.as_view(),

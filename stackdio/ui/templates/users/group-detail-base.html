@@ -1,0 +1,36 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Group Detail{% endblock %}
+{% block group-class %}active{% endblock %}
+
+{# Inject the group id into the window so we can access it in our javascript VM #}
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.groupName = '{{ group_name }}';
+    </script>
+{% endblock %}
+
+
+{% block page-content %}
+    <div class="row">
+        <div class="col-sm-3 col-sm-push-9">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:group-detail' name=group_name %}">Detail</a>
+                </li>
+                <li role="presentation"{% if page_id == 'members' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:group-members' name=group_name %}">Members</a>
+                </li>
+                {% if has_admin %}
+                <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:group-object-permissions' name=group_name %}">Permissions</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        {% block detail-content %}{% endblock %}
+    </div>
+{% endblock %}

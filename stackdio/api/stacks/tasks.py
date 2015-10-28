@@ -669,7 +669,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
 
 @shared_task(name='stacks.tag_infrastructure')
-def tag_infrastructure(stack_id, host_ids=None):
+def tag_infrastructure(stack_id, host_ids=None, change_status=True):
     """
     Tags hosts and volumes with certain metadata that should prove useful
     to anyone using the AWS console.
@@ -685,8 +685,9 @@ def tag_infrastructure(stack_id, host_ids=None):
         logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
 
         # Update status
-        stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
-                         'Tagging stack infrastructure.')
+        if change_status:
+            stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
+                             'Tagging stack infrastructure.')
 
         # for each set of hosts on an account, use the driver implementation
         # to tag the various infrastructure
@@ -696,8 +697,9 @@ def tag_infrastructure(stack_id, host_ids=None):
             volumes = stack.volumes.filter(host__in=hosts)
             driver.tag_resources(stack, hosts, volumes)
 
-        stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
-                         'Finished tagging stack infrastructure.')
+        if change_status:
+            stack.set_status(tag_infrastructure.name, Stack.CONFIGURING,
+                             'Finished tagging stack infrastructure.')
 
     except Stack.DoesNotExist:
         err_msg = 'Unknown Stack with id {0}'.format(stack_id)

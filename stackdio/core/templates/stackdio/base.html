@@ -65,7 +65,7 @@
                 </div>
 
                 <div id="navbar" class="collapse navbar-collapse">
-                    {% if user.is_authenticated %}
+                    {% if user.is_authenticated and user.password %}
                     <ul class="nav navbar-nav navbar-right">
                         <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
                         <li class="{% block blueprint-class %}{% endblock %}"><a href="{% url 'ui:blueprint-list' %}">Blueprints</a></li>
@@ -83,6 +83,16 @@
                                 <li class="{% block image-class %}{% endblock %}"><a href="{% url 'ui:cloud-image-list' %}">Cloud Images</a></li>
                             </ul>
                         </li>
+
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                Admin <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li class="{% block user-class %}{% endblock %}"><a href="{% url 'ui:user-list' %}">Users</a></li>
+                                <li class="{% block group-class %}{% endblock %}"><a href="{% url 'ui:group-list' %}">Groups</a></li>
+                            </ul>
+                        </li>
                         {% endif %}
 
                         <!-- Extra links -->
@@ -94,8 +104,6 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li class="{% block profile-class %}{% endblock %}"><a href="{% url 'ui:user-profile' %}">Profile</a></li>
-                                <li class="{% block user-class %}{% endblock %}"><a href="">Users</a></li>
-                                <li class="{% block group-class %}{% endblock %}"><a href="">Groups</a></li>
                                 <li class="divider"></li>
                                 <li><a href="{% url 'ui:logout' %}">Logout</a></li>
                             </ul>

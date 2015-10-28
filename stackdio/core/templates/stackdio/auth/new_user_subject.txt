@@ -1,0 +1,3 @@
+{% load i18n %}{% autoescape off %}
+{% blocktrans %}Your new stackd.io account on {{ site_name }}{% endblocktrans %}
+{% endautoescape %}

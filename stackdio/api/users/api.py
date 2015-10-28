@@ -32,9 +32,10 @@ from stackdio.core.viewsets import (
 from . import filters, mixins, permissions, serializers
 
 
-class UserListAPIView(generics.ListAPIView):
+class UserListAPIView(generics.ListCreateAPIView):
     queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID).order_by('username')
     serializer_class = serializers.PublicUserSerializer
+    permission_classes = (StackdioModelPermissions,)
     lookup_field = 'username'
     filter_class = filters.UserFilter
 
@@ -51,16 +52,30 @@ class UserDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'username'
 
 
+class UserModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    permission_classes = (permissions.UserPermissionsModelPermissions,)
+    model_permissions = ('create', 'admin')
+    parent_lookup_field = 'username'
+    model_cls = get_user_model()
+
+
+class UserModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    permission_classes = (permissions.UserPermissionsModelPermissions,)
+    model_permissions = ('create', 'admin')
+    parent_lookup_field = 'username'
+    model_cls = get_user_model()
+
+
 class UserGroupListAPIView(mixins.UserRelatedMixin, generics.ListAPIView):
     serializer_class = serializers.UserGroupSerializer
     lookup_field = 'username'
 
     def get_queryset(self):
-        return self.get_user().groups.all()
+        return self.get_user().groups.order_by('name')
 
 
 class GroupListAPIView(generics.ListCreateAPIView):
-    queryset = Group.objects.all()
+    queryset = Group.objects.order_by('name')
     serializer_class = serializers.GroupSerializer
     permission_classes = (StackdioModelPermissions,)
     lookup_field = 'name'
@@ -79,7 +94,7 @@ class GroupUserListAPIView(mixins.GroupRelatedMixin, generics.ListAPIView):
     lookup_field = 'name'
 
     def get_queryset(self):
-        return self.get_group().user_set.all()
+        return self.get_group().user_set.order_by('username')
 
 
 class GroupActionAPIView(mixins.GroupRelatedMixin, generics.GenericAPIView):

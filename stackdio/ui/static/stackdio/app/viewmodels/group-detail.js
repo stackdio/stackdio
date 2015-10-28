@@ -18,48 +18,40 @@
 define([
     'jquery',
     'knockout',
-    'models/user'
-], function($, ko, User) {
+    'models/group'
+], function($, ko, Group) {
     'use strict';
 
     return function() {
         var self = this;
 
         // View variables
-        self.user = null;
+        self.group = null;
 
         // Override the breadcrumbs
         self.breadcrumbs = [
             {
+                active: false,
+                title: 'Groups',
+                href: '/groups/'
+            },
+            {
                 active: true,
-                title: 'User Profile'
+                title: window.stackdio.groupName
             }
         ];
 
-        self.subscription = null;
-
         self.reset = function() {
-            // Make sure we don't have more than 1 subscription
-            if (self.subscription) {
-                self.subscription.dispose();
-            }
 
-            // Create the user object.
-            self.user = new User(null, self);
-            var $el = $('.checkbox-custom');
-            self.subscription = self.user.advanced.subscribe(function (newVal) {
-                if (newVal) {
-                    $el.checkbox('check');
-                } else {
-                    $el.checkbox('uncheck');
-                }
-            });
-
-            self.user.waiting.done(function () {
-                self.user.loadGroups();
+            // Create the group object.  Pass in the group id, and let the model load itself.
+            self.group = new Group(window.stackdio.groupName, self);
+            self.group.waiting.done(function () {
+                document.title = 'stackd.io | Group Detail - ' + self.group.name();
+            }).fail(function () {
+                // Just go back to the main page if we fail
+                window.location = '/groups/';
             });
         };
-
 
         // Start everything up
         self.reset();
