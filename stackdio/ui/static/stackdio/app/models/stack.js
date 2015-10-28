@@ -31,11 +31,11 @@ define([
     function FakeMoment() {
         this.calendar = function () {
             return '';
-        }
+        };
 
         this.toString = function () {
             return '';
-        }
+        };
     }
 
     // Define the stack model.
@@ -337,7 +337,7 @@ define([
         if (!this.raw.hasOwnProperty('history')) {
             this.raw.history = this.raw.url + 'history/';
         }
-        $.ajax({
+        return $.ajax({
             method: 'GET',
             url: this.raw.history
         }).done(function (history) {
