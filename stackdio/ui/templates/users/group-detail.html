@@ -1,0 +1,27 @@
+{% extends 'users/group-detail-base.html' %}
+
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    <div class="row">
+        <div class="col-md-6">
+            <form data-bind="submit: function() { group.save(); }">
+                <div id="name" class="form-group">
+                    <label for="groupName">Name</label>
+                    <input type="text" class="form-control" id="groupName"
+                           data-bind="value: group.name, valueUpdate: 'keyup'">
+                </div>
+
+                <div class="form-group" style="margin-top: 15px">
+                    <button type="submit" class="btn btn-primary">Save</button>
+
+                    <button class="btn btn-danger" data-bind="click: function () { group.delete() }">
+                        Delete
+                        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

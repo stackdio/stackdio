@@ -12,9 +12,10 @@ machine:
 ## Customize dependencies
 dependencies:
   override:
-    - pip install -U 'pip<6'
+    - bower install
+    - pip install -U pip
     - pip install -U wheel
-    - pip install -U -r requirements/testing.txt
+    - pip install -U -e .[testing]
 
 ## Customize test commands
 test:

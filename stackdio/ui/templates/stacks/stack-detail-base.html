@@ -1,12 +1,13 @@
 {% extends 'stackdio/page.html' %}
 
 {% block title %}Stack Detail{% endblock %}
+{% block stack-class %}active{% endblock %}
 
 {# Inject the stack id into the window so we can access it in our javascript VM #}
 {% block scripts %}
     {{ block.super }}
     <script type="text/javascript">
-        window.stackdio = {};
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
         window.stackdio.stackId = {{ stack_id }};
     </script>
 {% endblock %}
@@ -21,6 +22,9 @@
                 </li>
                 <li role="presentation"{% if page_id == 'properties' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-properties' pk=stack_id %}">Properties</a>
+                </li>
+                <li role="presentation"{% if page_id == 'labels' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:stack-labels' pk=stack_id %}">Labels</a>
                 </li>
                 <li role="presentation"{% if page_id == 'hosts' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-hosts' pk=stack_id %}">Hosts</a>

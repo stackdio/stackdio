@@ -1,6 +1,6 @@
 {
     "name": "stackd.io",
-    "version": "0.7.0a4",
+    "version": "0.7.0.dev",
     "homepage": "http://www.stackd.io",
     "authors": [
         "Clark Perkins <clark.perkins@digitalreasoning.com>"
@@ -26,7 +26,6 @@
     "dependencies": {
         "bootbox.js": "~4.4.0",
         "bootstrap": "~3.3.5",
-        "bootstrap-growl": "~1.1.0",
         "font-awesome": "~4.4.0",
         "fuelux": "~3.11.1",
         "jquery": "~1.9.1",
@@ -35,6 +34,8 @@
         "moment": "~2.10.6",
         "requirejs": "~2.1.20",
         "requirejs-domReady": "~2.0.1",
+        "select2": "~4.0.0",
+        "select2-bootstrap-theme": "https://github.com/select2/select2-bootstrap-theme.git#0.1.0-beta.4",
         "typeahead.js": "~0.11.1",
         "underscore": "~1.8.3"
     }

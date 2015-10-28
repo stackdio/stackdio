@@ -172,7 +172,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                          'components__description')
 
     class Meta:
-        ordering = ['pk']
+        ordering = ['title']
 
         default_permissions = tuple(set(_formula_model_permissions + _formula_object_permissions))
 
@@ -225,11 +225,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
         refs.remove('HEAD')
 
-        # Get the list of commit hashes
-        commit_hashes = [str(c.hexsha) for c in self.repo.iter_commits()]
-
-        # Combine them
-        return list(refs) + commit_hashes
+        return list(refs)
 
     @property
     def default_branch(self):

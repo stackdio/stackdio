@@ -1,0 +1,30 @@
+{% extends 'stackdio/page.html' %}
+{% load staticfiles %}
+
+{% block title %}Create Group{% endblock %}
+{% block group-class %}active{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/ladda/dist/ladda-themeless.min.css' %}">
+{% endblock %}
+
+{% block page-content %}
+    <form data-bind="submit: createGroup">
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="form-group" id="name">
+                    <label for="groupName">Name</label>
+                    <input type="text" class="form-control" id="groupName"
+                           data-bind="value: name, valueUpdate: 'keyup'">
+                </div>
+
+                <button type="submit" id="create-button" data-style="slide-left"
+                        data-bind="enable: name"
+                        class="btn btn-success ladda-button" style="margin-top: 10px">
+                    <span class="ladda-label">Create Group</span>
+                </button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

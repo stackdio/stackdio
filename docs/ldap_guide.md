@@ -1,3 +1,0 @@
-# LDAP Guide
-
-### Coming Soon

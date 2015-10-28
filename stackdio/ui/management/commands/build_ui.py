@@ -17,9 +17,11 @@
 
 import errno
 import os
+import pkgutil
 import shutil
 import subprocess
 import sys
+from importlib import import_module
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -61,25 +63,42 @@ class Command(BaseCommand):
     help = 'Optimizes all the javascript files'
 
     def handle(self, *args, **options):
+        try:
+            self._handle(*args, **options)
+        except (KeyboardInterrupt, EOFError):
+            # Clean up after ourselves if somebody quits
+            try:
+                shutil.rmtree(INPUT_DIR)
+                shutil.rmtree(NODE_PATH)
+            except Exception:
+                pass
+
+    def _handle(self, *args, **options):
         base_cls = ui_views.PageView
 
         viewmodels = set()
 
-        for view in ui_views.__dict__.values():
-            try:
-                if issubclass(view, base_cls):
-                    if view.viewmodel is not None:
-                        viewmodels.add(view.viewmodel)
-            except TypeError:
-                # We don't care if it wasn't a class
-                pass
+        def collect_vms(module_name):
+            module = import_module(module_name)
+            for view in module.__dict__.values():
+                try:
+                    if issubclass(view, base_cls):
+                        if view.viewmodel is not None:
+                            viewmodels.add(view.viewmodel)
+                except TypeError:
+                    # We don't care if it wasn't a class
+                    pass
 
-        # Install bower dependencies
-        args = ['bower', 'install']
-        ret = subprocess.call(args, cwd=settings.BASE_DIR)
+        collect_vms('stackdio.ui.views')
 
-        if ret:
-            self.stderr.write('Bower dependencies failed to install.\n')
+        for _, name, _ in pkgutil.iter_modules(['stackdio/ui/views']):
+            collect_vms('stackdio.ui.views.' + name)
+
+        # Force the user to install bower components first
+        if not os.path.exists(BOWER_PATH):
+            err_msg = ('It looks like you haven\'t installed the bower dependencies yet.  '
+                       'Please run `bower install` before using this command.\n')
+            self.stderr.write(err_msg)
             sys.exit(1)
 
         # Install r.js

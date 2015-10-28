@@ -21,18 +21,415 @@ import logging
 import multiprocessing
 import os
 import random
+import re
+import socket
 from datetime import datetime
+from logging.handlers import WatchedFileHandler
 
 import salt.client
 import salt.cloud
 import salt.config as config
 import salt.key
 import salt.utils
+import salt.utils.cloud
 import yaml
 from django.conf import settings
+from salt.log.setup import LOG_LEVELS
 
 
 logger = logging.getLogger(__name__)
+root_logger = logging.getLogger()
+
+ERROR_REQUISITE = 'One or more requisite failed'
+
+COLOR_REGEX = re.compile(r'\[0;[\d]+m')
+
+
+class StackdioSaltCloudMap(salt.cloud.Map):
+
+    def interpolated_map(self, query='list_nodes', cached=False):
+        """
+        Override this to use the in-memory map instead of on disk.
+        """
+        rendered_map = self.rendered_map.copy()
+        interpolated_map = {}
+
+        for profile, mapped_vms in rendered_map.items():
+            names = set(mapped_vms)
+            if profile not in self.opts['profiles']:
+                if 'Errors' not in interpolated_map:
+                    interpolated_map['Errors'] = {}
+                msg = (
+                    'No provider for the mapped {0!r} profile was found. '
+                    'Skipped VMS: {1}'.format(
+                        profile, ', '.join(names)
+                    )
+                )
+                logger.info(msg)
+                interpolated_map['Errors'][profile] = msg
+                continue
+
+            # Grab the provider name
+            provider_info = self.opts['profiles'][profile]['provider'].split(':')
+
+            provider = provider_info[0]
+            driver_name = provider_info[1]
+
+            matching = self.get_running_by_names(names, query, cached)
+
+            for alias, drivers in matching.items():
+                if alias != provider:
+                    # If the alias doesn't match the provider of the profile we're looking at,
+                    # skip it.
+                    continue
+
+                for driver, vms in drivers.items():
+                    if driver != driver_name:
+                        logger.warning(
+                            'The driver in the matching info doesn\'t match the provider '
+                            'specified in the config... Something fishy is going on'
+                        )
+
+                    for vm_name, vm_details in vms.items():
+                        if alias not in interpolated_map:
+                            interpolated_map[alias] = {}
+                        if driver not in interpolated_map[alias]:
+                            interpolated_map[alias][driver] = {}
+                        interpolated_map[alias][driver][vm_name] = vm_details
+                        names.remove(vm_name)
+
+            if not names:
+                continue
+
+            profile_details = self.opts['profiles'][profile]
+            alias, driver = profile_details['provider'].split(':')
+            for vm_name in names:
+                if alias not in interpolated_map:
+                    interpolated_map[alias] = {}
+                if driver not in interpolated_map[alias]:
+                    interpolated_map[alias][driver] = {}
+                interpolated_map[alias][driver][vm_name] = 'Absent'
+
+        return interpolated_map
+
+    def delete_map(self, query='list_nodes'):
+        """
+        Change the default value to something reasonable.
+        """
+        return super(StackdioSaltCloudMap, self).delete_map(query)
+
+    def get_running_by_names(self, names, query='list_nodes', cached=False, profile=None):
+        """
+        Override this so we only get appropriate things for our map
+        """
+        if isinstance(names, basestring):
+            names = [names]
+
+        matches = {}
+        handled_drivers = {}
+        mapped_providers = self.map_providers_parallel(query, cached=cached)
+        for alias, drivers in mapped_providers.items():
+            for driver, vms in drivers.items():
+                if driver not in handled_drivers:
+                    handled_drivers[driver] = alias
+                # When a profile is specified, only return an instance
+                # that matches the provider specified in the profile.
+                # This solves the issues when many providers return the
+                # same instance. For example there may be one provider for
+                # each availability zone in amazon in the same region, but
+                # the search returns the same instance for each provider
+                # because amazon returns all instances in a region, not
+                # availability zone.
+                if profile:
+                    if alias not in self.opts['profiles'][profile]['provider'].split(':')[0]:
+                        continue
+
+                for vm_name, details in vms.items():
+                    # XXX: The logic below can be removed once the aws driver
+                    # is removed
+                    if vm_name not in names:
+                        continue
+
+                    elif (
+                        driver == 'ec2' and
+                        'aws' in handled_drivers and
+                        'aws' in matches[handled_drivers['aws']] and
+                        vm_name in matches[handled_drivers['aws']]['aws']
+                    ):
+                        continue
+                    elif (
+                        driver == 'aws' and
+                        'ec2' in handled_drivers and
+                        'ec2' in matches[handled_drivers['ec2']] and
+                        vm_name in matches[handled_drivers['ec2']]['ec2']
+                    ):
+                        continue
+
+                    # This little addition makes everything not break :)
+                    # Without this, if you have 2 providers attaching to the same AWS account,
+                    # salt-cloud will try to kill / rename instances twice.  This snippet below
+                    # removes those duplicates, and only kills the ones you actually want killed.
+                    should_continue = False
+                    for profile, data in self.rendered_map.items():
+                        provider = self.opts['profiles'][profile]['provider'].split(':')[0]
+                        if vm_name in data and alias != provider:
+                            should_continue = True
+                            break
+
+                    if should_continue:
+                        continue
+
+                    # End inserted snippet #
+
+                    if alias not in matches:
+                        matches[alias] = {}
+                    if driver not in matches[alias]:
+                        matches[alias][driver] = {}
+                    matches[alias][driver][vm_name] = details
+
+        return matches
+
+
+class StackdioSaltCloudClient(salt.cloud.CloudClient):
+
+    def launch_map(self, cloud_map, **kwargs):
+        """
+        Runs a map from an already in-memory representation rather than an file on disk.
+        """
+        opts = self._opts_defaults(**kwargs)
+
+        handler = setup_logfile_logger(
+            opts['log_file'],
+            opts['log_level_logfile'],
+            log_format=opts['log_fmt_logfile'],
+            date_format=opts['log_datefmt_logfile'],
+        )
+
+        mapper = StackdioSaltCloudMap(opts)
+        mapper.rendered_map = cloud_map
+        dmap = mapper.map_data()
+
+        # Do the launch
+        ret = salt.utils.cloud.simple_types_filter(
+            mapper.run_map(dmap)
+        )
+
+        # Cancel the logging
+        root_logger.removeHandler(handler)
+
+        return ret
+
+    def destroy_map(self, cloud_map, **kwargs):
+        """
+        Destroy the named VMs
+        """
+        kwarg = kwargs.copy()
+        kwarg['destroy'] = True
+        mapper = StackdioSaltCloudMap(self._opts_defaults(**kwarg))
+        mapper.rendered_map = cloud_map
+        dmap = mapper.delete_map()
+
+        # This is pulled from the salt-cloud ec2 driver code.
+        msg = 'The following VMs are set to be destroyed:\n'
+        names = set()
+        for alias, drivers in dmap.items():
+            msg += '  {0}:\n'.format(alias)
+            for driver, vms in drivers.items():
+                msg += '    {0}:\n'.format(driver)
+                for name in vms:
+                    msg += '      {0}\n'.format(name)
+                    names.add(name)
+
+        if names:
+            logger.info(msg)
+            return salt.utils.cloud.simple_types_filter(
+                mapper.destroy(names)
+            )
+        else:
+            logger.info('There are no VMs to be destroyed.')
+            return {}
+
+
+def setup_logfile_logger(log_path, log_level='error', log_format=None, date_format=None):
+    """
+    Set up logging to a file.
+    """
+    # Grab the level
+    level = LOG_LEVELS.get(log_level.lower(), logging.ERROR)
+
+    # Create the handler
+    handler = WatchedFileHandler(log_path, mode='a', encoding='utf-8', delay=0)
+
+    handler.setLevel(level)
+
+    # Set the default console formatter config
+    if not log_format:
+        log_format = '%(asctime)s [%(name)-15s][%(levelname)-8s] %(message)s'
+    if not date_format:
+        date_format = '%Y-%m-%d %H:%M:%S'
+
+    formatter = logging.Formatter(log_format, datefmt=date_format)
+
+    handler.setFormatter(formatter)
+    root_logger.addHandler(handler)
+
+    return handler
+
+
+def state_to_dict(state_string):
+    """
+    Takes the state string and transforms it into a dict of key/value
+    pairs that are a bit easier to handle.
+
+    Before: group_|-stackdio_group_|-abe_|-present
+
+    After: {
+        'module': 'group',
+        'function': 'present',
+        'name': 'abe',
+        'declaration_id': 'stackdio_group'
+    }
+    """
+    state_labels = settings.STATE_EXECUTION_FIELDS
+    state_fields = state_string.split(settings.STATE_EXECUTION_DELIMITER)
+    return dict(zip(state_labels, state_fields))
+
+
+def is_requisite_error(state_meta):
+    """
+    Is the state error because of a requisite state failure?
+    """
+    return ERROR_REQUISITE in state_meta['comment']
+
+
+def is_recoverable(err):
+    """
+    Checks the provided error against a blacklist of errors
+    determined to be unrecoverable. This should be used to
+    prevent retrying of provisioning or orchestration because
+    the error will continue to occur.
+    """
+    # TODO: determine the blacklist of errors that
+    # will trigger a return of False here
+    return True
+
+
+def state_error(state_str, state_meta):
+    """
+    Takes the given state result string and the metadata
+    of the state execution result and returns a consistent
+    dict for the error along with whether or not the error
+    is recoverable.
+    """
+    state = state_to_dict(state_str)
+    func = '{module}.{func}'.format(**state)
+    decl_id = state['declaration_id']
+    err = {
+        'error': state_meta['comment'],
+        'function': func,
+        'declaration_id': decl_id,
+    }
+    if 'stderr' in state_meta['changes']:
+        err['stderr'] = state_meta['changes']['stderr']
+    if 'stdout' in state_meta['changes']:
+        err['stdout'] = state_meta['changes']['stdout']
+    return err, is_recoverable(err)
+
+
+def process_sls_result(sls_result, err_file):
+    if 'out' in sls_result and sls_result['out'] != 'highstate':
+        logger.debug('This isn\'t highstate data... it may not process correctly.')
+
+        from .tasks import StackTaskException
+        raise StackTaskException('Missing highstate data from the orchestrate runner.')
+
+    if 'ret' not in sls_result:
+        return True, set()
+
+    failed = False
+    failed_hosts = set()
+
+    for host, state_results in sls_result['ret'].items():
+        sorted_result = sorted(state_results.items(), key=lambda x: x[1]['__run_num__'])
+        for stage_label, stage_result in sorted_result:
+
+            if stage_result.get('result', False):
+                continue
+
+            # We have failed
+            failed = True
+
+            # Check to see if it's a requisite error - if so, we don't want to clutter the
+            # logs, so we'll continue on.
+            if is_requisite_error(stage_result):
+                continue
+
+            failed_hosts.add(host)
+
+            # Write to the error log
+            with open(err_file, 'a') as f:
+                f.write(yaml.safe_dump(stage_result))
+
+    return failed, failed_hosts
+
+
+def process_orchestrate_result(result, stack, log_file, err_file):
+    result = result['{0}_master'.format(socket.gethostname())]
+
+    if not isinstance(result, dict):
+        with open(err_file, 'a') as f:
+            f.write(str(result))
+
+        from .tasks import StackTaskException
+        raise StackTaskException(result)
+
+    failed = False
+    failed_hosts = set()
+
+    for sls, sls_result in sorted(result.items(), key=lambda x: x[1]['__run_num__']):
+        sls_dict = state_to_dict(sls)
+
+        logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'],
+                                                                stack.title))
+
+        with open(err_file, 'a') as f:
+            if 'changes' in sls_result and 'ret' in sls_result['changes']:
+                f.write(
+                    'Stage {0} returned {1} host info object(s)\n\n'.format(
+                        sls_dict['name'],
+                        len(sls_result['changes']['ret'])
+                    )
+                )
+            elif sls_result.get('result', False):
+                f.write('Stage {0} appears to have no changes, and it succeeded.\n\n'.format(
+                    sls_dict['name']
+                ))
+            else:
+                f.write(
+                    'Stage {0} appears to have no changes, but it failed.  See below.\n\n'.format(
+                        sls_dict['name']
+                    )
+                )
+
+        if sls_result.get('result', False):
+            # This whole sls is good!  Just continue on with the next one.
+            continue
+
+        # Process the data for this sls
+        with open(err_file, 'a') as f:
+            comment = sls_result['comment']
+            if isinstance(comment, basestring):
+                f.write(COLOR_REGEX.sub('', comment))
+            else:
+                f.write(yaml.safe_dump(comment))
+        local_failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
+
+        if local_failed:
+            # Do it this way to ensure we don't set it BACK to false after a failure.
+            failed = True
+        failed_hosts.update(local_failed_hosts)
+
+    return failed, failed_hosts
 
 
 def filter_actions(user, stack, actions):
@@ -72,29 +469,6 @@ def get_salt_cloud_log_file(stack, suffix):
     return log_file
 
 
-def get_launch_command(stack, log_file, parallel=False):
-    cmd_args = [
-        'salt-cloud',
-        '--assume-yes',
-        '--log-level=quiet',        # no logging on console
-        '--log-file={0}',           # where to log
-        '--log-file-level=debug',   # full logging
-        '--config-dir={1}',         # salt config dir
-        '--out=yaml',               # return YAML formatted results
-        '--map={2}',                # the map file to use for launching
-    ]
-
-    # parallize the salt-cloud launch
-    if parallel:
-        cmd_args.append('--parallel')
-
-    return ' '.join(cmd_args).format(
-        log_file,
-        settings.STACKDIO_CONFIG.salt_config_root,
-        stack.map_file.path,
-    )
-
-
 def get_salt_cloud_opts():
     return config.cloud_config(
         settings.STACKDIO_CONFIG.salt_cloud_config
@@ -107,22 +481,23 @@ def get_salt_master_opts():
     )
 
 
-def get_stack_mapper(stack):
+def get_stack_mapper(cloud_map):
     opts = get_salt_cloud_opts()
     opts.update({
-        'map': stack.map_file.path,
         'hard': False,
     })
-    return salt.cloud.Map(opts)
+    ret = salt.cloud.Map(opts)
+    ret.rendered_map = cloud_map
+    return ret
 
 
-def get_stack_map_data(stack):
-    mapper = get_stack_mapper(stack)
+def get_stack_map_data(cloud_map):
+    mapper = get_stack_mapper(cloud_map)
     return mapper.map_data()
 
 
-def get_stack_vm_map(stack):
-    dmap = get_stack_map_data(stack)
+def get_stack_vm_map(cloud_map):
+    dmap = get_stack_map_data(cloud_map)
     vms = {}
     for k in ('create', 'existing',):
         if k in dmap:
@@ -188,14 +563,13 @@ def ping_stack_hosts(stack):
     NOTE: This specifically targets the hosts in a stack instead of
     pinging all available hosts that salt is managing.
     """
-    client = salt.client.LocalClient(
-        settings.STACKDIO_CONFIG.salt_master_config
-    )
-    target = ' or '.join(
-        [hd.hostname_template.format(namespace=stack.namespace,
-                                     index='*')
-         for hd in stack.blueprint.host_definitions.all()])
-    return set(client.cmd(target, 'test.ping', expr_form='compound'))
+    client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
+    target = [host.hostname for host in stack.hosts.all()]
+
+    ret = set()
+    for val in client.cmd_iter(target, 'test.ping', expr_form='list'):
+        ret.update(val.keys())
+    return ret
 
 
 def find_zombie_hosts(stack):
@@ -204,14 +578,14 @@ def find_zombie_hosts(stack):
     reachable via a ping request.
     """
     pinged_hosts = ping_stack_hosts(stack)
-    hostnames = set([h[0] for h in stack.hosts.all().values_list('hostname')])
+    hostnames = set([host.hostname for host in stack.hosts.all()])
     zombies = hostnames - pinged_hosts
     if not zombies:
         return None
     return stack.hosts.filter(hostname__in=zombies)
 
 
-def check_for_ssh(stack, hosts):
+def check_for_ssh(cloud_map, hosts):
     """
     Attempts to SSH to the given hosts.
 
@@ -221,8 +595,8 @@ def check_for_ssh(stack, hosts):
     True if we could connect to Host over SSH, False otherwise
     """
     opts = get_salt_cloud_opts()
-    vms = get_stack_vm_map(stack)
-    mapper = get_stack_mapper(stack)
+    vms = get_stack_vm_map(cloud_map)
+    mapper = get_stack_mapper(cloud_map)
     result = []
 
     # Iterate over the given hosts. If the host hasn't been assigned a
@@ -305,7 +679,7 @@ def bootstrap_hosts(stack, hosts, parallel=True):
     the `find_zombie_hosts` method)
     """
     __opts__ = get_salt_cloud_opts()
-    dmap = get_stack_map_data(stack)
+    dmap = get_stack_map_data(stack.generate_cloud_map())
 
     # Params list holds the dict objects that will be used during
     # the deploy process; this will be handed off to the multiprocessing
@@ -470,55 +844,33 @@ def deploy_vm(params):
     return deployed
 
 
-def load_map_file(stack):
-    with open(stack.map_file.path, 'r') as f:
-        map_yaml = yaml.safe_load(f)
-    return map_yaml
-
-
-def write_map_file(stack, data):
-    with open(stack.map_file.path, 'w') as f:
-        f.write(yaml.safe_dump(data, default_flow_style=False))
-
-
-def mod_hosts_map(stack, n, **kwargs):
+def mod_hosts_map(cloud_map, n, **kwargs):
     """
     Selects n random hosts for the given stack and modifies/adds
-    the map entry for thoses hosts with the kwargs.
+    the map entry for those hosts with the kwargs.
     """
-    map_yaml = load_map_file(stack)
-
-    population = []
-    for k, v in map_yaml.iteritems():
-        population.extend(v)
+    population = cloud_map.keys()
 
     # randomly select n hosts
     hosts = random.sample(population, n)
 
     # modify the hosts
     for host in hosts:
-        host[host.keys()[0]].update(kwargs)
+        cloud_map[host].update(kwargs)
 
-    write_map_file(stack, map_yaml)
+    return cloud_map
 
 
-def unmod_hosts_map(stack, *args):
+def unmod_hosts_map(cloud_map, *args):
     """
     For debug method purpose only
     """
-    map_yaml = load_map_file(stack)
-
-    population = []
-    for k, v in map_yaml.iteritems():
-        population.extend(v)
-
-    for host in population:
-        host_data = host[host.keys()[0]]
+    for host, host_data in cloud_map.items():
         for k in args:
             if k in host_data:
                 del host_data[k]
 
-    write_map_file(stack, map_yaml)
+    return cloud_map
 
 
 def create_zombies(stack, n):
@@ -539,10 +891,10 @@ def create_zombies(stack, n):
     client = salt.client.LocalClient(
         settings.STACKDIO_CONFIG.salt_master_config
     )
-    result = client.cmd(
-        ' or '.join([h.hostname for h in hosts]),
+    result = list(client.cmd_iter(
+        [h.hostname for h in hosts],
         'service.stop',
         arg=('salt-minion',),
-        expr_form='compound'
-    )
-    print(result)
+        expr_form='list'
+    ))
+    logger.info(result)

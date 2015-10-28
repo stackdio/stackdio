@@ -30,6 +30,7 @@
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans:400,600,300">
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/bootstrap/dist/css/bootstrap.min.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/fuelux/dist/css/fuelux.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/font-awesome/css/font-awesome.min.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/css/stackdio.css' %}">
 
     <!-- extra stylesheets -->
@@ -58,22 +59,42 @@
                     </button>
                     <a class="navbar-brand" href="{% block branding-url %}{% url 'ui:index' %}{% endblock %}" >
                         {% block branding %}
-                        <img class="hidden-xs" alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">
-                        <img class="visible-xs" alt="Brand" style="height: 30px" src="{% static 'stackdio/img/logo-small-thumb.png' %}">
+                        <img alt="Brand" style="height: 30px; margin-right: 5px" src="{% static 'stackdio/img/logo-thumb.png' %}">
                         {% endblock %}
                     </a>
-                    {% if user.is_authenticated %}
-                    <form class="navbar-form navbar-left text-center" role="search">
-                        <div class="form-group" style="width: 100%">
-                            <input type="text" class="form-control" data-action="grow" style="width: 100%" placeholder="Search">
-                        </div>
-                    </form>
-                    {% endif %}
                 </div>
 
                 <div id="navbar" class="collapse navbar-collapse">
-                    {% if user.is_authenticated %}
+                    {% if user.is_authenticated and user.password %}
                     <ul class="nav navbar-nav navbar-right">
+                        <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
+                        <li class="{% block blueprint-class %}{% endblock %}"><a href="{% url 'ui:blueprint-list' %}">Blueprints</a></li>
+
+                        {% if user.settings.advanced_view %}
+                        <li class="{% block formula-class %}{% endblock %}"><a href="{% url 'ui:formula-list' %}">Formulas</a></li>
+                        <li class="{% block snapshot-class %}{% endblock %}"><a href="{% url 'ui:snapshot-list' %}">Snapshots</a></li>
+
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                Cloud <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li class="{% block account-class %}{% endblock %}"><a href="{% url 'ui:cloud-account-list' %}">Cloud Accounts</a></li>
+                                <li class="{% block image-class %}{% endblock %}"><a href="{% url 'ui:cloud-image-list' %}">Cloud Images</a></li>
+                            </ul>
+                        </li>
+
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                                Admin <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li class="{% block user-class %}{% endblock %}"><a href="{% url 'ui:user-list' %}">Users</a></li>
+                                <li class="{% block group-class %}{% endblock %}"><a href="{% url 'ui:group-list' %}">Groups</a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
                         <!-- Extra links -->
                         {% block links %}{% endblock %}
 
@@ -82,7 +103,8 @@
                                 {{ user.username }} <span class="caret"></span>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a href="{% url 'ui:user-profile' %}">Profile</a></li>
+                                <li class="{% block profile-class %}{% endblock %}"><a href="{% url 'ui:user-profile' %}">Profile</a></li>
+                                <li class="divider"></li>
                                 <li><a href="{% url 'ui:logout' %}">Logout</a></li>
                             </ul>
                         </li>

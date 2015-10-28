@@ -78,6 +78,13 @@ class CloudProvider(models.Model):
     def __unicode__(self):
         return self.name
 
+    def get_driver(self):
+        # determine the provider driver class
+        provider_class = get_provider_driver_class(self)
+
+        # Return an instance of the provider driver
+        return provider_class()
+
 
 _cloudaccount_model_permissions = (
     'create',
@@ -122,6 +129,9 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
 
     # the account/owner id of the account
     account_id = models.CharField('Account ID', max_length=64)
+
+    # If this is false, we won't create security groups on a per-stack basis.
+    create_security_groups = models.BooleanField('Create Security Groups', default=True)
 
     # Grab the list of formula components
     formula_components = GenericRelation('formulas.FormulaComponent')

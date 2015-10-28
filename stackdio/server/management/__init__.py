@@ -26,6 +26,7 @@
 import argparse
 import sys
 
+from stackdio.server.version import __version__
 from . import commands
 
 if sys.stdout.isatty():
@@ -42,6 +43,11 @@ SALT_COMMANDS = (
 
 def main():
     parser = argparse.ArgumentParser(prog='stackdio')
+
+    parser.add_argument('-v', '--version',
+                        action='version',
+                        version=__version__)
+
     subparsers = parser.add_subparsers(title='subcommands',
                                        description='available subcommands')
 
@@ -91,10 +97,7 @@ def main():
 
     upgrade_salt_parser = subparsers.add_parser(
         'upgrade-salt',
-        help='upgrade your salt version')
-    upgrade_salt_parser.add_argument('version',
-                                     help=('The version of salt you would like '
-                                           'to upgrade to'))
+        help='upgrade your salt version in config files')
     upgrade_salt_parser.set_defaults(command=commands.UpgradeSaltCommand)
     upgrade_salt_parser.set_defaults(raw_args=False)
 

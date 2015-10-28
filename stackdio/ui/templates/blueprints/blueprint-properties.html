@@ -1,0 +1,22 @@
+{% extends 'blueprints/blueprint-detail-base.html' %}
+{% load staticfiles %}
+
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    <div class="row">
+        <div class="col-md-12">
+            <form data-bind="submit: saveProperties">
+                <div class="form-group" id="properties">
+                    <label for="blueprintProperties">Properties</label>
+
+                    <textarea class="form-control" id="blueprintProperties" rows="25"
+                              data-bind="value: propertiesJSON, valueUpdate: 'keyup'"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-success">Save</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

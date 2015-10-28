@@ -17,8 +17,14 @@
 
 import logging
 
+from celery import chain
+from django.contrib.contenttypes.models import ContentType
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
+
+from stackdio.core import mixins, models
+from stackdio.api.stacks.tasks import tag_infrastructure, finish_stack
+from stackdio.api.stacks.models import Stack
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +38,8 @@ class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer)
         Create a field representing the object's own URL.
         """
         field_class = self.serializer_url_field
-        app_label = model_class._meta.app_label
-        model_name = model_class._meta.object_name.lower()
+        app_label = getattr(self.Meta, 'app_label', model_class._meta.app_label)
+        model_name = getattr(self.Meta, 'model_name', model_class._meta.object_name.lower())
 
         # Override user things
         if model_name in ('user', 'group', 'permission'):
@@ -43,6 +49,78 @@ class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer)
         }
 
         return field_class, field_kwargs
+
+
+class LabelUrlField(serializers.HyperlinkedIdentityField):
+
+    def get_url(self, obj, view_name, request, format):
+        """
+        Given an object, return the URL that hyperlinks to the object.
+
+        May raise a `NoReverseMatch` if the `view_name` and `lookup_field`
+        attributes are not configured to correctly match the URL conf.
+        """
+        # Unsaved objects will not yet have a valid URL.
+        if hasattr(obj, 'pk') and obj.pk is None:
+            return None
+
+        kwargs = {
+            'pk': obj.object_id,
+            'label_name': obj.key,
+        }
+        return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
+
+
+class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
+
+    serializer_url_field = LabelUrlField
+
+    class Meta:
+        model = models.Label
+        app_label = 'stacks'
+        model_name = 'stack-label'
+
+        fields = (
+            'url',
+            'key',
+            'value',
+        )
+
+        create_only_fields = (
+            'key',
+        )
+
+    def validate(self, attrs):
+        content_object = self.context['content_object']
+        key = attrs.get('key')
+
+        if key:
+            if key in ('Name', 'stack_id'):
+                raise serializers.ValidationError({
+                    'key': ['The keys `Name` and `stack_id` are reserved for system use.']
+                })
+
+            labels = content_object.labels.filter(key=key)
+
+            if labels.count() > 0:
+                raise serializers.ValidationError({
+                    'key': ['Label keys must be unique.']
+                })
+
+        return attrs
+
+    def save(self, **kwargs):
+        label = super(StackdioLabelSerializer, self).save(**kwargs)
+
+        stack_ctype = ContentType.objects.get_for_model(Stack)
+
+        if label.content_type == stack_ctype:
+            logger.info('Tagging infrastructure...')
+
+            # Spin up the task to tag everything
+            tag_infrastructure.si(label.object_id, None, False).apply_async()
+
+        return label
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):

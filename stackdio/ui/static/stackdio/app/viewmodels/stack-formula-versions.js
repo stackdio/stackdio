@@ -44,6 +44,8 @@ define([
             }
         ],
         stack: ko.observable(),
+        newVersions: ko.observableArray([]),
+        newVersionFormula: ko.observable(),
         autoRefresh: false,
         model: FormulaVersion,
         baseUrl: '/stacks/',
@@ -54,7 +56,39 @@ define([
         ],
         init: function () {
             this._super();
+            this.newVersionFormula(null);
             this.stack(new Stack(window.stackdio.stackId, this));
+        },
+        addNewVersion: function () {
+            var $el = $('#new-version-form');
+
+            $el.removeClass('has-error');
+
+            var self = this;
+            var dup = false;
+            this.sortedObjects().forEach(function (version) {
+                if (version.formula() === self.newVersionFormula()) {
+                    dup = true;
+                }
+            });
+
+            this.newVersions().forEach(function (version) {
+                if (version.formula === self.newVersionFormula()) {
+                    dup = true;
+                }
+            });
+
+            if (dup) {
+                utils.growlAlert('You may not have two versions with the same formula.', 'danger');
+                $el.addClass('has-error');
+                return;
+            }
+
+            this.newVersions.push({
+                formula: this.newVersionFormula(),
+                version: ko.observable(null)
+            });
+            this.newVersionFormula(null);
         },
         saveVersions: function () {
             var ajaxCalls = [];
@@ -73,11 +107,22 @@ define([
                 }));
             });
 
+            this.newVersions().forEach(function (version) {
+                ajaxCalls.push($.ajax({
+                    method: 'POST',
+                    url: self.stack().raw.formula_versions,
+                    data: JSON.stringify({
+                        formula: version.formula,
+                        version: version.version()
+                    })
+                }).fail(function (jqxhr) {
+                    utils.alertError(jqxhr, 'Error saving formula version',
+                        'Errors saving version for ' + version.formula + ':<br>');
+                }));
+            });
+
             $.when.apply(this, ajaxCalls).done(function () {
-                bootbox.alert({
-                    title: 'Formula versions saved',
-                    message: 'Successfully saved formula versions.'
-                });
+                utils.growlAlert('Successfully saved formula versions.', 'success');
             });
 
         }

@@ -31,6 +31,9 @@ define([
         // For the breadcrumb only
         self.stackTitle = ko.observable('');
 
+        self.blueprintTitle = ko.observable('');
+        self.blueprintUrl = ko.observable('');
+
         // Override the breadcrumbs
         self.breadcrumbs = [
             {
@@ -46,22 +49,42 @@ define([
             })
         ];
 
+        self.subscription = null;
+
         self.reset = function() {
+            // Make sure we don't have more than 1 subscription
+            if (self.subscription) {
+                self.subscription.dispose();
+            }
+
             // Create the stack object.  Pass in the stack id, and let the model load itself.
             self.stack = new Stack(window.stackdio.stackId, self);
             self.stack.waiting.done(function () {
                 document.title = 'stackd.io | Stack Detail - ' + self.stack.title();
                 self.stackTitle(self.stack.title());
+                self.stack.loadBlueprint().done(function () {
+                    self.blueprintTitle(self.stack.blueprint().title() + '  --  ' + self.stack.blueprint().description());
+                    self.blueprintUrl('/blueprints/' + self.stack.blueprint().id + '/');
+                });
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/stacks/';
             });
-            self.stackTitle('');
+            var $el = $('.checkbox-custom');
+            self.subscription = self.stack.createUsers.subscribe(function (newVal) {
+                if (newVal) {
+                    $el.checkbox('check');
+                } else {
+                    $el.checkbox('uncheck');
+                }
+            });
         };
 
         // Functions
         self.refreshStack = function () {
-            self.stack.loadHistory();
+            self.stack.loadHistory().fail(function () {
+                window.location = '/stacks/';
+            });
         };
 
         // React to an open-dropdown event & lazy load the actions

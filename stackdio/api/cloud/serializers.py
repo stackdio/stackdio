@@ -44,6 +44,9 @@ class CloudProviderSerializer(StackdioHyperlinkedModelSerializer):
     title = serializers.ReadOnlyField(source='get_type_name_display')
 
     # Links
+    required_fields = serializers.HyperlinkedIdentityField(
+        view_name='api:cloud:cloudprovider-required',
+        lookup_field='name')
     instance_sizes = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudinstancesize-list',
         lookup_field='name')
@@ -67,6 +70,7 @@ class CloudProviderSerializer(StackdioHyperlinkedModelSerializer):
             'url',
             'title',
             'name',
+            'required_fields',
             'instance_sizes',
             'regions',
             'zones',
@@ -83,6 +87,8 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
                                           queryset=models.CloudRegion.objects.all())
 
     # Hyperlinks
+    images = serializers.HyperlinkedIdentityField(
+        view_name='api:cloud:cloudaccount-cloudimage-list')
     security_groups = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudaccount-securitygroup-list')
     all_security_groups = serializers.HyperlinkedIdentityField(
@@ -103,6 +109,7 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
     class Meta:
         model = models.CloudAccount
         fields = (
+            'id',
             'url',
             'title',
             'slug',
@@ -111,6 +118,8 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
             'region',
             'account_id',
             'vpc_id',
+            'create_security_groups',
+            'images',
             'security_groups',
             'all_security_groups',
             'vpc_subnets',
@@ -156,7 +165,7 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
         # Leverage the driver to generate its required data that
         # will be serialized down to yaml and stored in both the database
         # and the salt cloud providers file
-        provider_data = driver.get_provider_data(validated_data)
+        provider_data = driver.get_provider_data(validated_data, self.initial_data)
 
         # Generate the yaml and store in the database
         yaml_data = {
@@ -264,7 +273,7 @@ class CloudImageSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerial
         return attrs
 
 
-class SnapshotSerializer(StackdioHyperlinkedModelSerializer):
+class SnapshotSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
     )
@@ -290,17 +299,24 @@ class SnapshotSerializer(StackdioHyperlinkedModelSerializer):
             'group_permissions',
         )
 
+        create_only_fields = (
+            'account',
+        )
+
     def validate(self, attrs):
-        request = self.context['request']
+        if 'snapshot_id' in attrs:
+            if self.instance:
+                account = self.instance.account
+            else:
+                account = attrs['account']
 
-        # validate that the snapshot exists by looking it up in the cloud
-        # account
-        account_id = request.DATA.get('account')
-        driver = models.CloudAccount.objects.get(pk=account_id).get_driver()
+            # validate that the snapshot exists by looking it up in the cloud
+            # account
+            driver = account.get_driver()
 
-        result, error = driver.has_snapshot(request.DATA['snapshot_id'])
-        if not result:
-            raise serializers.ValidationError({'errors': [error]})
+            result, error = driver.has_snapshot(attrs['snapshot_id'])
+            if not result:
+                raise serializers.ValidationError({'snapshot_id': [error]})
         return attrs
 
 
@@ -383,6 +399,8 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSer
 
     account = serializers.PrimaryKeyRelatedField(queryset=models.CloudAccount.objects.all())
 
+    name = serializers.CharField(default='')
+
     rules = serializers.HyperlinkedIdentityField(view_name='api:cloud:securitygroup-rules')
 
     default = serializers.BooleanField(source='is_default', required=False)
@@ -406,7 +424,6 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSer
         )
 
         extra_kwargs = {
-            'name': {'required': False},
             'group_id': {'required': False},
             'description': {'required': False},
         }
@@ -432,14 +449,21 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSer
             group_id = attrs.get('group_id')
 
             if not name and not group_id:
-                err_msg = 'You must provide one of `name` or `group_id`'
+                err_msg = 'You must provide one of either `name` or `group_id`'
                 raise serializers.ValidationError({
                     'name': [err_msg],
                     'group_id': [err_msg],
                 })
 
-            # check if the group exists on the account
+            if name and group_id:
+                err_msg = 'You may only provide one of `name` or `group_id`'
+                raise serializers.ValidationError({
+                    'name': [err_msg],
+                    'group_id': [err_msg],
+                })
+
             if group_id:
+                # check if the group exists on the account
                 try:
                     account_group_list = driver.get_security_groups([group_id])
 
@@ -452,17 +476,21 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSer
                     account_group = account_group_list[0]
                     logger.debug('Security group with id "{0}" and name "{1}" already exists on '
                                  'the account.'.format(group_id, name))
-                except GroupNotFoundException:
-                    # doesn't exist on the account, we'll try to create it later
-                    account_group = None
-            else:
-                account_group = None
+                except GroupNotFoundException as e:
+                    if e.message:
+                        err_msg = e.message
+                    else:
+                        err_msg = ('The group_id `{0}` doesn\'t exist on the provider '
+                                   'account.'.format(group_id))
 
-            # Set all the appropriate data
-            if account_group:
-                # Already exists, just need to create in our database
+                    raise serializers.ValidationError({
+                        'group_id': [err_msg],
+                    })
+
+                # Set appropriate properties we got back from the provider
                 attrs['group_id'] = account_group.group_id
                 attrs['description'] = account_group.description
+                attrs['name'] = account_group.name
                 attrs['is_managed'] = False
                 self.should_create_group = False
             else:
@@ -503,8 +531,6 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSer
         return group
 
     def update(self, instance, validated_data):
-        logger.debug(validated_data)
-
         group = super(SecurityGroupSerializer, self).update(instance, validated_data)
 
         account = validated_data['account']
@@ -543,6 +569,12 @@ class CloudAccountSecurityGroupSerializer(SecurityGroupSerializer):
             'name',
             'description',
         )
+
+    def to_internal_value(self, data):
+        ret = super(CloudAccountSecurityGroupSerializer, self).to_internal_value(data)
+        # Add in the account so the UniqueTogetherValidator doesn't get angry
+        ret['account'] = self.context['account']
+        return ret
 
 
 class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method

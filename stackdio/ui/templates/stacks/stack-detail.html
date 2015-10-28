@@ -3,9 +3,13 @@
 
 {% block detail-content %}
 <div class="col-sm-6 col-sm-pull-3">
-    <div class="container-fluid">
-        <div class="row">
+    <div class="row">
+        <div class="col-md-12">
             <form data-bind="submit: function() { stack.save(); }">
+                <div id="blueprint" class="form-group">
+                    <label>Blueprint</label>
+                    <p class="form-control-static"><a data-bind="text: blueprintTitle, attr: {href: blueprintUrl}"></a></p>
+                </div>
                 <div id="title" class="form-group">
                     <label for="stackTitle">Title</label>
                     <input type="text" class="form-control" id="stackTitle"
