@@ -98,9 +98,8 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
 
         errors = {}
 
-        if git_username:
+        if git_username and not self.instance:
             # We only need validation if a non-empty username is provided
-
             # We only care about this if we're importing
             access_token = attrs.get('access_token')
             git_password = attrs.get('git_password')
