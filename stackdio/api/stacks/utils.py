@@ -22,7 +22,6 @@ import multiprocessing
 import os
 import random
 import re
-import socket
 from datetime import datetime
 from logging.handlers import WatchedFileHandler
 
@@ -374,7 +373,9 @@ def process_sls_result(sls_result, err_file):
 
 
 def process_orchestrate_result(result, stack, log_file, err_file):
-    result = result['{0}_master'.format(socket.gethostname())]
+    opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+
+    result = result[opts['id']]
 
     if not isinstance(result, dict):
         with open(err_file, 'a') as f:

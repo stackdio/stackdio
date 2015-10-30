@@ -28,7 +28,9 @@ def load_cloud_objects(apps, schema_editor):
         model_cls = apps.get_model('cloud', model['model'])
         to_create = []
         for object_data in model['objects']:
-            to_create.append(model_cls(**object_data))
+            # Only create if it's not already there
+            if model_cls.objects.filter(**object_data).count() == 0:
+                to_create.append(model_cls(**object_data))
 
         model_cls.objects.using(db_alias).bulk_create(to_create)
 

@@ -83,7 +83,7 @@ def clone_to_temp(formula, git_password):
         if repo and not origin:
             origin = repo.remotes.origin.name
 
-        if formula and formula.private_git_repo:
+        if repo and formula and formula.private_git_repo:
             # remove the password from the config
             repo.git.remote('set-url', origin, formula.uri)
 
