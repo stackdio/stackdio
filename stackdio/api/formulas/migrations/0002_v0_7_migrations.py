@@ -2,6 +2,7 @@
 from __future__ import unicode_literals, print_function
 
 import os
+from urlparse import urlsplit, urlunsplit
 
 from django.conf import settings
 from django.db import models, migrations
@@ -17,6 +18,19 @@ def forward(apps, schema_editor):
     formulas = {}
 
     for formula in Formula.objects.all():
+        # Get the username out of the URI
+        parse_res = urlsplit(formula.uri)
+        if '@' in parse_res.netloc:
+            new_netloc = parse_res.netloc.split('@')[-1]
+            formula.uri = urlunsplit((
+                parse_res.scheme,
+                new_netloc,
+                parse_res.path,
+                parse_res.query,
+                parse_res.fragment
+            ))
+            formula.save()
+
         if formula.uri not in formulas:
             formulas[formula.uri] = formula
             continue
@@ -47,6 +61,8 @@ def forward(apps, schema_editor):
                     print('Skipping import of formula: {0}'.format(formula.uri))
                 else:
                     raise
+        else:
+            print('Please manually update this formula via the API: {0}'.format(formula.uri))
 
     # remove the old ones
     old_formula_dir = os.path.join(settings.STACKDIO_CONFIG['storage_root'], 'user_states')
