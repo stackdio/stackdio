@@ -363,6 +363,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.props_file:
             self.props_file.save('stack.props', ContentFile(props_json))
         else:
+            # always make sure it's closed first
+            self.props_file.close()
             self.props_file.open('w')
             self.props_file.write(props_json)
             self.props_file.close()
@@ -660,6 +662,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.map_file:
             self.map_file.save('stack.map', ContentFile(map_file_yaml))
         else:
+            # always make sure it's closed first
+            self.map_file.close()
             self.map_file.open('w')
             self.map_file.write(map_file_yaml)
             self.map_file.close()
@@ -679,6 +683,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.top_file:
             self.top_file.save('stack_{0}_top.sls'.format(self.pk), ContentFile(top_file_yaml))
         else:
+            # always make sure it's closed first
+            self.top_file.close()
             self.top_file.open('w')
             self.top_file.write(top_file_yaml)
             self.top_file.close()
@@ -721,6 +727,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.orchestrate_file:
             self.orchestrate_file.save('orchestrate.sls', ContentFile(yaml_data))
         else:
+            # always make sure it's closed first
+            self.orchestrate_file.close()
             self.orchestrate_file.open('w')
             self.orchestrate_file.write(yaml_data)
             self.orchestrate_file.close()
@@ -764,6 +772,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.global_orchestrate_file:
             self.global_orchestrate_file.save('global_orchestrate.sls', ContentFile(yaml_data))
         else:
+            # always make sure it's closed first
+            self.global_orchestrate_file.close()
             self.global_orchestrate_file.open('w')
             self.global_orchestrate_file.write(yaml_data)
             self.global_orchestrate_file.close()
@@ -826,6 +836,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.pillar_file:
             self.pillar_file.save('stack.pillar', ContentFile(pillar_file_yaml))
         else:
+            # always make sure it's closed first
+            self.pillar_file.close()
             self.pillar_file.open('w')
             self.pillar_file.write(pillar_file_yaml)
             self.pillar_file.close()
@@ -857,6 +869,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.global_pillar_file:
             self.global_pillar_file.save('stack.global_pillar', ContentFile(pillar_file_yaml))
         else:
+            # always make sure it's closed first
+            self.global_pillar_file.close()
             self.global_pillar_file.open('w')
             self.global_pillar_file.write(pillar_file_yaml)
             self.global_pillar_file.close()
