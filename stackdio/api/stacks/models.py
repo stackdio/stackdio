@@ -352,10 +352,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
     def properties(self):
         if not self.props_file:
             return {}
-        self.props_file.open()
-        ret = json.loads(self.props_file.read())
-        self.props_file.close()
-        return ret
+        with open(self.props_file.path, 'r') as f:
+            return json.load(f)
 
     @properties.setter
     def properties(self, props):
@@ -363,9 +361,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.props_file:
             self.props_file.save('stack.props', ContentFile(props_json))
         else:
-            self.props_file.open('w')
-            self.props_file.write(props_json)
-            self.props_file.close()
+            with open(self.props_file.path, 'w') as f:
+                f.write(props_json)
 
     def create_security_groups(self):
         for hostdef in self.blueprint.host_definitions.all():
@@ -660,9 +657,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.map_file:
             self.map_file.save('stack.map', ContentFile(map_file_yaml))
         else:
-            self.map_file.open('w')
-            self.map_file.write(map_file_yaml)
-            self.map_file.close()
+            with open(self.map_file.path, 'w') as f:
+                f.write(map_file_yaml)
 
     def generate_top_file(self):
         top_file_data = {
@@ -679,9 +675,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.top_file:
             self.top_file.save('stack_{0}_top.sls'.format(self.pk), ContentFile(top_file_yaml))
         else:
-            self.top_file.open('w')
-            self.top_file.write(top_file_yaml)
-            self.top_file.close()
+            with open(self.top_file.path, 'w') as f:
+                f.write(top_file_yaml)
 
     def generate_orchestrate_file(self):
         hosts = self.hosts.all()
@@ -721,9 +716,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.orchestrate_file:
             self.orchestrate_file.save('orchestrate.sls', ContentFile(yaml_data))
         else:
-            self.orchestrate_file.open('w')
-            self.orchestrate_file.write(yaml_data)
-            self.orchestrate_file.close()
+            with open(self.orchestrate_file.path, 'w') as f:
+                f.write(yaml_data)
 
     def generate_global_orchestrate_file(self):
         accounts = set([host.cloud_image.account for host in self.hosts.all()])
@@ -764,9 +758,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.global_orchestrate_file:
             self.global_orchestrate_file.save('global_orchestrate.sls', ContentFile(yaml_data))
         else:
-            self.global_orchestrate_file.open('w')
-            self.global_orchestrate_file.write(yaml_data)
-            self.global_orchestrate_file.close()
+            with open(self.global_orchestrate_file.path, 'w') as f:
+                f.write(yaml_data)
 
     def generate_pillar_file(self):
         users = []
@@ -826,9 +819,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.pillar_file:
             self.pillar_file.save('stack.pillar', ContentFile(pillar_file_yaml))
         else:
-            self.pillar_file.open('w')
-            self.pillar_file.write(pillar_file_yaml)
-            self.pillar_file.close()
+            with open(self.pillar_file.path, 'w') as f:
+                f.write(pillar_file_yaml)
 
     def generate_global_pillar_file(self):
 
@@ -857,9 +849,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         if not self.global_pillar_file:
             self.global_pillar_file.save('stack.global_pillar', ContentFile(pillar_file_yaml))
         else:
-            self.global_pillar_file.open('w')
-            self.global_pillar_file.write(pillar_file_yaml)
-            self.global_pillar_file.close()
+            with open(self.global_pillar_file.path, 'w') as f:
+                f.write(pillar_file_yaml)
 
     def query_hosts(self, force=False):
         """
