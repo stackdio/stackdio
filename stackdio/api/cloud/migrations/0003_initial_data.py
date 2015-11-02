@@ -29,19 +29,10 @@ def load_cloud_objects(apps, schema_editor):
         to_create = []
         for object_data in model['objects']:
             # Only create if it's not already there
-            if model_cls.objects.filter(**object_data).count() == 0:
+            if model_cls.objects.filter(instance_id=object_data['instance_id']).count() == 0:
                 to_create.append(model_cls(**object_data))
 
         model_cls.objects.using(db_alias).bulk_create(to_create)
-
-
-def remove_cloud_objects(apps, schema_editor):
-    initial_data = load_initial_data()
-
-    for model in reversed(initial_data):
-        model_cls = apps.get_model('cloud', model['model'])
-        for model_object in model_cls.objects.all():
-            model_object.delete()
 
 
 class Migration(migrations.Migration):
@@ -51,5 +42,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_cloud_objects, remove_cloud_objects),
+        migrations.RunPython(load_cloud_objects),
     ]
