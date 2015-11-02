@@ -37,8 +37,15 @@ def load_cloud_objects(apps, schema_editor):
         filter_attr = model_filter[model['model']]
         for object_data in model['objects']:
             # Only create if it's not already there
-            if model_cls.objects.filter(**{filter_attr: object_data[filter_attr]}).count() == 0:
+            filtered = model_cls.objects.filter(**{filter_attr: object_data[filter_attr]})
+            if filtered.count() == 0:
                 to_create.append(model_cls(**object_data))
+            else:
+                # Update the fields to match the new stuff if the object already exists
+                for obj in filtered:
+                    for attr, val in object_data.items():
+                        setattr(obj, attr, val)
+                    obj.save()
 
         model_cls.objects.using(db_alias).bulk_create(to_create)
 
