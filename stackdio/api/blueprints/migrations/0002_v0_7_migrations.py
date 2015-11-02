@@ -4,6 +4,16 @@ from __future__ import unicode_literals
 from django.db import models, migrations
 
 
+def forward(apps, schema_editor):
+    Blueprint = apps.get_model('blueprints', 'Blueprint')
+
+    # We just want to add the owner in the description so we can figure out where it came from
+    for blueprint in Blueprint.objects.all():
+        blueprint.description = '{0} (previously owned by {1})'.format(blueprint.description,
+                                                                       blueprint.owner.username)
+        blueprint.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -11,6 +21,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(forward),
         migrations.AlterModelOptions(
             name='blueprint',
             options={'default_permissions': ('admin', 'create', 'delete', 'update', 'view')},
