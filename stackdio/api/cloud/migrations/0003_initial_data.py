@@ -22,14 +22,22 @@ def load_initial_data():
 def load_cloud_objects(apps, schema_editor):
     initial_data = load_initial_data()
 
+    model_filter = {
+        'CloudProviderType': 'type_name',
+        'CloudRegion': 'title',
+        'CloudZone': 'title',
+        'CloudInstanceSize': 'instance_id',
+    }
+
     db_alias = schema_editor.connection.alias
 
     for model in initial_data:
         model_cls = apps.get_model('cloud', model['model'])
         to_create = []
+        filter_attr = model_filter[model['model']]
         for object_data in model['objects']:
             # Only create if it's not already there
-            if model_cls.objects.filter(instance_id=object_data['instance_id']).count() == 0:
+            if model_cls.objects.filter(**{filter_attr: object_data[filter_attr]}).count() == 0:
                 to_create.append(model_cls(**object_data))
 
         model_cls.objects.using(db_alias).bulk_create(to_create)
