@@ -52,16 +52,16 @@ def clone_to_temp(formula, git_password):
     tmpdir = mkdtemp(prefix='stackdio-')
     reponame = formula.get_repo_name()
     repodir = os.path.join(tmpdir, reponame)
+    origin = None
+    repo = None
 
     uri = formula.uri
     # Add the password for a private repo
     if formula.private_git_repo:
         parsed = urlsplit(uri)
-        hostname = parsed.netloc.split('@')[1]
         uri = urlunsplit((
             parsed.scheme,
-            '{0}:{1}@{2}'.format(
-                formula.git_username, git_password, hostname),
+            '{0}:{1}@{2}'.format(formula.git_username, git_password, parsed.netloc),
             parsed.path,
             parsed.query,
             parsed.fragment
@@ -73,20 +73,24 @@ def clone_to_temp(formula, git_password):
 
         origin = repo.remotes.origin.name
 
-        # Remove the password from the config
-        repo.git.remote('set-url', origin, formula.uri)
-
-        # Remove the logs which also store the password
-        log_dir = os.path.join(repodir, '.git', 'logs')
-        # if os.path.isdir(log_dir):
-        shutil.rmtree(log_dir)
-
     except git.GitCommandError:
         raise FormulaTaskException(
             formula,
             'Unable to clone provided URI. This is either not '
             'a git repository, or you don\'t have permission to clone it.  '
             'Note that private repositories require the https protocol.')
+    finally:
+        if repo and not origin:
+            origin = repo.remotes.origin.name
+
+        if repo and formula and formula.private_git_repo:
+            # remove the password from the config
+            repo.git.remote('set-url', origin, formula.uri)
+
+            # Remove the logs which also store the password
+            log_dir = os.path.join(repodir, '.git', 'logs')
+            if os.path.isdir(log_dir):
+                shutil.rmtree(log_dir)
 
     # return the path where the repo is
     return repodir
@@ -150,6 +154,7 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
     repo = None
     current_commit = None
     formula = None
+    origin = None
 
     try:
         formula = Formula.objects.get(pk=formula_id)
@@ -168,13 +173,12 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
 
         origin = repo.remotes.origin.name
 
-        # Add the password for a private repo
+        # Add the username / password for a private repo
         if formula.private_git_repo:
             parsed = urlsplit(formula.uri)
-            hostname = parsed.netloc.split('@')[1]
             uri = urlunsplit((
                 parsed.scheme,
-                '{0}:{1}@{2}'.format(formula.git_username, git_password, hostname),
+                '{0}:{1}@{2}'.format(formula.git_username, git_password, parsed.netloc),
                 parsed.path,
                 parsed.query,
                 parsed.fragment
@@ -188,15 +192,6 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
             formula.set_status(Formula.COMPLETE,
                                'There were no changes to the repository.')
             return True
-
-        if formula.private_git_repo:
-            # remove the password from the config
-            repo.git.remote('set-url', origin, formula.uri)
-
-            # Remove the logs which also store the password
-            log_dir = os.path.join(repodir, '.git', 'logs')
-            if os.path.isdir(log_dir):
-                shutil.rmtree(log_dir)
 
         formula_title, formula_description, root_path, components = validate_specfile(formula,
                                                                                       repodir)
@@ -232,3 +227,12 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
                 formula,
                 'An unhandled exception occurred.  Your formula was not changed'
             )
+    finally:
+        if formula and origin and formula.private_git_repo:
+            # remove the password from the config
+            repo.git.remote('set-url', origin, formula.uri)
+
+            # Remove the logs which also store the password
+            log_dir = os.path.join(repodir, '.git', 'logs')
+            if os.path.isdir(log_dir):
+                shutil.rmtree(log_dir)

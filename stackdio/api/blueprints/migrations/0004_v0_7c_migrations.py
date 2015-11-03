@@ -24,4 +24,8 @@ class Migration(migrations.Migration):
         migrations.DeleteModel(
             name='BlueprintHostFormulaComponent',
         ),
+        migrations.AlterModelOptions(
+            name='blueprint',
+            options={'ordering': ('title',), 'default_permissions': ('admin', 'create', 'delete', 'update', 'view')},
+        ),
     ]

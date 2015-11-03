@@ -35,6 +35,7 @@ requirejs.config({
         'knockout': '{{ bower_path }}/knockout/dist/knockout',
         'ladda': '{{ bower_path }}/ladda/js/ladda',
         'moment': '{{ bower_path }}/moment/moment',
+        'select2': '{{ bower_path }}/select2/dist/js/select2',
         'spin': '{{ bower_path }}/ladda/js/spin',
         'typeahead': '{{ bower_path }}/typeahead.js/dist/typeahead.jquery',
         'underscore': '{{ bower_path }}/underscore/underscore'
@@ -118,25 +119,6 @@ require([
             if (!csrfSafeMethod(settings.method) && !this.crossDomain) {
                 xhr.setRequestHeader("X-CSRFToken", csrftoken);
             }
-        }
-    });
-
-    // Make the search bar resize magically!
-    $(document).on("focus", '[data-action="grow"]', function() {
-        var width = $(window).width();
-        if (width > 767) {
-            var newWidth = width > 991 ? 350 : 250;
-            $(this).animate({
-                width: newWidth
-            });
-        }
-    });
-
-    $(document).on("blur", '[data-action="grow"]', function() {
-        if ($(window).width() > 767) {
-            $(this).animate({
-                width: 180
-            })
         }
     });
 

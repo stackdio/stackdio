@@ -1,0 +1,55 @@
+{% extends 'stackdio/page.html' %}
+{% load staticfiles %}
+
+{% block title %}Create User{% endblock %}
+{% block user-class %}active{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/ladda/dist/ladda-themeless.min.css' %}">
+{% endblock %}
+
+{% block page-content %}
+    <div class="row">
+        <div class="col-sm-6">
+            <form data-bind="submit: createUser">
+                <div class="form-group" id="username">
+                    <label for="userUsername">Username</label>
+                    <input type="text" class="form-control" id="userUsername"
+                           data-bind="value: username, valueUpdate: 'keyup'">
+                </div>
+
+                <div class="form-group" id="first_name">
+                    <label for="userFirstName">First Name</label>
+                    <input type="text" class="form-control" id="userFirstName"
+                           data-bind="value: firstName, valueUpdate: 'keyup'">
+                </div>
+
+                <div class="form-group" id="last_name">
+                    <label for="userLastName">Last Name</label>
+                    <input type="text" class="form-control" id="userLastName"
+                           data-bind="value: lastName, valueUpdate: 'keyup'">
+                </div>
+
+                <div class="form-group" id="email">
+                    <label for="userEmail">Email</label>
+                    <input type="email" class="form-control" id="userEmail"
+                           data-bind="value: email, valueUpdate: 'keyup'">
+                </div>
+
+                <button type="submit" id="create-button" data-style="slide-left"
+                        data-bind="enable: username() && email()"
+                        class="btn btn-success ladda-button" style="margin-top: 10px">
+                    <span class="ladda-label">Create User</span>
+                </button>
+            </form>
+        </div>
+        <div class="col-sm-6">
+            <p>After you press 'Create User', an email will be sent to the provided email
+                address with information about how to set up a password.</p>
+
+            <p>There is no default password, so the new user will not be able to login until
+                setting up a password via the link in the email.</p>
+        </div>
+    </div>
+{% endblock %}

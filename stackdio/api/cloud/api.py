@@ -18,6 +18,8 @@
 
 import logging
 
+from django.core.cache import cache
+from guardian.shortcuts import assign_perm
 from rest_framework import generics
 from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
@@ -102,12 +104,42 @@ class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderRelatedMixi
     parent_lookup_field = 'name'
 
 
+class CloudProviderRequiredFieldsAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
+    """
+    This endpoint lists all the extra fields required when creating an account for this provider.
+    """
+
+    def get_queryset(self):
+        provider = self.get_cloudprovider()
+        driver = provider.get_driver()
+
+        return driver.get_required_fields()
+
+    def list(self, request, *args, **kwargs):
+        """
+        Rewrite to get rid of using a serializer
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            return self.get_paginated_response(page)
+
+        return Response(queryset)
+
+
 class CloudAccountListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudAccount.objects.all()
     serializer_class = serializers.CloudAccountSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.CloudAccountFilter
+
+    def perform_create(self, serializer):
+        account = serializer.save()
+
+        for perm in models.CloudAccount.object_permissions:
+            assign_perm('cloud.%s_cloudaccount' % perm, self.request.user, account)
 
 
 class CloudAccountDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -203,6 +235,15 @@ class CloudAccountFormulaVersionsAPIView(mixins.CloudAccountRelatedMixin,
         serializer.save(content_object=self.get_cloudaccount())
 
 
+class CloudAccountImageListAPIView(mixins.CloudAccountRelatedMixin, generics.ListAPIView):
+    serializer_class = serializers.CloudImageSerializer
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    filter_class = filters.CloudImageFilter
+
+    def get_queryset(self):
+        return models.CloudImage.objects.filter(account=self.get_cloudaccount())
+
+
 class CloudImageListAPIView(generics.ListCreateAPIView):
     queryset = models.CloudImage.objects.all()
     serializer_class = serializers.CloudImageSerializer
@@ -211,8 +252,11 @@ class CloudImageListAPIView(generics.ListCreateAPIView):
     filter_class = filters.CloudImageFilter
 
     def perform_create(self, serializer):
-        obj = serializer.save()
-        obj.update_config()
+        image = serializer.save()
+        image.update_config()
+
+        for perm in models.CloudImage.object_permissions:
+            assign_perm('cloud.%s_cloudimage' % perm, self.request.user, image)
 
 
 class CloudImageDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -258,6 +302,12 @@ class SnapshotListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+
+    def perform_create(self, serializer):
+        snapshot = serializer.save()
+
+        for perm in models.Snapshot.object_permissions:
+            assign_perm('cloud.%s_snapshot' % perm, self.request.user, snapshot)
 
 
 class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -365,10 +415,16 @@ class SecurityGroupListAPIView(generics.ListCreateAPIView):
     ### POST
 
     Creates a new security group given the following properties
-    in the JSON request:
+    in the JSON request.
+
+    `group_id` -- the security group ID as defined py the cloud provider.
+                  You may only provide either the group_id or the name, but
+                  not both.  Using this property will **NOT** create a new group in the provider
 
     `name` -- The name of the security group. This will also be
               used to create the security group on the account.
+              You may only provide either the group_id or the name, but
+              not both.  Using this property **WILL** create a new group in the provider
 
     `description` -- The description or purpose of the group.
 
@@ -427,10 +483,12 @@ class SecurityGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             try:
                 driver.delete_security_group(instance.name)
             except DeleteGroupException as e:
-                raise ValidationError({
-                    'detail': ['Could not delete this security group.',
-                               e.message]
-                })
+                if 'does not exist' in e.message:
+                    logger.info('Security group already deleted.')
+                else:
+                    raise ValidationError({
+                        'detail': ['Could not delete this security group.', e.message]
+                    })
 
         # Save this before we delete
         is_default = instance.is_default
@@ -519,18 +577,26 @@ class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
     `active_hosts` fields will be populated like with the full
     list.
 
-    ### PUT / PATCH
+    ### POST
 
-    Updates an existing security group's details. Currently, only
-    the `default` field may be modified.
+    Creates a new security group given the following properties
+    in the JSON request.
 
-    ### DELETE
+    `group_id` -- the security group ID as defined py the cloud provider.
+                  You may only provide either the group_id or the name, but
+                  not both.  Using this property will **NOT** create a new group in the provider
 
-    Removes the corresponding security group from stackd.io, as well as
-    from the underlying cloud account if `managed` is true.
-    **NOTE** that if the security group is currently being used, then
-    it can not be removed. You must first terminate all machines depending
-    on the security group and then delete it.
+    `name` -- The name of the security group. This will also be
+              used to create the security group on the account.
+              You may only provide either the group_id or the name, but
+              not both.  Using this property **WILL** create a new group in the provider
+
+    `description` -- The description or purpose of the group.
+
+    `default` -- Boolean representing if this group, for this
+                    account, is set to automatically be added
+                    to all hosts launched on the account. **NOTE**
+                    this property may only be set by an admin.
     """
     serializer_class = serializers.CloudAccountSecurityGroupSerializer
     filter_class = filters.SecurityGroupFilter
@@ -539,8 +605,10 @@ class CloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
         account = self.get_cloudaccount()
         return account.security_groups.all()
 
-    def perform_create(self, serializer):
-        serializer.save(account=self.get_cloudaccount())
+    def get_serializer_context(self):
+        context = super(CloudAccountSecurityGroupListAPIView, self).get_serializer_context()
+        context['account'] = self.get_cloudaccount()
+        return context
 
 
 class FullCloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
@@ -556,7 +624,14 @@ class FullCloudAccountSecurityGroupListAPIView(mixins.CloudAccountRelatedMixin,
 
     def get_queryset(self):
         account = self.get_cloudaccount()
-        driver = account.get_driver()
-        account_groups = driver.get_security_groups()
+
+        cache_key = 'accounts:{0}:all_security_groups'.format(account.id)
+
+        account_groups = cache.get(cache_key)
+
+        if account_groups is None:
+            driver = account.get_driver()
+            account_groups = driver.get_security_groups()
+            cache.set(cache_key, account_groups, 30)
 
         return FakeQuerySet(models.SecurityGroup, sorted(account_groups, key=lambda x: x.name))

@@ -17,15 +17,19 @@
 
 import logging
 from collections import OrderedDict
-
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sites.shortcuts import get_current_site
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedField
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
-from . import models
+from . import models, utils
 
 
 logger = logging.getLogger(__name__)
@@ -46,25 +50,6 @@ class UserGroupSerializer(StackdioHyperlinkedModelSerializer):
         fields = (
             'url',
             'name',
-        )
-
-
-class PublicUserSerializer(StackdioHyperlinkedModelSerializer):
-    groups = serializers.HyperlinkedIdentityField(
-        view_name='api:users:user-grouplist',
-        lookup_field='username'
-    )
-
-    class Meta:
-        model = get_user_model()
-        lookup_field = 'username'
-        fields = (
-            'url',
-            'username',
-            'first_name',
-            'last_name',
-            'email',
-            'groups',
         )
 
 
@@ -147,8 +132,24 @@ class UserSettingsSerializer(serializers.ModelSerializer):
             'advanced_view',
         )
 
+    def update(self, instance, validated_data):
+        previous_value = instance.advanced_view
+        instance = super(UserSettingsSerializer, self).update(instance, validated_data)
+        new_value = instance.advanced_view
 
-class UserSerializer(serializers.ModelSerializer):
+        request = self.context['request']._request
+
+        if previous_value and not new_value:
+            messages.info(request, 'You have disabled the advanced view.  It may take a minute '
+                                   'for all of the advanced links to be disabled.')
+        elif not previous_value and new_value:
+            messages.info(request, 'You have enabled the advanced view.  It may take a minute '
+                                   'for all of the advanced links to be enabled.')
+
+        return instance
+
+
+class UserSerializer(StackdioHyperlinkedModelSerializer):
     superuser = serializers.BooleanField(source='is_superuser', read_only=True)
 
     groups = serializers.HyperlinkedIdentityField(
@@ -162,6 +163,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
+        lookup_field = 'username'
         fields = (
             'username',
             'first_name',
@@ -174,8 +176,12 @@ class UserSerializer(serializers.ModelSerializer):
             'settings',
         )
 
+        extra_kwargs = {
+            'email': {'required': True, 'allow_blank': False},
+        }
+
     def validate(self, attrs):
-        if settings.LDAP_ENABLED:
+        if settings.LDAP_ENABLED and self.instance:
             # We only run into issues if using LDAP
             errors = OrderedDict()
 
@@ -189,6 +195,40 @@ class UserSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(errors)
 
         return attrs
+
+    def create(self, validated_data):
+        """
+        We want to override this method so we can send an email to the new user with a link
+        to reset their password
+        """
+        user = super(UserSerializer, self).create(validated_data)
+
+        request = self.context['request']
+
+        from_email = None
+
+        subject_template_name = 'stackdio/auth/new_user_subject.txt'
+        email_template_name = 'stackdio/auth/password_reset_email.html'
+
+        current_site = get_current_site(request)
+        site_name = current_site.name
+        domain = current_site.domain
+
+        context = {
+            'email': user.email,
+            'domain': domain,
+            'site_name': site_name,
+            'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+            'user': user,
+            'token': default_token_generator.make_token(user),
+            'protocol': 'https' if request.is_secure() else 'http',
+            'intro_line': 'You\'re receiving this email because one of the administrators at {0} '
+                          'has created an account for you.'.format(site_name)
+        }
+
+        utils.send_mail(subject_template_name, email_template_name, context, from_email, user.email)
+
+        return user
 
     # We need a custom update since we have a nested field
     def update(self, instance, validated_data):
@@ -206,6 +246,22 @@ class UserSerializer(serializers.ModelSerializer):
             validated_data['settings'] = settings
 
         return instance
+
+
+class PublicUserSerializer(UserSerializer):
+    """
+    This is the serializer for the main user list view.  It's the same as the main UserSerializer,
+    it just has a few fields hidden.
+    """
+    class Meta(UserSerializer.Meta):
+        fields = (
+            'url',
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'groups',
+        )
 
 
 class ChangePasswordSerializer(serializers.Serializer):  # pylint: disable=abstract-method

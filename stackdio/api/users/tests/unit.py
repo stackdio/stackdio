@@ -18,6 +18,8 @@
 import logging
 
 from django.conf import settings
+from django.http import HttpRequest
+from rest_framework.request import Request
 from rest_framework.serializers import ValidationError
 
 from stackdio.core.tests.utils import StackdioTestCase, get_fake_request
@@ -33,7 +35,10 @@ class UserSerializerTestCase(StackdioTestCase):
         self.ldap_orig = settings.LDAP_ENABLED
 
     def get_serializer(self):
-        serializer = serializers.UserSerializer(self.user)
+        serializer = serializers.UserSerializer(
+            self.user,
+            context={'request': Request(HttpRequest())}
+        )
         return serializer
 
     def test_validate_ldap(self):

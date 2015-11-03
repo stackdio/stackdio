@@ -1,0 +1,40 @@
+{% extends 'cloud/cloud-account-detail-base.html' %}
+{% load staticfiles %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    {% include 'stackdio/stubs/pager.html' with object_type='images' search=True %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-hover">
+            <thead>
+                <tr>
+                    <!-- ko foreach: sortableFields -->
+                    <th data-bind="style: {width: width}">
+                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <!-- /ko -->
+                    <th style="width: 10%"></th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: sortedObjects">
+                <tr class="stackdio-hidden-on-load">
+                    <td data-bind="text: title, click: function (image) { $root.goToDetailPage(image) }"></td>
+                    <td data-bind="text: description, click: function (image) { $root.goToDetailPage(image) }"></td>
+                    <td data-bind="text: imageId, click: function (image) { $root.goToDetailPage(image) }"></td>
+                    <td class="text-center">
+                        <a href="#" data-bind="click: $data.delete">
+                            <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

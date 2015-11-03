@@ -21,8 +21,9 @@ define([
     'knockout',
     'moment',
     'bootbox',
-    'utils/utils'
-], function ($, ko, moment, bootbox, utils) {
+    'utils/utils',
+    'models/group'
+], function ($, ko, moment, bootbox, utils, Group) {
     'use strict';
 
     function FakeMoment() {
@@ -62,7 +63,7 @@ define([
         this.groups = ko.observableArray();
 
         if (needReload) {
-            this.reload();
+            this.waiting = this.reload();
         } else {
             this._process(raw);
         }
@@ -71,7 +72,7 @@ define([
     User.constructor = User;
 
     function processTime(time) {
-        if (time.length) {
+        if (time && time.length) {
             return moment(time);
         } else {
             return new FakeMoment();
@@ -85,8 +86,10 @@ define([
         this.email(raw.email);
         this.superuser(raw.superuser);
         this.lastLogin(processTime(raw.last_login));
-        this.publicKey(raw.settings.public_key);
-        this.advanced(raw.settings.advanced_view);
+        if (raw.settings) {
+            this.publicKey(raw.settings.public_key);
+            this.advanced(raw.settings.advanced_view);
+        }
     };
 
     // Reload the current volume
@@ -98,6 +101,22 @@ define([
         }).done(function (user) {
             self.raw = user;
             self._process(user);
+        });
+    };
+
+    User.prototype.loadGroups = function () {
+        var self = this;
+        return $.ajax({
+            method: 'GET',
+            url: this.raw.groups
+        }).done(function (groups) {
+            var groupModels = [];
+
+            groups.results.forEach(function (group) {
+                groupModels.push(new Group(group));
+            });
+
+            self.groups(groupModels);
         });
     };
 
@@ -119,6 +138,10 @@ define([
             })
         }).done(function (user) {
             utils.growlAlert('Successfully saved user!', 'success');
+            if (self.raw.settings.advanced_view !== self.advanced()) {
+                window.location.reload(true);
+            }
+            self._process(user);
         }).fail(function (jqxhr) {
             var message = '';
             try {

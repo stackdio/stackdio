@@ -1,0 +1,51 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Users{% endblock %}
+{% block user-class %}active{% endblock %}
+
+{% block page-content %}
+    <div class="row">
+        <div class="col-md-6">
+            <h2 style="margin-top: 0">Users</h2>
+            <p>Manage all of your users here.</p>
+        </div>
+        <div class="col-md-6 text-right">
+            {% if not ldap_enabled and has_admin %}
+            <!-- Only show the button if the user has permission to see it-->
+            <a class="btn btn-warning" href="{% url 'ui:user-model-permissions' %}">Permissions</a>
+            {% endif %}
+            {% if not ldap_enabled and has_create %}
+                <a class="btn btn-success" href="{% url 'ui:user-create' %}">New User</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include 'stackdio/stubs/pager.html' with object_type='users' search=True %}
+
+    <div class="row" style="margin-top: 15px">
+        <div class="col-md-12">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <!-- ko foreach: sortableFields -->
+                    <th data-bind="style: {width: width}">
+                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <!-- /ko -->
+                </tr>
+                </thead>
+                <tbody data-bind="foreach: sortedObjects">
+                <tr class="stackdio-hidden-on-load">
+                    <td data-bind="text: username"></td>
+                    <td data-bind="text: firstName"></td>
+                    <td data-bind="text: lastName"></td>
+                    <td data-bind="text: email"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

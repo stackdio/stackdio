@@ -4,10 +4,10 @@
 
 {% block scripts %}
     {% viewmodel viewmodel %}
-{% endblock %}
-
-{% block links %}
-    <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.advancedView = {{ user.settings.advanced_view | lower }};
+    </script>
 {% endblock %}
 
 {% block content %}

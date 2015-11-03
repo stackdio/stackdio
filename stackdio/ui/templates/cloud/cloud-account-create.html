@@ -1,0 +1,124 @@
+{% extends 'stackdio/page.html' %}
+{% load staticfiles %}
+
+{% block title %}Create Cloud Account{% endblock %}
+{% block account-class %}active{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2/dist/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
+{% endblock %}
+
+{% block page-content %}
+    <div class="wizard" data-initialize="wizard" id="accountWizard">
+        <div class="steps-container">
+            <ul class="steps">
+                <li data-step="1" data-name="basic" class="active"><span class="badge">1</span>Basic Info<span class="chevron"></span></li>
+                <li data-step="2" data-name="extras"><span class="badge">2</span>Extra Info<span class="chevron"></span></li>
+                <li data-step="3" data-name="security-groups"><span class="badge">3</span>Security Groups<span class="chevron"></span></li>
+            </ul>
+        </div>
+        <div class="actions">
+            <button type="button" class="btn btn-default btn-prev"><span class="glyphicon glyphicon-arrow-left"></span>Prev</button>
+            <button type="button" class="btn btn-default btn-next" data-last="Finish">Next<span class="glyphicon glyphicon-arrow-right"></span></button>
+        </div>
+        <div class="step-content">
+            <div class="step-pane active alert" data-step="1">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group" id="provider">
+                            <label for="accountProvider">Provider</label>
+                            <select id="accountProvider" style="width: 100%" class="stackdio-hidden-on-load"></select>
+                        </div>
+                        <div class="form-group" id="title">
+                            <label for="accountTitle">Title</label>
+                            <input type="text" class="form-control" id="accountTitle"
+                                   data-bind="value: title, valueUpdate: 'keyup'">
+                        </div>
+                        <div class="form-group" id="description">
+                            <label for="accountDescription">Description</label>
+                            <input type="text" class="form-control" id="accountDescription"
+                                   data-bind="value: description, valueUpdate: 'keyup'">
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group" id="region">
+                            <label for="accountRegion">Region</label>
+                            <select id="accountRegion" style="width: 100%" class="stackdio-hidden-on-load"></select>
+                        </div>
+
+                        <div id="vpc_enabled">
+                            <div class="checkbox">
+                                <label id="vpc-checkbox" class="checkbox-custom" data-initialize="checkbox">
+                                    <input class="sr-only" type="checkbox" data-bind="checked: vpcEnabled">
+                                    <span class="checkbox-label">VPC Enabled</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="vpc_id" data-bind="visible: vpcEnabled">
+                            <label for="accountVpcId">VPC ID</label>
+                            <input type="text" class="form-control" id="accountVpcId"
+                                   data-bind="value: vpcId, valueUpdate: 'keyup'">
+                        </div>
+
+                        <div id="create_security_groups">
+                            <div class="checkbox">
+                                <label id="sg-checkbox" class="checkbox-custom" data-initialize="checkbox">
+                                    <input class="sr-only" type="checkbox" data-bind="checked: createSecurityGroups">
+                                    <span class="checkbox-label">Create Security Groups</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="step-pane alert" data-step="2">
+                <div class="row">
+                    <div class="col-md-6" data-bind="foreach: extraFields">
+                        <div class="form-group" data-bind="attr: {id: apiName}">
+                            <label data-bind="text: displayName, attr: {for: 'account' + apiName}"></label>
+                            <input class="form-control"
+                                   data-bind="value: fieldValue,
+                                              valueUpdate: 'keyup',
+                                              attr: {id: 'account' + apiName, type: type}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group" id="private_key">
+                            <label for="accountPrivateKey">Private Key</label>
+                            <textarea class="form-control" id="accountPrivateKey" rows="25"
+                                      data-bind="value: privateKey, valueUpdate: 'keyup'"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="step-pane alert" data-step="3">
+                <h4>All stacks launched into this account will have these security groups
+                    added to them.</h4>
+
+                <div class="row" style="margin-top: 15px">
+                    <div class="col-md-6">
+                        <h5>Add Existing Security Groups</h5>
+                        <div class="form-group" id="security_groups">
+                            <label for="accountSecurityGroups" class="sr-only">Security Groups</label>
+                            <select id="accountSecurityGroups" multiple style="width: 100%" class="stackdio-hidden-on-load"></select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Add New Security Groups</h5>
+                        <div class="form-group" id="security_groups_new">
+                            <label for="accountSecurityGroupsNew" class="sr-only">Security Groups</label>
+                            <select id="accountSecurityGroupsNew" multiple style="width: 100%" class="stackdio-hidden-on-load"></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form data-bind="submit: createCloudAccount">
+
+    </form>
+{% endblock %}

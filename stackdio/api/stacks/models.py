@@ -68,37 +68,6 @@ def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
     return hostnames
 
 
-# Map, pillar, and properties files go into storage
-def get_map_file_path(obj, filename):
-    return 'stacks/{0}-{1}/stack.map'.format(obj.pk, obj.slug)
-
-
-def get_pillar_file_path(obj, filename):
-    return 'stacks/{0}-{1}/stack.pillar'.format(obj.pk, obj.slug)
-
-
-def get_global_pillar_file_path(obj, filename):
-    return 'stacks/{0}-{1}/stack.global_pillar'.format(obj.pk, obj.slug)
-
-
-def get_props_file_path(obj, filename):
-    return 'stacks/{0}-{1}/stack.props'.format(obj.pk, obj.slug)
-
-
-# Top file goes into salt root
-def get_top_file_path(obj, filename):
-    return "stack_{0}_top.sls".format(obj.pk)
-
-
-# Orchestrate files go in storage
-def get_orchestrate_file_path(obj, filename):
-    return 'stacks/{0}-{1}/formulas/__stackdio__/orchestrate.sls'.format(obj.pk, obj.slug)
-
-
-def get_global_orchestrate_file_path(obj, filename):
-    return 'stacks/{0}-{1}/formulas/__stackdio__/global_orchestrate.sls'.format(obj.pk, obj.slug)
-
-
 class StackCreationException(Exception):
     def __init__(self, errors, *args, **kwargs):
         self.errors = errors
@@ -175,6 +144,19 @@ _stack_object_permissions = (
 )
 
 
+stack_storage = FileSystemStorage(location=os.path.join(settings.FILE_STORAGE_DIRECTORY, 'stacks'))
+
+
+# For map, pillar, and properties.  Doesn't need to go in a sub directory
+def get_local_file_path(instance, filename):
+    return '{0}-{1}/{2}'.format(instance.pk, instance.slug, filename)
+
+
+# Orchestrate files go in formula directory
+def get_orchestrate_file_path(instance, filename):
+    return '{0}-{1}/formulas/__stackdio__/{2}'.format(instance.pk, instance.slug, filename)
+
+
 class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
     # Launch workflow:
@@ -240,16 +222,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
     # Where on disk is the salt-cloud map file stored
     map_file = DeletingFileField(
         max_length=255,
-        upload_to=get_map_file_path,
+        upload_to=get_local_file_path,
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+        storage=stack_storage)
 
     # Where on disk is the custom salt top.sls file stored
     top_file = DeletingFileField(
         max_length=255,
-        upload_to=get_top_file_path,
         null=True,
         blank=True,
         default=None,
@@ -262,45 +243,45 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+        storage=stack_storage)
 
     # Where on disk is the global orchestrate file stored
     global_orchestrate_file = DeletingFileField(
         max_length=255,
-        upload_to=get_global_orchestrate_file_path,
+        upload_to=get_orchestrate_file_path,
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+        storage=stack_storage)
 
     # Where on disk is the custom pillar file for custom configuration for
     # all salt states used by the top file
     pillar_file = DeletingFileField(
         max_length=255,
-        upload_to=get_pillar_file_path,
+        upload_to=get_local_file_path,
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+        storage=stack_storage)
 
     # Where on disk is the custom pillar file for custom configuration for
     # all salt states used by the top file
     global_pillar_file = DeletingFileField(
         max_length=255,
-        upload_to=get_global_pillar_file_path,
+        upload_to=get_local_file_path,
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+        storage=stack_storage)
 
     # storage for properties file
     props_file = DeletingFileField(
         max_length=255,
-        upload_to=get_props_file_path,
+        upload_to=get_local_file_path,
         null=True,
         blank=True,
         default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+        storage=stack_storage)
 
     # Use our custom manager object
     objects = StackQuerySet.as_manager()
@@ -360,20 +341,25 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             tags[label.key] = label.value
 
         tags['stack_id'] = self.id
+
+        # No name allowed.  salt-cloud uses this and it would break everything.
+        if 'Name' in tags:
+            del tags['Name']
+
         return tags
 
     @property
     def properties(self):
         if not self.props_file:
             return {}
-        with open(self.props_file.path) as f:
-            return json.loads(f.read())
+        with open(self.props_file.path, 'r') as f:
+            return json.load(f)
 
     @properties.setter
     def properties(self, props):
         props_json = json.dumps(props, indent=4)
         if not self.props_file:
-            self.props_file.save(self.slug + '.props', ContentFile(props_json))
+            self.props_file.save('stack.props', ContentFile(props_json))
         else:
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
@@ -385,11 +371,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             # and assign the rules to the group
             sg_name = 'stackdio-managed-{0}-stack-{1}'.format(
                 hostdef.slug,
-                self.pk)
+                self.pk
+            )
             sg_description = 'stackd.io managed security group'
 
             # cloud account and driver for the host definition
             account = hostdef.cloud_image.account
+
+            if not account.create_security_groups:
+                logger.debug('Skipping creation of {0} because security group creation is turned '
+                             'off for the account'.format(sg_name))
+                continue
+
             driver = account.get_driver()
 
             try:
@@ -517,22 +510,26 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
                 host = self.hosts.create(**kwargs)
 
+                account = host.cloud_image.account
+
                 # Add in the cloud account default security groups as
                 # defined by an admin.
                 account_groups = set(list(
-                    host.cloud_image.account.security_groups.filter(
+                    account.security_groups.filter(
                         is_default=True
                     )
                 ))
 
                 host.security_groups.add(*account_groups)
 
-                # Add in the security group provided by this host definition
-                security_group = SecurityGroup.objects.get(
-                    stack=self,
-                    blueprint_host_definition=hostdef
-                )
-                host.security_groups.add(security_group)
+                if account.create_security_groups:
+                    # Add in the security group provided by this host definition,
+                    # but only if this functionality is enabled on the account
+                    security_group = SecurityGroup.objects.get(
+                        stack=self,
+                        blueprint_host_definition=hostdef
+                    )
+                    host.security_groups.add(security_group)
 
                 # add formula components
                 host.formula_components.add(*components)
@@ -658,7 +655,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         map_file_yaml = yaml.safe_dump(images, default_flow_style=False)
 
         if not self.map_file:
-            self.map_file.save(self.slug + '.map', ContentFile(map_file_yaml))
+            self.map_file.save('stack.map', ContentFile(map_file_yaml))
         else:
             with open(self.map_file.path, 'w') as f:
                 f.write(map_file_yaml)
@@ -674,9 +671,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         }
 
         top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
+
         if not self.top_file:
-            self.top_file.save('stack_{0}_top.sls'.format(self.pk),
-                               ContentFile(top_file_yaml))
+            self.top_file.save('stack_{0}_top.sls'.format(self.pk), ContentFile(top_file_yaml))
         else:
             with open(self.top_file.path, 'w') as f:
                 f.write(top_file_yaml)
@@ -715,10 +712,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                     depend -= 1
 
         yaml_data = yaml.safe_dump(orchestrate, default_flow_style=False)
+
         if not self.orchestrate_file:
-            self.orchestrate_file.save(
-                get_orchestrate_file_path(self, None),
-                ContentFile(yaml_data))
+            self.orchestrate_file.save('orchestrate.sls', ContentFile(yaml_data))
         else:
             with open(self.orchestrate_file.path, 'w') as f:
                 f.write(yaml_data)
@@ -758,10 +754,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                         depend -= 1
 
         yaml_data = yaml.safe_dump(orchestrate, default_flow_style=False)
+
         if not self.global_orchestrate_file:
-            self.global_orchestrate_file.save(
-                get_global_orchestrate_file_path(self, None),
-                ContentFile(yaml_data))
+            self.global_orchestrate_file.save('global_orchestrate.sls', ContentFile(yaml_data))
         else:
             with open(self.global_orchestrate_file.path, 'w') as f:
                 f.write(yaml_data)
@@ -819,12 +814,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # stack creation
         recursive_update(pillar_props, self.properties)
 
-        pillar_file_yaml = yaml.safe_dump(pillar_props,
-                                          default_flow_style=False)
+        pillar_file_yaml = yaml.safe_dump(pillar_props, default_flow_style=False)
 
         if not self.pillar_file:
-            self.pillar_file.save('{0}.pillar'.format(self.slug),
-                                  ContentFile(pillar_file_yaml))
+            self.pillar_file.save('stack.pillar', ContentFile(pillar_file_yaml))
         else:
             with open(self.pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
@@ -851,13 +844,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             recursive_update(pillar_props,
                              account.global_orchestration_properties)
 
-        pillar_file_yaml = yaml.safe_dump(pillar_props,
-                                          default_flow_style=False)
+        pillar_file_yaml = yaml.safe_dump(pillar_props, default_flow_style=False)
 
         if not self.global_pillar_file:
-            self.global_pillar_file.save(
-                get_global_pillar_file_path(self, None),
-                ContentFile(pillar_file_yaml))
+            self.global_pillar_file.save('stack.global_pillar', ContentFile(pillar_file_yaml))
         else:
             with open(self.global_pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)

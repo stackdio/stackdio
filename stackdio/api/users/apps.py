@@ -28,13 +28,14 @@ from django.utils.translation import ugettext_lazy as _
 logger = logging.getLogger(__name__)
 
 
+EXTRA_USER_PERMS = ('admin', 'create')
 EXTRA_GROUP_PERMS = ('admin', 'create', 'update')
 
 
-def create_extra_group_permissions(app_config, verbosity=2, interactive=True,
-                                   using=DEFAULT_DB_ALIAS, **kwargs):
+def create_extra_permissions(app_config, verbosity=2, interactive=True,
+                             using=DEFAULT_DB_ALIAS, **kwargs):
     """
-    Create the extra group permissions we need.  Pulled almost entirely from:
+    Create the extra user & group permissions we need.  Pulled almost entirely from:
 
     django.contrib.auth.management:create_permissions
     """
@@ -44,6 +45,7 @@ def create_extra_group_permissions(app_config, verbosity=2, interactive=True,
 
     try:
         Permission = apps.get_model('auth', 'Permission')
+        User = apps.get_model('auth', 'User')
         Group = apps.get_model('auth', 'Group')
     except LookupError:
         return
@@ -53,30 +55,38 @@ def create_extra_group_permissions(app_config, verbosity=2, interactive=True,
 
     from django.contrib.contenttypes.models import ContentType
 
-    # This will hold the permissions we're looking for as
-    # (content_type, (codename, name))
-    searched_perms = list()
+    # The list of perms we need to create
+    perms = []
 
-    # Grab the ctype for the Group model
-    ctype = ContentType.objects.db_manager(using).get_for_model(Group)
+    for model, extra_perms in ((User, EXTRA_USER_PERMS), (Group, EXTRA_GROUP_PERMS)):
+        # This will hold the permissions we're looking for as
+        # (content_type, (codename, name))
+        searched_perms = []
 
-    for perm in EXTRA_GROUP_PERMS:
-        searched_perms.append((ctype, ('%s_group' % perm, 'Can %s group' % perm)))
+        # Grab the ctype for the model
+        ctype = ContentType.objects.db_manager(using).get_for_model(model)
 
-    # Find all the Permissions that have a content_type for the Group model.
-    # We don't need to check for codenames since we already have
-    # a list of the ones we're going to create.
-    all_perms = set(Permission.objects.using(using).filter(
-        content_type=ctype,
-    ).values_list(
-        "content_type", "codename"
-    ))
+        model_name = model._meta.model_name
 
-    perms = [
-        Permission(codename=codename, name=name, content_type=ct)
-        for ct, (codename, name) in searched_perms
-        if (ct.pk, codename) not in all_perms
-    ]
+        for perm in extra_perms:
+            searched_perms.append((ctype, ('%s_%s' % (perm, model_name),
+                                           'Can %s %s' % (perm, model_name))))
+
+        # Find all the Permissions that have a content_type for the model.
+        # We don't need to check for codenames since we already have
+        # a list of the ones we're going to create.
+        all_perms = set(Permission.objects.using(using).filter(
+            content_type=ctype,
+        ).values_list(
+            "content_type", "codename"
+        ))
+
+        perms += [
+            Permission(codename=codename, name=name, content_type=ct)
+            for ct, (codename, name) in searched_perms
+            if (ct.pk, codename) not in all_perms
+        ]
+
     # Validate the permissions before bulk_creation to avoid cryptic
     # database error when the verbose_name is longer than 50 characters
     permission_name_max_length = Permission._meta.get_field('name').max_length
@@ -90,6 +100,7 @@ def create_extra_group_permissions(app_config, verbosity=2, interactive=True,
                     verbose_name_max_length,
                 )
             )
+
     Permission.objects.using(using).bulk_create(perms)
     if verbosity >= 2:
         for perm in perms:
@@ -101,4 +112,4 @@ class UsersConfig(AppConfig):
     verbose_name = _("Users")
 
     def ready(self):
-        post_migrate.connect(create_extra_group_permissions, sender=self)
+        post_migrate.connect(create_extra_permissions, sender=self)
