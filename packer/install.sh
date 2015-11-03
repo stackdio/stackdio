@@ -32,8 +32,10 @@ EOF
 virtualenv /usr/share/stackdio
 . /usr/share/stackdio/bin/activate
 
+pip install -U pip
+
 # Install the tarball we uploaded
-pip install /tmp/stackdio-server.tar.gz
+pip install /tmp/stackdio_server-${STACKDIO_VERSION}-py2-none-any.whl[production,mysql]
 
 # Configure Nginx
 mv /tmp/stackdio-nginx /etc/nginx/sites-available/stackdio

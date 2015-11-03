@@ -39,8 +39,8 @@
     "provisioners": [
         {
             "type": "file",
-            "source": "dist/stackdio-server-{{ user `version` }}.tar.gz",
-            "destination": "/tmp/stackdio-server.tar.gz"
+            "source": "dist/stackdio_server-{{ user `version` }}-py2-none-any.whl",
+            "destination": "/tmp/stackdio_server-{{ user `version` }}-py2-none-any.whl"
         },
         {
             "type": "shell",
@@ -78,7 +78,7 @@
         {
             "type": "shell",
             "script": "packer/install.sh",
-            "execute_command": "{{ .Vars }} sudo -E sh '{{ .Path }}'"
+            "execute_command": "{{ .Vars }} STACKDIO_VERSION={{ user `version` }} sudo -E sh '{{ .Path }}'"
         },
         {
             "type": "shell",
