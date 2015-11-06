@@ -67,7 +67,7 @@ requirements = [
     'Django>=1.8.0,<1.9',
     'GitPython>=1.0',
     'Markdown>=2.6',
-    'PyYAML==3.10',
+    'PyYAML>=3.10',
     'boto==2.9.5',
     'celery>=3.1',
     'dj-database-url>=0.3',
