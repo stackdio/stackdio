@@ -16,7 +16,6 @@
 #
 
 
-import StringIO
 import logging
 import zipfile
 from os import listdir
@@ -30,6 +29,7 @@ from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsF
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
+from six import StringIO
 
 from stackdio.core.models import Label
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions

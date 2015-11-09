@@ -2,10 +2,10 @@
 from __future__ import unicode_literals, print_function
 
 import os
-from urlparse import urlsplit, urlunsplit
 
 from django.conf import settings
 from django.db import models, migrations
+from six.moves.urllib_parse import urlsplit, urlunsplit
 
 from stackdio.api.formulas.tasks import import_formula, FormulaTaskException
 import shutil

@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('created', django_extensions.db.fields.CreationDateTimeField(default=django.utils.timezone.now, verbose_name='created', editable=False, blank=True)),
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(default=django.utils.timezone.now, verbose_name='modified', editable=False, blank=True)),
                 ('title', models.CharField(max_length=255, verbose_name='title')),
-                ('slug', django_extensions.db.fields.AutoSlugField(populate_from=b'title', verbose_name='slug', editable=False, blank=True)),
+                ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('status', model_utils.fields.StatusField(default=b'error', max_length=100, verbose_name='status', no_check_for_status=True, choices=[(b'error', b'error'), (b'complete', b'complete'), (b'importing', b'importing')])),
                 ('status_changed', model_utils.fields.MonitorField(default=django.utils.timezone.now, verbose_name='status changed', monitor='status')),
@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('title', models.CharField(max_length=255, verbose_name='title')),
-                ('slug', django_extensions.db.fields.AutoSlugField(populate_from=b'title', verbose_name='slug', editable=False, blank=True)),
+                ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('sls_path', models.CharField(max_length=255)),
                 ('formula', models.ForeignKey(related_name='components', to='formulas.Formula')),

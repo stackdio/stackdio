@@ -400,7 +400,7 @@ class AWSCloudProvider(BaseCloudProvider):
                           'this account.'.format(domain)
                     errors.setdefault(self.ROUTE53_DOMAIN, []).append(err)
             # except boto.exception.DNSServerError, e:
-            except Exception, e:
+            except Exception as e:
                 logger.exception('Route53 issue?')
                 errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))
 
@@ -439,7 +439,7 @@ class AWSCloudProvider(BaseCloudProvider):
         try:
             ec2.get_all_images(image_ids=[image_id])
             return True, ''
-        except boto.exception.EC2ResponseError, e:
+        except boto.exception.EC2ResponseError as e:
             return False, e.error_message
 
     def connect_route53(self):
