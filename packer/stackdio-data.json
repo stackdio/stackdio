@@ -3,8 +3,8 @@
     "pk": 1,
     "model": "auth.user",
     "fields": {
-      "email": "stackdio@stackd.io",
-      "password": "pbkdf2_sha256$20000$KdgJ2M6F7Lqd$yMHyNTgHsumAAp6A4KOgkbaFEZki/UvnyjbUfqo/3Bw=",
+      "email": "",
+      "password": "pbkdf2_sha256$20000$hT9YEIp7VRnx$u2tA98F2G5vpVMkxhHlvRggDcsgCXxnUMfttpqIGyRw=",
       "user_permissions": [],
       "username": "admin",
       "first_name": "",

@@ -48,3 +48,6 @@ rm /etc/nginx/sites-enabled/default
 # Configure supervisor
 mv /tmp/stackdio-supervisord /etc/stackdio/supervisord.conf
 chown root:root /etc/stackdio/supervisord.conf
+
+# Make sure stackdio starts at boot
+update-rc.d stackdio defaults
