@@ -24,6 +24,10 @@ DAEMON_ARGS="-c $CONFIG"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
+# Make our pid dir
+mkdir -p /var/run/stackdio
+chown -R stackdio:stackdio /var/run/stackdio
+
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 

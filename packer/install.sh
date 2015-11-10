@@ -8,10 +8,8 @@ useradd -m -s/bin/bash -U stackdio
 # Create our directories
 mkdir /etc/stackdio
 mkdir -p /var/lib/stackdio
-mkdir -p /var/run/stackdio
 mkdir -p /var/log/stackdio
 chown -R stackdio:stackdio /var/lib/stackdio
-chown -R stackdio:stackdio /var/run/stackdio
 chown -R stackdio:stackdio /var/log/stackdio
 
 # Make sure everything has the right permissions
