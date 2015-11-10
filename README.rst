@@ -40,11 +40,11 @@ glad to help!
 -  StackExchange: Ask a question on any `StackExchange site <http://stackexchange.com/sites>`__
    and tag it with ``stackd.io`` or ``stackdio``
 
-.. |Circle CI| image:: https://circleci.com/gh/stackdio/stackdio/tree/develop.svg?style=svg
-   :target: https://circleci.com/gh/stackdio/stackdio/tree/develop
+.. |Circle CI| image:: https://circleci.com/gh/stackdio/stackdio/tree/master.svg?style=svg
+   :target: https://circleci.com/gh/stackdio/stackdio/tree/master
    :alt: Build Status
-.. |Coverage Status| image:: https://coveralls.io/repos/stackdio/stackdio/badge.svg?branch=develop
-   :target: https://coveralls.io/r/stackdio/stackdio?branch=develop
+.. |Coverage Status| image:: https://coveralls.io/repos/stackdio/stackdio/badge.svg?branch=master
+   :target: https://coveralls.io/r/stackdio/stackdio?branch=master
    :alt: Coverage Status
 .. |Docs Status| image:: https://readthedocs.org/projects/stackdio/badge/?version=latest
    :target: http://docs.stackd.io/en/latest/?badge=latest
