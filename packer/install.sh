@@ -9,8 +9,10 @@ useradd -m -s/bin/bash -U stackdio
 mkdir /etc/stackdio
 mkdir -p /var/lib/stackdio
 mkdir -p /var/log/stackdio
+mkdir -p /var/cache/salt
 chown -R stackdio:stackdio /var/lib/stackdio
 chown -R stackdio:stackdio /var/log/stackdio
+chown -R stackdio:stackdio /var/cache/salt
 
 # Make sure everything has the right permissions
 mv /tmp/stackdio-init /etc/init.d/stackdio

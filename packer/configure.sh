@@ -5,7 +5,7 @@ set -e
 stackdio init <<EOF
 stackdio
 /var/lib/stackdio
-
+curl-bootstrap
 
 mysql://stackdio:password@localhost:3306/stackdio
 true
