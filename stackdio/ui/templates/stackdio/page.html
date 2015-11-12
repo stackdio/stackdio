@@ -3,7 +3,15 @@
 {% load stackdio %}
 
 {% block scripts %}
-    {% viewmodel viewmodel %}
+    <script src="{% static 'stackdio/lib/bower_components/requirejs/require.js' %}"></script>
+    <script>
+        requirejs(['{% main_file %}'], function (main) {
+            requirejs(['knockout', '{{ viewmodel }}'], function (ko, vm) {
+                // We need to apply our bindings here.
+                ko.applyBindings(new vm());
+            });
+        });
+    </script>
     <script type="text/javascript">
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
         window.stackdio.advancedView = {{ user.settings.advanced_view | lower }};

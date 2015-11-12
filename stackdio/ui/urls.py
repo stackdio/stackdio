@@ -66,7 +66,7 @@ urlpatterns = (
         auth_reset_complete_kwargs,
         name='password_reset_complete'),
 
-    cached_url(r'^js/main/(?P<vm>[\w/.-]+)\.js$',
+    cached_url(r'^js/main.js$',
                views.AppMainView.as_view(),
                name='js-main',
                user_sensitive=False),

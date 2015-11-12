@@ -66,6 +66,7 @@ target/
 *.un~
 **/bower_components/
 **/node_modules/
+stackdio/ui/static/stackdio/app/main.js
 
 
 # development stuff

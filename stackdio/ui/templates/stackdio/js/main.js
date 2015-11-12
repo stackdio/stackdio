@@ -16,29 +16,24 @@
 */
 
 {% load staticfiles %}
-
 {# Templatize this file so that the static files always work even if the static url changes #}
-
-{# Grab the bower path #}
-{# This is better to be templatized.  This way our optimization process works easier #}
-{% with '../lib/bower_components' as bower_path %}
 
 requirejs.config({
     baseUrl: '{% static 'stackdio/app' %}',
     paths: {
-        'bloodhound': '{{ bower_path }}/typeahead.js/dist/bloodhound',
-        'bootbox': '{{ bower_path }}/bootbox.js/bootbox',
-        'bootstrap': '{{ bower_path }}/bootstrap/dist/js/bootstrap',
-        'domReady': '{{ bower_path }}/requirejs-domReady/domReady',
-        'fuelux': '{{ bower_path }}/fuelux/dist/js/fuelux',
-        'jquery': '{{ bower_path }}/jquery/jquery',
-        'knockout': '{{ bower_path }}/knockout/dist/knockout',
-        'ladda': '{{ bower_path }}/ladda/js/ladda',
-        'moment': '{{ bower_path }}/moment/moment',
-        'select2': '{{ bower_path }}/select2/dist/js/select2',
-        'spin': '{{ bower_path }}/ladda/js/spin',
-        'typeahead': '{{ bower_path }}/typeahead.js/dist/typeahead.jquery',
-        'underscore': '{{ bower_path }}/underscore/underscore'
+        'bloodhound': '../lib/bower_components/typeahead.js/dist/bloodhound',
+        'bootbox': '../lib/bower_components/bootbox.js/bootbox',
+        'bootstrap': '../lib/bower_components/bootstrap/dist/js/bootstrap',
+        'domReady': '../lib/bower_components/requirejs-domReady/domReady',
+        'fuelux': '../lib/bower_components/fuelux/dist/js/fuelux',
+        'jquery': '../lib/bower_components/jquery/jquery',
+        'knockout': '../lib/bower_components/knockout/dist/knockout',
+        'ladda': '../lib/bower_components/ladda/js/ladda',
+        'moment': '../lib/bower_components/moment/moment',
+        'select2': '../lib/bower_components/select2/dist/js/select2',
+        'spin': '../lib/bower_components/ladda/js/spin',
+        'typeahead': '../lib/bower_components/typeahead.js/dist/typeahead.jquery',
+        'underscore': '../lib/bower_components/underscore/underscore'
     },
     shim: {
         bootstrap: {
@@ -62,7 +57,6 @@ requirejs.config({
         }
     }
 });
-{% endwith %}
 
 // Add our custom capitalize method
 String.prototype.capitalize = function() {
@@ -71,13 +65,11 @@ String.prototype.capitalize = function() {
 
 require([
     'jquery',
-    'knockout',
-    '{{ viewmodel }}',
     'bootstrap',
     'fuelux',
     'utils/mobile-fix',
     'domReady!'
-], function($, ko, vm) {
+], function($) {
     // Function for getting cookies
     // pulled from Django 1.8 documentation
     function getCookie(name) {
@@ -121,7 +113,4 @@ require([
             }
         }
     });
-
-    // Lastly, apply the bindings for our viewmodel
-    ko.applyBindings(new vm());
 });
