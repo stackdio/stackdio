@@ -130,5 +130,8 @@ class Command(BaseCommand):
         # Get rid of temporary main.js
         os.remove(full_path)
 
+        # Remove the extra build.txt file r.js throws in
+        os.remove(os.path.join(BUILD_DIR, 'build.txt'))
+
         # Get rid of our node_modules
         shutil.rmtree(NODE_PATH)

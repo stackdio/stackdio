@@ -67,6 +67,7 @@ target/
 **/bower_components/
 **/node_modules/
 stackdio/ui/static/stackdio/app/main.js
+stackdio/ui/static/stackdio/build/
 
 
 # development stuff
