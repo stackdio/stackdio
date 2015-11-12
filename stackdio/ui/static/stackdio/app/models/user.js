@@ -122,6 +122,16 @@ define([
 
     User.prototype.save = function () {
         var self = this;
+        var keys = ['username', 'first_name', 'last_name', 'email'];
+        var settingsKeys = ['public_key', 'advanced_view'];
+
+        keys.concat(settingsKeys).forEach(function (key) {
+            var el = $('#' + key);
+            el.removeClass('has-error');
+            var help = el.find('.help-block');
+            help.remove();
+        });
+
         $.ajax({
             method: 'PUT',
             url: '/api/user/',
@@ -155,6 +165,16 @@ define([
                             resp[key].forEach(function (errMsg) {
                                 el.append('<span class="help-block">' + errMsg + '</span>');
                             });
+                        } else if (key === 'settings') {
+                            for (var subKey in resp[key]) {
+                                if (resp[key].hasOwnProperty(subKey) && settingsKeys.indexOf(subKey) >= 0) {
+                                    var subEl = $('#' + subKey);
+                                    subEl.addClass('has-error');
+                                    resp[key].forEach(function (errMsg) {
+                                        subEl.append('<span class="help-block">' + errMsg + '</span>');
+                                    });
+                                }
+                            }
                         } else if (key === 'non_field_errors') {
                             resp[key].forEach(function (errMsg) {
                                 if (errMsg.indexOf('username') >= 0) {
