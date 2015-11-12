@@ -73,8 +73,7 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         if blueprints:
             raise ValidationError({
-                'detail': 'One or more blueprints are making use of this '
-                          'formula.',
+                'detail': ['One or more blueprints are making use of this formula.'],
                 'blueprints': [b.title for b in blueprints],
             })
 
