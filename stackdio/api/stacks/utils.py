@@ -461,10 +461,10 @@ def get_salt_cloud_log_file(stack, suffix):
     log_symlink = os.path.join(root_dir, '{0}.log.latest'.format(suffix))
 
     # "touch" the log file and symlink it to the latest
-    with open(log_file, 'w') as f:  # NOQA
+    with open(log_file, 'w') as f:
         pass
 
-    if os.path.isfile(log_symlink):
+    if os.path.islink(log_symlink):
         os.remove(log_symlink)
     os.symlink(log_file, log_symlink)
 
