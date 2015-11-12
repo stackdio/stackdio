@@ -94,7 +94,7 @@ def copy_formulas(stack_or_account):
                 raise
 
         # Default to the HEAD branch
-        version = formula.default_branch
+        version = formula.default_version
         try:
             # Try to the version if it exists
             v = stack_or_account.formula_versions.get(formula=formula)

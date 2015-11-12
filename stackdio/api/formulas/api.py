@@ -99,7 +99,7 @@ class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIVi
         if version in formula.get_valid_versions():
             components = formula.components_for_version(version)
         else:
-            version = formula.default_branch
+            version = formula.default_version
             formula.repo.git.checkout(version)
             components = formula.components
 

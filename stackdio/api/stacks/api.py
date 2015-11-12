@@ -42,6 +42,7 @@ from stackdio.core.viewsets import (
     StackdioObjectGroupPermissionsViewSet,
 )
 from stackdio.api.cloud.filters import SecurityGroupFilter
+from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.api.volumes.serializers import VolumeSerializer
 from . import filters, mixins, models, permissions, serializers, utils, workflows
@@ -71,6 +72,16 @@ class StackListAPIView(generics.ListCreateAPIView):
             assign_perm('stacks.%s_stack' % perm, self.request.user, stack)
 
         stack.labels.create(key='owner', value=self.request.user.username)
+
+        # Create all the formula versions
+        for formula in stack.get_formulas():
+            # Try grabbing from the blueprint first, otherwise just get it from the default version
+            try:
+                version = stack.blueprint.formula_versions.get(formula=formula).version
+            except FormulaVersion.DoesNotExist:
+                version = formula.default_version
+
+            stack.formula_versions.create(formula=formula, version=version)
 
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

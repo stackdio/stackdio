@@ -228,7 +228,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return list(refs)
 
     @property
-    def default_branch(self):
+    def default_version(self):
         # This will be the name of the default branch.
         return str(self.repo.remotes.origin.refs.HEAD.ref.remote_head)
 
@@ -241,7 +241,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         components = self.components
 
         # Go back to HEAD
-        self.repo.git.checkout(self.default_branch)
+        self.repo.git.checkout(self.default_version)
 
         return components
 
