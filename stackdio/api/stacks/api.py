@@ -55,7 +55,6 @@ class StackListAPIView(generics.ListCreateAPIView):
     Displays a list of all stacks visible to you.
     """
     queryset = models.Stack.objects.all()
-    serializer_class = serializers.StackSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.StackFilter
@@ -73,15 +72,15 @@ class StackListAPIView(generics.ListCreateAPIView):
 
         stack.labels.create(key='owner', value=self.request.user.username)
 
-        # Create all the formula versions
-        for formula in stack.get_formulas():
-            # Try grabbing from the blueprint first, otherwise just get it from the default version
+        # Create all the formula versions from the blueprint
+        for formula_version in stack.blueprint.formula_versions.all():
+            # Make sure the version doesn't already exist (could have been created in
+            # the serializer.save() call)
             try:
-                version = stack.blueprint.formula_versions.get(formula=formula).version
+                stack.formula_versions.get(formula=formula_version.formula)
             except FormulaVersion.DoesNotExist:
-                version = formula.default_version
-
-            stack.formula_versions.create(formula=formula, version=version)
+                stack.formula_versions.create(formula=formula_version.formula,
+                                              version=formula_version.version)
 
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

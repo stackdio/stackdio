@@ -62,7 +62,8 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
 
         # Create all the formula versions
         for formula in blueprint.get_formulas():
-            # Make sure the version doesn't already exist
+            # Make sure the version doesn't already exist (could have been created in
+            # the serializer.save() call)
             try:
                 blueprint.formula_versions.get(formula=formula)
             except FormulaVersion.DoesNotExist:
