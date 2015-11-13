@@ -35,9 +35,6 @@ def forward(apps, schema_editor):
 
     host_def_ctype = ContentType.objects.get(model='blueprinthostdefinition')
 
-    stack_ctype = ContentType.objects.get(model='stack')
-    blueprint_ctype = ContentType.objects.get(model='blueprint')
-
     def get_formulas(blueprint):
         formulas = set()
         for host_definition in HostDefinition.objects.filter(blueprint=blueprint):
@@ -47,25 +44,34 @@ def forward(apps, schema_editor):
 
         return list(formulas)
 
-    for stack in Stack.objects.all():
-        for formula in get_formulas(stack.blueprint):
-            # Make sure the version doesn't already exist
-            try:
-                FormulaVersion.objects.get(formula=formula, object_id=stack.id,
-                                           content_type=stack_ctype)
-            except FormulaVersion.DoesNotExist:
-                FormulaVersion.objects.create(formula=formula, version=get_default_version(formula),
-                                              object_id=stack.id, content_type=stack_ctype)
+    if Stack.objects.count() > 0:
+        stack_ctype = ContentType.objects.get(model='stack')
 
-    for blueprint in Blueprint.objects.all():
-        for formula in get_formulas(blueprint):
-            # Make sure the version doesn't already exist
-            try:
-                FormulaVersion.objects.get(formula=formula, object_id=blueprint.id,
-                                           content_type=blueprint_ctype)
-            except FormulaVersion.DoesNotExist:
-                FormulaVersion.objects.create(formula=formula, version=get_default_version(formula),
-                                              object_id=blueprint.id, content_type=blueprint_ctype)
+        for stack in Stack.objects.all():
+            for formula in get_formulas(stack.blueprint):
+                # Make sure the version doesn't already exist
+                try:
+                    FormulaVersion.objects.get(formula=formula, object_id=stack.id,
+                                               content_type=stack_ctype)
+                except FormulaVersion.DoesNotExist:
+                    FormulaVersion.objects.create(formula=formula,
+                                                  version=get_default_version(formula),
+                                                  object_id=stack.id, content_type=stack_ctype)
+
+    if Blueprint.objects.count() > 0:
+        blueprint_ctype = ContentType.objects.get(model='blueprint')
+
+        for blueprint in Blueprint.objects.all():
+            for formula in get_formulas(blueprint):
+                # Make sure the version doesn't already exist
+                try:
+                    FormulaVersion.objects.get(formula=formula, object_id=blueprint.id,
+                                               content_type=blueprint_ctype)
+                except FormulaVersion.DoesNotExist:
+                    FormulaVersion.objects.create(formula=formula,
+                                                  version=get_default_version(formula),
+                                                  object_id=blueprint.id,
+                                                  content_type=blueprint_ctype)
 
 
 def reverse(apps, schema_editor):
