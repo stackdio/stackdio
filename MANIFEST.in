@@ -3,6 +3,7 @@ include CONTRIBUTING.rst
 include README.rst
 include LICENSE
 include MANIFEST.in
+include stackdio/server/settings/ldap_settings.py.template
 recursive-include stackdio/api/cloud/fixtures *.json
 recursive-include stackdio/core/templates *
 recursive-include stackdio/server/management *
