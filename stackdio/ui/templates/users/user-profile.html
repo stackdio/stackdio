@@ -62,6 +62,9 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary">Save</button>
+                {% if not ldap %}
+                <a class="btn btn-info" href="{% url 'ui:user-password-change' %}">Change Password</a>
+                {% endif %}
             </div>
 
             <div class="col-md-6">

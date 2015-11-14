@@ -24,7 +24,30 @@ from django.shortcuts import get_object_or_404
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
 
 
-class UserCreateView(PageView):
+class FailOnLDAPMixin(object):
+    def render_to_response(self, context, **response_kwargs):
+        if settings.LDAP_ENABLED:
+            self.template_name = 'users/ldap-managed.html'
+            response_kwargs['status'] = 400
+        return super(FailOnLDAPMixin, self).render_to_response(context, **response_kwargs)
+
+
+class UserProfileView(PageView):
+    template_name = 'users/user-profile.html'
+    viewmodel = 'viewmodels/user-profile'
+
+    def get_context_data(self, **kwargs):
+        context = super(UserProfileView, self).get_context_data(**kwargs)
+        context['ldap'] = settings.LDAP_ENABLED
+        return context
+
+
+class UserPasswordChangeView(FailOnLDAPMixin, PageView):
+    template_name = 'users/user-password-change.html'
+    viewmodel = 'viewmodels/user-password-change'
+
+
+class UserCreateView(FailOnLDAPMixin, PageView):
     template_name = 'users/user-create.html'
     viewmodel = 'viewmodels/user-create'
 
@@ -32,8 +55,6 @@ class UserCreateView(PageView):
         if not request.user.has_perm('auth.create_user'):
             # No permission granted
             raise Http404()
-        if settings.LDAP_ENABLED:
-            self.template_name = 'users/ldap-managed.html'
         return super(UserCreateView, self).get(request, *args, **kwargs)
 
 

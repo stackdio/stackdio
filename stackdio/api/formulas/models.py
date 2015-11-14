@@ -18,7 +18,7 @@
 
 import logging
 from collections import OrderedDict
-from os.path import join, isdir, split, splitext
+from os.path import exists, join, isdir, split, splitext
 from shutil import rmtree
 
 import git
@@ -207,6 +207,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     @property
     def repo(self):
+        if not exists(self.get_repo_dir()):
+            return None
+
         # Cache the repo obj
         if getattr(self, '_repo', None) is None:
             self._repo = git.Repo(self.get_repo_dir())
@@ -228,7 +231,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return list(refs)
 
     @property
-    def default_branch(self):
+    def default_version(self):
+        if not self.repo:
+            return None
         # This will be the name of the default branch.
         return str(self.repo.remotes.origin.refs.HEAD.ref.remote_head)
 
@@ -241,7 +246,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         components = self.components
 
         # Go back to HEAD
-        self.repo.git.checkout(self.default_branch)
+        self.repo.git.checkout(self.default_version)
 
         return components
 

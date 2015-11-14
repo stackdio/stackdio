@@ -372,7 +372,7 @@ define([
             });
 
             var $vpc = $('#vpc-checkbox');
-            self.vpcSubscription = self.createSecurityGroups.subscribe(function (newVal) {
+            self.vpcSubscription = self.vpcEnabled.subscribe(function (newVal) {
                 if (newVal) {
                     $vpc.checkbox('check');
                 } else {

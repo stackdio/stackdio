@@ -53,21 +53,6 @@ class AppMainView(TemplateView):
     template_name = 'stackdio/js/main.js'
     content_type = 'application/javascript'
 
-    def __init__(self, **kwargs):
-        super(AppMainView, self).__init__(**kwargs)
-        self.viewmodel = None
-
-    def get_context_data(self, **kwargs):
-        context = super(AppMainView, self).get_context_data(**kwargs)
-        context['viewmodel'] = self.viewmodel
-        return context
-
-    def get(self, request, *args, **kwargs):
-        self.viewmodel = kwargs.get('vm')
-        if self.viewmodel is None:
-            return HttpResponse()
-        return super(AppMainView, self).get(request, *args, **kwargs)
-
 
 class PageView(StackdioView):
     viewmodel = None
@@ -132,13 +117,3 @@ class ObjectPermissionsView(PageView):
             # No permission granted
             raise Http404()
         return super(ObjectPermissionsView, self).get(request, *args, **kwargs)
-
-
-class UserProfileView(PageView):
-    template_name = 'users/user-profile.html'
-    viewmodel = 'viewmodels/user-profile'
-
-    def get_context_data(self, **kwargs):
-        context = super(UserProfileView, self).get_context_data(**kwargs)
-        context['ldap'] = settings.LDAP_ENABLED
-        return context

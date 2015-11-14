@@ -34,6 +34,8 @@ define([
         this.formula = ko.observable();
         this.version = ko.observable();
 
+        this.formulaHtmlId = ko.observable();
+
         this._process(raw);
     }
 
@@ -43,6 +45,7 @@ define([
     FormulaVersion.prototype._process = function (raw) {
         this.formula(raw.formula);
         this.version(raw.version);
+        this.formulaHtmlId(raw.formula.replace(/\//g, '-').replace(/:/g, '-').replace(/\./g, '-'));
     };
 
     return FormulaVersion;

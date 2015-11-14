@@ -15,20 +15,15 @@
 # limitations under the License.
 #
 
-import errno
 import os
-import pkgutil
 import shutil
 import subprocess
 import sys
-from importlib import import_module
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.template import Context
 from django.template.loader import get_template
-
-from stackdio.ui import views as ui_views
 
 STATIC_DIR = os.path.join(
     settings.BASE_DIR,
@@ -38,8 +33,8 @@ STATIC_DIR = os.path.join(
     'stackdio',
 )
 
-INPUT_DIR = os.path.join(STATIC_DIR, 'app', 'build-input')
-OUTPUT_DIR = os.path.join(STATIC_DIR, 'build')
+APP_DIR = os.path.join(STATIC_DIR, 'app')
+BUILD_DIR = os.path.join(STATIC_DIR, 'build')
 
 BOWER_PATH = os.path.join(
     STATIC_DIR,
@@ -68,32 +63,11 @@ class Command(BaseCommand):
         except (KeyboardInterrupt, EOFError):
             # Clean up after ourselves if somebody quits
             try:
-                shutil.rmtree(INPUT_DIR)
                 shutil.rmtree(NODE_PATH)
             except Exception:
                 pass
 
     def _handle(self, *args, **options):
-        base_cls = ui_views.PageView
-
-        viewmodels = set()
-
-        def collect_vms(module_name):
-            module = import_module(module_name)
-            for view in module.__dict__.values():
-                try:
-                    if issubclass(view, base_cls):
-                        if view.viewmodel is not None:
-                            viewmodels.add(view.viewmodel)
-                except TypeError:
-                    # We don't care if it wasn't a class
-                    pass
-
-        collect_vms('stackdio.ui.views')
-
-        for _, name, _ in pkgutil.iter_modules(['stackdio/ui/views']):
-            collect_vms('stackdio.ui.views.' + name)
-
         # Force the user to install bower components first
         if not os.path.exists(BOWER_PATH):
             err_msg = ('It looks like you haven\'t installed the bower dependencies yet.  '
@@ -109,50 +83,55 @@ class Command(BaseCommand):
             self.stderr.write('Failed to install requirejs with npm.\n')
             sys.exit(1)
 
+        # Get rid of our build dir if it's already there
+        if os.path.exists(BUILD_DIR):
+            shutil.rmtree(BUILD_DIR)
+
         main_template = get_template('stackdio/js/main.js')
 
-        # Go over each of the viewmodels
-        for vm in viewmodels:
-            # Render the main js file
-            context = Context({'viewmodel': vm})
-            js = main_template.render(context)
-            full_path = os.path.join(INPUT_DIR, vm) + '.js'
+        context = Context({})
 
-            try:
-                os.makedirs(os.path.dirname(full_path))
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
+        js = main_template.render(context)
 
-            # Write it to disk
-            with open(full_path, 'w') as f:
-                f.write(js)
+        # Replace our appDir
+        js = js.replace('{0}stackdio/app'.format(settings.STATIC_URL), '.')
 
-            output = os.path.join(OUTPUT_DIR, vm) + '.js'
+        full_path = os.path.join(APP_DIR, 'main.js')
 
-            try:
-                os.makedirs(os.path.dirname(output))
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    raise
+        # Write it to disk
+        with open(full_path, 'w') as f:
+            f.write(js)
 
-            # Optimize the file using r.js
-            args = [
-                'node', R_JS, '-o',
-                'baseUrl={0}/app'.format(STATIC_DIR),
-                'name=build-input/{0}'.format(vm),
-                'mainConfigFile={0}'.format(full_path),
-                'out={0}'.format(output),
-            ]
+        # Optimize the project using r.js
+        args = ['node', R_JS, '-o', 'app.build.js']
 
-            # Build the optimized file
-            ret = subprocess.call(args)
-            if ret:
-                self.stderr.write('Failed to optimize JS file for {0}.  Stopping now.\n'.format(vm))
-                sys.exit(1)
+        # Build the optimized file
+        ret = subprocess.call(args)
+        if ret:
+            self.stderr.write('Failed to optimize project\n')
+            sys.exit(1)
 
-        # Get rid of our input directory
-        shutil.rmtree(INPUT_DIR)
+        built_main_file = os.path.join(BUILD_DIR, 'main.js')
+
+        # Grab the contents of the build main file
+        with open(built_main_file, 'r') as f:
+            built_main_js = f.read()
+
+        # Fix the built main file
+        built_main_js = built_main_js.replace(
+            'baseUrl:"."',
+            'baseUrl:"{0}stackdio/build"'.format(settings.STATIC_URL)
+        )
+
+        # Write it back out to disk
+        with open(built_main_file, 'w') as f:
+            f.write(built_main_js)
+
+        # Get rid of temporary main.js
+        os.remove(full_path)
+
+        # Remove the extra build.txt file r.js throws in
+        os.remove(os.path.join(BUILD_DIR, 'build.txt'))
 
         # Get rid of our node_modules
         shutil.rmtree(NODE_PATH)

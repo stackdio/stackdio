@@ -16,7 +16,7 @@
 #
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.models import Group
 from django_auth_ldap.backend import LDAPBackend
 from rest_framework import generics
@@ -155,10 +155,12 @@ class ChangePasswordAPIView(generics.GenericAPIView):
     """
     API that handles changing your account password. Note that
     only POST requests are available on this endpoint. Below
-    are the required parameters of the JSON object you will PUT.
+    are the required parameters of the JSON object you will POST.
 
-    @current_password: Your current password.
-    @new_password: Your new password you want to change to.
+    * `current_password` - Your current password.
+    * `new_password1` - Your new password you want to change to.
+    * `new_password2` - Your new password again.  Note that this must match
+        `new_password1` exactly.
     """
 
     serializer_class = serializers.ChangePasswordSerializer
@@ -167,5 +169,7 @@ class ChangePasswordAPIView(generics.GenericAPIView):
         user = request.user
         serializer = self.get_serializer(user, data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
+        # This ensures that the user doesn't get logged out after the password change
+        update_session_auth_hash(request, user)
         return Response(serializer.data)
