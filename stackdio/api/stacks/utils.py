@@ -31,6 +31,7 @@ import salt.config as config
 import salt.key
 import salt.utils
 import salt.utils.cloud
+import six
 import yaml
 from django.conf import settings
 from salt.log.setup import LOG_LEVELS
@@ -121,7 +122,7 @@ class StackdioSaltCloudMap(salt.cloud.Map):
         """
         Override this so we only get appropriate things for our map
         """
-        if isinstance(names, basestring):
+        if isinstance(names, six.string_types):
             names = [names]
 
         matches = {}
@@ -419,7 +420,7 @@ def process_orchestrate_result(result, stack, log_file, err_file):
         # Process the data for this sls
         with open(err_file, 'a') as f:
             comment = sls_result['comment']
-            if isinstance(comment, basestring):
+            if isinstance(comment, six.string_types):
                 f.write(COLOR_REGEX.sub('', comment))
             else:
                 f.write(yaml.safe_dump(comment))
@@ -460,10 +461,10 @@ def get_salt_cloud_log_file(stack, suffix):
     log_symlink = os.path.join(root_dir, '{0}.log.latest'.format(suffix))
 
     # "touch" the log file and symlink it to the latest
-    with open(log_file, 'w') as f:  # NOQA
+    with open(log_file, 'w') as f:
         pass
 
-    if os.path.isfile(log_symlink):
+    if os.path.islink(log_symlink):
         os.remove(log_symlink)
     os.symlink(log_file, log_symlink)
 

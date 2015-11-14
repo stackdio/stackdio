@@ -390,7 +390,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 sg_id = driver.create_security_group(sg_name,
                                                      sg_description,
                                                      delete_if_exists=True)
-            except Exception, e:
+            except Exception as e:
                 err_msg = 'Error creating security group: {0}'.format(str(e))
                 self.set_status('create_security_groups', self.ERROR,
                                 err_msg, Level.ERROR)

@@ -17,9 +17,9 @@
 
 
 import logging
-from urlparse import urlsplit, urlunsplit
 
 from rest_framework import serializers
+from six.moves.urllib_parse import urlsplit, urlunsplit
 
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin

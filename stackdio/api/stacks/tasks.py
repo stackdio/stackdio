@@ -28,6 +28,7 @@ import salt.client
 import salt.cloud
 import salt.config
 import salt.runner
+import six
 import yaml
 from celery import shared_task
 from celery.result import AsyncResult
@@ -434,7 +435,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         err_msg = 'Unknown stack id {0}'.format(stack_id)
         logger.exception(err_msg)
         raise StackTaskException(err_msg)
-    except StackTaskException, e:
+    except StackTaskException as e:
         err_msg = 'Unhandled exception: {0}'.format(str(e))
         stack.set_status(launch_hosts.name, stack.ERROR, err_msg, Level.ERROR)
         raise
@@ -563,7 +564,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                 host_data = query_results.get(host.hostname)
                 is_absent = host_data is None
 
-                if isinstance(host_data, basestring):
+                if isinstance(host_data, six.string_types):
                     raise TypeError('Expected dict, received {0}'.format(type(host_data)))
 
                 # Check for terminated host state
