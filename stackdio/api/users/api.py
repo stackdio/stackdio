@@ -16,7 +16,7 @@
 #
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.models import Group
 from django_auth_ldap.backend import LDAPBackend
 from rest_framework import generics
@@ -169,5 +169,7 @@ class ChangePasswordAPIView(generics.GenericAPIView):
         user = request.user
         serializer = self.get_serializer(user, data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        user = serializer.save()
+        # This ensures that the user doesn't get logged out after the password change
+        update_session_auth_hash(request, user)
         return Response(serializer.data)
