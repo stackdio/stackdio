@@ -155,10 +155,12 @@ class ChangePasswordAPIView(generics.GenericAPIView):
     """
     API that handles changing your account password. Note that
     only POST requests are available on this endpoint. Below
-    are the required parameters of the JSON object you will PUT.
+    are the required parameters of the JSON object you will POST.
 
-    @current_password: Your current password.
-    @new_password: Your new password you want to change to.
+    * `current_password` - Your current password.
+    * `new_password1` - Your new password you want to change to.
+    * `new_password2` - Your new password again.  Note that this must match
+        `new_password1` exactly.
     """
 
     serializer_class = serializers.ChangePasswordSerializer

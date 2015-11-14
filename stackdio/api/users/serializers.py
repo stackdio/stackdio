@@ -27,7 +27,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import serializers
 
-from stackdio.core.fields import HyperlinkedField
+from stackdio.core.fields import HyperlinkedField, PasswordField
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from . import models, utils
 
@@ -265,8 +265,9 @@ class PublicUserSerializer(UserSerializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    current_password = serializers.CharField()
-    new_password = serializers.CharField()
+    current_password = PasswordField(label='Current Password')
+    new_password1 = PasswordField(label='New Password')
+    new_password2 = PasswordField(label='New Password Again')
 
     def to_representation(self, instance):
         """
@@ -278,9 +279,10 @@ class ChangePasswordSerializer(serializers.Serializer):  # pylint: disable=abstr
     def validate(self, attrs):
         if settings.LDAP_ENABLED:
             # Just stop immediately if we're on LDAP
-            raise serializers.ValidationError(
-                'You cannot change your password when using LDAP authentication.'
-            )
+            raise serializers.ValidationError({
+                'current_password': ['You cannot change your password when using LDAP '
+                                     'authentication.']
+            })
 
         # the current user is set as the instance when we initialize the serializer
         user = self.instance
@@ -288,6 +290,11 @@ class ChangePasswordSerializer(serializers.Serializer):  # pylint: disable=abstr
         if not user.check_password(attrs['current_password']):
             raise serializers.ValidationError({
                 'current_password': ['You entered an incorrect current password value.']
+            })
+
+        if attrs['new_password1'] != attrs['new_password2']:
+            raise serializers.ValidationError({
+                'new_password2': ['The 2 new passwords don\'t match.']
             })
 
         return attrs
@@ -305,8 +312,9 @@ class ChangePasswordSerializer(serializers.Serializer):  # pylint: disable=abstr
             'You cannot call `.save()` on a serializer with invalid data.'
         )
 
-        # change the password
-        new_password = self.validated_data['new_password']
+        # change the password.  We can just grab new_password1 since we validated that it's the
+        # same as new_password2 in the validate() method
+        new_password = self.validated_data['new_password1']
 
         self.instance.set_password(new_password)
         self.instance.save()
