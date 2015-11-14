@@ -117,13 +117,3 @@ class ObjectPermissionsView(PageView):
             # No permission granted
             raise Http404()
         return super(ObjectPermissionsView, self).get(request, *args, **kwargs)
-
-
-class UserProfileView(PageView):
-    template_name = 'users/user-profile.html'
-    viewmodel = 'viewmodels/user-profile'
-
-    def get_context_data(self, **kwargs):
-        context = super(UserProfileView, self).get_context_data(**kwargs)
-        context['ldap'] = settings.LDAP_ENABLED
-        return context

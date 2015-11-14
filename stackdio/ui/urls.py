@@ -72,8 +72,13 @@ urlpatterns = (
                user_sensitive=False),
 
     cached_url('^user/$',
-               views.UserProfileView.as_view(),
+               users.UserProfileView.as_view(),
                name='user-profile',
+               timeout=10),
+
+    cached_url('^user/password/$',
+               users.UserPasswordChangeView.as_view(),
+               name='user-password-change',
                timeout=10),
 
     cached_url(r'^users/$',
