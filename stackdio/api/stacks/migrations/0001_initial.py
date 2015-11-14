@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
                 ('created', django_extensions.db.fields.CreationDateTimeField(default=django.utils.timezone.now, verbose_name='created', editable=False, blank=True)),
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(default=django.utils.timezone.now, verbose_name='modified', editable=False, blank=True)),
                 ('title', models.CharField(max_length=255, verbose_name='title')),
-                ('slug', django_extensions.db.fields.AutoSlugField(populate_from=b'title', verbose_name='slug', editable=False, blank=True)),
+                ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('status', model_utils.fields.StatusField(default=b'pending', max_length=100, verbose_name='status', no_check_for_status=True, choices=[(b'pending', b'pending'), (b'launching', b'launching'), (b'configuring', b'configuring'), (b'syncing', b'syncing'), (b'provisioning', b'provisioning'), (b'orchestrating', b'orchestrating'), (b'finalizing', b'finalizing'), (b'destroying', b'destroying'), (b'finished', b'finished'), (b'starting', b'starting'), (b'stopping', b'stopping'), (b'terminating', b'terminating'), (b'executing_action', b'executing_action'), (b'error', b'error')])),
                 ('status_changed', model_utils.fields.MonitorField(default=django.utils.timezone.now, verbose_name='status changed', monitor='status')),
