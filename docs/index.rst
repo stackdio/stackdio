@@ -24,9 +24,20 @@ stackd.io is a `Django`_ project, and uses `Salt`_ for its back-end configuratio
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: Concepts
+
+
+.. toctree::
+   :maxdepth: 1
    :caption: User Guide
 
    webserver-guide
-   developers/contributor-guide
    contact
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Developer Guide
+
+   developers/contributor-guide
