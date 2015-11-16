@@ -205,17 +205,19 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
             date_format=opts['log_datefmt_logfile'],
         )
 
-        mapper = StackdioSaltCloudMap(opts)
-        mapper.rendered_map = cloud_map
-        dmap = mapper.map_data()
+        try:
+            mapper = StackdioSaltCloudMap(opts)
+            mapper.rendered_map = cloud_map
+            dmap = mapper.map_data()
 
-        # Do the launch
-        ret = salt.utils.cloud.simple_types_filter(
-            mapper.run_map(dmap)
-        )
+            # Do the launch
+            ret = salt.utils.cloud.simple_types_filter(
+                mapper.run_map(dmap)
+            )
 
-        # Cancel the logging
-        root_logger.removeHandler(handler)
+        finally:
+            # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
+            root_logger.removeHandler(handler)
 
         return ret
 
