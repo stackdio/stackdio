@@ -50,6 +50,8 @@ class StackdioSaltCloudMap(salt.cloud.Map):
     def interpolated_map(self, query='list_nodes', cached=False):
         """
         Override this to use the in-memory map instead of on disk.
+        Also we'll change it so that having multiple providers on the same cloud
+        account doesn't break things
         """
         rendered_map = self.rendered_map.copy()
         interpolated_map = {}
