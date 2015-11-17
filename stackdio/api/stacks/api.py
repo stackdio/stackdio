@@ -16,7 +16,6 @@
 #
 
 
-import StringIO
 import logging
 import zipfile
 from os import listdir
@@ -30,6 +29,7 @@ from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsF
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
+from six import StringIO
 
 from stackdio.core.models import Label
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
@@ -42,6 +42,7 @@ from stackdio.core.viewsets import (
     StackdioObjectGroupPermissionsViewSet,
 )
 from stackdio.api.cloud.filters import SecurityGroupFilter
+from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.api.volumes.serializers import VolumeSerializer
 from . import filters, mixins, models, permissions, serializers, utils, workflows
@@ -54,7 +55,6 @@ class StackListAPIView(generics.ListCreateAPIView):
     Displays a list of all stacks visible to you.
     """
     queryset = models.Stack.objects.all()
-    serializer_class = serializers.StackSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.StackFilter
@@ -71,6 +71,16 @@ class StackListAPIView(generics.ListCreateAPIView):
             assign_perm('stacks.%s_stack' % perm, self.request.user, stack)
 
         stack.labels.create(key='owner', value=self.request.user.username)
+
+        # Create all the formula versions from the blueprint
+        for formula_version in stack.blueprint.formula_versions.all():
+            # Make sure the version doesn't already exist (could have been created in
+            # the serializer.save() call)
+            try:
+                stack.formula_versions.get(formula=formula_version.formula)
+            except FormulaVersion.DoesNotExist:
+                stack.formula_versions.create(formula=formula_version.formula,
+                                              version=formula_version.version)
 
 
 class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):

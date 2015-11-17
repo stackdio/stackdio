@@ -1,4 +1,11 @@
 {% extends 'stacks/stack-detail-base.html' %}
+{% load staticfiles %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2/dist/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
+{% endblock %}
 
 {% block detail-content %}
     <div class="col-sm-9 col-sm-pull-3">
@@ -17,17 +24,7 @@
                     <tr class="stackdio-hidden-on-load">
                         <td data-bind="text: formula"></td>
                         <td>
-                            <input type="text" class="form-control"
-                                   data-bind="value: version, valueUpdate: 'keyup'">
-                        </td>
-                    </tr>
-                    <!-- /ko -->
-                    <!-- ko foreach: newVersions -->
-                    <tr class="stackdio-hidden-on-load">
-                        <td data-bind="text: formula"></td>
-                        <td>
-                            <input type="text" class="form-control"
-                                   data-bind="value: version, valueUpdate: 'keyup'">
+                            <select style="width: 100%" class="hidden-formula-versions" data-bind="attr: {id: formulaHtmlId}"></select>
                         </td>
                     </tr>
                     <!-- /ko -->
@@ -37,19 +34,8 @@
         </div>
 
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-12">
                 <button type="submit" class="btn btn-primary" data-bind="click: function () { saveVersions() }">Save</button>
-            </div>
-            <div class="col-md-8">
-                <form data-bind="submit: function () { addNewVersion() }">
-                    <div id="new-version-form" class="input-group">
-                        <input type="text" class="form-control" placeholder="New Version"
-                               data-bind="value: newVersionFormula, valueUpdate: 'keyup'">
-                        <span class="input-group-btn">
-                            <button type="submit" class="btn btn-success">Add</button>
-                        </span>
-                    </div>
-                </form>
             </div>
         </div>
     </div>

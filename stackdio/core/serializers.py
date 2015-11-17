@@ -17,13 +17,12 @@
 
 import logging
 
-from celery import chain
 from django.contrib.contenttypes.models import ContentType
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
 from stackdio.core import mixins, models
-from stackdio.api.stacks.tasks import tag_infrastructure, finish_stack
+from stackdio.api.stacks.tasks import tag_infrastructure
 from stackdio.api.stacks.models import Stack
 
 logger = logging.getLogger(__name__)

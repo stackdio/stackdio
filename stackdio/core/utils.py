@@ -18,6 +18,7 @@
 
 import collections
 
+import six
 from django.conf import settings
 from django.conf.urls import url
 from django.views.decorators.cache import cache_page
@@ -59,7 +60,7 @@ class FakeQuerySet(object):
         return FakeQuerySet(self.model, ret)
 
 
-class PasswordStr(unicode):
+class PasswordStr(six.text_type):
     """
     Used so that passwords aren't logged in the celery task log
     """

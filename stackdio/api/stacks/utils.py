@@ -31,6 +31,7 @@ import salt.config as config
 import salt.key
 import salt.utils
 import salt.utils.cloud
+import six
 import yaml
 from django.conf import settings
 from salt.log.setup import LOG_LEVELS
@@ -49,6 +50,8 @@ class StackdioSaltCloudMap(salt.cloud.Map):
     def interpolated_map(self, query='list_nodes', cached=False):
         """
         Override this to use the in-memory map instead of on disk.
+        Also we'll change it so that having multiple providers on the same cloud
+        account doesn't break things
         """
         rendered_map = self.rendered_map.copy()
         interpolated_map = {}
@@ -121,7 +124,7 @@ class StackdioSaltCloudMap(salt.cloud.Map):
         """
         Override this so we only get appropriate things for our map
         """
-        if isinstance(names, basestring):
+        if isinstance(names, six.string_types):
             names = [names]
 
         matches = {}
@@ -204,17 +207,19 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
             date_format=opts['log_datefmt_logfile'],
         )
 
-        mapper = StackdioSaltCloudMap(opts)
-        mapper.rendered_map = cloud_map
-        dmap = mapper.map_data()
+        try:
+            mapper = StackdioSaltCloudMap(opts)
+            mapper.rendered_map = cloud_map
+            dmap = mapper.map_data()
 
-        # Do the launch
-        ret = salt.utils.cloud.simple_types_filter(
-            mapper.run_map(dmap)
-        )
+            # Do the launch
+            ret = salt.utils.cloud.simple_types_filter(
+                mapper.run_map(dmap)
+            )
 
-        # Cancel the logging
-        root_logger.removeHandler(handler)
+        finally:
+            # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
+            root_logger.removeHandler(handler)
 
         return ret
 
@@ -249,17 +254,17 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
             return {}
 
 
-def setup_logfile_logger(log_path, log_level='error', log_format=None, date_format=None):
+def setup_logfile_logger(log_path, log_level=None, log_format=None, date_format=None):
     """
     Set up logging to a file.
     """
-    # Grab the level
-    level = LOG_LEVELS.get(log_level.lower(), logging.ERROR)
-
     # Create the handler
-    handler = WatchedFileHandler(log_path, mode='a', encoding='utf-8', delay=0)
+    handler = WatchedFileHandler(log_path)
 
-    handler.setLevel(level)
+    if log_level:
+        # Grab and set the level
+        level = LOG_LEVELS.get(log_level.lower(), logging.ERROR)
+        handler.setLevel(level)
 
     # Set the default console formatter config
     if not log_format:
@@ -419,7 +424,7 @@ def process_orchestrate_result(result, stack, log_file, err_file):
         # Process the data for this sls
         with open(err_file, 'a') as f:
             comment = sls_result['comment']
-            if isinstance(comment, basestring):
+            if isinstance(comment, six.string_types):
                 f.write(COLOR_REGEX.sub('', comment))
             else:
                 f.write(yaml.safe_dump(comment))
@@ -460,10 +465,10 @@ def get_salt_cloud_log_file(stack, suffix):
     log_symlink = os.path.join(root_dir, '{0}.log.latest'.format(suffix))
 
     # "touch" the log file and symlink it to the latest
-    with open(log_file, 'w') as f:  # NOQA
+    with open(log_file, 'w') as f:
         pass
 
-    if os.path.isfile(log_symlink):
+    if os.path.islink(log_symlink):
         os.remove(log_symlink)
     os.symlink(log_file, log_symlink)
 

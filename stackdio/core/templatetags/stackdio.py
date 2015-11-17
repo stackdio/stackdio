@@ -32,11 +32,8 @@ def stackdio_version():
 
 
 @register.simple_tag
-def viewmodel(viewmodel):
-    require = '{0}stackdio/lib/bower_components/requirejs/require.js'.format(settings.STATIC_URL)
+def main_file():
     if settings.DEBUG:
-        app = '/js/main/{0}'.format(viewmodel)
+        return '/js/main.js'
     else:
-        app = '{0}stackdio/build/{1}.js'.format(settings.STATIC_URL, viewmodel)
-
-    return '<script data-main="{0}" src="{1}"></script>'.format(app, require)
+        return '{0}stackdio/build/main.js'.format(settings.STATIC_URL)

@@ -9,28 +9,26 @@ with, and there may be things we missed. If you feel anything is out of
 the ordinary, a bit confusing, or just plain missing, please :doc:`contact
 us<contact>`.
 
-Quick Start Script
-------------------
+
+Amazon AMI
+----------
 
 We know that reading through a big, messy guide like this one and
 executing each and every command will be time consuming and error prone.
 If you would rather just run a script to do a lot of this for you, we
-have a script for just that. Keep in mind that the script is somewhat
+have a script to build an AMI for you. Keep in mind that the script is somewhat
 opinionated and won't let you make many decisions (you're free to modify
 it to suit your needs though!) Here's a list of things it will do:
 
--  Detect your OS (only Ubuntu 13.10 and CentOS 6.4 were tested)
--  Install all of the necessary stuff (MySQL, virtualenv-wrapper, tons
-   of packages, etc)
--  Create a ``stackdio`` virtualenv
+-  Install all of the necessary stuff (MySQL, python, virtualenv, tons of packages, etc)
+-  Create a ``stackdio`` virtualenv at ``/usr/share/stackdio``
 -  Install stackdio and its python dependencies
 -  Install and configure Nginx
--  Install and configure supervisord to run gunicorn, celery, and
-   salt-master
+-  Install and configure supervisord to run gunicorn, celery, and salt-master
+-  Create an ``admin`` user
 
-If you're cool with this, download the script located in
-``scripts/stackdio_quickstart.sh`` and execute it on a server as a user
-with sudo access.
+
+For more information, check out the AMI guide: :doc:`ami`
 
 MySQL
 -----

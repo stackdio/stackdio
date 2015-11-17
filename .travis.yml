@@ -2,6 +2,8 @@ language: python
 
 python:
   - "2.7"
+  - "3.3"
+  - "3.4"
 
 cache:
   directories:
@@ -34,8 +36,8 @@ install:
 
 ## Customize test commands
 before_script:
-  - pep8 --ignore=E501,E12 --exclude='*/migrations/*,*/bower_components/*' stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
-  - pylint --rcfile=.pylintrc stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
+  - pep8 stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
+  - pylint stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
   - mkdir /home/travis/.stackdio
   - cp tests/config-travis /home/travis/.stackdio/config
 

@@ -25,9 +25,20 @@ from setuptools import setup, find_packages
 major = sys.version_info[0]
 minor = sys.version_info[1]
 micro = sys.version_info[2]
-if major != 2 or minor != 7:
+
+bad_version = False
+
+if major not in (2, 3):
+    bad_version = True
+
+if major == 2 and minor != 7:
+    bad_version = True
+elif major == 3 and minor not in (3, 4):
+    bad_version = True
+
+if bad_version:
     err_msg = ('Your Python version {0}.{1}.{2} is not supported.\n'
-               'stackdio-server requires Python 2.7.\n'.format(major, minor, micro))
+               'stackdio-server requires Python 2.7, 3.3, or 3.4.\n'.format(major, minor, micro))
     sys.stderr.write(err_msg)
     sys.exit(1)
 
@@ -67,11 +78,11 @@ requirements = [
     'Django>=1.8.0,<1.9',
     'GitPython>=1.0',
     'Markdown>=2.6',
-    'PyYAML==3.10',
-    'boto==2.9.5',
+    'PyYAML>=3.10',
+    'boto>=2.32.0',
     'celery>=3.1',
     'dj-database-url>=0.3',
-    'django-auth-ldap>=1.2',
+    'django-auth-ldap>=1.2.7',
     'django-extensions>=1.5,<1.5.6',
     'django-filter>=0.9',
     'django-guardian>=1.3',
@@ -80,7 +91,8 @@ requirements = [
     'envoy>=0.0.2',
     'psutil>=2.1',
     'requests>=2.4',
-    'salt>=2015.8.0,<2015.9,!=2015.8.1',
+    'salt>=2015.8.2,<2015.9',
+    'six>=1.6',
 ]
 
 testing_requirements = [

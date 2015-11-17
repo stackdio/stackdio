@@ -22,10 +22,10 @@ import os
 import shutil
 import sys
 from tempfile import mkdtemp
-from urlparse import urlsplit, urlunsplit
 
 import git
 from celery import shared_task
+from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=import-error
 
 from .models import Formula
 from stackdio.api.formulas.validators import validate_specfile, validate_component
@@ -211,7 +211,7 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
 
         return True
 
-    except Exception, e:
+    except Exception as e:
         # Roll back the pull
         if repo is not None and current_commit is not None:
             repo.git.reset('--hard', current_commit)

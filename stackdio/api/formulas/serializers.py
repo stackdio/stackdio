@@ -17,16 +17,15 @@
 
 
 import logging
-from urlparse import urlsplit, urlunsplit
 
 from rest_framework import serializers
+from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=import-error
 
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from stackdio.core.utils import recursively_sort_dict
 from . import models, tasks, validators
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +34,8 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
     # Non-model fields
     git_password = PasswordField(write_only=True, required=False,
                                  allow_blank=True, label='Git Password')
+
+    default_version = serializers.ReadOnlyField()
 
     # Link fields
     properties = serializers.HyperlinkedIdentityField(
@@ -62,6 +63,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
             'git_username',
             'git_password',
             'access_token',
+            'default_version',
             'root_path',
             'created',
             'modified',
@@ -128,7 +130,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
                 new_netloc,
                 parse_res.path,
                 parse_res.query,
-                parse_res.fragment
+                parse_res.fragment,
             ))
 
         if errors:
@@ -189,7 +191,7 @@ class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstra
             models.Formula.IMPORTING,
             'Importing formula...this could take a while.'
         )
-        tasks.update_formula.si(formula.id, git_password, formula.default_branch).apply_async()
+        tasks.update_formula.si(formula.id, git_password, formula.default_version).apply_async()
 
     def save(self, **kwargs):
         action = self.validated_data['action']

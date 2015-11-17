@@ -170,7 +170,8 @@ class ChangePasswordSerializerTestCase(StackdioTestCase):
 
         attrs = {
             'current_password': 'blah',
-            'new_password': 'blah',
+            'new_password1': 'blah',
+            'new_password2': 'blahg',
         }
 
         # Try with a bad password first
@@ -180,8 +181,18 @@ class ChangePasswordSerializerTestCase(StackdioTestCase):
         except ValidationError as e:
             self.assertIn('current_password', e.detail)
 
-        # Fix the password, now everything should validate correctly
+        # Fix the password
         attrs['current_password'] = '1234'
+
+        # Try with non-matching passwords
+        try:
+            serializer.validate(attrs)
+            raise AssertionError('`serializer.validate()` should have thrown a ValidationError')
+        except ValidationError as e:
+            self.assertIn('new_password2', e.detail)
+
+        # Fix the password, now everything should validate correctly
+        attrs['new_password2'] = 'blah'
 
         try:
             new_attrs = serializer.validate(attrs)
@@ -198,7 +209,8 @@ class ChangePasswordSerializerTestCase(StackdioTestCase):
 
         data = {
             'current_password': '1234',
-            'new_password': 'blah',
+            'new_password1': 'blah',
+            'new_password2': 'blah',
         }
 
         serializer = self.get_serializer(data=data)

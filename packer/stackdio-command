@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source /usr/share/stackdio/bin/activate
+
+/usr/share/stackdio/bin/stackdio "$@"
+
+deactivate

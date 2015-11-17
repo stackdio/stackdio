@@ -25,11 +25,13 @@ import sys
 import textwrap
 
 import jinja2
+import six
 import yaml
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
 
+raw_input = six.moves.input
 
 SALT_COLORS = get_colors()
 
@@ -357,7 +359,7 @@ class InitCommand(WizardCommand):
 
         for d in dirs:
             try:
-                os.makedirs(d, mode=0755)
+                os.makedirs(d, mode=0o0755)
             except OSError:
                 pass
 
@@ -484,7 +486,7 @@ class InitCommand(WizardCommand):
             engine.cursor()
         except KeyError:
             return False, 'Invalid DSN provided.\n'
-        except Exception, e:
+        except Exception as e:
             return False, '{0}\n'.format(str(e))
         return True, ''
 

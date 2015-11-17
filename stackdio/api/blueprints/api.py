@@ -33,6 +33,7 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
+from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from . import serializers, filters, models, permissions, mixins
 
@@ -58,6 +59,15 @@ class BlueprintListAPIView(generics.ListCreateAPIView):
         blueprint = serializer.save()
         for perm in models.Blueprint.object_permissions:
             assign_perm('blueprints.%s_blueprint' % perm, self.request.user, blueprint)
+
+        # Create all the formula versions
+        for formula in blueprint.get_formulas():
+            # Make sure the version doesn't already exist (could have been created in
+            # the serializer.save() call)
+            try:
+                blueprint.formula_versions.get(formula=formula)
+            except FormulaVersion.DoesNotExist:
+                blueprint.formula_versions.create(formula=formula, version=formula.default_version)
 
 
 class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
