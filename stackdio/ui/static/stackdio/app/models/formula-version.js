@@ -45,6 +45,8 @@ define([
     FormulaVersion.prototype._process = function (raw) {
         this.formula(raw.formula);
         this.version(raw.version);
+        // This is necessary because html ids can't contain slashes, colons, or periods.
+        // We use the formula URI as an html ID at points.
         this.formulaHtmlId(raw.formula.replace(/\//g, '-').replace(/:/g, '-').replace(/\./g, '-'));
     };
 
