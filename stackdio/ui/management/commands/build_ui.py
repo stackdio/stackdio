@@ -55,6 +55,10 @@ R_JS = os.path.join(
 
 BUILD_FILE = os.path.join(
     settings.BASE_DIR,
+    'stackdio',
+    'ui',
+    'management',
+    'build',
     'app.build.js',
 )
 

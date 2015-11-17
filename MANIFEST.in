@@ -6,6 +6,7 @@ include MANIFEST.in
 recursive-include stackdio/api/cloud/fixtures *.json
 recursive-include stackdio/core/templates *
 recursive-include stackdio/server/management *
+include stackdio/ui/management/build/app.build.js
 recursive-include stackdio/ui/templates *
 recursive-include stackdio/ui/static *
 recursive-exclude * *.py[co]
