@@ -22,6 +22,7 @@ import string
 
 import salt.cloud
 from django.conf import settings
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.compat import OrderedDict
 from rest_framework.exceptions import PermissionDenied
@@ -34,7 +35,7 @@ from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
 from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
-from stackdio.api.formulas.serializers import FormulaComponentSerializer
+from stackdio.api.formulas.serializers import FormulaComponentSerializer, FormulaVersionSerializer
 from . import models, tasks, utils, workflows
 
 logger = logging.getLogger(__name__)
@@ -461,6 +462,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
 class FullStackSerializer(StackSerializer):
     properties = StackPropertiesSerializer(required=False)
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
+    formula_versions = FormulaVersionSerializer(many=True, required=False)
 
     def to_representation(self, instance):
         """
@@ -469,8 +471,18 @@ class FullStackSerializer(StackSerializer):
         return StackSerializer(instance, context=self.context).to_representation(instance)
 
     def create(self, validated_data):
-        # Create the stack
-        stack = self.Meta.model.objects.create(**validated_data)
+        formula_versions = validated_data.pop('formula_versions', [])
+
+        with transaction.atomic(using=models.Stack.objects.db):
+            # Create the stack
+            stack = self.Meta.model.objects.create(**validated_data)
+
+            # Create the formula versions
+            formula_version_field = self.fields['formula_versions']
+            # Add in the stack to all the formula versions
+            for formula_version in formula_versions:
+                formula_version['content_object'] = stack
+            formula_version_field.create(formula_versions)
 
         # The stack was created, now let's launch it
         # We'll pass the initial_data in as the opts

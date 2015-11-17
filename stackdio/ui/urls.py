@@ -66,14 +66,19 @@ urlpatterns = (
         auth_reset_complete_kwargs,
         name='password_reset_complete'),
 
-    cached_url(r'^js/main/(?P<vm>[\w/.-]+)\.js$',
+    cached_url(r'^js/main.js$',
                views.AppMainView.as_view(),
                name='js-main',
                user_sensitive=False),
 
     cached_url('^user/$',
-               views.UserProfileView.as_view(),
+               users.UserProfileView.as_view(),
                name='user-profile',
+               timeout=10),
+
+    cached_url('^user/password/$',
+               users.UserPasswordChangeView.as_view(),
+               name='user-password-change',
                timeout=10),
 
     cached_url(r'^users/$',

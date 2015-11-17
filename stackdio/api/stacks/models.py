@@ -109,13 +109,6 @@ class StackQuerySet(models.QuerySet):
 
             stack.properties = properties
 
-            # Copy over the formula versions from the blueprint
-            for version in stack.blueprint.formula_versions.all():
-                stack.formula_versions.create(
-                    formula=version.formula,
-                    version=version.version,
-                )
-
             # Create the appropriate hosts & security group objects
             stack.create_security_groups()
             stack.create_hosts()

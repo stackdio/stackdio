@@ -14,7 +14,7 @@ init-hook="
 # Pickle collected data for later comparisons.
 persistent=no
 
-ignore=migrations
+ignore=migrations,bower_components
 
 #load-plugins=
 
@@ -63,7 +63,6 @@ disable=R,
   W0631,
   W0704,
   F0220,
-  F0401,
   E8121,
   E8122,
   E8123,
@@ -106,7 +105,6 @@ disable=R,
 # W0631 (undefined-loop-variable) [~3 instances, seem to be okay]
 # W0704 (pointless-except) [misnomer; "ignores the exception" rather than "pointless"]
 # F0220 (unresolved-interface)
-# F0401 (import-error)
 #
 # E812* All PEP8 E12*
 # E8265 PEP8 E265 - block comment should start with "# "

@@ -82,6 +82,10 @@ textarea {
     display: none;
 }
 
+.hidden-formula-versions {
+    display: none;
+}
+
 /*
 Bootstrap overrides
 */
