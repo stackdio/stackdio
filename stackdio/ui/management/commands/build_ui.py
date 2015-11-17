@@ -58,7 +58,7 @@ BUILD_FILE = os.path.join(
     'stackdio',
     'ui',
     'management',
-    'build',
+    'files',
     'app.build.js',
 )
 
