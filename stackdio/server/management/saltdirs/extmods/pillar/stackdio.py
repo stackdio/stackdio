@@ -50,7 +50,7 @@ def ext_pillar(pillar, *args, **kwargs):
         with open(__grains__['stack_pillar_file'], 'r') as f:  # NOQA
             d = yaml.safe_load(f)
             d['stack_pillar_available'] = True
-    except Exception, e:
+    except Exception as e:
         logger.exception(e)
         logger.critical('Unable to load/render stack_pillar_file. Is the YAML '
                         'properly formatted?')
