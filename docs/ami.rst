@@ -12,27 +12,33 @@ Building an AMI
 If you haven't already, install packer using their documentation `here <https://packer.io/docs/installation.html>`_.
 We recommend using homebrew for the installation if you're using OSX.
 
-You must also have `npm`_ and `bower`_ installed locally before you can build the AMI.
-``npm`` can almost always be installed with your favorite package manager, and ``bower`` is
-installed with the following command (after you install ``npm``):
+.. note::
 
-.. code:: bash
-
-    npm install -g bower
+    Before building with packer, you must accept the license agreement for the base Ubuntu AMI:
+    http://aws.amazon.com/marketplace/pp?sku=b3dl4415quatdndl4qa6kcu45
 
 
-First you must clone the github repository:
+First clone the github repository:
 
 .. code:: bash
 
     git clone https://github.com/stackdio/stackdio.git
     cd stackdio
 
-Then, run the packer build:
+
+Ensure packer knows about your aws credentials:
 
 .. code:: bash
 
-    ./packer/build.sh
+    export AWS_ACCESS_KEY='<YOUR_ACCESS_KEY>'
+    export AWS_SECRET_KEY='<YOUR_SECRET_KEY>'
+
+
+Finally, run the packer build, where ``<version>`` is the version you want to build:
+
+.. code:: bash
+
+    ./packer/build.py <version>
 
 
 After a few minutes, you should have a usable AMI.
