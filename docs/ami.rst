@@ -9,22 +9,35 @@ provide this AMI on the `AWS Marketplace`_, we don't have this set up yet.
 Building an AMI
 ---------------
 
+.. note::
+
+    The build script that runs packer requires you to have python installed locally.
+
+1. Install Packer
+~~~~~~~~~~~~~~~~~
+
 If you haven't already, install packer using their documentation `here <https://packer.io/docs/installation.html>`_.
 We recommend using homebrew for the installation if you're using OSX.
 
-.. note::
 
-    Before building with packer, you must accept the license agreement for the base Ubuntu AMI:
-    http://aws.amazon.com/marketplace/pp?sku=b3dl4415quatdndl4qa6kcu45
+2. Accept License
+~~~~~~~~~~~~~~~~~
+
+Before building with packer, you must accept the license agreement for the base Ubuntu AMI:
+http://aws.amazon.com/marketplace/pp?sku=b3dl4415quatdndl4qa6kcu45
 
 
-First clone the github repository:
+3. Clone Repository
+~~~~~~~~~~~~~~~~~~~
 
 .. code:: bash
 
     git clone https://github.com/stackdio/stackdio.git
     cd stackdio
 
+
+4. Export AWS Credentials
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Ensure packer knows about your aws credentials:
 
@@ -33,6 +46,9 @@ Ensure packer knows about your aws credentials:
     export AWS_ACCESS_KEY='<YOUR_ACCESS_KEY>'
     export AWS_SECRET_KEY='<YOUR_SECRET_KEY>'
 
+
+5. Run the packer build
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Finally, run the packer build, where ``<version>`` is the version you want to build:
 
