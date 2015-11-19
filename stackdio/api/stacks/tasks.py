@@ -66,7 +66,7 @@ def symlink(source, target):
     """
     Symlink the given source to the given target
     """
-    if os.path.isfile(target):
+    if os.path.islink(target):
         os.remove(target)
     os.symlink(source, target)
 
