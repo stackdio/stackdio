@@ -29,11 +29,13 @@ import salt.client
 import salt.cloud
 import salt.config as config
 import salt.key
+import salt.syspaths
 import salt.utils
 import salt.utils.cloud
 import six
 import yaml
 from django.conf import settings
+from msgpack.exceptions import ExtraData
 from salt.log.setup import LOG_LEVELS
 
 
@@ -43,6 +45,8 @@ root_logger = logging.getLogger()
 ERROR_REQUISITE = 'One or more requisite failed'
 
 COLOR_REGEX = re.compile(r'\[0;[\d]+m')
+
+SALT_CLOUD_CACHE_DIR = os.path.join(salt.syspaths.CACHE_DIR, 'cloud')
 
 
 class StackdioSaltCloudMap(salt.cloud.Map):
@@ -212,16 +216,18 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
             mapper.rendered_map = cloud_map
             dmap = mapper.map_data()
 
-            # Do the launch
-            ret = salt.utils.cloud.simple_types_filter(
-                mapper.run_map(dmap)
-            )
-
+            try:
+                # Do the launch
+                ret = mapper.run_map(dmap)
+            except ExtraData:
+                # Blow away the salt cloud cache and try again
+                os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                ret = mapper.run_map(dmap)
         finally:
             # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
             root_logger.removeHandler(handler)
 
-        return ret
+        return salt.utils.cloud.simple_types_filter(ret)
 
     def destroy_map(self, cloud_map, **kwargs):
         """
@@ -246,9 +252,14 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
 
         if names:
             logger.info(msg)
-            return salt.utils.cloud.simple_types_filter(
-                mapper.destroy(names)
-            )
+            try:
+                ret = mapper.destroy(names)
+            except ExtraData:
+                # Blow away the salt cloud cache and try again
+                os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                ret = mapper.destroy(names)
+
+            return salt.utils.cloud.simple_types_filter(ret)
         else:
             logger.info('There are no VMs to be destroyed.')
             return {}
