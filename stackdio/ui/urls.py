@@ -30,15 +30,18 @@ from .views import users
 
 auth_login_kwargs = {
     'template_name': 'stackdio/login.html',
+    'extra_context': {'hide_navbar': True},
 }
 
 auth_reset_confirm_kwargs = {
     'post_reset_redirect': 'ui:password_reset_complete',
     'template_name': 'stackdio/auth/password_reset_confirm.html',
+    'extra_context': {'hide_navbar': True},
 }
 
 auth_reset_complete_kwargs = {
     'template_name': 'stackdio/auth/password_reset_complete.html',
+    'extra_context': {'hide_navbar': True},
 }
 
 urlpatterns = (

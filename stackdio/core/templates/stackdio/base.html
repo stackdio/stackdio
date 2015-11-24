@@ -65,7 +65,7 @@
                 </div>
 
                 <div id="navbar" class="collapse navbar-collapse">
-                    {% if user.is_authenticated and user.password %}
+                    {% if user.is_authenticated and not hide_navbar %}
                     <ul class="nav navbar-nav navbar-right">
                         <li class="{% block stack-class %}{% endblock %}"><a href="{% url 'ui:stack-list' %}">Stacks</a></li>
                         <li class="{% block blueprint-class %}{% endblock %}"><a href="{% url 'ui:blueprint-list' %}">Blueprints</a></li>
