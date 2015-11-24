@@ -92,6 +92,7 @@ requirements = [
     'psutil>=2.1',
     'requests>=2.4',
     'salt>=2015.8.0,<2015.9,!=2015.8.1,!=2015.8.2',
+    'setuptools!=18.6',
     'six>=1.6',
 ]
 
