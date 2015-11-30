@@ -311,7 +311,11 @@ define([
                             action: action
                         })
                     }).done(function () {
-                        self.reload();
+                        if (self.parent && typeof self.parent.reload === 'function') {
+                            self.parent.reload();
+                        } else {
+                            self.reload();
+                        }
                     }).fail(function (jqxhr) {
                         var message;
                         try {
@@ -488,6 +492,9 @@ define([
                     }).done(function (stack) {
                         self.raw = stack;
                         self._process(stack);
+                        if (self.parent && typeof self.parent.reload === 'function') {
+                            self.parent.reload();
+                        }
                     }).fail(function (jqxhr) {
                         var message;
                         try {
