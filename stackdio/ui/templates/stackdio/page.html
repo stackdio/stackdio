@@ -19,6 +19,7 @@
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
         window.stackdio.advancedView = {{ user.settings.advanced_view | lower }};
 
+        // Throw these in here so we don't have to retrieve them via AJAX
         window.stackdio.permissionsMap = {};
         {% for obj in object_list %}
         window.stackdio.permissionsMap['{{ obj.id }}'] = {
