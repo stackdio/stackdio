@@ -24,6 +24,10 @@
                     <label>Namespace</label>
                     <p class="form-control-static" data-bind="text: stack.namespace"></p>
                 </div>
+                <div id="status" class="form-group">
+                    <label>Status</label>
+                    <p class="form-control-static"><span class="label" data-bind="css: stack.labelClass, text: stack.status"></span></p>
+                </div>
                 <div id="created" class="form-group">
                     <label>Launched</label>
                     <p class="form-control-static" data-bind="text: stack.created().calendar()"></p>

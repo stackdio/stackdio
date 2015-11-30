@@ -82,9 +82,10 @@ define([
 
         // Functions
         self.refreshStack = function () {
-            self.stack.loadHistory().fail(function () {
+            self.stack.reload().fail(function () {
                 window.location = '/stacks/';
             });
+            self.stack.loadHistory();
         };
 
         // React to an open-dropdown event & lazy load the actions
