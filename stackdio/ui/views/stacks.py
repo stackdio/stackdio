@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404
 
 from stackdio.api.stacks.models import Stack, StackCommand
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.utils import get_object_list
 
 
 class StackCreateView(PageView):
@@ -41,6 +42,7 @@ class StackListView(PageView):
         context = super(StackListView, self).get_context_data(**kwargs)
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack')
         context['has_create'] = self.request.user.has_perm('stacks.create_stack')
+        context['object_list'] = get_object_list(self.request.user, Stack)
         return context
 
 
@@ -63,6 +65,8 @@ class StackDetailView(PageView):
             raise Http404()
         context['stack_id'] = pk
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
+        context['has_delete'] = self.request.user.has_perm('stacks.delete_stack', stack)
+        context['has_update'] = self.request.user.has_perm('stacks.update_stack', stack)
         context['page_id'] = self.page_id
         return context
 

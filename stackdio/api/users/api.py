@@ -20,6 +20,7 @@ from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.models import Group
 from django_auth_ldap.backend import LDAPBackend
 from rest_framework import generics
+from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
 from stackdio.core.permissions import StackdioModelPermissions
@@ -37,6 +38,7 @@ class UserListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.PublicUserSerializer
     permission_classes = (StackdioModelPermissions,)
     lookup_field = 'username'
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.UserFilter
 
     def get_queryset(self):
@@ -79,6 +81,7 @@ class GroupListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.GroupSerializer
     permission_classes = (StackdioModelPermissions,)
     lookup_field = 'name'
+    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.GroupFilter
 
 
@@ -132,14 +135,14 @@ class GroupModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
 class GroupObjectUserPermissionsViewSet(mixins.GroupRelatedMixin,
                                         StackdioObjectUserPermissionsViewSet):
     permission_classes = (permissions.GroupPermissionsObjectPermissions,)
-    object_permissions = ('update', 'delete', 'admin')
+    object_permissions = ('update', 'delete', 'admin', 'view')
     parent_lookup_field = 'name'
 
 
 class GroupObjectGroupPermissionsViewSet(mixins.GroupRelatedMixin,
                                          StackdioObjectGroupPermissionsViewSet):
     permission_classes = (permissions.GroupPermissionsObjectPermissions,)
-    object_permissions = ('update', 'delete', 'admin')
+    object_permissions = ('update', 'delete', 'admin', 'view')
     parent_lookup_field = 'name'
 
 

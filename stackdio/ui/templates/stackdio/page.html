@@ -18,6 +18,14 @@
     <script type="text/javascript">
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
         window.stackdio.advancedView = {{ user.settings.advanced_view | lower }};
+
+        window.stackdio.permissionsMap = {};
+        {% for obj in object_list %}
+        window.stackdio.permissionsMap['{{ obj.id }}'] = {
+            'delete': {{ obj.can_delete | lower }},
+            'update': {{ obj.can_update | lower }}
+        };
+        {% endfor %}
     </script>
 {% endblock %}
 

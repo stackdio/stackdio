@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404
 
 from stackdio.api.formulas.models import Formula
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.utils import get_object_list
 
 
 class FormulaImportView(PageView):
@@ -41,6 +42,7 @@ class FormulaListView(PageView):
         context = super(FormulaListView, self).get_context_data(**kwargs)
         context['has_admin'] = self.request.user.has_perm('formulas.admin_formula')
         context['has_create'] = self.request.user.has_perm('formulas.create_formula')
+        context['object_list'] = get_object_list(self.request.user, Formula)
         return context
 
 
@@ -64,6 +66,8 @@ class FormulaDetailView(PageView):
             raise Http404()
         context['formula_id'] = pk
         context['has_admin'] = self.request.user.has_perm('formulas.admin_formula', formula)
+        context['has_delete'] = self.request.user.has_perm('formulas.delete_formula', formula)
+        context['has_update'] = self.request.user.has_perm('formulas.update_formula', formula)
         context['page_id'] = self.page_id
         return context
 

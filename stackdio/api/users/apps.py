@@ -28,8 +28,8 @@ from django.utils.translation import ugettext_lazy as _
 logger = logging.getLogger(__name__)
 
 
-EXTRA_USER_PERMS = ('admin', 'create')
-EXTRA_GROUP_PERMS = ('admin', 'create', 'update')
+EXTRA_USER_PERMS = ('admin', 'create', 'view')
+EXTRA_GROUP_PERMS = ('admin', 'create', 'update', 'view')
 
 
 def create_extra_permissions(app_config, verbosity=2, interactive=True,

@@ -44,12 +44,16 @@
                 </div>
 
                 <div class="form-group" style="margin-top: 15px">
+                    {% if has_update %}
                     <button type="submit" class="btn btn-primary">Save</button>
+                    {% endif %}
 
+                    {% if has_delete %}
                     <button class="btn btn-danger" data-bind="click: function () { image.delete() }">
                         Delete
                         <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                     </button>
+                    {% endif %}
                 </div>
             </div>
             <div class="col-md-6">

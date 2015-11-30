@@ -45,6 +45,8 @@ define([
         sortKey: ko.observable(),
         sortAsc: ko.observable(true),
 
+        permissionsMap: window.stackdio.permissionsMap,
+
         // Computed observables, to be created in init()
         sortedObjects: null,
         startNum: null,
