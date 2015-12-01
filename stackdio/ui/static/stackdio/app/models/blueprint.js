@@ -202,7 +202,6 @@ define([
                     }).fail(function (jqxhr) {
                         var message;
                         try {
-                            console.log(jqxhr.responseText);
                             var resp = JSON.parse(jqxhr.responseText);
                             message = resp.detail.join('<br>');
                             if (Object.keys(resp).indexOf('stacks') >= 0) {
