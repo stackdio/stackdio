@@ -76,7 +76,7 @@ class APIRootView(APIView):
 
 @api_view(APIView.http_method_names)
 def api_not_found_view(request, *args, **kwargs):
-    return Response({'detail': 'Not Found'}, status=status.HTTP_404_NOT_FOUND)
+    return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
 def api_not_found(request, *args, **kwargs):
