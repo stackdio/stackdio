@@ -15,8 +15,10 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 from django.conf.urls import include, url
+from django.http import Http404
 
 from rest_framework.compat import OrderedDict
 from rest_framework.response import Response
@@ -70,6 +72,30 @@ class APIRootView(APIView):
         return Response(api)
 
 
+class APINotFoundView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        raise Http404
+
+    def post(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def head(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def trace(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+
 urlpatterns = (
     url(r'^$', APIRootView.as_view(), name='root'),
 
@@ -83,6 +109,7 @@ urlpatterns = (
     url(r'^', include('stackdio.api.stacks.urls', namespace='stacks')),
     url(r'^', include('stackdio.api.volumes.urls', namespace='volumes')),
     url(r'^', include('stackdio.api.search.urls', namespace='search')),
+    url(r'^.*$', APINotFoundView.as_view(), name='404'),
 )
 
 # Format suffixes - this only should go on API endpoints, not everything!
