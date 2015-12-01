@@ -82,9 +82,9 @@ class BlueprintDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         stacks = [s.title for s in instance.stacks.all()]
         if stacks:
             raise ValidationError({
-                'detail': 'This blueprint is in use by one or more '
-                          'stacks and cannot be removed.',
-                'stacks': stacks
+                'detail': ['This blueprint is in use by one or more '
+                           'stacks and cannot be removed.'],
+                'stacks': stacks,
             })
 
         # The blueprint isn't being used, so delete it

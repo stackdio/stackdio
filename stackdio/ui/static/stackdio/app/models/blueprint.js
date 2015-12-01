@@ -202,8 +202,12 @@ define([
                     }).fail(function (jqxhr) {
                         var message;
                         try {
+                            console.log(jqxhr.responseText);
                             var resp = JSON.parse(jqxhr.responseText);
                             message = resp.detail.join('<br>');
+                            if (Object.keys(resp).indexOf('stacks') >= 0) {
+                                message += '<br><br>Stacks:<ul><li>' + resp.stacks.join('</li><li>') + '</li></ul>';
+                            }
                         } catch (e) {
                             message = 'Oops... there was a server error.  This has been reported ' +
                                 'to your administrators.';
