@@ -17,11 +17,12 @@
 
 
 from django.conf.urls import include, url
+from django.contrib import admin
+
+from stackdio.api.urls import api_not_found
 
 # Enable admin interface
-from django.contrib import admin
 admin.autodiscover()
-
 
 urlpatterns = (
     # Admin interface
@@ -40,3 +41,6 @@ urlpatterns = (
     # in the browsable api.
     url(r'^api/', include('rest_framework.urls', namespace='rest_framework'))
 )
+
+# Override the default 404 handler
+handler404 = api_not_found

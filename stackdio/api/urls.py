@@ -18,9 +18,11 @@
 from __future__ import unicode_literals
 
 from django.conf.urls import include, url
-from django.http import Http404
+from django.views.defaults import page_not_found
 
+from rest_framework import status
 from rest_framework.compat import OrderedDict
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.urlpatterns import format_suffix_patterns
@@ -72,28 +74,19 @@ class APIRootView(APIView):
         return Response(api)
 
 
-class APINotFoundView(APIView):
+@api_view(APIView.http_method_names)
+def api_not_found_view(request, *args, **kwargs):
+    return Response({'detail': 'Not Found'}, status=status.HTTP_404_NOT_FOUND)
 
-    def get(self, request, *args, **kwargs):
-        raise Http404
 
-    def post(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
-
-    def put(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
-
-    def patch(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
-
-    def head(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
-
-    def trace(self, request, *args, **kwargs):
-        return self.get(request, *args, **kwargs)
+def api_not_found(request, *args, **kwargs):
+    if request.path.startswith('/api'):
+        ret = api_not_found_view(request, *args, **kwargs)
+        ret.render()
+        return ret
+    else:
+        # Just use the default one
+        return page_not_found(request, *args, **kwargs)
 
 
 urlpatterns = (
@@ -109,7 +102,6 @@ urlpatterns = (
     url(r'^', include('stackdio.api.stacks.urls', namespace='stacks')),
     url(r'^', include('stackdio.api.volumes.urls', namespace='volumes')),
     url(r'^', include('stackdio.api.search.urls', namespace='search')),
-    url(r'^.*$', APINotFoundView.as_view(), name='404'),
 )
 
 # Format suffixes - this only should go on API endpoints, not everything!
