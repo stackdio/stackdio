@@ -64,7 +64,7 @@ class SnapshotDetailView(PageView):
         snapshot = get_object_or_404(Snapshot.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.view_snapshot', snapshot):
             raise Http404()
-        context['snapshot_id'] = pk
+        context['snapshot'] = snapshot
         context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot', snapshot)
         context['has_delete'] = self.request.user.has_perm('cloud.delete_snapshot', snapshot)
         context['has_update'] = self.request.user.has_perm('cloud.update_snapshot', snapshot)
@@ -85,7 +85,7 @@ class SnapshotObjectPermissionsView(ObjectPermissionsView):
         snapshot = get_object_or_404(Snapshot.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.admin_snapshot', snapshot):
             raise Http404()
-        context['snapshot_id'] = pk
+        context['snapshot'] = snapshot
         context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot', snapshot)
         context['page_id'] = self.page_id
         return context
