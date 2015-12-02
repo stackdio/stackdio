@@ -79,6 +79,8 @@ def api_not_found_view(request, *args, **kwargs):
     return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
+# This is our custom 404 handler so that 404 requests to /api endpoints return JSON instead
+# of the default 404 page
 def api_not_found(request, *args, **kwargs):
     if request.path.startswith('/api'):
         ret = api_not_found_view(request, *args, **kwargs)
@@ -98,10 +100,10 @@ urlpatterns = (
     url(r'^', include('stackdio.api.users.urls', namespace='users')),
     url(r'^cloud/', include('stackdio.api.cloud.urls', namespace='cloud')),
     url(r'^blueprints/', include('stackdio.api.blueprints.urls', namespace='blueprints')),
-    url(r'^', include('stackdio.api.formulas.urls', namespace='formulas')),
+    url(r'^formulas/', include('stackdio.api.formulas.urls', namespace='formulas')),
     url(r'^', include('stackdio.api.stacks.urls', namespace='stacks')),
-    url(r'^', include('stackdio.api.volumes.urls', namespace='volumes')),
-    url(r'^', include('stackdio.api.search.urls', namespace='search')),
+    url(r'^volumes/', include('stackdio.api.volumes.urls', namespace='volumes')),
+    url(r'^search/', include('stackdio.api.search.urls', namespace='search')),
 )
 
 # Format suffixes - this only should go on API endpoints, not everything!
