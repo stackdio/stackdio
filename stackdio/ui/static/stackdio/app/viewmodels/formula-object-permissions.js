@@ -34,7 +34,7 @@ define([
                 },
                 {
                     active: false,
-                    title: 'Formula Detail',
+                    title: window.stackdio.formulaTitle,
                     href: this.saveUrl
                 },
                 {

@@ -64,7 +64,7 @@ class FormulaDetailView(PageView):
         formula = get_object_or_404(Formula.objects.all(), pk=pk)
         if not self.request.user.has_perm('formulas.view_formula', formula):
             raise Http404()
-        context['formula_id'] = pk
+        context['formula'] = formula
         context['has_admin'] = self.request.user.has_perm('formulas.admin_formula', formula)
         context['has_delete'] = self.request.user.has_perm('formulas.delete_formula', formula)
         context['has_update'] = self.request.user.has_perm('formulas.update_formula', formula)
@@ -85,7 +85,7 @@ class FormulaObjectPermissionsView(ObjectPermissionsView):
         formula = get_object_or_404(Formula.objects.all(), pk=pk)
         if not self.request.user.has_perm('formulas.admin_formula', formula):
             raise Http404()
-        context['formula_id'] = pk
+        context['formula'] = formula
         context['has_admin'] = self.request.user.has_perm('formulas.admin_formula', formula)
         context['page_id'] = self.page_id
         return context

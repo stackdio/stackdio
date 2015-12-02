@@ -26,7 +26,17 @@ define([
     'use strict';
 
     return Pagination.extend({
-        breadcrumbs: [],
+        breadcrumbs: [
+            {
+                active: false,
+                title: 'Formulas',
+                href: '/formulas/'
+            },
+            {
+                active: true,
+                title: window.stackdio.formulaTitle
+            }
+        ],
         model: Component,
         baseUrl: '/formulas/' + window.stackdio.formulaId + '/',
         initialUrl: '/api/formulas/' + window.stackdio.formulaId + '/components/',
@@ -37,29 +47,14 @@ define([
         ],
         autoRefresh: false,
         formula: null,
-        formulaTitle: ko.observable(''),
         formulaUrl: ko.observable(''),
         init: function () {
             this._super();
             var self = this;
-            this.breadcrumbs = [
-                {
-                    active: false,
-                    title: 'Formulas',
-                    href: '/formulas/'
-                },
-                ko.observable({
-                    active: true,
-                    title: ko.computed(function() {
-                        return self.formulaTitle()
-                    })
-                })
-            ];
 
             this.formula = new Formula(window.stackdio.formulaId, this);
             this.formula.waiting.done(function () {
                 document.title = 'stackd.io | Formula Detail - ' + self.formula.title();
-                self.formulaTitle(self.formula.title());
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/formulas/';

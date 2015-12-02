@@ -34,12 +34,12 @@ define([
             },
             {
                 active: false,
-                title: 'Formula Detail',
+                title: window.stackdio.formulaTitle,
                 href: '/formulas/' + window.stackdio.formulaId + '/'
             },
             {
                 active: true,
-                title: 'Formula Properties'
+                title: 'Default Properties'
             }
         ];
 
