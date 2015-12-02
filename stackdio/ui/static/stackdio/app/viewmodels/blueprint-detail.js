@@ -36,10 +36,10 @@ define([
                 title: 'Blueprints',
                 href: '/blueprints/'
             },
-            ko.observable({
+            {
                 active: true,
                 title: window.stackdio.blueprintTitle
-            })
+            }
         ];
 
         self.subscription = null;

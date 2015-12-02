@@ -34,7 +34,7 @@ define([
                 },
                 {
                     active: false,
-                    title: 'Cloud Account Detail',
+                    title: window.stackdio.accountTitle,
                     href: this.saveUrl
                 },
                 {
