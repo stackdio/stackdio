@@ -116,7 +116,7 @@ class GroupDetailView(PageView):
         group = get_object_or_404(Group.objects.all(), name=name)
         if not self.request.user.has_perm('auth.view_group', group):
             raise Http404()
-        context['group_name'] = name
+        context['group'] = group
         context['has_admin'] = self.request.user.has_perm('auth.admin_group', group)
         context['has_delete'] = self.request.user.has_perm('auth.delete_group', group)
         context['has_update'] = self.request.user.has_perm('auth.update_group', group)
@@ -136,7 +136,7 @@ class GroupObjectPermissionsView(ObjectPermissionsView):
         group = get_object_or_404(Group.objects.all(), name=name)
         if not self.request.user.has_perm('auth.admin_group', group):
             raise Http404()
-        context['group_name'] = name
+        context['group'] = group
         context['object_id'] = name
         context['has_admin'] = self.request.user.has_perm('auth.admin_group', group)
         context['page_id'] = self.page_id
