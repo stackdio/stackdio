@@ -211,18 +211,23 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
             date_format=opts['log_datefmt_logfile'],
         )
 
+        ret = None
+
         try:
             mapper = StackdioSaltCloudMap(opts)
             mapper.rendered_map = cloud_map
             dmap = mapper.map_data()
 
-            try:
-                # Do the launch
-                ret = mapper.run_map(dmap)
-            except ExtraData:
-                # Blow away the salt cloud cache and try again
-                os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                ret = mapper.run_map(dmap)
+            launched = False
+            while not launched:
+                try:
+                    # Do the launch
+                    ret = mapper.run_map(dmap)
+                    # It worked
+                    launched = True
+                except ExtraData:
+                    # Blow away the salt cloud cache and try again
+                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
         finally:
             # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
             root_logger.removeHandler(handler)
@@ -252,12 +257,18 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
 
         if names:
             logger.info(msg)
-            try:
-                ret = mapper.destroy(names)
-            except ExtraData:
-                # Blow away the salt cloud cache and try again
-                os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                ret = mapper.destroy(names)
+
+            ret = None
+
+            destroyed = False
+            while not destroyed:
+                try:
+                    ret = mapper.destroy(names)
+                    # It worked
+                    destroyed = True
+                except ExtraData:
+                    # Blow away the salt cloud cache and try again
+                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
 
             return salt.utils.cloud.simple_types_filter(ret)
         else:
