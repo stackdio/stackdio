@@ -53,7 +53,7 @@ class BlueprintDetailView(PageView):
         blueprint = get_object_or_404(Blueprint.objects.all(), pk=pk)
         if not self.request.user.has_perm('blueprints.view_blueprint', blueprint):
             raise Http404()
-        context['blueprint_id'] = pk
+        context['blueprint'] = blueprint
         context['has_admin'] = self.request.user.has_perm('blueprints.admin_blueprint', blueprint)
         context['has_delete'] = self.request.user.has_perm('blueprints.delete_blueprint', blueprint)
         context['has_update'] = self.request.user.has_perm('blueprints.update_blueprint', blueprint)
@@ -74,7 +74,7 @@ class BlueprintObjectPermissionsView(ObjectPermissionsView):
         blueprint = get_object_or_404(Blueprint.objects.all(), pk=pk)
         if not self.request.user.has_perm('blueprints.admin_blueprint', blueprint):
             raise Http404()
-        context['blueprint_id'] = pk
+        context['blueprint'] = blueprint
         context['has_admin'] = self.request.user.has_perm('blueprints.admin_blueprint', blueprint)
         context['page_id'] = self.page_id
         return context
