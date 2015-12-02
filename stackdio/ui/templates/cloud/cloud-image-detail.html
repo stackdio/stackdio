@@ -5,8 +5,9 @@
     {{ block.super }}
     <script type="text/javascript">
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
-        window.stackdio.accountId = {{ account_id }};
-        window.stackdio.providerName = '{{ provider_name }}';
+        window.stackdio.accountId = {{ image.account.id }};
+        window.stackdio.accountTitle = '{{ image.account.title }}';
+        window.stackdio.providerName = '{{ image.account.provider.name }}';
     </script>
 {% endblock %}
 

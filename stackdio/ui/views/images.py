@@ -64,9 +64,7 @@ class ImageDetailView(PageView):
         image = get_object_or_404(CloudImage.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.view_cloudimage', image):
             raise Http404()
-        context['image_id'] = pk
-        context['account_id'] = image.account.id
-        context['provider_name'] = image.account.provider.name
+        context['image'] = image
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudimage', image)
         context['has_delete'] = self.request.user.has_perm('cloud.delete_cloudimage', image)
         context['has_update'] = self.request.user.has_perm('cloud.update_cloudimage', image)
@@ -87,7 +85,7 @@ class ImageObjectPermissionsView(ObjectPermissionsView):
         image = get_object_or_404(CloudImage.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.admin_cloudimage', image):
             raise Http404()
-        context['image_id'] = pk
+        context['image'] = image
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudimage', image)
         context['page_id'] = self.page_id
         return context

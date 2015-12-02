@@ -8,7 +8,8 @@
     {{ block.super }}
     <script type="text/javascript">
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
-        window.stackdio.imageId = {{ image_id }};
+        window.stackdio.imageId = {{ image.id }};
+        window.stackdio.imageTitle = '{{ image.title }}';
     </script>
 {% endblock %}
 
@@ -18,11 +19,11 @@
         <div class="col-sm-3 col-sm-push-9">
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:cloud-image-detail' pk=image_id %}">Detail</a>
+                    <a href="{% url 'ui:cloud-image-detail' pk=image.id %}">Detail</a>
                 </li>
                 {% if has_admin %}
                 <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:cloud-image-object-permissions' pk=image_id %}">Permissions</a>
+                    <a href="{% url 'ui:cloud-image-object-permissions' pk=image.id %}">Permissions</a>
                 </li>
                 {% endif %}
             </ul>
