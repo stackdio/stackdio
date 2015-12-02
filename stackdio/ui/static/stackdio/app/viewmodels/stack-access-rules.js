@@ -34,12 +34,12 @@ define([
             },
             {
                 active: false,
-                title: 'Stack Detail',
+                title: window.stackdio.stackTitle,
                 href: '/stacks/' + window.stackdio.stackId + '/'
             },
             {
                 active: true,
-                title: 'Stack Access Rules'
+                title: 'Access Rules'
             }
         ],
         stack: ko.observable(),

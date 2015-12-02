@@ -63,7 +63,7 @@ class StackDetailView(PageView):
         stack = get_object_or_404(Stack.objects.all(), pk=pk)
         if not self.request.user.has_perm('stacks.view_stack', stack):
             raise Http404()
-        context['stack_id'] = pk
+        context['stack'] = stack
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
         context['has_delete'] = self.request.user.has_perm('stacks.delete_stack', stack)
         context['has_update'] = self.request.user.has_perm('stacks.update_stack', stack)
@@ -83,7 +83,7 @@ class StackObjectPermissionsView(ObjectPermissionsView):
         stack = get_object_or_404(Stack.objects.all(), pk=pk)
         if not self.request.user.has_perm('stacks.admin_stack', stack):
             raise Http404()
-        context['stack_id'] = pk
+        context['stack'] = stack
         context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
         context['page_id'] = self.page_id
         return context
