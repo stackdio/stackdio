@@ -49,7 +49,7 @@ define([
                 delay: 100,
                 data: function (params) {
                     return {
-                        title: params.term
+                        q: params.term
                     };
                 },
                 processResults: function (data) {
