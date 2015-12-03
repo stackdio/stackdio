@@ -18,12 +18,15 @@
 
 import django_filters
 
+from stackdio.core.filters import OrFieldsFilter
 from . import models
 
 
 class FormulaFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
     component = django_filters.CharFilter(name='components__sls_path')
+    q = OrFieldsFilter(field_names=('title', 'description', 'uri', 'root_path'),
+                       lookup_type='icontains')
 
     class Meta:
         model = models.Formula
@@ -32,4 +35,5 @@ class FormulaFilter(django_filters.FilterSet):
             'uri',
             'root_path',
             'component',
+            'q',
         )

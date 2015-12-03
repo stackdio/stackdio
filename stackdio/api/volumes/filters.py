@@ -18,14 +18,18 @@
 
 import django_filters
 
+from stackdio.core.filters import OrFieldsFilter
 from . import models
 
 
 class VolumeFilter(django_filters.FilterSet):
     stack = django_filters.CharFilter(name='stack__title', lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('stack__title', 'hostname', 'snapshot__title'),
+                       lookup_type='icontains')
 
     class Meta:
         model = models.Volume
         fields = (
             'stack',
+            'q',
         )

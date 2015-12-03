@@ -111,17 +111,10 @@ define([
                    'You can get it all back by later running the "launch" action on this stack.'
     };
 
-    Stack.prototype._process = function (raw) {
-        this.title(raw.title);
-        this.description(raw.description);
-        this.createUsers(raw.create_users);
-        this.status(raw.status);
-        this.hostCount(raw.host_count);
-        this.namespace(raw.namespace);
-        this.created(moment(raw.created));
-
+    Stack.prototype._processStatus = function (status) {
+        this.status(status);
         // Determine what type of label should be around the status
-        switch (raw.status) {
+        switch (status) {
             case 'finished':
             case 'ok':
                 this.labelClass('label-success');
@@ -150,6 +143,16 @@ define([
         }
     };
 
+    Stack.prototype._process = function (raw) {
+        this.title(raw.title);
+        this.description(raw.description);
+        this.createUsers(raw.create_users);
+        this.hostCount(raw.host_count);
+        this.namespace(raw.namespace);
+        this.created(moment(raw.created));
+        this._processStatus(raw.status);
+    };
+
     // Reload the current stack
     Stack.prototype.reload = function () {
         var self = this;
@@ -159,6 +162,18 @@ define([
         }).done(function (stack) {
             self.raw = stack;
             self._process(stack);
+        });
+    };
+
+    // Reload the current stack
+    Stack.prototype.refreshStatus = function () {
+        var self = this;
+        return $.ajax({
+            method: 'GET',
+            url: self.raw.url
+        }).done(function (stack) {
+            self.raw = stack;
+            self._processStatus(stack.status);
         });
     };
 

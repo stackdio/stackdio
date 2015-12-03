@@ -71,7 +71,7 @@ define([
 
         // Functions
         self.refreshStack = function () {
-            self.stack.reload().fail(function () {
+            self.stack.refreshStatus().fail(function () {
                 window.location = '/stacks/';
             });
             self.stack.loadHistory();

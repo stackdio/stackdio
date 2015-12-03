@@ -68,7 +68,7 @@ define([
             $searchBar.search();
 
             $searchBar.on('searched.fu.search', function () {
-                self.currentPage(self.initialUrl + '?title=' + self.searchInput.val());
+                self.currentPage(self.initialUrl + '?q=' + self.searchInput.val());
                 self.shouldReset = false;
                 self.reset();
             });
