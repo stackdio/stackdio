@@ -417,8 +417,8 @@ def process_orchestrate_result(result, stack, log_file, err_file):
     for sls, sls_result in sorted(result.items(), key=lambda x: x[1]['__run_num__']):
         sls_dict = state_to_dict(sls)
 
-        logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'],
-                                                                stack.title))
+        logger.info('Processing stage {0} for stack {1}\n'.format(sls_dict['name'],
+                                                                  stack.title))
 
         with open(err_file, 'a') as f:
             if 'changes' in sls_result and 'ret' in sls_result['changes']:
@@ -434,7 +434,7 @@ def process_orchestrate_result(result, stack, log_file, err_file):
                 ))
             else:
                 f.write(
-                    'Stage {0} appears to have no changes, but it failed.  See below.\n\n'.format(
+                    'Stage {0} appears to have no changes, but it failed.  See below.\n'.format(
                         sls_dict['name']
                     )
                 )
@@ -447,9 +447,9 @@ def process_orchestrate_result(result, stack, log_file, err_file):
         with open(err_file, 'a') as f:
             comment = sls_result['comment']
             if isinstance(comment, six.string_types):
-                f.write(COLOR_REGEX.sub('', comment))
+                f.write('{0}\n\n'.format(COLOR_REGEX.sub('', comment)))
             else:
-                f.write(yaml.safe_dump(comment))
+                f.write('{0}\n\n'.format(yaml.safe_dump(comment)))
         local_failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
 
         if local_failed:
