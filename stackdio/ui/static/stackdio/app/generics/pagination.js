@@ -135,7 +135,7 @@ define([
             }, this);
 
             if (this.autoRefresh) {
-                setInterval((function (self) {
+                this.intervalId = setInterval((function (self) {
                     return function() {
                         self.reload();
                     }
@@ -237,9 +237,14 @@ define([
                 }));
 
                 self.extraReloadSteps();
-            }).fail(function () {
-                // If we get a 404 or something, reset EVERYTHING.
-                self.reset();
+            }).fail(function (jqxhr) {
+                if (jqxhr.status == 403) {
+                    // On 403, we should reload, which SHOULD redirect to the login page
+                    window.location.reload(true);
+                } else {
+                    // If we get a 404 or something else, reset EVERYTHING.
+                    self.reset();
+                }
             }).always(function () {
                 self.loading(false);
             });
