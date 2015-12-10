@@ -77,7 +77,11 @@ define([
                         logDiv.scrollTop = logDiv.scrollHeight - 498;
                     }
                 }).fail(function (jqxhr) {
-                    utils.growlAlert('Failed to load log', 'danger');
+                    if (jqxhr.status == 403) {
+                        window.location.reload(true);
+                    } else {
+                        utils.growlAlert('Failed to load log', 'danger');
+                    }
                 });
             }
         };

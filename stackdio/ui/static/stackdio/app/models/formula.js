@@ -119,6 +119,10 @@ define([
         }).done(function (formula) {
             self.raw = formula;
             self._process(formula);
+        }).fail(function (jqxhr) {
+            if (jqxhr.status == 403) {
+                window.location.reload(true);
+            }
         });
     };
 

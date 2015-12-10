@@ -162,6 +162,10 @@ define([
         }).done(function (stack) {
             self.raw = stack;
             self._process(stack);
+        }).fail(function (jqxhr) {
+            if (jqxhr.status == 403) {
+                window.location.reload(true);
+            }
         });
     };
 
@@ -174,6 +178,10 @@ define([
         }).done(function (stack) {
             self.raw = stack;
             self._processStatus(stack.status);
+        }).fail(function (jqxhr) {
+            if (jqxhr.status == 403) {
+                window.location.reload(true);
+            }
         });
     };
 
