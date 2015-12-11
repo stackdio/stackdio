@@ -176,8 +176,17 @@ define([
         };
 
         self.createSelectors = function () {
+            var markForRemoval = [];
             self.formulaVersions().forEach(function (version) {
-                versionUtils.createVersionSelector(version, self.formulas);
+                if (!versionUtils.createVersionSelector(version, self.formulas)) {
+                    // We don't have permission, add it to the removal list
+                    markForRemoval.push(version);
+                }
+            });
+
+            // Get rid of ones we don't have permission to see
+            markForRemoval.forEach(function (version) {
+                self.formulaVersions.remove(version);
             });
         };
 

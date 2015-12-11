@@ -53,8 +53,8 @@ define([
             }
 
             if (!validVersionsUrl) {
-                console.warn('Formula ' + version.formula() + ' not found...');
-                return;
+                // The user probably doesn't have permission to view this formula
+                return false;
             }
 
             var $el = $('#' + version.formulaHtmlId());
@@ -105,6 +105,8 @@ define([
                 var selectedVersion = ev.params.data;
                 version.version(selectedVersion.version);
             });
+
+            return true;
         }
     };
 });
