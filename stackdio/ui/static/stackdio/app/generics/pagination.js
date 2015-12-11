@@ -18,7 +18,8 @@
 define([
     'jquery',
     'knockout',
-    'utils/class'
+    'utils/class',
+    'fuelux'
 ], function ($, ko, Class) {
     'use strict';
     
