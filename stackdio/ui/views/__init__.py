@@ -18,10 +18,11 @@
 
 import logging
 
-from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import resolve_url
 from django.views.generic import TemplateView
+
+from stackdio.api.cloud.models import CloudAccount
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +42,18 @@ class StackdioView(TemplateView):
 class RootView(StackdioView):
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():
-            return HttpResponseRedirect('/stacks/')
+            has_account_perm = request.user.has_perm('cloud.create_cloudaccount')
+
+            if has_account_perm and CloudAccount.objects.count() == 0:
+                # if the user has permission to create an account and there aren't any yet,
+                # take them there
+                redirect_view = 'ui:cloud-account-list'
+            else:
+                # Otherwise just go to stacks
+                redirect_view = 'ui:stack-list'
+            return HttpResponseRedirect(resolve_url(redirect_view))
         else:
-            redirect_url = resolve_url('ui:login')
-            if request.path != '/':
-                redirect_url = '{0}?next={1}'.format(redirect_url, request.path)
-            return HttpResponseRedirect(redirect_url)
+            return super(RootView, self).get(request, *args, **kwargs)
 
 
 class AppMainView(TemplateView):
