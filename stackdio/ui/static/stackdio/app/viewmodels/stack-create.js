@@ -22,6 +22,7 @@ define([
     'bootbox',
     'utils/formula-versions',
     'models/formula-version',
+    'fuelux',
     'select2'
 ], function ($, ko, Ladda, bootbox, versionUtils, FormulaVersion) {
     'use strict';
@@ -130,6 +131,7 @@ define([
         self.properties = ko.observable({});
         self.formulaVersions = ko.observableArray([]);
         self.formulas = null;
+        self.versionsReady = ko.observable();
 
         self.validProperties = true;
         self.createButton = null;
@@ -173,6 +175,7 @@ define([
             self.namespace('');
             self.properties({});
             self.formulaVersions([]);
+            self.versionsReady(false);
         };
 
         self.createSelectors = function () {
@@ -188,6 +191,8 @@ define([
             markForRemoval.forEach(function (version) {
                 self.formulaVersions.remove(version);
             });
+
+            self.versionsReady(true);
         };
 
         self.removeErrors = function(keys) {

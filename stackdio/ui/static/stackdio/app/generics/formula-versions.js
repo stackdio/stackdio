@@ -35,6 +35,7 @@ define([
         model: FormulaVersion,
         baseUrl: null,
         initialUrl: null,
+        versionsReady: ko.observable(false),
         sortableFields: [
             {name: 'formula', displayName: 'Formula', width: '60%'},
             {name: 'version', displayName: 'Version', width: '40%'}
@@ -57,6 +58,8 @@ define([
             markForRemoval.forEach(function (version) {
                 self.objects.remove(version);
             });
+
+            this.versionsReady(true);
         },
         extraReloadSteps: function () {
             if (this.formulas) {

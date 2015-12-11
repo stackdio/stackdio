@@ -21,7 +21,7 @@
                     </thead>
                     <tbody>
                     <!-- ko foreach: sortedObjects -->
-                    <tr class="stackdio-hidden-on-load">
+                    <tr class="stackdio-hidden-on-load" data-bind="visible: $root.versionsReady">
                         <td data-bind="text: formula"></td>
                         <td>
                             <select style="width: 100%" class="hidden-formula-versions" data-bind="attr: {id: formulaHtmlId}"></select>
