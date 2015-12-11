@@ -35,7 +35,7 @@ define([
         model: FormulaVersion,
         baseUrl: null,
         initialUrl: null,
-        versionsReady: ko.observable(false),
+        versionsReady: ko.observable(!window.stackdio.hasUpdatePerm),
         sortableFields: [
             {name: 'formula', displayName: 'Formula', width: '60%'},
             {name: 'version', displayName: 'Version', width: '40%'}
@@ -62,15 +62,17 @@ define([
             this.versionsReady(true);
         },
         extraReloadSteps: function () {
-            if (this.formulas) {
-                this.createSelectors();
-            } else {
-                // We don't have the formulas yet, we need to grab them
-                var self = this;
-                versionUtils.getAllFormulas(function (formulas) {
-                    self.formulas = formulas;
-                    self.createSelectors();
-                });
+            if (window.stackdio.hasUpdatePerm) {
+                if (this.formulas) {
+                    this.createSelectors();
+                } else {
+                    // We don't have the formulas yet, we need to grab them
+                    var self = this;
+                    versionUtils.getAllFormulas(function (formulas) {
+                        self.formulas = formulas;
+                        self.createSelectors();
+                    });
+                }
             }
         },
         saveVersions: function () {

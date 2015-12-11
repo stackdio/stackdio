@@ -20,7 +20,8 @@ define([
     'knockout',
     'bootbox',
     'utils/utils',
-    'models/stack'
+    'models/stack',
+    'fuelux'
 ], function ($, ko, bootbox, utils, Stack) {
     'use strict';
 

@@ -12,6 +12,7 @@
         window.stackdio.stackTitle = '{{ stack.title }}';
         window.stackdio.blueprintId = {{ stack.blueprint.id }};
         window.stackdio.blueprintTitle = '{{ stack.blueprint.title }}  --  {{ stack.blueprint.description }}';
+        window.stackdio.hasUpdatePerm = {{ has_update | lower }};
     </script>
 {% endblock %}
 
@@ -32,6 +33,7 @@
                 <li role="presentation"{% if page_id == 'hosts' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-hosts' pk=stack.id %}">Hosts</a>
                 </li>
+                {% if user.settings.advanced_view %}
                 <li role="presentation"{% if page_id == 'volumes' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-volumes' pk=stack.id %}">Volumes</a>
                 </li>
@@ -44,6 +46,7 @@
                 <li role="presentation"{% if page_id == 'formula-versions' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-formula-versions' pk=stack.id %}">Formula Versions</a>
                 </li>
+                {% endif %}
                 {% if has_admin %}
                 <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
                     <a href="{% url 'ui:stack-object-permissions' pk=stack.id %}">Permissions</a>
