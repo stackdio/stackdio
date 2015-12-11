@@ -20,10 +20,10 @@ define([
     'knockout',
     'bootbox',
     'utils/utils',
+    'utils/formula-versions',
     'generics/pagination',
-    'models/formula-version',
-    'select2'
-], function ($, ko, bootbox, utils, Pagination, FormulaVersion) {
+    'models/formula-version'
+], function ($, ko, bootbox, utils, versionUtils, Pagination, FormulaVersion) {
     'use strict';
 
     return Pagination.extend({
@@ -46,68 +46,7 @@ define([
         createSelectors: function () {
             var self = this;
             this.objects().forEach(function (version) {
-                var validVersionsUrl = null;
-
-                for (var i = 0, length = self.formulas.length; i < length; ++i) {
-                    if (self.formulas[i].uri === version.formula()) {
-                        validVersionsUrl = self.formulas[i].valid_versions;
-                        break;
-                    }
-                }
-
-                if (!validVersionsUrl) {
-                    console.warn('Formula ' + version.formula() + ' not found...');
-                    return;
-                }
-
-                var $el = $('#' + version.formulaHtmlId());
-
-                var ver = version.version();
-
-                $el.append('<option value="' + ver + '" title="' + ver + '">' + ver + '</option>');
-
-                // Unhide it
-                $el.removeClass('hidden-formula-versions');
-
-                $el.select2({
-                    ajax: {
-                        url: validVersionsUrl,
-                        dataType: 'json',
-                        delay: 100,
-                        data: function (params) {
-                            return {
-                                title: params.term
-                            };
-                        },
-                        processResults: function (data) {
-                            var results = [];
-                            data.results.forEach(function (version) {
-                                results.push({
-                                    id: version,
-                                    text: version,
-                                    version: version
-                                });
-                            });
-                            return {
-                                results: results
-                            };
-                        },
-                        cache: true
-                    },
-                    theme: 'bootstrap',
-                    placeholder: 'Select a version...',
-                    templateResult: function (version) {
-                        return version.text;
-                    },
-                    minimumInputLength: 0
-                });
-
-                $el.val(ver).trigger('change');
-
-                $el.on('select2:select', function (ev) {
-                    var selectedVersion = ev.params.data;
-                    version.version(selectedVersion.version);
-                });
+                versionUtils.createVersionSelector(version, self.formulas);
             });
         },
         extraReloadSteps: function () {
@@ -116,11 +55,8 @@ define([
             } else {
                 // We don't have the formulas yet, we need to grab them
                 var self = this;
-                $.ajax({
-                    method: 'GET',
-                    url: '/api/formulas/'
-                }).done(function (formulas) {
-                    self.formulas = formulas.results;
+                versionUtils.getAllFormulas(function (formulas) {
+                    self.formulas = formulas;
                     self.createSelectors();
                 });
             }
