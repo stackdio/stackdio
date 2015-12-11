@@ -12,7 +12,9 @@
         window.stackdio.stackTitle = '{{ stack.title }}';
         window.stackdio.blueprintId = {{ stack.blueprint.id }};
         window.stackdio.blueprintTitle = '{{ stack.blueprint.title }}  --  {{ stack.blueprint.description }}';
+        {% if has_update != None %}
         window.stackdio.hasUpdatePerm = {{ has_update | lower }};
+        {% endif %}
     </script>
 {% endblock %}
 
