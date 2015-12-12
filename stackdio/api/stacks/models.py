@@ -42,8 +42,6 @@ from model_utils.models import StatusModel
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.utils import recursive_update
 from stackdio.api.cloud.models import SecurityGroup
-from stackdio.api.formulas.models import FormulaVersion
-from stackdio.api.formulas.tasks import update_formula
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -757,6 +755,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(yaml_data)
 
     def generate_pillar_file(self, update_formulas=False):
+        # Import here to not cause circular imports
+        from stackdio.api.formulas.models import FormulaVersion
+        from stackdio.api.formulas.tasks import update_formula
+
         users = []
         # pull the create_ssh_users property from the stackd.io config file.
         # If it's False, we won't create ssh users on the box.
@@ -833,6 +835,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(pillar_file_yaml)
 
     def generate_global_pillar_file(self, update_formulas=False):
+        # Import here to not cause circular imports
+        from stackdio.api.formulas.models import FormulaVersion
+        from stackdio.api.formulas.tasks import update_formula
+
         pillar_props = {}
 
         # Find all of the globally used formulas for the stack
