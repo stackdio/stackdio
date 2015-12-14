@@ -207,12 +207,11 @@ define([
                         method: 'DELETE',
                         url: self.raw.url
                     }).done(function () {
-                        if (self.parent.reload) {
+                        if (window.location.pathname !== '/groups/') {
+                            window.location = '/groups/';
+                        } else if (self.parent && typeof self.parent.reload === 'function') {
                             self.parent.reload();
                         }
-
-                        // Go back to the list page
-                        window.location = '/groups/';
                     }).fail(function (jqxhr) {
                         var message;
                         if (jqxhr.status === 403) {

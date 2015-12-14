@@ -27,11 +27,6 @@ define([
 
         // View variables
         self.snapshot = null;
-
-        // For the breadcrumb only
-        self.snapshotTitle = ko.observable('');
-
-        self.snapshotTitle = ko.observable('');
         self.snapshotUrl = ko.observable('');
 
         // Override the breadcrumbs
@@ -41,12 +36,10 @@ define([
                 title: 'Snapshots',
                 href: '/snapshots/'
             },
-            ko.observable({
+            {
                 active: true,
-                title: ko.computed(function() {
-                    return self.snapshotTitle()
-                })
-            })
+                title: window.stackdio.snapshotTitle
+            }
         ];
 
         self.reset = function() {
@@ -54,7 +47,6 @@ define([
             self.snapshot = new Snapshot(window.stackdio.snapshotId, self);
             self.snapshot.waiting.done(function () {
                 document.title = 'stackd.io | Snapshot Detail - ' + self.snapshot.title();
-                self.snapshotTitle(self.snapshot.title());
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/snapshots/';

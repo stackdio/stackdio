@@ -34,7 +34,7 @@ define([
                 },
                 {
                     active: false,
-                    title: 'Blueprint Detail',
+                    title: window.stackdio.blueprintTitle,
                     href: this.saveUrl
                 },
                 {

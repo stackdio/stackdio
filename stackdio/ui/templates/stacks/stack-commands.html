@@ -2,6 +2,7 @@
 
 {% block detail-content %}
 <div class="col-sm-9 col-sm-pull-3">
+    {% if has_update %}
     <form class="form-inline" data-bind="submit: function () { runCommand() }">
         <div class="row" style="margin-top: 15px">
             <div class="form-group col-sm-3">
@@ -21,6 +22,7 @@
             </div>
         </div>
     </form>
+    {% endif %}
 
     {% include 'stackdio/stubs/pager.html' with object_type='commands' search=False %}
 

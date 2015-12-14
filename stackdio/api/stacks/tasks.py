@@ -66,7 +66,7 @@ def symlink(source, target):
     """
     Symlink the given source to the given target
     """
-    if os.path.isfile(target):
+    if os.path.islink(target):
         os.remove(target)
     os.symlink(source, target)
 
@@ -181,7 +181,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         log_file = utils.get_salt_cloud_log_file(stack, 'launch')
 
         # Generate the pillar file.  We need it!
-        stack.generate_pillar_file()
+        stack.generate_pillar_file(update_formulas=True)
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
         logger.info('Log file: {0}'.format(log_file))
@@ -846,8 +846,8 @@ def sync_all(stack_id):
         logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
         # Generate all the files before we sync
-        stack.generate_pillar_file()
-        stack.generate_global_pillar_file()
+        stack.generate_pillar_file(update_formulas=True)
+        stack.generate_global_pillar_file(update_formulas=True)
         stack.generate_top_file()
         stack.generate_orchestrate_file()
         stack.generate_global_orchestrate_file()
@@ -1089,7 +1089,7 @@ def propagate_ssh(stack_id, max_retries=2):
         stack = Stack.objects.get(id=stack_id)
         target = [h.hostname for h in stack.get_hosts()]
         # Regenerate the stack pillar file
-        stack.generate_pillar_file()
+        stack.generate_pillar_file(update_formulas=True)
         num_hosts = len(stack.get_hosts())
         logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
 

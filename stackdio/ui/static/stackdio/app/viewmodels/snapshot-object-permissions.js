@@ -34,7 +34,7 @@ define([
                 },
                 {
                     active: false,
-                    title: 'Snapshot Detail',
+                    title: window.stackdio.snapshotTitle,
                     href: this.saveUrl
                 },
                 {

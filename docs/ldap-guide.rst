@@ -22,6 +22,12 @@ The template contains most of the relevant bits you may want to use, but we defe
 deeper to the `django-auth-ldap`_ documentation.
 
 
+.. note::
+
+    If you're using the packer-built AMI described in :doc:`ami`, your ldap settings should be placed here:
+    ``/usr/share/stackdio/lib/python2.7/site-packages/stackdio/server/settings/ldap_settings.py``
+
+
 .. code:: python
 
     ##

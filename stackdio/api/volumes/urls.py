@@ -40,17 +40,17 @@ object_router.register(r'groups',
 
 
 urlpatterns = (
-    url(r'^volumes/$',
+    url(r'^$',
         api.VolumeListAPIView.as_view(),
         name='volume-list'),
 
-    url(r'^volumes/permissions/',
+    url(r'^permissions/',
         include(model_router.urls)),
 
-    url(r'^volumes/(?P<pk>[0-9]+)/$',
+    url(r'^(?P<pk>[0-9]+)/$',
         api.VolumeDetailAPIView.as_view(),
         name='volume-detail'),
 
-    url(r'^volumes/(?P<pk>[0-9]+)/permissions/',
+    url(r'^(?P<pk>[0-9]+)/permissions/',
         include(object_router.urls)),
 )

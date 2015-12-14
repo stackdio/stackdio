@@ -134,8 +134,12 @@ define([
                     $.ajax({
                         method: 'DELETE',
                         url: self.raw.url
-                    }).done(function (image) {
-                        // Nothing to do here?
+                    }).done(function () {
+                        if (window.location.pathname !== '/images/') {
+                            window.location = '/images/';
+                        } else if (self.parent && typeof self.parent.reload === 'function') {
+                            self.parent.reload();
+                        }
                     }).fail(function (jqxhr) {
                         var message;
                         try {

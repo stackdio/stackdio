@@ -26,6 +26,8 @@ define([
     return function () {
         var self = this;
 
+        self.blueprint = new Blueprint(window.stackdio.blueprintId);
+
         self.breadcrumbs = [
             {
                 active: false,
@@ -34,18 +36,16 @@ define([
             },
             {
                 active: false,
-                title: 'Blueprint Detail',
+                title: window.stackdio.blueprintTitle,
                 href: '/blueprints/' + window.stackdio.blueprintId + '/'
             },
             {
                 active: true,
-                title: 'Blueprint Properties'
+                title: 'Properties'
             }
         ];
 
         self.validProperties = true;
-
-        self.blueprint = new Blueprint(window.stackdio.blueprintId);
 
         self.propertiesJSON = ko.pureComputed({
             read: function () {

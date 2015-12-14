@@ -21,11 +21,15 @@
                     </thead>
                     <tbody>
                     <!-- ko foreach: sortedObjects -->
-                    <tr class="stackdio-hidden-on-load">
+                    <tr class="stackdio-hidden-on-load" data-bind="visible: $root.versionsReady">
                         <td data-bind="text: formula"></td>
+                        {% if has_update %}
                         <td>
                             <select style="width: 100%" class="hidden-formula-versions" data-bind="attr: {id: formulaHtmlId}"></select>
                         </td>
+                        {% else %}
+                        <td data-bind="text: version"></td>
+                        {% endif %}
                     </tr>
                     <!-- /ko -->
                     </tbody>
@@ -33,10 +37,12 @@
             </div>
         </div>
 
+        {% if has_update %}
         <div class="row">
             <div class="col-md-12">
                 <button type="submit" class="btn btn-primary" data-bind="click: function () { saveVersions() }">Save</button>
             </div>
         </div>
+        {% endif %}
     </div>
 {% endblock %}

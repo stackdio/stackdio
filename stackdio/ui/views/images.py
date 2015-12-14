@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404
 
 from stackdio.api.cloud.models import CloudImage
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.utils import get_object_list
 
 
 class ImageCreateView(PageView):
@@ -41,6 +42,7 @@ class ImageListView(PageView):
         context = super(ImageListView, self).get_context_data(**kwargs)
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudimage')
         context['has_create'] = self.request.user.has_perm('cloud.create_cloudimage')
+        context['object_list'] = get_object_list(self.request.user, CloudImage)
         return context
 
 
@@ -62,10 +64,10 @@ class ImageDetailView(PageView):
         image = get_object_or_404(CloudImage.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.view_cloudimage', image):
             raise Http404()
-        context['image_id'] = pk
-        context['account_id'] = image.account.id
-        context['provider_name'] = image.account.provider.name
+        context['image'] = image
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudimage', image)
+        context['has_delete'] = self.request.user.has_perm('cloud.delete_cloudimage', image)
+        context['has_update'] = self.request.user.has_perm('cloud.update_cloudimage', image)
         context['page_id'] = self.page_id
         return context
 
@@ -83,7 +85,7 @@ class ImageObjectPermissionsView(ObjectPermissionsView):
         image = get_object_or_404(CloudImage.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.admin_cloudimage', image):
             raise Http404()
-        context['image_id'] = pk
+        context['image'] = image
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudimage', image)
         context['page_id'] = self.page_id
         return context

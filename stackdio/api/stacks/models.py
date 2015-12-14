@@ -754,7 +754,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             with open(self.global_orchestrate_file.path, 'w') as f:
                 f.write(yaml_data)
 
-    def generate_pillar_file(self):
+    def generate_pillar_file(self, update_formulas=False):
+        # Import here to not cause circular imports
+        from stackdio.api.formulas.models import FormulaVersion
+        from stackdio.api.formulas.tasks import update_formula
+
         users = []
         # pull the create_ssh_users property from the stackd.io config file.
         # If it's False, we won't create ssh users on the box.
@@ -799,6 +803,21 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         for host in self.hosts.all():
             formulas.update([c.formula for c in host.formula_components.all()])
 
+        # Update the formulas if requested
+        if update_formulas:
+            for formula in formulas:
+                # Update the formula, and fail silently if there was an error.
+                if formula.private_git_repo:
+                    logger.debug('Skipping private formula: {0}'.format(formula.uri))
+                    continue
+
+                try:
+                    version = self.formula_versions.get(formula=formula).version
+                except FormulaVersion.DoesNotExist:
+                    version = formula.default_version
+
+                update_formula.si(formula.id, None, version, raise_exception=False)()
+
         # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
             recursive_update(pillar_props, formula.properties)
@@ -815,7 +834,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             with open(self.pillar_file.path, 'w') as f:
                 f.write(pillar_file_yaml)
 
-    def generate_global_pillar_file(self):
+    def generate_global_pillar_file(self, update_formulas=False):
+        # Import here to not cause circular imports
+        from stackdio.api.formulas.models import FormulaVersion
+        from stackdio.api.formulas.tasks import update_formula
 
         pillar_props = {}
 
@@ -827,6 +849,21 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         global_formulas = []
         for account in accounts:
             global_formulas.extend(account.get_formulas())
+
+        # Update the formulas if requested
+        if update_formulas:
+            for formula in global_formulas:
+                # Update the formula, and fail silently if there was an error.
+                if formula.private_git_repo:
+                    logger.debug('Skipping private formula: {0}'.format(formula.uri))
+                    continue
+
+                try:
+                    version = self.formula_versions.get(formula=formula).version
+                except FormulaVersion.DoesNotExist:
+                    version = formula.default_version
+
+                update_formula.si(formula.id, None, version, raise_exception=False)()
 
         # Add the global formulas into the props
         for formula in set(global_formulas):

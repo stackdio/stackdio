@@ -20,11 +20,15 @@ import django_filters
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
+from stackdio.core.filters import OrFieldsFilter
+
 
 class UserFilter(django_filters.FilterSet):
     username = django_filters.CharFilter(lookup_type='icontains')
     first_name = django_filters.CharFilter(lookup_type='icontains')
     last_name = django_filters.CharFilter(lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('username', 'first_name', 'last_name', 'email'),
+                       lookup_type='icontains')
 
     class Meta:
         model = get_user_model()
@@ -32,14 +36,17 @@ class UserFilter(django_filters.FilterSet):
             'username',
             'first_name',
             'last_name',
+            'q',
         )
 
 
 class GroupFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('name',), lookup_type='icontains')
 
     class Meta:
         model = Group
         fields = (
             'name',
+            'q',
         )

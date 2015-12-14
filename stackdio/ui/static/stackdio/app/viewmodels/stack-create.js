@@ -20,8 +20,11 @@ define([
     'knockout',
     'ladda',
     'bootbox',
+    'utils/formula-versions',
+    'models/formula-version',
+    'fuelux',
     'select2'
-], function ($, ko, Ladda, bootbox) {
+], function ($, ko, Ladda, bootbox, versionUtils, FormulaVersion) {
     'use strict';
 
     return function() {
@@ -49,7 +52,7 @@ define([
                 delay: 100,
                 data: function (params) {
                     return {
-                        title: params.term
+                        q: params.term
                     };
                 },
                 processResults: function (data) {
@@ -81,6 +84,7 @@ define([
 
             self.removeErrors(keys);
 
+            // Grab blueprint properties
             $.ajax({
                 method: 'GET',
                 url: blueprint.properties
@@ -96,13 +100,19 @@ define([
                     url: url
                 }).done(function (versions) {
                     fullVersionsList.push.apply(fullVersionsList, versions.results.map(function (version) {
-                        return {
-                            formula: version.formula,
-                            version: ko.observable(version.version)
-                        }
+                        return new FormulaVersion(version, self);
                     }));
                     if (versions.next === null) {
                         self.formulaVersions(fullVersionsList);
+                        if (self.formulas) {
+                            self.createSelectors();
+                        } else {
+                            // We don't have the formulas yet, we need to grab them
+                            versionUtils.getAllFormulas(function (formulas) {
+                                self.formulas = formulas;
+                                self.createSelectors();
+                            });
+                        }
                     } else {
                         getVersions(versions.next);
                     }
@@ -120,6 +130,8 @@ define([
         self.namespace = ko.observable();
         self.properties = ko.observable({});
         self.formulaVersions = ko.observableArray([]);
+        self.formulas = null;
+        self.versionsReady = ko.observable();
 
         self.validProperties = true;
         self.createButton = null;
@@ -135,7 +147,6 @@ define([
                 } catch (err) {
                     self.validProperties = false;
                 }
-
             }
         });
 
@@ -164,6 +175,24 @@ define([
             self.namespace('');
             self.properties({});
             self.formulaVersions([]);
+            self.versionsReady(false);
+        };
+
+        self.createSelectors = function () {
+            var markForRemoval = [];
+            self.formulaVersions().forEach(function (version) {
+                if (!versionUtils.createVersionSelector(version, self.formulas)) {
+                    // We don't have permission, add it to the removal list
+                    markForRemoval.push(version);
+                }
+            });
+
+            // Get rid of ones we don't have permission to see
+            markForRemoval.forEach(function (version) {
+                self.formulaVersions.remove(version);
+            });
+
+            self.versionsReady(true);
         };
 
         self.removeErrors = function(keys) {
@@ -172,6 +201,15 @@ define([
                 el.removeClass('has-error');
                 var help = el.find('.help-block');
                 help.remove();
+            });
+        };
+
+        self.getVersionsData = function () {
+            return self.formulaVersions().map(function (version) {
+                return {
+                    formula: version.formula(),
+                    version: version.version()
+                }
             });
         };
 
@@ -207,7 +245,7 @@ define([
                     create_users: self.createUsers(),
                     namespace: self.namespace(),
                     properties: self.properties(),
-                    formulaVersions: ko.toJS(self.formulaVersions())
+                    formula_versions: self.getVersionsData()
                 })
             }).always(function () {
                 // Stop our spinning buttons FIRST

@@ -29,11 +29,13 @@ import salt.client
 import salt.cloud
 import salt.config as config
 import salt.key
+import salt.syspaths
 import salt.utils
 import salt.utils.cloud
 import six
 import yaml
 from django.conf import settings
+from msgpack.exceptions import ExtraData
 from salt.log.setup import LOG_LEVELS
 
 
@@ -43,6 +45,8 @@ root_logger = logging.getLogger()
 ERROR_REQUISITE = 'One or more requisite failed'
 
 COLOR_REGEX = re.compile(r'\[0;[\d]+m')
+
+SALT_CLOUD_CACHE_DIR = os.path.join(salt.syspaths.CACHE_DIR, 'cloud')
 
 
 class StackdioSaltCloudMap(salt.cloud.Map):
@@ -207,21 +211,28 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
             date_format=opts['log_datefmt_logfile'],
         )
 
+        ret = None
+
         try:
             mapper = StackdioSaltCloudMap(opts)
             mapper.rendered_map = cloud_map
             dmap = mapper.map_data()
 
-            # Do the launch
-            ret = salt.utils.cloud.simple_types_filter(
-                mapper.run_map(dmap)
-            )
-
+            launched = False
+            while not launched:
+                try:
+                    # Do the launch
+                    ret = mapper.run_map(dmap)
+                    # It worked
+                    launched = True
+                except ExtraData:
+                    # Blow away the salt cloud cache and try again
+                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
         finally:
             # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
             root_logger.removeHandler(handler)
 
-        return ret
+        return salt.utils.cloud.simple_types_filter(ret)
 
     def destroy_map(self, cloud_map, **kwargs):
         """
@@ -246,9 +257,20 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
 
         if names:
             logger.info(msg)
-            return salt.utils.cloud.simple_types_filter(
-                mapper.destroy(names)
-            )
+
+            ret = None
+
+            destroyed = False
+            while not destroyed:
+                try:
+                    ret = mapper.destroy(names)
+                    # It worked
+                    destroyed = True
+                except ExtraData:
+                    # Blow away the salt cloud cache and try again
+                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+
+            return salt.utils.cloud.simple_types_filter(ret)
         else:
             logger.info('There are no VMs to be destroyed.')
             return {}
@@ -395,8 +417,8 @@ def process_orchestrate_result(result, stack, log_file, err_file):
     for sls, sls_result in sorted(result.items(), key=lambda x: x[1]['__run_num__']):
         sls_dict = state_to_dict(sls)
 
-        logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'],
-                                                                stack.title))
+        logger.info('Processing stage {0} for stack {1}\n'.format(sls_dict['name'],
+                                                                  stack.title))
 
         with open(err_file, 'a') as f:
             if 'changes' in sls_result and 'ret' in sls_result['changes']:
@@ -412,7 +434,7 @@ def process_orchestrate_result(result, stack, log_file, err_file):
                 ))
             else:
                 f.write(
-                    'Stage {0} appears to have no changes, but it failed.  See below.\n\n'.format(
+                    'Stage {0} appears to have no changes, but it failed.  See below.\n'.format(
                         sls_dict['name']
                     )
                 )
@@ -425,9 +447,9 @@ def process_orchestrate_result(result, stack, log_file, err_file):
         with open(err_file, 'a') as f:
             comment = sls_result['comment']
             if isinstance(comment, six.string_types):
-                f.write(COLOR_REGEX.sub('', comment))
+                f.write('{0}\n\n'.format(COLOR_REGEX.sub('', comment)))
             else:
-                f.write(yaml.safe_dump(comment))
+                f.write('{0}\n\n'.format(yaml.safe_dump(comment)))
         local_failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
 
         if local_failed:

@@ -48,7 +48,7 @@
                     </td>
                     <td data-bind="text: filesystemType, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
                     <td class="text-center">
-                        <a href="#" data-bind="click: $data.delete">
+                        <a href="#" data-bind="click: $data.delete, if: $root.permissionsMap[$data.id].delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                         </a>
                     </td>

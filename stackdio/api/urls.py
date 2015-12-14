@@ -15,10 +15,14 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 from django.conf.urls import include, url
+from django.views.defaults import page_not_found
 
+from rest_framework import status
 from rest_framework.compat import OrderedDict
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.urlpatterns import format_suffix_patterns
@@ -70,6 +74,23 @@ class APIRootView(APIView):
         return Response(api)
 
 
+@api_view(APIView.http_method_names)
+def api_not_found_view(request, *args, **kwargs):
+    return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# This is our custom 404 handler so that 404 requests to /api endpoints return JSON instead
+# of the default 404 page
+def api_not_found(request, *args, **kwargs):
+    if request.path.startswith('/api'):
+        ret = api_not_found_view(request, *args, **kwargs)
+        ret.render()
+        return ret
+    else:
+        # Just use the default one
+        return page_not_found(request, *args, **kwargs)
+
+
 urlpatterns = (
     url(r'^$', APIRootView.as_view(), name='root'),
 
@@ -79,10 +100,10 @@ urlpatterns = (
     url(r'^', include('stackdio.api.users.urls', namespace='users')),
     url(r'^cloud/', include('stackdio.api.cloud.urls', namespace='cloud')),
     url(r'^blueprints/', include('stackdio.api.blueprints.urls', namespace='blueprints')),
-    url(r'^', include('stackdio.api.formulas.urls', namespace='formulas')),
+    url(r'^formulas/', include('stackdio.api.formulas.urls', namespace='formulas')),
     url(r'^', include('stackdio.api.stacks.urls', namespace='stacks')),
-    url(r'^', include('stackdio.api.volumes.urls', namespace='volumes')),
-    url(r'^', include('stackdio.api.search.urls', namespace='search')),
+    url(r'^volumes/', include('stackdio.api.volumes.urls', namespace='volumes')),
+    url(r'^search/', include('stackdio.api.search.urls', namespace='search')),
 )
 
 # Format suffixes - this only should go on API endpoints, not everything!

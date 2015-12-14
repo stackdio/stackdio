@@ -119,6 +119,10 @@ define([
         }).done(function (formula) {
             self.raw = formula;
             self._process(formula);
+        }).fail(function (jqxhr) {
+            if (jqxhr.status == 403) {
+                window.location.reload(true);
+            }
         });
     };
 
@@ -213,7 +217,11 @@ define([
                                 git_password: gitPassword
                             })
                         }).done(function () {
-                            self.reload();
+                            if (self.parent && typeof self.parent.reload === 'function') {
+                                self.parent.reload();
+                            } else {
+                                self.reload();
+                            }
                         }).fail(function (jqxhr) {
                             var message;
                             try {
@@ -291,15 +299,19 @@ define([
                     $.ajax({
                         method: 'DELETE',
                         url: self.raw.url
-                    }).done(function (formula) {
-                        // Nothing to do here?
+                    }).done(function () {
+                        if (window.location.pathname !== '/formulas/') {
+                            window.location = '/formulas/';
+                        } else if (self.parent && typeof self.parent.reload === 'function') {
+                            self.parent.reload();
+                        }
                     }).fail(function (jqxhr) {
                         var message;
                         try {
                             var resp = JSON.parse(jqxhr.responseText);
                             message = resp.detail.join('<br>');
                             if (Object.keys(resp).indexOf('blueprints') >= 0) {
-                                message += '<br><br>Blueprints:<br>' + resp.blueprints.join(', ');
+                                message += '<br><br>Blueprints:<ul><li>' + resp.blueprints.join('</li><li>') + '</li></ul>';
                             }
                         } catch (e) {
                             message = 'Oops... there was a server error.  This has been reported ' +

@@ -135,8 +135,12 @@ define([
                     $.ajax({
                         method: 'DELETE',
                         url: self.raw.url
-                    }).done(function (snapshot) {
-                        window.location = '/snapshots/';
+                    }).done(function () {
+                        if (window.location.pathname !== '/snapshots/') {
+                            window.location = '/snapshots/';
+                        } else if (self.parent && typeof self.parent.reload === 'function') {
+                            self.parent.reload();
+                        }
                     }).fail(function (jqxhr) {
                         var message;
                         try {
