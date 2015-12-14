@@ -302,6 +302,7 @@ class SnapshotListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.SnapshotSerializer
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
+    filter_class = filters.SnapshotFilter
 
     def perform_create(self, serializer):
         snapshot = serializer.save()

@@ -53,6 +53,15 @@ R_JS = os.path.join(
     'r.js',
 )
 
+BUILD_FILE = os.path.join(
+    settings.BASE_DIR,
+    'stackdio',
+    'ui',
+    'management',
+    'files',
+    'app.build.js',
+)
+
 
 class Command(BaseCommand):
     help = 'Optimizes all the javascript files'
@@ -103,7 +112,7 @@ class Command(BaseCommand):
             f.write(js)
 
         # Optimize the project using r.js
-        args = ['node', R_JS, '-o', 'app.build.js']
+        args = ['node', R_JS, '-o', BUILD_FILE]
 
         # Build the optimized file
         ret = subprocess.call(args)

@@ -399,7 +399,7 @@ class AWSCloudProvider(BaseCloudProvider):
                     err = 'The Route53 domain \'{0}\' does not exist in ' \
                           'this account.'.format(domain)
                     errors.setdefault(self.ROUTE53_DOMAIN, []).append(err)
-            # except boto.exception.DNSServerError, e:
+            # except boto.exception.DNSServerError as e:
             except Exception as e:
                 logger.exception('Route53 issue?')
                 errors.setdefault(self.ROUTE53_DOMAIN, []).append(str(e))

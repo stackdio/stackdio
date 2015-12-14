@@ -34,7 +34,7 @@ define([
                 },
                 {
                     active: false,
-                    title: 'Group Detail',
+                    title: window.stackdio.groupName,
                     href: this.saveUrl
                 },
                 {

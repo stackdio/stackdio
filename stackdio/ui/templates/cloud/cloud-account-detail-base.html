@@ -8,7 +8,8 @@
     {{ block.super }}
     <script type="text/javascript">
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
-        window.stackdio.accountId = {{ account_id }};
+        window.stackdio.accountId = {{ account.id }};
+        window.stackdio.accountTitle = '{{ account.title }}';
     </script>
 {% endblock %}
 
@@ -18,23 +19,23 @@
         <div class="col-sm-3 col-sm-push-9">
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:cloud-account-detail' pk=account_id %}">Detail</a>
+                    <a href="{% url 'ui:cloud-account-detail' pk=account.id %}">Detail</a>
                 </li>
                 <li role="presentation"{% if page_id == 'images' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:cloud-account-images' pk=account_id %}">Images</a>
+                    <a href="{% url 'ui:cloud-account-images' pk=account.id %}">Images</a>
                 </li>
                 <li role="presentation"{% if page_id == 'security-groups' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:cloud-account-security-groups' pk=account_id %}">Security Groups</a>
+                    <a href="{% url 'ui:cloud-account-security-groups' pk=account.id %}">Security Groups</a>
                 </li>
 {#                <li role="presentation"{% if page_id == 'global-orchestration' %} class="active"{% endif %}>#}
 {#                    <a href="">Global Orchestration</a>#}
 {#                </li>#}
 {#                <li role="presentation"{% if page_id == 'formula-versions' %} class="active"{% endif %}>#}
-{#                    <a href="{% url 'ui:cloud-account-formula-versions' pk=account_id %}">Formula Versions</a>#}
+{#                    <a href="{% url 'ui:cloud-account-formula-versions' pk=account.id %}">Formula Versions</a>#}
 {#                </li>#}
                 {% if has_admin %}
                 <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:cloud-account-object-permissions' pk=account_id %}">Permissions</a>
+                    <a href="{% url 'ui:cloud-account-object-permissions' pk=account.id %}">Permissions</a>
                 </li>
                 {% endif %}
             </ul>

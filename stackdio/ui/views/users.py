@@ -22,6 +22,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.utils import get_object_list
 
 
 class FailOnLDAPMixin(object):
@@ -94,6 +95,7 @@ class GroupListView(PageView):
         context = super(GroupListView, self).get_context_data(**kwargs)
         context['has_admin'] = self.request.user.has_perm('auth.admin_group')
         context['has_create'] = self.request.user.has_perm('auth.create_group')
+        context['object_list'] = get_object_list(self.request.user, Group, 'name')
         return context
 
 
@@ -114,8 +116,10 @@ class GroupDetailView(PageView):
         group = get_object_or_404(Group.objects.all(), name=name)
         if not self.request.user.has_perm('auth.view_group', group):
             raise Http404()
-        context['group_name'] = name
+        context['group'] = group
         context['has_admin'] = self.request.user.has_perm('auth.admin_group', group)
+        context['has_delete'] = self.request.user.has_perm('auth.delete_group', group)
+        context['has_update'] = self.request.user.has_perm('auth.update_group', group)
         context['page_id'] = self.page_id
         return context
 
@@ -132,7 +136,7 @@ class GroupObjectPermissionsView(ObjectPermissionsView):
         group = get_object_or_404(Group.objects.all(), name=name)
         if not self.request.user.has_perm('auth.admin_group', group):
             raise Http404()
-        context['group_name'] = name
+        context['group'] = group
         context['object_id'] = name
         context['has_admin'] = self.request.user.has_perm('auth.admin_group', group)
         context['page_id'] = self.page_id

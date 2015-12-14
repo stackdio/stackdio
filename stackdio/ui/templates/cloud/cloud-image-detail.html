@@ -5,8 +5,9 @@
     {{ block.super }}
     <script type="text/javascript">
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
-        window.stackdio.accountId = {{ account_id }};
-        window.stackdio.providerName = '{{ provider_name }}';
+        window.stackdio.accountId = {{ image.account.id }};
+        window.stackdio.accountTitle = '{{ image.account.title }}';
+        window.stackdio.providerName = '{{ image.account.provider.name }}';
     </script>
 {% endblock %}
 
@@ -44,12 +45,16 @@
                 </div>
 
                 <div class="form-group" style="margin-top: 15px">
+                    {% if has_update %}
                     <button type="submit" class="btn btn-primary">Save</button>
+                    {% endif %}
 
+                    {% if has_delete %}
                     <button class="btn btn-danger" data-bind="click: function () { image.delete() }">
                         Delete
                         <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                     </button>
+                    {% endif %}
                 </div>
             </div>
             <div class="col-md-6">

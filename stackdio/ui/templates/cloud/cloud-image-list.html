@@ -44,7 +44,7 @@
                     <td data-bind="text: description, click: function (image) { $root.goToDetailPage(image) }"></td>
                     <td data-bind="text: imageId, click: function (image) { $root.goToDetailPage(image) }">
                     <td class="text-center">
-                        <a href="#" data-bind="click: $data.delete">
+                        <a href="#" data-bind="click: $data.delete, if: $root.permissionsMap[$data.id].delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                         </a>
                     </td>

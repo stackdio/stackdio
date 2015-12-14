@@ -27,11 +27,6 @@ define([
 
         // View variables
         self.blueprint = null;
-
-        // For the breadcrumb only
-        self.blueprintTitle = ko.observable('');
-
-        self.blueprintTitle = ko.observable('');
         self.blueprintUrl = ko.observable('');
 
         // Override the breadcrumbs
@@ -41,12 +36,10 @@ define([
                 title: 'Blueprints',
                 href: '/blueprints/'
             },
-            ko.observable({
+            {
                 active: true,
-                title: ko.computed(function() {
-                    return self.blueprintTitle()
-                })
-            })
+                title: window.stackdio.blueprintTitle
+            }
         ];
 
         self.subscription = null;
@@ -61,7 +54,6 @@ define([
             self.blueprint = new Blueprint(window.stackdio.blueprintId, self);
             self.blueprint.waiting.done(function () {
                 document.title = 'stackd.io | Blueprint Detail - ' + self.blueprint.title();
-                self.blueprintTitle(self.blueprint.title());
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/blueprints/';

@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404
 
 from stackdio.api.cloud.models import CloudAccount
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.utils import get_object_list
 
 
 class AccountCreateView(PageView):
@@ -41,6 +42,7 @@ class AccountListView(PageView):
         context = super(AccountListView, self).get_context_data(**kwargs)
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudaccount')
         context['has_create'] = self.request.user.has_perm('cloud.create_cloudaccount')
+        context['object_list'] = get_object_list(self.request.user, CloudAccount)
         return context
 
 
@@ -62,8 +64,10 @@ class AccountDetailView(PageView):
         account = get_object_or_404(CloudAccount.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.view_cloudaccount', account):
             raise Http404()
-        context['account_id'] = pk
+        context['account'] = account
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudaccount', account)
+        context['has_delete'] = self.request.user.has_perm('cloud.delete_cloudaccount', account)
+        context['has_update'] = self.request.user.has_perm('cloud.update_cloudaccount', account)
         context['page_id'] = self.page_id
         return context
 
@@ -81,7 +85,7 @@ class AccountObjectPermissionsView(ObjectPermissionsView):
         account = get_object_or_404(CloudAccount.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.admin_cloudaccount', account):
             raise Http404()
-        context['account_id'] = pk
+        context['account'] = account
         context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudaccount', account)
         context['page_id'] = self.page_id
         return context

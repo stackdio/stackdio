@@ -20,7 +20,8 @@ define([
     'knockout',
     'bootbox',
     'utils/utils',
-    'models/stack'
+    'models/stack',
+    'fuelux'
 ], function ($, ko, bootbox, utils, Stack) {
     'use strict';
 
@@ -35,12 +36,12 @@ define([
             },
             {
                 active: false,
-                title: 'Stack Detail',
+                title: window.stackdio.stackTitle,
                 href: '/stacks/' + window.stackdio.stackId + '/'
             },
             {
                 active: true,
-                title: 'Stack Logs'
+                title: 'Logs'
             }
         ];
 
@@ -77,7 +78,11 @@ define([
                         logDiv.scrollTop = logDiv.scrollHeight - 498;
                     }
                 }).fail(function (jqxhr) {
-                    utils.growlAlert('Failed to load log', 'danger');
+                    if (jqxhr.status == 403) {
+                        window.location.reload(true);
+                    } else {
+                        utils.growlAlert('Failed to load log', 'danger');
+                    }
                 });
             }
         };

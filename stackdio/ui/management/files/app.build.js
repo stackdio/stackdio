@@ -1,7 +1,7 @@
 {
-    appDir: 'stackdio/ui/static/stackdio/app',
-    mainConfigFile: 'stackdio/ui/static/stackdio/app/main.js',
-    dir: 'stackdio/ui/static/stackdio/build',
+    appDir: '../../static/stackdio/app',
+    mainConfigFile: '../../static/stackdio/app/main.js',
+    dir: '../../static/stackdio/build',
     modules: [
         {
             name: 'main',

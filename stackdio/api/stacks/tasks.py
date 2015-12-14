@@ -49,8 +49,8 @@ from .models import (
 )
 
 logger = get_task_logger(__name__)
-salt_logger = logging.getLogger('salt')
-salt_formatter = logging.Formatter('%(asctime)s [%(name)17s] [%(levelname)8s] %(message)s')
+
+root_logger = logging.getLogger()
 
 ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
 ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found ' \
@@ -66,7 +66,7 @@ def symlink(source, target):
     """
     Symlink the given source to the given target
     """
-    if os.path.isfile(target):
+    if os.path.islink(target):
         os.remove(target)
     os.symlink(source, target)
 
@@ -181,7 +181,7 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
         log_file = utils.get_salt_cloud_log_file(stack, 'launch')
 
         # Generate the pillar file.  We need it!
-        stack.generate_pillar_file()
+        stack.generate_pillar_file(update_formulas=True)
 
         logger.info('Launching hosts for stack: {0!r}'.format(stack))
         logger.info('Log file: {0}'.format(log_file))
@@ -846,8 +846,8 @@ def sync_all(stack_id):
         logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
         # Generate all the files before we sync
-        stack.generate_pillar_file()
-        stack.generate_global_pillar_file()
+        stack.generate_pillar_file(update_formulas=True)
+        stack.generate_global_pillar_file(update_formulas=True)
         stack.generate_top_file()
         stack.generate_orchestrate_file()
         stack.generate_global_orchestrate_file()
@@ -973,35 +973,37 @@ def highstate(stack_id, max_retries=2):
             symlink(log_file, log_symlink)
             symlink(err_file, err_symlink)
 
-            file_log_handler = logging.FileHandler(log_file)
-            file_log_handler.setFormatter(salt_formatter)
-            salt_logger.addHandler(file_log_handler)
+            file_log_handler = utils.setup_logfile_logger(log_file)
 
-            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
-
-            old_handler = None
-            for handler in salt_logger.handlers:
+            # Remove the other handlers, but save them so we can put them back later
+            old_handlers = []
+            for handler in root_logger.handlers:
                 if isinstance(handler, logging.StreamHandler):
-                    old_handler = handler
-                    salt_logger.removeHandler(handler)
+                    old_handlers.append(handler)
+                    root_logger.removeHandler(handler)
 
-            ret = salt_client.cmd_iter(
-                target,
-                'state.top',
-                [stack.top_file.name],
-                expr_form='list'
-            )
+            # Put this in a try block so the handler always gets cleaned up
+            try:
+                salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
-            result = {}
-            # cmd_iter returns a generator that blocks until jobs finish, so
-            # we want to loop through it until the jobs are done
-            for i in ret:
-                for k, v in i.items():
-                    result[k] = v['ret']
+                ret = salt_client.cmd_iter(
+                    target,
+                    'state.top',
+                    [stack.top_file.name],
+                    expr_form='list'
+                )
 
-            salt_logger.removeHandler(file_log_handler)
-            if old_handler:
-                salt_logger.addHandler(old_handler)
+                result = {}
+                # cmd_iter returns a generator that blocks until jobs finish, so
+                # we want to loop through it until the jobs are done
+                for i in ret:
+                    for k, v in i.items():
+                        result[k] = v['ret']
+
+            finally:
+                root_logger.removeHandler(file_log_handler)
+                for handler in old_handlers:
+                    root_logger.addHandler(handler)
 
             with open(log_file, 'a') as f:
                 f.write(yaml.safe_dump(result))
@@ -1087,7 +1089,7 @@ def propagate_ssh(stack_id, max_retries=2):
         stack = Stack.objects.get(id=stack_id)
         target = [h.hostname for h in stack.get_hosts()]
         # Regenerate the stack pillar file
-        stack.generate_pillar_file()
+        stack.generate_pillar_file(update_formulas=True)
         num_hosts = len(stack.get_hosts())
         logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
 
@@ -1129,35 +1131,36 @@ def propagate_ssh(stack_id, max_retries=2):
             symlink(log_file, log_symlink)
             symlink(err_file, err_symlink)
 
-            file_log_handler = logging.FileHandler(log_file)
-            file_log_handler.setFormatter(salt_formatter)
-            salt_logger.addHandler(file_log_handler)
+            file_log_handler = utils.setup_logfile_logger(log_file)
 
-            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
-
-            old_handler = None
-            for handler in salt_logger.handlers:
+            # Remove the other handlers, but save them so we can put them back later
+            old_handlers = []
+            for handler in root_logger.handlers:
                 if isinstance(handler, logging.StreamHandler):
-                    old_handler = handler
-                    salt_logger.removeHandler(handler)
+                    old_handlers.append(handler)
+                    root_logger.removeHandler(handler)
 
-            ret = salt_client.cmd_iter(
-                target,
-                'state.sls',
-                ['core.stackdio_users'],
-                expr_form='list'
-            )
+            try:
+                salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
-            result = {}
-            # cmd_iter returns a generator that blocks until jobs finish, so
-            # we want to loop through it until the jobs are done
-            for i in ret:
-                for k, v in i.items():
-                    result[k] = v['ret']
+                ret = salt_client.cmd_iter(
+                    target,
+                    'state.sls',
+                    ['core.stackdio_users'],
+                    expr_form='list'
+                )
 
-            salt_logger.removeHandler(file_log_handler)
-            if old_handler:
-                salt_logger.addHandler(old_handler)
+                result = {}
+                # cmd_iter returns a generator that blocks until jobs finish, so
+                # we want to loop through it until the jobs are done
+                for i in ret:
+                    for k, v in i.items():
+                        result[k] = v['ret']
+
+            finally:
+                root_logger.removeHandler(file_log_handler)
+                for handler in old_handlers:
+                    root_logger.addHandler(handler)
 
             with open(log_file, 'a') as f:
                 f.write(yaml.safe_dump(result))
@@ -1301,29 +1304,28 @@ def global_orchestrate(stack_id, max_retries=2):
             symlink(err_file, err_symlink)
 
             # Set up logging
-            file_log_handler = logging.FileHandler(log_file)
-            file_log_handler.setFormatter(salt_formatter)
-            salt_logger.addHandler(file_log_handler)
+            file_log_handler = utils.setup_logfile_logger(log_file)
 
-            opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+            try:
+                opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
-            salt_runner = salt.runner.RunnerClient(opts)
+                salt_runner = salt.runner.RunnerClient(opts)
 
-            # This might be kind of scary - but it'll work while we only have one account per
-            # stack
-            result = salt_runner.cmd(
-                'stackdio.orchestrate',
-                [
-                    'stack_{0}_global_orchestrate'.format(stack_id),
-                    'cloud.{0}'.format(accounts[0].slug),
-                ]
-            )
+                # This might be kind of scary - but it'll work while we only have one account per
+                # stack
+                result = salt_runner.cmd(
+                    'stackdio.orchestrate',
+                    [
+                        'stack_{0}_global_orchestrate'.format(stack_id),
+                        'cloud.{0}'.format(accounts[0].slug),
+                    ]
+                )
 
-            failed, failed_hosts = utils.process_orchestrate_result(result, stack,
-                                                                    log_file, err_file)
+                failed, failed_hosts = utils.process_orchestrate_result(result, stack,
+                                                                        log_file, err_file)
 
-            # Stop logging
-            salt_logger.removeHandler(file_log_handler)
+            finally:
+                root_logger.removeHandler(file_log_handler)
 
             if failed:
                 if current_try <= max_retries:  # NOQA
@@ -1426,27 +1428,27 @@ def orchestrate(stack_id, max_retries=2):
             symlink(err_file, err_symlink)
 
             # Set up logging
-            file_log_handler = logging.FileHandler(log_file)
-            file_log_handler.setFormatter(salt_formatter)
-            salt_logger.addHandler(file_log_handler)
+            file_log_handler = utils.setup_logfile_logger(log_file)
 
-            opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+            try:
+                opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
-            salt_runner = salt.runner.RunnerClient(opts)
+                salt_runner = salt.runner.RunnerClient(opts)
 
-            result = salt_runner.cmd(
-                'stackdio.orchestrate',
-                [
-                    'orchestrate',
-                    'stacks.{0}-{1}'.format(stack.pk, stack.slug),
-                ]
-            )
+                result = salt_runner.cmd(
+                    'stackdio.orchestrate',
+                    [
+                        'orchestrate',
+                        'stacks.{0}-{1}'.format(stack.pk, stack.slug),
+                    ]
+                )
 
-            failed, failed_hosts = utils.process_orchestrate_result(result, stack,
-                                                                    log_file, err_file)
+                failed, failed_hosts = utils.process_orchestrate_result(result, stack,
+                                                                        log_file, err_file)
 
-            # Stop logging
-            salt_logger.removeHandler(file_log_handler)
+            finally:
+                # Stop logging
+                root_logger.removeHandler(file_log_handler)
 
             if failed:
                 if current_try <= max_retries:  # NOQA

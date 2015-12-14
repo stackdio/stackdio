@@ -341,7 +341,8 @@ class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
         We need the stack during serializer validation - so we'll throw it in the context
         """
         context = super(StackHostsAPIView, self).get_serializer_context()
-        context['stack'] = self.get_stack()
+        # No need to check perms - that happens in get_queryset
+        context['stack'] = self.get_stack(check_permissions=False)
         return context
 
 

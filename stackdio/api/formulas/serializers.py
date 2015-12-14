@@ -19,16 +19,13 @@
 import logging
 
 from rest_framework import serializers
-from six import moves
+from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=import-error
 
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from stackdio.core.utils import recursively_sort_dict
 from . import models, tasks, validators
-
-urlsplit = moves.urllib_parse.urlsplit
-urlunsplit = moves.urllib_parse.urlunsplit
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +130,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
                 new_netloc,
                 parse_res.path,
                 parse_res.query,
-                parse_res.fragment
+                parse_res.fragment,
             ))
 
         if errors:

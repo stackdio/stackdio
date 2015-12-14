@@ -82,7 +82,7 @@ requirements = [
     'boto>=2.32.0',
     'celery>=3.1',
     'dj-database-url>=0.3',
-    'django-auth-ldap>=1.2',
+    'django-auth-ldap>=1.2.7',
     'django-extensions>=1.5,<1.5.6',
     'django-filter>=0.9',
     'django-guardian>=1.3',
@@ -91,7 +91,8 @@ requirements = [
     'envoy>=0.0.2',
     'psutil>=2.1',
     'requests>=2.4',
-    'salt>=2015.8.0,<2015.9,!=2015.8.1',
+    'salt>=2015.8.0,<2015.9,!=2015.8.1,!=2015.8.2',
+    'setuptools!=18.6',
     'six>=1.6',
 ]
 

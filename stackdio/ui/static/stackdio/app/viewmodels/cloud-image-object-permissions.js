@@ -34,7 +34,7 @@ define([
                 },
                 {
                     active: false,
-                    title: 'Cloud Image Detail',
+                    title: window.stackdio.imageTitle,
                     href: this.saveUrl
                 },
                 {

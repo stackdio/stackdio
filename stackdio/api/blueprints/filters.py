@@ -18,14 +18,17 @@
 
 import django_filters
 
+from stackdio.core.filters import OrFieldsFilter
 from . import models
 
 
 class BlueprintFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('title', 'description'), lookup_type='icontains')
 
     class Meta:
         model = models.Blueprint
         fields = (
             'title',
+            'q',
         )

@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404
 
 from stackdio.api.cloud.models import Snapshot
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.utils import get_object_list
 
 
 class SnapshotCreateView(PageView):
@@ -41,6 +42,7 @@ class SnapshotListView(PageView):
         context = super(SnapshotListView, self).get_context_data(**kwargs)
         context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot')
         context['has_create'] = self.request.user.has_perm('cloud.create_snapshot')
+        context['object_list'] = get_object_list(self.request.user, Snapshot)
         return context
 
 
@@ -62,8 +64,10 @@ class SnapshotDetailView(PageView):
         snapshot = get_object_or_404(Snapshot.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.view_snapshot', snapshot):
             raise Http404()
-        context['snapshot_id'] = pk
+        context['snapshot'] = snapshot
         context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot', snapshot)
+        context['has_delete'] = self.request.user.has_perm('cloud.delete_snapshot', snapshot)
+        context['has_update'] = self.request.user.has_perm('cloud.update_snapshot', snapshot)
         context['page_id'] = self.page_id
         return context
 
@@ -81,7 +85,7 @@ class SnapshotObjectPermissionsView(ObjectPermissionsView):
         snapshot = get_object_or_404(Snapshot.objects.all(), pk=pk)
         if not self.request.user.has_perm('cloud.admin_snapshot', snapshot):
             raise Http404()
-        context['snapshot_id'] = pk
+        context['snapshot'] = snapshot
         context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot', snapshot)
         context['page_id'] = self.page_id
         return context

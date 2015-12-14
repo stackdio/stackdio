@@ -15,21 +15,20 @@
 # limitations under the License.
 #
 
-
-import django_filters
-
-from stackdio.core.filters import OrFieldsFilter
-from . import models
+from django.db.models import Model
 
 
-class VolumeFilter(django_filters.FilterSet):
-    stack = django_filters.CharFilter(name='stack__title', lookup_type='icontains')
-    q = OrFieldsFilter(field_names=('stack__title', 'hostname', 'snapshot__title'),
-                       lookup_type='icontains')
+def get_object_list(user, model_cls, pk_field='id'):
+    assert issubclass(model_cls, Model)
 
-    class Meta:
-        model = models.Volume
-        fields = (
-            'stack',
-            'q',
-        )
+    model_name = model_cls._meta.model_name
+
+    object_list = []
+    for obj in model_cls.objects.all():
+        if user.has_perm('view_%s' % model_name, obj):
+            object_list.append({
+                'id': getattr(obj, pk_field),
+                'can_delete': user.has_perm('delete_%s' % model_name, obj),
+                'can_update': user.has_perm('update_%s' % model_name, obj),
+            })
+    return object_list

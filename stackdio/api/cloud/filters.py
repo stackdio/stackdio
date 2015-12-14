@@ -17,28 +17,35 @@
 
 import django_filters
 
+from stackdio.core.filters import OrFieldsFilter
 from . import models
 
 
 class CloudAccountFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
     region = django_filters.CharFilter(name='region__title')
+    q = OrFieldsFilter(field_names=('title', 'description', 'region__title', 'vpc_id'),
+                       lookup_type='icontains')
 
     class Meta:
         model = models.CloudAccount
         fields = (
             'title',
             'region',
+            'q',
         )
 
 
 class CloudImageFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('title', 'description', 'image_id'),
+                       lookup_type='icontains')
 
     class Meta:
         model = models.CloudImage
         fields = (
             'title',
+            'q',
         )
 
 
@@ -87,4 +94,18 @@ class SecurityGroupFilter(django_filters.FilterSet):
             'description',
             'default',
             'managed',
+        )
+
+
+class SnapshotFilter(django_filters.FilterSet):
+    title = django_filters.CharFilter(lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('title', 'description', 'snapshot_id', 'size_in_gb',
+                                    'filesystem_type'),
+                       lookup_type='icontains')
+
+    class Meta:
+        model = models.Snapshot
+        fields = (
+            'title',
+            'q',
         )
