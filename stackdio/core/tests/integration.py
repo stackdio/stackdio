@@ -68,6 +68,8 @@ class AuthenticationTestCase(StackdioTestCase):
                 continue
             if '(?P<' in url:
                 continue
+            if '.*' in url:
+                continue
             if 'login' in url or 'logout' in url:
                 # We don't care about login / logout views
                 continue
@@ -114,3 +116,24 @@ class AuthenticationTestCase(StackdioTestCase):
                              'URL {0} failed.  Expected {1}, was {2}.'.format(url,
                                                                               expected,
                                                                               response.status_code))
+
+    def test_404_endpoints(self):
+        self.client.login(username='test.user', password='1234')
+
+        for url in ('/api/blah', '/api/foobar/', '/api/blah/', '/api/stacks/permissions/foo'):
+            for method in ('get', 'post', 'put', 'patch', 'delete', 'head', 'trace'):
+                for accept in ('application/json', 'text/html'):
+                    func = getattr(self.client, method)
+                    response = func(url, HTTP_ACCEPT=accept)
+
+                    self.assertEqual(
+                        response.status_code,
+                        status.HTTP_404_NOT_FOUND,
+                        'URL {0} did not return a 404, it returned {1}'.format(url,
+                                                                               response.status_code)
+                    )
+
+                    # For some reason response.content_type is None, so this should work
+                    content_type = response._headers['content-type'][1]
+
+                    self.assertIn(accept, content_type)

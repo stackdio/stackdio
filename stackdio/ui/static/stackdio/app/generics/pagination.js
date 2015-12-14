@@ -18,7 +18,8 @@
 define([
     'jquery',
     'knockout',
-    'utils/class'
+    'utils/class',
+    'fuelux'
 ], function ($, ko, Class) {
     'use strict';
     
@@ -45,6 +46,8 @@ define([
         sortKey: ko.observable(),
         sortAsc: ko.observable(true),
 
+        permissionsMap: window.stackdio.permissionsMap,
+
         // Computed observables, to be created in init()
         sortedObjects: null,
         startNum: null,
@@ -66,7 +69,7 @@ define([
             $searchBar.search();
 
             $searchBar.on('searched.fu.search', function () {
-                self.currentPage(self.initialUrl + '?title=' + self.searchInput.val());
+                self.currentPage(self.initialUrl + '?q=' + self.searchInput.val());
                 self.shouldReset = false;
                 self.reset();
             });
@@ -133,7 +136,7 @@ define([
             }, this);
 
             if (this.autoRefresh) {
-                setInterval((function (self) {
+                this.intervalId = setInterval((function (self) {
                     return function() {
                         self.reload();
                     }
@@ -235,9 +238,14 @@ define([
                 }));
 
                 self.extraReloadSteps();
-            }).fail(function () {
-                // If we get a 404 or something, reset EVERYTHING.
-                self.reset();
+            }).fail(function (jqxhr) {
+                if (jqxhr.status == 403) {
+                    // On 403, we should reload, which SHOULD redirect to the login page
+                    window.location.reload(true);
+                } else {
+                    // If we get a 404 or something else, reset EVERYTHING.
+                    self.reset();
+                }
             }).always(function () {
                 self.loading(false);
             });

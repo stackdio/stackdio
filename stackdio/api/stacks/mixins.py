@@ -23,11 +23,12 @@ from . import models, permissions
 class StackRelatedMixin(object):
     permission_classes = (permissions.StackParentObjectPermissions,)
 
-    def get_stack(self):
+    def get_stack(self, check_permissions=True):
         queryset = models.Stack.objects.all()
 
         obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
+        if check_permissions:
+            self.check_object_permissions(self.request, obj)
         return obj
 
     def get_permissioned_object(self):

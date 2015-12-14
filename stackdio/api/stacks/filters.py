@@ -18,21 +18,27 @@
 
 import django_filters
 
+from stackdio.core.filters import OrFieldsFilter
 from . import models
 
 
 class StackFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('title', 'description', 'namespace'), lookup_type='icontains')
 
     class Meta:
         model = models.Stack
         fields = (
             'title',
+            'q',
         )
 
 
 class HostFilter(django_filters.FilterSet):
     hostname = django_filters.CharFilter(lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('title', 'description', 'hostname', 'instance_id',
+                                    'provider_private_ip'),
+                       lookup_type='icontains')
 
     class Meta:
         model = models.Host
@@ -40,4 +46,5 @@ class HostFilter(django_filters.FilterSet):
             'hostname',
             'status',
             'state',
+            'q',
         )

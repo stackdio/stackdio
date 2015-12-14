@@ -48,7 +48,9 @@
                 </div>
             </div>
             <div class="col-sm-2">
+                {% if has_update %}
                 <button type="submit" class="btn btn-success">Save</button>
+                {% endif %}
             </div>
         </form>
     </div>
@@ -64,6 +66,7 @@
             <select id="formulaVersion" style="width: 100%" class="stackdio-hidden-on-load"></select>
         </div>
         <div class="col-md-6 text-right">
+            {% if has_update %}
             <div class="btn-group action-dropdown">
                 <button type="button" class="btn btn-info dropdown-toggle"
                         data-toggle="dropdown" aria-haspopup="true"
@@ -78,6 +81,7 @@
                     </li>
                 </ul>
             </div>
+            {% endif %}
         </div>
     </div>
 

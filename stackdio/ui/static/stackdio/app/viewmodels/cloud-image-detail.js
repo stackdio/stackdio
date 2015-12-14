@@ -31,10 +31,6 @@ define([
         self.image = null;
         self.account = null;
 
-        // For the breadcrumb only
-        self.imageTitle = ko.observable('');
-
-        self.imageTitle = ko.observable('');
         self.imageUrl = ko.observable('');
 
         self.accountTitle = ko.observable();
@@ -52,19 +48,17 @@ define([
                 },
                 {
                     active: false,
-                    title: 'Cloud Account Detail',
+                    title: window.stackdio.accountTitle,
                     href: ko.computed(function () { return '/accounts/' + self.accountId() + '/';})
                 },
                 {
                     active: false,
-                    title: 'Cloud Account Images',
+                    title: 'Images',
                     href: ko.computed(function () { return '/accounts/' + self.accountId() + '/images/';})
                 },
                 {
                     active: true,
-                    title: ko.computed(function() {
-                        return self.imageTitle()
-                    })
+                    title: window.stackdio.imageTitle
                 }
             ];
         } else {
@@ -76,9 +70,7 @@ define([
                 },
                 {
                     active: true,
-                    title: ko.computed(function() {
-                        return self.imageTitle()
-                    })
+                    title: window.stackdio.imageTitle
                 }
             ];
         }
@@ -121,7 +113,6 @@ define([
             self.account = new CloudAccount(window.stackdio.accountId, self);
             self.image.waiting.done(function () {
                 document.title = 'stackd.io | Cloud Image Detail - ' + self.image.title();
-                self.imageTitle(self.image.title());
                 self.accountId(self.image.raw.account);
 
                 // Set the default size

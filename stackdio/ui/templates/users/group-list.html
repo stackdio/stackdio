@@ -42,7 +42,7 @@
                 <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: name, click: function (group) { $root.goToDetailPage(group) }"></td>
                     <td class="text-center">
-                        <a href="#" data-bind="click: $data.delete">
+                        <a href="#" data-bind="click: $data.delete, if: $root.permissionsMap[$data.name()] && $root.permissionsMap[$data.name()].delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                         </a>
                     </td>

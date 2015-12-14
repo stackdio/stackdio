@@ -8,7 +8,7 @@
     {{ block.super }}
     <script type="text/javascript">
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
-        window.stackdio.groupName = '{{ group_name }}';
+        window.stackdio.groupName = '{{ group.name }}';
     </script>
 {% endblock %}
 
@@ -18,14 +18,14 @@
         <div class="col-sm-3 col-sm-push-9">
             <ul class="nav nav-pills nav-stacked">
                 <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:group-detail' name=group_name %}">Detail</a>
+                    <a href="{% url 'ui:group-detail' name=group.name %}">Detail</a>
                 </li>
                 <li role="presentation"{% if page_id == 'members' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:group-members' name=group_name %}">Members</a>
+                    <a href="{% url 'ui:group-members' name=group.name %}">Members</a>
                 </li>
                 {% if has_admin %}
                 <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
-                    <a href="{% url 'ui:group-object-permissions' name=group_name %}">Permissions</a>
+                    <a href="{% url 'ui:group-object-permissions' name=group.name %}">Permissions</a>
                 </li>
                 {% endif %}
             </ul>

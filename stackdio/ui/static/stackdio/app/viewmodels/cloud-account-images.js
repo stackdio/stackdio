@@ -30,12 +30,12 @@ define([
             },
             {
                 active: false,
-                title: 'Cloud Account Detail',
+                title: window.stackdio.accountTitle,
                 href: '/accounts/' + window.stackdio.accountId + '/'
             },
             {
                 active: true,
-                title: 'Cloud Account Images'
+                title: 'Images'
             }
         ],
         model: CloudImage,

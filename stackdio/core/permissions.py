@@ -78,6 +78,25 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
 
     parent_model_cls = None
 
+    def has_permission(self, request, view):
+        """
+        Since this is for 'parent' object permissions, override this to check permissions on
+        the parent object.
+        """
+        try:
+            model_name = self.parent_model_cls._meta.model_name
+        except AttributeError:
+            return False
+
+        # Grab the get_object method
+        get_object_method = getattr(view, 'get_%s' % model_name, None)
+
+        # Couldn't find a method, no permission granted
+        if get_object_method is None:
+            return False
+
+        return self.has_object_permission(request, view, get_object_method())
+
     def has_object_permission(self, request, view, obj):
         assert self.parent_model_cls is not None, (
             'Cannot apply %s directly. '

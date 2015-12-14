@@ -27,11 +27,6 @@ define([
 
         // View variables
         self.account = null;
-
-        // For the breadcrumb only
-        self.accountTitle = ko.observable('');
-
-        self.accountTitle = ko.observable('');
         self.accountUrl = ko.observable('');
 
         // Override the breadcrumbs
@@ -41,12 +36,10 @@ define([
                 title: 'Cloud Accounts',
                 href: '/accounts/'
             },
-            ko.observable({
+            {
                 active: true,
-                title: ko.computed(function() {
-                    return self.accountTitle()
-                })
-            })
+                title: window.stackdio.accountTitle
+            }
         ];
 
         self.subscription = null;
@@ -61,7 +54,6 @@ define([
             self.account = new CloudAccount(window.stackdio.accountId, self);
             self.account.waiting.done(function () {
                 document.title = 'stackd.io | Cloud Account Detail - ' + self.account.title();
-                self.accountTitle(self.account.title());
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/accounts/';

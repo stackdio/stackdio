@@ -30,12 +30,12 @@ define([
             },
             {
                 active: false,
-                title: 'Blueprint Detail',
+                title: window.stackdio.blueprintTitle,
                 href: '/blueprints/' + window.stackdio.blueprintId + '/'
             },
             {
                 active: true,
-                title: 'Blueprint Formula Versions'
+                title: 'Formula Versions'
             }
         ],
         objectId: window.stackdio.blueprintId,

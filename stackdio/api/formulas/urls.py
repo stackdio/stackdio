@@ -40,33 +40,33 @@ object_router.register(r'groups',
 
 
 urlpatterns = (
-    url(r'^formulas/$',
+    url(r'^$',
         api.FormulaListAPIView.as_view(),
         name='formula-list'),
 
-    url(r'^formulas/permissions/',
+    url(r'^permissions/',
         include(model_router.urls)),
 
-    url(r'^formulas/(?P<pk>[0-9]+)/$',
+    url(r'^(?P<pk>[0-9]+)/$',
         api.FormulaDetailAPIView.as_view(),
         name='formula-detail'),
 
-    url(r'^formulas/(?P<pk>[0-9]+)/properties/$',
+    url(r'^(?P<pk>[0-9]+)/properties/$',
         api.FormulaPropertiesAPIView.as_view(),
         name='formula-properties'),
 
-    url(r'^formulas/(?P<pk>[0-9]+)/components/$',
+    url(r'^(?P<pk>[0-9]+)/components/$',
         api.FormulaComponentListAPIView.as_view(),
         name='formula-component-list'),
 
-    url(r'^formulas/(?P<pk>[0-9]+)/valid_versions/$',
+    url(r'^(?P<pk>[0-9]+)/valid_versions/$',
         api.FormulaValidVersionListAPIView.as_view(),
         name='formula-valid-version-list'),
 
-    url(r'^formulas/(?P<pk>[0-9]+)/action/$',
+    url(r'^(?P<pk>[0-9]+)/action/$',
         api.FormulaActionAPIView.as_view(),
         name='formula-action'),
 
-    url(r'^formulas/(?P<pk>[0-9]+)/permissions/',
+    url(r'^(?P<pk>[0-9]+)/permissions/',
         include(object_router.urls)),
 )

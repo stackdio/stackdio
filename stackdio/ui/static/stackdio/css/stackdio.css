@@ -99,6 +99,11 @@ Bootstrap overrides
     padding-bottom: 10px;
 }
 
+.modal-body {
+    max-height: calc(100vh - 212px);
+    overflow-y: auto;
+}
+
 #main-content {
     position: relative;
 }

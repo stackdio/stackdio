@@ -52,11 +52,14 @@
             <div class="col-sm-6">
                 <h3>Formula Versions</h3>
                 <hr>
-                <div id="formula_versions" data-bind="foreach: formulaVersions">
-                    <div class="form-group">
-                        <label data-bind="text: formula"></label>
-                        <input type="text" class="form-control" data-bind="value: version, valueUpdate: 'keyup'">
+                <div id="formula_versions" data-bind="foreach: formulaVersions, visible: versionsReady">
+                    <div class="form-group stackdio-hidden-on-load">
+                        <label data-bind="text: formula, attr: {for: formulaHtmlId}"></label>
+                        <select class="hidden-formula-versions" style="width: 100%" data-bind="attr: {id: formulaHtmlId}"></select>
                     </div>
+                </div>
+                <div class="stackdio-hidden-on-load" data-bind="visible: versionsReady() && formulaVersions().length === 0">
+                    <h5>No formula versions to set.</h5>
                 </div>
                 <p data-bind="visible: !blueprintId()">Please select a blueprint</p>
                 <button type="submit" id="create-button" data-style="slide-left"
