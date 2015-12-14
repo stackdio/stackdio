@@ -217,7 +217,11 @@ define([
                                 git_password: gitPassword
                             })
                         }).done(function () {
-                            self.reload();
+                            if (self.parent && typeof self.parent.reload === 'function') {
+                                self.parent.reload();
+                            } else {
+                                self.reload();
+                            }
                         }).fail(function (jqxhr) {
                             var message;
                             try {
