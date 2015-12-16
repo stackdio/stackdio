@@ -30,7 +30,7 @@ class OrFieldsFilter(django_filters.Filter):
         self.field_names = field_names
         super(OrFieldsFilter, self).__init__(*args, **kwargs)
 
-    def filter(self, qs, value):
+    def filter(self, qs, value):  # pylint: disable=method-hidden
         if isinstance(value, Lookup):
             lookup = six.text_type(value.lookup_type)
             value = value.value

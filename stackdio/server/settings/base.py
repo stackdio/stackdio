@@ -66,7 +66,9 @@ if not os.path.isdir(LOG_DIRECTORY):
 ##
 # Some convenience variables
 ##
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)
+))))
 
 # Set DEBUG things to False here, override to True in the development.py settings
 DEBUG = False
@@ -369,7 +371,8 @@ CELERY_ROUTES = {
 # to ldap_settings.py and modify the settings there.
 ##
 try:
-    from stackdio.server.settings.ldap_settings import *  # pylint: disable=wildcard-import, unused-wildcard-import, no-name-in-module
+    # pylint: disable=wildcard-import, unused-wildcard-import, no-name-in-module
+    from stackdio.server.settings.ldap_settings import *
     LDAP_ENABLED = True
     AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
 except ImportError:
