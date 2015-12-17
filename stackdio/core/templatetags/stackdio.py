@@ -20,6 +20,7 @@ from __future__ import absolute_import
 
 from django import template
 from django.conf import settings
+from django.shortcuts import resolve_url
 
 from stackdio.server import __version__
 
@@ -33,7 +34,7 @@ def stackdio_version():
 
 @register.simple_tag
 def main_file():
-    if settings.DEBUG:
-        return '/js/main.js'
+    if settings.JAVASCRIPT_DEBUG:
+        return resolve_url('ui:js-main')
     else:
         return '{0}stackdio/build/main.js'.format(settings.STATIC_URL)

@@ -21,6 +21,7 @@
 from stackdio.server.settings.testing import *
 
 DEBUG = True
+JAVASCRIPT_DEBUG = True
 
 # Set the log level to DEBUG - it's WARNING by default
 LOGGING['loggers']['']['level'] = 'DEBUG'

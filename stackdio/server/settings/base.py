@@ -72,6 +72,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 
 # Set DEBUG things to False here, override to True in the development.py settings
 DEBUG = False
+JAVASCRIPT_DEBUG = False
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
