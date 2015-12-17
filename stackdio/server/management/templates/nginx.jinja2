@@ -29,6 +29,7 @@ server {
     # static content - assuming standard installation location
     location /static {
         root {{ storage_root }};
+        expires 30m;
     }
 
     # gunicorn 
