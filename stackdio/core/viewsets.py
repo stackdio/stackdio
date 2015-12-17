@@ -312,13 +312,14 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
                         obj)
 
 
-class StackdioObjectUserPermissionsViewSet(StackdioObjectPermissionsViewSet):  # pylint: disable=abstract-method
+# pylint: disable=abstract-method
+class StackdioObjectUserPermissionsViewSet(StackdioObjectPermissionsViewSet):
     user_or_group = 'user'
     lookup_field = 'username'
     lookup_url_kwarg = 'username'
 
 
-class StackdioObjectGroupPermissionsViewSet(StackdioObjectPermissionsViewSet):  # pylint: disable=abstract-method
+class StackdioObjectGroupPermissionsViewSet(StackdioObjectPermissionsViewSet):
     user_or_group = 'group'
     lookup_field = 'name'
     lookup_url_kwarg = 'groupname'

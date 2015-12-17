@@ -20,9 +20,9 @@ from __future__ import unicode_literals
 from django.conf.urls import include, url
 from django.views.defaults import page_not_found
 
-from rest_framework import status
+from rest_framework import permissions, status
 from rest_framework.compat import OrderedDict
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.urlpatterns import format_suffix_patterns
@@ -75,6 +75,7 @@ class APIRootView(APIView):
 
 
 @api_view(APIView.http_method_names)
+@permission_classes([permissions.AllowAny])
 def api_not_found_view(request, *args, **kwargs):
     return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 

@@ -47,19 +47,19 @@ account_object_router.register(r'groups',
 
 image_model_router = routers.SimpleRouter()
 image_model_router.register(r'users',
-                              api.CloudImageModelUserPermissionsViewSet,
-                              'cloudimage-model-user-permissions')
+                            api.CloudImageModelUserPermissionsViewSet,
+                            'cloudimage-model-user-permissions')
 image_model_router.register(r'groups',
-                              api.CloudImageModelGroupPermissionsViewSet,
-                              'cloudimage-model-group-permissions')
+                            api.CloudImageModelGroupPermissionsViewSet,
+                            'cloudimage-model-group-permissions')
 
 image_object_router = routers.SimpleRouter()
 image_object_router.register(r'users',
-                               api.CloudImageObjectUserPermissionsViewSet,
-                               'cloudimage-object-user-permissions')
+                             api.CloudImageObjectUserPermissionsViewSet,
+                             'cloudimage-object-user-permissions')
 image_object_router.register(r'groups',
-                               api.CloudImageObjectGroupPermissionsViewSet,
-                               'cloudimage-object-group-permissions')
+                             api.CloudImageObjectGroupPermissionsViewSet,
+                             'cloudimage-object-group-permissions')
 
 snapshot_model_router = routers.SimpleRouter()
 snapshot_model_router.register(r'users',
