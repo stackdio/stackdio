@@ -5,13 +5,15 @@
 {% block scripts %}
     <script src="{% static 'stackdio/lib/bower_components/requirejs/require.js' %}"></script>
     <script type="text/javascript">
-        require(['{% main_file %}'], function (main) {
-            require(['jquery', 'knockout', '{{ viewmodel }}', 'domReady!'], function ($, ko, vm) {
-                // Unhide all the things that are hidden before we do anything weird with the DOM
-                $('.stackdio-hidden-on-load').removeClass('stackdio-hidden-on-load');
+        require(['{% main_file %}'], function () {
+            require(['domReady!'], function () {
+                require(['jquery', 'knockout', '{{ viewmodel }}'], function ($, ko, vm) {
+                    // Unhide all the things that are hidden before we do anything weird with the DOM
+                    $('.stackdio-hidden-on-load').removeClass('stackdio-hidden-on-load');
 
-                // We need to apply our bindings here.
-                ko.applyBindings(new vm());
+                    // We need to apply our bindings here.
+                    ko.applyBindings(new vm());
+                });
             });
         });
     </script>
