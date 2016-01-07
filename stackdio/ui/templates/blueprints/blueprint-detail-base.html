@@ -10,6 +10,9 @@
         if (typeof window.stackdio == 'undefined') window.stackdio = {};
         window.stackdio.blueprintId = {{ blueprint.id }};
         window.stackdio.blueprintTitle = '{{ blueprint.title }}';
+        {% if has_update != None %}
+        window.stackdio.hasUpdatePerm = {{ has_update | lower }};
+        {% endif %}
     </script>
 {% endblock %}
 
