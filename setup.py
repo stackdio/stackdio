@@ -98,6 +98,7 @@ requirements = [
 ]
 
 testing_requirements = [
+    'astroid<1.4',
     'coveralls',
     'django-nose>=1.0,<=1.4',
     'mock',
