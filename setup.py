@@ -85,10 +85,11 @@ requirements = [
     'django-auth-ldap>=1.2.7',
     'django-extensions>=1.5,<1.5.6',
     'django-filter>=0.9',
-    'django-guardian>=1.3',
+    'django-guardian>=1.3,<1.4',
     'django-model-utils>=2.0,<2.3',
     'djangorestframework>=3.1,<3.2',
     'envoy>=0.0.2',
+    'pip>=6',
     'psutil>=2.1',
     'requests>=2.4',
     'salt>=2015.8.0,<2015.9,!=2015.8.1,!=2015.8.2',
@@ -97,6 +98,7 @@ requirements = [
 ]
 
 testing_requirements = [
+    'astroid<1.4',
     'coveralls',
     'django-nose>=1.0,<=1.4',
     'mock',

@@ -399,6 +399,24 @@ def process_sls_result(sls_result, err_file):
     return failed, failed_hosts
 
 
+def process_times(sls_result):
+    if 'ret' not in sls_result:
+        return
+
+    time_map = {}
+
+    for state_results in sls_result['ret'].values():
+        for stage_label, stage_result in state_results.items():
+            info_dict = state_to_dict(stage_label)
+
+            if 'duration' in stage_result:
+                current = time_map.get(info_dict['module'], 0)
+                time_map[info_dict['module']] = current + float(stage_result['duration'].split()[0])
+
+    for module, time in sorted(time_map.items()):
+        logger.info('Module {0} took {1} total seconds to run'.format(module, time / 1000))
+
+
 def process_orchestrate_result(result, stack, log_file, err_file):
     opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
@@ -417,8 +435,13 @@ def process_orchestrate_result(result, stack, log_file, err_file):
     for sls, sls_result in sorted(result.items(), key=lambda x: x[1]['__run_num__']):
         sls_dict = state_to_dict(sls)
 
-        logger.info('Processing stage {0} for stack {1}\n'.format(sls_dict['name'],
-                                                                  stack.title))
+        logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'],
+                                                                stack.title))
+
+        if 'changes' in sls_result:
+            process_times(sls_result['changes'])
+
+        logger.info('')
 
         with open(err_file, 'a') as f:
             if 'changes' in sls_result and 'ret' in sls_result['changes']:
