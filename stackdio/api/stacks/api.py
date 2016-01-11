@@ -201,6 +201,9 @@ class StackCommandDetailAPIView(generics.RetrieveDestroyAPIView):
     serializer_class = serializers.StackCommandSerializer
     permission_classes = (permissions.StackParentObjectPermissions,)
 
+    def get_stack(self):
+        return self.get_object().stack
+
     def check_object_permissions(self, request, obj):
         # Check the permissions on the stack instead of the host
         super(StackCommandDetailAPIView, self).check_object_permissions(request, obj.stack)
@@ -350,6 +353,9 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
     queryset = models.Host.objects.all()
     serializer_class = serializers.HostSerializer
     permission_classes = (permissions.StackParentObjectPermissions,)
+
+    def get_stack(self):
+        return self.get_object().stack
 
     def check_object_permissions(self, request, obj):
         # Check the permissions on the stack instead of the host
