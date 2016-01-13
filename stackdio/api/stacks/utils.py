@@ -411,7 +411,17 @@ def process_times(sls_result):
 
             if 'duration' in stage_result:
                 current = time_map.get(info_dict['module'], 0)
-                time_map[info_dict['module']] = current + float(stage_result['duration'].split()[0])
+                duration = stage_result['duration']
+                try:
+                    if isinstance(duration, six.string_types):
+                        new_time = float(stage_result['duration'].split()[0])
+                    else:
+                        new_time = float(duration)
+                except ValueError:
+                    # Make sure we never fail
+                    new_time = 0
+
+                time_map[info_dict['module']] = current + new_time
 
     for module, time in sorted(time_map.items()):
         logger.info('Module {0} took {1} total seconds to run'.format(module, time / 1000))
