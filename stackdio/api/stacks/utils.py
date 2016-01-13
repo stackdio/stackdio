@@ -414,7 +414,7 @@ def process_times(sls_result):
                 duration = stage_result['duration']
                 try:
                     if isinstance(duration, six.string_types):
-                        new_time = float(stage_result['duration'].split()[0])
+                        new_time = float(duration.split()[0])
                     else:
                         new_time = float(duration)
                 except ValueError:
