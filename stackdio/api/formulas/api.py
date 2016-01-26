@@ -100,8 +100,11 @@ class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIVi
             components = formula.components_for_version(version)
         else:
             version = formula.default_version
-            formula.repo.git.checkout(version)
-            components = formula.components
+            if formula.repo is None:
+                components = {}
+            else:
+                formula.repo.git.checkout(version)
+                components = formula.components
 
         components = components.values()
 
