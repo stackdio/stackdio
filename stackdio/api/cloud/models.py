@@ -47,12 +47,12 @@ FILESYSTEM_CHOICES = (
 )
 
 
-def get_config_file_path(obj, filename):
-    return obj.slug + '.conf'
+def get_config_file_path(instance, filename):
+    return filename
 
 
-def get_global_orch_props_file_path(obj, filename):
-    return "cloud/{0}/global_orch.props".format(obj.slug)
+def get_global_orch_props_file_path(instance, filename):
+    return 'cloud/{0}/{1}'.format(instance.slug, filename)
 
 
 _cloudprovider_model_permissions = ()
@@ -187,8 +187,7 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
         self.save()
 
         if not self.config_file:
-            self.config_file.save(self.slug + '.conf',
-                                  ContentFile(self.yaml))
+            self.config_file.save(self.slug + '.conf', ContentFile(self.yaml))
         else:
             with open(self.config_file.path, 'w') as f:
                 # update the yaml to include updated security group information
@@ -205,9 +204,7 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
     def global_orchestration_properties(self, props):
         props_json = json.dumps(props, indent=4)
         if not self.global_orch_props_file:
-            self.global_orch_props_file.save(
-                get_global_orch_props_file_path(self, None),
-                ContentFile(props_json))
+            self.global_orch_props_file.save('global_orch.props', ContentFile(props_json))
         else:
             with open(self.global_orch_props_file.path, 'w') as f:
                 f.write(props_json)
@@ -325,8 +322,7 @@ class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
                                       default_flow_style=False)
 
         if not self.config_file:
-            self.config_file.save(self.slug + '.conf',
-                                  ContentFile(profile_yaml))
+            self.config_file.save(self.slug + '.conf', ContentFile(profile_yaml))
         else:
             with open(self.config_file.path, 'w') as f:
                 # update the yaml to include updated security group information

@@ -137,6 +137,7 @@ class CloudAccountListAPIView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         account = serializer.save()
+        account.update_config()
 
         for perm in models.CloudAccount.object_permissions:
             assign_perm('cloud.%s_cloudaccount' % perm, self.request.user, account)
@@ -146,6 +147,10 @@ class CloudAccountDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudAccount.objects.all()
     serializer_class = serializers.CloudAccountSerializer
     permission_classes = (StackdioObjectPermissions,)
+
+    def perform_update(self, serializer):
+        account = serializer.save()
+        account.update_config()
 
     def perform_destroy(self, instance):
         # check for images using this account before deleting
@@ -263,6 +268,10 @@ class CloudImageDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.CloudImage.objects.all()
     serializer_class = serializers.CloudImageSerializer
     permission_classes = (StackdioObjectPermissions,)
+
+    def perform_update(self, serializer):
+        image = serializer.save()
+        image.update_config()
 
     def perform_destroy(self, instance):
         # check for blueprint usage before deleting
