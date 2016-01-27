@@ -106,8 +106,9 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
     searchable_fields = ('title', 'description')
 
     class Meta:
+        ordering = ('title',)
+
         unique_together = ('title', 'provider')
-        ordering = ('provider', 'title')
 
         default_permissions = tuple(set(_cloudaccount_model_permissions +
                                         _cloudaccount_object_permissions))
@@ -262,6 +263,8 @@ class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
     searchable_fields = ('title', 'description')
 
     class Meta:
+        ordering = ('title',)
+
         unique_together = ('title', 'account')
 
         default_permissions = tuple(set(_cloudimage_model_permissions +
