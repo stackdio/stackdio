@@ -52,7 +52,14 @@ def find_ebs_device(device):
         return device
 
     if device.startswith('/dev/sd'):
-        new_device = '/dev/xvd' + device[device.rfind('/') + 3:]
+        if os.path.exists('/dev/xvda'):
+            new_device_letter = device[7]
+        else:
+            # Some systems start with /dev/xvde instead of /dev/xvda, so we need to add 4
+            new_device_letter = chr(ord(device[7]) + 4)
+        device_partition = device[8:]
+
+        new_device = '/dev/xvd{0}{1}'.format(new_device_letter, device_partition)
         if os.path.exists(new_device):
             return new_device
 
