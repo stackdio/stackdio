@@ -270,7 +270,7 @@ class CloudImageDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
         if blueprints:
             raise ValidationError({
-                'detail': 'One or more blueprints are making use of this image.',
+                'detail': ['One or more blueprints are making use of this image.'],
                 'blueprints': [b.title for b in blueprints],
             })
 
