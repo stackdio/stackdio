@@ -10,7 +10,7 @@
 
 {% set device_name = salt['mount.find_ebs_device'](vol['device']) %}
 
-{#{% if device_name %}#}
+{% if device_name %}
 {{ vol['mount_point'] }}:
   mount:
     - mounted
@@ -19,6 +19,6 @@
     - mount: true
     - mkmnt: true
     - persist: false
-{#{% endif %}#}
+{% endif %}
 
 {% endfor %}
