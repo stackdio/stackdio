@@ -628,7 +628,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 'securitygroupid': list(security_groups),
                 'volumes': map_volumes,
                 'delvol_on_destroy': True,
-                'del_root_vol_on_destroy': True,
                 'del_all_vols_on_destroy': True,
             }
 

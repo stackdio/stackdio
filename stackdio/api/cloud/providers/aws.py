@@ -319,7 +319,6 @@ class AWSCloudProvider(BaseCloudProvider):
             'wait_for_passwd_timeout': 5,
             'rename_on_destroy': True,
             'delvol_on_destroy': True,
-            'del_root_vol_on_destroy': True,
             'del_all_vols_on_destroy': True,
         }
 
