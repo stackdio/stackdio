@@ -137,7 +137,6 @@ class CloudAccountListAPIView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         account = serializer.save()
-        account.update_config()
 
         for perm in models.CloudAccount.object_permissions:
             assign_perm('cloud.%s_cloudaccount' % perm, self.request.user, account)

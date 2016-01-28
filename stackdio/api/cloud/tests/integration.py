@@ -16,7 +16,9 @@
 #
 
 import logging
+import os
 
+import yaml
 from rest_framework import status
 
 from stackdio.core.tests.utils import PermissionsMixin, StackdioTestCase
@@ -77,6 +79,21 @@ class CloudAccountTestCase(StackdioTestCase, PermissionsMixin):
             },
         ]
     }
+
+    def set_up_perms(self):
+        super(CloudAccountTestCase, self).set_up_perms()
+
+        # Generate the yaml and store in the database
+        yaml_data = {
+            self.obj.slug: {
+                'securitygroupid': []
+            }
+        }
+        self.obj.yaml = yaml.safe_dump(yaml_data, default_flow_style=False)
+        self.obj.save()
+
+        # Update the salt cloud providers file
+        self.obj.update_config()
 
     def test_view_account_as_admin(self):
         self.client.login(username='test.admin', password='1234')
