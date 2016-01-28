@@ -18,7 +18,26 @@
 import os
 
 import yaml
-from rest_framework.serializers import ValidationError
+from django.core.validators import URLValidator
+from django.utils.translation import ugettext_lazy as _
+from rest_framework.serializers import CharField, ValidationError
+
+
+class FormulaURLValidator(URLValidator):
+    # Use the valid git url schemes
+    schemes = ['ssh', 'git', 'git+ssh', 'http', 'https', 'ftp', 'ftps', 'rsync']
+    message = _('Enter a valid git URL.')
+
+
+class FormulaURLField(CharField):
+    default_error_messages = {
+        'invalid': _('Enter a valid git URL.')
+    }
+
+    def __init__(self, **kwargs):
+        super(FormulaURLField, self).__init__(**kwargs)
+        validator = FormulaURLValidator(message=self.error_messages['invalid'])
+        self.validators.append(validator)
 
 
 def validate_specfile(formula, repodir):

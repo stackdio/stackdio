@@ -84,14 +84,16 @@ def copy_formulas(stack_or_account):
     for formula in stack_or_account.get_formulas():
         formula_dir = os.path.join(dest_dir, formula.get_repo_name())
 
-        try:
+        # Blow away the private repo and re-copy.  This way we get the most recent states
+        # that have been updated
+        if formula.private_git_repo and os.path.exists(formula_dir):
+            shutil.rmtree(formula_dir)
+
+        if not os.path.isdir(formula_dir):
             # Copy over the formula - but just bail if it already exists
             shutil.copytree(formula.get_repo_dir(), formula_dir)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                logger.debug('Formula not copied, already exists: {0}'.format(formula.uri))
-            else:
-                raise
+        else:
+            logger.debug('Formula not copied, already exists: {0}'.format(formula.uri))
 
         # Default to the HEAD branch
         version = formula.default_version
@@ -102,11 +104,14 @@ def copy_formulas(stack_or_account):
         except FormulaVersion.DoesNotExist:
             pass
 
-        # Update the formula, and fail silently if there was an error.
         if formula.private_git_repo:
-            logger.debug('Skipping private formula: {0}'.format(formula.uri))
+            # If it's private, we can't update it but we can at least checkout the right branch
+            if formula.repo is not None:
+                formula.repo.git.checkout(version)
+            logger.debug('Skipping update of private formula: {0}'.format(formula.uri))
             continue
 
+        # Update the formula
         update_formula.si(formula.id, None, version, formula_dir, raise_exception=False)()
 
 

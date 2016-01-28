@@ -578,7 +578,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 v = {
                     'device': vol.device,
                     'mount_point': vol.mount_point,
+                    # filesystem_type doesn't matter, should remove soon
                     'filesystem_type': vol.snapshot.filesystem_type,
+                    'type': 'gp2',
                 }
                 if vol.volume_id:
                     v['volume_id'] = vol.volume_id
@@ -625,6 +627,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 'size': instance_size,
                 'securitygroupid': list(security_groups),
                 'volumes': map_volumes,
+                'delvol_on_destroy': True,
+                'del_all_vols_on_destroy': True,
             }
 
             if cloud_account.vpc_enabled:

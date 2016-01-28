@@ -216,6 +216,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return self._repo
 
     def get_valid_versions(self):
+        if self.repo is None:
+            return []
+
         # This will grab all the tags, remote branches, and local branches
         refs = set()
         for r in self.repo.refs:
@@ -238,6 +241,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return str(self.repo.remotes.origin.refs.HEAD.ref.remote_head)
 
     def components_for_version(self, version):
+        if self.repo is None:
+            return {}
+
         if version in self.get_valid_versions():
             # Checkout version, but only if it's valid
             self.repo.git.checkout(version)
