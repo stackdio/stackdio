@@ -81,7 +81,20 @@ def is_state_error(state_meta):
 def copy_formulas(stack_or_account):
     dest_dir = os.path.join(stack_or_account.get_root_directory(), 'formulas')
 
+    # Be sure to create a formula version for all formulas needed
     for formula in stack_or_account.get_formulas():
+        try:
+            # Try to the version if it exists
+            stack_or_account.formula_versions.get(formula=formula)
+        except FormulaVersion.DoesNotExist:
+            # Default to the head branch
+            stack_or_account.formula_versions.create(formula=formula,
+                                                     version=formula.default_version)
+
+    for formula_version in stack_or_account.formula_versions.all():
+        formula = formula_version.formula
+        version = formula_version.version
+
         formula_dir = os.path.join(dest_dir, formula.get_repo_name())
 
         # Blow away the private repo and re-copy.  This way we get the most recent states
@@ -94,15 +107,6 @@ def copy_formulas(stack_or_account):
             shutil.copytree(formula.get_repo_dir(), formula_dir)
         else:
             logger.debug('Formula not copied, already exists: {0}'.format(formula.uri))
-
-        # Default to the HEAD branch
-        version = formula.default_version
-        try:
-            # Try to the version if it exists
-            v = stack_or_account.formula_versions.get(formula=formula)
-            version = v.version
-        except FormulaVersion.DoesNotExist:
-            pass
 
         if formula.private_git_repo:
             # If it's private, we can't update it but we can at least checkout the right branch
