@@ -1035,14 +1035,14 @@ def highstate(stack_id, max_retries=2):
                 # is either a list or dict. Those that are lists we can
                 # assume to be a list of errors
                 errors = {}
-                for host, states in result.iteritems():
-                    if type(states) is list:
+                for host, states in result.items():
+                    if not isinstance(states, dict):
                         errors[host] = states
                         continue
 
                     # iterate over the individual states in the host
                     # looking for state failures
-                    for state_str, state_meta in states.iteritems():
+                    for state_str, state_meta in states.items():
                         if not is_state_error(state_meta):
                             continue
 
@@ -1057,7 +1057,7 @@ def highstate(stack_id, max_retries=2):
                     with open(err_file, 'a') as f:
                         f.write(yaml.safe_dump(errors))
 
-                    if not unrecoverable_error and current_try <= max_retries:  # NOQA
+                    if not unrecoverable_error and current_try <= max_retries:
                         continue
 
                     err_msg = 'Core provisioning errors on hosts: ' \
