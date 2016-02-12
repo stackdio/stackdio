@@ -876,7 +876,10 @@ def sync_all(stack_id):
                 result[host] = data
 
         for host, data in result.items():
-            if data['retcode'] != 0:
+            if 'retcode' not in data:
+                logger.warning('Host {0} missing a retcode... assuming failure'.format(host))
+
+            if data.get('retcode', 1) != 0:
                 err_msg = str(data['ret'])
                 stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
                 raise StackTaskException('Error syncing salt data on stack {0}: '
