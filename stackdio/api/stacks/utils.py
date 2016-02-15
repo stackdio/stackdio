@@ -228,6 +228,12 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
                 except ExtraData:
                     # Blow away the salt cloud cache and try again
                     os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                except salt.cloud.SaltCloudSystemExit as e:
+                    if 'extra data' in e.message:
+                        # Blow away the salt cloud cache and try again
+                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                    else:
+                        raise
         finally:
             # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
             root_logger.removeHandler(handler)
