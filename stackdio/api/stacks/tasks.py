@@ -1463,7 +1463,7 @@ def orchestrate(stack_id, max_retries=2):
                 root_logger.removeHandler(file_log_handler)
 
             if failed:
-                if current_try <= max_retries:  # NOQA
+                if current_try <= max_retries:
                     continue
 
                 err_msg = 'Orchestration errors on hosts: ' \

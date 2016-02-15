@@ -430,6 +430,18 @@ def process_times(sls_result):
 def process_orchestrate_result(result, stack, log_file, err_file):
     opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
+    if not isinstance(result, dict):
+        with open(err_file, 'a') as f:
+            f.write('Orchestration failed.  See below.\n\n')
+            f.write(str(result))
+        return True, set()
+
+    if opts['id'] not in result:
+        with open(err_file, 'a') as f:
+            f.write('Orchestration result is missing information:\n\n')
+            f.write(str(result))
+        return True, set()
+
     result = result[opts['id']]
 
     if not isinstance(result, dict):
