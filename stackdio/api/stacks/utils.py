@@ -226,10 +226,19 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
                     # It worked
                     launched = True
                 except ExtraData:
+                    logger.info('Received ExtraData, retrying: {0}'.format(e))
                     # Blow away the salt cloud cache and try again
                     os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
                 except salt.cloud.SaltCloudSystemExit as e:
                     if 'extra data' in e.message:
+                        logger.info('Received ExtraData, retrying: {0}'.format(e))
+                        # Blow away the salt cloud cache and try again
+                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                    else:
+                        raise
+                except TypeError as e:
+                    if 'NoneType' in e.message:
+                        logger.info('Received TypeError, retrying: {0}'.format(e))
                         # Blow away the salt cloud cache and try again
                         os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
                     else:
@@ -273,8 +282,16 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
                     # It worked
                     destroyed = True
                 except ExtraData:
+                    logger.info('Received ExtraData, retrying: {0}'.format(e))
                     # Blow away the salt cloud cache and try again
                     os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                except TypeError as e:
+                    if 'NoneType' in e.message:
+                        logger.info('Received TypeError, retrying: {0}'.format(e))
+                        # Blow away the salt cloud cache and try again
+                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                    else:
+                        raise
 
             return salt.utils.cloud.simple_types_filter(ret)
         else:
