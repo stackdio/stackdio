@@ -426,14 +426,14 @@ def process_times(sls_result):
     if 'ret' not in sls_result:
         return
 
-    time_map = {}
+    max_time_map = {}
 
     for state_results in sls_result['ret'].values():
         for stage_label, stage_result in state_results.items():
-            info_dict = state_to_dict(stage_label)
 
+            # Pull out the duration
             if 'duration' in stage_result:
-                current = time_map.get(info_dict['module'], 0)
+                current = max_time_map.get(stage_label, 0)
                 duration = stage_result['duration']
                 try:
                     if isinstance(duration, six.string_types):
@@ -444,7 +444,21 @@ def process_times(sls_result):
                     # Make sure we never fail
                     new_time = 0
 
-                time_map[info_dict['module']] = current + new_time
+                # Only set the duration if it's higher than what we already have
+                # This should be all we care about - since everything is running in parallel,
+                # the bottleneck is the max time
+                max_time_map[stage_label] = max(current, new_time)
+
+    time_map = {}
+
+    # aggregate into modules
+    for stage_label, max_time in max_time_map.items():
+        info_dict = state_to_dict(stage_label)
+
+        current = time_map.get(info_dict['module'], 0)
+
+        # Now we want the sum since these are NOT running in parallel.
+        time_map[info_dict['module']] = current + max_time
 
     for module, time in sorted(time_map.items()):
         logger.info('Module {0} took {1} total seconds to run'.format(module, time / 1000))
