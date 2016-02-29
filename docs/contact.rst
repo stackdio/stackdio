@@ -61,7 +61,7 @@ If you think you've found a bug, here's what we ask of you:
 #. Be patient :)
 
 #. Optionally, it would be fantastic if you could help us out and fix
-   the problem yourself...if you're brave enough, see the :doc:`contributor-guide`
+   the problem yourself...if you're brave enough, see the :doc:`developers/contributor-guide`
    on contributing to the project.
 
 Usage Questions

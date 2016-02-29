@@ -21,7 +21,7 @@ Filing issues and feature requests
 ----------------------------------
 
 The process for filing issues and feature requests is described in the
-:doc:`contact` page.
+:doc:`../contact` page.
 
 Contributing Code
 -----------------

@@ -1,10 +1,10 @@
-stackd.io webserver guide
-=========================
+Webserver Guide
+===============
 
 This guide will help you quickly get the web portion of stackd.io
 running behind either Apache or Nginx. You should've already worked
-through the :doc:`quickstart` before running through
-the steps below. As with the quickstart, our focus is not entirely on
+through this manual install guide before running through
+the steps below. As with this guide, our focus is not entirely on
 building out a production-ready system, but merely helping you quickly
 get a system stood up to become familiar with stackd.io. Once you
 understand how it works, then we can start hardening the system for
