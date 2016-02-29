@@ -145,5 +145,5 @@ Next Steps
 ----------
 
 You're now finished with the CentOS-specific requirements for stackd.io.
-You can head back over to the :ref:`Quickstart Guide <installation>` and
+You can head back over to the :ref:`Manual Install <installation>` and
 continue the installation of stackd.io.

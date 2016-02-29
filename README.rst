@@ -9,7 +9,7 @@ infrastructure without the need for a background in systems engineering.
 Getting started
 ---------------
 
-Please see our `Quick Start Guide <http://docs.stackd.io/en/latest/installation/quickstart.html>`__ for a fast
+Please see our `Quick Start Guide <http://docs.stackd.io/en/latest/installation/overview.html>`__ for a fast
 track to installing stackd.io
 
 Contributing
