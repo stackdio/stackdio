@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+# Just disable this for the file
+# pylint: disable=abstract-method
 
 import logging
 
@@ -180,7 +182,7 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
         return account
 
 
-class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+class VPCSubnetSerializer(serializers.Serializer):
     vpc_id = serializers.CharField()
     id = serializers.CharField()
     availability_zone = serializers.CharField()
@@ -188,7 +190,7 @@ class VPCSubnetSerializer(serializers.Serializer):  # pylint: disable=abstract-m
     tags = serializers.DictField(child=serializers.CharField())
 
 
-class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
     def to_representation(self, obj):
         ret = {}
         if obj is not None:
@@ -577,7 +579,7 @@ class CloudAccountSecurityGroupSerializer(SecurityGroupSerializer):
         return ret
 
 
-class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+class SecurityGroupRuleSerializer(serializers.Serializer):
     available_actions = ('authorize', 'revoke')
 
     action = serializers.CharField(write_only=True)
@@ -658,7 +660,7 @@ class SecurityGroupRuleSerializer(serializers.Serializer):  # pylint: disable=ab
         return self.instance
 
 
-class DirectCloudAccountSecurityGroupSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+class DirectCloudAccountSecurityGroupSerializer(serializers.Serializer):
     name = serializers.CharField()
     description = serializers.CharField()
     group_id = serializers.CharField()

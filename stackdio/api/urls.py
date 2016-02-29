@@ -18,11 +18,11 @@
 from __future__ import unicode_literals
 
 from django.conf.urls import include, url
-from django.views.defaults import page_not_found
+from django.views.defaults import page_not_found, server_error, bad_request, permission_denied
 
-from rest_framework import status
+from rest_framework import permissions, status
 from rest_framework.compat import OrderedDict
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.urlpatterns import format_suffix_patterns
@@ -75,20 +75,64 @@ class APIRootView(APIView):
 
 
 @api_view(APIView.http_method_names)
+@permission_classes([permissions.AllowAny])
+def api_bad_request_view(request, *args, **kwargs):
+    return Response({'detail': 'Bad request.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(APIView.http_method_names)
+@permission_classes([permissions.AllowAny])
+def api_permission_denied_view(request, *args, **kwargs):
+    return Response({'detail': 'Permission denied.'}, status=status.HTTP_403_FORBIDDEN)
+
+
+@api_view(APIView.http_method_names)
+@permission_classes([permissions.AllowAny])
 def api_not_found_view(request, *args, **kwargs):
     return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
 
-# This is our custom 404 handler so that 404 requests to /api endpoints return JSON instead
-# of the default 404 page
-def api_not_found(request, *args, **kwargs):
-    if request.path.startswith('/api'):
-        ret = api_not_found_view(request, *args, **kwargs)
-        ret.render()
-        return ret
-    else:
-        # Just use the default one
-        return page_not_found(request, *args, **kwargs)
+@api_view(APIView.http_method_names)
+@permission_classes([permissions.AllowAny])
+def api_server_error_view(request, *args, **kwargs):
+    return Response({'detail': 'Internal server error.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+ERROR_MAP = {
+    400: {
+        'api': api_bad_request_view,
+        'default': bad_request,
+    },
+    403: {
+        'api': api_permission_denied_view,
+        'default': permission_denied,
+    },
+    404: {
+        'api': api_not_found_view,
+        'default': page_not_found,
+    },
+    500: {
+        'api': api_server_error_view,
+        'default': server_error,
+    },
+}
+
+
+def get_error_handler(error_code):
+
+    # This is our custom error handler so that 400/403/404/500 requests to /api endpoints
+    # return JSON instead of the default page
+    def error_handler(request, *args, **kwargs):
+        if request.path.startswith('/api'):
+            ret = ERROR_MAP[error_code]['api'](request, *args, **kwargs)
+            ret.render()
+            return ret
+        else:
+            # Just use the default one
+            return ERROR_MAP[error_code]['default'](request, *args, **kwargs)
+
+    return error_handler
 
 
 urlpatterns = (

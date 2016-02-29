@@ -36,11 +36,17 @@ PROTOCOL_CHOICES = [
 ]
 
 DEVICE_ID_CHOICES = [
-    ('/dev/xvdj', '/dev/xvdj'),
-    ('/dev/xvdk', '/dev/xvdk'),
-    ('/dev/xvdl', '/dev/xvdl'),
-    ('/dev/xvdm', '/dev/xvdm'),
-    ('/dev/xvdn', '/dev/xvdn'),
+    ('/dev/sdb', '/dev/sdb'),
+    ('/dev/sdc', '/dev/sdc'),
+    ('/dev/sdd', '/dev/sdd'),
+    ('/dev/sde', '/dev/sde'),
+    ('/dev/sdf', '/dev/sdf'),
+    ('/dev/sdg', '/dev/sdg'),
+    ('/dev/sdh', '/dev/sdh'),
+    ('/dev/sdi', '/dev/sdi'),
+    ('/dev/sdj', '/dev/sdj'),
+    ('/dev/sdk', '/dev/sdk'),
+    ('/dev/sdl', '/dev/sdl'),
 ]
 
 logger = logging.getLogger(__name__)

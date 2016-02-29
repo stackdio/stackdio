@@ -71,7 +71,7 @@ class Volume(TimeStampedModel):
     # is determined by the snapshot
     snapshot = models.ForeignKey('cloud.Snapshot')
 
-    # the device id (e.g, /dev/sdj or /dev/sdk) the volume will assume when
+    # the device id (e.g, /dev/sdb, dev/sdc, etc) the volume will assume when
     # it's attached to its host
     device = models.CharField('Device', max_length=32)
 

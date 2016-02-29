@@ -18,6 +18,7 @@
 
 import logging
 
+from django.db.models import URLField
 from rest_framework import serializers
 from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=import-error
 
@@ -94,6 +95,10 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
         extra_kwargs = {
             'access_token': {'default': serializers.CreateOnlyDefault(False)},
         }
+
+    # Add in our custom URL field
+    serializer_field_mapping = serializers.ModelSerializer.serializer_field_mapping
+    serializer_field_mapping[URLField] = validators.FormulaURLField
 
     def validate(self, attrs):
         git_username = attrs.get('git_username')

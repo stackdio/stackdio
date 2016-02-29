@@ -38,7 +38,6 @@ class UserListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.PublicUserSerializer
     permission_classes = (StackdioModelPermissions,)
     lookup_field = 'username'
-    filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.UserFilter
 
     def get_queryset(self):

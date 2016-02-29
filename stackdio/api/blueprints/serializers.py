@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+# pylint: disable=abstract-method
 
 import logging
 import string
@@ -26,16 +27,15 @@ from rest_framework import serializers
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
-from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone
+from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone, Snapshot
 from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
 from stackdio.api.formulas.validators import validate_formula_components
-from stackdio.api.volumes.models import Volume
 from . import models, validators
 
 logger = logging.getLogger(__name__)
 
 
-class BlueprintPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+class BlueprintPropertiesSerializer(serializers.Serializer):
     def to_representation(self, obj):
         ret = {}
         if obj is not None:
@@ -97,7 +97,7 @@ class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
 
 
 class BlueprintVolumeSerializer(serializers.ModelSerializer):
-    snapshot = serializers.SlugRelatedField(slug_field='slug', queryset=Volume.objects.all())
+    snapshot = serializers.SlugRelatedField(slug_field='slug', queryset=Snapshot.objects.all())
 
     class Meta:
         model = models.BlueprintVolume
@@ -313,7 +313,7 @@ class FullBlueprintSerializer(BlueprintSerializer):
         for component, orders in component_map.items():
             if len(orders) > 1:
                 err_msg = 'Formula component "{0}" has inconsistent orders across host definitions.'
-                errors.setdefault('host_definitions', []).append(err_msg.format(component.sls_path))
+                errors.setdefault('host_definitions', []).append(err_msg.format(component))
 
         # Every number in the range [0, MAX_ORDER] should be represented
         if sorted(order_set) != range(len(order_set)):

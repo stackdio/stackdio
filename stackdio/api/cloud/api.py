@@ -147,6 +147,10 @@ class CloudAccountDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.CloudAccountSerializer
     permission_classes = (StackdioObjectPermissions,)
 
+    def perform_update(self, serializer):
+        account = serializer.save()
+        account.update_config()
+
     def perform_destroy(self, instance):
         # check for images using this account before deleting
         images = [p.slug for p in instance.images.all()]
@@ -264,13 +268,17 @@ class CloudImageDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.CloudImageSerializer
     permission_classes = (StackdioObjectPermissions,)
 
+    def perform_update(self, serializer):
+        image = serializer.save()
+        image.update_config()
+
     def perform_destroy(self, instance):
         # check for blueprint usage before deleting
         blueprints = Blueprint.objects.filter(host_definitions__cloud_image=instance).distinct()
 
         if blueprints:
             raise ValidationError({
-                'detail': 'One or more blueprints are making use of this image.',
+                'detail': ['One or more blueprints are making use of this image.'],
                 'blueprints': [b.title for b in blueprints],
             })
 

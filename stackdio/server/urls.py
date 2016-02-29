@@ -19,7 +19,7 @@
 from django.conf.urls import include, url
 from django.contrib import admin
 
-from stackdio.api.urls import api_not_found
+from stackdio.api.urls import get_error_handler
 
 # Enable admin interface
 admin.autodiscover()
@@ -42,5 +42,8 @@ urlpatterns = (
     url(r'^__private/admin/', include(admin.site.urls)),
 )
 
-# Override the default 404 handler
-handler404 = api_not_found
+# Override the default handlers
+handler400 = get_error_handler(400)
+handler403 = get_error_handler(403)
+handler404 = get_error_handler(404)
+handler500 = get_error_handler(500)

@@ -48,7 +48,7 @@
                         <i class="fa fa-lg fa-times text-danger" data-bind="visible: !createSecurityGroups()"></i>
                     </td>
                     <td class="text-center">
-                        <a href="#" data-bind="click: $data.delete, if: $root.permissionsMap[$data.id].delete">
+                        <a href="#" data-bind="click: $data.delete, if: !$root.permissionsMap[$data.id] || $root.permissionsMap[$data.id].delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                         </a>
                     </td>

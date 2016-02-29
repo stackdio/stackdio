@@ -28,7 +28,7 @@ from django.db.models import Q
 
 
 def get_users_with_model_perms(model_cls, attach_perms=False, with_superusers=False,
-        with_group_users=True):
+                               with_group_users=True):
     """
     Returns queryset of all ``User`` objects with *any* model permissions for
     the given ``model_cls``.

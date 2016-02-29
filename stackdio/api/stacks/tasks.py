@@ -81,32 +81,41 @@ def is_state_error(state_meta):
 def copy_formulas(stack_or_account):
     dest_dir = os.path.join(stack_or_account.get_root_directory(), 'formulas')
 
+    # Be sure to create a formula version for all formulas needed
     for formula in stack_or_account.get_formulas():
-        formula_dir = os.path.join(dest_dir, formula.get_repo_name())
-
-        try:
-            # Copy over the formula - but just bail if it already exists
-            shutil.copytree(formula.get_repo_dir(), formula_dir)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                logger.debug('Formula not copied, already exists: {0}'.format(formula.uri))
-            else:
-                raise
-
-        # Default to the HEAD branch
-        version = formula.default_version
         try:
             # Try to the version if it exists
-            v = stack_or_account.formula_versions.get(formula=formula)
-            version = v.version
+            stack_or_account.formula_versions.get(formula=formula)
         except FormulaVersion.DoesNotExist:
-            pass
+            # Default to the head branch
+            stack_or_account.formula_versions.create(formula=formula,
+                                                     version=formula.default_version)
 
-        # Update the formula, and fail silently if there was an error.
+    for formula_version in stack_or_account.formula_versions.all():
+        formula = formula_version.formula
+        version = formula_version.version
+
+        formula_dir = os.path.join(dest_dir, formula.get_repo_name())
+
+        # Blow away the private repo and re-copy.  This way we get the most recent states
+        # that have been updated
+        if formula.private_git_repo and os.path.exists(formula_dir):
+            shutil.rmtree(formula_dir)
+
+        if not os.path.isdir(formula_dir):
+            # Copy over the formula - but just bail if it already exists
+            shutil.copytree(formula.get_repo_dir(), formula_dir)
+        else:
+            logger.debug('Formula not copied, already exists: {0}'.format(formula.uri))
+
         if formula.private_git_repo:
-            logger.debug('Skipping private formula: {0}'.format(formula.uri))
+            # If it's private, we can't update it but we can at least checkout the right branch
+            if formula.repo is not None:
+                formula.repo.git.checkout(version)
+            logger.debug('Skipping update of private formula: {0}'.format(formula.uri))
             continue
 
+        # Update the formula
         update_formula.si(formula.id, None, version, formula_dir, raise_exception=False)()
 
 
@@ -867,7 +876,10 @@ def sync_all(stack_id):
                 result[host] = data
 
         for host, data in result.items():
-            if data['retcode'] != 0:
+            if 'retcode' not in data:
+                logger.warning('Host {0} missing a retcode... assuming failure'.format(host))
+
+            if data.get('retcode', 1) != 0:
                 err_msg = str(data['ret'])
                 stack.set_status(sync_all.name, Stack.ERROR, err_msg, Level.ERROR)
                 raise StackTaskException('Error syncing salt data on stack {0}: '
@@ -1023,14 +1035,14 @@ def highstate(stack_id, max_retries=2):
                 # is either a list or dict. Those that are lists we can
                 # assume to be a list of errors
                 errors = {}
-                for host, states in result.iteritems():
-                    if type(states) is list:
+                for host, states in result.items():
+                    if not isinstance(states, dict):
                         errors[host] = states
                         continue
 
                     # iterate over the individual states in the host
                     # looking for state failures
-                    for state_str, state_meta in states.iteritems():
+                    for state_str, state_meta in states.items():
                         if not is_state_error(state_meta):
                             continue
 
@@ -1045,7 +1057,7 @@ def highstate(stack_id, max_retries=2):
                     with open(err_file, 'a') as f:
                         f.write(yaml.safe_dump(errors))
 
-                    if not unrecoverable_error and current_try <= max_retries:  # NOQA
+                    if not unrecoverable_error and current_try <= max_retries:
                         continue
 
                     err_msg = 'Core provisioning errors on hosts: ' \
@@ -1451,7 +1463,7 @@ def orchestrate(stack_id, max_retries=2):
                 root_logger.removeHandler(file_log_handler)
 
             if failed:
-                if current_try <= max_retries:  # NOQA
+                if current_try <= max_retries:
                     continue
 
                 err_msg = 'Orchestration errors on hosts: ' \
