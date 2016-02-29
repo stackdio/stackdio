@@ -16,7 +16,7 @@ stackd.io is a `Django`_ project, and uses `Salt`_ for its back-end configuratio
    :caption: Installation Guide
 
    installation/overview
-   installation/
+   installation/manual
    installation/ami
    installation/ldap-guide
 

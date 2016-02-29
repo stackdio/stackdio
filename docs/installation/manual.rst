@@ -33,8 +33,13 @@ Follow one of the individual guides below to prepare your particular
 environment for stackd.io. Once you finish, come back here and continue
 on.
 
--  :doc:`centos-prep`
--  :doc:`ubuntu-prep`
+
+.. toctree::
+   :maxdepth: 1
+
+   ubuntu-prep
+   centos-prep
+
 
 .. _installation:
 
@@ -169,6 +174,7 @@ proxying the Python app through gunicorn.
 To configure Nginx for CentOS:
 
 .. code:: bash
+
     # CENTOS
 
     # add execute permissions to the user's home directory for static content to serve correctly
