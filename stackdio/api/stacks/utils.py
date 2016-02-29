@@ -226,8 +226,23 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
                     # It worked
                     launched = True
                 except ExtraData:
+                    logger.info('Received ExtraData, retrying: {0}'.format(e))
                     # Blow away the salt cloud cache and try again
                     os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                except salt.cloud.SaltCloudSystemExit as e:
+                    if 'extra data' in e.message:
+                        logger.info('Received ExtraData, retrying: {0}'.format(e))
+                        # Blow away the salt cloud cache and try again
+                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                    else:
+                        raise
+                except TypeError as e:
+                    if 'NoneType' in e.message:
+                        logger.info('Received TypeError, retrying: {0}'.format(e))
+                        # Blow away the salt cloud cache and try again
+                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                    else:
+                        raise
         finally:
             # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
             root_logger.removeHandler(handler)
@@ -267,8 +282,16 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
                     # It worked
                     destroyed = True
                 except ExtraData:
+                    logger.info('Received ExtraData, retrying: {0}'.format(e))
                     # Blow away the salt cloud cache and try again
                     os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                except TypeError as e:
+                    if 'NoneType' in e.message:
+                        logger.info('Received TypeError, retrying: {0}'.format(e))
+                        # Blow away the salt cloud cache and try again
+                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                    else:
+                        raise
 
             return salt.utils.cloud.simple_types_filter(ret)
         else:
@@ -403,14 +426,14 @@ def process_times(sls_result):
     if 'ret' not in sls_result:
         return
 
-    time_map = {}
+    max_time_map = {}
 
     for state_results in sls_result['ret'].values():
         for stage_label, stage_result in state_results.items():
-            info_dict = state_to_dict(stage_label)
 
+            # Pull out the duration
             if 'duration' in stage_result:
-                current = time_map.get(info_dict['module'], 0)
+                current = max_time_map.get(stage_label, 0)
                 duration = stage_result['duration']
                 try:
                     if isinstance(duration, six.string_types):
@@ -421,7 +444,21 @@ def process_times(sls_result):
                     # Make sure we never fail
                     new_time = 0
 
-                time_map[info_dict['module']] = current + new_time
+                # Only set the duration if it's higher than what we already have
+                # This should be all we care about - since everything is running in parallel,
+                # the bottleneck is the max time
+                max_time_map[stage_label] = max(current, new_time)
+
+    time_map = {}
+
+    # aggregate into modules
+    for stage_label, max_time in max_time_map.items():
+        info_dict = state_to_dict(stage_label)
+
+        current = time_map.get(info_dict['module'], 0)
+
+        # Now we want the sum since these are NOT running in parallel.
+        time_map[info_dict['module']] = current + max_time
 
     for module, time in sorted(time_map.items()):
         logger.info('Module {0} took {1} total seconds to run'.format(module, time / 1000))
@@ -429,6 +466,18 @@ def process_times(sls_result):
 
 def process_orchestrate_result(result, stack, log_file, err_file):
     opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+
+    if not isinstance(result, dict):
+        with open(err_file, 'a') as f:
+            f.write('Orchestration failed.  See below.\n\n')
+            f.write(str(result))
+        return True, set()
+
+    if opts['id'] not in result:
+        with open(err_file, 'a') as f:
+            f.write('Orchestration result is missing information:\n\n')
+            f.write(str(result))
+        return True, set()
 
     result = result[opts['id']]
 

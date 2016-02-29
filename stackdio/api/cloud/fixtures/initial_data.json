@@ -370,6 +370,41 @@
                 "provider_type_id": 1
             },
             {
+                "instance_id": "m4.large",
+                "slug": "m4.large",
+                "title": "m4.large",
+                "description": "General Purpose M4 Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m4.xlarge",
+                "slug": "m4.xlarge",
+                "title": "m4.xlarge",
+                "description": "General Purpose M4 Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m4.2xlarge",
+                "slug": "m4.2xlarge",
+                "title": "m4.2xlarge",
+                "description": "General Purpose M4 Double Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m4.4xlarge",
+                "slug": "m4.4xlarge",
+                "title": "m4.4xlarge",
+                "description": "General Purpose M4 Quadruple Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
+                "instance_id": "m4.10xlarge",
+                "slug": "m4.10xlarge",
+                "title": "m4.10xlarge",
+                "description": "General Purpose M4 Ten Extra Large Instance",
+                "provider_type_id": 1
+            },
+            {
                 "instance_id": "c4.large",
                 "slug": "c4.large",
                 "title": "c4.large",

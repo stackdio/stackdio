@@ -848,16 +848,16 @@ class AWSCloudProvider(BaseCloudProvider):
 
         ec2 = self.connect_ec2()
 
-        # Tag each volume with a unique name. This makes it easier to view
+        # First tag each volume with a unique name. This makes it easier to view
         # the volumes in the AWS console
-        for v in volumes:
+        for v in filter(lambda vol: vol.volume_id is not None, volumes):
             name = 'stackdio::volume::{0!s}'.format(v.id)
-            logger.info('tagging volume {0}: {1}'.format(v.volume_id, name))
+            logger.debug('tagging volume {0}: {1}'.format(v.volume_id, name))
             ec2.create_tags([v.volume_id], {
                 'Name': name,
             })
 
-        # Next tag all resources with a set of common fields
+        # Next tag ALL resources with a set of common fields
         resource_ids = [v.volume_id for v in volumes] + \
                        [h.instance_id for h in hosts]
 
@@ -865,7 +865,7 @@ class AWSCloudProvider(BaseCloudProvider):
         resource_ids = filter(None, resource_ids)
 
         if resource_ids:
-            logger.info('tagging {0!r}'.format(resource_ids))
+            logger.debug('tagging {0!r}'.format(resource_ids))
             ec2.create_tags(resource_ids, stack.get_tags())
 
     def get_ec2_instances(self, hosts):

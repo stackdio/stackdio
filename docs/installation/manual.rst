@@ -1,74 +1,28 @@
-Quick Start Guide
-=================
+Manual Install
+==============
 
 This guide is intended to quickly march you through the steps of
 installing and running stackd.io and its dependencies. We're not
 intending to be complete or provide you with everything needed for a
 production-ready install, we may make some assumptions you don't agree
 with, and there may be things we missed. If you feel anything is out of
-the ordinary, a bit confusing, or just plain missing, please :doc:`contact
-us<contact>`.
+the ordinary, a bit confusing, or just plain missing, please
+:doc:`contact us<../contact>`.
 
+1. A database
+-------------
 
-Amazon AMI
-----------
-
-We know that reading through a big, messy guide like this one and
-executing each and every command will be time consuming and error prone.
-If you would rather just run a script to do a lot of this for you, we
-have a script to build an AMI for you. Keep in mind that the script is somewhat
-opinionated and won't let you make many decisions (you're free to modify
-it to suit your needs though!) Here's a list of things it will do:
-
--  Install all of the necessary stuff (MySQL, python, virtualenv, tons of packages, etc)
--  Create a ``stackdio`` virtualenv at ``/usr/share/stackdio``
--  Install stackdio and its python dependencies
--  Install and configure Nginx
--  Install and configure supervisord to run gunicorn, celery, and salt-master
--  Create an ``admin`` user
-
-
-For more information, check out the AMI guide: :doc:`ami`
-
-MySQL
------
-
-We're using stackd.io internally with MySQL. Since stackd.io is using
-Django, it inherently supports many different database servers, so if
-you need something different feel free, but you're on your own for its
-install. Be sure to plug in the correct settings later when configuring
-stackd.io with different servers. For more information on Django's
+stackd.io needs a relational database to store internal information.
+Since it's built on Django, it inherently supports many different database
+servers.  Mysql will do fine, but if you'd prefer something else, it is beyond
+the scope of this guide to install it.  For more information on Django's
 database support, see:
 https://docs.djangoproject.com/en/1.8/ref/databases/
 
-Python virtual environments
----------------------------
+The OS-specific prep of your choice (below) will walk you through installing mysql.
 
-It's highly recommend to install stackd.io into a Python virtualenv, and
-we recommend using virtualenv wrapper.
-
-stackdio user and sudo access
------------------------------
-
-Some of the coming steps in the Quick Start Guide require sudo/root
-access, but once those are handled, the rest of stackd.io should work
-with a non-root user. For ease of use, we're going to create a
-``stackdio`` user, give sudo access, and use this user for the remainder
-of this guide.
-
-.. code:: bash
-
-    # Create the user
-    sudo useradd -m -s/bin/bash -U stackdio
-
-    # Give sudo
-    sudo echo 'stackdio ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/stackdio > /dev/null
-
-    # Switch to user...and remain as this user for the rest of the guide
-    sudo su - stackdio
-
-OS-specific preparation
------------------------
+2. OS-specific preparation
+--------------------------
 
 .. warning::
 
@@ -79,20 +33,18 @@ Follow one of the individual guides below to prepare your particular
 environment for stackd.io. Once you finish, come back here and continue
 on.
 
--  :doc:`centos-prep`
--  :doc:`ubuntu-prep`
+
+.. toctree::
+   :maxdepth: 1
+
+   ubuntu-prep
+   centos-prep
+
 
 .. _installation:
 
-Installation
-------------
-
-Below we're going to create our virtualenv named ``stackdio`` and
-install it directy from github. You can name your virtualenv whatever
-you like, but remember to modify the steps accordingly.
-
-Creating the virtualenv
-~~~~~~~~~~~~~~~~~~~~~~~
+3. Create a virtualenv
+----------------------
 
 Let's create a virtualenv to install stackd.io into:
 
@@ -110,8 +62,8 @@ command:
 
     workon stackdio
 
-Install bower
-~~~~~~~~~~~~~
+4. Install bower
+----------------
 
 In your terminal, run the following command to install bower:
 
@@ -123,8 +75,8 @@ In your terminal, run the following command to install bower:
 
     sudo npm install -g bower
 
-Install the stackd.io project
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+5. Install stackd.io
+--------------------
 
 .. note::
 
@@ -139,24 +91,11 @@ There's two options for installing here.  We recommend pulling the latest versio
 .. code:: bash
 
     workon stackdio  # Activate the virtualenv
-    pip install https://github.com/stackdio/stackdio/releases/download/0.7.0a4/stackdio_server-0.7.0a4-py2-none-any.whl
+    pip install stackdio-server[production,mysql]
 
-If you'd rather have the most up to date code, you can install from our repository instead:
 
-.. code:: bash
-
-    workon stackdio  # Activate the virtualenv
-    cd /tmp
-    git clone https://github.com/stackdio/stackdio.git
-    cd stackdio
-    bower install
-    pip install -e .[production]
-
-    # For mysql only
-    pip install -e .[mysql]
-
-Configuration
--------------
+6. Configuration
+----------------
 
 After the install, you'll have a ``stackdio`` command available to
 interact with much of the platform. First off, we need to configure
@@ -184,16 +123,9 @@ Now, let's populate are database with a schema:
 
     stackdio manage.py migrate
 
-**IF** you installed from our github repository, you'll need to build the minified javascript files:
 
-.. code::
-
-    # ONLY DO THIS IF YOU INSTALLED FROM THE GITHUB REPOSITORY.
-    stackdio manage.py build_ui
-
-
-stackd.io users
----------------
+7. stackd.io users
+------------------
 
 LDAP
 ~~~~
@@ -204,6 +136,7 @@ If you choose to go the LDAP route, you can skip this
 entire section because users who successfully authenticate and are
 members of the right groups via LDAP will automatically be created in
 stackd.io.
+
 
 Non-LDAP admin user
 ~~~~~~~~~~~~~~~~~~~
@@ -231,10 +164,10 @@ use the built-in Django admin interface. First we need the server to be
 up and running so keep following the steps below and we'll come back to
 adding users later.
 
-Web server configuration
-------------------------
+8. Web server configuration
+---------------------------
 
-For the quickstart, we'll use the ``stackdio`` command to generate the
+For this guide, we'll use the ``stackdio`` command to generate the
 necessary configuration for Nginx to serve our static content as well as
 proxying the Python app through gunicorn.
 
@@ -275,8 +208,8 @@ and finally, start Nginx:
 
     sudo service nginx restart
 
-RabbitMQ, celery, and salt
---------------------------
+9. RabbitMQ, celery, and salt
+-----------------------------
 
 Start the rabbitmq server:
 
@@ -290,7 +223,6 @@ supervisor and start the services.
 
 .. code:: bash
 
-
     # generate supervisord configuration that controls gunicorn, celery, and salt-master and store it in the .stackdio directory.
     stackdio config supervisord > ~/.stackdio/supervisord.conf
 
@@ -298,8 +230,8 @@ supervisor and start the services.
     supervisord -c ~/.stackdio/supervisord.conf
     supervisorctl -c ~/.stackdio/supervisord.conf start all
 
-Try it out!
------------
+10. Try it out!
+---------------
 
 At this point, you should have everything configured and running, so
 fire up a web browser and point it to your hostname and you should see
@@ -307,8 +239,8 @@ the stackd.io login page. If you're using LDAP, try logging in with a
 user that is a member of the ``stackdio-admin`` and ``stackdio-user``
 groups, or login with the admin user you created earlier.
 
-Creating additional users
--------------------------
+11. Creating additional users
+-----------------------------
 
 .. note::
 
