@@ -5,7 +5,7 @@ storage_root: /home/ubuntu/.stackdio
 user: ubuntu
 
 salt_bootstrap_script: bootstrap-salt
-salt_bootstrap_args: -K -D git v2015.8.0
+salt_bootstrap_args: -K -D git v{salt_version}
 
 django_secret_key: "$c0mmag@6zppv3l+unbynv7p1ajb$0(yodk-b)axsgsixhlm2^"
 
