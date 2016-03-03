@@ -293,9 +293,9 @@ class InitCommand(WizardCommand):
                           'bootstrap process. Override the defaults here. See '
                           'http://bootstrap.saltstack.org for more info. '
                           'It is highly advised that you pass in a version also. '
-                          'The default args are set to include the current '
-                          'version of the salt master.'),
-            'default': '-K -D git v{0}'.format(get_salt_version())
+                          'The default args are templatized to have the salt_version '
+                          'in it.'),
+            'default': '-K -D git v{salt_version}'
         }, {
             'attr': 'db_dsn',
             'short_desc': ('What database DSN should stackdio use to connect to '
@@ -565,28 +565,8 @@ class UpgradeSaltCommand(BaseCommand):
         sys.stdout.flush()
 
         config = self.stackdio_config()
-        bootstrap_args = config.salt_bootstrap_args
 
-        # Change the config to the new version - don't just do a replace, parse the config and be
-        # smart about it
-        spl = bootstrap_args.split(' ')
-
-        idx = spl.index('git')
-
-        if idx == -1:
-            # Add to the config
-            self.out('WARNING: salt version was not previously in the config file')
-            spl.append('git')
-            spl.append('v{0}'.format(new_version))
-        else:
-            # Change the config
-            spl[idx + 1] = 'v{0}'.format(new_version)
-
-        config.salt_bootstrap_args = ' '.join(spl)
-
-        self.render_template('server/management/templates/config.jinja2',
-                             self.CONFIG_FILE,
-                             context=config)
+        new_args = config.salt_bootstrap_args.format(salt_version=new_version)
 
         for profile_config in os.listdir(config.salt_profiles_dir):
             slug = '.'.join(profile_config.split('.')[:-1])
@@ -595,21 +575,9 @@ class UpgradeSaltCommand(BaseCommand):
             with open(prof_file, 'r') as f:
                 profile_yaml = yaml.safe_load(f)
 
-            # same thing here as above - parse the config and smartly replace the salt version
-            spl = profile_yaml[slug]['script_args'].split(' ')
-
-            idx = spl.index('git')
-
-            if idx == -1:
-                # Add to the config
-                self.out('WARNING: salt version was not previously in the config file')
-                spl.append('git')
-                spl.append('v{0}'.format(new_version))
-            else:
-                # Change the config
-                spl[idx + 1] = 'v{0}'.format(new_version)
-
-            profile_yaml[slug]['script_args'] = ' '.join(spl)
+            # Update the script and the args
+            profile_yaml[slug]['script'] = config.salt_bootstrap_script
+            profile_yaml[slug]['script_args'] = new_args
 
             with open(prof_file, 'w') as f:
                 yaml.safe_dump(profile_yaml, f, default_flow_style=False)

@@ -30,6 +30,7 @@ class StackdioConfig(dict):
         'storage_root',
         'django_secret_key',
         'create_ssh_users',
+        'salt_bootstrap_args',
     )
 
     def __init__(self):
@@ -72,6 +73,9 @@ class StackdioConfig(dict):
                                                'cloud.providers.d')
         self.salt_profiles_dir = os.path.join(self.salt_config_root,
                                               'cloud.profiles.d')
+
+        if '{salt_version}' not in self.salt_bootstrap_args:
+            raise ImproperlyConfigured('salt_bootstrap_args must contain `{salt_version}`')
 
         # defaults
         if not self.salt_master_log_level:  # pylint: disable=access-member-before-definition
