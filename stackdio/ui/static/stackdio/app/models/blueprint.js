@@ -176,6 +176,10 @@ define([
         });
     };
 
+    Blueprint.prototype.launch = function () {
+        window.location = '/stacks/create/?blueprint=' + this.id;
+    };
+
     Blueprint.prototype.delete = function () {
         var self = this;
         var blueprintTitle = this.title();

@@ -18,6 +18,7 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
+from stackdio.api.blueprints.models import Blueprint
 from stackdio.api.stacks.models import Stack, StackCommand
 from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
 from stackdio.ui.utils import get_object_list
@@ -32,6 +33,21 @@ class StackCreateView(PageView):
             # No permission granted
             raise Http404()
         return super(StackCreateView, self).get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(StackCreateView, self).get_context_data(**kwargs)
+
+        blueprint_id = self.request.GET.get('blueprint')
+
+        blueprint = None
+        if blueprint_id:
+            try:
+                blueprint = Blueprint.objects.get(id=blueprint_id)
+            except Blueprint.DoesNotExist:
+                pass
+
+        context['blueprint'] = blueprint
+        return context
 
 
 class StackListView(PageView):

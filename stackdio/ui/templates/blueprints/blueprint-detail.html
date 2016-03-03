@@ -26,6 +26,8 @@
                     </div>
                 </div>
                 <div class="form-group" style="margin-top: 15px">
+                    <a href="{% url 'ui:stack-create' %}?blueprint={{ blueprint.id }}" class="btn btn-info">Launch a Stack</a>
+
                     {% if has_update %}
                     <button type="submit" class="btn btn-primary">Save</button>
                     {% endif %}

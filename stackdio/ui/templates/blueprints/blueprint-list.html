@@ -35,13 +35,19 @@
                         </span>
                     </th>
                     <!-- /ko -->
-                    <th style="width: 10%"></th>
+                    <th style="width: 5%"></th>
+                    <th style="width: 5%"></th>
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
                 <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: title, click: function (blueprint) { $root.goToDetailPage(blueprint) }"></td>
                     <td data-bind="text: description, click: function (blueprint) { $root.goToDetailPage(blueprint) }"></td>
+                    <td class="text-center">
+                        <a href="#" class="btn btn-xs btn-info" data-bind="click: $data.launch">
+                            Launch
+                        </a>
+                    </td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete, if: !$root.permissionsMap[$data.id] || $root.permissionsMap[$data.id].delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>

@@ -45,6 +45,10 @@ define([
         // Create the blueprint selector
         self.blueprintSelector = $('#stackBlueprint');
 
+        if (window.stackdio.blueprintId) {
+            self.blueprintSelector.append('<option value="' + window.stackdio.blueprintId + '" title="' + window.stackdio.blueprintText + '">' + window.stackdio.blueprintText + '</option>');
+        }
+
         self.blueprintSelector.select2({
             ajax: {
                 url: '/api/blueprints/',
@@ -74,9 +78,7 @@ define([
             minimumInputLength: 0
         });
 
-        self.blueprintSelector.on('select2:select', function(ev) {
-            var blueprint = ev.params.data;
-
+        self.selectBlueprint = function (blueprint) {
             self.createUsers(blueprint.create_users);
             self.blueprintId(blueprint.id);
             var keys = ['blueprint', 'title', 'description',
@@ -120,6 +122,11 @@ define([
             }
 
             getVersions(blueprint.formula_versions);
+        };
+
+        self.blueprintSelector.on('select2:select', function(ev) {
+            var blueprint = ev.params.data;
+            self.selectBlueprint(blueprint);
         });
 
         // View variables
@@ -176,6 +183,16 @@ define([
             self.properties({});
             self.formulaVersions([]);
             self.versionsReady(false);
+
+            if (window.stackdio.blueprintId) {
+                self.blueprintSelector.val(window.stackdio.blueprintId).trigger('change');
+                $.ajax({
+                    method: 'GET',
+                    url: '/api/blueprints/' + window.stackdio.blueprintId + '/'
+                }).done(function (blueprint) {
+                    self.selectBlueprint(blueprint);
+                });
+            }
         };
 
         self.createSelectors = function () {
