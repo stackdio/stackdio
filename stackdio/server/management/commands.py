@@ -288,14 +288,10 @@ class InitCommand(WizardCommand):
             'attr': 'salt_bootstrap_args',
             'short_desc': 'Any special arguments for the bootstrap script?',
             'long_desc': ('What arguments to pass to the bootstrap script above? '
-                          'For our purposes, we are enabling debug output for '
-                          'tracking down issues that may crop up during the '
-                          'bootstrap process. Override the defaults here. See '
-                          'http://bootstrap.saltstack.org for more info. '
-                          'It is highly advised that you pass in a version also. '
-                          'The default args are templatized to have the salt_version '
-                          'in it.'),
-            'default': '-K -D git v{salt_version}'
+                          'Override the defaults here. See http://bootstrap.saltstack.org '
+                          'for more info.  You must include \'{salt_version}\' somewhere - '
+                          'it will be replaced by the current version of the salt master.'),
+            'default': 'stable archive/{salt_version}'
         }, {
             'attr': 'db_dsn',
             'short_desc': ('What database DSN should stackdio use to connect to '
