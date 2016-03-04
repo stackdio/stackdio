@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-import errno
 import json
 import logging
 import os

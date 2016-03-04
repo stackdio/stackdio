@@ -16,7 +16,6 @@
 #
 
 import logging
-import os
 
 import yaml
 from rest_framework import status
