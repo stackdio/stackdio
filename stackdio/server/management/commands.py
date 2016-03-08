@@ -30,18 +30,11 @@ import yaml
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
+from salt.version import __version__ as salt_version
 
 raw_input = six.moves.input
 
 SALT_COLORS = get_colors()
-
-
-def get_salt_version():
-    import envoy
-    result = envoy.run('pip freeze | grep salt')
-    if result.status_code != 0:
-        raise Exception('Cannot determine salt version')
-    return result.std_out.strip().split('==')[1]
 
 
 class Colors(object):
@@ -555,14 +548,12 @@ class UpgradeSaltCommand(BaseCommand):
                      Colors.ERROR)
             return
 
-        new_version = get_salt_version()
-
         self.out('Updating config files...', nl=0)
         sys.stdout.flush()
 
         config = self.stackdio_config()
 
-        new_args = config.salt_bootstrap_args.format(salt_version=new_version)
+        new_args = config.salt_bootstrap_args.format(salt_version=salt_version)
 
         for profile_config in os.listdir(config.salt_profiles_dir):
             slug = '.'.join(profile_config.split('.')[:-1])
