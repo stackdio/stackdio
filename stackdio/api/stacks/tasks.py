@@ -1547,6 +1547,12 @@ def register_volume_delete(stack_id, host_ids=None):
             logger.debug('Deleting volumes for hosts {0}'.format(hosts))
             driver.register_volumes_for_delete(hosts)
 
+            # Forget the old volume IDs
+            for host in hosts:
+                for volume in host.volumes.all():
+                    volume.volume_id = ''
+                    volume.save()
+
         stack.set_status(finish_stack.name, Stack.DESTROYING,
                          'Finished registering volumes for deletion.')
 
