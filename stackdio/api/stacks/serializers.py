@@ -22,13 +22,14 @@ import string
 
 import salt.cloud
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.compat import OrderedDict
 from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer, StackdioLabelSerializer
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
@@ -490,6 +491,38 @@ class FullStackSerializer(StackSerializer):
         workflow.execute()
 
         return stack
+
+
+class StackLabelSerializer(StackdioLabelSerializer):
+
+    class Meta(StackdioLabelSerializer.Meta):
+        app_label = 'stacks'
+        model_name = 'stack-label'
+
+    def validate(self, attrs):
+        attrs = super(StackLabelSerializer, self).validate(attrs)
+
+        key = attrs.get('key')
+
+        if key and key in ('Name', 'stack_id'):
+            raise serializers.ValidationError({
+                'key': ['The keys `Name` and `stack_id` are reserved for system use.']
+            })
+
+        return attrs
+
+    def save(self, **kwargs):
+        label = super(StackLabelSerializer, self).save(**kwargs)
+
+        stack_ctype = ContentType.objects.get_for_model(models.Stack)
+
+        if label.content_type == stack_ctype:
+            logger.info('Tagging infrastructure...')
+
+            # Spin up the task to tag everything
+            tasks.tag_infrastructure.si(label.object_id, None, False).apply_async()
+
+        return label
 
 
 class StackBlueprintHostDefinitionSerializer(BlueprintHostDefinitionSerializer):

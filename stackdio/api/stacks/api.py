@@ -34,7 +34,6 @@ from six import StringIO
 from stackdio.core.models import Label
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
-from stackdio.core.serializers import StackdioLabelSerializer
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -246,7 +245,7 @@ class StackCommandZipAPIView(generics.GenericAPIView):
 
 
 class StackLabelListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
-    serializer_class = StackdioLabelSerializer
+    serializer_class = serializers.StackLabelSerializer
 
     def get_queryset(self):
         stack = self.get_stack()
@@ -263,7 +262,7 @@ class StackLabelListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView
 
 class StackLabelDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = Label.objects.all()
-    serializer_class = StackdioLabelSerializer
+    serializer_class = serializers.StackLabelSerializer
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())

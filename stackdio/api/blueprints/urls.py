@@ -67,6 +67,14 @@ urlpatterns = (
         api.BlueprintFormulaVersionsAPIView.as_view(),
         name='blueprint-formula-versions'),
 
+    url(r'^(?P<pk>[0-9]+)/labels/$',
+        api.BlueprintLabelListAPIView.as_view(),
+        name='blueprint-label-list'),
+
+    url(r'^(?P<pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
+        api.BlueprintLabelDetailAPIView.as_view(),
+        name='blueprint-label-detail'),
+
     url(r'^(?P<pk>[0-9]+)/permissions/',
         include(object_router.urls)),
 )
