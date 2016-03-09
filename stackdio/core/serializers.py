@@ -68,6 +68,19 @@ class LabelUrlField(serializers.HyperlinkedIdentityField):
 
 
 class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
+    """
+    This is an abstract class meant to be extended for any type of object that needs to be labelled
+    by setting the appropriate `app_label` and `model_name` attributes on the `Meta` class.
+
+    ```
+    class MyObjectLabelSerializer(StackdioLabelSerializer):
+
+        # The Meta class needs to inherit from the super Meta class
+        class Meta(StackdioLabelSerializer.Meta):
+            app_label = 'my-app'
+            model_name = 'my-object'
+    ```
+    """
 
     serializer_url_field = LabelUrlField
 
