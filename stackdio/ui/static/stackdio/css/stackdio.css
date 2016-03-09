@@ -82,6 +82,10 @@ textarea {
     display: none;
 }
 
+.stackdio-advanced-warning {
+    display: none;
+}
+
 .hidden-formula-versions {
     display: none;
 }
