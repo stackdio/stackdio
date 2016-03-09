@@ -193,6 +193,8 @@ class ActionWorkflow(BaseWorkflow):
                 tasks.cure_zombies.si(self.stack.id),
             ],
             BaseCloudProvider.ACTION_TERMINATE: [
+                tasks.update_metadata.si(self.stack.id, remove_absent=False),
+                tasks.register_volume_delete.si(self.stack.id),
                 tasks.unregister_dns.si(self.stack.id),
                 tasks.destroy_hosts.si(self.stack.id, delete_hosts=False,
                                        delete_security_groups=False),

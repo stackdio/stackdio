@@ -30,6 +30,7 @@ from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
+from salt.version import __version__ as salt_version
 
 from stackdio.core.queryset_transform import TransformQuerySet
 from stackdio.core.fields import DeletingFileField
@@ -302,16 +303,18 @@ class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
         """
         Writes the salt-cloud profile configuration file
         """
+        script = settings.STACKDIO_CONFIG.get('salt_bootstrap_script', 'bootstrap-salt')
+        script_args = settings.STACKDIO_CONFIG.get('salt_bootstrap_args',
+                                                   'stable archive/{salt_version}')
+
         profile_yaml = {
             self.slug: {
                 'provider': self.account.slug,
                 'image': self.image_id,
                 'size': self.default_instance_size.title,
                 'ssh_username': self.ssh_user,
-                'script': settings.STACKDIO_CONFIG.get('salt_bootstrap_script',
-                                                       'bootstrap-salt'),
-                'script_args': settings.STACKDIO_CONFIG.get('salt_bootstrap_args',
-                                                            ''),
+                'script': script,
+                'script_args': script_args.format(salt_version=salt_version),
                 'sync_after_install': 'all',
                 # PI-44: Need to add an empty minion config until salt-cloud/701
                 # is fixed.
