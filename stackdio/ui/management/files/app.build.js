@@ -9,6 +9,7 @@
                 'bloodhound',
                 'bootbox',
                 'bootstrap',
+                'cookie',
                 'domReady',
                 'fuelux',
                 'jquery',
