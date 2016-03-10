@@ -18,18 +18,19 @@ def forward(apps, schema_editor):
     formulas = {}
 
     for formula in Formula.objects.all():
-        # Get the username out of the URI
-        parse_res = urlsplit(formula.uri)
-        if '@' in parse_res.netloc:
-            new_netloc = parse_res.netloc.split('@')[-1]
-            formula.uri = urlunsplit((
-                parse_res.scheme,
-                new_netloc,
-                parse_res.path,
-                parse_res.query,
-                parse_res.fragment
-            ))
-            formula.save()
+        # Get the username out of the URI if it's a private formula
+        if formula.git_username:
+            parse_res = urlsplit(formula.uri)
+            if '@' in parse_res.netloc:
+                new_netloc = parse_res.netloc.split('@')[-1]
+                formula.uri = urlunsplit((
+                    parse_res.scheme,
+                    new_netloc,
+                    parse_res.path,
+                    parse_res.query,
+                    parse_res.fragment
+                ))
+                formula.save()
 
         if formula.uri not in formulas:
             formulas[formula.uri] = formula
