@@ -16,6 +16,7 @@
 #
 
 import logging
+from collections import OrderedDict
 
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
@@ -110,6 +111,18 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
                 })
 
         return attrs
+
+
+class StackdioLiteralLabelsSerializer(serializers.Serializer):
+    def to_representation(self, obj):
+        ret = OrderedDict()
+        if obj is not None:
+            for label in obj.order_by('key'):
+                ret[label.key] = label.value
+        return ret
+
+    def to_internal_value(self, data):
+        return data
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):

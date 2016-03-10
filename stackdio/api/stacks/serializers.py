@@ -29,7 +29,11 @@ from rest_framework.compat import OrderedDict
 from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer, StackdioLabelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioLabelSerializer,
+    StackdioLiteralLabelsSerializer,
+)
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator, validate_hostname
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
@@ -288,6 +292,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
     # Read only fields
     host_count = serializers.ReadOnlyField(source='hosts.count')
     volume_count = serializers.ReadOnlyField(source='volumes.count')
+    label_pairs = StackdioLiteralLabelsSerializer(read_only=True, source='labels')
 
     # Identity links
     hosts = serializers.HyperlinkedIdentityField(
@@ -329,6 +334,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'host_count',
             'volume_count',
             'created',
+            'label_pairs',
             'user_permissions',
             'group_permissions',
             'hosts',

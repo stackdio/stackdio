@@ -24,7 +24,11 @@ from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer, StackdioLabelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioLabelSerializer,
+    StackdioLiteralLabelsSerializer,
+)
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone, Snapshot
@@ -219,6 +223,8 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
 
 
 class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
+    label_pairs = StackdioLiteralLabelsSerializer(read_only=True, source='labels')
+
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-properties')
     host_definitions = serializers.HyperlinkedIdentityField(
@@ -242,6 +248,7 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
             'title',
             'description',
             'create_users',
+            'label_pairs',
             'properties',
             'host_definitions',
             'formula_versions',
