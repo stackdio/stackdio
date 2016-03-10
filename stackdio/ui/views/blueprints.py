@@ -89,6 +89,12 @@ class BlueprintPropertiesView(BlueprintDetailView):
     page_id = 'properties'
 
 
+class BlueprintLabelsView(BlueprintDetailView):
+    template_name = 'blueprints/blueprint-labels.html'
+    viewmodel = 'viewmodels/blueprint-labels'
+    page_id = 'labels'
+
+
 class BlueprintHostDefinitionsView(BlueprintDetailView):
     template_name = 'blueprints/blueprint-host-definitions.html'
     viewmodel = 'viewmodels/blueprint-host-definitions'
