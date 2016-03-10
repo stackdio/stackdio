@@ -199,6 +199,10 @@ urlpatterns = (
                blueprints.BlueprintPropertiesView.as_view(),
                name='blueprint-properties'),
 
+    cached_url(r'^blueprints/(?P<pk>[0-9]+)/labels/$',
+               blueprints.BlueprintLabelsView.as_view(),
+               name='blueprint-labels'),
+
     cached_url(r'^blueprints/(?P<pk>[0-9]+)/host_definitions/$',
                blueprints.BlueprintHostDefinitionsView.as_view(),
                name='blueprint-host-definitions'),

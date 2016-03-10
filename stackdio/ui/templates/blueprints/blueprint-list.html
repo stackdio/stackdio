@@ -43,6 +43,14 @@
                 <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: title, click: function (blueprint) { $root.goToDetailPage(blueprint) }"></td>
                     <td data-bind="text: description, click: function (blueprint) { $root.goToDetailPage(blueprint) }"></td>
+                    <td data-bind="foreach: labelList, click: function (blueprint) { $root.goToDetailPage(blueprint) }">
+                        <!-- ko if: value -->
+                        <span class="label label-default" data-bind="text: key + ':' + value"></span>
+                        <!-- /ko -->
+                        <!-- ko ifnot: value -->
+                        <span class="label label-default" data-bind="text: key"></span>
+                        <!-- /ko -->
+                    </td>
                     <td class="text-center">
                         <a href="#" class="btn btn-xs btn-info" data-bind="click: $data.launch">
                             Launch

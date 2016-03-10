@@ -126,17 +126,18 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
         else:
             uri = attrs['uri']
 
-        # Remove the git username from the uri if necessary
-        parse_res = urlsplit(uri)
-        if '@' in parse_res.netloc:
-            new_netloc = parse_res.netloc.split('@')[-1]
-            attrs['uri'] = urlunsplit((
-                parse_res.scheme,
-                new_netloc,
-                parse_res.path,
-                parse_res.query,
-                parse_res.fragment,
-            ))
+        # Remove the git username from the uri if it's a private formula
+        if git_username:
+            parse_res = urlsplit(uri)
+            if '@' in parse_res.netloc:
+                new_netloc = parse_res.netloc.split('@')[-1]
+                attrs['uri'] = urlunsplit((
+                    parse_res.scheme,
+                    new_netloc,
+                    parse_res.path,
+                    parse_res.query,
+                    parse_res.fragment,
+                ))
 
         if errors:
             raise serializers.ValidationError(errors)

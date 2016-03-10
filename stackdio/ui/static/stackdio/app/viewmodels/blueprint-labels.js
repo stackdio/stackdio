@@ -17,30 +17,30 @@
 
 define([
     'generics/labels',
-    'models/stack'
-], function (Labels, Stack) {
+    'models/blueprint'
+], function (Labels, Blueprint) {
     'use strict';
 
     return Labels.extend({
         breadcrumbs: [
             {
                 active: false,
-                title: 'Stacks',
-                href: '/stacks/'
+                title: 'Blueprints',
+                href: '/blueprints/'
             },
             {
                 active: false,
-                title: window.stackdio.stackTitle,
-                href: '/stacks/' + window.stackdio.stackId + '/'
+                title: window.stackdio.blueprintTitle,
+                href: '/blueprints/' + window.stackdio.blueprintId + '/'
             },
             {
                 active: true,
                 title: 'Labels'
             }
         ],
-        parentModel: Stack,
-        parentId: window.stackdio.stackId,
-        baseUrl: '/stacks/',
-        initialUrl: '/api/stacks/' + window.stackdio.stackId + '/labels/'
+        parentModel: Blueprint,
+        parentId: window.stackdio.blueprintId,
+        baseUrl: '/blueprints/',
+        initialUrl: '/api/blueprints/' + window.stackdio.blueprintId + '/labels/'
     });
 });

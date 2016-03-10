@@ -87,6 +87,8 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         default_permissions = tuple(set(_blueprint_model_permissions +
                                         _blueprint_object_permissions))
 
+    labels = GenericRelation('core.Label')
+
     formula_versions = GenericRelation('formulas.FormulaVersion')
 
     create_users = models.BooleanField('Create SSH Users')

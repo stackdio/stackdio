@@ -53,6 +53,7 @@ define([
         this.title = ko.observable();
         this.description = ko.observable();
         this.createUsers = ko.observable();
+        this.labelList = ko.observable();
 
         // Lazy-loaded properties (not returned from the main blueprint endpoint)
         this.properties = ko.observable({});
@@ -72,6 +73,7 @@ define([
         this.title(raw.title);
         this.description(raw.description);
         this.createUsers(raw.create_users);
+        this.labelList(raw.label_list);
     };
 
     // Reload the current blueprint

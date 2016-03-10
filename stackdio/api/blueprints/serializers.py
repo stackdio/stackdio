@@ -24,7 +24,11 @@ from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioLabelSerializer,
+    StackdioLiteralLabelsSerializer,
+)
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone, Snapshot
@@ -219,12 +223,16 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
 
 
 class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
+    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
+
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-properties')
     host_definitions = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-host-definition-list')
     formula_versions = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-formula-versions')
+    labels = serializers.HyperlinkedIdentityField(
+        view_name='api:blueprints:blueprint-label-list')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
@@ -240,9 +248,11 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
             'title',
             'description',
             'create_users',
+            'label_list',
             'properties',
             'host_definitions',
             'formula_versions',
+            'labels',
             'user_permissions',
             'group_permissions',
             'export',
@@ -381,3 +391,10 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
         # We can't use super() here, because FullBlueprintSerializer only returns links.  We
         # need to skip over it all the way to BlueprintSerializer's implementation
         return BlueprintSerializer.to_representation(self, instance)
+
+
+class BlueprintLabelSerializer(StackdioLabelSerializer):
+
+    class Meta(StackdioLabelSerializer.Meta):
+        app_label = 'blueprints'
+        model_name = 'blueprint-label'

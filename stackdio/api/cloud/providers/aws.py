@@ -866,7 +866,13 @@ class AWSCloudProvider(BaseCloudProvider):
 
         if resource_ids:
             logger.debug('tagging {0!r}'.format(resource_ids))
-            ec2.create_tags(resource_ids, stack.get_tags())
+
+            # Replace None with the empty string
+            tags = {}
+            for key, value in stack.get_tags().items():
+                tags[key] = '' if value is None else value
+
+            ec2.create_tags(resource_ids, tags)
 
     def get_ec2_instances(self, hosts):
         ec2 = self.connect_ec2()

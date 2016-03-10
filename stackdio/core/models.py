@@ -31,7 +31,7 @@ class Label(models.Model):
     key = models.CharField('Key', max_length=255)
 
     # the value
-    value = models.CharField('Value', max_length=255)
+    value = models.CharField('Value', max_length=255, null=True)
 
     # the labeled object
     content_type = models.ForeignKey('contenttypes.ContentType')

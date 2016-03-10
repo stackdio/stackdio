@@ -74,6 +74,13 @@ class PropertiesValidator(BaseValidator):
             })
 
 
+class LabelValidator(BaseValidator):
+
+    def validate(self, value):
+        if ':' in value:
+            raise ValidationError('This field may not contain the colon character `:`.')
+
+
 def validate_hostname(value, raise_exception=False):
     errors = []
 

@@ -25,9 +25,10 @@ from django_filters.fields import Lookup
 
 class OrFieldsFilter(django_filters.Filter):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, include_labels=False, *args, **kwargs):
         field_names = kwargs.pop('field_names', ())
         self.field_names = field_names
+        self.include_labels = include_labels
         super(OrFieldsFilter, self).__init__(*args, **kwargs)
 
     def filter(self, qs, value):  # pylint: disable=method-hidden
@@ -43,7 +44,37 @@ class OrFieldsFilter(django_filters.Filter):
         for field in self.field_names:
             q_objects.append(Q(**{'%s__%s' % (field, lookup): value}))
 
+        if self.include_labels:
+            if ':' in value:
+                k, v = value.split(':')
+                v = v if v else None
+            else:
+                k, v = value, None
+
+            if v is None:
+                q_objects.append(Q(**{'labels__key__%s' % lookup: k}))
+            else:
+                q_objects.append(Q(**{
+                    'labels__key': k,
+                    'labels__value__%s' % lookup: v,
+                }))
+
         qs = self.get_method(qs)(reduce(or_, q_objects))
         if self.distinct:
             qs = qs.distinct()
         return qs
+
+
+class LabelFilterMixin(object):
+
+    def filter_label(self, queryset, value):
+        if ':' in value:
+            k, v = value.split(':')
+            v = v if v else None
+        else:
+            k, v = value, None
+
+        if v is None:
+            return queryset.filter(labels__key=k)
+        else:
+            return queryset.filter(labels__key=k, labels__value=v)
