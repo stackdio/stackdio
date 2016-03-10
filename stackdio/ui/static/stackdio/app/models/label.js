@@ -18,8 +18,9 @@
 
 define([
     'knockout',
-    'bootbox'
-], function (ko, bootbox) {
+    'bootbox',
+    'underscore'
+], function (ko, bootbox, _) {
     'use strict';
 
     // Define the label model.

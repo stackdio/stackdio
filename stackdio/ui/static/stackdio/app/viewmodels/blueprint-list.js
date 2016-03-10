@@ -34,8 +34,9 @@ define([
         initialUrl: '/api/blueprints/',
         detailRequiresAdvanced: true,
         sortableFields: [
-            {name: 'title', displayName: 'Title', width: '25%'},
-            {name: 'description', displayName: 'Description', width: '65%'}
+            {name: 'title', displayName: 'Title', width: '20%'},
+            {name: 'description', displayName: 'Description', width: '50%'},
+            {name: 'labelPairs', displayName: 'Labels', width: '20%'}
         ]
     });
 });

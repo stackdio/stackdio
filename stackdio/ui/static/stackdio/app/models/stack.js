@@ -73,6 +73,7 @@ define([
         // Non-editable fields
         this.namespace = ko.observable();
         this.created = ko.observable(new FakeMoment());
+        this.labelPairs = ko.observable();
 
         // Lazy-loaded properties (not returned from the main stack endpoint)
         this.properties = ko.observable({});
@@ -150,6 +151,7 @@ define([
         this.hostCount(raw.host_count);
         this.namespace(raw.namespace);
         this.created(moment(raw.created));
+        this.labelPairs(raw.label_pairs);
         this._processStatus(raw.status);
     };
 

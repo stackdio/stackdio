@@ -113,16 +113,13 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
         return attrs
 
 
-class StackdioLiteralLabelsSerializer(serializers.Serializer):
-    def to_representation(self, obj):
-        ret = OrderedDict()
-        if obj is not None:
-            for label in obj.order_by('key'):
-                ret[label.key] = label.value
-        return ret
+class StackdioLiteralLabelsSerializer(StackdioLabelSerializer):
 
-    def to_internal_value(self, data):
-        return data
+    class Meta(StackdioLabelSerializer.Meta):
+        fields = (
+            'key',
+            'value',
+        )
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):
