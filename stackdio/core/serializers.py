@@ -16,12 +16,11 @@
 #
 
 import logging
-from collections import OrderedDict
 
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
-from stackdio.core import mixins, models
+from stackdio.core import mixins, models, validators
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +92,11 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
             'key',
             'value',
         )
+
+        extra_kwargs = {
+            'key': {'validators': [validators.LabelValidator()]},
+            'value': {'validators': [validators.LabelValidator()]},
+        }
 
         create_only_fields = (
             'key',
