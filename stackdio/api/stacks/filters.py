@@ -24,14 +24,28 @@ from . import models
 
 class StackFilter(django_filters.FilterSet):
     title = django_filters.CharFilter(lookup_type='icontains')
+    label = django_filters.MethodFilter(action='get_stacks_from_label')
     q = OrFieldsFilter(field_names=('title', 'description', 'namespace'), lookup_type='icontains')
 
     class Meta:
         model = models.Stack
         fields = (
             'title',
+            'label',
             'q',
         )
+
+    def get_stacks_from_label(self, queryset, value):
+        if ':' in value:
+            k, v = value.split(':')
+            v = v if v else None
+        else:
+            k, v = value, None
+
+        if v is None:
+            return queryset.filter(labels__key=k)
+        else:
+            return queryset.filter(labels__key=k, labels__value=v)
 
 
 class HostFilter(django_filters.FilterSet):
