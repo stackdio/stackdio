@@ -25,7 +25,9 @@ from . import models
 class BlueprintFilter(django_filters.FilterSet, LabelFilterMixin):
     title = django_filters.CharFilter(lookup_type='icontains')
     label = django_filters.MethodFilter(action='filter_label')
-    q = OrFieldsFilter(field_names=('title', 'description'), lookup_type='icontains')
+    q = OrFieldsFilter(field_names=('title', 'description'),
+                       lookup_type='icontains',
+                       include_labels=True)
 
     class Meta:
         model = models.Blueprint
