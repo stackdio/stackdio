@@ -1,6 +1,6 @@
 {
     "name": "stackd.io",
-    "version": "0.7.5",
+    "version": "0.7.6.dev",
     "homepage": "http://www.stackd.io",
     "authors": [
         "Clark Perkins <clark.perkins@digitalreasoning.com>"
