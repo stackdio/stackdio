@@ -36,7 +36,7 @@ define([
         sortableFields: [
             {name: 'title', displayName: 'Title', width: '20%'},
             {name: 'description', displayName: 'Description', width: '50%'},
-            {name: 'labelPairs', displayName: 'Labels', width: '20%'}
+            {name: 'labelList', displayName: 'Labels', width: '20%'}
         ]
     });
 });

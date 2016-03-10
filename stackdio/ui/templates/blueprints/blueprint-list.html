@@ -43,7 +43,7 @@
                 <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: title, click: function (blueprint) { $root.goToDetailPage(blueprint) }"></td>
                     <td data-bind="text: description, click: function (blueprint) { $root.goToDetailPage(blueprint) }"></td>
-                    <td data-bind="foreach: labelPairs, click: function (blueprint) { $root.goToDetailPage(blueprint) }">
+                    <td data-bind="foreach: labelList, click: function (blueprint) { $root.goToDetailPage(blueprint) }">
                         <!-- ko if: value -->
                         <span class="label label-default" data-bind="text: key + ':' + value"></span>
                         <!-- /ko -->

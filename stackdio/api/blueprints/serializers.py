@@ -223,7 +223,7 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
 
 
 class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
-    label_pairs = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
+    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
 
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-properties')
@@ -248,7 +248,7 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
             'title',
             'description',
             'create_users',
-            'label_pairs',
+            'label_list',
             'properties',
             'host_definitions',
             'formula_versions',
