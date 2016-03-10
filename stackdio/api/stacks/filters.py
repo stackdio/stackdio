@@ -18,13 +18,13 @@
 
 import django_filters
 
-from stackdio.core.filters import OrFieldsFilter
+from stackdio.core.filters import OrFieldsFilter, LabelFilterMixin
 from . import models
 
 
-class StackFilter(django_filters.FilterSet):
+class StackFilter(django_filters.FilterSet, LabelFilterMixin):
     title = django_filters.CharFilter(lookup_type='icontains')
-    label = django_filters.MethodFilter(action='get_stacks_from_label')
+    label = django_filters.MethodFilter(action='filter_label')
     q = OrFieldsFilter(field_names=('title', 'description', 'namespace'), lookup_type='icontains')
 
     class Meta:
@@ -34,18 +34,6 @@ class StackFilter(django_filters.FilterSet):
             'label',
             'q',
         )
-
-    def get_stacks_from_label(self, queryset, value):
-        if ':' in value:
-            k, v = value.split(':')
-            v = v if v else None
-        else:
-            k, v = value, None
-
-        if v is None:
-            return queryset.filter(labels__key=k)
-        else:
-            return queryset.filter(labels__key=k, labels__value=v)
 
 
 class HostFilter(django_filters.FilterSet):

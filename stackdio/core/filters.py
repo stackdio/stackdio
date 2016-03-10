@@ -47,3 +47,18 @@ class OrFieldsFilter(django_filters.Filter):
         if self.distinct:
             qs = qs.distinct()
         return qs
+
+
+class LabelFilterMixin(object):
+
+    def filter_label(self, queryset, value):
+        if ':' in value:
+            k, v = value.split(':')
+            v = v if v else None
+        else:
+            k, v = value, None
+
+        if v is None:
+            return queryset.filter(labels__key=k)
+        else:
+            return queryset.filter(labels__key=k, labels__value=v)
