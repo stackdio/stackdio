@@ -100,10 +100,11 @@ requirements = [
 testing_requirements = [
     'astroid<1.4',
     'coveralls',
-    'django-nose>=1.0,<=1.4',
     'mock',
     'pep8',
     'pylint<=1.2.0',
+    'pytest-cov',
+    'pytest-django',
 ]
 
 # Call the setup method from setuptools that does all the heavy lifting
