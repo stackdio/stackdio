@@ -54,3 +54,9 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
             'user_permissions',
             'group_permissions',
         )
+
+        extra_kwargs = {
+            'stack': {'view_name': 'api:stacks:stack-detail'},
+            'host': {'view_name': 'api:stacks:host-detail'},
+            'snapshot': {'view_name': 'api:cloud:snapshot-detail'},
+        }
