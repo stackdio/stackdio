@@ -850,12 +850,14 @@ class AWSCloudProvider(BaseCloudProvider):
 
         # First tag each volume with a unique name. This makes it easier to view
         # the volumes in the AWS console
-        for v in filter(lambda vol: vol.volume_id is not None, volumes):
-            name = 'stackdio::volume::{0!s}'.format(v.id)
-            logger.debug('tagging volume {0}: {1}'.format(v.volume_id, name))
-            ec2.create_tags([v.volume_id], {
-                'Name': name,
-            })
+        for v in volumes:
+            # Only tag the if the volume isn't null / empty
+            if v.volume_id:
+                name = 'stackdio::volume::{0!s}'.format(v.id)
+                logger.debug('tagging volume {0}: {1}'.format(v.volume_id, name))
+                ec2.create_tags([v.volume_id], {
+                    'Name': name,
+                })
 
         # Next tag ALL resources with a set of common fields
         resource_ids = [v.volume_id for v in volumes] + \
