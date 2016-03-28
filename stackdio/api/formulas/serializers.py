@@ -290,9 +290,13 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
         sls_path = attrs['sls_path']
         attrs['validated'] = False
 
+        # Grab the formula versions out of the content object
+        content_object = self.context.get('content_object')
+        formula_versions = content_object.formula_versions.all() if content_object else ()
+
         if formula is None:
             # Do some validation if the formula is done
-            all_components = models.Formula.all_components()
+            all_components = models.Formula.all_components(formula_versions)
 
             if sls_path not in all_components:
                 raise serializers.ValidationError({
@@ -313,12 +317,8 @@ class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
             attrs['validated'] = True
         else:
             # If they provided a formula, validate the sls_path is in that formula
-            content_object = self.context.get('content_object')
-
-            if content_object is not None:
-                # content_object should either be an account or host_definition
-                validators.validate_formula_component(attrs, content_object.formula_versions.all())
-                attrs['validated'] = True
+            validators.validate_formula_component(attrs, formula_versions)
+            attrs['validated'] = True
 
         return attrs
 
