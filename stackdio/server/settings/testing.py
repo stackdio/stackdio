@@ -21,8 +21,4 @@ from stackdio.server.settings.base import *
 
 # Add additional testing settings here
 
-INSTALLED_APPS += ('django_nose',)
-
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-
 REST_FRAMEWORK['TEST_REQUEST_DEFAULT_FORMAT'] = 'json'
