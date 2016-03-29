@@ -27,6 +27,8 @@ class OrFieldsFilter(django_filters.Filter):
 
     def __init__(self, include_labels=False, *args, **kwargs):
         field_names = kwargs.pop('field_names', ())
+        # Default distinct to true here, since this is a common issue with this filter
+        kwargs.setdefault('distinct', True)
         self.field_names = field_names
         self.include_labels = include_labels
         super(OrFieldsFilter, self).__init__(*args, **kwargs)

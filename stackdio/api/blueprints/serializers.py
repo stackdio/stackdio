@@ -269,6 +269,7 @@ class FullBlueprintSerializer(BlueprintSerializer):
     properties = BlueprintPropertiesSerializer(required=False)
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
     formula_versions = FormulaVersionSerializer(many=True, required=False)
+    labels = StackdioLiteralLabelsSerializer(many=True, required=False)
 
     def to_representation(self, instance):
         """
@@ -342,6 +343,7 @@ class FullBlueprintSerializer(BlueprintSerializer):
         host_definitions = validated_data.pop('host_definitions')
         properties = validated_data.pop('properties', {})
         formula_versions = validated_data.pop('formula_versions', [])
+        labels = validated_data.pop('labels', [])
 
         with transaction.atomic(using=models.Blueprint.objects.db):
             # Create the blueprint
@@ -364,10 +366,18 @@ class FullBlueprintSerializer(BlueprintSerializer):
                 formula_version['content_object'] = blueprint
             formula_version_field.create(formula_versions)
 
+            # Create the labels
+            label_field = self.fields['labels']
+            # Add in the blueprint to all the labels
+            for label in labels:
+                label['content_object'] = blueprint
+            label_field.create(labels)
+
         # Add the other fields back in for deserialization
         validated_data['properties'] = properties
         validated_data['host_definitions'] = host_definitions
         validated_data['formula_versions'] = formula_versions
+        validated_data['labels'] = labels
 
         return blueprint
 
@@ -380,6 +390,7 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
             'description',
             'create_users',
             'properties',
+            'labels',
             'host_definitions',
             'formula_versions',
         )

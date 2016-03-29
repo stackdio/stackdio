@@ -309,14 +309,6 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
                         num_errors += 1
                     else:
                         raise
-                except TypeError as e:
-                    if 'NoneType' in e.message:
-                        logger.info('Received TypeError, retrying: {0}'.format(e))
-                        # Blow away the salt cloud cache and try again
-                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                        num_errors += 1
-                    else:
-                        raise
 
             return salt.utils.cloud.simple_types_filter(ret)
         else:

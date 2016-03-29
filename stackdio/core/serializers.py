@@ -103,10 +103,11 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
         )
 
     def validate(self, attrs):
-        content_object = self.context['content_object']
+        content_object = self.context.get('content_object')
         key = attrs.get('key')
 
-        if key:
+        # Only need to validate if both a key was passed in and the content_object already exists
+        if key and content_object:
             labels = content_object.labels.filter(key=key)
 
             if labels.count() > 0:
