@@ -48,7 +48,7 @@ from stackdio.api.cloud.providers.base import (
 )
 
 GROUP_PATTERN = re.compile(r'\d+:[a-zA-Z0-9-_]')
-CIDR_PATTERN = re.compile(r'[0-9]+(?:\.[0-9]+){3}\/\d{1,2}')
+CIDR_PATTERN = re.compile(r'[0-9]+(?:\.[0-9]+){3}/\d{1,2}')
 
 # Boto Errors
 BOTO_DUPLICATE_ERROR_CODE = 'InvalidPermission.Duplicate'
@@ -76,6 +76,7 @@ class Route53Domain(object):
         self.hosted_zone = None
         self.zone_id = None
         self.rr_sets = None
+        self._rr_txn = None
 
         self.conn = boto.connect_route53(self.access_key,
                                          self.secret_key)
@@ -123,7 +124,7 @@ class Route53Domain(object):
         transaction use the `cancel_rr_transaction`.
         """
 
-        if not hasattr(self, '_rr_txn') or self._rr_txn is None:
+        if self._rr_txn is None:
             # Return a new ResourceRecordSets "transaction"
             self._rr_txn = ResourceRecordSets(self.conn, self.zone_id)
 
@@ -180,8 +181,7 @@ class Route53Domain(object):
 
         self._add_rr_record(record_name, [record_value], record_type, ttl=ttl)
 
-    def delete_record(self, record_name, record_value, record_type,
-                      ttl=DEFAULT_ROUTE53_TTL):
+    def delete_record(self, record_name, record_value, record_type, ttl=DEFAULT_ROUTE53_TTL):
         """
         Almost the same as `add_record` but it deletes an existing record
 
@@ -260,6 +260,11 @@ class AWSCloudProvider(BaseCloudProvider):
     STATE_RUNNING = 'running'
     STATE_SHUTTING_DOWN = 'shutting-down'
     STATE_TERMINATED = 'terminated'
+
+    def __init__(self, *args, **kwargs):
+        super(AWSCloudProvider, self).__init__(*args, **kwargs)
+        self._ec2_connection = None
+        self._vpc_connection = None
 
     def get_required_fields(self):
         return [
@@ -457,7 +462,7 @@ class AWSCloudProvider(BaseCloudProvider):
         return Route53Domain(access_key, secret_key, domain)
 
     def connect_ec2(self):
-        if not hasattr(self, '_ec2_connection'):
+        if self._ec2_connection is None:
             region, access_key, secret_key = self.get_credentials()
             self._ec2_connection = boto.ec2.connect_to_region(
                 region,
@@ -467,7 +472,7 @@ class AWSCloudProvider(BaseCloudProvider):
         return self._ec2_connection
 
     def connect_vpc(self):
-        if not hasattr(self, '_vpc_connection'):
+        if self._vpc_connection is None:
             region, access_key, secret_key = self.get_credentials()
             self._vpc_connection = boto.vpc.connect_to_region(
                 region,
@@ -815,15 +820,13 @@ class AWSCloudProvider(BaseCloudProvider):
             # find those devices that aren't already registered for deletion
             # and build a list of the modify strings
             mods = []
-            for device_name, device in devices.iteritems():
+            for device_name, device in devices.items():
                 if not device.delete_on_termination:
                     mods.append('{0}=true'.format(device_name))
 
             # use the modify strings to change the existing volumes flag
             if mods:
-                ec2.modify_instance_attribute(h.instance_id,
-                                              'blockDeviceMapping',
-                                              mods)
+                ec2.modify_instance_attribute(h.instance_id, 'blockDeviceMapping', mods)
 
             # for each volume, rename them so we can create new volumes with
             # the same now, just in case
@@ -860,8 +863,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 })
 
         # Next tag ALL resources with a set of common fields
-        resource_ids = [v.volume_id for v in volumes] + \
-                       [h.instance_id for h in hosts]
+        resource_ids = [v.volume_id for v in volumes] + [h.instance_id for h in hosts]
 
         # filter out empty strings
         resource_ids = filter(None, resource_ids)
@@ -884,13 +886,8 @@ class AWSCloudProvider(BaseCloudProvider):
                 for r in ec2.get_all_instances(instance_ids)
                 for i in r.instances]
 
-    def _wait(self,
-              fun,
-              fun_args=None,
-              fun_kwargs=None,
-              timeout=5 * 60,
-              interval=5,
-              max_failures=5):
+    def _wait(self, fun, fun_args=None, fun_kwargs=None,
+              timeout=5 * 60, interval=5, max_failures=5):
         """
         Generic function that will call the given function `fun` with
         `fun_args` and `fun_kwargs` until the function returns a valid result
@@ -939,7 +936,7 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def wait_for_state(self, hosts, state, timeout=5 * 60):
         if not hosts:
-            return (True, 'No hosts defined.')
+            return True, 'No hosts defined.'
 
         logger.debug('wait_for_state {0}'.format(hosts))
 
@@ -949,7 +946,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 fun_args=(hosts, state),
                 timeout=timeout,
             )
-            return (True, instances)
+            return True, instances
         except MaxFailuresException:
             err_msg = 'Max number of failures reached while waiting ' \
                       'for state: {0}'.format(state)
@@ -957,7 +954,7 @@ class AWSCloudProvider(BaseCloudProvider):
             err_msg = 'Timeout reached while waiting for state: ' \
                       '{0}'.format(state)
 
-        return (False, err_msg)
+        return False, err_msg
 
     def _wait_for_state(self, hosts, state):
         """
