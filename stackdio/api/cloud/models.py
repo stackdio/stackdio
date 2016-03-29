@@ -416,7 +416,7 @@ class SecurityGroupQuerySet(TransformQuerySet):
         for group in queryset:
             by_account.setdefault(group.account, []).append(group)
 
-        for account, groups in by_account.iteritems():
+        for account, groups in by_account.items():
             group_ids = [group.group_id for group in groups]
             driver = account.get_driver()
             account_groups = driver.get_security_groups(group_ids)

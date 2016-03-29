@@ -90,7 +90,7 @@ def recursive_update(d, u):
     :return: the merged dict object
     :rtype: dict
     """
-    for k, v in u.iteritems():
+    for k, v in u.items():
         if isinstance(v, collections.Mapping):
             r = recursive_update(d.get(k, {}), v)
             d[k] = r

@@ -161,7 +161,7 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
         stack = self.get_stack()
         driver_hosts_map = stack.get_driver_hosts_map()
         available_actions = set()
-        for driver, hosts in driver_hosts_map.iteritems():
+        for driver, hosts in driver_hosts_map.items():
             available_actions.update(driver.get_available_actions())
 
         available_actions = utils.filter_actions(request.user, stack, available_actions)
