@@ -75,13 +75,10 @@ with open('README.rst') as f:
     LONG_DESCRIPTION = f.read()
 
 requirements = [
-    'Django>=1.8.0,<1.9',
-    'GitPython>=1.0',
-    'Markdown>=2.6',
-    'PyYAML>=3.10',
     'boto>=2.32.0',
     'celery>=3.1',
     'dj-database-url>=0.3',
+    'Django>=1.8.0,<1.9',
     'django-auth-ldap>=1.2.7',
     'django-extensions>=1.5,<1.5.6',
     'django-filter>=0.9',
@@ -89,8 +86,11 @@ requirements = [
     'django-model-utils>=2.0,<2.3',
     'djangorestframework>=3.1,<3.2',
     'envoy>=0.0.2',
+    'GitPython>=1.0',
+    'Markdown>=2.6',
     'pip>=6',
     'psutil>=2.1',
+    'PyYAML>=3.10',
     'requests>=2.4',
     'salt>=2015.8.8,<2015.9',
     'six>=1.6',
@@ -99,10 +99,12 @@ requirements = [
 testing_requirements = [
     'astroid<1.4',
     'coveralls',
-    'django-nose>=1.0,<=1.4',
     'mock',
     'pep8',
     'pylint<=1.2.0',
+    'pytest',
+    'pytest-cov',
+    'pytest-django',
 ]
 
 # Call the setup method from setuptools that does all the heavy lifting

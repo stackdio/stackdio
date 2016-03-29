@@ -11,10 +11,6 @@ cache:
 
 # Set up our environment
 env:
-  NOSE_WITH_XUNIT: 1
-  NOSE_WITH_COVERAGE: 1
-  NOSE_COVER_BRANCHES: 1
-  NOSE_COVER_INCLUSIVE: 1
   DJANGO_SETTINGS_MODULE: stackdio.server.settings.testing
 
 # So that we get a docker container
@@ -42,7 +38,7 @@ before_script:
   - cp tests/config-travis /home/travis/.stackdio/config
 
 script:
-  - python manage.py test --cover-html
+  - py.test --cov=stackdio stackdio
   - python manage.py build_ui
 
 # Only build artifacts on success
