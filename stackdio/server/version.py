@@ -29,7 +29,7 @@ except ImportError:
             return func
         return wrapped_func
 
-VERSION = (0, 7, 6, 'final', 0)
+VERSION = (0, 7, 7, 'dev', 0)
 
 
 def get_version(version):
