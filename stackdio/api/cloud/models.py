@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
 )
+from salt.version import __version__ as salt_version
 
 from stackdio.core.queryset_transform import TransformQuerySet
 from stackdio.core.fields import DeletingFileField
@@ -302,16 +303,18 @@ class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
         """
         Writes the salt-cloud profile configuration file
         """
+        script = settings.STACKDIO_CONFIG.get('salt_bootstrap_script', 'bootstrap-salt')
+        script_args = settings.STACKDIO_CONFIG.get('salt_bootstrap_args',
+                                                   'stable archive/{salt_version}')
+
         profile_yaml = {
             self.slug: {
                 'provider': self.account.slug,
                 'image': self.image_id,
                 'size': self.default_instance_size.title,
                 'ssh_username': self.ssh_user,
-                'script': settings.STACKDIO_CONFIG.get('salt_bootstrap_script',
-                                                       'bootstrap-salt'),
-                'script_args': settings.STACKDIO_CONFIG.get('salt_bootstrap_args',
-                                                            ''),
+                'script': script,
+                'script_args': script_args.format(salt_version=salt_version),
                 'sync_after_install': 'all',
                 # PI-44: Need to add an empty minion config until salt-cloud/701
                 # is fixed.
@@ -413,7 +416,7 @@ class SecurityGroupQuerySet(TransformQuerySet):
         for group in queryset:
             by_account.setdefault(group.account, []).append(group)
 
-        for account, groups in by_account.iteritems():
+        for account, groups in by_account.items():
             group_ids = [group.group_id for group in groups]
             driver = account.get_driver()
             account_groups = driver.get_security_groups(group_ids)

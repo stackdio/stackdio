@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-	Copyright 2014,  Digital Reasoning
+	Copyright 2016,  Digital Reasoning
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -129,13 +129,20 @@
     <!-- Any messages if they exist -->
     <div class="container">
         <div class="row">
-            <div class="col-lg-8 col-lg-offset-2">
-            {% for message in messages %}
+            <div class="col-lg-12">
+                <div class="alert alert-warning stackdio-advanced-warning" role="alert">
+                    <button id="advanced-warning-dismiss" type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    It looks like you don't have advanced view enabled.  If you would like to turn on advanced view, check out your
+                    <a href="{% url 'ui:user-profile' %}" id="advanced-warning-button" class="alert-link">User Profile</a>.
+                </div>
+                {% for message in messages %}
                 <div class="alert alert-{{ message.tags }}" role="alert">
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     {{ message }}
                 </div>
-            {% endfor %}
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -147,7 +154,7 @@
         <footer class="footer">
             <div class="row">
                 <div class="col-xs-6">
-                    <p>&copy; Digital Reasoning 2015</p>
+                    <p>&copy; Digital Reasoning 2016</p>
                 </div>
                 <div class="col-xs-6">
                 {% block api-link %}

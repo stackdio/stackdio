@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -258,7 +258,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     @property
     def components(self):
-        cache_key = 'formula-components-{0}'.format(self.id)
+        cache_key = 'formula-components-{0}-{1}'.format(self.id, self.repo.head.commit)
 
         cached_components = cache.get(cache_key)
 
@@ -280,10 +280,23 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             return ret
 
     @classmethod
-    def all_components(cls):
+    def all_components(cls, versions=()):
+        version_map = {}
+
+        # Build the map of formula -> version
+        for version in versions:
+            version_map[version.formula] = version.version
+
         ret = {}
         for formula in cls.objects.all():
-            for component in formula.components:
+            if formula in version_map:
+                # Use the specified version
+                components = formula.components_for_version(version_map[formula])
+            else:
+                # Otherwise use the default version
+                components = formula.components_for_version(formula.default_version)
+
+            for component in components:
                 ret.setdefault(component, []).append(formula)
         return ret
 

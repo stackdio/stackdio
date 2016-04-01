@@ -20,7 +20,6 @@ install-ntpd:
     - pkgs:
       - ntp
       - ntpdate
-      - ntp-doc
 
 sync-ntpd:
   cmd.run:

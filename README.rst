@@ -43,8 +43,8 @@ glad to help!
 .. |Travis CI| image:: https://travis-ci.org/stackdio/stackdio.svg?branch=master
    :target: https://travis-ci.org/stackdio/stackdio
    :alt: Build Status
-.. |Coverage Status| image:: https://coveralls.io/repos/stackdio/stackdio/badge.svg?branch=master
-   :target: https://coveralls.io/r/stackdio/stackdio?branch=master
+.. |Coverage Status| image:: https://coveralls.io/repos/github/stackdio/stackdio/badge.svg?branch=master
+   :target: https://coveralls.io/github/stackdio/stackdio?branch=master
    :alt: Coverage Status
 .. |Docs Status| image:: https://readthedocs.org/projects/stackdio/badge/?version=latest
    :target: http://docs.stackd.io/en/latest/?badge=latest

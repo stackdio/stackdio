@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from __future__ import absolute_import
 from django import template
 from django.conf import settings
 from django.shortcuts import resolve_url
+from django.contrib.staticfiles.templatetags.staticfiles import static
 
 from stackdio.server import __version__
 
@@ -37,4 +38,4 @@ def main_file():
     if settings.JAVASCRIPT_DEBUG:
         return resolve_url('ui:js-main')
     else:
-        return '{0}stackdio/build/main.js'.format(settings.STATIC_URL)
+        return static('stackdio/build/main.js')

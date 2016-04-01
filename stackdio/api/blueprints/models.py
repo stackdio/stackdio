@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,6 +86,8 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         ordering = ('title',)
         default_permissions = tuple(set(_blueprint_model_permissions +
                                         _blueprint_object_permissions))
+
+    labels = GenericRelation('core.Label')
 
     formula_versions = GenericRelation('formulas.FormulaVersion')
 

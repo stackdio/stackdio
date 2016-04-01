@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-import errno
 import json
 import logging
 import os
@@ -561,7 +560,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
         driver_hosts = stack.get_driver_hosts_map(host_ids)
 
-        for driver, hosts in driver_hosts.iteritems():
+        for driver, hosts in driver_hosts.items():
             bad_states = (driver.STATE_TERMINATED,
                           driver.STATE_SHUTTING_DOWN)
 
@@ -640,7 +639,6 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
                             # save the new volume info
                             volume.save()
-                            bdm_updated = True
 
                     except Volume.DoesNotExist:
                         # This is most likely fine. Usually means that the
@@ -703,7 +701,7 @@ def tag_infrastructure(stack_id, host_ids=None, change_status=True):
         # to tag the various infrastructure
         driver_hosts = stack.get_driver_hosts_map(host_ids)
 
-        for driver, hosts in driver_hosts.iteritems():
+        for driver, hosts in driver_hosts.items():
             volumes = stack.volumes.filter(host__in=hosts)
             driver.tag_resources(stack, hosts, volumes)
 
@@ -741,7 +739,7 @@ def register_dns(stack_id, host_ids=None):
         # Use the provider implementation to register a set of hosts
         # with the appropriate cloud's DNS service
         driver_hosts = stack.get_driver_hosts_map(host_ids)
-        for driver, hosts in driver_hosts.iteritems():
+        for driver, hosts in driver_hosts.items():
             driver.register_dns(hosts)
 
         stack.set_status(register_dns.name, Stack.CONFIGURING,
@@ -1192,14 +1190,14 @@ def propagate_ssh(stack_id, max_retries=2):
                 # is either a list or dict. Those that are lists we can
                 # assume to be a list of errors
                 errors = {}
-                for host, states in result.iteritems():
+                for host, states in result.items():
                     if type(states) is list:
                         errors[host] = states
                         continue
 
                     # iterate over the individual states in the host
                     # looking for state failures
-                    for state_str, state_meta in states.iteritems():
+                    for state_str, state_meta in states.items():
                         if not is_state_error(state_meta):
                             continue
 
@@ -1544,9 +1542,15 @@ def register_volume_delete(stack_id, host_ids=None):
         # use the stack driver to register all volumes on the hosts to
         # automatically delete after the host is terminated
         driver_hosts = stack.get_driver_hosts_map(host_ids)
-        for driver, hosts in driver_hosts.iteritems():
+        for driver, hosts in driver_hosts.items():
             logger.debug('Deleting volumes for hosts {0}'.format(hosts))
             driver.register_volumes_for_delete(hosts)
+
+            # Forget the old volume IDs
+            for host in hosts:
+                for volume in host.volumes.all():
+                    volume.volume_id = ''
+                    volume.save()
 
         stack.set_status(finish_stack.name, Stack.DESTROYING,
                          'Finished registering volumes for deletion.')
@@ -1609,7 +1613,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
         # destroy security groups
         driver_hosts = stack.get_driver_hosts_map(host_ids)
         security_groups = set()
-        for driver, hosts in driver_hosts.iteritems():
+        for driver, hosts in driver_hosts.items():
             security_groups.update(SecurityGroup.objects.filter(
                 hosts__in=hosts).exclude(is_default=True))
 
@@ -1624,34 +1628,35 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
                     raise StackTaskException(result)
                 known_hosts.update(instance_id='', state='terminated')
 
-        if delete_security_groups:
-            time.sleep(5)
-            for security_group in security_groups:
-                try:
-                    driver.delete_security_group(security_group.name)
-                    logger.debug('Managed security group {0} '
-                                 'deleted...'.format(security_group.name))
-                except DeleteGroupException as e:
-                    if 'does not exist' in e.message:
-                        # The group didn't exist in the first place - just throw out a warning
-                        logger.warn(e.message)
-                    elif 'instances using security group' in e.message:
-                        # The group has running instances in it - we can't delete it
-                        instances = driver.get_instances_for_group(security_group.group_id)
-                        err_msg = (
-                            'There are active instances using security group \'{0}\': {1}.  '
-                            'Please remove these instances before attempting to delete this '
-                            'stack again.'.format(security_group.name,
-                                                  ', '.join([i['id'] for i in instances]))
-                        )
+            if delete_security_groups:
+                time.sleep(5)
+                for security_group in security_groups:
+                    try:
+                        driver.delete_security_group(security_group.name)
+                        logger.debug('Managed security group {0} '
+                                     'deleted...'.format(security_group.name))
+                    except DeleteGroupException as e:
+                        if 'does not exist' in e.message:
+                            # The group didn't exist in the first place - just throw out a warning
+                            logger.warn(e.message)
+                        elif 'instances using security group' in e.message:
+                            # The group has running instances in it - we can't delete it
+                            instances = driver.get_instances_for_group(security_group.group_id)
+                            err_msg = (
+                                'There are active instances using security group \'{0}\': {1}.  '
+                                'Please remove these instances before attempting to delete this '
+                                'stack again.'.format(security_group.name,
+                                                      ', '.join([i['id'] for i in instances]))
+                            )
 
-                        stack.set_status(destroy_hosts.name, Stack.ERROR, err_msg, level='ERROR')
-                        logger.error(err_msg)
+                            stack.set_status(destroy_hosts.name, Stack.ERROR,
+                                             err_msg, level='ERROR')
+                            logger.error(err_msg)
 
-                        raise StackTaskException(err_msg)
-                    else:
-                        raise
-                security_group.delete()
+                            raise StackTaskException(err_msg)
+                        else:
+                            raise
+                    security_group.delete()
 
         # delete hosts
         if delete_hosts and hosts:
@@ -1756,7 +1761,7 @@ def execute_action(stack_id, action, *args, **kwargs):
         )
 
         driver_hosts_map = stack.get_driver_hosts_map()
-        for driver, hosts in driver_hosts_map.iteritems():
+        for driver, hosts in driver_hosts_map.items():
             fun = getattr(driver, '_action_{0}'.format(action))
             fun(stack=stack, *args, **kwargs)
 

@@ -85,8 +85,8 @@ In your terminal, run the following command to install bower:
     (because it's trying to install into the global python site-packages
     directory which we don't want!)
 
-There's two options for installing here.  We recommend pulling the latest version from our
-`releases page <https://github.com/stackdio/stackdio/releases>`__, like this:
+There's two options for installing here.  We recommend pulling the latest version from
+`pypi <https://pypi.python.org/pypi/stackdio-server>`__ with pip, like this:
 
 .. code:: bash
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -148,7 +148,7 @@ def validate_formula_components(components, versions):
     return components
 
 
-def validate_formula_component(component, versions):
+def validate_formula_component(component, versions=()):
     """
     Validate a SINGLE formula component from versions that already exist.
     i.e. adding a formula component to a blueprint or cloud account
@@ -157,13 +157,13 @@ def validate_formula_component(component, versions):
 
     # Build the map of formula -> version
     for version in versions:
-        version_map[version.formula] = version.formula
+        version_map[version.formula] = version.version
 
     errors = {}
 
     formula = component.get('formula')
     sls_path = component['sls_path']
-    version = version_map.get(formula)
+    version = version_map.get(formula, formula.default_version)
     component_list = formula.components_for_version(version)
 
     if sls_path not in component_list:

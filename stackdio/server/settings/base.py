@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -372,7 +372,7 @@ CELERY_ROUTES = {
 # to ldap_settings.py and modify the settings there.
 ##
 try:
-    # pylint: disable=wildcard-import, unused-wildcard-import, no-name-in-module
+    # pylint: disable=wildcard-import, unused-wildcard-import, no-name-in-module, import-error
     from stackdio.server.settings.ldap_settings import *
     LDAP_ENABLED = True
     AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)

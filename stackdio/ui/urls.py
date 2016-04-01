@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -198,6 +198,10 @@ urlpatterns = (
     cached_url(r'^blueprints/(?P<pk>[0-9]+)/properties/$',
                blueprints.BlueprintPropertiesView.as_view(),
                name='blueprint-properties'),
+
+    cached_url(r'^blueprints/(?P<pk>[0-9]+)/labels/$',
+               blueprints.BlueprintLabelsView.as_view(),
+               name='blueprint-labels'),
 
     cached_url(r'^blueprints/(?P<pk>[0-9]+)/host_definitions/$',
                blueprints.BlueprintHostDefinitionsView.as_view(),

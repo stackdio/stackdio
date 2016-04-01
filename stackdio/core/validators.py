@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,6 +72,13 @@ class PropertiesValidator(BaseValidator):
             raise ValidationError({
                 'properties': ['The `__stackdio__` key is reserved for system use.']
             })
+
+
+class LabelValidator(BaseValidator):
+
+    def validate(self, value):
+        if ':' in value:
+            raise ValidationError('This field may not contain the colon character `:`.')
 
 
 def validate_hostname(value, raise_exception=False):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -193,6 +193,8 @@ class ActionWorkflow(BaseWorkflow):
                 tasks.cure_zombies.si(self.stack.id),
             ],
             BaseCloudProvider.ACTION_TERMINATE: [
+                tasks.update_metadata.si(self.stack.id, remove_absent=False),
+                tasks.register_volume_delete.si(self.stack.id),
                 tasks.unregister_dns.si(self.stack.id),
                 tasks.destroy_hosts.si(self.stack.id, delete_hosts=False,
                                        delete_security_groups=False),

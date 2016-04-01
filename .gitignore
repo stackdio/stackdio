@@ -44,6 +44,7 @@ cover/
 .coverage
 .coverage.*
 .cache
+tests.xml
 nosetests.xml
 coverage.xml
 *,cover

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ class Label(models.Model):
     key = models.CharField('Key', max_length=255)
 
     # the value
-    value = models.CharField('Value', max_length=255)
+    value = models.CharField('Value', max_length=255, null=True)
 
     # the labeled object
     content_type = models.ForeignKey('contenttypes.ContentType')

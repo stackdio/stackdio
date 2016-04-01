@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,11 @@ from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioLabelSerializer,
+    StackdioLiteralLabelsSerializer,
+)
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone, Snapshot
@@ -219,12 +223,16 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
 
 
 class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
+    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
+
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-properties')
     host_definitions = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-host-definition-list')
     formula_versions = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-formula-versions')
+    labels = serializers.HyperlinkedIdentityField(
+        view_name='api:blueprints:blueprint-label-list')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
@@ -240,9 +248,11 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
             'title',
             'description',
             'create_users',
+            'label_list',
             'properties',
             'host_definitions',
             'formula_versions',
+            'labels',
             'user_permissions',
             'group_permissions',
             'export',
@@ -259,6 +269,7 @@ class FullBlueprintSerializer(BlueprintSerializer):
     properties = BlueprintPropertiesSerializer(required=False)
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
     formula_versions = FormulaVersionSerializer(many=True, required=False)
+    labels = StackdioLiteralLabelsSerializer(many=True, required=False)
 
     def to_representation(self, instance):
         """
@@ -332,6 +343,7 @@ class FullBlueprintSerializer(BlueprintSerializer):
         host_definitions = validated_data.pop('host_definitions')
         properties = validated_data.pop('properties', {})
         formula_versions = validated_data.pop('formula_versions', [])
+        labels = validated_data.pop('labels', [])
 
         with transaction.atomic(using=models.Blueprint.objects.db):
             # Create the blueprint
@@ -354,10 +366,18 @@ class FullBlueprintSerializer(BlueprintSerializer):
                 formula_version['content_object'] = blueprint
             formula_version_field.create(formula_versions)
 
+            # Create the labels
+            label_field = self.fields['labels']
+            # Add in the blueprint to all the labels
+            for label in labels:
+                label['content_object'] = blueprint
+            label_field.create(labels)
+
         # Add the other fields back in for deserialization
         validated_data['properties'] = properties
         validated_data['host_definitions'] = host_definitions
         validated_data['formula_versions'] = formula_versions
+        validated_data['labels'] = labels
 
         return blueprint
 
@@ -370,6 +390,7 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
             'description',
             'create_users',
             'properties',
+            'labels',
             'host_definitions',
             'formula_versions',
         )
@@ -381,3 +402,10 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
         # We can't use super() here, because FullBlueprintSerializer only returns links.  We
         # need to skip over it all the way to BlueprintSerializer's implementation
         return BlueprintSerializer.to_representation(self, instance)
+
+
+class BlueprintLabelSerializer(StackdioLabelSerializer):
+
+    class Meta(StackdioLabelSerializer.Meta):
+        app_label = 'blueprints'
+        model_name = 'blueprint-label'

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ from six import StringIO
 from stackdio.core.models import Label
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
-from stackdio.core.serializers import StackdioLabelSerializer
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -162,7 +161,7 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
         stack = self.get_stack()
         driver_hosts_map = stack.get_driver_hosts_map()
         available_actions = set()
-        for driver, hosts in driver_hosts_map.iteritems():
+        for driver, hosts in driver_hosts_map.items():
             available_actions.update(driver.get_available_actions())
 
         available_actions = utils.filter_actions(request.user, stack, available_actions)
@@ -246,7 +245,7 @@ class StackCommandZipAPIView(generics.GenericAPIView):
 
 
 class StackLabelListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
-    serializer_class = StackdioLabelSerializer
+    serializer_class = serializers.StackLabelSerializer
 
     def get_queryset(self):
         stack = self.get_stack()
@@ -263,7 +262,7 @@ class StackLabelListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView
 
 class StackLabelDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = Label.objects.all()
-    serializer_class = StackdioLabelSerializer
+    serializer_class = serializers.StackLabelSerializer
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())

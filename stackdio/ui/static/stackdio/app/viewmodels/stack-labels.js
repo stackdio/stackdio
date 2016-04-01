@@ -1,5 +1,5 @@
 /*!
-  * Copyright 2014,  Digital Reasoning
+  * Copyright 2016,  Digital Reasoning
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -16,17 +16,12 @@
 */
 
 define([
-    'jquery',
-    'knockout',
-    'bootbox',
-    'utils/utils',
-    'generics/pagination',
-    'models/stack',
-    'models/label'
-], function ($, ko, bootbox, utils, Pagination, Stack, Label) {
+    'generics/labels',
+    'models/stack'
+], function (Labels, Stack) {
     'use strict';
 
-    return Pagination.extend({
+    return Labels.extend({
         breadcrumbs: [
             {
                 active: false,
@@ -43,94 +38,9 @@ define([
                 title: 'Labels'
             }
         ],
-        stack: ko.observable(),
-        newLabels: ko.observableArray([]),
-        newLabelKey: ko.observable(),
-        autoRefresh: false,
-        model: Label,
+        parentModel: Stack,
+        parentId: window.stackdio.stackId,
         baseUrl: '/stacks/',
-        initialUrl: '/api/stacks/' + window.stackdio.stackId + '/labels/',
-        sortableFields: [
-            {name: 'key', displayName: 'Key', width: '45%'},
-            {name: 'value', displayName: 'Value', width: '45%'}
-        ],
-        init: function () {
-            this._super();
-            this.newLabelKey(null);
-            this.stack(new Stack(window.stackdio.stackId, this));
-        },
-        addNewLabel: function () {
-            var $el = $('#new-label-form');
-
-            $el.removeClass('has-error');
-
-            var self = this;
-            var dup = false;
-            this.sortedObjects().forEach(function (label) {
-                if (label.key() === self.newLabelKey()) {
-                    dup = true;
-                }
-            });
-
-            this.newLabels().forEach(function (label) {
-                if (label.key === self.newLabelKey()) {
-                    dup = true;
-                }
-            });
-
-            if (dup) {
-                utils.growlAlert('You may not have two labels with the same key.', 'danger');
-                $el.addClass('has-error');
-                return;
-            }
-
-            this.newLabels.push({
-                key: this.newLabelKey(),
-                value: ko.observable(null)
-            });
-            this.newLabelKey(null);
-        },
-        deleteNewLabel: function (label) {
-            this.newLabels.remove(label);
-        },
-        saveLabels: function () {
-            var ajaxCalls = [];
-            var self = this;
-            this.objects().forEach(function (label) {
-                ajaxCalls.push($.ajax({
-                    method: 'PUT',
-                    url: self.stack().raw.labels + label.key() + '/',
-                    data: JSON.stringify({
-                        value: label.value()
-                    })
-                }).fail(function (jqxhr) {
-                    if (jqxhr.status !== 404) {
-                        utils.alertError(jqxhr, 'Error saving label',
-                            'Errors saving label for ' + label.key() + ':<br>');
-                    }
-                }));
-            });
-
-            this.newLabels().forEach(function (label) {
-                ajaxCalls.push($.ajax({
-                    method: 'POST',
-                    url: self.stack().raw.labels,
-                    data: JSON.stringify({
-                        key: label.key,
-                        value: label.value()
-                    })
-                }).fail(function (jqxhr) {
-                    utils.alertError(jqxhr, 'Error saving label',
-                        'Errors saving label for ' + label.key + ':<br>');
-                }));
-            });
-
-            $.when.apply(this, ajaxCalls).done(function () {
-                utils.growlAlert('Successfully saved labels!', 'success');
-                self.newLabels([]);
-                self.reload();
-            });
-
-        }
+        initialUrl: '/api/stacks/' + window.stackdio.stackId + '/labels/'
     });
 });

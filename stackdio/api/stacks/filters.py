@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,18 +18,22 @@
 
 import django_filters
 
-from stackdio.core.filters import OrFieldsFilter
+from stackdio.core.filters import OrFieldsFilter, LabelFilterMixin
 from . import models
 
 
-class StackFilter(django_filters.FilterSet):
+class StackFilter(django_filters.FilterSet, LabelFilterMixin):
     title = django_filters.CharFilter(lookup_type='icontains')
-    q = OrFieldsFilter(field_names=('title', 'description', 'namespace'), lookup_type='icontains')
+    label = django_filters.MethodFilter(action='filter_label')
+    q = OrFieldsFilter(field_names=('title', 'description', 'namespace'),
+                       lookup_type='icontains',
+                       include_labels=True)
 
     class Meta:
         model = models.Stack
         fields = (
             'title',
+            'label',
             'q',
         )
 

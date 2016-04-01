@@ -1,6 +1,6 @@
 
 /*!
-  * Copyright 2014,  Digital Reasoning
+  * Copyright 2016,  Digital Reasoning
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ define([
         this.title = ko.observable();
         this.description = ko.observable();
         this.createUsers = ko.observable();
+        this.labelList = ko.observable();
 
         // Lazy-loaded properties (not returned from the main blueprint endpoint)
         this.properties = ko.observable({});
@@ -72,6 +73,7 @@ define([
         this.title(raw.title);
         this.description(raw.description);
         this.createUsers(raw.create_users);
+        this.labelList(raw.label_list);
     };
 
     // Reload the current blueprint
@@ -174,6 +176,10 @@ define([
         }).fail(function (jqxhr) {
             utils.parseSaveError(jqxhr, 'blueprint', keys);
         });
+    };
+
+    Blueprint.prototype.launch = function () {
+        window.location = '/stacks/create/?blueprint=' + this.id;
     };
 
     Blueprint.prototype.delete = function () {

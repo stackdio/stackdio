@@ -36,6 +36,8 @@
                         <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                     </button>
                     {% endif %}
+
+                    <a href="{% url 'ui:stack-create' %}?blueprint={{ blueprint.id }}" class="btn btn-info">Launch a Stack</a>
                 </div>
             </form>
         </div>

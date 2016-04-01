@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -87,6 +87,12 @@ class BlueprintPropertiesView(BlueprintDetailView):
     template_name = 'blueprints/blueprint-properties.html'
     viewmodel = 'viewmodels/blueprint-properties'
     page_id = 'properties'
+
+
+class BlueprintLabelsView(BlueprintDetailView):
+    template_name = 'blueprints/blueprint-labels.html'
+    viewmodel = 'viewmodels/blueprint-labels'
+    page_id = 'labels'
 
 
 class BlueprintHostDefinitionsView(BlueprintDetailView):

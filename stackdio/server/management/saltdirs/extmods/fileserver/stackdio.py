@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -233,7 +233,7 @@ def update():
     if not os.path.exists(mtime_map_path_dir):
         os.makedirs(mtime_map_path_dir)
     with salt.utils.fopen(mtime_map_path, 'w') as fp_:
-        for file_path, mtime in new_mtime_map.iteritems():
+        for file_path, mtime in new_mtime_map.items():
             fp_.write('{file_path}:{mtime}\n'.format(file_path=file_path, mtime=mtime))
 
     if __opts__.get('fileserver_events', False):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,6 +66,14 @@ urlpatterns = (
     url(r'^(?P<pk>[0-9]+)/formula_versions/$',
         api.BlueprintFormulaVersionsAPIView.as_view(),
         name='blueprint-formula-versions'),
+
+    url(r'^(?P<pk>[0-9]+)/labels/$',
+        api.BlueprintLabelListAPIView.as_view(),
+        name='blueprint-label-list'),
+
+    url(r'^(?P<pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
+        api.BlueprintLabelDetailAPIView.as_view(),
+        name='blueprint-label-detail'),
 
     url(r'^(?P<pk>[0-9]+)/permissions/',
         include(object_router.urls)),

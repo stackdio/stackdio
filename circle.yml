@@ -3,10 +3,6 @@ machine:
     version: '2.7'
 
   environment:
-    NOSE_WITH_XUNIT: 1
-    NOSE_WITH_COVERAGE: 1
-    NOSE_COVER_BRANCHES: 1
-    NOSE_COVER_INCLUSIVE: 1
     DJANGO_SETTINGS_MODULE: 'stackdio.server.settings.testing'
 
 ## Customize dependencies
@@ -26,12 +22,11 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
-    - python manage.py test --cover-html
+    - py.test --cov=stackdio --cov-report=html --junit-xml=tests.xml stackdio
 
   post:
-    - mv nosetests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
-    - mv cover $CIRCLE_ARTIFACTS/coverage
-    - coveralls
+    - mv tests.xml $CIRCLE_TEST_REPORTS/stackdio-tests.xml
+    - mv htmlcov $CIRCLE_ARTIFACTS/coverage
 
 deployment:
   artifact:

@@ -1,6 +1,6 @@
 
 /*!
-  * Copyright 2014,  Digital Reasoning
+  * Copyright 2016,  Digital Reasoning
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -73,6 +73,7 @@ define([
         // Non-editable fields
         this.namespace = ko.observable();
         this.created = ko.observable(new FakeMoment());
+        this.labelList = ko.observable();
 
         // Lazy-loaded properties (not returned from the main stack endpoint)
         this.properties = ko.observable({});
@@ -150,6 +151,7 @@ define([
         this.hostCount(raw.host_count);
         this.namespace(raw.namespace);
         this.created(moment(raw.created));
+        this.labelList(raw.label_list);
         this._processStatus(raw.status);
     };
 

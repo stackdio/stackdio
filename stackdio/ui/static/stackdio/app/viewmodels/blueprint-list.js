@@ -1,5 +1,5 @@
 /*!
-  * Copyright 2014,  Digital Reasoning
+  * Copyright 2016,  Digital Reasoning
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -34,8 +34,9 @@ define([
         initialUrl: '/api/blueprints/',
         detailRequiresAdvanced: true,
         sortableFields: [
-            {name: 'title', displayName: 'Title', width: '25%'},
-            {name: 'description', displayName: 'Description', width: '65%'}
+            {name: 'title', displayName: 'Title', width: '20%'},
+            {name: 'description', displayName: 'Description', width: '50%'},
+            {name: 'labelList', displayName: 'Labels', width: '20%'}
         ]
     });
 });

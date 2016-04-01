@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@
 
 import logging
 
-from django.contrib.contenttypes.models import ContentType
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
-from stackdio.core import mixins, models
-from stackdio.api.stacks.tasks import tag_infrastructure
-from stackdio.api.stacks.models import Stack
+from stackdio.core import mixins, models, validators
 
 logger = logging.getLogger(__name__)
 
@@ -71,13 +68,24 @@ class LabelUrlField(serializers.HyperlinkedIdentityField):
 
 
 class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
+    """
+    This is an abstract class meant to be extended for any type of object that needs to be labelled
+    by setting the appropriate `app_label` and `model_name` attributes on the `Meta` class.
+
+    ```
+    class MyObjectLabelSerializer(StackdioLabelSerializer):
+
+        # The Meta class needs to inherit from the super Meta class
+        class Meta(StackdioLabelSerializer.Meta):
+            app_label = 'my-app'
+            model_name = 'my-object'
+    ```
+    """
 
     serializer_url_field = LabelUrlField
 
     class Meta:
         model = models.Label
-        app_label = 'stacks'
-        model_name = 'stack-label'
 
         fields = (
             'url',
@@ -85,20 +93,21 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
             'value',
         )
 
+        extra_kwargs = {
+            'key': {'validators': [validators.LabelValidator()]},
+            'value': {'validators': [validators.LabelValidator()]},
+        }
+
         create_only_fields = (
             'key',
         )
 
     def validate(self, attrs):
-        content_object = self.context['content_object']
+        content_object = self.context.get('content_object')
         key = attrs.get('key')
 
-        if key:
-            if key in ('Name', 'stack_id'):
-                raise serializers.ValidationError({
-                    'key': ['The keys `Name` and `stack_id` are reserved for system use.']
-                })
-
+        # Only need to validate if both a key was passed in and the content_object already exists
+        if key and content_object:
             labels = content_object.labels.filter(key=key)
 
             if labels.count() > 0:
@@ -108,18 +117,14 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
 
         return attrs
 
-    def save(self, **kwargs):
-        label = super(StackdioLabelSerializer, self).save(**kwargs)
 
-        stack_ctype = ContentType.objects.get_for_model(Stack)
+class StackdioLiteralLabelsSerializer(StackdioLabelSerializer):
 
-        if label.content_type == stack_ctype:
-            logger.info('Tagging infrastructure...')
-
-            # Spin up the task to tag everything
-            tag_infrastructure.si(label.object_id, None, False).apply_async()
-
-        return label
+    class Meta(StackdioLabelSerializer.Meta):
+        fields = (
+            'key',
+            'value',
+        )
 
 
 class StackdioModelPermissionsSerializer(serializers.Serializer):

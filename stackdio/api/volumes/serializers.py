@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,3 +54,9 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
             'user_permissions',
             'group_permissions',
         )
+
+        extra_kwargs = {
+            'stack': {'view_name': 'api:stacks:stack-detail'},
+            'host': {'view_name': 'api:stacks:host-detail'},
+            'snapshot': {'view_name': 'api:cloud:snapshot-detail'},
+        }

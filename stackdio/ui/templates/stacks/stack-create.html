@@ -11,6 +11,17 @@
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
 {% endblock %}
 
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        {% if blueprint %}
+        window.stackdio.blueprintId = {{ blueprint.id }};
+        window.stackdio.blueprintText = '{{ blueprint.title }} -- {{ blueprint.description }}';
+        {% endif %}
+    </script>
+{% endblock %}
+
 {% block page-content %}
     <form data-bind="submit: createStack">
         <div class="row">

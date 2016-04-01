@@ -1,5 +1,5 @@
 /*!
-  * Copyright 2014,  Digital Reasoning
+  * Copyright 2016,  Digital Reasoning
   *
   * Licensed under the Apache License, Version 2.0 (the "License");
   * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ requirejs.config({
         'bloodhound': '{{ bower_path }}/typeahead.js/dist/bloodhound',
         'bootbox': '{{ bower_path }}/bootbox.js/bootbox',
         'bootstrap': '{{ bower_path }}/bootstrap/dist/js/bootstrap',
+        'cookie': '{{ bower_path }}/cookie/src/js.cookie',
         'domReady': '{{ bower_path }}/requirejs-domReady/domReady',
         'fuelux': '{{ bower_path }}/fuelux/dist/js/fuelux',
         'jquery': '{{ bower_path }}/jquery/jquery',
@@ -69,29 +70,12 @@ String.prototype.capitalize = function() {
 
 require([
     'jquery',
+    'cookie',
     'bootstrap',
     'fuelux',
     'utils/mobile-fix',
     'domReady!'
-], function($) {
-    // Function for getting cookies
-    // pulled from Django 1.8 documentation
-    function getCookie(name) {
-        var cookieValue = null;
-        if (document.cookie && document.cookie != '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = jQuery.trim(cookies[i]);
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
+], function($, Cookie) {
     // Check for safe methods
     // pulled from Django 1.8 documentation
     function csrfSafeMethod(method) {
@@ -100,7 +84,7 @@ require([
     }
 
     // Grab the CSRF token
-    var csrftoken = getCookie('csrftoken');
+    var csrftoken = Cookie.get('csrftoken');
 
     // Set up some basic jQuery ajax settings globally so we don't have to worry about it later
     $.ajaxSetup({
@@ -114,4 +98,22 @@ require([
             }
         }
     });
+
+    var advancedWarning = Cookie.get('displayAdvancedWarning');
+
+    if (!window.stackdio.advancedView && typeof advancedWarning === 'undefined') {
+        // Save the element
+        var $el = $('.stackdio-advanced-warning');
+
+        // Show the message
+        $el.removeClass('stackdio-advanced-warning');
+
+        function turnOfWarning(e) {
+            Cookie.set('displayAdvancedWarning', false, {expires: 365, path: '/'});
+        }
+
+        // Register our click handlers to set the cookie
+        $('#advanced-warning-dismiss').click(turnOfWarning);
+        $('#advanced-warning-button').click(turnOfWarning)
+    }
 });

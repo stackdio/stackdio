@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014,  Digital Reasoning
+# Copyright 2016,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,18 +30,11 @@ import yaml
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from salt.utils import get_colors
+from salt.version import __version__ as salt_version
 
 raw_input = six.moves.input
 
 SALT_COLORS = get_colors()
-
-
-def get_salt_version():
-    import envoy
-    result = envoy.run('pip freeze | grep salt')
-    if result.status_code != 0:
-        raise Exception('Cannot determine salt version')
-    return result.std_out.strip().split('==')[1]
 
 
 class Colors(object):
@@ -288,14 +281,10 @@ class InitCommand(WizardCommand):
             'attr': 'salt_bootstrap_args',
             'short_desc': 'Any special arguments for the bootstrap script?',
             'long_desc': ('What arguments to pass to the bootstrap script above? '
-                          'For our purposes, we are enabling debug output for '
-                          'tracking down issues that may crop up during the '
-                          'bootstrap process. Override the defaults here. See '
-                          'http://bootstrap.saltstack.org for more info. '
-                          'It is highly advised that you pass in a version also. '
-                          'The default args are set to include the current '
-                          'version of the salt master.'),
-            'default': '-K -D git v{0}'.format(get_salt_version())
+                          'Override the defaults here. See http://bootstrap.saltstack.org '
+                          'for more info.  You must include \'{salt_version}\' somewhere - '
+                          'it will be replaced by the current version of the salt master.'),
+            'default': 'stable archive/{salt_version}'
         }, {
             'attr': 'db_dsn',
             'short_desc': ('What database DSN should stackdio use to connect to '
@@ -559,34 +548,12 @@ class UpgradeSaltCommand(BaseCommand):
                      Colors.ERROR)
             return
 
-        new_version = get_salt_version()
-
         self.out('Updating config files...', nl=0)
         sys.stdout.flush()
 
         config = self.stackdio_config()
-        bootstrap_args = config.salt_bootstrap_args
 
-        # Change the config to the new version - don't just do a replace, parse the config and be
-        # smart about it
-        spl = bootstrap_args.split(' ')
-
-        idx = spl.index('git')
-
-        if idx == -1:
-            # Add to the config
-            self.out('WARNING: salt version was not previously in the config file')
-            spl.append('git')
-            spl.append('v{0}'.format(new_version))
-        else:
-            # Change the config
-            spl[idx + 1] = 'v{0}'.format(new_version)
-
-        config.salt_bootstrap_args = ' '.join(spl)
-
-        self.render_template('server/management/templates/config.jinja2',
-                             self.CONFIG_FILE,
-                             context=config)
+        new_args = config.salt_bootstrap_args.format(salt_version=salt_version)
 
         for profile_config in os.listdir(config.salt_profiles_dir):
             slug = '.'.join(profile_config.split('.')[:-1])
@@ -595,21 +562,9 @@ class UpgradeSaltCommand(BaseCommand):
             with open(prof_file, 'r') as f:
                 profile_yaml = yaml.safe_load(f)
 
-            # same thing here as above - parse the config and smartly replace the salt version
-            spl = profile_yaml[slug]['script_args'].split(' ')
-
-            idx = spl.index('git')
-
-            if idx == -1:
-                # Add to the config
-                self.out('WARNING: salt version was not previously in the config file')
-                spl.append('git')
-                spl.append('v{0}'.format(new_version))
-            else:
-                # Change the config
-                spl[idx + 1] = 'v{0}'.format(new_version)
-
-            profile_yaml[slug]['script_args'] = ' '.join(spl)
+            # Update the script and the args
+            profile_yaml[slug]['script'] = config.salt_bootstrap_script
+            profile_yaml[slug]['script_args'] = new_args
 
             with open(prof_file, 'w') as f:
                 yaml.safe_dump(profile_yaml, f, default_flow_style=False)
