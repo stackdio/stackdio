@@ -216,7 +216,6 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
         try:
             mapper = StackdioSaltCloudMap(opts)
             mapper.rendered_map = cloud_map
-            dmap = mapper.map_data()
 
             launched = False
             num_errors = 0
@@ -228,6 +227,7 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
 
                 try:
                     # Do the launch
+                    dmap = mapper.map_data()
                     ret = mapper.run_map(dmap)
                     # It worked
                     launched = True
@@ -266,6 +266,47 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
         kwarg['destroy'] = True
         mapper = StackdioSaltCloudMap(self._opts_defaults(**kwarg))
         mapper.rendered_map = cloud_map
+
+        ret = None
+
+        destroyed = False
+        num_errors = 0
+        while not destroyed:
+            if num_errors >= 5:
+                raise salt.cloud.SaltCloudSystemExit(
+                    'Maximum number of errors reached while destroying stack.'
+                )
+
+            try:
+                ret = self._do_destroy(mapper)
+                # It worked
+                destroyed = True
+            except ExtraData as e:
+                logger.info('Received ExtraData, retrying: {0}'.format(e))
+                # Blow away the salt cloud cache and try again
+                os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                num_errors += 1
+            except salt.cloud.SaltCloudSystemExit as e:
+                if 'extra data' in e.message:
+                    logger.info('Received ExtraData, retrying: {0}'.format(e))
+                    # Blow away the salt cloud cache and try again
+                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                    num_errors += 1
+                else:
+                    raise
+            except TypeError as e:
+                if 'NoneType' in e.message:
+                    logger.info('Received TypeError, retrying: {0}'.format(e))
+                    num_errors += 1
+                else:
+                    raise
+
+        return ret
+
+    def _do_destroy(self, mapper):
+        """
+        Here's where the destroying actually happens
+        """
         dmap = mapper.delete_map()
 
         # This is pulled from the salt-cloud ec2 driver code.
@@ -281,36 +322,7 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
 
         if names:
             logger.info(msg)
-
-            ret = None
-
-            destroyed = False
-            num_errors = 0
-            while not destroyed:
-                if num_errors >= 5:
-                    raise salt.cloud.SaltCloudSystemExit(
-                        'Maximum number of errors reached while destroying stack.'
-                    )
-
-                try:
-                    ret = mapper.destroy(names)
-                    # It worked
-                    destroyed = True
-                except ExtraData as e:
-                    logger.info('Received ExtraData, retrying: {0}'.format(e))
-                    # Blow away the salt cloud cache and try again
-                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                    num_errors += 1
-                except salt.cloud.SaltCloudSystemExit as e:
-                    if 'extra data' in e.message:
-                        logger.info('Received ExtraData, retrying: {0}'.format(e))
-                        # Blow away the salt cloud cache and try again
-                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                        num_errors += 1
-                    else:
-                        raise
-
-            return salt.utils.cloud.simple_types_filter(ret)
+            return salt.utils.cloud.simple_types_filter(mapper.destroy(names))
         else:
             logger.info('There are no VMs to be destroyed.')
             return {}

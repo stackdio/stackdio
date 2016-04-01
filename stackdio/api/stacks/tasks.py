@@ -1599,26 +1599,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
             else:
                 logger.info('Destroying complete stack: {0!r}'.format(stack))
 
-            destroyed = False
-            num_errors = 0
-            result = {}
-
-            while not destroyed:
-                if num_errors >= 5:
-                    raise salt.cloud.SaltCloudSystemExit(
-                        'Maximum number of errors reached while destroying stack.'
-                    )
-
-                try:
-                    result = salt_cloud.destroy_map(stack.generate_cloud_map(), parallel=parallel)
-                    # It worked
-                    destroyed = True
-                except TypeError as e:
-                    if 'NoneType' in e.message:
-                        logger.info('Received TypeError, retrying: {0}'.format(e))
-                        num_errors += 1
-                    else:
-                        raise
+            result = salt_cloud.destroy_map(stack.generate_cloud_map(), parallel=parallel)
 
             # Error checking?
             for profile, provider in result.items():
