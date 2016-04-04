@@ -16,18 +16,9 @@
 #
 
 import datetime
+import logging
 import os
 import subprocess
-
-try:
-    from django.utils.lru_cache import lru_cache
-except ImportError:
-    # Sometimes we might not have django yet (like when we're pip installing :))
-
-    def lru_cache():
-        def wrapped_func(func):
-            return func
-        return wrapped_func
 
 VERSION = (0, 8, 0, 'dev', 0)
 
@@ -73,7 +64,6 @@ def get_version(version):
 
 
 # Borrowed directly from django
-@lru_cache()
 def get_git_changeset():
     """Returns a numeric identifier of the latest git changeset.
 

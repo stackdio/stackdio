@@ -21,6 +21,8 @@ import pip
 from rest_framework import permissions, views
 from rest_framework.response import Response
 
+from stackdio.server import __version__ as stackdio_version
+
 # Do this once at the module level so we don't have to load it multiple times
 versions = dict((x.project_name, x) for x in pip.get_installed_distributions())
 
@@ -28,7 +30,7 @@ dep_versions = OrderedDict()
 
 if 'stackdio-server' in versions:
     stackdio_dist = versions['stackdio-server']
-    for dist in sorted(stackdio_dist.requires(), key=lambda x: x.project_name):
+    for dist in sorted(stackdio_dist.requires(), key=lambda x: x.project_name.lower()):
         dep_versions[dist.project_name] = versions[dist.project_name].version
 
 
@@ -39,9 +41,7 @@ class VersionAPIView(views.APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
-        from stackdio.server import __version__
-
         return Response({
-            'version': __version__,
+            'version': stackdio_version,
             'dependency_versions': dep_versions,
         })
