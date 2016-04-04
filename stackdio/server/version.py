@@ -79,7 +79,8 @@ def get_git_changeset():
     try:
         timestamp = datetime.datetime.utcfromtimestamp(int(timestamp))
     except ValueError:
-        return None
+        # If we can't get the timestamp, get the current UTC time
+        timestamp = datetime.datetime.utcnow()
     return timestamp.strftime('%Y%m%d%H%M%S')
 
 
