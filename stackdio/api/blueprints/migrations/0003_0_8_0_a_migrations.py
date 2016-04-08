@@ -4,90 +4,53 @@ from __future__ import unicode_literals
 
 from django.db import migrations
 import django_extensions.db.fields
-import model_utils.fields
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('stacks', '0001_0_8_initial'),
+        ('blueprints', '0002_0_8_initial'),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='host',
-            name='availability_zone',
-        ),
-        migrations.RemoveField(
-            model_name='host',
-            name='cloud_image',
-        ),
-        migrations.RemoveField(
-            model_name='host',
-            name='instance_size',
-        ),
-        migrations.RemoveField(
-            model_name='host',
-            name='subnet_id',
-        ),
         migrations.AlterField(
-            model_name='host',
+            model_name='blueprint',
             name='created',
             field=django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created'),
         ),
         migrations.AlterField(
-            model_name='host',
+            model_name='blueprint',
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
         migrations.AlterField(
-            model_name='host',
-            name='status',
-            field=model_utils.fields.StatusField(default=b'pending', max_length=100, no_check_for_status=True, verbose_name='status'),
-        ),
-        migrations.AlterField(
-            model_name='stack',
+            model_name='blueprintaccessrule',
             name='created',
             field=django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created'),
         ),
         migrations.AlterField(
-            model_name='stack',
+            model_name='blueprintaccessrule',
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
         migrations.AlterField(
-            model_name='stack',
-            name='status',
-            field=model_utils.fields.StatusField(default=b'pending', max_length=100, no_check_for_status=True, verbose_name='status'),
-        ),
-        migrations.AlterField(
-            model_name='stackcommand',
+            model_name='blueprinthostdefinition',
             name='created',
             field=django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created'),
         ),
         migrations.AlterField(
-            model_name='stackcommand',
+            model_name='blueprinthostdefinition',
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
         migrations.AlterField(
-            model_name='stackcommand',
-            name='status',
-            field=model_utils.fields.StatusField(default=b'waiting', max_length=100, no_check_for_status=True, verbose_name='status'),
-        ),
-        migrations.AlterField(
-            model_name='stackhistory',
+            model_name='blueprintvolume',
             name='created',
             field=django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created'),
         ),
         migrations.AlterField(
-            model_name='stackhistory',
+            model_name='blueprintvolume',
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
-        ),
-        migrations.AlterField(
-            model_name='stackhistory',
-            name='status',
-            field=model_utils.fields.StatusField(default=b'pending', max_length=100, no_check_for_status=True, verbose_name='status'),
         ),
     ]
