@@ -48,8 +48,6 @@ class Volume(TimeStampedModel):
     # it can only be assigned after the host is up and the volume is
     # actually attached
     host = models.ForeignKey('stacks.Host',
-                             null=True,
-                             on_delete=models.SET_NULL,
                              related_name='volumes')
 
     blueprint_volume = models.ForeignKey('blueprints.BlueprintVolume',
@@ -76,7 +74,7 @@ class Volume(TimeStampedModel):
 
     @property
     def stack(self):
-        return self.host.stack
+        return self.host.stack if self.host else None
 
     @property
     def snapshot(self):

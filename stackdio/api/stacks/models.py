@@ -40,6 +40,7 @@ from model_utils import Choices
 from model_utils.models import StatusModel
 
 from stackdio.api.cloud.models import SecurityGroup
+from stackdio.api.volumes.models import Volume
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.utils import recursive_update
 
@@ -284,6 +285,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         self.save()
         self.history.create(event=event, status=status,
                             status_detail=detail, level=level)
+
+    @property
+    def volumes(self):
+        return Volume.objects.filter(host__in=self.hosts.all())
 
     def get_driver_hosts_map(self, host_ids=None):
         """

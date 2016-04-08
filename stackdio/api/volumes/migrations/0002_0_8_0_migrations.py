@@ -59,6 +59,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name='volume',
+            name='host',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='volumes', to='stacks.Host'),
+        ),
+        migrations.AlterField(
+            model_name='volume',
             name='created',
             field=django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created'),
         ),

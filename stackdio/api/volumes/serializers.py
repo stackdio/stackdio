@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class VolumeSerializer(StackdioHyperlinkedModelSerializer):
-    snapshot_name = serializers.ReadOnlyField(source='snapshot.snapshot_id')
+    snapshot_id = serializers.ReadOnlyField(source='snapshot.snapshot_id')
     size_in_gb = serializers.ReadOnlyField(source='snapshot.size_in_gb')
 
     # Link fields
@@ -35,6 +35,11 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
         view_name='api:volumes:volume-object-user-permissions-list')
     group_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:volumes:volume-object-group-permissions-list')
+
+    stack = serializers.HyperlinkedRelatedField(
+        view_name='api:stacks:stack-detail', read_only=True, source='stack.pk')
+    snapshot = serializers.HyperlinkedRelatedField(
+        view_name='api:cloud:snapshot-detail', read_only=True, source='snapshot.pk')
 
     class Meta:
         model = models.Volume
@@ -47,7 +52,7 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
             'hostname',
             'host',
             'snapshot',
-            'snapshot_name',
+            'snapshot_id',
             'size_in_gb',
             'device',
             'mount_point',
@@ -56,7 +61,5 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
         )
 
         extra_kwargs = {
-            'stack': {'view_name': 'api:stacks:stack-detail'},
             'host': {'view_name': 'api:stacks:host-detail'},
-            'snapshot': {'view_name': 'api:cloud:snapshot-detail'},
         }
