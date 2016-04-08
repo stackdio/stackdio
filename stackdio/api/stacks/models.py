@@ -1133,14 +1133,3 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     def get_driver(self):
         return self.cloud_account.get_driver()
-
-    def get_account(self):
-        warnings.warn('blueprint.get_account is deprecated in stackd.io '
-                      '0.8.0, please use blueprint.cloud_account')
-        return self.account
-
-    def get_provider(self):
-        import warnings
-        warnings.warn('blueprint.get_provider is deprecated in stackd.io '
-                      '0.8.0, please use blueprint.cloud_provider')
-        return self.account
