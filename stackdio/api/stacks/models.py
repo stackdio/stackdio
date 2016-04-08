@@ -525,8 +525,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 host.formula_components.add(*components)
 
                 for volumedef in hostdef.volumes.all():
-                    self.volumes.create(
-                        host=host,
+                    host.volumes.create(
                         blueprint_volume=volumedef,
                         hostname=hostname,
                         device=volumedef.device,
