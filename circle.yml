@@ -1,6 +1,6 @@
 machine:
   python:
-    version: '2.7'
+    version: '2.7.10'
 
   environment:
     DJANGO_SETTINGS_MODULE: 'stackdio.server.settings.testing'
