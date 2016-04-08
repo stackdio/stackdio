@@ -52,8 +52,14 @@ def load_cloud_objects(apps, schema_editor):
 
 class Migration(migrations.Migration):
 
+    initial = True
+
     dependencies = [
-        ('cloud', '0002_initial'),
+        ('cloud', '0002_0_8_initial'),
+    ]
+
+    replaces = [
+        (b'cloud', '0003_initial_data'),
     ]
 
     operations = [

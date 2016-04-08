@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
 
+    initial = True
+
     dependencies = [
         ('contenttypes', '0002_remove_content_type_name'),
+    ]
+
+    replaces = [
+        (b'core', '0001_initial'),
+        (b'core', '0002_v0_7_migrations'),
     ]
 
     operations = [
@@ -16,7 +23,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('key', models.CharField(max_length=255, verbose_name=b'Key')),
-                ('value', models.CharField(max_length=255, verbose_name=b'Value')),
+                ('value', models.CharField(max_length=255, null=True, verbose_name=b'Value')),
                 ('object_id', models.PositiveIntegerField()),
                 ('content_type', models.ForeignKey(to='contenttypes.ContentType')),
             ],

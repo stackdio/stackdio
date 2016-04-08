@@ -1,22 +1,32 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
-import model_utils.fields
-import django_extensions.db.fields
-import stackdio.core.fields
 import django.core.files.storage
 import django.utils.timezone
+import django_extensions.db.fields
+import model_utils.fields
 from django.conf import settings
+from django.db import migrations, models
+
 import stackdio.api.stacks.models
+import stackdio.core.fields
 
 
 class Migration(migrations.Migration):
 
+    initial = True
+
     dependencies = [
-        ('cloud', '0001_initial'),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('blueprints', '0001_initial'),
+        ('blueprints', '0001_0_8_initial'),
+        ('cloud', '0001_0_8_initial'),
+    ]
+
+    replaces = [
+        (b'stacks', '0001_initial'),
+        (b'stacks', '0002_v0_7_migrations'),
+        (b'stacks', '0003_v0_7b_migrations'),
+        (b'stacks', '0004_v0_7c_migrations'),
+        (b'stacks', '0005_v0_7d_migrations'),
     ]
 
     operations = [
@@ -43,13 +53,13 @@ class Migration(migrations.Migration):
                 ('sir_price', models.DecimalField(null=True, verbose_name=b'Spot Price', max_digits=5, decimal_places=2)),
                 ('availability_zone', models.ForeignKey(related_name='hosts', to='cloud.CloudZone', null=True)),
                 ('blueprint_host_definition', models.ForeignKey(related_name='hosts', to='blueprints.BlueprintHostDefinition')),
-                ('cloud_profile', models.ForeignKey(related_name='hosts', to='cloud.CloudProfile')),
-                ('formula_components', models.ManyToManyField(related_name='hosts', to='blueprints.BlueprintHostFormulaComponent')),
+                ('cloud_image', models.ForeignKey(related_name='hosts', to='cloud.CloudImage')),
                 ('instance_size', models.ForeignKey(related_name='hosts', to='cloud.CloudInstanceSize')),
                 ('security_groups', models.ManyToManyField(related_name='hosts', to='cloud.SecurityGroup')),
             ],
             options={
                 'ordering': ['blueprint_host_definition', '-index'],
+                'default_permissions': (),
             },
         ),
         migrations.CreateModel(
@@ -59,43 +69,43 @@ class Migration(migrations.Migration):
                 ('created', django_extensions.db.fields.CreationDateTimeField(default=django.utils.timezone.now, verbose_name='created', editable=False, blank=True)),
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(default=django.utils.timezone.now, verbose_name='modified', editable=False, blank=True)),
                 ('title', models.CharField(max_length=255, verbose_name='title')),
-                ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
+                ('slug', django_extensions.db.fields.AutoSlugField(populate_from=b'title', verbose_name='slug', editable=False, blank=True)),
                 ('status', model_utils.fields.StatusField(default=b'pending', max_length=100, verbose_name='status', no_check_for_status=True, choices=[(b'pending', b'pending'), (b'launching', b'launching'), (b'configuring', b'configuring'), (b'syncing', b'syncing'), (b'provisioning', b'provisioning'), (b'orchestrating', b'orchestrating'), (b'finalizing', b'finalizing'), (b'destroying', b'destroying'), (b'finished', b'finished'), (b'starting', b'starting'), (b'stopping', b'stopping'), (b'terminating', b'terminating'), (b'executing_action', b'executing_action'), (b'error', b'error')])),
                 ('status_changed', model_utils.fields.MonitorField(default=django.utils.timezone.now, verbose_name='status changed', monitor='status')),
-                ('namespace', models.CharField(max_length=64, verbose_name=b'Namespace', blank=True)),
-                ('public', models.BooleanField(default=False, verbose_name=b'Public')),
+                ('namespace', models.CharField(max_length=64, verbose_name=b'Namespace')),
+                ('create_users', models.BooleanField(verbose_name=b'Create SSH Users')),
                 ('map_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_local_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
-                ('top_file', stackdio.core.fields.DeletingFileField(default=None, storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_core_states), max_length=255, blank=True, null=True)),
-                ('overstate_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_orchestrate_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_core_states), max_length=255, blank=True, null=True)),
-                ('global_overstate_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_orchestrate_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_core_states), max_length=255, blank=True, null=True)),
+                ('top_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=b'', storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_core_states), max_length=255, blank=True, null=True)),
+                ('orchestrate_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_orchestrate_file_path, storage=django.core.files.storage.FileSystemStorage(location=stackdio.api.stacks.models.stack_storage), max_length=255, blank=True, null=True)),
+                ('global_orchestrate_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_orchestrate_file_path, storage=django.core.files.storage.FileSystemStorage(location=stackdio.api.stacks.models.stack_storage), max_length=255, blank=True, null=True)),
                 ('pillar_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_local_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
                 ('global_pillar_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_local_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
                 ('props_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_local_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
                 ('blueprint', models.ForeignKey(related_name='stacks', to='blueprints.Blueprint')),
-                ('owner', models.ForeignKey(related_name='stacks', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'ordering': ('title',),
+                'default_permissions': ('execute', 'delete', 'launch', 'admin', 'terminate', 'create', 'stop', 'update', 'start', 'ssh', 'orchestrate', 'provision', 'view'),
             },
         ),
         migrations.CreateModel(
-            name='StackAction',
+            name='StackCommand',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('created', django_extensions.db.fields.CreationDateTimeField(default=django.utils.timezone.now, verbose_name='created', editable=False, blank=True)),
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(default=django.utils.timezone.now, verbose_name='modified', editable=False, blank=True)),
                 ('status', model_utils.fields.StatusField(default=b'waiting', max_length=100, verbose_name='status', no_check_for_status=True, choices=[(b'waiting', b'waiting'), (b'running', b'running'), (b'finished', b'finished'), (b'error', b'error')])),
                 ('status_changed', model_utils.fields.MonitorField(default=django.utils.timezone.now, verbose_name='status changed', monitor='status')),
-                ('start', models.DateTimeField(verbose_name=b'Start Time')),
-                ('type', models.CharField(max_length=50, verbose_name=b'Action Type')),
+                ('start', models.DateTimeField(default=django.utils.timezone.now, verbose_name=b'Start Time', blank=True)),
                 ('host_target', models.CharField(max_length=255, verbose_name=b'Host Target')),
                 ('command', models.TextField(verbose_name=b'Command')),
                 ('std_out_storage', models.TextField()),
                 ('std_err_storage', models.TextField()),
-                ('stack', models.ForeignKey(related_name='actions', to='stacks.Stack')),
+                ('stack', models.ForeignKey(related_name='commands', to='stacks.Stack')),
             ],
             options={
+                'default_permissions': (),
                 'verbose_name_plural': 'stack actions',
             },
         ),
@@ -114,6 +124,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 'ordering': ['-created', '-id'],
+                'default_permissions': (),
                 'verbose_name_plural': 'stack history',
             },
         ),
@@ -124,6 +135,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='stack',
-            unique_together=set([('owner', 'title')]),
+            unique_together=set([('title',)]),
         ),
     ]

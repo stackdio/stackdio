@@ -1,17 +1,24 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
-import django.utils.timezone
 import django.db.models.deletion
+import django.utils.timezone
 import django_extensions.db.fields
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
 
+    initial = True
+
     dependencies = [
-        ('stacks', '0001_initial'),
-        ('cloud', '0002_initial'),
+        ('stacks', '0001_0_8_initial'),
+        ('cloud', '0001_0_8_initial'),
+    ]
+
+    replaces = [
+        (b'volumes', '0001_initial'),
+        (b'volumes', '0002_v0_7_migrations'),
     ]
 
     operations = [
@@ -31,9 +38,7 @@ class Migration(migrations.Migration):
                 ('stack', models.ForeignKey(related_name='volumes', to='stacks.Stack')),
             ],
             options={
-                'ordering': ('-modified', '-created'),
-                'abstract': False,
-                'get_latest_by': 'modified',
+                'default_permissions': ('admin', 'create', 'delete', 'update', 'view'),
             },
         ),
     ]
