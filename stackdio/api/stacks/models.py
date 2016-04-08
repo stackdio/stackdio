@@ -302,7 +302,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # Create an account -> hosts map
         accounts = {}
         for h in host_queryset:
-            accounts.setdefault(h.get_account(), []).append(h)
+            accounts.setdefault(h.cloud_account, []).append(h)
 
         # Convert to a driver -> hosts map
         result = {}
@@ -551,7 +551,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         for host in hosts:
             # load provider yaml to extract default security groups
-            cloud_account = host.cloud_image.account
+            cloud_account = host.cloud_account
             cloud_account_yaml = yaml.safe_load(cloud_account.yaml)[cloud_account.slug]
 
             # pull various stuff we need for a host
@@ -612,7 +612,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                         'cluster_size': cluster_size,
                         'stack_pillar_file': self.pillar_file.path,
                         'volumes': map_volumes,
-                        'cloud_account': host.cloud_image.account.slug,
+                        'cloud_account': host.cloud_account.slug,
                         'cloud_image': host.cloud_image.slug,
                         'namespace': self.namespace,
                     },
@@ -714,7 +714,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(yaml_data)
 
     def generate_global_orchestrate_file(self):
-        accounts = set([host.cloud_image.account for host in self.hosts.all()])
+        accounts = set([host.cloud_account for host in self.hosts.all()])
 
         orchestrate = {}
 
@@ -844,7 +844,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         # Find all of the globally used formulas for the stack
         accounts = set(
-            [host.cloud_image.account for
+            [host.cloud_account for
              host in self.hosts.all()]
         )
         global_formulas = []
@@ -909,8 +909,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # of account and provider type dictionaries
         host_result = {}
         for host in self.hosts.all():
-            account = host.get_account()
-            provider = account.provider
+            account = host.cloud_account
+            provider = host.cloud_provider
 
             # each host is buried in a cloud provider type dict that's
             # inside a cloud account name dict
