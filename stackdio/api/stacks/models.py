@@ -470,7 +470,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 else:
                     start = hosts.order_by('-index')[0].index + 1
                     end = start + count
-                    indexes = xrange(start, end)
+                    indexes = range(start, end)
 
             # all components defined in the host definition
             components = hostdef.formula_components.all()
@@ -527,7 +527,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 for volumedef in hostdef.volumes.all():
                     self.volumes.create(
                         host=host,
-                        snapshot=volumedef.snapshot,
+                        blueprint_volume=volumedef,
                         hostname=hostname,
                         device=volumedef.device,
                         mount_point=volumedef.mount_point
