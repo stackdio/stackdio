@@ -33,12 +33,12 @@ if major not in (2, 3):
 
 if major == 2 and minor != 7:
     bad_version = True
-elif major == 3 and minor not in (4, 5):
+elif major == 3 and minor not in (4,):
     bad_version = True
 
 if bad_version:
     err_msg = ('Your Python version {0}.{1}.{2} is not supported.\n'
-               'stackdio-server requires Python 2.7, 3.4, or 3.5.\n'.format(major, minor, micro))
+               'stackdio-server requires Python 2.7, 3.4.\n'.format(major, minor, micro))
     sys.stderr.write(err_msg)
     sys.exit(1)
 
