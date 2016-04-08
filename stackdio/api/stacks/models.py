@@ -500,7 +500,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
                 host = self.hosts.create(**kwargs)
 
-                account = host.cloud_image.account
+                account = host.cloud_account
 
                 # Add in the cloud account default security groups as
                 # defined by an admin.
