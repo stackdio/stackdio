@@ -250,7 +250,7 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
 
     # The snapshot ID to create the volume from
     snapshot = models.ForeignKey('cloud.Snapshot',
-                                 related_name='host_definitions')
+                                 related_name='blueprint_volumes')
 
     def __unicode__(self):
         return u'BlueprintVolume: {0}'.format(self.pk)
