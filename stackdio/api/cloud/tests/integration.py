@@ -60,7 +60,6 @@ class CloudAccountTestCase(StackdioTestCase, PermissionsMixin):
             'provider_id': 1,
             'title': 'test',
             'description': 'test',
-            'account_id': 'blah',
             'vpc_id': 'vpc-blah',
             'region_id': 1,
         },

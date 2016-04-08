@@ -118,7 +118,6 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
             'description',
             'provider',
             'region',
-            'account_id',
             'vpc_id',
             'create_security_groups',
             'images',
@@ -136,7 +135,6 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
         create_only_fields = (
             'provider',
             'region',
-            'account_id',
             'vpc_id',
         )
 

@@ -18,13 +18,13 @@
 
 import logging
 import zipfile
+from collections import OrderedDict
 from os import listdir
 from os.path import join, isfile
 
 import envoy
 from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
-from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse

@@ -229,9 +229,6 @@ class AWSCloudProvider(BaseCloudProvider):
     SHORT_NAME = 'ec2'
     LONG_NAME = 'Amazon Web Services'
 
-    # The account/owner id
-    ACCOUNT_ID = 'account_id'
-
     # The AWS access key id
     ACCESS_KEY = 'access_key_id'
 

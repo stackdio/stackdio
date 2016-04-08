@@ -19,13 +19,13 @@
 import logging
 import os
 import string
+from collections import OrderedDict
 
 import salt.cloud
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from rest_framework import serializers
-from rest_framework.compat import OrderedDict
 from rest_framework.exceptions import PermissionDenied
 
 from stackdio.core.mixins import CreateOnlyFieldsMixin
