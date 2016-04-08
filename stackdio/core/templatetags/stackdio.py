@@ -20,8 +20,9 @@ from __future__ import absolute_import
 
 from django import template
 from django.conf import settings
-from django.shortcuts import resolve_url
 from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.shortcuts import resolve_url
+from django.utils.safestring import mark_safe
 
 from stackdio.server import __version__
 
@@ -30,7 +31,7 @@ register = template.Library()
 
 @register.simple_tag
 def stackdio_version():
-    return '<span class="version">{0}</span>'.format(__version__)
+    return mark_safe('<span class="version">{0}</span>'.format(__version__))
 
 
 @register.simple_tag
