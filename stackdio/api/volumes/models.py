@@ -53,6 +53,7 @@ class Volume(TimeStampedModel):
                              related_name='volumes')
 
     blueprint_volume = models.ForeignKey('blueprints.BlueprintVolume',
+                                         null=True,
                                          related_name='volumes')
 
     # the volume id as provided by the cloud provider. This can only

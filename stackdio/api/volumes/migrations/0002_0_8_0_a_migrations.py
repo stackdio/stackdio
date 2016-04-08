@@ -25,7 +25,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='volume',
             name='blueprint_volume',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='volumes', to='blueprints.BlueprintVolume'),
-            preserve_default=False,
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='volumes', to='blueprints.BlueprintVolume'),
         ),
     ]
