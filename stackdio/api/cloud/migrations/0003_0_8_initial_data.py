@@ -23,7 +23,7 @@ def load_cloud_objects(apps, schema_editor):
     initial_data = load_initial_data()
 
     model_filter = {
-        'CloudProviderType': 'type_name',
+        'CloudProvider': 'name',
         'CloudRegion': 'title',
         'CloudZone': 'title',
         'CloudInstanceSize': 'instance_id',
