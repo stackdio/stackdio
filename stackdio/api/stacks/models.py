@@ -38,8 +38,10 @@ from django_extensions.db.models import (
 from guardian.shortcuts import get_users_with_perms
 from model_utils import Choices
 from model_utils.models import StatusModel
+from rest_framework.exceptions import APIException
 
 from stackdio.api.cloud.models import SecurityGroup
+from stackdio.api.cloud.providers.base import GroupExistsException
 from stackdio.api.volumes.models import Volume
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.utils import recursive_update
@@ -385,10 +387,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 sg_id = driver.create_security_group(sg_name,
                                                      sg_description,
                                                      delete_if_exists=True)
-            except Exception as e:
+            except GroupExistsException as e:
                 err_msg = 'Error creating security group: {0}'.format(str(e))
-                self.set_status('create_security_groups', self.ERROR,
-                                err_msg, Level.ERROR)
+                raise APIException({'error': err_msg})
 
             logger.debug('Created security group {0}: {1}'.format(
                 sg_name,
