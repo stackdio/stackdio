@@ -50,7 +50,7 @@ define([
         this.volumeId = ko.observable();
         this.attachTime = ko.observable();
         this.hostname = ko.observable();
-        this.snapshotName = ko.observable();
+        this.snapshotId = ko.observable();
         this.size = ko.observable();
         this.device = ko.observable();
         this.mountPoint = ko.observable();
@@ -68,7 +68,7 @@ define([
         this.volumeId(raw.volume_id);
         this.attachTime(raw.attach_time);
         this.hostname(raw.hostname);
-        this.snapshotName(raw.snapshot_name);
+        this.snapshotId(raw.snapshot_id);
         this.size(raw.size_in_gb);
         this.device(raw.device);
         this.mountPoint(raw.mount_point);

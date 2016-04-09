@@ -449,12 +449,12 @@ class StackLogsDetailAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
         log_file = self.kwargs.get('log', '')
 
         try:
-            tail = int(request.QUERY_PARAMS.get('tail', 0))
+            tail = int(request.query_params.get('tail', 0))
         except ValueError:
             tail = None
 
         try:
-            head = int(request.QUERY_PARAMS.get('head', 0))
+            head = int(request.query_params.get('head', 0))
         except ValueError:
             head = None
 
