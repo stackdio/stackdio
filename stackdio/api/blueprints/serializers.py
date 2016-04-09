@@ -223,6 +223,7 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
 
 
 class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
+    stack_count = serializers.ReadOnlyField(source='stacks.count')
     label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
 
     properties = serializers.HyperlinkedIdentityField(
@@ -248,6 +249,7 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
             'title',
             'description',
             'create_users',
+            'stack_count',
             'label_list',
             'properties',
             'host_definitions',
