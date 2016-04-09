@@ -1694,7 +1694,8 @@ def destroy_stack(stack_id):
                              level=Stack.ERROR)
         else:
             # delete the stack storage directory
-            shutil.rmtree(stack.get_root_directory())
+            if os.path.exists(stack.get_root_directory()):
+                shutil.rmtree(stack.get_root_directory())
             stack.delete()
 
     except Stack.DoesNotExist:
