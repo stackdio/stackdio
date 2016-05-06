@@ -20,6 +20,7 @@ import logging
 import os
 import string
 
+import six
 import salt.cloud
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -284,8 +285,13 @@ class StackCreateUserDefault(object):
         blueprint_id = self._context.initial_data.get('blueprint', None)
         if blueprint_id is None:
             return None
-        blueprint = Blueprint.objects.get(pk=blueprint_id)
-        return blueprint.create_users
+        if not isinstance(blueprint_id, six.integer_types):
+            return None
+        try:
+            blueprint = Blueprint.objects.get(pk=blueprint_id)
+            return blueprint.create_users
+        except Blueprint.DoesNotExist:
+            return None
 
 
 class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
