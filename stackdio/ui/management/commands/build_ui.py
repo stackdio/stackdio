@@ -22,7 +22,6 @@ import sys
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.template import Context
 from django.template.loader import get_template
 
 STATIC_DIR = os.path.join(
