@@ -123,7 +123,7 @@ setup(
             'supervisor>=3.0',
         ],
         'mysql': [
-            'MySQL-python==1.2.5',
+            'mysqlclient==1.3.7',
         ],
         'postgresql': [
             'psycopg2==2.6.1'
