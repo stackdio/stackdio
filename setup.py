@@ -84,7 +84,6 @@ requirements = [
     'GitPython>=1.0',
     'Markdown>=2.6',
     'pip>=6',
-    'psutil>=2.1',
     'PyYAML>=3.10',
     'requests>=2.4',
     'salt>=2016.3.0,<2016.4',
