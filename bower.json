@@ -25,19 +25,19 @@
     ],
     "dependencies": {
         "bootbox.js": "~4.4.0",
-        "bootstrap": "~3.3.5",
-        "cookie": "https://github.com/js-cookie/js-cookie.git#v2.1.0",
-        "font-awesome": "~4.4.0",
-        "fuelux": "~3.11.1",
-        "jquery": "~1.9.1",
-        "knockout": "~3.3.0",
-        "ladda": "~0.9.8",
-        "moment": "~2.10.6",
-        "requirejs": "~2.1.20",
-        "requirejs-domReady": "~2.0.1",
+        "bootstrap": "~3.3.0",
+        "font-awesome": "~4.6.0",
+        "fuelux": "~3.15.0",
+        "jquery": "~2.2.0",
+        "js-cookie": "~2.1.0",
+        "knockout": "~3.4.0",
+        "ladda": "~1.0.0",
+        "moment": "~2.13.0",
+        "requirejs": "~2.2.0",
+        "requirejs-domReady": "~2.0.0",
         "select2": "~4.0.0",
         "select2-bootstrap-theme": "https://github.com/select2/select2-bootstrap-theme.git#0.1.0-beta.4",
-        "typeahead.js": "~0.11.1",
-        "underscore": "~1.8.3"
+        "typeahead.js": "~0.11.0",
+        "underscore": "~1.8.0"
     }
 }
