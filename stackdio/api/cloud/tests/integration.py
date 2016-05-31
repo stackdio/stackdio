@@ -108,7 +108,6 @@ class CloudImageTestCase(StackdioTestCase, PermissionsMixin):
     permission_tests = {
         'model': models.CloudImage,
         'create_data': {
-            'account_id': 1,
             'title': 'test',
             'description': 'test',
             'image_id': 'blah',
@@ -130,7 +129,9 @@ class CloudImageTestCase(StackdioTestCase, PermissionsMixin):
         ]
     }
 
-    @classmethod
-    def setUpTestData(cls):
-        super(CloudImageTestCase, cls).setUpTestData()
-        models.CloudAccount.objects.create(**CloudAccountTestCase.permission_tests['create_data'])
+    def set_up_perms(self):
+        account = models.CloudAccount.objects.create(
+            **CloudAccountTestCase.permission_tests['create_data']
+        )
+        self.obj = models.CloudImage.objects.create(account=account,
+                                                    **self.permission_tests['create_data'])

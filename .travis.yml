@@ -21,6 +21,9 @@ addons:
     packages:
       - swig
 
+services:
+  - mysql
+
 ## Customize dependencies
 install:
   - npm install -g bower

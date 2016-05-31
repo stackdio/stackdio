@@ -5,6 +5,9 @@ machine:
   environment:
     DJANGO_SETTINGS_MODULE: 'stackdio.server.settings.testing'
 
+  services:
+    - mysql
+
 ## Customize dependencies
 dependencies:
   override:
