@@ -265,7 +265,6 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def get_required_fields(self):
         return [
-            self.ACCOUNT_ID,
             self.ACCESS_KEY,
             self.SECRET_KEY,
             self.KEYPAIR,
