@@ -24,6 +24,9 @@ addons:
 services:
   - mysql
 
+before_install:
+  - mysql -e "CREATE DATABASE IF NOT EXISTS stackdio;" -u root
+
 ## Customize dependencies
 install:
   - npm install -g bower
