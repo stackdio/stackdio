@@ -98,9 +98,7 @@ class Command(BaseCommand):
 
         main_template = get_template('stackdio/js/main.js')
 
-        context = Context({})
-
-        js = main_template.render(context)
+        js = main_template.render({})
 
         # Replace our appDir
         js = js.replace('{0}stackdio/app'.format(settings.STATIC_URL), '.')
