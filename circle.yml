@@ -25,6 +25,7 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
+    - python manage.py migrate
     - py.test --cov=stackdio --cov-report=html --junit-xml=tests.xml stackdio
 
   post:
