@@ -14,7 +14,7 @@ dependencies:
     - bower install
     - pip install -U pip
     - pip install -U wheel
-    - pip install -U -e .[testing]
+    - pip install -U -e .[testing,mysql]
 
 ## Customize test commands
 test:
