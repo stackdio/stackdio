@@ -17,19 +17,27 @@
 
 
 import logging
-from operator import or_
 
 from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
 from rest_framework import generics, permissions
 from rest_framework.filters import DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
+from stackdio.api.blueprints.serializers import BlueprintSerializer
+from stackdio.api.formulas.serializers import FormulaSerializer
+from stackdio.api.stacks.serializers import StackSerializer
 from . import serializers
 
 logger = logging.getLogger(__name__)
+
+
+SERIALIZER_MAP = {
+    'formula': FormulaSerializer,
+    'blueprint': BlueprintSerializer,
+    'stack': StackSerializer,
+}
 
 
 class SearchAPIView(generics.ListAPIView):
@@ -59,26 +67,23 @@ class SearchAPIView(generics.ListAPIView):
 
         for app, models in apps.all_models.items():
             for model_name, model_cls in models.items():
-                if not hasattr(model_cls, 'searchable_fields'):
+                if not hasattr(model_cls.objects, 'search'):
                     continue
-
-                fields = model_cls.searchable_fields
 
                 ctype = ContentType.objects.get_for_model(model_cls)
 
                 # Pull out all the objects we don't have permission on
                 searchable = self.filter_queryset(model_cls.objects.all())
 
-                # Put together the Q args
-                qset = reduce(or_, [Q(**{'%s__icontains' % field: q}) for field in fields])
-
-                for obj in searchable.filter(qset).distinct():
+                # Use our qset search method
+                for obj in searchable.search(q):
                     full_queryset.append({
-                        'object_type': ctype,
+                        'type': ctype,
                         'title': obj.title,
                         'url': reverse('api:%s:%s-detail' % (app, model_name),
                                        kwargs={'pk': obj.pk},
                                        request=self.request),
+                        'object': SERIALIZER_MAP[ctype.model](obj).data,
                     })
 
         return full_queryset

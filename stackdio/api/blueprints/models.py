@@ -27,6 +27,7 @@ from django.db import models
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
 from stackdio.core.fields import DeletingFileField
+from stackdio.core.models import SearchQuerySet
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -56,6 +57,10 @@ def get_props_file_path(obj, filename):
     return 'blueprints/{0}-{1}.props'.format(obj.pk, obj.slug)
 
 
+class BlueprintQuerySet(SearchQuerySet):
+    searchable_fields = ('title', 'description')
+
+
 _blueprint_model_permissions = (
     'create',
     'admin',
@@ -80,7 +85,6 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
     model_permissions = _blueprint_model_permissions
     object_permissions = _blueprint_object_permissions
-    searchable_fields = ('title', 'description')
 
     class Meta:
         ordering = ('title',)
@@ -101,6 +105,8 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         blank=True,
         default=None,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+
+    objects = BlueprintQuerySet.as_manager()
 
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.id)

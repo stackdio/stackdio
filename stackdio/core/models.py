@@ -15,8 +15,22 @@
 # limitations under the License.
 #
 
+from operator import or_
+
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
+from django.db.models import Q
+
+
+class SearchQuerySet(models.QuerySet):
+    searchable_fields = ()
+
+    def search(self, query):
+        # Put together the Q args
+        q_objs = [Q(**{'%s__icontains' % field: query}) for field in self.searchable_fields]
+        qset = reduce(or_, q_objs)
+
+        return self.filter(qset).distinct()
 
 
 class Label(models.Model):
