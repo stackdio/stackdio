@@ -27,9 +27,9 @@ import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.cache import cache
-from django.db import models, transaction
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
+from django.db import models, transaction
 from django.utils.timezone import now
 from django_extensions.db.models import (
     TimeStampedModel,
@@ -38,10 +38,13 @@ from django_extensions.db.models import (
 from guardian.shortcuts import get_users_with_perms
 from model_utils import Choices
 from model_utils.models import StatusModel
+from rest_framework.exceptions import APIException
 
+from stackdio.api.cloud.models import SecurityGroup
+from stackdio.api.cloud.providers.base import GroupExistsException
+from stackdio.api.volumes.models import Volume
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.utils import recursive_update
-from stackdio.api.cloud.models import SecurityGroup
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -57,7 +60,7 @@ HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
     hostnames = []
     for hostdef in hostdefs:
-        for i in xrange(hostdef.count):
+        for i in range(hostdef.count):
             hostnames.append(
                 hostdef.hostname_template.format(
                     namespace=namespace,
@@ -96,7 +99,6 @@ class StatusDetailModel(StatusModel):
 
 
 class StackQuerySet(models.QuerySet):
-
     def create(self, **kwargs):
         new_properties = kwargs.pop('properties', {})
 
@@ -136,7 +138,6 @@ _stack_object_permissions = (
     'admin',
 )
 
-
 stack_storage = FileSystemStorage(location=os.path.join(settings.FILE_STORAGE_DIRECTORY, 'stacks'))
 
 
@@ -151,7 +152,6 @@ def get_orchestrate_file_path(instance, filename):
 
 
 class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
-
     # Launch workflow:
     PENDING = 'pending'
     LAUNCHING = 'launching'
@@ -288,6 +288,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         self.history.create(event=event, status=status,
                             status_detail=detail, level=level)
 
+    @property
+    def volumes(self):
+        return Volume.objects.filter(host__in=self.hosts.all())
+
     def get_driver_hosts_map(self, host_ids=None):
         """
         Stacks are comprised of multiple hosts. Each host may be
@@ -305,7 +309,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # Create an account -> hosts map
         accounts = {}
         for h in host_queryset:
-            accounts.setdefault(h.get_account(), []).append(h)
+            accounts.setdefault(h.cloud_account, []).append(h)
 
         # Convert to a driver -> hosts map
         result = {}
@@ -383,10 +387,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 sg_id = driver.create_security_group(sg_name,
                                                      sg_description,
                                                      delete_if_exists=True)
-            except Exception as e:
+            except GroupExistsException as e:
                 err_msg = 'Error creating security group: {0}'.format(str(e))
-                self.set_status('create_security_groups', self.ERROR,
-                                err_msg, Level.ERROR)
+                raise APIException({'error': err_msg})
 
             logger.debug('Created security group {0}: {1}'.format(
                 sg_name,
@@ -473,7 +476,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 else:
                     start = hosts.order_by('-index')[0].index + 1
                     end = start + count
-                    indexes = xrange(start, end)
+                    indexes = range(start, end)
 
             # all components defined in the host definition
             components = hostdef.formula_components.all()
@@ -503,7 +506,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
                 host = self.hosts.create(**kwargs)
 
-                account = host.cloud_image.account
+                account = host.cloud_account
 
                 # Add in the cloud account default security groups as
                 # defined by an admin.
@@ -528,9 +531,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 host.formula_components.add(*components)
 
                 for volumedef in hostdef.volumes.all():
-                    self.volumes.create(
-                        host=host,
-                        snapshot=volumedef.snapshot,
+                    host.volumes.create(
+                        blueprint_volume=volumedef,
                         hostname=hostname,
                         device=volumedef.device,
                         mount_point=volumedef.mount_point
@@ -554,15 +556,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         for host in hosts:
             # load provider yaml to extract default security groups
-            cloud_account = host.cloud_image.account
+            cloud_account = host.cloud_account
             cloud_account_yaml = yaml.safe_load(cloud_account.yaml)[cloud_account.slug]
 
             # pull various stuff we need for a host
             roles = [c.sls_path for c in host.formula_components.all()]
             instance_size = host.instance_size.title
             security_groups = set([
-                sg.group_id for sg in host.security_groups.all()
-            ])
+                                      sg.group_id for sg in host.security_groups.all()
+                                      ])
             volumes = host.volumes.all()
 
             domain = cloud_account_yaml['append_domain']
@@ -615,7 +617,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                         'cluster_size': cluster_size,
                         'stack_pillar_file': self.pillar_file.path,
                         'volumes': map_volumes,
-                        'cloud_account': host.cloud_image.account.slug,
+                        'cloud_account': host.cloud_account.slug,
                         'cloud_image': host.cloud_image.slug,
                         'namespace': self.namespace,
                     },
@@ -717,7 +719,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 f.write(yaml_data)
 
     def generate_global_orchestrate_file(self):
-        accounts = set([host.cloud_image.account for host in self.hosts.all()])
+        accounts = set([host.cloud_account for host in self.hosts.all()])
 
         orchestrate = {}
 
@@ -847,8 +849,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         # Find all of the globally used formulas for the stack
         accounts = set(
-            [host.cloud_image.account for
-                host in self.hosts.all()]
+            [host.cloud_account for
+             host in self.hosts.all()]
         )
         global_formulas = []
         for account in accounts:
@@ -912,8 +914,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         # of account and provider type dictionaries
         host_result = {}
         for host in self.hosts.all():
-            account = host.get_account()
-            provider = account.provider
+            account = host.cloud_account
+            provider = host.cloud_provider
 
             # each host is buried in a cloud provider type dict that's
             # inside a cloud account name dict
@@ -953,7 +955,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
 
 class StackHistory(TimeStampedModel, StatusDetailModel):
-
     class Meta:
         verbose_name_plural = 'stack history'
         ordering = ['-created', '-id']
@@ -1050,25 +1051,8 @@ class Host(TimeStampedModel, StatusDetailModel):
 
         default_permissions = ()
 
-    # TODO: We should be using generic foreign keys here to a cloud account
-    # specific implementation of a Host object. I'm not exactly sure how this
-    # will work, but I think by using Django's content type system we can make
-    # it work...just not sure how easy it will be to extend, maintain, etc.
-
     stack = models.ForeignKey('Stack',
                               related_name='hosts')
-
-    cloud_image = models.ForeignKey('cloud.CloudImage',
-                                    related_name='hosts')
-
-    instance_size = models.ForeignKey('cloud.CloudInstanceSize',
-                                      related_name='hosts')
-
-    availability_zone = models.ForeignKey('cloud.CloudZone',
-                                          null=True,
-                                          related_name='hosts')
-
-    subnet_id = models.CharField('Subnet ID', max_length=32, blank=True, default='')
 
     blueprint_host_definition = models.ForeignKey(
         'blueprints.BlueprintHostDefinition',
@@ -1127,11 +1111,29 @@ class Host(TimeStampedModel, StatusDetailModel):
     def formula_components(self):
         return self.blueprint_host_definition.formula_components
 
-    def get_account(self):
+    @property
+    def instance_size(self):
+        return self.blueprint_host_definition.size
+
+    @property
+    def availability_zone(self):
+        return self.blueprint_host_definition.zone
+
+    @property
+    def subnet_id(self):
+        return self.blueprint_host_definition.subnet_id
+
+    @property
+    def cloud_image(self):
+        return self.blueprint_host_definition.cloud_image
+
+    @property
+    def cloud_account(self):
         return self.cloud_image.account
 
-    def get_provider(self):
-        return self.get_account().provider
+    @property
+    def cloud_provider(self):
+        return self.cloud_account.provider
 
     def get_driver(self):
-        return self.cloud_image.get_driver()
+        return self.cloud_account.get_driver()

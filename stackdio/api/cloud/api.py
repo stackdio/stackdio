@@ -17,11 +17,11 @@
 
 
 import logging
+from collections import OrderedDict
 
 from django.core.cache import cache
 from guardian.shortcuts import assign_perm
 from rest_framework import generics
-from rest_framework.compat import OrderedDict
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response

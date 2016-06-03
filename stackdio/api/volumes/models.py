@@ -20,12 +20,10 @@ from django.db import models
 
 from django_extensions.db.models import TimeStampedModel
 
-
 _volume_model_permissions = (
     'create',
     'admin',
 )
-
 
 _volume_object_permissions = (
     'view',
@@ -36,15 +34,11 @@ _volume_object_permissions = (
 
 
 class Volume(TimeStampedModel):
-
     model_permissions = _volume_model_permissions
     object_permissions = _volume_object_permissions
 
     class Meta:
         default_permissions = tuple(set(_volume_model_permissions + _volume_object_permissions))
-
-    # The stack this volume belongs to
-    stack = models.ForeignKey('stacks.Stack', related_name='volumes')
 
     # The hostname is used to match up volumes to hosts as they
     # come online.
@@ -54,9 +48,10 @@ class Volume(TimeStampedModel):
     # it can only be assigned after the host is up and the volume is
     # actually attached
     host = models.ForeignKey('stacks.Host',
-                             null=True,
-                             on_delete=models.SET_NULL,
                              related_name='volumes')
+
+    blueprint_volume = models.ForeignKey('blueprints.BlueprintVolume',
+                                         related_name='volumes')
 
     # the volume id as provided by the cloud provider. This can only
     # be populated after the volume has been created, thus allowing
@@ -67,10 +62,6 @@ class Volume(TimeStampedModel):
     # after the volume has been created
     attach_time = models.DateTimeField('Attach Time', default=None, null=True, blank=True)
 
-    # the snapshot used when this volume is created. The size of the volume
-    # is determined by the snapshot
-    snapshot = models.ForeignKey('cloud.Snapshot')
-
     # the device id (e.g, /dev/sdb, dev/sdc, etc) the volume will assume when
     # it's attached to its host
     device = models.CharField('Device', max_length=32)
@@ -80,3 +71,11 @@ class Volume(TimeStampedModel):
 
     def __unicode__(self):
         return '{0}'.format(self.volume_id)
+
+    @property
+    def stack(self):
+        return self.host.stack if self.host else None
+
+    @property
+    def snapshot(self):
+        return self.blueprint_volume.snapshot

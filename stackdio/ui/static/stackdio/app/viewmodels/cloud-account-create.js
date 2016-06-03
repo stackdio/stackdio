@@ -289,7 +289,6 @@ define([
             'create_security_groups', 'vpc_id', 'region'];
 
         self.extrasMap = {
-            account_id: 'Account ID',
             access_key_id: 'Access Key ID',
             secret_access_key: 'Secret Access Key',
             keypair: 'Keypair Name',

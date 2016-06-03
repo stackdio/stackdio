@@ -1,9 +1,12 @@
 machine:
   python:
-    version: '2.7'
+    version: '2.7.10'
 
   environment:
     DJANGO_SETTINGS_MODULE: 'stackdio.server.settings.testing'
+
+  services:
+    - mysql
 
 ## Customize dependencies
 dependencies:
@@ -11,7 +14,7 @@ dependencies:
     - bower install
     - pip install -U pip
     - pip install -U wheel
-    - pip install -U -e .[testing]
+    - pip install -U -e .[testing,mysql]
 
 ## Customize test commands
 test:
@@ -22,6 +25,7 @@ test:
     - cp tests/config /home/ubuntu/.stackdio/config
 
   override:
+    - python manage.py migrate
     - py.test --cov=stackdio --cov-report=html --junit-xml=tests.xml stackdio
 
   post:

@@ -9,6 +9,6 @@ salt_bootstrap_args: -K -D git v{salt_version}
 
 django_secret_key: "$c0mmag@6zppv3l+unbynv7p1ajb$0(yodk-b)axsgsixhlm2^"
 
-db_dsn: sqlite:///stackdio_test.db
+db_dsn: mysql://ubuntu@localhost/circle_test
 
 create_ssh_users: true

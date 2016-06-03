@@ -1599,7 +1599,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
             else:
                 logger.info('Destroying complete stack: {0!r}'.format(stack))
 
-            result = salt_cloud.destroy_map(stack.generate_cloud_map(), parallel=parallel)
+            result = salt_cloud.destroy_map(stack.generate_cloud_map(), hosts, parallel=parallel)
 
             # Error checking?
             for profile, provider in result.items():
@@ -1694,7 +1694,8 @@ def destroy_stack(stack_id):
                              level=Stack.ERROR)
         else:
             # delete the stack storage directory
-            shutil.rmtree(stack.get_root_directory())
+            if os.path.exists(stack.get_root_directory()):
+                shutil.rmtree(stack.get_root_directory())
             stack.delete()
 
     except Stack.DoesNotExist:

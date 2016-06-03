@@ -19,15 +19,21 @@
 import logging
 import os
 import string
+from collections import OrderedDict
 
 import salt.cloud
+import six
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from rest_framework import serializers
-from rest_framework.compat import OrderedDict
 from rest_framework.exceptions import PermissionDenied
 
+from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
+from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
+from stackdio.api.cloud.models import SecurityGroup
+from stackdio.api.cloud.serializers import SecurityGroupSerializer
+from stackdio.api.formulas.serializers import FormulaComponentSerializer, FormulaVersionSerializer
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
@@ -36,11 +42,6 @@ from stackdio.core.serializers import (
 )
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator, validate_hostname
-from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
-from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
-from stackdio.api.cloud.models import SecurityGroup
-from stackdio.api.cloud.serializers import SecurityGroupSerializer
-from stackdio.api.formulas.serializers import FormulaComponentSerializer, FormulaVersionSerializer
 from . import models, tasks, utils, workflows
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,6 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
 
 class HostSerializer(StackdioHyperlinkedModelSerializer):
     # Read only fields
-    subnet_id = serializers.ReadOnlyField()
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
     blueprint_host_definition = serializers.ReadOnlyField(source='blueprint_host_definition.title')
     formula_components = FormulaComponentSerializer(many=True, read_only=True)
@@ -132,6 +132,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
             'state_reason',
             'status',
             'status_detail',
+            'subnet_id',
             'sir_id',
             'sir_price',
         )
@@ -284,8 +285,13 @@ class StackCreateUserDefault(object):
         blueprint_id = self._context.initial_data.get('blueprint', None)
         if blueprint_id is None:
             return None
-        blueprint = Blueprint.objects.get(pk=blueprint_id)
-        return blueprint.create_users
+        if not isinstance(blueprint_id, six.integer_types):
+            return None
+        try:
+            blueprint = Blueprint.objects.get(pk=blueprint_id)
+            return blueprint.create_users
+        except Blueprint.DoesNotExist:
+            return None
 
 
 class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):

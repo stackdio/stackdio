@@ -51,6 +51,7 @@
                         <span class="label label-default" data-bind="text: key"></span>
                         <!-- /ko -->
                     </td>
+                    <td data-bind="text: stackCount, click: function (blueprint) { $root.goToDetailPage(blueprint) }"></td>
                     <td class="text-center">
                         <a href="#" class="btn btn-xs btn-info" data-bind="click: $data.launch">
                             Launch

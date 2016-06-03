@@ -109,21 +109,22 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     def host_definition_count(self):
         return self.host_definitions.count()
 
-    @property
-    def properties(self):
+    def _get_properties(self):
         if not self.props_file:
             return {}
         with open(self.props_file.path) as f:
             return json.loads(f.read())
 
-    @properties.setter
-    def properties(self, props):
+    def _set_properties(self, props):
         props_json = json.dumps(props, indent=4)
         if not self.props_file:
             self.props_file.save(self.slug + '.props', ContentFile(props_json))
         else:
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
+
+    # Create a property
+    properties = property(_get_properties, _set_properties)
 
     def get_formulas(self):
         formulas = set()
@@ -249,7 +250,7 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
 
     # The snapshot ID to create the volume from
     snapshot = models.ForeignKey('cloud.Snapshot',
-                                 related_name='host_definitions')
+                                 related_name='blueprint_volumes')
 
     def __unicode__(self):
         return u'BlueprintVolume: {0}'.format(self.pk)

@@ -129,9 +129,6 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
     # FOR EC2 VPC
     vpc_id = models.CharField('VPC ID', max_length=64, blank=True)
 
-    # the account/owner id of the account
-    account_id = models.CharField('Account ID', max_length=64)
-
     # If this is false, we won't create security groups on a per-stack basis.
     create_security_groups = models.BooleanField('Create Security Groups', default=True)
 
@@ -194,21 +191,23 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
                 # update the yaml to include updated security group information
                 f.write(self.yaml)
 
-    @property
-    def global_orchestration_properties(self):
+    def _get_global_orchestration_properties(self):
         if not self.global_orch_props_file:
             return {}
         with open(self.global_orch_props_file.path) as f:
             return json.loads(f.read())
 
-    @global_orchestration_properties.setter
-    def global_orchestration_properties(self, props):
+    def _set_global_orchestration_properties(self, props):
         props_json = json.dumps(props, indent=4)
         if not self.global_orch_props_file:
             self.global_orch_props_file.save('global_orch.props', ContentFile(props_json))
         else:
             with open(self.global_orch_props_file.path, 'w') as f:
                 f.write(props_json)
+
+    # Add as a property
+    global_orchestration_properties = property(_get_global_orchestration_properties,
+                                               _set_global_orchestration_properties)
 
     def get_root_directory(self):
         return os.path.join(settings.FILE_STORAGE_DIRECTORY, 'cloud', self.slug)
@@ -401,6 +400,10 @@ class CloudZone(TitleSlugDescriptionModel):
 
     def __unicode__(self):
         return self.title
+
+    @property
+    def provider(self):
+        return self.region.provider
 
 
 class SecurityGroupQuerySet(TransformQuerySet):

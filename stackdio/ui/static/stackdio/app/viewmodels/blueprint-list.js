@@ -35,8 +35,9 @@ define([
         detailRequiresAdvanced: true,
         sortableFields: [
             {name: 'title', displayName: 'Title', width: '20%'},
-            {name: 'description', displayName: 'Description', width: '50%'},
-            {name: 'labelList', displayName: 'Labels', width: '20%'}
+            {name: 'description', displayName: 'Description', width: '43%'},
+            {name: 'labelList', displayName: 'Labels', width: '20%'},
+            {name: 'stackCount', displayName: 'Stacks', width: '7%'}
         ]
     });
 });

@@ -22,7 +22,6 @@ import sys
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.template import Context
 from django.template.loader import get_template
 
 STATIC_DIR = os.path.join(
@@ -98,9 +97,7 @@ class Command(BaseCommand):
 
         main_template = get_template('stackdio/js/main.js')
 
-        context = Context({})
-
-        js = main_template.render(context)
+        js = main_template.render({})
 
         # Replace our appDir
         js = js.replace('{0}stackdio/app'.format(settings.STATIC_URL), '.')

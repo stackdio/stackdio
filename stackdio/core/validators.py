@@ -93,7 +93,4 @@ def validate_hostname(value, raise_exception=False):
     if errors and raise_exception:
         raise ValidationError(errors)
 
-    logger.debug(value)
-    logger.debug(errors)
-
     return errors

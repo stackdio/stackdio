@@ -54,6 +54,7 @@ define([
         this.description = ko.observable();
         this.createUsers = ko.observable();
         this.labelList = ko.observable();
+        this.stackCount = ko.observable();
 
         // Lazy-loaded properties (not returned from the main blueprint endpoint)
         this.properties = ko.observable({});
@@ -74,6 +75,7 @@ define([
         this.description(raw.description);
         this.createUsers(raw.create_users);
         this.labelList(raw.label_list);
+        this.stackCount(raw.stack_count);
     };
 
     // Reload the current blueprint

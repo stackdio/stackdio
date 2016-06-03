@@ -36,12 +36,14 @@ class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer)
         field_class = self.serializer_url_field
         app_label = getattr(self.Meta, 'app_label', model_class._meta.app_label)
         model_name = getattr(self.Meta, 'model_name', model_class._meta.object_name.lower())
+        lookup_field = getattr(self.Meta, 'lookup_field', 'pk')
 
         # Override user things
         if model_name in ('user', 'group', 'permission'):
             app_label = 'users'
         field_kwargs = {
             'view_name': 'api:%s:%s-detail' % (app_label, model_name),
+            'lookup_field': lookup_field,
         }
 
         return field_class, field_kwargs

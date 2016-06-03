@@ -187,7 +187,6 @@ class ObjectPermissionSerializerTestCase(StackdioTestCase):
             provider_id=1,
             title='test',
             description='test',
-            account_id='blah',
             vpc_id='vpc-blah',
             region_id=1,
         )
@@ -659,7 +658,6 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
             provider_id=1,
             title='test',
             description='test',
-            account_id='blah',
             vpc_id='vpc-blah',
             region_id=1,
         )
