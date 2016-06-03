@@ -1,7 +1,7 @@
 stackd.io
 =========
 
-|Travis CI| |Coverage Status| |Docs Status|
+|TravisCI| |PyPi| |CoverageStatus| |DocsStatus|
 
 stackd.io is a web-based tool for managing, provisioning, and orchestrating cloud
 infrastructure without the need for a background in systems engineering.
@@ -40,12 +40,15 @@ glad to help!
 -  StackExchange: Ask a question on any `StackExchange site <http://stackexchange.com/sites>`__
    and tag it with ``stackd.io`` or ``stackdio``
 
-.. |Travis CI| image:: https://travis-ci.org/stackdio/stackdio.svg?branch=master
+.. |TravisCI| image:: https://travis-ci.org/stackdio/stackdio.svg?branch=master
    :target: https://travis-ci.org/stackdio/stackdio
    :alt: Build Status
-.. |Coverage Status| image:: https://coveralls.io/repos/github/stackdio/stackdio/badge.svg?branch=master
+.. |PyPi| image:: https://img.shields.io/pypi/v/stackdio-server.svg
+   :target: https://pypi.python.org/pypi/stackdio-server
+   :alt: PyPi Version
+.. |CoverageStatus| image:: https://coveralls.io/repos/github/stackdio/stackdio/badge.svg?branch=master
    :target: https://coveralls.io/github/stackdio/stackdio?branch=master
    :alt: Coverage Status
-.. |Docs Status| image:: https://readthedocs.org/projects/stackdio/badge/?version=latest
+.. |DocsStatus| image:: https://readthedocs.org/projects/stackdio/badge/?version=latest
    :target: http://docs.stackd.io/en/latest/?badge=latest
    :alt: Documentation Status
