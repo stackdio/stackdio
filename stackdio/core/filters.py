@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from functools import reduce
 from operator import or_
 
 import django_filters

@@ -1635,7 +1635,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
                     except DeleteGroupException as e:
                         if 'does not exist' in e.message:
                             # The group didn't exist in the first place - just throw out a warning
-                            logger.warn(e.message)
+                            logger.warning(e.message)
                         elif 'instances using security group' in e.message:
                             # The group has running instances in it - we can't delete it
                             instances = driver.get_instances_for_group(security_group.group_id)
