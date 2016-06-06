@@ -34,7 +34,7 @@ supported_versions = [
 
 if (major, minor) not in supported_versions:
     err_msg = ('Your Python version {0}.{1}.{2} is not supported.\n'
-               'stackdio-server requires Python 2.7 or 3.4.\n'.format(major, minor, micro))
+               'stackdio-server requires Python 2.7, 3.4, or 3.5.\n'.format(major, minor, micro))
     sys.stderr.write(err_msg)
     sys.exit(1)
 
