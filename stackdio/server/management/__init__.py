@@ -30,7 +30,7 @@ from stackdio.server.version import __version__
 from . import commands
 
 if sys.stdout.isatty():
-    import readline  # NOQA
+    import readline  # pylint: disable=wrong-import-order
 
 SALT_COMMANDS = (
     'salt',
@@ -128,7 +128,7 @@ def main():
         wrapper_parser.set_defaults(raw_args=True)
 
     # parse args
-    args, unknown_args = parser.parse_known_args()
+    args, unknown_args = parser.parse_known_args()  # pylint: disable=unused-variable
     if args.raw_args:
         args.command(sys.argv[1:])()
     else:

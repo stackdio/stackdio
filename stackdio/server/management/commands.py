@@ -80,7 +80,7 @@ class BaseCommand(object):
         if wrap:
             msg = textwrap.fill(msg, **kwargs)
         fp.write(color + msg + Colors.ENDC)
-        for i in range(nl):
+        for _ in range(nl):
             fp.write('\n')
 
     def _get_prompt_msg(self, msg, default_value, choices):
@@ -106,11 +106,10 @@ class BaseCommand(object):
                                                        choices))
 
                 if choices and value not in choices:
-                    self.out('Invalid response. Must be one of {0}'.format(
-                        choices),
-                        Colors.ERROR,
-                        nl=2,
-                        **self.ERROR_INDENT)
+                    self.out('Invalid response. Must be one of {0}'.format(choices),
+                             Colors.ERROR,
+                             nl=2,
+                             **self.ERROR_INDENT)
                     continue
                 if not value and default is None:
                     self.out('Invalid response. Please provide a value.',
@@ -223,11 +222,9 @@ class WizardCommand(BaseCommand):
 
         self.out('Are the following values correct?', Colors.PROMPT)
         for question in self.QUESTIONS:
-            self.out('{0} = {1}'.format(
-                question['attr'],
-                self.answers[question['attr']]),
-                Colors.VALUE,
-                initial_indent='    * ')
+            self.out('{0} = {1}'.format(question['attr'], self.answers[question['attr']]),
+                     Colors.VALUE,
+                     initial_indent='    * ')
         self.out()
         self.out('If you say no, we will abort without writing any of your '
                  'configuration or saving any values you provided.',
@@ -575,7 +572,6 @@ class UpgradeSaltCommand(BaseCommand):
 class SaltWrapperCommand(BaseCommand):
 
     def run(self):
-        import sys
         import salt.scripts
         config = self.stackdio_config()
 

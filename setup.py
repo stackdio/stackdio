@@ -29,6 +29,7 @@ micro = sys.version_info[2]
 supported_versions = [
     (2, 7),
     (3, 4),
+    (3, 5),
 ]
 
 if (major, minor) not in supported_versions:
@@ -91,11 +92,10 @@ requirements = [
 ]
 
 testing_requirements = [
-    'astroid<1.4',
     'coveralls',
     'mock',
     'pep8',
-    'pylint<=1.2.0',
+    'pylint',
     'pytest',
     'pytest-cov',
     'pytest-django',

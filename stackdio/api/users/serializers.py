@@ -233,17 +233,17 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
     # We need a custom update since we have a nested field
     def update(self, instance, validated_data):
         # We need to manually pop off settings and update manually
-        settings = validated_data.pop('settings')
+        user_settings = validated_data.pop('settings')
 
-        if settings:
+        if user_settings:
             settings_serializer = self.fields['settings']
-            settings_serializer.update(instance.settings, settings)
+            settings_serializer.update(instance.settings, user_settings)
 
         instance = super(UserSerializer, self).update(instance, validated_data)
 
         # Now we need to put it back, in case something else needs it later.
-        if settings:
-            validated_data['settings'] = settings
+        if user_settings:
+            validated_data['settings'] = user_settings
 
         return instance
 

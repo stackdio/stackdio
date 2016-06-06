@@ -140,6 +140,7 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
 
     def _transform_perm(self, model_name):
         def do_tranform(item):
+            # pylint: disable=unused-variable
             perm, sep, empty = item.partition('_' + model_name)
             return perm
 
@@ -200,7 +201,7 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
         ret = []
         sorted_perms = sorted(perm_map.items(), key=lambda x: getattr(x[0], self.lookup_field))
         for auth_obj, perms in sorted_perms:
-            new_perms = map(self._transform_perm(model_name), perms)
+            new_perms = [self._transform_perm(model_name)(perm) for perm in perms]
 
             ret.append({
                 self.get_user_or_group(): auth_obj,
@@ -281,7 +282,7 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
         ret = []
         sorted_perms = sorted(perm_map.items(), key=lambda x: getattr(x[0], self.lookup_field))
         for auth_obj, perms in sorted_perms:
-            new_perms = map(self._transform_perm(model_name), perms)
+            new_perms = [self._transform_perm(model_name)(perm) for perm in perms]
 
             ret.append({
                 self.get_user_or_group(): auth_obj,

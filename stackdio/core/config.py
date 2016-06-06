@@ -43,16 +43,16 @@ class StackdioConfig(dict):
                 'Missing stackdio configuration file. To create the file, you '
                 'may use `stackdio init`')
         with open(self.CONFIG_FILE) as f:
-            config = yaml.safe_load(f)
+            stackdio_config = yaml.safe_load(f)
 
-        if not config:
+        if not stackdio_config:
             raise ImproperlyConfigured(
                 'stackdio configuration file appears to be empty or not '
                 'valid yaml.')
 
         errors = []
         for k in self.REQUIRED_FIELDS:
-            if k not in config:
+            if k not in stackdio_config:
                 errors.append('Missing parameter `{0}`'.format(k))
 
         if errors:
@@ -61,7 +61,7 @@ class StackdioConfig(dict):
                 msg += '  - {0}\n'.format(err)
             raise ImproperlyConfigured(msg)
 
-        self.update(config)
+        self.update(stackdio_config)
 
         # additional helper attributes
         self.salt_root = os.path.join(self.storage_root)

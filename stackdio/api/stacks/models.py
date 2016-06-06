@@ -564,9 +564,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             # pull various stuff we need for a host
             roles = [c.sls_path for c in host.formula_components.all()]
             instance_size = host.instance_size.title
-            security_groups = set([
-                                      sg.group_id for sg in host.security_groups.all()
-                                      ])
+            security_groups = set(sg.group_id for sg in host.security_groups.all())
             volumes = host.volumes.all()
 
             domain = cloud_account_yaml['append_domain']
