@@ -23,7 +23,14 @@ from rest_framework import serializers
 logger = logging.getLogger(__name__)
 
 
+class PassThroughSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+
+    def to_representation(self, instance):
+        return instance
+
+
 class SearchSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    object_type = serializers.SlugRelatedField(slug_field='model', read_only=True)
+    type = serializers.SlugRelatedField(slug_field='model', read_only=True)
     title = serializers.CharField()
     url = serializers.URLField()
+    object = PassThroughSerializer()
