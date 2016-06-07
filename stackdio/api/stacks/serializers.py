@@ -80,11 +80,35 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
         return stack
 
 
+class HostComponentSerializer(FormulaComponentSerializer):
+    status = serializers.SerializerMethodField()
+    timestamp = serializers.SerializerMethodField()
+
+    def get_status(self, obj):
+        # This relies on the parent serializer setting the host attribute
+        # (see to_representation() in the HostSerializer class)
+        return obj.get_status_for_host(self.parent.parent.host).status
+
+    def get_timestamp(self, obj):
+        return obj.get_status_for_host(self.parent.parent.host).modified
+
+    class Meta(FormulaComponentSerializer.Meta):
+        fields = (
+            'formula',
+            'title',
+            'description',
+            'sls_path',
+            'order',
+            'status',
+            'timestamp',
+        )
+
+
 class HostSerializer(StackdioHyperlinkedModelSerializer):
     # Read only fields
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
     blueprint_host_definition = serializers.ReadOnlyField(source='blueprint_host_definition.title')
-    formula_components = FormulaComponentSerializer(many=True, read_only=True)
+    formula_components = HostComponentSerializer(many=True, read_only=True)
 
     # Fields for adding / removing hosts
     available_actions = ('add', 'remove')
@@ -105,6 +129,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
             'provider_private_dns',
             'provider_private_ip',
             'fqdn',
+            'health',
             'state',
             'state_reason',
             'status',
@@ -140,6 +165,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
     def __init__(self, *args, **kwargs):
         super(HostSerializer, self).__init__(*args, **kwargs)
         self.create_object = False
+        self.host = None
 
     def get_fields(self):
         """
@@ -164,7 +190,11 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
                 ('results', serializer.to_representation(instance)),
             ))
         else:
-            return super(HostSerializer, self).to_representation(instance)
+            # Temporarily set the host attribute on this serializer so the children can pick it up
+            self.host = instance
+            ret = super(HostSerializer, self).to_representation(instance)
+            self.host = None
+            return ret
 
     def validate(self, attrs):
         stack = self.context['stack']
@@ -335,6 +365,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'title',
             'description',
             'status',
+            'health',
             'namespace',
             'create_users',
             'host_count',

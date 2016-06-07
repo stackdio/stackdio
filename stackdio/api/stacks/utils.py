@@ -38,6 +38,7 @@ from django.conf import settings
 from msgpack.exceptions import ExtraData
 from salt.log.setup import LOG_LEVELS
 
+from . import models
 
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
@@ -555,6 +556,7 @@ def process_orchestrate_result(result, stack, log_file, err_file):
 
         if sls_result.get('result', False):
             # This whole sls is good!  Just continue on with the next one.
+            stack.set_component_status(sls_dict['name'], models.ComponentStatus.OK)
             continue
 
         # Process the data for this sls
@@ -570,6 +572,7 @@ def process_orchestrate_result(result, stack, log_file, err_file):
             # Do it this way to ensure we don't set it BACK to false after a failure.
             failed = True
         failed_hosts.update(local_failed_hosts)
+        stack.set_component_status(sls_dict['name'], models.ComponentStatus.OK, failed_hosts)
 
     return failed, failed_hosts
 
