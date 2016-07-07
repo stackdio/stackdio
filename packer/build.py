@@ -3,7 +3,6 @@
 import os
 import subprocess
 import sys
-import urllib2
 
 
 def main():
@@ -14,28 +13,6 @@ def main():
     version = sys.argv[1]
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-    dist_dir = os.path.join(base_dir, 'dist')
-
-    wheel_file = os.path.join(dist_dir, 'stackdio_server-{0}-py2-none-any.whl'.format(version))
-
-    if not os.path.isdir(dist_dir):
-        os.mkdir(dist_dir)
-    elif os.path.exists(wheel_file):
-        os.remove(wheel_file)
-
-    try:
-        response = urllib2.urlopen('https://github.com/stackdio/stackdio/releases/download/{0}/'
-                                   'stackdio_server-{0}-py2-none-any.whl'.format(version))
-
-        f = open(wheel_file, 'w')
-        f.write(response.read())
-        f.close()
-
-    except urllib2.URLError:
-        sys.stderr.write('Invalid version supplied.  Please try one listed here:  '
-                         'https://github.com/stackdio/stackdio/releases\n')
-        return 1
 
     os.environ['STACKDIO_VERSION'] = version
 

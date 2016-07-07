@@ -38,11 +38,6 @@
     ],
     "provisioners": [
         {
-            "type": "file",
-            "source": "dist/stackdio_server-{{ user `version` }}-py2-none-any.whl",
-            "destination": "/tmp/stackdio_server-{{ user `version` }}-py2-none-any.whl"
-        },
-        {
             "type": "shell",
             "inline": [
                 "apt-get update",
