@@ -39,8 +39,8 @@ virtualenv /usr/share/stackdio
 
 pip install -U pip
 
-# Install the tarball we uploaded
-pip install /tmp/stackdio_server-${STACKDIO_VERSION}-py2-none-any.whl[production,mysql]
+# Install stackdio-server from pypi
+pip install stackdio-server[mysql,production]==${STACKDIO_VERSION}
 
 # Configure Nginx
 mv /tmp/stackdio-nginx /etc/nginx/sites-available/stackdio

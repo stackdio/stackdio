@@ -77,5 +77,3 @@ We recommend changing this password immediately after logging in the first time.
 
 .. _packer: https://packer.io
 .. _AWS Marketplace: https://aws.amazon.com/marketplace
-.. _npm: https://www.npmjs.com
-.. _bower: http://bower.io
