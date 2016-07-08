@@ -73,12 +73,12 @@
         {
             "type": "shell",
             "script": "packer/install.sh",
-            "execute_command": "{{ .Vars }} STACKDIO_VERSION={{ user `version` }} sudo -E sh '{{ .Path }}'"
+            "execute_command": "sudo su - root -c \"{{ .Vars }} STACKDIO_VERSION={{ user `version` }} sh '{{ .Path }}'\""
         },
         {
             "type": "shell",
             "script": "packer/configure.sh",
-            "execute_command": "{{ .Vars }} sudo su - stackdio -c \"sh '{{ .Path }}'\""
+            "execute_command": "sudo su - stackdio -c \"{{ .Vars }} sh '{{ .Path }}'\""
         },
         {
             "type": "shell",

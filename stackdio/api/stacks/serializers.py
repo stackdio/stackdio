@@ -74,6 +74,9 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
             # This is a PUT, so just add the data directly
             stack.properties = validated_data
 
+        # Regenerate the pillar file now too
+        stack.generate_pillar_file()
+
         # Be sure to save the instance
         stack.save()
 
