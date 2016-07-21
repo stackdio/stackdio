@@ -32,6 +32,7 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 from model_utils import Choices
 
 from stackdio.api.stacks.models import StatusDetailModel
+from stackdio.core.models import SearchQuerySet
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +61,12 @@ _formula_object_permissions = (
 )
 
 
-class FormulaQuerySet(models.QuerySet):
+class FormulaQuerySet(SearchQuerySet):
     """
     Override create to automatically kick off a celery task to clone the formula repository.
     """
+    searchable_fields = ('title', 'description', 'uri')
+
     def create(self, **kwargs):
         # Should already be a PasswordStr object from the serializer
         git_password = kwargs.pop('git_password', '')
@@ -80,6 +83,25 @@ class FormulaQuerySet(models.QuerySet):
         tasks.import_formula.si(formula.id, git_password).apply_async()
 
         return formula
+
+    def search(self, query):
+        result = super(FormulaQuerySet, self).search(query)
+
+        # Find formula component matches
+        formula_ids = []
+        for formula in self.all():
+            for sls_path, component in formula.components.items():
+                if query.lower() in sls_path.lower():
+                    formula_ids.append(formula.id)
+                elif query.lower() in component['title'].lower():
+                    formula_ids.append(formula.id)
+                elif query.lower() in component['description'].lower():
+                    formula_ids.append(formula.id)
+
+        component_matches = self.filter(id__in=formula_ids)
+
+        # Or them together and return
+        return (result or component_matches).distinct()
 
 
 class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
@@ -167,9 +189,6 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     model_permissions = _formula_model_permissions
     object_permissions = _formula_object_permissions
-
-    searchable_fields = ('title', 'description', 'uri', 'components__title',
-                         'components__description')
 
     class Meta:
         ordering = ['title']

@@ -282,9 +282,9 @@ class InitCommand(WizardCommand):
             'short_desc': 'Any special arguments for the bootstrap script?',
             'long_desc': ('What arguments to pass to the bootstrap script above? '
                           'Override the defaults here. See http://bootstrap.saltstack.org '
-                          'for more info.  You must include \'{salt_version}\' somewhere - '
+                          'for more info.  You must include \'{{salt_version}}\' somewhere - '
                           'it will be replaced by the current version of the salt master.'),
-            'default': 'stable archive/{salt_version}'
+            'default': 'stable {{salt_version}}'
         }, {
             'attr': 'db_dsn',
             'short_desc': ('What database DSN should stackdio use to connect to '

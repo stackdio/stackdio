@@ -45,6 +45,7 @@ from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import GroupExistsException
 from stackdio.api.volumes.models import Volume
 from stackdio.core.fields import DeletingFileField
+from stackdio.core.models import SearchQuerySet
 from stackdio.core.utils import recursive_update
 
 PROTOCOL_CHOICES = [
@@ -99,7 +100,9 @@ class StatusDetailModel(StatusModel):
         return self.save()
 
 
-class StackQuerySet(models.QuerySet):
+class StackQuerySet(SearchQuerySet):
+    searchable_fields = ('title', 'description', 'history__status_detail')
+
     def create(self, **kwargs):
         new_properties = kwargs.pop('properties', {})
 
@@ -191,7 +194,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
     model_permissions = _stack_model_permissions
     object_permissions = _stack_object_permissions
-    searchable_fields = ('title', 'description', 'history__status_detail')
 
     class Meta:
         ordering = ('title',)
