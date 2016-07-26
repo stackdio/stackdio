@@ -157,19 +157,15 @@ class StackdioSaltCloudMap(salt.cloud.Map):
                     if vm_name not in names:
                         continue
 
-                    elif (
-                        driver == 'ec2' and
-                        'aws' in handled_drivers and
-                        'aws' in matches[handled_drivers['aws']] and
-                        vm_name in matches[handled_drivers['aws']]['aws']
-                    ):
+                    elif (driver == 'ec2' and
+                          'aws' in handled_drivers and
+                          'aws' in matches[handled_drivers['aws']] and
+                          vm_name in matches[handled_drivers['aws']]['aws']):
                         continue
-                    elif (
-                        driver == 'aws' and
-                        'ec2' in handled_drivers and
-                        'ec2' in matches[handled_drivers['ec2']] and
-                        vm_name in matches[handled_drivers['ec2']]['ec2']
-                    ):
+                    elif (driver == 'aws' and
+                          'ec2' in handled_drivers and
+                          'ec2' in matches[handled_drivers['ec2']] and
+                          vm_name in matches[handled_drivers['ec2']]['ec2']):
                         continue
 
                     # This little addition makes everything not break :)
@@ -432,8 +428,8 @@ def process_sls_result(sls_result, err_file):
     failed_hosts = set()
 
     for host, state_results in sls_result['ret'].items():
-        sorted_result = sorted(state_results.items(), key=lambda x: x[1]['__run_num__'])
-        for stage_label, stage_result in sorted_result:
+        sorted_result = sorted(state_results.values(), key=lambda x: x['__run_num__'])
+        for stage_result in sorted_result:
 
             if stage_result.get('result', False):
                 continue
@@ -604,7 +600,7 @@ def get_salt_cloud_log_file(stack, suffix):
     log_symlink = os.path.join(root_dir, '{0}.log.latest'.format(suffix))
 
     # "touch" the log file and symlink it to the latest
-    with open(log_file, 'w') as f:
+    with open(log_file, 'w') as _:
         pass
 
     if os.path.islink(log_symlink):
@@ -1010,7 +1006,7 @@ def unmod_hosts_map(cloud_map, *args):
     """
     For debug method purpose only
     """
-    for host, host_data in cloud_map.items():
+    for host_data in cloud_map.values():
         for k in args:
             if k in host_data:
                 del host_data[k]

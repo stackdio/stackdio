@@ -24,8 +24,8 @@ import logging
 import os
 import re
 import stat
-from uuid import uuid4
 from time import sleep
+from uuid import uuid4
 
 import boto
 import boto.ec2
@@ -550,9 +550,7 @@ class AWSCloudProvider(BaseCloudProvider):
         try:
             ec2.delete_security_group(**kwargs)
         except boto.exception.EC2ResponseError as e:
-            logger.exception('Error deleting security group {0}'.format(
-                group_name)
-            )
+            logger.error('Error deleting security group {0}'.format(group_name))
             raise DeleteGroupException(e.error_message)
 
     def authorize_security_group(self, group_id, rule):
@@ -828,8 +826,7 @@ class AWSCloudProvider(BaseCloudProvider):
             # the same now, just in case
             for v in h.volumes.all():
                 if not v.volume_id:
-                    logger.warn('{0!r} missing volume_id. Skipping delete '
-                                'retag.'.format(v))
+                    logger.warning('{0!r} missing volume_id. Skipping delete retag.'.format(v))
                     continue
                 name = 'stackdio::volume::{0!s}-DEL-{1}'.format(v.id,
                                                                 uuid4().hex)
@@ -862,7 +859,7 @@ class AWSCloudProvider(BaseCloudProvider):
         resource_ids = [v.volume_id for v in volumes] + [h.instance_id for h in hosts]
 
         # filter out empty strings
-        resource_ids = filter(None, resource_ids)
+        resource_ids = [rid for rid in resource_ids if rid]
 
         if resource_ids:
             logger.debug('tagging {0!r}'.format(resource_ids))
