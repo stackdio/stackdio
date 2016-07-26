@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+# pylint: disable=too-many-lines
+
 import json
 import logging
 import os
@@ -397,18 +399,13 @@ def launch_hosts(stack_id, parallel=True, max_retries=2,
                     # Error format #1
                     if 'Errors' in v and 'Error' in v['Errors']:
                         err_msg = v['Errors']['Error']['Message']
-                        logger.debug('Error on host {0}: {1}'.format(
-                            h,
-                            err_msg)
-                        )
+                        logger.debug('Error on host {0}: {1}'.format(h, err_msg))
                         errors.add(err_msg)
 
                     # Error format #2
                     elif 'Error' in v:
                         err_msg = v['Error']
-                        logger.debug('Error on host {0}: {1}'.format(
-                            h,
-                            err_msg))
+                        logger.debug('Error on host {0}: {1}'.format(h, err_msg))
                         errors.add(err_msg)
 
                 if errors:
@@ -619,7 +616,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                     .get('blockDeviceMapping', {}) \
                     .get('item', [])
 
-                if type(block_device_mappings) is not list:
+                if not isinstance(block_device_mappings, list):
                     block_device_mappings = [block_device_mappings]
 
                 # for each block device mapping found on the running host,
@@ -1191,7 +1188,7 @@ def propagate_ssh(stack_id, max_retries=2):
                 # assume to be a list of errors
                 errors = {}
                 for host, states in result.items():
-                    if type(states) is list:
+                    if isinstance(states, list):
                         errors[host] = states
                         continue
 
@@ -1602,8 +1599,8 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
             result = salt_cloud.destroy_map(stack.generate_cloud_map(), hosts, parallel=parallel)
 
             # Error checking?
-            for profile, provider in result.items():
-                for name, hosts in provider.items():
+            for provider in result.values():
+                for hosts in provider.values():
                     for host, data in hosts.items():
                         if data.get('currentState', {}).get('name') != 'shutting-down':
                             logger.info('Host {0} does not appear to be '
@@ -1638,7 +1635,7 @@ def destroy_hosts(stack_id, host_ids=None, delete_hosts=True, delete_security_gr
                     except DeleteGroupException as e:
                         if 'does not exist' in e.message:
                             # The group didn't exist in the first place - just throw out a warning
-                            logger.warn(e.message)
+                            logger.warning(e.message)
                         elif 'instances using security group' in e.message:
                             # The group has running instances in it - we can't delete it
                             instances = driver.get_instances_for_group(security_group.group_id)
@@ -1756,13 +1753,10 @@ def execute_action(stack_id, action, *args, **kwargs):
     stack = None
     try:
         stack = Stack.objects.get(id=stack_id)
-        logger.info('Executing action \'{0}\' on stack: {1!r}'.format(
-            action,
-            stack)
-        )
+        logger.info('Executing action \'{0}\' on stack: {1!r}'.format(action, stack))
 
         driver_hosts_map = stack.get_driver_hosts_map()
-        for driver, hosts in driver_hosts_map.items():
+        for driver in driver_hosts_map:
             fun = getattr(driver, '_action_{0}'.format(action))
             fun(stack=stack, *args, **kwargs)
 
