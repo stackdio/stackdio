@@ -552,7 +552,7 @@ def process_orchestrate_result(result, stack, log_file, err_file):
 
         if sls_result.get('result', False):
             # This whole sls is good!  Just continue on with the next one.
-            stack.set_component_status(sls_dict['name'], models.ComponentStatus.OK)
+            stack.set_component_status(sls_dict['name'], models.ComponentStatus.SUCCEEDED)
             continue
 
         # Process the data for this sls
@@ -568,7 +568,7 @@ def process_orchestrate_result(result, stack, log_file, err_file):
             # Do it this way to ensure we don't set it BACK to false after a failure.
             failed = True
         failed_hosts.update(local_failed_hosts)
-        stack.set_component_status(sls_dict['name'], models.ComponentStatus.OK, failed_hosts)
+        stack.set_component_status(sls_dict['name'], models.ComponentStatus.SUCCEEDED, failed_hosts)
 
     return failed, failed_hosts
 

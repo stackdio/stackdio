@@ -50,6 +50,9 @@
                     <td data-bind="click: function (stack) { $root.goToDetailPage(stack) }">
                         <span class="label" data-bind="css: labelClass, text: status"></span>
                     </td>
+                    <td data-bind="click: function (stack) { $root.goToDetailPage(stack) }">
+                        <span class="label" data-bind="css: healthLabelClass, text: health"></span>
+                    </td>
                     <td>
                         <div class="btn-group btn-group-xs action-dropdown"
                              data-bind="css: {open: $root.openActionStackId === id},
