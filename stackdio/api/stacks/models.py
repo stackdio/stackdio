@@ -48,6 +48,46 @@ from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.utils import recursive_update
 
+
+class Health(object):
+    HEALTHY = 'healthy'  # green
+    UNSTABLE = 'unstable'  # yellow
+    UNHEALTHY = 'unhealthy'  # red
+    UNKNOWN = 'unknown'  # grey
+
+    @classmethod
+    def aggregate(cls, health_list):
+        # Make sure everything in the list is a valid health
+        assert len([h for h in health_list if h not in vars(cls)]) == 0
+
+        # Make sure we don't have an empty list
+        assert len(health_list) > 0
+
+        if cls.UNHEALTHY in health_list:
+            return cls.UNHEALTHY
+        elif cls.UNSTABLE in health_list:
+            return cls.UNSTABLE
+        elif cls.UNKNOWN in health_list:
+            return cls.UNKNOWN
+        elif cls.HEALTHY in health_list:
+            return cls.HEALTHY
+
+        raise ValueError('This should never be reached...  Make sure you are '
+                         'assigning proper health values')
+
+
+class ComponentStatus(object):
+    # Unstable statuses
+    QUEUED = 'queued'
+    RUNNING = 'running'
+
+    # Stable statuses
+    SUCCEEDED = 'succeeded'
+    FAILED = 'failed'
+    CANCELLED = 'cancelled'
+    UNKNOWN = 'unknown'
+
+
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
     ('udp', 'UDP'),
@@ -369,35 +409,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         """
         Calculates the health of this stack from its hosts
         """
-        health_map = {}
-
-        # Build a map of status -> count
-        for host in self.hosts.all():
-            health_map[host.health] = health_map.get(host.status, 0) + 1
-
-        # Switch on healths
-        if health_map.get(ComponentStatus.RUNNING, 0) > 0:
-            # If a single component is running, then the host is running
-            return ComponentStatus.RUNNING
-        elif health_map.get(ComponentStatus.FAILED, 0) > 0:
-            # If a single component has failed, then the host has failed
-            return ComponentStatus.FAILED
-        elif health_map.get(ComponentStatus.CANCELLED, 0) > 0:
-            # If a single component has been cancelled, then the host has been cancelled
-            # (this case probably should never come up)
-            return ComponentStatus.CANCELLED
-        elif health_map.get(ComponentStatus.QUEUED, 0) > 0 and len(health_map) == 1:
-            # Only return queued if EVERYTHING is marked as queued
-            return ComponentStatus.QUEUED
-        elif health_map.get(ComponentStatus.OK, 0) > 0 and len(health_map) == 1:
-            # Only return ok if EVERYTHING is marked as ok
-            return ComponentStatus.OK
-
-        # Means we couldn't determine a health value - this should only come up if there
-        # were no hosts
-        logger.debug('Unknown stack health, printing host health map:')
-        logger.debug(json.dumps(health_map, indent=4))
-        return 'unknown'
+        return Health.aggregate([host.health for host in self.hosts.all()])
 
     def set_component_status(self, sls_path, status, failed_hosts=None):
         """
@@ -413,11 +425,15 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         for host in self.hosts.all():
             for component in host.formula_components.all():
                 if component.sls_path == sls_path:
+                    current_health = host.get_metadata_for_component().health
                     if host.hostname in failed_hosts:
-                        host.component_statuses.create(formula_component=component,
-                                                       status=ComponentStatus.FAILED)
+                        host.component_metadatas.create(formula_component=component,
+                                                        status=ComponentStatus.FAILED,
+                                                        current_health=current_health)
                     else:
-                        host.component_statuses.create(formula_component=component, status=status)
+                        host.component_metadatas.create(formula_component=component,
+                                                        status=status,
+                                                        current_health=current_health)
 
     def create_security_groups(self):
         for hostdef in self.blueprint.host_definitions.all():
@@ -434,8 +450,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             account = hostdef.cloud_image.account
 
             if not account.create_security_groups:
-                logger.debug('Skipping creation of {0} because security group creation is turned '
-                             'off for the account'.format(sg_name))
+                logger.info('Skipping creation of {0} because security group creation is turned '
+                            'off for the account'.format(sg_name))
                 continue
 
             driver = account.get_driver()
@@ -591,7 +607,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                     )
 
                 for component in host.formula_components.all():
-                    host.component_statuses.create(formula_component=component)
+                    host.component_metadatas.create(formula_component=component)
 
                 created_hosts.append(host)
 
@@ -1158,50 +1174,26 @@ class Host(TimeStampedModel, StatusDetailModel):
     @property
     def health(self):
         """
-        Calculates the health of this host from its component statuses
+        Calculates the health of this host from its component healths
         """
-        status_map = {}
+        return Health.aggregate(self.get_current_component_healths())
 
-        # Build a map of status -> count
-        for status in self.get_current_component_statuses():
-            status_map[status.status] = status_map.get(status.status, 0) + 1
-
-        # Switch on statuses
-        if status_map.get(ComponentStatus.RUNNING, 0) > 0:
-            # If a single component is running, then the host is running
-            return ComponentStatus.RUNNING
-        elif status_map.get(ComponentStatus.FAILED, 0) > 0:
-            # If a single component has failed, then the host has failed
-            return ComponentStatus.FAILED
-        elif status_map.get(ComponentStatus.CANCELLED, 0) > 0:
-            # If a single component has been cancelled, then the host has been cancelled
-            # (this case probably should never come up)
-            return ComponentStatus.CANCELLED
-        elif status_map.get(ComponentStatus.QUEUED, 0) > 0 and len(status_map) == 1:
-            # Only return queued if EVERYTHING is marked as queued
-            return ComponentStatus.QUEUED
-        elif status_map.get(ComponentStatus.OK, 0) > 0 and len(status_map) == 1:
-            # Only return ok if EVERYTHING is marked as ok
-            return ComponentStatus.OK
-
-        # Means we couldn't determine a health value - this should only come up if there
-        # were no statuses
-        logger.debug('Unknown host health, printing status map:')
-        logger.debug(json.dumps(status_map, indent=4))
-        return 'unknown'
-
-    def get_current_component_statuses(self):
+    def get_current_component_metadatas(self):
         """
-        Generator to get only the newest version of each component status
+        Get a list of only the newest version of each component metadata
         """
         yielded = set()
 
-        for status in self.component_statuses.order_by('-modified'):
-            if status.sls_path not in yielded:
-                yielded.add(status.sls_path)
-                yield status
+        ret = []
 
-    def get_status_for_component(self, component):
+        for metadata in self.component_metadatas.order_by('-modified'):
+            if metadata.sls_path not in yielded:
+                yielded.add(metadata.sls_path)
+                ret.append(metadata)
+
+        return ret
+
+    def get_metadata_for_component(self, component):
         """
         Get the current status of a given component
         """
@@ -1210,10 +1202,10 @@ class Host(TimeStampedModel, StatusDetailModel):
         elif hasattr(component, 'sls_path'):
             sls_path = component.sls_path
         else:
-            raise ValueError('get_status_for_component requires a string or a '
+            raise ValueError('get_metadata_for_component requires a string or a '
                              'FormulaComponent object.')
 
-        return self.component_statuses.filter(
+        return self.component_metadatas.filter(
             formula_component__sls_path=sls_path
         ).order_by('-modified').first()
 
@@ -1254,29 +1246,56 @@ class Host(TimeStampedModel, StatusDetailModel):
         return self.cloud_account.get_driver()
 
 
-class ComponentStatus(TimeStampedModel):
+class ComponentMetadataQuerySet(models.QuerySet):
 
-    # Possible statuses
-    QUEUED = 'queued'
-    RUNNING = 'running'
-    OK = 'ok'
-    FAILED = 'failed'
-    CANCELLED = 'cancelled'
+    def create(self, **kwargs):
+        current_health = kwargs.pop('current_health')
+        if 'status' in kwargs:
+            kwargs['health'] = ComponentMetadata.HEALTH_MAP[kwargs['status']] \
+                               or current_health \
+                               or Health.UNKNOWN
+        return super(ComponentMetadataQuerySet, self).create(**kwargs)
 
-    STATUS_CHOICES = (
-        (QUEUED, QUEUED),
-        (RUNNING, RUNNING),
-        (OK, OK),
-        (FAILED, FAILED),
-        (CANCELLED, CANCELLED),
-    )
 
+class ComponentMetadata(TimeStampedModel):
+
+    HEALTH_MAP = {
+        ComponentStatus.QUEUED: None,
+        ComponentStatus.RUNNING: Health.UNSTABLE,
+        ComponentStatus.SUCCEEDED: Health.HEALTHY,
+        ComponentStatus.FAILED: Health.UNHEALTHY,
+        ComponentStatus.CANCELLED: None,
+        ComponentStatus.UNKNOWN: Health.UNKNOWN,
+    }
+
+    STATUS_CHOICES = tuple((x, x) for x in set(HEALTH_MAP.keys()))
+    HEALTH_CHOICES = tuple((x, x) for x in set(HEALTH_MAP.values()) if x is not None)
+
+    # Fields
     formula_component = models.ForeignKey('formulas.FormulaComponent', related_name='statuses')
 
-    host = models.ForeignKey('Host', related_name='component_statuses')
+    host = models.ForeignKey('Host', related_name='component_metadatas')
 
-    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=QUEUED)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=ComponentStatus.QUEUED)
+
+    health = models.CharField(max_length=32, choices=HEALTH_CHOICES, default=Health.UNKNOWN)
+
+    objects = ComponentMetadataQuerySet.as_manager()
 
     @property
     def sls_path(self):
         return self.formula_component.sls_path
+
+    def set_status(self, status):
+        # Make sure it's a valid status
+        assert status in self.HEALTH_MAP
+
+        self.status = status
+
+        # Set the health based on the new status
+        new_health = self.HEALTH_MAP[status]
+
+        if new_health is not None:
+            self.health = new_health
+
+        self.save()

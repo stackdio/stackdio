@@ -93,14 +93,15 @@ class Migration(migrations.Migration):
             field=model_utils.fields.StatusField(default=b'pending', max_length=100, no_check_for_status=True, verbose_name='status'),
         ),
         migrations.CreateModel(
-            name='ComponentStatus',
+            name='ComponentMetadata',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('status', models.CharField(choices=[(b'queued', b'queued'), (b'running', b'running'), (b'ok', b'ok'), (b'failed', b'failed'), (b'cancelled', b'cancelled')], default=b'queued', max_length=32)),
+                ('status', models.CharField(choices=[(b'succeeded', b'succeeded'), (b'unknown', b'unknown'), (b'failed', b'failed'), (b'running', b'running'), (b'cancelled', b'cancelled'), (b'queued', b'queued')], default=b'queued', max_length=32)),
+                ('health', models.CharField(choices=[(b'healthy', b'healthy'), (b'unknown', b'unknown'), (b'unstable', b'unstable'), (b'unhealthy', b'unhealthy')], default=b'unknown', max_length=32)),
                 ('formula_component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='statuses', to='formulas.FormulaComponent')),
-                ('host', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='component_statuses', to='stacks.Host')),
+                ('host', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='component_metadatas', to='stacks.Host')),
             ],
             options={
                 'ordering': ('-modified', '-created'),
