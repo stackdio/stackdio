@@ -1249,7 +1249,7 @@ class Host(TimeStampedModel, StatusDetailModel):
 class ComponentMetadataQuerySet(models.QuerySet):
 
     def create(self, **kwargs):
-        current_health = kwargs.pop('current_health')
+        current_health = kwargs.pop('current_health', None)
         if 'status' in kwargs:
             kwargs['health'] = ComponentMetadata.HEALTH_MAP[kwargs['status']] \
                                or current_health \
