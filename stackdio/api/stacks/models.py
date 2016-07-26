@@ -1176,7 +1176,7 @@ class Host(TimeStampedModel, StatusDetailModel):
         """
         Calculates the health of this host from its component healths
         """
-        return Health.aggregate(self.get_current_component_healths())
+        return Health.aggregate([m.health for m in self.get_current_component_metadatas()])
 
     def get_current_component_metadatas(self):
         """
