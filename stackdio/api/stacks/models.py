@@ -425,7 +425,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         for host in self.hosts.all():
             for component in host.formula_components.all():
                 if component.sls_path == sls_path:
-                    current_health = host.get_metadata_for_component().health
+                    current_health = host.get_metadata_for_component(component).health
                     if host.hostname in failed_hosts:
                         host.component_metadatas.create(formula_component=component,
                                                         status=ComponentStatus.FAILED,
