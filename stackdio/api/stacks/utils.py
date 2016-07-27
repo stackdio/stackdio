@@ -422,11 +422,10 @@ def process_sls_result(sls_result, err_file):
         raise StackTaskException('Missing highstate data from the orchestrate runner.')
 
     if 'ret' not in sls_result:
-        return True, set(), set()
+        return True, set()
 
     failed = False
     failed_hosts = set()
-    cancelled_hosts = set()
 
     for host, state_results in sls_result['ret'].items():
         sorted_result = sorted(state_results.values(), key=lambda x: x['__run_num__'])
@@ -441,7 +440,6 @@ def process_sls_result(sls_result, err_file):
             # Check to see if it's a requisite error - if so, we don't want to clutter the
             # logs, so we'll continue on.
             if is_requisite_error(stage_result):
-                cancelled_hosts.add(host)
                 continue
 
             failed_hosts.add(host)
@@ -450,7 +448,7 @@ def process_sls_result(sls_result, err_file):
             with open(err_file, 'a') as f:
                 f.write(yaml.safe_dump(stage_result))
 
-    return failed, failed_hosts, cancelled_hosts
+    return failed, failed_hosts
 
 
 def process_times(sls_result):
@@ -532,6 +530,8 @@ def process_orchestrate_result(result, stack, log_file, err_file):
 
         logger.info('')
 
+        status_set = False
+
         with open(err_file, 'a') as f:
             if 'changes' in sls_result and 'ret' in sls_result['changes']:
                 f.write(
@@ -550,10 +550,17 @@ def process_orchestrate_result(result, stack, log_file, err_file):
                         sls_dict['name']
                     )
                 )
+                # No changes, so set based on the comment
+                if ERROR_REQUISITE in sls_result['comment']:
+                    stack.set_component_status(sls_dict['name'], models.ComponentStatus.CANCELLED)
+                else:
+                    stack.set_component_status(sls_dict['name'], models.ComponentStatus.FAILED)
+                status_set = True
 
         if sls_result.get('result', False):
             # This whole sls is good!  Just continue on with the next one.
-            stack.set_component_success(sls_dict['name'])
+            if not status_set:
+                stack.set_component_status(sls_dict['name'], models.ComponentStatus.SUCCEEDED)
             continue
 
         # Process the data for this sls
@@ -563,15 +570,25 @@ def process_orchestrate_result(result, stack, log_file, err_file):
                 f.write('{0}\n\n'.format(COLOR_REGEX.sub('', comment)))
             else:
                 f.write('{0}\n\n'.format(yaml.safe_dump(comment)))
-        local_failed, local_failed_hosts, local_cancelled_hosts = process_sls_result(
-            sls_result['changes'], err_file
-        )
+        local_failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
+
+        if not status_set:
+            # Set the status to FAILED on everything that failed
+            stack.set_component_status(sls_dict['name'],
+                                       models.ComponentStatus.FAILED,
+                                       local_failed_hosts)
+
+            if local_failed and local_failed_hosts:
+                # Set the status to SUCCEEDED on everything that didn't fail
+                stack.set_component_status(sls_dict['name'],
+                                           models.ComponentStatus.SUCCEEDED,
+                                           [],
+                                           local_failed_hosts)
 
         if local_failed:
             # Do it this way to ensure we don't set it BACK to false after a failure.
             failed = True
         failed_hosts.update(local_failed_hosts)
-        stack.set_component_success(sls_dict['name'], local_failed_hosts, local_cancelled_hosts)
 
     return failed, failed_hosts
 

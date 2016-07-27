@@ -411,34 +411,33 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         """
         return Health.aggregate([host.health for host in self.hosts.all()])
 
-    def set_component_success(self, sls_path, failed_hosts=None, cancelled_hosts=None):
+    def set_component_status(self, sls_path, status, include_list=None, exclude_list=None):
         """
         Will set the status for all hosts for the sls_path to be `status`,
         except anything in failed_hosts will be set to "failed".
         :param sls_path: The sls_path to set the status on
-        :param failed_hosts: The hosts that failed
-        :param cancelled_hosts: The hosts that were cancelled
+        :param status: The status to set to
+        :param include_list: The hosts that need to be set.  If None, defaults to all hosts
+        :param exclude_list: The hosts to be excluded.  If None, nothing is excluded
         :return:
         """
-        failed_hosts = failed_hosts or []
-        cancelled_hosts = cancelled_hosts or []
+        include_list = include_list or []
+        exclude_list = exclude_list or []
 
         for host in self.hosts.all():
+            # If we have an include list, and the host isn't in it, skip it
+            if include_list and host.hostname not in include_list:
+                continue
+            # if the host is in the exclude list, skip it
+            if host.hostname in exclude_list:
+                continue
+
             for component in host.formula_components.all():
                 if component.sls_path == sls_path:
                     current_health = host.get_metadata_for_component(component).health
-                    if host.hostname in failed_hosts:
-                        host.component_metadatas.create(formula_component=component,
-                                                        status=ComponentStatus.FAILED,
-                                                        current_health=current_health)
-                    elif host.hostname in cancelled_hosts:
-                        host.component_metadatas.create(formula_component=component,
-                                                        status=ComponentStatus.CANCELLED,
-                                                        current_health=current_health)
-                    else:
-                        host.component_metadatas.create(formula_component=component,
-                                                        status=ComponentStatus.SUCCEEDED,
-                                                        current_health=current_health)
+                    host.component_metadatas.create(formula_component=component,
+                                                    status=status,
+                                                    current_health=current_health)
 
     def create_security_groups(self):
         for hostdef in self.blueprint.host_definitions.all():
