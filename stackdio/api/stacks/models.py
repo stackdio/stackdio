@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+# pylint: disable=too-many-lines
 
 import json
 import logging
@@ -778,7 +779,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 groups.setdefault(component.order, set()).add(component.sls_path)
 
         orchestrate = {}
-        for order in sorted(groups.keys()):
+        for order in sorted(groups):
             for role in groups[order]:
                 orchestrate[role] = {
                     'salt.state': [
@@ -819,7 +820,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             for component in account.formula_components.all():
                 groups.setdefault(component.order, set()).add(component.sls_path)
 
-            for order in sorted(groups.keys()):
+            for order in sorted(groups):
                 for role in groups[order]:
                     state_title = '{0}_{1}'.format(account.slug, role)
                     orchestrate[state_title] = {
