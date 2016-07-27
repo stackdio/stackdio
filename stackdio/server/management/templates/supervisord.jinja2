@@ -16,9 +16,9 @@ username=root
 password=1234
 
 [supervisord]
-logfile={{ storage_root }}/var/log/supervisord/supervisord.log ; (main log file;default $CWD/supervisord.log)
-pidfile={{ storage_root }}/var/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
-childlogdir={{ storage_root }}/var/log/supervisord
+logfile={{ log_dir }}/supervisord/supervisord.log ; (main log file;default $CWD/supervisord.log)
+pidfile={{ storage_dir }}/supervisor/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
+childlogdir={{ log_dir }}/supervisord
 
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface

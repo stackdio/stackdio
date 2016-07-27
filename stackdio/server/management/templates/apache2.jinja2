@@ -75,7 +75,7 @@ SSLCryptoDevice builtin
 
 # Global mod_wsgi configuration
 <IfVersion < 2.4 >
-    WSGISocketPrefix {{ storage_root }}/var/run
+    WSGISocketPrefix {{ storage_dir }}/apache
 </IfVersion>
 WSGIPythonPath {{ stackdio_root }}
 
@@ -95,16 +95,16 @@ Listen 80
     ServerAdmin admin@example.com
     ServerName stackdio.example.com
 
-    DocumentRoot {{ storage_root }}
+    DocumentRoot {{ storage_dir }}
 
     # NOTE: The following directories must exist.
     LogLevel warn
-    ErrorLog {{ storage_root }}/var/log/web/error_log
-    CustomLog {{ storage_root }}/var/log/web/access_log common
+    ErrorLog {{ log_dir }}/web/error_log
+    CustomLog {{ log_dir }}/web/access_log common
 
     ## Non-Django directories
-    Alias /static {{ storage_root }}/static
-    <Directory "{{ storage_root }}/static">
+    Alias /static {{ storage_dir }}/static
+    <Directory "{{ storage_dir }}/static">
         Options -Indexes
         Order deny,allow
         <IfVersion >= 2.4 >

@@ -1,14 +1,16 @@
 # Testing configuration for travis
 
-storage_root: /home/travis/.stackdio
+storage_dir: storage
 
-user: travis
+log_dir: logs
+
+user: {{ user }}
 
 salt_bootstrap_script: bootstrap-salt
 salt_bootstrap_args: -K -D git v{salt_version}
 
-django_secret_key: "$c0mmag@6zppv3l+unbynv7p1ajb$0(yodk-b)axsgsixhlm2^"
+django_secret_key: "{{ random_secret_key }}"
 
-db_dsn: mysql://travis@localhost/stackdio
+database_url: mysql://travis@localhost/stackdio
 
 create_ssh_users: true

@@ -37,6 +37,7 @@ from stackdio.core.config import StackdioConfig
 
 logger = logging.getLogger(__name__)
 
+# Grab a stackdio config object
 STACKDIO_CONFIG = StackdioConfig()
 
 # The delimiter used in state execution results
@@ -48,20 +49,7 @@ STATE_EXECUTION_FIELDS = ('module', 'declaration_id', 'name', 'func')
 ##
 # The Django local storage directory for storing its data
 ##
-FILE_STORAGE_DIRECTORY = os.path.join(
-    STACKDIO_CONFIG['storage_root'],
-    'storage'
-)
-
-LOG_DIRECTORY = os.path.join(
-    STACKDIO_CONFIG['storage_root'],
-    'var',
-    'log',
-    'stackdio'
-)
-
-if not os.path.isdir(LOG_DIRECTORY):
-    os.makedirs(LOG_DIRECTORY)
+FILE_STORAGE_DIRECTORY = STACKDIO_CONFIG.storage_dir
 
 ##
 # Some convenience variables
@@ -79,7 +67,7 @@ JAVASCRIPT_DEBUG = False
 ALLOWED_HOSTS = ['*']
 
 
-SECRET_KEY = STACKDIO_CONFIG['django_secret_key']
+SECRET_KEY = STACKDIO_CONFIG.django_secret_key
 
 # Application definition
 
@@ -159,7 +147,7 @@ MANAGERS = ADMINS
 # environment variable, we're loading it from the stackdio config
 ##
 DATABASES = {
-    'default': dj_database_url.parse(STACKDIO_CONFIG['db_dsn'])
+    'default': dj_database_url.parse(STACKDIO_CONFIG.database_url)
 }
 
 
@@ -193,7 +181,7 @@ STATIC_URL = '/static/'
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/var/www/example.com/static/"
-STATIC_ROOT = '%s/static/' % STACKDIO_CONFIG.storage_root
+STATIC_ROOT = '%s/static/' % FILE_STORAGE_DIRECTORY
 
 # Additional locations of static files
 STATICFILES_DIRS = ()
@@ -205,7 +193,7 @@ MEDIA_URL = '/media/'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"
-MEDIA_ROOT = '%s/media/' % STACKDIO_CONFIG.storage_root
+MEDIA_ROOT = '%s/media/' % FILE_STORAGE_DIRECTORY
 
 # Override message tags for bootstrap
 MESSAGE_TAGS = {
@@ -252,7 +240,7 @@ LOGGING = {
             'level': 'DEBUG',
             'formatter': 'default',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOG_DIRECTORY, 'django.log'),
+            'filename': os.path.join(STACKDIO_CONFIG.log_dir, 'django.log'),
             'maxBytes': 5242880,
             'backupCount': 5,
         },

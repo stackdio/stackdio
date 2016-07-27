@@ -83,6 +83,7 @@ requirements = [
     'djangorestframework>=3.3,<3.4',
     'envoy>=0.0.2',
     'GitPython>=1.0',
+    'Jinja2>=2.0,<3.0',
     'Markdown>=2.6',
     'pip>=6',
     'PyYAML>=3.10',
