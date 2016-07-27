@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+# pylint: disable=too-many-lines
 
 import json
 import logging
@@ -23,6 +24,7 @@ import re
 import socket
 
 import salt.cloud
+import six
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -46,6 +48,46 @@ from stackdio.api.volumes.models import Volume
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.utils import recursive_update
+
+
+class Health(object):
+    HEALTHY = 'healthy'  # green
+    UNSTABLE = 'unstable'  # yellow
+    UNHEALTHY = 'unhealthy'  # red
+    UNKNOWN = 'unknown'  # grey
+
+    @classmethod
+    def aggregate(cls, health_list):
+        # Make sure everything in the list is a valid health
+        assert len([h for h in health_list if h not in vars(cls)]) == 0
+
+        # Make sure we don't have an empty list
+        assert len(health_list) > 0
+
+        if cls.UNHEALTHY in health_list:
+            return cls.UNHEALTHY
+        elif cls.UNSTABLE in health_list:
+            return cls.UNSTABLE
+        elif cls.UNKNOWN in health_list:
+            return cls.UNKNOWN
+        elif cls.HEALTHY in health_list:
+            return cls.HEALTHY
+
+        raise ValueError('This should never be reached...  Make sure you are '
+                         'assigning proper health values')
+
+
+class ComponentStatus(object):
+    # Unstable statuses
+    QUEUED = 'queued'
+    RUNNING = 'running'
+
+    # Stable statuses
+    SUCCEEDED = 'succeeded'
+    FAILED = 'failed'
+    CANCELLED = 'cancelled'
+    UNKNOWN = 'unknown'
+
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -363,6 +405,54 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
 
+    @property
+    def health(self):
+        """
+        Calculates the health of this stack from its hosts
+        """
+        return Health.aggregate([host.health for host in self.hosts.all()])
+
+    def set_all_component_statuses(self, status):
+        """
+        Will set the status for all components on all hosts to the given status
+        :param status: the status to set to
+        :return:
+        """
+        for host in self.hosts.all():
+            for component in host.formula_components.all():
+                current_health = host.get_metadata_for_component(component).health
+                host.component_metadatas.create(formula_component=component,
+                                                status=status,
+                                                current_health=current_health)
+
+    def set_component_status(self, sls_path, status, include_list=None, exclude_list=None):
+        """
+        Will set the status for all hosts for the sls_path to be `status`,
+        except anything in failed_hosts will be set to "failed".
+        :param sls_path: The sls_path to set the status on
+        :param status: The status to set to
+        :param include_list: The hosts that need to be set.  If None, defaults to all hosts
+        :param exclude_list: The hosts to be excluded.  If None, nothing is excluded
+        :return:
+        """
+        include_list = include_list or []
+        exclude_list = exclude_list or []
+
+        for host in self.hosts.all():
+            # If we have an include list, and the host isn't in it, skip it
+            if include_list and host.hostname not in include_list:
+                continue
+            # if the host is in the exclude list, skip it
+            if host.hostname in exclude_list:
+                continue
+
+            for component in host.formula_components.all():
+                if component.sls_path == sls_path:
+                    current_health = host.get_metadata_for_component(component).health
+                    host.component_metadatas.create(formula_component=component,
+                                                    status=status,
+                                                    current_health=current_health)
+
     def create_security_groups(self):
         for hostdef in self.blueprint.host_definitions.all():
 
@@ -378,8 +468,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             account = hostdef.cloud_image.account
 
             if not account.create_security_groups:
-                logger.debug('Skipping creation of {0} because security group creation is turned '
-                             'off for the account'.format(sg_name))
+                logger.info('Skipping creation of {0} because security group creation is turned '
+                            'off for the account'.format(sg_name))
                 continue
 
             driver = account.get_driver()
@@ -480,9 +570,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                     end = start + count
                     indexes = range(start, end)
 
-            # all components defined in the host definition
-            components = hostdef.formula_components.all()
-
             # iterate over the host definition count and create individual
             # host records on the stack
             for i in indexes:
@@ -529,9 +616,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                     )
                     host.security_groups.add(security_group)
 
-                # add formula components
-                host.formula_components.add(*components)
-
                 for volumedef in hostdef.volumes.all():
                     host.volumes.create(
                         blueprint_volume=volumedef,
@@ -539,6 +623,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                         device=volumedef.device,
                         mount_point=volumedef.mount_point
                     )
+
+                for component in host.formula_components.all():
+                    host.component_metadatas.create(formula_component=component)
 
                 created_hosts.append(host)
 
@@ -692,7 +779,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 groups.setdefault(component.order, set()).add(component.sls_path)
 
         orchestrate = {}
-        for order in sorted(groups.keys()):
+        for order in sorted(groups):
             for role in groups[order]:
                 orchestrate[role] = {
                     'salt.state': [
@@ -733,7 +820,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             for component in account.formula_components.all():
                 groups.setdefault(component.order, set()).add(component.sls_path)
 
-            for order in sorted(groups.keys()):
+            for order in sorted(groups):
                 for role in groups[order]:
                     state_title = '{0}_{1}'.format(account.slug, role)
                     orchestrate[state_title] = {
@@ -1103,6 +1190,44 @@ class Host(TimeStampedModel, StatusDetailModel):
         return self.hostname
 
     @property
+    def health(self):
+        """
+        Calculates the health of this host from its component healths
+        """
+        return Health.aggregate([m.health for m in self.get_current_component_metadatas()])
+
+    def get_current_component_metadatas(self):
+        """
+        Get a list of only the newest version of each component metadata
+        """
+        yielded = set()
+
+        ret = []
+
+        for metadata in self.component_metadatas.order_by('-modified'):
+            if metadata.sls_path not in yielded:
+                yielded.add(metadata.sls_path)
+                ret.append(metadata)
+
+        return ret
+
+    def get_metadata_for_component(self, component):
+        """
+        Get the current status of a given component
+        """
+        if isinstance(component, six.string_types):
+            sls_path = component
+        elif hasattr(component, 'sls_path'):
+            sls_path = component.sls_path
+        else:
+            raise ValueError('get_metadata_for_component requires a string or a '
+                             'FormulaComponent object.')
+
+        return self.component_metadatas.filter(
+            formula_component__sls_path=sls_path
+        ).order_by('-modified').first()
+
+    @property
     def provider_metadata(self):
         metadata = self.stack.query_hosts()
         return metadata[self.hostname]
@@ -1137,3 +1262,58 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     def get_driver(self):
         return self.cloud_account.get_driver()
+
+
+class ComponentMetadataQuerySet(models.QuerySet):
+
+    def create(self, **kwargs):
+        current_health = kwargs.pop('current_health', None)
+        if 'status' in kwargs:
+            kwargs['health'] = ComponentMetadata.HEALTH_MAP[kwargs['status']] \
+                               or current_health \
+                               or Health.UNKNOWN
+        return super(ComponentMetadataQuerySet, self).create(**kwargs)
+
+
+class ComponentMetadata(TimeStampedModel):
+
+    HEALTH_MAP = {
+        ComponentStatus.QUEUED: None,
+        ComponentStatus.RUNNING: Health.UNSTABLE,
+        ComponentStatus.SUCCEEDED: Health.HEALTHY,
+        ComponentStatus.FAILED: Health.UNHEALTHY,
+        ComponentStatus.CANCELLED: None,
+        ComponentStatus.UNKNOWN: Health.UNKNOWN,
+    }
+
+    STATUS_CHOICES = tuple((x, x) for x in set(HEALTH_MAP.keys()))
+    HEALTH_CHOICES = tuple((x, x) for x in set(HEALTH_MAP.values()) if x is not None)
+
+    # Fields
+    formula_component = models.ForeignKey('formulas.FormulaComponent', related_name='metadatas')
+
+    host = models.ForeignKey('Host', related_name='component_metadatas')
+
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=ComponentStatus.QUEUED)
+
+    health = models.CharField(max_length=32, choices=HEALTH_CHOICES, default=Health.UNKNOWN)
+
+    objects = ComponentMetadataQuerySet.as_manager()
+
+    @property
+    def sls_path(self):
+        return self.formula_component.sls_path
+
+    def set_status(self, status):
+        # Make sure it's a valid status
+        assert status in self.HEALTH_MAP
+
+        self.status = status
+
+        # Set the health based on the new status
+        new_health = self.HEALTH_MAP[status]
+
+        if new_health is not None:
+            self.health = new_health
+
+        self.save()

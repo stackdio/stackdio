@@ -38,6 +38,7 @@ from django.conf import settings
 from msgpack.exceptions import ExtraData
 from salt.log.setup import LOG_LEVELS
 
+from . import models
 
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
@@ -522,13 +523,14 @@ def process_orchestrate_result(result, stack, log_file, err_file):
     for sls, sls_result in sorted(result.items(), key=lambda x: x[1]['__run_num__']):
         sls_dict = state_to_dict(sls)
 
-        logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'],
-                                                                stack.title))
+        logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'], stack.title))
 
         if 'changes' in sls_result:
             process_times(sls_result['changes'])
 
         logger.info('')
+
+        status_set = False
 
         with open(err_file, 'a') as f:
             if 'changes' in sls_result and 'ret' in sls_result['changes']:
@@ -548,9 +550,17 @@ def process_orchestrate_result(result, stack, log_file, err_file):
                         sls_dict['name']
                     )
                 )
+                # No changes, so set based on the comment
+                if ERROR_REQUISITE in sls_result['comment']:
+                    stack.set_component_status(sls_dict['name'], models.ComponentStatus.CANCELLED)
+                else:
+                    stack.set_component_status(sls_dict['name'], models.ComponentStatus.FAILED)
+                status_set = True
 
         if sls_result.get('result', False):
             # This whole sls is good!  Just continue on with the next one.
+            if not status_set:
+                stack.set_component_status(sls_dict['name'], models.ComponentStatus.SUCCEEDED)
             continue
 
         # Process the data for this sls
@@ -561,6 +571,19 @@ def process_orchestrate_result(result, stack, log_file, err_file):
             else:
                 f.write('{0}\n\n'.format(yaml.safe_dump(comment)))
         local_failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
+
+        if not status_set:
+            # Set the status to FAILED on everything that failed
+            stack.set_component_status(sls_dict['name'],
+                                       models.ComponentStatus.FAILED,
+                                       local_failed_hosts)
+
+            if local_failed and local_failed_hosts:
+                # Set the status to SUCCEEDED on everything that didn't fail
+                stack.set_component_status(sls_dict['name'],
+                                           models.ComponentStatus.SUCCEEDED,
+                                           [],
+                                           local_failed_hosts)
 
         if local_failed:
             # Do it this way to ensure we don't set it BACK to false after a failure.

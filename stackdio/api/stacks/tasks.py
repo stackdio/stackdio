@@ -45,6 +45,7 @@ from . import utils
 from .models import (
     Stack,
     Level,
+    ComponentStatus,
     StackCommand,
     Host,
 )
@@ -1441,6 +1442,9 @@ def orchestrate(stack_id, max_retries=2):
                 opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
                 salt_runner = salt.runner.RunnerClient(opts)
+
+                # Set us to RUNNING
+                stack.set_all_component_statuses(ComponentStatus.RUNNING)
 
                 result = salt_runner.cmd(
                     'stackdio.orchestrate',

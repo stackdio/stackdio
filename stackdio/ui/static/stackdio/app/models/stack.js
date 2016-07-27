@@ -67,8 +67,10 @@ define([
         this.description = ko.observable();
         this.createUsers = ko.observable();
         this.status = ko.observable();
+        this.health = ko.observable();
         this.hostCount = ko.observable();
         this.labelClass = ko.observable();
+        this.healthLabelClass = ko.observable();
 
         // Non-editable fields
         this.namespace = ko.observable();
@@ -144,6 +146,24 @@ define([
         }
     };
 
+    Stack.prototype._processHealth = function (health) {
+        this.health(health);
+        // Determine what type of label should be around the health
+        switch (health) {
+            case 'healthy':
+                this.healthLabelClass('label-success');
+                break;
+            case 'unstable':
+                this.healthLabelClass('label-warning');
+                break;
+            case 'unhealthy':
+                this.healthLabelClass('label-danger');
+                break;
+            default:
+                this.healthLabelClass('label-default');
+        }
+    };
+
     Stack.prototype._process = function (raw) {
         this.title(raw.title);
         this.description(raw.description);
@@ -153,6 +173,7 @@ define([
         this.created(moment(raw.created));
         this.labelList(raw.label_list);
         this._processStatus(raw.status);
+        this._processHealth(raw.health);
     };
 
     // Reload the current stack
@@ -180,6 +201,7 @@ define([
         }).done(function (stack) {
             self.raw = stack;
             self._processStatus(stack.status);
+            self._processHealth(stack.health);
         }).fail(function (jqxhr) {
             if (jqxhr.status == 403) {
                 window.location.reload(true);

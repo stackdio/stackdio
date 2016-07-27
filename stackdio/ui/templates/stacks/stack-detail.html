@@ -28,6 +28,10 @@
                     <label>Status</label>
                     <p class="form-control-static"><span class="label" data-bind="css: stack.labelClass, text: stack.status"></span></p>
                 </div>
+                <div id="health" class="form-group">
+                    <label>Health</label>
+                    <p class="form-control-static"><span class="label" data-bind="css: stack.healthLabelClass, text: stack.health"></span></p>
+                </div>
                 <div id="created" class="form-group">
                     <label>Launched</label>
                     <p class="form-control-static" data-bind="text: stack.created().calendar()"></p>

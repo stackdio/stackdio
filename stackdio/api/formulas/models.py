@@ -370,6 +370,12 @@ class FormulaComponent(TimeStampedModel):
             self._full_component = self.formula.components[self.sls_path]
         return self._full_component['description']
 
+    def get_metadata_for_host(self, host):
+        """
+        Get the current status of a given host
+        """
+        return self.metadatas.filter(host=host).order_by('-modified').first()
+
 
 ##
 # Signal events and handlers
