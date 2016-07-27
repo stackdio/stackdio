@@ -411,6 +411,19 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         """
         return Health.aggregate([host.health for host in self.hosts.all()])
 
+    def set_all_component_statuses(self, status):
+        """
+        Will set the status for all components on all hosts to the given status
+        :param status: the status to set to
+        :return:
+        """
+        for host in self.hosts.all():
+            for component in host.formula_components.all():
+                current_health = host.get_metadata_for_component(component).health
+                host.component_metadatas.create(formula_component=component,
+                                                status=status,
+                                                current_health=current_health)
+
     def set_component_status(self, sls_path, status, include_list=None, exclude_list=None):
         """
         Will set the status for all hosts for the sls_path to be `status`,
