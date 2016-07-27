@@ -85,15 +85,19 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
 
 class HostComponentSerializer(FormulaComponentSerializer):
     status = serializers.SerializerMethodField()
+    health = serializers.SerializerMethodField()
     timestamp = serializers.SerializerMethodField()
 
     def get_status(self, obj):
         # This relies on the parent serializer setting the host attribute
         # (see to_representation() in the HostSerializer class)
-        return obj.get_status_for_host(self.parent.parent.host).status
+        return obj.get_metadata_for_host(self.parent.parent.host).status
+
+    def get_health(self, obj):
+        return obj.get_metadata_for_host(self.parent.parent.host).health
 
     def get_timestamp(self, obj):
-        return obj.get_status_for_host(self.parent.parent.host).modified
+        return obj.get_metadata_for_host(self.parent.parent.host).modified
 
     class Meta(FormulaComponentSerializer.Meta):
         fields = (
@@ -103,6 +107,7 @@ class HostComponentSerializer(FormulaComponentSerializer):
             'sls_path',
             'order',
             'status',
+            'health',
             'timestamp',
         )
 

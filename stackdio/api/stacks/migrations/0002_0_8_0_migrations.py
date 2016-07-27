@@ -100,7 +100,7 @@ class Migration(migrations.Migration):
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
                 ('status', models.CharField(choices=[(b'succeeded', b'succeeded'), (b'unknown', b'unknown'), (b'failed', b'failed'), (b'running', b'running'), (b'cancelled', b'cancelled'), (b'queued', b'queued')], default=b'queued', max_length=32)),
                 ('health', models.CharField(choices=[(b'healthy', b'healthy'), (b'unknown', b'unknown'), (b'unstable', b'unstable'), (b'unhealthy', b'unhealthy')], default=b'unknown', max_length=32)),
-                ('formula_component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='statuses', to='formulas.FormulaComponent')),
+                ('formula_component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='metadatas', to='formulas.FormulaComponent')),
                 ('host', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='component_metadatas', to='stacks.Host')),
             ],
             options={

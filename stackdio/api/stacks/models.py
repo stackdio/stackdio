@@ -411,16 +411,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         """
         return Health.aggregate([host.health for host in self.hosts.all()])
 
-    def set_component_status(self, sls_path, status, failed_hosts=None):
+    def set_component_success(self, sls_path, failed_hosts=None, cancelled_hosts=None):
         """
         Will set the status for all hosts for the sls_path to be `status`,
         except anything in failed_hosts will be set to "failed".
         :param sls_path: The sls_path to set the status on
-        :param status: The status to set to
-        :param failed_hosts: Any hosts that failed
+        :param failed_hosts: The hosts that failed
+        :param cancelled_hosts: The hosts that were cancelled
         :return:
         """
         failed_hosts = failed_hosts or []
+        cancelled_hosts = cancelled_hosts or []
 
         for host in self.hosts.all():
             for component in host.formula_components.all():
@@ -430,9 +431,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                         host.component_metadatas.create(formula_component=component,
                                                         status=ComponentStatus.FAILED,
                                                         current_health=current_health)
+                    elif host.hostname in cancelled_hosts:
+                        host.component_metadatas.create(formula_component=component,
+                                                        status=ComponentStatus.CANCELLED,
+                                                        current_health=current_health)
                     else:
                         host.component_metadatas.create(formula_component=component,
-                                                        status=status,
+                                                        status=ComponentStatus.SUCCEEDED,
                                                         current_health=current_health)
 
     def create_security_groups(self):
@@ -1272,7 +1277,7 @@ class ComponentMetadata(TimeStampedModel):
     HEALTH_CHOICES = tuple((x, x) for x in set(HEALTH_MAP.values()) if x is not None)
 
     # Fields
-    formula_component = models.ForeignKey('formulas.FormulaComponent', related_name='statuses')
+    formula_component = models.ForeignKey('formulas.FormulaComponent', related_name='metadatas')
 
     host = models.ForeignKey('Host', related_name='component_metadatas')
 
