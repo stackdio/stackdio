@@ -422,7 +422,7 @@ def process_sls_result(sls_result, err_file):
         raise StackTaskException('Missing highstate data from the orchestrate runner.')
 
     if 'ret' not in sls_result:
-        return True, set()
+        return True, set(), set()
 
     failed = False
     failed_hosts = set()
