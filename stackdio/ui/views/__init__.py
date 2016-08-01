@@ -28,20 +28,21 @@ logger = logging.getLogger(__name__)
 
 
 class RootView(TemplateView):
+    """
+    We don't really have a home page, so let's redirect to either the
+    stack or account page depending on certain cases
+    """
     def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            has_account_perm = request.user.has_perm('cloud.create_cloudaccount')
+        has_account_perm = request.user.has_perm('cloud.create_cloudaccount')
 
-            if has_account_perm and CloudAccount.objects.count() == 0:
-                # if the user has permission to create an account and there aren't any yet,
-                # take them there
-                redirect_view = 'ui:cloud-account-list'
-            else:
-                # Otherwise just go to stacks
-                redirect_view = 'ui:stack-list'
-            return HttpResponseRedirect(resolve_url(redirect_view))
+        if has_account_perm and CloudAccount.objects.count() == 0:
+            # if the user has permission to create an account and there aren't any yet,
+            # take them there
+            redirect_view = 'ui:cloud-account-list'
         else:
-            return super(RootView, self).get(request, *args, **kwargs)
+            # Otherwise just go to stacks
+            redirect_view = 'ui:stack-list'
+        return HttpResponseRedirect(resolve_url(redirect_view))
 
 
 class AppMainView(TemplateView):
@@ -83,12 +84,11 @@ class ModelPermissionsView(PageView):
         return context
 
     def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            app_label = self.model._meta.app_label
-            model_name = self.model._meta.model_name
-            if not request.user.has_perm('%s.admin_%s' % (app_label, model_name)):
-                # No permission granted
-                raise Http404()
+        app_label = self.model._meta.app_label
+        model_name = self.model._meta.model_name
+        if not request.user.has_perm('%s.admin_%s' % (app_label, model_name)):
+            # No permission granted
+            raise Http404()
         return super(ModelPermissionsView, self).get(request, *args, **kwargs)
 
 
@@ -105,12 +105,11 @@ class ObjectPermissionsView(PageView):
         return context
 
     def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            obj = self.get_object()
-            app_label = obj._meta.app_label
-            model_name = obj._meta.model_name
-            # Check permissions on the object
-            if not request.user.has_perm('%s.admin_%s' % (app_label, model_name), obj):
-                # No permission granted
-                raise Http404()
+        obj = self.get_object()
+        app_label = obj._meta.app_label
+        model_name = obj._meta.model_name
+        # Check permissions on the object
+        if not request.user.has_perm('%s.admin_%s' % (app_label, model_name), obj):
+            # No permission granted
+            raise Http404()
         return super(ObjectPermissionsView, self).get(request, *args, **kwargs)
