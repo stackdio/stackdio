@@ -29,11 +29,10 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 import logging
 import os
 
-from django.contrib.messages import constants as messages
 import dj_database_url
+from django.contrib.messages import constants as messages
 
 from stackdio.core.config import StackdioConfig
-
 
 logger = logging.getLogger(__name__)
 
@@ -104,14 +103,14 @@ INSTALLED_APPS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'stackdio.core.middleware.LoginRedirectMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -125,6 +124,7 @@ ANONYMOUS_USER_ID = -1
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'debug': DEBUG,
@@ -132,6 +132,7 @@ TEMPLATES = [
                 'django.template.context_processors.csrf',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
+                'django.template.context_processors.tz',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -161,6 +162,25 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': dj_database_url.parse(STACKDIO_CONFIG['db_dsn'])
 }
+
+
+# Password validation
+# https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 
 # Internationalization

@@ -27,19 +27,7 @@ from stackdio.api.cloud.models import CloudAccount
 logger = logging.getLogger(__name__)
 
 
-class StackdioView(TemplateView):
-
-    def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            return super(StackdioView, self).get(request, *args, **kwargs)
-        else:
-            redirect_url = resolve_url('ui:login')
-            if request.path != '/':
-                redirect_url = '{0}?next={1}'.format(redirect_url, request.path)
-            return HttpResponseRedirect(redirect_url)
-
-
-class RootView(StackdioView):
+class RootView(TemplateView):
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated():
             has_account_perm = request.user.has_perm('cloud.create_cloudaccount')
@@ -61,7 +49,7 @@ class AppMainView(TemplateView):
     content_type = 'application/javascript'
 
 
-class PageView(StackdioView):
+class PageView(TemplateView):
     viewmodel = None
 
     def __init__(self, **kwargs):
