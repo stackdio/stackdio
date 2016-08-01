@@ -95,11 +95,12 @@ class ModelPermissionsView(PageView):
         return context
 
     def get(self, request, *args, **kwargs):
-        app_label = self.model._meta.app_label
-        model_name = self.model._meta.model_name
-        if not request.user.has_perm('%s.admin_%s' % (app_label, model_name)):
-            # No permission granted
-            raise Http404()
+        if request.user.is_authenticated():
+            app_label = self.model._meta.app_label
+            model_name = self.model._meta.model_name
+            if not request.user.has_perm('%s.admin_%s' % (app_label, model_name)):
+                # No permission granted
+                raise Http404()
         return super(ModelPermissionsView, self).get(request, *args, **kwargs)
 
 
@@ -116,11 +117,12 @@ class ObjectPermissionsView(PageView):
         return context
 
     def get(self, request, *args, **kwargs):
-        obj = self.get_object()
-        app_label = obj._meta.app_label
-        model_name = obj._meta.model_name
-        # Check permissions on the object
-        if not request.user.has_perm('%s.admin_%s' % (app_label, model_name), obj):
-            # No permission granted
-            raise Http404()
+        if request.user.is_authenticated():
+            obj = self.get_object()
+            app_label = obj._meta.app_label
+            model_name = obj._meta.model_name
+            # Check permissions on the object
+            if not request.user.has_perm('%s.admin_%s' % (app_label, model_name), obj):
+                # No permission granted
+                raise Http404()
         return super(ObjectPermissionsView, self).get(request, *args, **kwargs)
