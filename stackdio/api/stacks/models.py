@@ -73,7 +73,7 @@ class Health(object):
         elif cls.HEALTHY in health_list:
             return cls.HEALTHY
 
-        raise ValueError('This should never be reached...  Make sure you are '
+        raise ValueError('This state should never be reached...  Make sure you are '
                          'assigning proper health values')
 
 
@@ -389,21 +389,21 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         return tags
 
-    @property
-    def properties(self):
+    def _get_properties(self):
         if not self.props_file:
             return {}
         with open(self.props_file.path, 'r') as f:
             return json.load(f)
 
-    @properties.setter
-    def properties(self, props):
+    def _set_properties(self, props):
         props_json = json.dumps(props, indent=4)
         if not self.props_file:
             self.props_file.save('stack.props', ContentFile(props_json))
         else:
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
+
+    properties = property(_get_properties, _set_properties)
 
     @property
     def health(self):
@@ -1153,16 +1153,17 @@ class Host(TimeStampedModel, StatusDetailModel):
                                              related_name='hosts')
 
     # The machine state as provided by the cloud account
+    # Would like to have choices, but these vary per cloud provider
     state = models.CharField('State', max_length=32, default='unknown')
-    state_reason = models.CharField('State Reason', max_length=255, default='', blank=True)
 
     # This must be updated automatically after the host is online.
     # After salt-cloud has launched VMs, we will need to look up
     # the DNS name set by whatever cloud provider is being used
     # and set it here
-    provider_dns = models.CharField('Provider DNS', max_length=64, blank=True)
+    provider_public_dns = models.CharField('Provider Public DNS', max_length=64, blank=True)
+    provider_public_ip = models.GenericIPAddressField('Provider Public IP', blank=True, null=True)
     provider_private_dns = models.CharField('Provider Private DNS', max_length=64, blank=True)
-    provider_private_ip = models.CharField('Provider Private IP Address', max_length=64, blank=True)
+    provider_private_ip = models.GenericIPAddressField('Provider Private IP', blank=True, null=True)
 
     # The FQDN for the host. This includes the hostname and the
     # domain if it was registered with DNS

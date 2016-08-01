@@ -53,7 +53,8 @@ class HostAdmin(GuardedModelAdmin):
         'cloud_image',
         'instance_size',
         'hostname',
-        'provider_dns',
+        'provider_public_dns',
+        'provider_private_dns',
         'fqdn',
     ]
 

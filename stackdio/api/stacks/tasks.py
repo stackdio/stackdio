@@ -587,9 +587,7 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
                     # if AWS gives a reason, save it with the host
                     if not is_absent:
-                        state_reason = host_data \
-                            .get('stateReason', {}) \
-                            .get('message', None)
+                        state_reason = host_data.get('stateReason', {}).get('message', None)
                         if state_reason:
                             host.state_reason = state_reason
                     host.save()
@@ -600,22 +598,17 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
 
                 # Get the host's public IP/host set by the cloud provider. This
                 # is used later when we tie the machine to DNS
-                host.provider_dns = host_data.get('dnsName', '') or ''
-                host.provider_private_dns = host_data.get('privateDnsName', '') or ''
+                host.provider_public_dns = host_data.get('dnsName', '')
+                host.provider_private_dns = host_data.get('privateDnsName', '')
 
                 # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
                 # throws an exception if we don't use host_data.get().  I changed the above two
                 # keys to do the same for robustness
-                host.provider_private_ip = host_data.get('privateIpAddress', '') or ''
-
-                # update the state of the host as provided by ec2
-                if host.state != Host.DELETING:
-                    host.state = host_data['state']
+                host.provider_public_ip = host_data.get('ipAddress', '')
+                host.provider_private_ip = host_data.get('privateIpAddress', '')
 
                 # update volume information
-                block_device_mappings = host_data \
-                    .get('blockDeviceMapping', {}) \
-                    .get('item', [])
+                block_device_mappings = host_data.get('blockDeviceMapping', {}).get('item', [])
 
                 if not isinstance(block_device_mappings, list):
                     block_device_mappings = [block_device_mappings]
@@ -672,6 +665,96 @@ def update_metadata(stack_id, host_ids=None, remove_absent=True):
                          err_msg, Level.ERROR)
         logger.exception(err_msg)
         raise
+
+
+@shared_task(name='stacks.update_host_info')
+def update_host_info():
+    """
+    Update all the host info
+    """
+    # get our salt cloud object & query the cloud providers
+    salt_cloud = salt.cloud.CloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
+    query_results = salt_cloud.full_query()
+
+    logger.info('Received host info from salt cloud.')
+
+    # Iterate through all the hosts and check their status / state
+    for host in Host.objects.all():
+        account = host.cloud_account
+
+        account_info = query_results.get(account.slug, {}).get(account.provider.name, {})
+        host_info = account_info.get(host.hostname)
+
+        old_state = host.state
+
+        # Check for terminated host state
+        if not host_info:
+            host.state = 'absent'
+        else:
+            host.state = host_info['state']
+
+        # The instance id of the host
+        host.instance_id = host_info.get('instanceId', '')
+
+        # Get the host's public IP/host set by the cloud provider. This
+        # is used later when we tie the machine to DNS
+        host.provider_public_dns = host_info.get('dnsName', '')
+        host.provider_private_dns = host_info.get('privateDnsName', '')
+
+        # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
+        # throws an exception if we don't use host_data.get().  I changed the above two
+        # keys to do the same for robustness
+        host.provider_public_ip = host_info.get('ipAddress', '')
+        host.provider_private_ip = host_info.get('privateIpAddress', '')
+
+        # update volume information
+        block_device_mappings = host_info.get('blockDeviceMapping', {}).get('item', [])
+
+        if not isinstance(block_device_mappings, list):
+            block_device_mappings = [block_device_mappings]
+
+        # for each block device mapping found on the running host,
+        # try to match the device name up with that stored in the DB
+        # if a match is found, fill in the metadata and save the volume
+        for bdm in block_device_mappings:
+            bdm_volume_id = bdm['ebs']['volumeId']
+            try:
+                # attempt to get the volume for this host that
+                # has been created
+                volume = host.volumes.get(device=bdm['deviceName'])
+
+                # update the volume information if needed
+                if volume.volume_id != bdm_volume_id:
+                    volume.volume_id = bdm['ebs']['volumeId']
+                    volume.attach_time = bdm['ebs']['attachTime']
+
+                    # save the new volume info
+                    volume.save()
+
+            except Volume.DoesNotExist:
+                # This is most likely fine. Usually means that the
+                # EBS volume for the root drive was found instead.
+                pass
+            except Exception:
+                err_msg = ('Unhandled exception while updating volume '
+                           'metadata.')
+                logger.exception(err_msg)
+                logger.debug(block_device_mappings)
+                raise
+
+        # Update spot instance metadata
+        if 'spotInstanceRequestId' in host_info:
+            host.sir_id = host_info['spotInstanceRequestId']
+        else:
+            host.sir_id = ''
+
+        if host.state != old_state:
+            logger.info('Host {0} state changed from {1} to {2}'.format(host.hostname,
+                                                                        old_state,
+                                                                        host.state))
+
+        # save the host
+        host.save()
 
 
 @shared_task(name='stacks.tag_infrastructure')

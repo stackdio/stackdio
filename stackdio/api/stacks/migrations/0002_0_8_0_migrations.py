@@ -109,4 +109,28 @@ class Migration(migrations.Migration):
                 'get_latest_by': 'modified',
             },
         ),
+        migrations.RemoveField(
+            model_name='host',
+            name='state_reason',
+        ),
+        migrations.RenameField(
+            model_name='host',
+            old_name='provider_dns',
+            new_name='provider_public_dns',
+        ),
+        migrations.AlterField(
+            model_name='host',
+            name='provider_public_dns',
+            field=models.CharField(blank=True, max_length=64, verbose_name=b'Provider Public DNS'),
+        ),
+        migrations.AddField(
+            model_name='host',
+            name='provider_public_ip',
+            field=models.GenericIPAddressField(blank=True, null=True, verbose_name=b'Provider Public IP'),
+        ),
+        migrations.AlterField(
+            model_name='host',
+            name='provider_private_ip',
+            field=models.GenericIPAddressField(blank=True, null=True, verbose_name=b'Provider Private IP'),
+        ),
     ]

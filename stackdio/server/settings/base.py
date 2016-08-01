@@ -30,6 +30,7 @@ import logging
 import os
 
 import dj_database_url
+from celery.schedules import crontab
 from django.contrib.messages import constants as messages
 
 from stackdio.core.config import StackdioConfig
@@ -364,12 +365,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 
 # Configure queues
 CELERY_ROUTES = {
-    'formulas.import_formula': {'queue': 'formulas'},
-    'formulas.update_formula': {'queue': 'formulas'},
+    'formulas.import_formula': {'queue': 'short'},
+    'formulas.update_formula': {'queue': 'short'},
     'stacks.cure_zombies': {'queue': 'stacks'},
     'stacks.destroy_hosts': {'queue': 'stacks'},
     'stacks.destroy_stack': {'queue': 'stacks'},
-    'stacks.execute_action': {'queue': 'stacks'},
+    'stacks.execute_action': {'queue': 'short'},
     'stacks.finish_stack': {'queue': 'stacks'},
     'stacks.global_orchestrate': {'queue': 'stacks'},
     'stacks.handle_error': {'queue': 'stacks'},
@@ -380,11 +381,20 @@ CELERY_ROUTES = {
     'stacks.propagate_ssh': {'queue': 'stacks'},
     'stacks.register_dns': {'queue': 'stacks'},
     'stacks.register_volume_delete': {'queue': 'stacks'},
-    'stacks.run_command': {'queue': 'stacks'},
+    'stacks.run_command': {'queue': 'short'},
     'stacks.sync_all': {'queue': 'stacks'},
     'stacks.tag_infrastructure': {'queue': 'stacks'},
     'stacks.unregister_dns': {'queue': 'stacks'},
+    'stacks.update_host_info': {'queue': 'short'},
     'stacks.update_metadata': {'queue': 'stacks'},
+}
+
+CELERYBEAT_SCHEDULE = {
+    'update-host-info': {
+        'task': 'stacks.update_host_info',
+        'schedule': crontab(minute='*/15'),  # Execute every 15 minutes
+        'args': (),
+    },
 }
 
 ##

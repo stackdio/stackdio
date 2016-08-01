@@ -70,7 +70,7 @@ define([
     Host.prototype._process = function (raw) {
         this.hostname(raw.hostname);
         this.fqdn(raw.fqdn);
-        this.publicDNS(raw.provider_dns);
+        this.publicDNS(raw.provider_public_dns);
         this.privateDNS(raw.provider_private_dns);
         this.hostDefinition(raw.blueprint_host_definition);
         this.status(raw.status);

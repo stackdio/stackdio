@@ -133,13 +133,12 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
         fields = (
             'url',
             'hostname',
-            'provider_dns',
+            'provider_public_dns',
+            'provider_public_ip',
             'provider_private_dns',
             'provider_private_ip',
             'fqdn',
             'health',
-            'state',
-            'state_reason',
             'status',
             'status_detail',
             'availability_zone',
@@ -157,7 +156,8 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
 
         read_only_fields = (
             'hostname',
-            'provider_dns',
+            'provider_public_dns',
+            'provider_public_ip',
             'provider_private_dns',
             'provider_private_ip',
             'fqdn',

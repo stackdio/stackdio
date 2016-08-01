@@ -728,7 +728,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 record_value = host.provider_private_ip
                 record_type = 'A'
             else:
-                record_value = host.provider_dns
+                record_value = host.provider_public_dns
                 record_type = 'CNAME'
 
             logger.info('Registering DNS: {0} - {1}'.format(
@@ -767,12 +767,12 @@ class AWSCloudProvider(BaseCloudProvider):
                 record_value = host.provider_private_ip
                 record_type = 'A'
             else:
-                record_value = host.provider_dns
+                record_value = host.provider_public_dns
                 record_type = 'CNAME'
 
             if not record_value:
                 logger.info(
-                    'Host {0} has no provider_dns or provider_private_ip...'
+                    'Host {0} has no provider_public_dns or provider_private_ip...'
                     'skipping DNS deregister.'.format(host)
                 )
                 continue
