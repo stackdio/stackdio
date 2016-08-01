@@ -55,7 +55,7 @@ environment=PYTHONOPTIMIZE="1"
 autorestart=true
 
 [program:celery-beat]
-command=stackdio celery beat -s {{ storage_root }}/var/run/supervisord-celery-schedule
+command=stackdio celery beat -s {{ storage_root }}/var/run/supervisord-celery-schedule --pidfile={{ storage_root }}/var/run/celery-beat.pid
 autorestart=true
 {% endif %}
 
