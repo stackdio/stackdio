@@ -49,7 +49,7 @@ command=stackdio celery worker -l info -c 4 -O fair -Q default,stacks,short -n m
 environment=PYTHONOPTIMIZE="1"
 autorestart=true
 
-[program:celery-formulas]
+[program:celery-short]
 command=stackdio celery worker -l info -c 1 -O fair -Q short -n short.%%h
 environment=PYTHONOPTIMIZE="1"
 autorestart=true
