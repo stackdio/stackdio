@@ -377,7 +377,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         :param activity: the activity to set
         """
         # Make sure all host activities are saved atomically
-        with transaction.atomic(using=self.db):
+        with transaction.atomic(using=Stack.objects.db):
             self.activity = activity
             self.save()
             for host in self.hosts.all():

@@ -15,4 +15,14 @@
 # limitations under the License.
 #
 
-default_app_config = 'stackdio.api.stacks.apps.StackdioStacksAppConfig'
+from django.apps import AppConfig
+
+
+class StackdioStacksAppConfig(AppConfig):
+    name = 'stacks'
+
+    def ready(self):
+        from actstream import registry
+        registry.register(self.get_model('Stack'))
+        registry.register(self.get_model('Host'))
+        registry.register(self.get_model('StackCommand'))

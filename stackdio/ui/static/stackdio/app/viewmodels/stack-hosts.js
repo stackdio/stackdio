@@ -53,7 +53,7 @@ define([
             {name: 'fqdn', displayName: 'FQDN', width: '30%'},
             {name: 'privateDNS', displayName: 'Private DNS', width: '15%'},
             {name: 'publicDNS', displayName: 'Public DNS', width: '15%'},
-            {name: 'state', displayName: 'State', width: '10%'}
+            {name: 'activity', displayName: 'Activity', width: '10%'}
         ],
         selectedHostDef: ko.observable(null),
         selectedAction: ko.observable(null),
