@@ -54,9 +54,10 @@ define([
         this.publicDNS = ko.observable();
         this.privateDNS = ko.observable();
         this.hostDefinition = ko.observable();
-        this.status = ko.observable();
-        this.state = ko.observable();
+        this.activity = ko.observable();
+        this.health = ko.observable();
         this.labelClass = ko.observable();
+        this.healthLabelClass = ko.observable();
 
         if (needReload) {
             this.reload();
@@ -73,11 +74,11 @@ define([
         this.publicDNS(raw.provider_public_dns);
         this.privateDNS(raw.provider_private_dns);
         this.hostDefinition(raw.blueprint_host_definition);
-        this.status(raw.status);
-        this.state(raw.state);
+        this.activity(raw.activity);
+        this.health(raw.health);
 
-        // Determine what type of label should be around the status
-        switch (raw.state) {
+        // Determine what type of label should be around the activity
+        switch (raw.activity) {
             case 'running':
                 this.labelClass('label-success');
                 break;
@@ -96,6 +97,21 @@ define([
                 break;
             default:
                 this.labelClass('label-default');
+        }
+
+        // Determine what type of label should be around the health
+        switch (raw.health) {
+            case 'healthy':
+                this.healthLabelClass('label-success');
+                break;
+            case 'unstable':
+                this.healthLabelClass('label-warning');
+                break;
+            case 'unhealthy':
+                this.healthLabelClass('label-danger');
+                break;
+            default:
+                this.healthLabelClass('label-default');
         }
     };
 

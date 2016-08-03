@@ -66,7 +66,7 @@ define([
         this.title = ko.observable();
         this.description = ko.observable();
         this.createUsers = ko.observable();
-        this.status = ko.observable();
+        this.activity = ko.observable();
         this.health = ko.observable();
         this.hostCount = ko.observable();
         this.labelClass = ko.observable();
@@ -114,31 +114,26 @@ define([
                    'You can get it all back by later running the "launch" action on this stack.'
     };
 
-    Stack.prototype._processStatus = function (status) {
-        this.status(status);
-        // Determine what type of label should be around the status
-        switch (status) {
-            case 'finished':
-            case 'ok':
+    Stack.prototype._processActivity = function (activity) {
+        this.activity(activity);
+        // Determine what type of label should be around the activity
+        switch (activity) {
+            case 'idle':
                 this.labelClass('label-success');
                 break;
             case 'launching':
-            case 'configuring':
-            case 'syncing':
             case 'provisioning':
             case 'orchestrating':
-            case 'finalizing':
-            case 'destroying':
-            case 'starting':
-            case 'stopping':
-            case 'executing_action':
+            case 'resuming':
+            case 'pausing':
+            case 'executing':
             case 'terminating':
                 this.labelClass('label-warning');
                 break;
-            case 'pending':
+            case 'queued':
                 this.labelClass('label-info');
                 break;
-            case 'error':
+            case 'dead':
                 this.labelClass('label-danger');
                 break;
             default:
@@ -172,7 +167,7 @@ define([
         this.namespace(raw.namespace);
         this.created(moment(raw.created));
         this.labelList(raw.label_list);
-        this._processStatus(raw.status);
+        this._processActivity(raw.activity);
         this._processHealth(raw.health);
     };
 
@@ -193,14 +188,14 @@ define([
     };
 
     // Reload the current stack
-    Stack.prototype.refreshStatus = function () {
+    Stack.prototype.refreshActivity = function () {
         var self = this;
         return $.ajax({
             method: 'GET',
             url: self.raw.url
         }).done(function (stack) {
             self.raw = stack;
-            self._processStatus(stack.status);
+            self._processActivity(stack.activity);
             self._processHealth(stack.health);
         }).fail(function (jqxhr) {
             if (jqxhr.status == 403) {
@@ -394,19 +389,6 @@ define([
         }).done(function (history) {
             history.results.forEach(function (entry) {
                 entry.timestamp = moment(entry.created);
-                switch (entry.level) {
-                    case 'ERROR':
-                        entry.itemClass = 'list-group-item-danger';
-                        break;
-                    case 'WARNING':
-                        entry.itemClass = 'list-group-item-warning';
-                        break;
-                    default:
-                        entry.itemClass = '';
-                }
-                if (entry.status === 'finished') {
-                    entry.itemClass = 'list-group-item-success';
-                }
             });
             self.history(history.results);
         });

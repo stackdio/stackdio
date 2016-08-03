@@ -180,10 +180,6 @@ class Activity(object):
     # states when deleting a stack is valid
     can_delete = [IDLE, PAUSED, TERMINATED, DEAD]
 
-    @classmethod
-    def aggregate(cls, activity_list):
-        return cls.UNKNOWN
-
 
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
     hostnames = []
@@ -273,6 +269,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         default_permissions = tuple(set(_stack_model_permissions + _stack_object_permissions))
 
         unique_together = ('title',)
+
+    activity = models.CharField('Activity',
+                                max_length=32,
+                                blank=True,
+                                choices=Activity.ALL,
+                                default=Activity.QUEUED)
 
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint', related_name='stacks')
@@ -375,7 +377,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         :param activity: the activity to set
         """
         # Make sure all host activities are saved atomically
-        with transaction.atomic(using=Host.objects.db):
+        with transaction.atomic(using=self.db):
+            self.activity = activity
+            self.save()
             for host in self.hosts.all():
                 host.activity = activity
                 host.save()
@@ -459,13 +463,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         Calculates the health of this stack from its hosts
         """
         return Health.aggregate([host.health for host in self.hosts.all()])
-
-    @property
-    def activity(self):
-        """
-        Calculates the activity of this stack from its hosts
-        """
-        return Activity.aggregate([host.activity for host in self.hosts.all()])
 
     def set_all_component_statuses(self, status):
         """
