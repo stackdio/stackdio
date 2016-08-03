@@ -54,8 +54,7 @@ logger = get_task_logger(__name__)
 root_logger = logging.getLogger()
 
 ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
-ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found ' \
-                          'already running'
+ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found already running'
 ERROR_ALREADY_RUNNING = 'Already running'
 
 
@@ -1542,61 +1541,61 @@ def update_host_info():
             else:
                 host.state = host_info['state']
 
-            # The instance id of the host
-            host.instance_id = host_info.get('instanceId', '')
+                # The instance id of the host
+                host.instance_id = host_info.get('instanceId', '')
 
-            # Get the host's public IP/host set by the cloud provider. This
-            # is used later when we tie the machine to DNS
-            host.provider_public_dns = host_info.get('dnsName')
-            host.provider_private_dns = host_info.get('privateDnsName')
+                # Get the host's public IP/host set by the cloud provider. This
+                # is used later when we tie the machine to DNS
+                host.provider_public_dns = host_info.get('dnsName')
+                host.provider_private_dns = host_info.get('privateDnsName')
 
-            # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
-            # throws an exception if we don't use host_data.get().  I changed the above two
-            # keys to do the same for robustness
-            host.provider_public_ip = host_info.get('ipAddress')
-            host.provider_private_ip = host_info.get('privateIpAddress')
+                # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
+                # throws an exception if we don't use host_data.get().  I changed the above two
+                # keys to do the same for robustness
+                host.provider_public_ip = host_info.get('ipAddress')
+                host.provider_private_ip = host_info.get('privateIpAddress')
 
-            # update volume information
-            block_device_mappings_parent = host_info.get('blockDeviceMapping') or {}
-            block_device_mappings = block_device_mappings_parent.get('item') or []
+                # update volume information
+                block_device_mappings_parent = host_info.get('blockDeviceMapping') or {}
+                block_device_mappings = block_device_mappings_parent.get('item') or []
 
-            if not isinstance(block_device_mappings, list):
-                block_device_mappings = [block_device_mappings]
+                if not isinstance(block_device_mappings, list):
+                    block_device_mappings = [block_device_mappings]
 
-            # for each block device mapping found on the running host,
-            # try to match the device name up with that stored in the DB
-            # if a match is found, fill in the metadata and save the volume
-            for bdm in block_device_mappings:
-                bdm_volume_id = bdm['ebs']['volumeId']
-                try:
-                    # attempt to get the volume for this host that
-                    # has been created
-                    volume = host.volumes.get(device=bdm['deviceName'])
+                # for each block device mapping found on the running host,
+                # try to match the device name up with that stored in the DB
+                # if a match is found, fill in the metadata and save the volume
+                for bdm in block_device_mappings:
+                    bdm_volume_id = bdm['ebs']['volumeId']
+                    try:
+                        # attempt to get the volume for this host that
+                        # has been created
+                        volume = host.volumes.get(device=bdm['deviceName'])
 
-                    # update the volume information if needed
-                    if volume.volume_id != bdm_volume_id:
-                        volume.volume_id = bdm['ebs']['volumeId']
-                        volume.attach_time = bdm['ebs']['attachTime']
+                        # update the volume information if needed
+                        if volume.volume_id != bdm_volume_id:
+                            volume.volume_id = bdm['ebs']['volumeId']
+                            volume.attach_time = bdm['ebs']['attachTime']
 
-                        # save the new volume info
-                        volume.save()
+                            # save the new volume info
+                            volume.save()
 
-                except Volume.DoesNotExist:
-                    # This is most likely fine. Usually means that the
-                    # EBS volume for the root drive was found instead.
-                    pass
-                except Exception:
-                    err_msg = ('Unhandled exception while updating volume '
-                               'metadata.')
-                    logger.exception(err_msg)
-                    logger.debug(block_device_mappings)
-                    raise
+                    except Volume.DoesNotExist:
+                        # This is most likely fine. Usually means that the
+                        # EBS volume for the root drive was found instead.
+                        pass
+                    except Exception:
+                        err_msg = ('Unhandled exception while updating volume '
+                                   'metadata.')
+                        logger.exception(err_msg)
+                        logger.debug(block_device_mappings)
+                        raise
 
-            # Update spot instance metadata
-            if 'spotInstanceRequestId' in host_info:
-                host.sir_id = host_info['spotInstanceRequestId']
-            else:
-                host.sir_id = ''
+                # Update spot instance metadata
+                if 'spotInstanceRequestId' in host_info:
+                    host.sir_id = host_info['spotInstanceRequestId']
+                else:
+                    host.sir_id = ''
 
             if host.state != old_state:
                 logger.info('Host {0} state changed from {1} to {2}'.format(host.hostname,
