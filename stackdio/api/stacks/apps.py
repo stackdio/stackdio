@@ -19,7 +19,8 @@ from django.apps import AppConfig
 
 
 class StackdioStacksAppConfig(AppConfig):
-    name = 'stacks'
+    name = 'stackdio.api.stacks'
+    label = 'stacks'
 
     def ready(self):
         from actstream import registry
