@@ -1602,7 +1602,7 @@ def update_host_info():
                                                                             old_state,
                                                                             host.state))
 
-            if host.status in ('terminated',):
+            if host.state in ('terminated',):
                 host.activity = Activity.TERMINATED
 
             host_activities.add(host.activity)
