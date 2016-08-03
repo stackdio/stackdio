@@ -21,6 +21,7 @@ import os
 import string
 from collections import OrderedDict
 
+import actstream
 import salt.cloud
 import six
 from django.conf import settings
@@ -88,16 +89,24 @@ class HostComponentSerializer(FormulaComponentSerializer):
     health = serializers.SerializerMethodField()
     timestamp = serializers.SerializerMethodField()
 
+    def _get_metadata(self, obj):
+        if not hasattr(self, '_metadata'):
+            self._metadata = obj.get_metadata_for_host(self.parent.parent.host)
+        return self._metadata
+
     def get_status(self, obj):
         # This relies on the parent serializer setting the host attribute
         # (see to_representation() in the HostSerializer class)
-        return obj.get_metadata_for_host(self.parent.parent.host).status
+        meta = self._get_metadata(obj)
+        return meta.status if meta else models.ComponentStatus.UNKNOWN
 
     def get_health(self, obj):
-        return obj.get_metadata_for_host(self.parent.parent.host).health
+        meta = self._get_metadata(obj)
+        return meta.health if meta else models.Health.UNKNOWN
 
     def get_timestamp(self, obj):
-        return obj.get_metadata_for_host(self.parent.parent.host).modified
+        meta = self._get_metadata(obj)
+        return meta.modified if meta else None
 
     class Meta(FormulaComponentSerializer.Meta):
         fields = (
@@ -133,14 +142,13 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
         fields = (
             'url',
             'hostname',
+            'fqdn',
             'provider_public_dns',
             'provider_public_ip',
             'provider_private_dns',
             'provider_private_ip',
-            'fqdn',
             'health',
-            'status',
-            'status_detail',
+            'activity',
             'availability_zone',
             'subnet_id',
             'created',
@@ -161,10 +169,8 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
             'provider_private_dns',
             'provider_private_ip',
             'fqdn',
-            'state',
-            'state_reason',
-            'status',
-            'status_detail',
+            'health',
+            'activity',
             'subnet_id',
             'sir_id',
             'sir_price',
@@ -223,10 +229,10 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
                 errors.setdefault('count', []).append(err_msg)
 
         # Make sure the stack is in a valid state
-        if stack.status != models.Stack.FINISHED:
+        if stack.activity != models.Activity.IDLE:
             err_msg = 'You may not add hosts to the stack in its current state: {0}'
             raise serializers.ValidationError({
-                'stack': [err_msg.format(stack.status)]
+                'stack': [err_msg.format(stack.activity)]
             })
 
         # Make sure that the host definition belongs to the proper blueprint
@@ -300,11 +306,8 @@ class StackHistorySerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.StackHistory
         fields = (
-            'event',
-            'status',
-            'status_detail',
-            'level',
-            'created'
+            'message',
+            'created',
         )
 
 
@@ -372,7 +375,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'blueprint',
             'title',
             'description',
-            'status',
+            'activity',
             'health',
             'namespace',
             'create_users',
@@ -400,7 +403,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         )
 
         read_only_fields = (
-            'status',
+            'activity',
+            'health',
         )
 
         extra_kwargs = {
@@ -613,9 +617,15 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         action = attrs['action']
         request = self.context['request']
 
-        if stack.status not in models.Stack.SAFE_STATES:
+        if action not in models.Action.ALL:
             raise serializers.ValidationError({
-                'action': ['You may not perform an action while the stack is in its current state.']
+                'action': ['{0} is not a valid action.'.format(action)]
+            })
+
+        if stack.activity not in models.Activity.action_map.get(action, []):
+            err_msg = 'You may not perform the {0} action while the stack is {1}.'
+            raise serializers.ValidationError({
+                'action': [err_msg.format(action, stack.activity)]
             })
 
         driver_hosts_map = stack.get_driver_hosts_map()
@@ -706,9 +716,8 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         action = self.validated_data['action']
         args = self.validated_data.get('args', [])
 
-        stack.set_status(models.Stack.EXECUTING_ACTION,
-                         models.Stack.EXECUTING_ACTION,
-                         'Stack is executing action \'{0}\''.format(action))
+        stack.set_activity(models.Activity.QUEUED)
+        actstream.action.send(self.request.user, verb='executed {0}'.format(action), target=stack)
 
         # Utilize our workflow to run the action
         workflow = workflows.ActionWorkflow(stack, action, args)

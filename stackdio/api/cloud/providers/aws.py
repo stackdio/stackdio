@@ -283,6 +283,10 @@ class AWSCloudProvider(BaseCloudProvider):
             self.ACTION_SSH,
         ]
 
+    def get_health_from_state(self, state):
+        from stackdio.api.stacks.models import Health
+        return Health.HEALTHY
+
     def get_private_key_path(self):
         return os.path.join(self.provider_storage, 'id_rsa')
 
@@ -975,14 +979,11 @@ class AWSCloudProvider(BaseCloudProvider):
     # ACTION IMPLEMENTATIONS BELOW
     ##
 
-    def _execute_action(self, stack, status, success_state, state_fun,
-                        *args, **kwargs):
+    def _execute_action(self, stack, success_state, state_fun, *args, **kwargs):
         """
         Generic function to handle most all states accordingly. If you need
         custom logic in the state handling, do so in the _action* methods.
         """
-        stack.set_status(status, status, '{0} all hosts in this stack.'.format(status.capitalize()))
-
         hosts = stack.get_hosts()
         instance_ids = [h.instance_id for h in hosts]
 
@@ -1006,7 +1007,6 @@ class AWSCloudProvider(BaseCloudProvider):
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    stack.STOPPING,
                                     self.STATE_STOPPED,
                                     ec2.stop_instances,
                                     *args,
@@ -1018,7 +1018,6 @@ class AWSCloudProvider(BaseCloudProvider):
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    stack.STARTING,
                                     self.STATE_RUNNING,
                                     ec2.start_instances,
                                     *args,
@@ -1030,7 +1029,6 @@ class AWSCloudProvider(BaseCloudProvider):
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    stack.TERMINATING,
                                     self.STATE_TERMINATED,
                                     ec2.terminate_instances,
                                     *args,

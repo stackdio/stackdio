@@ -48,7 +48,5 @@ class HostFilter(django_filters.FilterSet):
         model = models.Host
         fields = (
             'hostname',
-            'status',
-            'state',
             'q',
         )

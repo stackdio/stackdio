@@ -35,18 +35,6 @@ class StackAdmin(GuardedModelAdmin):
 admin.site.register(models.Stack, StackAdmin)
 
 
-class StackHistoryAdmin(GuardedModelAdmin):
-    list_display = [
-        'event',
-        'status',
-        'level',
-        'created',
-    ]
-
-
-admin.site.register(models.StackHistory, StackHistoryAdmin)
-
-
 class HostAdmin(GuardedModelAdmin):
     list_display = [
         'stack',

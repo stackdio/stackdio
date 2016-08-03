@@ -18,10 +18,11 @@
 
 import logging
 
+from actstream import action
 from celery import chain
 
 from stackdio.api.cloud.providers.base import BaseCloudProvider
-from . import tasks
+from . import models, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -124,8 +125,8 @@ class LaunchWorkflow(BaseWorkflow):
                                           max_retries=opts.max_retries))
         l.append(tasks.finish_stack.si(stack_id))
 
-        self.stack.set_status('queued', tasks.Stack.PENDING,
-                              'Stack has been submitted to launch queue.')
+        self.stack.set_activity(models.Activity.QUEUED)
+        action.send(self.stack, verb='was submitted to launch queue')
 
         return l
 

@@ -74,7 +74,8 @@ requirements = [
     'boto>=2.32.0',
     'celery>=3.1',
     'dj-database-url>=0.3',
-    'Django>=1.9.0,<1.10',
+    'Django>=1.9,<1.10',
+    'django-activity-stream>=0.6,<0.7',
     'django-auth-ldap>=1.2.7',
     'django-extensions>=1.6,<1.7',
     'django-filter>=0.9',
@@ -87,7 +88,7 @@ requirements = [
     'pip>=6',
     'PyYAML>=3.10',
     'requests>=2.4',
-    'salt>=2016.3.0,<2016.4',
+    'salt>=2016.3,<2016.4',
     'six>=1.6',
 ]
 

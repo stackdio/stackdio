@@ -49,8 +49,22 @@ from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.utils import recursive_update
 
+logger = logging.getLogger(__name__)
+
+
+PROTOCOL_CHOICES = [
+    ('tcp', 'TCP'),
+    ('udp', 'UDP'),
+    ('icmp', 'ICMP'),
+]
+
+HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
+
 
 class Health(object):
+    """
+    Define valid values for the health of stacks / hosts / components
+    """
     HEALTHY = 'healthy'  # green
     UNSTABLE = 'unstable'  # yellow
     UNHEALTHY = 'unhealthy'  # red
@@ -78,6 +92,9 @@ class Health(object):
 
 
 class ComponentStatus(object):
+    """
+    Define valid values for the status of a component
+    """
     # Unstable statuses
     QUEUED = 'queued'
     RUNNING = 'running'
@@ -89,15 +106,83 @@ class ComponentStatus(object):
     UNKNOWN = 'unknown'
 
 
-PROTOCOL_CHOICES = [
-    ('tcp', 'TCP'),
-    ('udp', 'UDP'),
-    ('icmp', 'ICMP'),
-]
+class Action(object):
+    """
+    Define valid actions that can be performed on stacks
+    """
+    LAUNCH = 'launch'
+    TERMINATE = 'terminate'
 
-logger = logging.getLogger(__name__)
+    PAUSE = 'pause'
+    RESUME = 'resume'
 
-HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
+    ORCHESTRATE = 'orchestrate'
+    PROVISION = 'provision'
+    PROPAGATE_SSH = 'propagate-ssh'
+
+    ALL = [LAUNCH, TERMINATE, PAUSE, RESUME, ORCHESTRATE, PROVISION, PROPAGATE_SSH]
+
+
+class Activity(object):
+    """
+    Define valid states for the activity field on stacks / hosts
+    """
+    # Ephemeral states
+    UNKNOWN = 'unknown'
+    QUEUED = 'queued'
+
+    # Normal workflow
+    LAUNCHING = 'launching'
+    PROVISIONING = 'provisioning'
+    ORCHESTRATING = 'orchestrating'
+    IDLE = ''
+
+    # Pausing workflow
+    PAUSING = 'pausing'
+    PAUSED = 'paused'
+    RESUMING = 'resuming'
+
+    # Terminating workflow
+    TERMINATING = 'terminating'
+    TERMINATED = 'terminated'
+
+    # Command workflow
+    EXECUTING = 'executing'
+
+    # Dead
+    DEAD = 'dead'
+
+    ALL = (
+        (UNKNOWN, UNKNOWN),
+        (QUEUED, QUEUED),
+        (LAUNCHING, LAUNCHING),
+        (PROVISIONING, PROVISIONING),
+        (ORCHESTRATING, ORCHESTRATING),
+        (IDLE, IDLE),
+        (PAUSING, PAUSING),
+        (PAUSED, PAUSED),
+        (RESUMING, RESUMING),
+        (TERMINATING, TERMINATING),
+        (TERMINATED, TERMINATED),
+        (EXECUTING, EXECUTING),
+        (DEAD, DEAD),
+    )
+
+    # For stacks
+    action_map = {
+        IDLE: [Action.LAUNCH, Action.TERMINATE, Action.RESUME, Action.PAUSE,
+               Action.PROPAGATE_SSH, Action.PROVISION, Action.ORCHESTRATE],
+        PAUSED: [Action.RESUME, Action.TERMINATE],
+        TERMINATED: [Action.LAUNCH],
+        DEAD: [Action.LAUNCH],
+    }
+
+    # states when deleting a stack is valid
+    can_delete = [IDLE, PAUSED, TERMINATED, DEAD]
+
+    @classmethod
+    def aggregate(cls, activity_list):
+        return cls.UNKNOWN
 
 
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
@@ -120,29 +205,8 @@ class StackCreationException(Exception):
         super(StackCreationException, self).__init__(*args, **kwargs)
 
 
-class Level(object):
-    DEBUG = 'DEBUG'
-    INFO = 'INFO'
-    WARN = 'WARNING'
-    ERROR = 'ERROR'
-
-
-class StatusDetailModel(StatusModel):
-    status_detail = models.TextField(blank=True)
-
-    class Meta:
-        abstract = True
-
-        default_permissions = ()
-
-    def set_status(self, status, detail=''):
-        self.status = status
-        self.status_detail = detail
-        return self.save()
-
-
 class StackQuerySet(SearchQuerySet):
-    searchable_fields = ('title', 'description', 'history__status_detail')
+    searchable_fields = ('title', 'description', 'history__message')
 
     def create(self, **kwargs):
         new_properties = kwargs.pop('properties', {})
@@ -196,43 +260,10 @@ def get_orchestrate_file_path(instance, filename):
     return '{0}-{1}/formulas/__stackdio__/{2}'.format(instance.pk, instance.slug, filename)
 
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
-    # Launch workflow:
-    PENDING = 'pending'
-    LAUNCHING = 'launching'
-    CONFIGURING = 'configuring'
-    SYNCING = 'syncing'
-    PROVISIONING = 'provisioning'
-    ORCHESTRATING = 'orchestrating'
-    FINALIZING = 'finalizing'
-    FINISHED = 'finished'
-
-    # Delete workflow:
-    # PENDING
-    DESTROYING = 'destroying'
-    # FINISHED
-
-    # Other actions
-    # LAUNCHING
-    STARTING = 'starting'
-    STOPPING = 'stopping'
-    TERMINATING = 'terminating'
-    EXECUTING_ACTION = 'executing_action'
-
-    # Errors
-    ERROR = 'error'
-
-    SAFE_STATES = [FINISHED, ERROR]
-
-    # Not sure?
-    OK = 'ok'
-    RUNNING = 'running'
-    REBOOTING = 'rebooting'
-
-    STATUS = Choices(PENDING, LAUNCHING, CONFIGURING, SYNCING, PROVISIONING,
-                     ORCHESTRATING, FINALIZING, DESTROYING, FINISHED,
-                     STARTING, STOPPING, TERMINATING, EXECUTING_ACTION, ERROR)
-
+class Stack(TimeStampedModel, TitleSlugDescriptionModel):
+    """
+    The basic model for a stack
+    """
     model_permissions = _stack_model_permissions
     object_permissions = _stack_object_permissions
 
@@ -326,11 +357,28 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.id)
 
-    def set_status(self, event, status, detail, level=Level.INFO):
-        self.status = status
-        self.save()
-        self.history.create(event=event, status=status,
-                            status_detail=detail, level=level)
+    def log_history(self, messsage, activity=None):
+        """
+        Create a new history message and optionally set the activity on all hosts.
+        :param messsage: the history message to create
+        :param activity: the activity value to set on all hosts
+        """
+        if activity is not None:
+            self.set_activity(activity)
+
+        # Create a history
+        self.history.create(messsage=messsage)
+
+    def set_activity(self, activity):
+        """
+        Set the activity on all hosts in the stack
+        :param activity: the activity to set
+        """
+        # Make sure all host activities are saved atomically
+        with transaction.atomic(using=Host.objects.db):
+            for host in self.hosts.all():
+                host.activity = activity
+                host.save()
 
     @property
     def volumes(self):
@@ -411,6 +459,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         Calculates the health of this stack from its hosts
         """
         return Health.aggregate([host.health for host in self.hosts.all()])
+
+    @property
+    def activity(self):
+        """
+        Calculates the activity of this stack from its hosts
+        """
+        return Activity.aggregate([host.activity for host in self.hosts.all()])
 
     def set_all_component_statuses(self, status):
         """
@@ -584,8 +639,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                     blueprint_host_definition=hostdef,
                     instance_size=hostdef.size,
                     hostname=hostname,
-                    sir_price=hostdef.spot_price,
-                    state=Host.PENDING
+                    sir_price=hostdef.spot_price
                 )
 
                 if hostdef.cloud_image.account.vpc_enabled:
@@ -1041,31 +1095,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         return list(roles)
 
 
-class StackHistory(TimeStampedModel, StatusDetailModel):
+class StackHistory(TimeStampedModel):
     class Meta:
         verbose_name_plural = 'stack history'
         ordering = ['-created', '-id']
 
         default_permissions = ()
 
-    STATUS = Stack.STATUS
-
     stack = models.ForeignKey('Stack', related_name='history')
 
-    # What 'event' (method name, task name, etc) that caused
-    # this status update
-    event = models.CharField(max_length=128)
-
-    # The human-readable description of the event
-    # status = models.TextField(blank=True)
-
-    # Optional: level (DEBUG, INFO, WARNING, ERROR, etc)
-    level = models.CharField(max_length=16, choices=(
-        (Level.DEBUG, Level.DEBUG),
-        (Level.INFO, Level.INFO),
-        (Level.WARN, Level.WARN),
-        (Level.ERROR, Level.ERROR),
-    ))
+    message = models.CharField('Message', max_length=256)
 
 
 class StackCommand(TimeStampedModel, StatusModel):
@@ -1127,7 +1166,7 @@ class StackCommand(TimeStampedModel, StatusModel):
             return ''
 
 
-class Host(TimeStampedModel, StatusDetailModel):
+class Host(TimeStampedModel):
     PENDING = 'pending'
     OK = 'ok'
     DELETING = 'deleting'
@@ -1137,6 +1176,12 @@ class Host(TimeStampedModel, StatusDetailModel):
         ordering = ['blueprint_host_definition', '-index']
 
         default_permissions = ()
+
+    activity = models.CharField('Activity',
+                                max_length=32,
+                                blank=True,
+                                choices=Activity.ALL,
+                                default=Activity.QUEUED)
 
     stack = models.ForeignKey('Stack',
                               related_name='hosts')
@@ -1154,15 +1199,16 @@ class Host(TimeStampedModel, StatusDetailModel):
 
     # The machine state as provided by the cloud account
     # Would like to have choices, but these vary per cloud provider
+    # This is hidden from the user - only used internally
     state = models.CharField('State', max_length=32, default='unknown')
 
     # This must be updated automatically after the host is online.
     # After salt-cloud has launched VMs, we will need to look up
     # the DNS name set by whatever cloud provider is being used
     # and set it here
-    provider_public_dns = models.CharField('Provider Public DNS', max_length=64, blank=True)
+    provider_public_dns = models.CharField('Provider Public DNS', max_length=64, null=True)
     provider_public_ip = models.GenericIPAddressField('Provider Public IP', blank=True, null=True)
-    provider_private_dns = models.CharField('Provider Private DNS', max_length=64, blank=True)
+    provider_private_dns = models.CharField('Provider Private DNS', max_length=64, null=True)
     provider_private_ip = models.GenericIPAddressField('Provider Private IP', blank=True, null=True)
 
     # The FQDN for the host. This includes the hostname and the
@@ -1190,12 +1236,23 @@ class Host(TimeStampedModel, StatusDetailModel):
     def __unicode__(self):
         return self.hostname
 
+    def set_activity(self, activity):
+        self.activity = activity
+        self.save()
+
     @property
     def health(self):
         """
         Calculates the health of this host from its component healths
         """
-        return Health.aggregate([m.health for m in self.get_current_component_metadatas()])
+        # Get all the healths of the components
+        healths = [m.health for m in self.get_current_component_metadatas()]
+
+        # Add the health from the driver
+        healths.append(self.get_driver().get_health_from_state(self.state))
+
+        # Aggregate them together
+        return Health.aggregate(healths)
 
     def get_current_component_metadatas(self):
         """
@@ -1295,9 +1352,9 @@ class ComponentMetadata(TimeStampedModel):
 
     host = models.ForeignKey('Host', related_name='component_metadatas')
 
-    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=ComponentStatus.QUEUED)
+    status = models.CharField('Status', max_length=32, choices=STATUS_CHOICES, default=ComponentStatus.QUEUED)
 
-    health = models.CharField(max_length=32, choices=HEALTH_CHOICES, default=Health.UNKNOWN)
+    health = models.CharField('Health', max_length=32, choices=HEALTH_CHOICES, default=Health.UNKNOWN)
 
     objects = ComponentMetadataQuerySet.as_manager()
 

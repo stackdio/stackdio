@@ -115,8 +115,7 @@ class BaseCloudProvider(object):
                                              account.slug) if self.account else None
 
         # make sure the storage directory is available
-        if self.provider_storage and \
-           not os.path.isdir(self.provider_storage):
+        if self.provider_storage and not os.path.isdir(self.provider_storage):
             os.makedirs(self.provider_storage)
 
     def destroy(self):
@@ -150,6 +149,10 @@ class BaseCloudProvider(object):
             raise AttributeError('LONG_NAME must exist and be a string.')
 
         return cls.SHORT_NAME, cls.LONG_NAME
+
+    def get_health_from_state(self, state):
+        from stackdio.api.stacks.models import Health
+        return Health.UNKNOWN
 
     def get_required_fields(self):
         """

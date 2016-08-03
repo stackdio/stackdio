@@ -90,6 +90,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'actstream',
     'guardian',
     'stackdio.core',
     'stackdio.api.users',
@@ -373,7 +374,6 @@ CELERY_ROUTES = {
     'stacks.execute_action': {'queue': 'short'},
     'stacks.finish_stack': {'queue': 'stacks'},
     'stacks.global_orchestrate': {'queue': 'stacks'},
-    'stacks.handle_error': {'queue': 'stacks'},
     'stacks.highstate': {'queue': 'stacks'},
     'stacks.launch_hosts': {'queue': 'stacks'},
     'stacks.orchestrate': {'queue': 'stacks'},
@@ -392,7 +392,7 @@ CELERY_ROUTES = {
 CELERYBEAT_SCHEDULE = {
     'update-host-info': {
         'task': 'stacks.update_host_info',
-        'schedule': crontab(minute='*/15'),  # Execute every 15 minutes
+        'schedule': crontab(minute='*/5'),  # Execute every 5 minutes
         'args': (),
     },
 }
