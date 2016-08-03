@@ -75,10 +75,11 @@ class Health(object):
         # Make sure everything in the list is a valid health
         assert len([h for h in health_list if h not in vars(cls)]) == 0
 
-        # Make sure we don't have an empty list
-        assert len(health_list) > 0
-
-        if cls.UNHEALTHY in health_list:
+        if len(health_list) == 0:
+            # We can get an empty list sometimes when we're deleting a stack, so we'll
+            # just aggregate that to unknown
+            return cls.UNKNOWN
+        elif cls.UNHEALTHY in health_list:
             return cls.UNHEALTHY
         elif cls.UNSTABLE in health_list:
             return cls.UNSTABLE
@@ -1067,11 +1068,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return host_result
 
     def get_root_directory(self):
-        if self.map_file:
-            return os.path.dirname(self.map_file.path)
-        if self.props_file:
-            return os.path.dirname(self.props_file.path)
-        return None
+        return os.path.join(stack_storage.location, '{0}-{1}'.format(self.pk, self.slug))
 
     def get_log_directory(self):
         root_dir = self.get_root_directory()
