@@ -1557,7 +1557,8 @@ def update_host_info():
             host.provider_private_ip = host_info.get('privateIpAddress')
 
             # update volume information
-            block_device_mappings = host_info.get('blockDeviceMapping', {}).get('item', [])
+            block_device_mappings_parent = host_info.get('blockDeviceMapping') or {}
+            block_device_mappings = block_device_mappings_parent.get('item') or []
 
             if not isinstance(block_device_mappings, list):
                 block_device_mappings = [block_device_mappings]
