@@ -359,17 +359,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.id)
 
-    def log_history(self, messsage, activity=None):
+    def log_history(self, message, activity=None):
         """
         Create a new history message and optionally set the activity on all hosts.
-        :param messsage: the history message to create
+        :param message: the history message to create
         :param activity: the activity value to set on all hosts
         """
         if activity is not None:
             self.set_activity(activity)
 
         # Create a history
-        self.history.create(messsage=messsage)
+        self.history.create(message=message)
 
     def set_activity(self, activity):
         """
