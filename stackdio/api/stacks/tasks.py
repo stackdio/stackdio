@@ -47,7 +47,6 @@ from .models import (
     Activity,
     ComponentStatus,
     StackCommand,
-    Host,
 )
 
 logger = get_task_logger(__name__)
@@ -1146,7 +1145,7 @@ def global_orchestrate(stack, max_retries=2):
             result = salt_runner.cmd(
                 'stackdio.orchestrate',
                 [
-                    'stack_{0}_global_orchestrate'.format(stack_id),
+                    'stack_{0}_global_orchestrate'.format(stack.id),
                     'cloud.{0}'.format(accounts[0].slug),
                 ]
             )
@@ -1523,80 +1522,95 @@ def update_host_info():
 
     logger.info('Received host info from salt cloud.')
 
-    # Iterate through all the hosts and check their status / state
-    for host in Host.objects.all():
-        account = host.cloud_account
+    # Iterate through all the stacks & hosts and check their state / activity
+    for stack in Stack.objects.all():
 
-        account_info = query_results.get(account.slug, {}).get(account.provider.name, {})
-        host_info = account_info.get(host.hostname)
+        host_activities = set()
 
-        old_state = host.state
+        for host in stack.hosts.all():
+            account = host.cloud_account
 
-        # Check for terminated host state
-        if not host_info:
-            host.state = 'absent'
-        else:
-            host.state = host_info['state']
+            account_info = query_results.get(account.slug, {}).get(account.provider.name, {})
+            host_info = account_info.get(host.hostname)
 
-        # The instance id of the host
-        host.instance_id = host_info.get('instanceId', '')
+            old_state = host.state
 
-        # Get the host's public IP/host set by the cloud provider. This
-        # is used later when we tie the machine to DNS
-        host.provider_public_dns = host_info.get('dnsName')
-        host.provider_private_dns = host_info.get('privateDnsName')
+            # Check for terminated host state
+            if not host_info:
+                host.state = Activity.DEAD
+                host.activity = Activity.DEAD
+            else:
+                host.state = host_info['state']
 
-        # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
-        # throws an exception if we don't use host_data.get().  I changed the above two
-        # keys to do the same for robustness
-        host.provider_public_ip = host_info.get('ipAddress')
-        host.provider_private_ip = host_info.get('privateIpAddress')
+            # The instance id of the host
+            host.instance_id = host_info.get('instanceId', '')
 
-        # update volume information
-        block_device_mappings = host_info.get('blockDeviceMapping', {}).get('item', [])
+            # Get the host's public IP/host set by the cloud provider. This
+            # is used later when we tie the machine to DNS
+            host.provider_public_dns = host_info.get('dnsName')
+            host.provider_private_dns = host_info.get('privateDnsName')
 
-        if not isinstance(block_device_mappings, list):
-            block_device_mappings = [block_device_mappings]
+            # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
+            # throws an exception if we don't use host_data.get().  I changed the above two
+            # keys to do the same for robustness
+            host.provider_public_ip = host_info.get('ipAddress')
+            host.provider_private_ip = host_info.get('privateIpAddress')
 
-        # for each block device mapping found on the running host,
-        # try to match the device name up with that stored in the DB
-        # if a match is found, fill in the metadata and save the volume
-        for bdm in block_device_mappings:
-            bdm_volume_id = bdm['ebs']['volumeId']
-            try:
-                # attempt to get the volume for this host that
-                # has been created
-                volume = host.volumes.get(device=bdm['deviceName'])
+            # update volume information
+            block_device_mappings = host_info.get('blockDeviceMapping', {}).get('item', [])
 
-                # update the volume information if needed
-                if volume.volume_id != bdm_volume_id:
-                    volume.volume_id = bdm['ebs']['volumeId']
-                    volume.attach_time = bdm['ebs']['attachTime']
+            if not isinstance(block_device_mappings, list):
+                block_device_mappings = [block_device_mappings]
 
-                    # save the new volume info
-                    volume.save()
+            # for each block device mapping found on the running host,
+            # try to match the device name up with that stored in the DB
+            # if a match is found, fill in the metadata and save the volume
+            for bdm in block_device_mappings:
+                bdm_volume_id = bdm['ebs']['volumeId']
+                try:
+                    # attempt to get the volume for this host that
+                    # has been created
+                    volume = host.volumes.get(device=bdm['deviceName'])
 
-            except Volume.DoesNotExist:
-                # This is most likely fine. Usually means that the
-                # EBS volume for the root drive was found instead.
-                pass
-            except Exception:
-                err_msg = ('Unhandled exception while updating volume '
-                           'metadata.')
-                logger.exception(err_msg)
-                logger.debug(block_device_mappings)
-                raise
+                    # update the volume information if needed
+                    if volume.volume_id != bdm_volume_id:
+                        volume.volume_id = bdm['ebs']['volumeId']
+                        volume.attach_time = bdm['ebs']['attachTime']
 
-        # Update spot instance metadata
-        if 'spotInstanceRequestId' in host_info:
-            host.sir_id = host_info['spotInstanceRequestId']
-        else:
-            host.sir_id = ''
+                        # save the new volume info
+                        volume.save()
 
-        if host.state != old_state:
-            logger.info('Host {0} state changed from {1} to {2}'.format(host.hostname,
-                                                                        old_state,
-                                                                        host.state))
+                except Volume.DoesNotExist:
+                    # This is most likely fine. Usually means that the
+                    # EBS volume for the root drive was found instead.
+                    pass
+                except Exception:
+                    err_msg = ('Unhandled exception while updating volume '
+                               'metadata.')
+                    logger.exception(err_msg)
+                    logger.debug(block_device_mappings)
+                    raise
 
-        # save the host
-        host.save()
+            # Update spot instance metadata
+            if 'spotInstanceRequestId' in host_info:
+                host.sir_id = host_info['spotInstanceRequestId']
+            else:
+                host.sir_id = ''
+
+            if host.state != old_state:
+                logger.info('Host {0} state changed from {1} to {2}'.format(host.hostname,
+                                                                            old_state,
+                                                                            host.state))
+
+            if host.status in ('terminated',):
+                host.activity = Activity.TERMINATED
+
+            host_activities.add(host.activity)
+
+            # save the host
+            host.save()
+
+        # If all the hosts are dead, set the stack to dead also
+        if len(host_activities) == 1 and Activity.DEAD in host_activities:
+            stack.activity = Activity.DEAD
+            stack.save()
