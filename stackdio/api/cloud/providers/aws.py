@@ -285,7 +285,14 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def get_health_from_state(self, state):
         from stackdio.api.stacks.models import Health
-        return Health.HEALTHY
+        if state in ('terminated', 'shutting-down'):
+            return Health.UNHEALTHY
+        elif state in ('stopped', 'stopping'):
+            return Health.UNSTABLE
+        elif state in ('running',):
+            return Health.HEALTHY
+        else:
+            return Health.UNKNOWN
 
     def get_private_key_path(self):
         return os.path.join(self.provider_storage, 'id_rsa')
