@@ -32,8 +32,10 @@ import boto.ec2
 import boto.vpc
 import yaml
 from boto.route53.record import ResourceRecordSets
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.serializers import ValidationError
 
+from stackdio.core.constants import Action, Health
 from stackdio.api.cloud.providers.base import (
     BaseCloudProvider,
     DeleteGroupException,
@@ -268,7 +270,6 @@ class AWSCloudProvider(BaseCloudProvider):
         ]
 
     def get_available_actions(self):
-        from stackdio.api.stacks.models import Action
         return [
             Action.PAUSE,
             Action.RESUME,
@@ -280,7 +281,6 @@ class AWSCloudProvider(BaseCloudProvider):
         ]
 
     def get_health_from_state(self, state):
-        from stackdio.api.stacks.models import Health
         if state in ('terminated', 'shutting-down'):
             return Health.UNHEALTHY
         elif state in ('stopped', 'stopping'):
@@ -542,8 +542,6 @@ class AWSCloudProvider(BaseCloudProvider):
         return kwargs
 
     def delete_security_group(self, group_name):
-        from django.core.exceptions import ObjectDoesNotExist
-
         if self.account.vpc_id:
             try:
                 sg = self.account.security_groups.get(name=group_name)

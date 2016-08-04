@@ -40,13 +40,9 @@ from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.tasks import update_formula
+from stackdio.core.constants import Activity, ComponentStatus
 from . import utils
-from .models import (
-    Stack,
-    Activity,
-    ComponentStatus,
-    StackCommand,
-)
+from .models import Stack, StackCommand
 
 logger = get_task_logger(__name__)
 

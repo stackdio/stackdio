@@ -23,6 +23,8 @@ import shutil
 from django.conf import settings
 from rest_framework.serializers import ValidationError
 
+from stackdio.core.constants import Health
+
 logger = logging.getLogger(__name__)
 
 
@@ -141,7 +143,6 @@ class BaseCloudProvider(object):
         return cls.SHORT_NAME, cls.LONG_NAME
 
     def get_health_from_state(self, state):
-        from stackdio.api.stacks.models import Health
         return Health.UNKNOWN
 
     def get_required_fields(self):

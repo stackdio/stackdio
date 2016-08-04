@@ -32,6 +32,7 @@ from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
 from six import StringIO
 
+from stackdio.core.constants import Activity
 from stackdio.core.models import Label
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
@@ -104,7 +105,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         stack = instance
 
         # Check the activity
-        if stack.activity not in models.Activity.can_delete:
+        if stack.activity not in Activity.can_delete:
             err_msg = ('You may not delete this stack in its current state.  Please wait until '
                        'it is finished with the current action.')
             raise ValidationError({
@@ -112,7 +113,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             })
 
         # Update the status
-        stack.set_activity(models.Activity.QUEUED)
+        stack.set_activity(Activity.QUEUED)
         action.send(self.request.user, verb='deleted', action_object=instance)
 
         # Execute the workflow to delete the infrastructure
@@ -160,7 +161,7 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         stack = self.get_stack()
         # Grab the list of available actions for the current stack activity
-        available_actions = models.Activity.action_map.get(stack.activity, [])
+        available_actions = Activity.action_map.get(stack.activity, [])
 
         # Filter them based on permissions
         available_actions = utils.filter_actions(request.user, stack, available_actions)
@@ -369,13 +370,13 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
     def perform_destroy(self, instance):
         stack = instance.stack
 
-        if stack.activity not in models.Activity.can_delete:
+        if stack.activity not in Activity.can_delete:
             err_msg = 'You may not delete hosts on this stack in its current state: {0}'
             raise ValidationError({
                 'stack': [err_msg.format(stack.activity)]
             })
 
-        instance.set_activity(models.Activity.QUEUED)
+        instance.set_activity(Activity.QUEUED)
         action.send(self.request.user, verb='deleted', action_object=instance)
 
         host_ids = [instance.id]

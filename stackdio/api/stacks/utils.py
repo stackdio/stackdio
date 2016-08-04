@@ -39,7 +39,7 @@ from msgpack.exceptions import ExtraData
 from salt.log.setup import LOG_LEVELS
 
 from stackdio.api.volumes.models import Volume
-from . import models
+from stackdio.core.constants import Action, ComponentStatus
 
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
@@ -553,15 +553,15 @@ def process_orchestrate_result(result, stack, log_file, err_file):
                 )
                 # No changes, so set based on the comment
                 if ERROR_REQUISITE in sls_result['comment']:
-                    stack.set_component_status(sls_dict['name'], models.ComponentStatus.CANCELLED)
+                    stack.set_component_status(sls_dict['name'], ComponentStatus.CANCELLED)
                 else:
-                    stack.set_component_status(sls_dict['name'], models.ComponentStatus.FAILED)
+                    stack.set_component_status(sls_dict['name'], ComponentStatus.FAILED)
                 status_set = True
 
         if sls_result.get('result', False):
             # This whole sls is good!  Just continue on with the next one.
             if not status_set:
-                stack.set_component_status(sls_dict['name'], models.ComponentStatus.SUCCEEDED)
+                stack.set_component_status(sls_dict['name'], ComponentStatus.SUCCEEDED)
             continue
 
         # Process the data for this sls
@@ -576,13 +576,13 @@ def process_orchestrate_result(result, stack, log_file, err_file):
         if not status_set:
             # Set the status to FAILED on everything that failed
             stack.set_component_status(sls_dict['name'],
-                                       models.ComponentStatus.FAILED,
+                                       ComponentStatus.FAILED,
                                        local_failed_hosts)
 
             if local_failed and local_failed_hosts:
                 # Set the status to SUCCEEDED on everything that didn't fail
                 stack.set_component_status(sls_dict['name'],
-                                           models.ComponentStatus.SUCCEEDED,
+                                           ComponentStatus.SUCCEEDED,
                                            [],
                                            local_failed_hosts)
 
@@ -600,7 +600,7 @@ def filter_actions(user, stack, actions):
         the_action = action
         if action == 'command':
             the_action = 'execute'
-        elif action == models.Action.PROPAGATE_SSH:
+        elif action == Action.PROPAGATE_SSH:
             the_action = 'admin'
         if user.has_perm('stacks.{0}_stack'.format(the_action.lower()), stack):
             ret.append(action)

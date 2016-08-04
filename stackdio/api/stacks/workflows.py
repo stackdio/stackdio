@@ -21,7 +21,8 @@ import logging
 from actstream import action
 from celery import chain
 
-from . import models, tasks
+from stackdio.core.constants import Action, Activity
+from . import tasks
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,7 @@ class LaunchWorkflow(BaseWorkflow):
                                           max_retries=opts.max_retries))
         l.append(tasks.finish_stack.si(stack_id))
 
-        self.stack.set_activity(models.Activity.QUEUED)
+        self.stack.set_activity(Activity.QUEUED)
         action.send(self.stack, verb='was submitted to launch queue')
 
         return l
@@ -187,25 +188,25 @@ class ActionWorkflow(BaseWorkflow):
     def task_list(self):
         # TODO: not generic enough
         base_tasks = {
-            models.Action.LAUNCH: [
+            Action.LAUNCH: [
                 tasks.launch_hosts.si(self.stack.id),
                 tasks.update_metadata.si(self.stack.id),
                 tasks.cure_zombies.si(self.stack.id),
             ],
-            models.Action.TERMINATE: [
+            Action.TERMINATE: [
                 tasks.update_metadata.si(self.stack.id, remove_absent=False),
                 tasks.register_volume_delete.si(self.stack.id),
                 tasks.unregister_dns.si(self.stack.id),
                 tasks.destroy_hosts.si(self.stack.id, delete_hosts=False,
                                        delete_security_groups=False),
             ],
-            models.Action.PAUSE: [
+            Action.PAUSE: [
                 tasks.execute_action.si(self.stack.id, self.action, *self.args),
             ],
-            models.Action.RESUME: [
+            Action.RESUME: [
                 tasks.execute_action.si(self.stack.id, self.action, *self.args),
             ],
-            models.Action.PROPAGATE_SSH: [
+            Action.PROPAGATE_SSH: [
                 tasks.propagate_ssh.si(self.stack.id),
             ],
         }
@@ -214,26 +215,24 @@ class ActionWorkflow(BaseWorkflow):
         task_list = base_tasks.get(self.action, [])
 
         # Update the metadata after the main action has been executed
-        if self.action != models.Action.TERMINATE:
+        if self.action != Action.TERMINATE:
             task_list.append(tasks.update_metadata.si(self.stack.id))
 
         # Resuming and launching requires DNS updates
-        if self.action in (models.Action.RESUME, models.Action.LAUNCH):
+        if self.action in (Action.RESUME, Action.LAUNCH):
             task_list.append(tasks.tag_infrastructure.si(self.stack.id))
             task_list.append(tasks.register_dns.si(self.stack.id))
 
         # resuming, launching, or reprovisioning requires us to execute the
         # provisioning tasks
-        if self.action in (models.Action.RESUME, models.Action.LAUNCH,
-                           models.Action.PROVISION, models.Action.ORCHESTRATE):
+        if self.action in (Action.RESUME, Action.LAUNCH, Action.PROVISION, Action.ORCHESTRATE):
             task_list.append(tasks.ping.si(self.stack.id))
             task_list.append(tasks.sync_all.si(self.stack.id))
 
-        if self.action in (models.Action.LAUNCH, models.Action.PROVISION):
+        if self.action in (Action.LAUNCH, Action.PROVISION):
             task_list.append(tasks.highstate.si(self.stack.id))
 
-        if self.action in (models.Action.LAUNCH, models.Action.PROVISION,
-                           models.Action.ORCHESTRATE):
+        if self.action in (Action.LAUNCH, Action.PROVISION, Action.ORCHESTRATE):
             task_list.append(tasks.global_orchestrate.si(self.stack.id))
             task_list.append(tasks.orchestrate.si(self.stack.id, 2))
 

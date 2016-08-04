@@ -35,6 +35,7 @@ from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerialize
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
 from stackdio.api.formulas.serializers import FormulaComponentSerializer, FormulaVersionSerializer
+from stackdio.core.constants import Action, Activity, ComponentStatus, Health
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
@@ -98,11 +99,11 @@ class HostComponentSerializer(FormulaComponentSerializer):
         # This relies on the parent serializer setting the host attribute
         # (see to_representation() in the HostSerializer class)
         meta = self._get_metadata(obj)
-        return meta.status if meta else models.ComponentStatus.UNKNOWN
+        return meta.status if meta else ComponentStatus.UNKNOWN
 
     def get_health(self, obj):
         meta = self._get_metadata(obj)
-        return meta.health if meta else models.Health.UNKNOWN
+        return meta.health if meta else Health.UNKNOWN
 
     def get_timestamp(self, obj):
         meta = self._get_metadata(obj)
@@ -229,7 +230,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
                 errors.setdefault('count', []).append(err_msg)
 
         # Make sure the stack is in a valid state
-        if stack.activity != models.Activity.IDLE:
+        if stack.activity != Activity.IDLE:
             err_msg = 'You may not add hosts to the stack in its current state: {0}'
             raise serializers.ValidationError({
                 'stack': [err_msg.format(stack.activity)]
@@ -279,7 +280,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
         host_ids = [h.id for h in hosts]
         if host_ids:
             models.Host.objects.filter(id__in=host_ids).update(
-                activity=models.Activity.TERMINATING,
+                activity=Activity.TERMINATING,
             )
 
             # Start the celery task chain to kill the hosts
@@ -616,12 +617,12 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         action = attrs['action']
         request = self.context['request']
 
-        if action not in models.Action.ALL:
+        if action not in Action.ALL:
             raise serializers.ValidationError({
                 'action': ['{0} is not a valid action.'.format(action)]
             })
 
-        if stack.activity not in models.Activity.action_map.get(action, []):
+        if stack.activity not in Activity.action_map.get(action, []):
             err_msg = 'You may not perform the {0} action while the stack is {1}.'
             raise serializers.ValidationError({
                 'action': [err_msg.format(action, stack.activity)]
@@ -630,13 +631,13 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         total_host_count = len(stack.get_hosts().exclude(instance_id=''))
 
         # Check to make sure the user is authorized to execute the action
-        if action not in utils.filter_actions(request.user, stack, models.Action.ALL):
+        if action not in utils.filter_actions(request.user, stack, Action.ALL):
             raise PermissionDenied(
                 'You are not authorized to run the "{0}" action on this stack'.format(action)
             )
 
         # All actions other than launch require hosts to be available
-        if action != models.Action.LAUNCH and total_host_count == 0:
+        if action != Action.LAUNCH and total_host_count == 0:
             err_msg = ('The submitted action requires the stack to have available hosts. '
                        'Perhaps you meant to run the launch action instead.')
             raise serializers.ValidationError({
@@ -657,7 +658,7 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         action = self.validated_data['action']
         args = self.validated_data.get('args', [])
 
-        stack.set_activity(models.Activity.QUEUED)
+        stack.set_activity(Activity.QUEUED)
         actstream.action.send(self.request.user, verb='executed {0}'.format(action), target=stack)
 
         # Utilize our workflow to run the action
