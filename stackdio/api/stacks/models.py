@@ -1051,11 +1051,6 @@ class StackCommand(TimeStampedModel, StatusModel):
 
 
 class Host(TimeStampedModel):
-    PENDING = 'pending'
-    OK = 'ok'
-    DELETING = 'deleting'
-    STATUS = Choices(PENDING, OK, DELETING)
-
     class Meta:
         ordering = ['blueprint_host_definition', '-index']
 
