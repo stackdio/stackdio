@@ -34,6 +34,7 @@ class StackFilter(django_filters.FilterSet, LabelFilterMixin):
         fields = (
             'title',
             'label',
+            'activity',
             'q',
         )
 
@@ -48,5 +49,6 @@ class HostFilter(django_filters.FilterSet):
         model = models.Host
         fields = (
             'hostname',
+            'activity',
             'q',
         )
