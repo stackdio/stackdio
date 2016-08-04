@@ -627,82 +627,21 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
                 'action': [err_msg.format(action, stack.activity)]
             })
 
-        driver_hosts_map = stack.get_driver_hosts_map()
         total_host_count = len(stack.get_hosts().exclude(instance_id=''))
 
-        available_actions = set()
-
-        # check the individual provider for available actions
-        for driver in driver_hosts_map:
-            host_available_actions = driver.get_available_actions()
-            if action not in host_available_actions:
-                err_msg = ('At least one of the hosts in this stack does not support '
-                           'the requested action.')
-                raise serializers.ValidationError({
-                    'action': [err_msg]
-                })
-            available_actions.update(host_available_actions)
-
-        if action not in available_actions:
-            raise serializers.ValidationError({
-                'action': ['{0} is not a valid action.'.format(action)]
-            })
-
         # Check to make sure the user is authorized to execute the action
-        if action not in utils.filter_actions(request.user, stack, available_actions):
+        if action not in utils.filter_actions(request.user, stack, models.Action.ALL):
             raise PermissionDenied(
                 'You are not authorized to run the "{0}" action on this stack'.format(action)
             )
 
         # All actions other than launch require hosts to be available
-        if action != 'launch' and total_host_count == 0:
+        if action != models.Action.LAUNCH and total_host_count == 0:
             err_msg = ('The submitted action requires the stack to have available hosts. '
                        'Perhaps you meant to run the launch action instead.')
             raise serializers.ValidationError({
                 'action': [err_msg]
             })
-
-        # Make sure the action is executable on all hosts
-        for driver, hosts in driver_hosts_map.items():
-            # check the action against current states (e.g., starting can't
-            # happen unless the hosts are in the paused state.)
-            # XXX: Assuming that host metadata is accurate here
-            for host in hosts:
-                resume_pause_msg = ('{0} action requires all hosts to be in the {1} '
-                                    'state first. At least one host is reporting an invalid '
-                                    'state: {2}')
-
-                if action == models.Action.RESUME and host.activity != models.Activity.PAUSED:
-                    raise serializers.ValidationError({
-                        'action': [resume_pause_msg.format('Resume',
-                                                         models.Activity.PAUSED,
-                                                         host.activity)]
-                    })
-                if action == models.Action.PAUSE and host.activity != models.Activity.IDLE:
-                    raise serializers.ValidationError({
-                        'action': [resume_pause_msg.format('Pause', 'idle', host.activity)]
-                    })
-                if action == models.Action.TERMINATE \
-                        and host.activity not in (models.Activity.IDLE, models.Activity.PAUSED):
-                    raise serializers.ValidationError({
-                        'action': [resume_pause_msg.format('Terminate',
-                                                         'idle or paused',
-                                                         host.activity)]
-                    })
-
-                require_running = (
-                    models.Action.PROVISION,
-                    models.Action.ORCHESTRATE,
-                    models.Action.PROPAGATE_SSH,
-                )
-
-                if action in require_running and host.activity != models.Activity.IDLE:
-                    err_msg = ('Provisioning actions require all hosts to be in the '
-                               'idle state first. At least one host is reporting '
-                               'an invalid state: {0}'.format(host.activity))
-                    raise serializers.ValidationError({
-                        'action': [err_msg]
-                    })
 
         return attrs
 

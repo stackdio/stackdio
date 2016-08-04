@@ -171,7 +171,7 @@ class Activity(object):
 
     # For stacks
     action_map = {
-        IDLE: [Action.LAUNCH, Action.TERMINATE, Action.RESUME, Action.PAUSE,
+        IDLE: [Action.LAUNCH, Action.TERMINATE, Action.PAUSE,
                Action.PROPAGATE_SSH, Action.PROVISION, Action.ORCHESTRATE],
         PAUSED: [Action.RESUME, Action.TERMINATE],
         TERMINATED: [Action.LAUNCH],
