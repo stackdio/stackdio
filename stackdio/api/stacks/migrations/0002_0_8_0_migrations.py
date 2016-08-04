@@ -8,6 +8,29 @@ import django_extensions.db.fields
 import model_utils.fields
 
 
+def fix_fields_forwards(apps, schema_editor):
+    Stack = apps.get_model('stacks', 'Stack')
+    Host = apps.get_model('stacks', 'Host')
+
+    # Just set all the activities to be idle.
+    for stack in Stack.objects.all():
+        stack.activity = ''
+        stack.save()
+
+    for host in Host.objects.all():
+        host.activity = ''
+        host.save()
+
+
+def fix_fields_reverse(apps, schema_editor):
+    Stack = apps.get_model('stacks', 'Stack')
+
+    # Host states are already set in 0.8, no need to change them when going backwards.
+    for stack in Stack.objects.all():
+        stack.status = 'finished'
+        stack.save()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -190,4 +213,7 @@ class Migration(migrations.Migration):
                 'get_latest_by': 'modified',
             },
         ),
+
+        # Fix fields (status -> activity, state, health)
+        migrations.RunPython(fix_fields_forwards, fix_fields_reverse),
     ]
