@@ -40,7 +40,6 @@ from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.tasks import update_formula
-from stackdio.api.volumes.models import Volume
 from . import utils
 from .models import (
     Stack,
@@ -237,6 +236,9 @@ def launch_hosts(stack, parallel=True, max_retries=2,
         is ignored if all of the above failure flags are set to False.
         Defaults to 0.3 (30%).
     """
+    # Set the activity right away
+    stack.set_activity(Activity.LAUNCHING)
+
     hosts = stack.get_hosts()
     num_hosts = len(hosts)
     log_file = utils.get_salt_cloud_log_file(stack, 'launch')
@@ -291,8 +293,7 @@ def launch_hosts(stack, parallel=True, max_retries=2,
                 label,
                 current_try,
                 max_retries + 1
-            ),
-            Activity.LAUNCHING,
+            )
         )
 
         cloud_map = stack.generate_cloud_map()
@@ -475,6 +476,9 @@ def cure_zombies(stack, max_retries=2):
     @ param stack_id (int) -
     @ param max_retries (int) -
     """
+    # Set the activity
+    stack.set_activity(Activity.LAUNCHING)
+
     current_try = 0
     while True:
         current_try += 1
@@ -524,12 +528,12 @@ def cure_zombies(stack, max_retries=2):
 
 @stack_task(name='stacks.update_metadata')
 def update_metadata(stack, host_ids=None, remove_absent=True):
+    # Update activity
+    stack.log_history('Collecting host metadata from cloud provider.', Activity.LAUNCHING)
+
     # All hosts are running (we hope!) so now we can pull the various
     # metadata and store what we want to keep track of.
     logger.info('Updating metadata for stack: {0!r}'.format(stack))
-
-    # Update status
-    stack.log_history('Collecting host metadata from cloud provider.')
 
     # Use salt-cloud to look up host information we need now that
     # the machines are running
@@ -584,7 +588,7 @@ def update_metadata(stack, host_ids=None, remove_absent=True):
             h.delete()
 
 
-@stack_task(name='stacks.tag_infrastructure')
+@stack_task(name='stacks.tag_infrastructure', final_task=True)
 def tag_infrastructure(stack, host_ids=None):
     """
     Tags hosts and volumes with certain metadata that should prove useful
@@ -614,9 +618,9 @@ def register_dns(stack, host_ids=None):
     Must be ran after a Stack is up and running and all host information has
     been pulled and stored in the database.
     """
-    logger.info('Registering DNS for stack: {0!r}'.format(stack))
+    stack.log_history('Registering hosts with DNS provider.', Activity.LAUNCHING)
 
-    stack.log_history('Registering hosts with DNS provider.')
+    logger.info('Registering DNS for stack: {0!r}'.format(stack))
 
     # Use the provider implementation to register a set of hosts
     # with the appropriate cloud's DNS service
@@ -639,8 +643,8 @@ def ping(stack, interval=5, max_failures=10):
                    The timeout does not affect this parameter.
     @raises StackTaskException
     """
+    stack.log_history('Attempting to ping all hosts.', Activity.LAUNCHING)
     required_hosts = [h.hostname for h in stack.get_hosts()]
-    stack.log_history('Attempting to ping all hosts.')
 
     client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
@@ -694,6 +698,9 @@ def ping(stack, interval=5, max_failures=10):
 
 @stack_task(name='stacks.sync_all')
 def sync_all(stack):
+    # Update status
+    stack.log_history('Synchronizing salt systems on all hosts.', Activity.PROVISIONING)
+
     logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
     # Generate all the files before we sync
@@ -702,9 +709,6 @@ def sync_all(stack):
     stack.generate_top_file()
     stack.generate_orchestrate_file()
     stack.generate_global_orchestrate_file()
-
-    # Update status
-    stack.log_history('Synchronizing salt systems on all hosts.')
 
     target = [h.hostname for h in stack.get_hosts()]
     client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
@@ -742,6 +746,8 @@ def highstate(stack, max_retries=2):
     by the SLS. I don't see this as a problem right now, but something we
     might have to tackle in the future if someone were to need that.
     """
+    stack.set_activity(Activity.PROVISIONING)
+
     num_hosts = len(stack.get_hosts())
     target = [h.hostname for h in stack.get_hosts()]
     logger.info('Running core provisioning for stack: {0!r}'.format(stack))
@@ -768,8 +774,7 @@ def highstate(stack, max_retries=2):
             'This may take a while.'.format(
                 current_try,
                 max_retries + 1
-            ),
-            Activity.PROVISIONING,
+            )
         )
 
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -879,6 +884,8 @@ def propagate_ssh(stack, max_retries=2):
     instead of `core.*`.  This is useful so that ssh keys can be added to
     hosts without having to completely re run provisioning.
     """
+    stack.set_activity(Activity.PROVISIONING)
+
     target = [h.hostname for h in stack.get_hosts()]
     # Regenerate the stack pillar file
     stack.generate_pillar_file(update_formulas=True)
@@ -906,8 +913,7 @@ def propagate_ssh(stack, max_retries=2):
             'Propagating ssh try {0} of {1}. This may take a while.'.format(
                 current_try,
                 max_retries + 1
-            ),
-            Activity.PROVISIONING,
+            )
         )
 
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -1017,6 +1023,8 @@ def global_orchestrate(stack, max_retries=2):
     will target the __stackdio__ user's environment and provision the hosts with
     the formulas defined in the global orchestration.
     """
+    stack.set_activity(Activity.ORCHESTRATING)
+
     logger.info('Executing global orchestration for stack: {0!r}'.format(stack))
 
     accounts = set()
@@ -1060,8 +1068,7 @@ def global_orchestrate(stack, max_retries=2):
             'may take a while.'.format(
                 current_try,
                 max_retries + 1
-            ),
-            Activity.ORCHESTRATING,
+            )
         )
 
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -1134,6 +1141,8 @@ def orchestrate(stack, max_retries=2):
     will need to support executing multiple orchestrate files in different
     environments.
     """
+    stack.set_activity(Activity.ORCHESTRATING)
+
     logger.info('Executing orchestration for stack: {0!r}'.format(stack))
 
     # Copy the formulas to somewhere useful
@@ -1168,8 +1177,7 @@ def orchestrate(stack, max_retries=2):
             'may take a while.'.format(
                 current_try,
                 max_retries + 1
-            ),
-            Activity.ORCHESTRATING,
+            )
         )
 
         now = datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -1234,13 +1242,8 @@ def orchestrate(stack, max_retries=2):
 def finish_stack(stack):
     logger.info('Finishing stack: {0!r}'.format(stack))
 
-    # Update status
-    stack.log_history('Performing final updates to Stack.')
-
-    # TODO: Are there any last minute updates and checks?
-
-    # Update status
-    stack.log_history('Finished executing tasks.', Activity.IDLE)
+    # Update activity
+    stack.set_activity(Activity.IDLE)
 
 
 @stack_task(name='stacks.register_volume_delete')
@@ -1352,7 +1355,7 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
         hosts.delete()
 
 
-@stack_task(name='stacks.destroy_stack')
+@stack_task(name='stacks.destroy_stack', final_task=True)
 def destroy_stack(stack):
     stack.log_history('Performing final cleanup of stack.', Activity.TERMINATING)
     hosts = stack.get_hosts()
@@ -1375,9 +1378,9 @@ def unregister_dns(stack, host_ids=None):
     stack is terminated or stopped or put into some state where DNS no longer
     applies.
     """
-    logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
-
     stack.log_history('Unregistering hosts with DNS provider.', Activity.TERMINATING)
+
+    logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
 
     # Use the provider implementation to register a set of hosts
     # with the appropriate cloud's DNS service
@@ -1386,8 +1389,6 @@ def unregister_dns(stack, host_ids=None):
         logger.debug('Unregistering DNS for hosts: {0}'.format(hosts))
         driver.unregister_dns(hosts)
 
-    stack.log_history('Finished unregistering hosts with DNS provider.')
-
 
 @stack_task(name='stacks.execute_action')
 def execute_action(stack, action, *args, **kwargs):
@@ -1395,6 +1396,8 @@ def execute_action(stack, action, *args, **kwargs):
     Executes a defined action using the stack's cloud provider implementation.
     Actions are defined on the implementation class (e.g, _action_{action})
     """
+    stack.set_activity(Activity.EXECUTING)
+
     logger.info('Executing action \'{0}\' on stack: {1!r}'.format(action, stack))
 
     driver_hosts_map = stack.get_driver_hosts_map()
