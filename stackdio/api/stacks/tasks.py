@@ -504,8 +504,7 @@ def cure_zombies(stack, max_retries=2):
                     label,
                     current_try,
                     max_retries + 1
-                ),
-                Activity.LAUNCHING,
+                )
             )
             utils.bootstrap_hosts(
                 stack,
@@ -518,14 +517,13 @@ def cure_zombies(stack, max_retries=2):
                 '{0} detected and the maximum number of '
                 'tries have been reached.'.format(label)
             )
-            stack.log_history(err_msg, Activity.IDLE)
             raise StackTaskException(err_msg)
 
 
 @stack_task(name='stacks.update_metadata')
-def update_metadata(stack, host_ids=None, remove_absent=True):
+def update_metadata(stack, activity, host_ids=None, remove_absent=True):
     # Update activity
-    stack.log_history('Collecting host metadata from cloud provider.', Activity.LAUNCHING)
+    stack.log_history('Collecting host metadata from cloud provider.', activity)
 
     # All hosts are running (we hope!) so now we can pull the various
     # metadata and store what we want to keep track of.
@@ -585,7 +583,7 @@ def update_metadata(stack, host_ids=None, remove_absent=True):
 
 
 @stack_task(name='stacks.tag_infrastructure', final_task=True)
-def tag_infrastructure(stack, host_ids=None):
+def tag_infrastructure(stack, activity=None, host_ids=None):
     """
     Tags hosts and volumes with certain metadata that should prove useful
     to anyone using the AWS console.
@@ -595,6 +593,9 @@ def tag_infrastructure(stack, host_ids=None):
     we need to use the tagging API effectively.
     """
     logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
+
+    if activity is not None:
+        stack.set_activity(activity)
 
     # Log some history
     stack.log_history('Tagging stack infrastructure.')
@@ -607,14 +608,17 @@ def tag_infrastructure(stack, host_ids=None):
         volumes = stack.volumes.filter(host__in=hosts)
         driver.tag_resources(stack, hosts, volumes)
 
+    if activity is not None:
+        stack.set_activity(Activity.QUEUED)
+
 
 @stack_task(name='stacks.register_dns')
-def register_dns(stack, host_ids=None):
+def register_dns(stack, activity, host_ids=None):
     """
     Must be ran after a Stack is up and running and all host information has
     been pulled and stored in the database.
     """
-    stack.log_history('Registering hosts with DNS provider.', Activity.LAUNCHING)
+    stack.log_history('Registering hosts with DNS provider.', activity)
 
     logger.info('Registering DNS for stack: {0!r}'.format(stack))
 
@@ -626,7 +630,7 @@ def register_dns(stack, host_ids=None):
 
 
 @stack_task(name='stacks.ping')
-def ping(stack, interval=5, max_failures=10):
+def ping(stack, activity, interval=5, max_failures=10):
     """
     Attempts to use salt's test.ping module to ping the entire stack
     and confirm that all hosts are reachable by salt.
@@ -639,7 +643,7 @@ def ping(stack, interval=5, max_failures=10):
                    The timeout does not affect this parameter.
     @raises StackTaskException
     """
-    stack.log_history('Attempting to ping all hosts.', Activity.LAUNCHING)
+    stack.log_history('Attempting to ping all hosts.', activity)
     required_hosts = [h.hostname for h in stack.get_hosts()]
 
     client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
@@ -679,14 +683,12 @@ def ping(stack, interval=5, max_failures=10):
 
         if failures > max_failures:
             err_msg = 'Max failures ({0}) reached while pinging hosts.'.format(max_failures)
-            stack.log_history(err_msg, Activity.IDLE)
             raise StackTaskException(err_msg)
 
         time.sleep(interval)
 
     if false_hosts:
         err_msg = 'Unable to ping hosts: {0}'.format(', '.join(false_hosts))
-        stack.log_history(err_msg, Activity.IDLE)
         raise StackTaskException(err_msg)
 
     stack.log_history('All hosts pinged successfully.')
@@ -1357,7 +1359,7 @@ def destroy_stack(stack):
     hosts = stack.get_hosts()
 
     if hosts.count() > 0:
-        stack.log_history(
+        raise StackTaskException(
             'Stack appears to have hosts attached and can\'t be completely destroyed.'
         )
     else:
@@ -1368,13 +1370,13 @@ def destroy_stack(stack):
 
 
 @stack_task(name='stacks.unregister_dns')
-def unregister_dns(stack, host_ids=None):
+def unregister_dns(stack, activity, host_ids=None):
     """
     Removes all host information from DNS. Intended to be used just before a
     stack is terminated or stopped or put into some state where DNS no longer
     applies.
     """
-    stack.log_history('Unregistering hosts with DNS provider.', Activity.TERMINATING)
+    stack.log_history('Unregistering hosts with DNS provider.', activity)
 
     logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
 
@@ -1387,12 +1389,12 @@ def unregister_dns(stack, host_ids=None):
 
 
 @stack_task(name='stacks.execute_action')
-def execute_action(stack, action, *args, **kwargs):
+def execute_action(stack, action, activity, *args, **kwargs):
     """
     Executes a defined action using the stack's cloud provider implementation.
     Actions are defined on the implementation class (e.g, _action_{action})
     """
-    stack.set_activity(Activity.EXECUTING)
+    stack.set_activity(activity)
 
     logger.info('Executing action \'{0}\' on stack: {1!r}'.format(action, stack))
 

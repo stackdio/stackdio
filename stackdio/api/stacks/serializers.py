@@ -573,7 +573,7 @@ class StackLabelSerializer(StackdioLabelSerializer):
             logger.info('Tagging infrastructure...')
 
             # Spin up the task to tag everything
-            tasks.tag_infrastructure.si(label.object_id, None, False).apply_async()
+            tasks.tag_infrastructure.si(label.object_id).apply_async()
 
         return label
 
