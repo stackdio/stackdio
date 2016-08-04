@@ -279,8 +279,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
         host_ids = [h.id for h in hosts]
         if host_ids:
             models.Host.objects.filter(id__in=host_ids).update(
-                state=models.Host.DELETING,
-                state_reason='User initiated delete.'
+                activity=models.Activity.TERMINATING,
             )
 
             # Start the celery task chain to kill the hosts
@@ -673,31 +672,34 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
                                   'state first. At least one host is reporting an invalid '
                                   'state: {2}')
 
-                if action == driver.ACTION_START and host.state != driver.STATE_STOPPED:
+                if action == models.Action.RESUME and host.activity != models.Activity.PAUSED:
                     raise serializers.ValidationError({
-                        'action': [start_stop_msg.format('Start', driver.STATE_STOPPED, host.state)]
+                        'action': [start_stop_msg.format('Resume',
+                                                         models.Activity.PAUSED,
+                                                         host.activity)]
                     })
-                if action == driver.ACTION_STOP and host.state != driver.STATE_RUNNING:
+                if action == models.Action.PAUSE and host.activity != models.Activity.IDLE:
                     raise serializers.ValidationError({
-                        'action': [start_stop_msg.format('Stop', driver.STATE_RUNNING, host.state)]
+                        'action': [start_stop_msg.format('Pause', 'idle', host.activity)]
                     })
-                if action == driver.ACTION_TERMINATE and host.state not in (driver.STATE_RUNNING,
-                                                                            driver.STATE_STOPPED):
+                if action == models.Action.TERMINATE \
+                        and host.activity not in (models.Activity.IDLE, models.Activity.PAUSED):
                     raise serializers.ValidationError({
                         'action': [start_stop_msg.format('Terminate',
-                                                         'running or stopped',
-                                                         host.state)]
+                                                         'idle or paused',
+                                                         host.activity)]
                     })
 
                 require_running = (
-                    driver.ACTION_PROVISION,
-                    driver.ACTION_ORCHESTRATE
+                    models.Action.PROVISION,
+                    models.Action.ORCHESTRATE,
+                    models.Action.PROPAGATE_SSH,
                 )
 
-                if action in require_running and host.state != driver.STATE_RUNNING:
+                if action in require_running and host.activity != models.Activity.IDLE:
                     err_msg = ('Provisioning actions require all hosts to be in the '
-                               'running state first. At least one host is reporting '
-                               'an invalid state: {0}'.format(host.state))
+                               'idle state first. At least one host is reporting '
+                               'an invalid state: {0}'.format(host.activity))
                     raise serializers.ValidationError({
                         'action': [err_msg]
                     })

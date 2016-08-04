@@ -545,7 +545,7 @@ def update_metadata(stack, host_ids=None, remove_absent=True):
     driver_hosts = stack.get_driver_hosts_map(host_ids)
 
     for driver, hosts in driver_hosts.items():
-        bad_states = (driver.STATE_TERMINATED, driver.STATE_SHUTTING_DOWN)
+        bad_states = ('terminated', 'shutting-down')
 
         for host in hosts:
             logger.debug('Updating metadata for host {0}'.format(host))
@@ -1319,7 +1319,7 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
         known_hosts = hosts.exclude(instance_id='')
         if known_hosts:
             ok, result = driver.wait_for_state(known_hosts,
-                                               driver.STATE_TERMINATED,
+                                               'terminated',
                                                timeout=10 * 60)
             if not ok:
                 raise StackTaskException(result)

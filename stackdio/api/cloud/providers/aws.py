@@ -253,11 +253,6 @@ class AWSCloudProvider(BaseCloudProvider):
 
     REGION = 'region'
 
-    STATE_STOPPED = 'stopped'
-    STATE_RUNNING = 'running'
-    STATE_SHUTTING_DOWN = 'shutting-down'
-    STATE_TERMINATED = 'terminated'
-
     def __init__(self, *args, **kwargs):
         super(AWSCloudProvider, self).__init__(*args, **kwargs)
         self._ec2_connection = None
@@ -273,14 +268,15 @@ class AWSCloudProvider(BaseCloudProvider):
         ]
 
     def get_available_actions(self):
+        from stackdio.api.stacks.models import Action
         return [
-            self.ACTION_STOP,
-            self.ACTION_START,
-            self.ACTION_TERMINATE,
-            self.ACTION_LAUNCH,
-            self.ACTION_PROVISION,
-            self.ACTION_ORCHESTRATE,
-            self.ACTION_SSH,
+            Action.PAUSE,
+            Action.RESUME,
+            Action.TERMINATE,
+            Action.LAUNCH,
+            Action.PROVISION,
+            Action.ORCHESTRATE,
+            Action.PROPAGATE_SSH,
         ]
 
     def get_health_from_state(self, state):
@@ -1008,24 +1004,24 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return False
 
-    def _action_stop(self, stack, *args, **kwargs):
+    def _action_pause(self, stack, *args, **kwargs):
         """
         Stop all of the hosts on the given stack.
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    self.STATE_STOPPED,
+                                    'stopped',
                                     ec2.stop_instances,
                                     *args,
                                     **kwargs)
 
-    def _action_start(self, stack, *args, **kwargs):
+    def _action_resume(self, stack, *args, **kwargs):
         """
         Starts all of the hosts on the given stack.
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    self.STATE_RUNNING,
+                                    'running',
                                     ec2.start_instances,
                                     *args,
                                     **kwargs)
@@ -1036,7 +1032,7 @@ class AWSCloudProvider(BaseCloudProvider):
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    self.STATE_TERMINATED,
+                                    'terminated',
                                     ec2.terminate_instances,
                                     *args,
                                     **kwargs)
