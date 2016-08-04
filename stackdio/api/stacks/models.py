@@ -1236,9 +1236,15 @@ class ComponentMetadata(TimeStampedModel):
 
     host = models.ForeignKey('Host', related_name='component_metadatas')
 
-    status = models.CharField('Status', max_length=32, choices=STATUS_CHOICES, default=ComponentStatus.QUEUED)
+    status = models.CharField('Status',
+                              max_length=32,
+                              choices=STATUS_CHOICES,
+                              default=ComponentStatus.QUEUED)
 
-    health = models.CharField('Health', max_length=32, choices=HEALTH_CHOICES, default=Health.UNKNOWN)
+    health = models.CharField('Health',
+                              max_length=32,
+                              choices=HEALTH_CHOICES,
+                              default=Health.UNKNOWN)
 
     objects = ComponentMetadataQuerySet.as_manager()
 

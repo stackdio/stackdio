@@ -18,7 +18,7 @@
 
 import logging
 
-from actstream import action
+import actstream
 from celery import chain
 
 from stackdio.core.constants import Action, Activity
@@ -126,7 +126,7 @@ class LaunchWorkflow(BaseWorkflow):
         l.append(tasks.finish_stack.si(stack_id))
 
         self.stack.set_activity(Activity.QUEUED)
-        action.send(self.stack, verb='was submitted to launch queue')
+        actstream.action.send(self.stack, verb='was submitted to launch queue')
 
         return l
 

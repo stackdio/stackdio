@@ -536,50 +536,47 @@ def update_metadata(stack, activity, host_ids=None, remove_absent=True):
     # keep track of terminated hosts for future removal
     hosts_to_remove = []
 
-    driver_hosts = stack.get_driver_hosts_map(host_ids)
+    bad_states = ('terminated', 'shutting-down')
 
-    for driver, hosts in driver_hosts.items():
-        bad_states = ('terminated', 'shutting-down')
+    for host in stack.get_hosts(host_ids):
+        logger.debug('Updating metadata for host {0}'.format(host))
 
-        for host in hosts:
-            logger.debug('Updating metadata for host {0}'.format(host))
+        # FIXME: This is cloud provider specific. Should farm it out to
+        # the right implementation
+        host_data = query_results.get(host.hostname)
+        is_absent = host_data is None
 
-            # FIXME: This is cloud provider specific. Should farm it out to
-            # the right implementation
-            host_data = query_results.get(host.hostname)
-            is_absent = host_data is None
+        if isinstance(host_data, six.string_types):
+            raise TypeError('Expected dict, received {0}'.format(type(host_data)))
 
-            if isinstance(host_data, six.string_types):
-                raise TypeError('Expected dict, received {0}'.format(type(host_data)))
-
-            # Check for terminated host state
-            if is_absent or ('state' in host_data and host_data['state'] in bad_states):
-                if is_absent and remove_absent:
-                    hosts_to_remove.append(host)
-                    continue
-
-                # udpate relevant metadata
-                host.instance_id = ''
-                host.sir_id = 'NA'
-
-                host.state = 'Absent' if is_absent else host_data['state']
-
-                # if AWS gives a reason, save it with the host
-                if not is_absent:
-                    state_reason = host_data.get('stateReason', {}).get('message', None)
-                    if state_reason:
-                        host.state_reason = state_reason
-                host.save()
+        # Check for terminated host state
+        if is_absent or ('state' in host_data and host_data['state'] in bad_states):
+            if is_absent and remove_absent:
+                hosts_to_remove.append(host)
                 continue
 
-            # Process the host info
-            utils.process_host_info(host_data, host)
+            # udpate relevant metadata
+            host.instance_id = ''
+            host.sir_id = 'NA'
 
-            # save the host
+            host.state = 'Absent' if is_absent else host_data['state']
+
+            # if AWS gives a reason, save it with the host
+            if not is_absent:
+                state_reason = host_data.get('stateReason', {}).get('message', None)
+                if state_reason:
+                    host.state_reason = state_reason
             host.save()
+            continue
 
-        for h in hosts_to_remove:
-            h.delete()
+        # Process the host info
+        utils.process_host_info(host_data, host)
+
+        # save the host
+        host.save()
+
+    for h in hosts_to_remove:
+        h.delete()
 
 
 @stack_task(name='stacks.tag_infrastructure', final_task=True)
