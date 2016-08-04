@@ -281,11 +281,7 @@ class AWSCloudProvider(BaseCloudProvider):
         ]
 
     def get_health_from_state(self, state):
-        if state in ('terminated', 'shutting-down'):
-            return Health.UNHEALTHY
-        elif state in ('stopped', 'stopping'):
-            return Health.UNSTABLE
-        elif state in ('running',):
+        if state in ('running',):
             return Health.HEALTHY
         else:
             return Health.UNKNOWN

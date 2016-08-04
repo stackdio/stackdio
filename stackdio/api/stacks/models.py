@@ -343,7 +343,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         """
         Calculates the health of this stack from its hosts
         """
-        return Health.aggregate([host.health for host in self.hosts.all()])
+        healths = []
+        activities = set()
+
+        for host in self.hosts.all():
+            healths.append(host.health)
+            activities.add(host.activity)
+
+        if Activity.DEAD in activities:
+            return Health.UNKNOWN if len(activities) == 1 else Health.UNHEALTHY
+
+        return Health.aggregate(healths)
 
     def set_all_component_statuses(self, status):
         """
