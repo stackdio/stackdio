@@ -83,13 +83,14 @@ define([
                 this.labelClass('label-success');
                 break;
             case 'shutting-down':
-            case 'stopping':
+            case 'pausing':
+            case 'resuming':
             case 'launching':
             case 'deleting':
                 this.labelClass('label-warning');
                 break;
             case 'terminated':
-            case 'stopped':
+            case 'paused':
                 this.labelClass('label-danger');
                 break;
             case 'pending':

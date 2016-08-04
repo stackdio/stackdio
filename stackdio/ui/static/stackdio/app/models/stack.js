@@ -108,8 +108,8 @@ define([
         provision: 'This will re-run core provisioning, in addition to re-running all of your ' +
                    'custom formula components.  This may overwrite anything you have manually ' +
                    'changed on your hosts.',
-        start: '',
-        stop: '',
+        pause: '',
+        resume: '',
         terminate: 'This will terminate all infrastructure related to this stack.  ' +
                    'You can get it all back by later running the "launch" action on this stack.'
     };

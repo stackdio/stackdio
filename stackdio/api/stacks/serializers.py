@@ -665,27 +665,27 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         # Make sure the action is executable on all hosts
         for driver, hosts in driver_hosts_map.items():
             # check the action against current states (e.g., starting can't
-            # happen unless the hosts are in the stopped state.)
+            # happen unless the hosts are in the paused state.)
             # XXX: Assuming that host metadata is accurate here
             for host in hosts:
-                start_stop_msg = ('{0} action requires all hosts to be in the {1} '
-                                  'state first. At least one host is reporting an invalid '
-                                  'state: {2}')
+                resume_pause_msg = ('{0} action requires all hosts to be in the {1} '
+                                    'state first. At least one host is reporting an invalid '
+                                    'state: {2}')
 
                 if action == models.Action.RESUME and host.activity != models.Activity.PAUSED:
                     raise serializers.ValidationError({
-                        'action': [start_stop_msg.format('Resume',
+                        'action': [resume_pause_msg.format('Resume',
                                                          models.Activity.PAUSED,
                                                          host.activity)]
                     })
                 if action == models.Action.PAUSE and host.activity != models.Activity.IDLE:
                     raise serializers.ValidationError({
-                        'action': [start_stop_msg.format('Pause', 'idle', host.activity)]
+                        'action': [resume_pause_msg.format('Pause', 'idle', host.activity)]
                     })
                 if action == models.Action.TERMINATE \
                         and host.activity not in (models.Activity.IDLE, models.Activity.PAUSED):
                     raise serializers.ValidationError({
-                        'action': [start_stop_msg.format('Terminate',
+                        'action': [resume_pause_msg.format('Terminate',
                                                          'idle or paused',
                                                          host.activity)]
                     })

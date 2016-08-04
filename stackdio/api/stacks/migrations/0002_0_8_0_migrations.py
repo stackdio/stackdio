@@ -139,6 +139,10 @@ class Migration(migrations.Migration):
             name='activity',
             field=models.CharField(blank=True, choices=[(b'unknown', b'unknown'), (b'queued', b'queued'), (b'launching', b'launching'), (b'provisioning', b'provisioning'), (b'orchestrating', b'orchestrating'), (b'', b''), (b'pausing', b'pausing'), (b'paused', b'paused'), (b'resuming', b'resuming'), (b'terminating', b'terminating'), (b'terminated', b'terminated'), (b'executing', b'executing'), (b'dead', b'dead')], default=b'queued', max_length=32, verbose_name=b'Activity'),
         ),
+        migrations.AlterModelOptions(
+            name='stack',
+            options={'default_permissions': ('delete', 'execute', 'pause', 'launch', 'admin', 'create', 'resume', 'terminate', 'update', 'ssh', 'orchestrate', 'provision', 'view'), 'ordering': ('title',)},
+        ),
 
         # Stack Command things
         migrations.AlterField(
