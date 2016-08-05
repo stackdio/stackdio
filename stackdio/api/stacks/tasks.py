@@ -520,10 +520,11 @@ def cure_zombies(stack, max_retries=2):
             raise StackTaskException(err_msg)
 
 
-@stack_task(name='stacks.update_metadata')
-def update_metadata(stack, activity, host_ids=None, remove_absent=True):
-    # Update activity
-    stack.log_history('Collecting host metadata from cloud provider.', activity)
+@stack_task(name='stacks.update_metadata', final_task=True)
+def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
+    if activity is not None:
+        # Update activity
+        stack.log_history('Collecting host metadata from cloud provider.', activity)
 
     # All hosts are running (we hope!) so now we can pull the various
     # metadata and store what we want to keep track of.
@@ -578,6 +579,9 @@ def update_metadata(stack, activity, host_ids=None, remove_absent=True):
     for h in hosts_to_remove:
         h.delete()
 
+    if activity is not None:
+        stack.set_activity(Activity.QUEUED)
+
 
 @stack_task(name='stacks.tag_infrastructure', final_task=True)
 def tag_infrastructure(stack, activity=None, host_ids=None):
@@ -592,10 +596,8 @@ def tag_infrastructure(stack, activity=None, host_ids=None):
     logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
 
     if activity is not None:
-        stack.set_activity(activity)
-
-    # Log some history
-    stack.log_history('Tagging stack infrastructure.')
+        # Log some history
+        stack.log_history('Tagging stack infrastructure.', activity)
 
     # for each set of hosts on an account, use the driver implementation
     # to tag the various infrastructure
