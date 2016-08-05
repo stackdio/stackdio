@@ -629,7 +629,7 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
                 'action': ['{0} is not a valid action.'.format(action)]
             })
 
-        if stack.activity not in Activity.action_map.get(action, []):
+        if action not in Activity.action_map.get(stack.activity, []):
             err_msg = 'You may not perform the {0} action while the stack is {1}.'
             raise serializers.ValidationError({
                 'action': [err_msg.format(action, stack.activity)]
@@ -664,9 +664,10 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         stack = self.instance
         action = self.validated_data['action']
         args = self.validated_data.get('args', [])
+        request = self.context['request']
 
         stack.set_activity(Activity.QUEUED)
-        actstream.action.send(self.request.user, verb='executed {0}'.format(action), target=stack)
+        actstream.action.send(request.user, verb='executed {0}'.format(action), target=stack)
 
         # Utilize our workflow to run the action
         workflow = workflows.ActionWorkflow(stack, action, args)

@@ -1236,11 +1236,11 @@ def orchestrate(stack, max_retries=2):
 
 
 @stack_task(name='stacks.finish_stack', final_task=True)
-def finish_stack(stack):
+def finish_stack(stack, activity=Activity.IDLE):
     logger.info('Finishing stack: {0!r}'.format(stack))
 
     # Update activity
-    stack.set_activity(Activity.IDLE)
+    stack.set_activity(activity)
 
 
 @stack_task(name='stacks.register_volume_delete')
