@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 
+import json
 import os
 import sys
 
@@ -41,15 +42,10 @@ if (major, minor) not in supported_versions:
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
-components_dir = os.path.join(
-    root_dir,
-    'stackdio',
-    'ui',
-    'static',
-    'stackdio',
-    'lib',
-    'bower_components',
-)
+with open(os.path.join(root_dir, '.bowerrc')) as f:
+    bowerrc = json.load(f)
+
+components_dir = os.path.join(root_dir, bowerrc['directory'])
 
 # Force the user to install bower components first
 if not os.path.exists(components_dir):
@@ -63,8 +59,7 @@ from stackdio.server import __version__
 VERSION = __version__
 
 # Short and long descriptions for our package
-SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
-                     'platform for everyone.')
+SHORT_DESCRIPTION = 'A cloud deployment, automation, and orchestration platform for everyone.'
 
 # Grab README.md and use its contents as the long description
 with open('README.rst') as f:
