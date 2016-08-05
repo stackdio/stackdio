@@ -32,8 +32,10 @@ import boto.ec2
 import boto.vpc
 import yaml
 from boto.route53.record import ResourceRecordSets
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.serializers import ValidationError
 
+from stackdio.core.constants import Action, Health
 from stackdio.api.cloud.providers.base import (
     BaseCloudProvider,
     DeleteGroupException,
@@ -253,11 +255,6 @@ class AWSCloudProvider(BaseCloudProvider):
 
     REGION = 'region'
 
-    STATE_STOPPED = 'stopped'
-    STATE_RUNNING = 'running'
-    STATE_SHUTTING_DOWN = 'shutting-down'
-    STATE_TERMINATED = 'terminated'
-
     def __init__(self, *args, **kwargs):
         super(AWSCloudProvider, self).__init__(*args, **kwargs)
         self._ec2_connection = None
@@ -274,14 +271,20 @@ class AWSCloudProvider(BaseCloudProvider):
 
     def get_available_actions(self):
         return [
-            self.ACTION_STOP,
-            self.ACTION_START,
-            self.ACTION_TERMINATE,
-            self.ACTION_LAUNCH,
-            self.ACTION_PROVISION,
-            self.ACTION_ORCHESTRATE,
-            self.ACTION_SSH,
+            Action.PAUSE,
+            Action.RESUME,
+            Action.TERMINATE,
+            Action.LAUNCH,
+            Action.PROVISION,
+            Action.ORCHESTRATE,
+            Action.PROPAGATE_SSH,
         ]
+
+    def get_health_from_state(self, state):
+        if state in ('running',):
+            return Health.HEALTHY
+        else:
+            return Health.UNKNOWN
 
     def get_private_key_path(self):
         return os.path.join(self.provider_storage, 'id_rsa')
@@ -535,8 +538,6 @@ class AWSCloudProvider(BaseCloudProvider):
         return kwargs
 
     def delete_security_group(self, group_name):
-        from django.core.exceptions import ObjectDoesNotExist
-
         if self.account.vpc_id:
             try:
                 sg = self.account.security_groups.get(name=group_name)
@@ -728,7 +729,7 @@ class AWSCloudProvider(BaseCloudProvider):
                 record_value = host.provider_private_ip
                 record_type = 'A'
             else:
-                record_value = host.provider_dns
+                record_value = host.provider_public_dns
                 record_type = 'CNAME'
 
             logger.info('Registering DNS: {0} - {1}'.format(
@@ -767,12 +768,12 @@ class AWSCloudProvider(BaseCloudProvider):
                 record_value = host.provider_private_ip
                 record_type = 'A'
             else:
-                record_value = host.provider_dns
+                record_value = host.provider_public_dns
                 record_type = 'CNAME'
 
             if not record_value:
                 logger.info(
-                    'Host {0} has no provider_dns or provider_private_ip...'
+                    'Host {0} has no provider_public_dns or provider_private_ip...'
                     'skipping DNS deregister.'.format(host)
                 )
                 continue
@@ -975,14 +976,11 @@ class AWSCloudProvider(BaseCloudProvider):
     # ACTION IMPLEMENTATIONS BELOW
     ##
 
-    def _execute_action(self, stack, status, success_state, state_fun,
-                        *args, **kwargs):
+    def _execute_action(self, stack, success_state, state_fun, *args, **kwargs):
         """
         Generic function to handle most all states accordingly. If you need
         custom logic in the state handling, do so in the _action* methods.
         """
-        stack.set_status(status, status, '{0} all hosts in this stack.'.format(status.capitalize()))
-
         hosts = stack.get_hosts()
         instance_ids = [h.instance_id for h in hosts]
 
@@ -1000,26 +998,24 @@ class AWSCloudProvider(BaseCloudProvider):
 
         return False
 
-    def _action_stop(self, stack, *args, **kwargs):
+    def _action_pause(self, stack, *args, **kwargs):
         """
         Stop all of the hosts on the given stack.
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    stack.STOPPING,
-                                    self.STATE_STOPPED,
+                                    'stopped',
                                     ec2.stop_instances,
                                     *args,
                                     **kwargs)
 
-    def _action_start(self, stack, *args, **kwargs):
+    def _action_resume(self, stack, *args, **kwargs):
         """
         Starts all of the hosts on the given stack.
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    stack.STARTING,
-                                    self.STATE_RUNNING,
+                                    'running',
                                     ec2.start_instances,
                                     *args,
                                     **kwargs)
@@ -1030,8 +1026,7 @@ class AWSCloudProvider(BaseCloudProvider):
         """
         ec2 = self.connect_ec2()
         return self._execute_action(stack,
-                                    stack.TERMINATING,
-                                    self.STATE_TERMINATED,
+                                    'terminated',
                                     ec2.terminate_instances,
                                     *args,
                                     **kwargs)

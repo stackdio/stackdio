@@ -23,6 +23,8 @@ import shutil
 from django.conf import settings
 from rest_framework.serializers import ValidationError
 
+from stackdio.core.constants import Health
+
 logger = logging.getLogger(__name__)
 
 
@@ -86,16 +88,6 @@ class BaseCloudProvider(object):
     # Web Services' or 'Rackspace')
     LONG_NAME = None
 
-    # Actions that may be executed. Implement these
-    # actions below
-    ACTION_STOP = 'stop'
-    ACTION_START = 'start'
-    ACTION_TERMINATE = 'terminate'
-    ACTION_LAUNCH = 'launch'
-    ACTION_PROVISION = 'provision'
-    ACTION_ORCHESTRATE = 'orchestrate'
-    ACTION_SSH = 'propagate-ssh'
-
     def __init__(self, account=None, *args, **kwargs):
         if account:
             from stackdio.api.cloud.models import CloudAccount
@@ -115,8 +107,7 @@ class BaseCloudProvider(object):
                                              account.slug) if self.account else None
 
         # make sure the storage directory is available
-        if self.provider_storage and \
-           not os.path.isdir(self.provider_storage):
+        if self.provider_storage and not os.path.isdir(self.provider_storage):
             os.makedirs(self.provider_storage)
 
     def destroy(self):
@@ -150,6 +141,9 @@ class BaseCloudProvider(object):
             raise AttributeError('LONG_NAME must exist and be a string.')
 
         return cls.SHORT_NAME, cls.LONG_NAME
+
+    def get_health_from_state(self, state):
+        return Health.UNKNOWN
 
     def get_required_fields(self):
         """

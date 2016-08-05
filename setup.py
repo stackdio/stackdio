@@ -17,6 +17,7 @@
 
 from __future__ import print_function
 
+import json
 import os
 import sys
 
@@ -41,15 +42,10 @@ if (major, minor) not in supported_versions:
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
-components_dir = os.path.join(
-    root_dir,
-    'stackdio',
-    'ui',
-    'static',
-    'stackdio',
-    'lib',
-    'bower_components',
-)
+with open(os.path.join(root_dir, '.bowerrc')) as f:
+    bowerrc = json.load(f)
+
+components_dir = os.path.join(root_dir, bowerrc['directory'])
 
 # Force the user to install bower components first
 if not os.path.exists(components_dir):
@@ -63,8 +59,7 @@ from stackdio.server import __version__
 VERSION = __version__
 
 # Short and long descriptions for our package
-SHORT_DESCRIPTION = ('A cloud deployment, automation, and orchestration '
-                     'platform for everyone.')
+SHORT_DESCRIPTION = 'A cloud deployment, automation, and orchestration platform for everyone.'
 
 # Grab README.md and use its contents as the long description
 with open('README.rst') as f:
@@ -74,7 +69,8 @@ requirements = [
     'boto>=2.32.0',
     'celery>=3.1',
     'dj-database-url>=0.3',
-    'Django>=1.9.0,<1.10',
+    'Django>=1.9,<1.10',
+    'django-activity-stream>=0.6,<0.7',
     'django-auth-ldap>=1.2.7',
     'django-extensions>=1.6,<1.7',
     'django-filter>=0.9',
@@ -88,7 +84,7 @@ requirements = [
     'pip>=6',
     'PyYAML>=3.10',
     'requests>=2.4',
-    'salt>=2016.3.0,<2016.4',
+    'salt>=2016.3,<2016.4',
     'six>=1.6',
 ]
 

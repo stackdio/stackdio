@@ -27,33 +27,22 @@ from stackdio.api.cloud.models import CloudAccount
 logger = logging.getLogger(__name__)
 
 
-class StackdioView(TemplateView):
-
+class RootView(TemplateView):
+    """
+    We don't really have a home page, so let's redirect to either the
+    stack or account page depending on certain cases
+    """
     def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            return super(StackdioView, self).get(request, *args, **kwargs)
+        has_account_perm = request.user.has_perm('cloud.create_cloudaccount')
+
+        if has_account_perm and CloudAccount.objects.count() == 0:
+            # if the user has permission to create an account and there aren't any yet,
+            # take them there
+            redirect_view = 'ui:cloud-account-list'
         else:
-            redirect_url = resolve_url('ui:login')
-            if request.path != '/':
-                redirect_url = '{0}?next={1}'.format(redirect_url, request.path)
-            return HttpResponseRedirect(redirect_url)
-
-
-class RootView(StackdioView):
-    def get(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            has_account_perm = request.user.has_perm('cloud.create_cloudaccount')
-
-            if has_account_perm and CloudAccount.objects.count() == 0:
-                # if the user has permission to create an account and there aren't any yet,
-                # take them there
-                redirect_view = 'ui:cloud-account-list'
-            else:
-                # Otherwise just go to stacks
-                redirect_view = 'ui:stack-list'
-            return HttpResponseRedirect(resolve_url(redirect_view))
-        else:
-            return super(RootView, self).get(request, *args, **kwargs)
+            # Otherwise just go to stacks
+            redirect_view = 'ui:stack-list'
+        return HttpResponseRedirect(resolve_url(redirect_view))
 
 
 class AppMainView(TemplateView):
@@ -61,7 +50,7 @@ class AppMainView(TemplateView):
     content_type = 'application/javascript'
 
 
-class PageView(StackdioView):
+class PageView(TemplateView):
     viewmodel = None
 
     def __init__(self, **kwargs):

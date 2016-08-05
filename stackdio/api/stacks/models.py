@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+# pylint: disable=too-many-lines
 
 import json
 import logging
@@ -44,48 +45,12 @@ from rest_framework.exceptions import APIException
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import GroupExistsException
 from stackdio.api.volumes.models import Volume
+from stackdio.core.constants import Health, ComponentStatus, Activity
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.utils import recursive_update
 
-
-class Health(object):
-    HEALTHY = 'healthy'  # green
-    UNSTABLE = 'unstable'  # yellow
-    UNHEALTHY = 'unhealthy'  # red
-    UNKNOWN = 'unknown'  # grey
-
-    @classmethod
-    def aggregate(cls, health_list):
-        # Make sure everything in the list is a valid health
-        assert len([h for h in health_list if h not in vars(cls)]) == 0
-
-        # Make sure we don't have an empty list
-        assert len(health_list) > 0
-
-        if cls.UNHEALTHY in health_list:
-            return cls.UNHEALTHY
-        elif cls.UNSTABLE in health_list:
-            return cls.UNSTABLE
-        elif cls.UNKNOWN in health_list:
-            return cls.UNKNOWN
-        elif cls.HEALTHY in health_list:
-            return cls.HEALTHY
-
-        raise ValueError('This should never be reached...  Make sure you are '
-                         'assigning proper health values')
-
-
-class ComponentStatus(object):
-    # Unstable statuses
-    QUEUED = 'queued'
-    RUNNING = 'running'
-
-    # Stable statuses
-    SUCCEEDED = 'succeeded'
-    FAILED = 'failed'
-    CANCELLED = 'cancelled'
-    UNKNOWN = 'unknown'
+logger = logging.getLogger(__name__)
 
 
 PROTOCOL_CHOICES = [
@@ -93,8 +58,6 @@ PROTOCOL_CHOICES = [
     ('udp', 'UDP'),
     ('icmp', 'ICMP'),
 ]
-
-logger = logging.getLogger(__name__)
 
 HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
 
@@ -119,29 +82,8 @@ class StackCreationException(Exception):
         super(StackCreationException, self).__init__(*args, **kwargs)
 
 
-class Level(object):
-    DEBUG = 'DEBUG'
-    INFO = 'INFO'
-    WARN = 'WARNING'
-    ERROR = 'ERROR'
-
-
-class StatusDetailModel(StatusModel):
-    status_detail = models.TextField(blank=True)
-
-    class Meta:
-        abstract = True
-
-        default_permissions = ()
-
-    def set_status(self, status, detail=''):
-        self.status = status
-        self.status_detail = detail
-        return self.save()
-
-
 class StackQuerySet(SearchQuerySet):
-    searchable_fields = ('title', 'description', 'history__status_detail')
+    searchable_fields = ('title', 'description', 'history__message')
 
     def create(self, **kwargs):
         new_properties = kwargs.pop('properties', {})
@@ -175,8 +117,8 @@ _stack_object_permissions = (
     'provision',
     'orchestrate',
     'execute',
-    'start',
-    'stop',
+    'pause',
+    'resume',
     'terminate',
     'delete',
     'admin',
@@ -195,43 +137,10 @@ def get_orchestrate_file_path(instance, filename):
     return '{0}-{1}/formulas/__stackdio__/{2}'.format(instance.pk, instance.slug, filename)
 
 
-class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
-    # Launch workflow:
-    PENDING = 'pending'
-    LAUNCHING = 'launching'
-    CONFIGURING = 'configuring'
-    SYNCING = 'syncing'
-    PROVISIONING = 'provisioning'
-    ORCHESTRATING = 'orchestrating'
-    FINALIZING = 'finalizing'
-    FINISHED = 'finished'
-
-    # Delete workflow:
-    # PENDING
-    DESTROYING = 'destroying'
-    # FINISHED
-
-    # Other actions
-    # LAUNCHING
-    STARTING = 'starting'
-    STOPPING = 'stopping'
-    TERMINATING = 'terminating'
-    EXECUTING_ACTION = 'executing_action'
-
-    # Errors
-    ERROR = 'error'
-
-    SAFE_STATES = [FINISHED, ERROR]
-
-    # Not sure?
-    OK = 'ok'
-    RUNNING = 'running'
-    REBOOTING = 'rebooting'
-
-    STATUS = Choices(PENDING, LAUNCHING, CONFIGURING, SYNCING, PROVISIONING,
-                     ORCHESTRATING, FINALIZING, DESTROYING, FINISHED,
-                     STARTING, STOPPING, TERMINATING, EXECUTING_ACTION, ERROR)
-
+class Stack(TimeStampedModel, TitleSlugDescriptionModel):
+    """
+    The basic model for a stack
+    """
     model_permissions = _stack_model_permissions
     object_permissions = _stack_object_permissions
 
@@ -241,6 +150,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         default_permissions = tuple(set(_stack_model_permissions + _stack_object_permissions))
 
         unique_together = ('title',)
+
+    activity = models.CharField('Activity',
+                                max_length=32,
+                                blank=True,
+                                choices=Activity.ALL,
+                                default=Activity.QUEUED)
 
     # What blueprint did this stack derive from?
     blueprint = models.ForeignKey('blueprints.Blueprint', related_name='stacks')
@@ -325,11 +240,30 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
     def __unicode__(self):
         return u'{0} (id={1})'.format(self.title, self.id)
 
-    def set_status(self, event, status, detail, level=Level.INFO):
-        self.status = status
-        self.save()
-        self.history.create(event=event, status=status,
-                            status_detail=detail, level=level)
+    def log_history(self, message, activity=None):
+        """
+        Create a new history message and optionally set the activity on all hosts.
+        :param message: the history message to create
+        :param activity: the activity value to set on all hosts
+        """
+        if activity is not None:
+            self.set_activity(activity)
+
+        # Create a history
+        self.history.create(message=message)
+
+    def set_activity(self, activity):
+        """
+        Set the activity on all hosts in the stack
+        :param activity: the activity to set
+        """
+        # Make sure all host activities are saved atomically
+        with transaction.atomic(using=Stack.objects.db):
+            self.activity = activity
+            self.save()
+            for host in self.hosts.all():
+                host.activity = activity
+                host.save()
 
     @property
     def volumes(self):
@@ -388,15 +322,13 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
 
         return tags
 
-    @property
-    def properties(self):
+    def _get_properties(self):
         if not self.props_file:
             return {}
         with open(self.props_file.path, 'r') as f:
             return json.load(f)
 
-    @properties.setter
-    def properties(self, props):
+    def _set_properties(self, props):
         props_json = json.dumps(props, indent=4)
         if not self.props_file:
             self.props_file.save('stack.props', ContentFile(props_json))
@@ -404,36 +336,65 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             with open(self.props_file.path, 'w') as f:
                 f.write(props_json)
 
+    properties = property(_get_properties, _set_properties)
+
     @property
     def health(self):
         """
         Calculates the health of this stack from its hosts
         """
-        return Health.aggregate([host.health for host in self.hosts.all()])
+        healths = []
+        activities = set()
 
-    def set_component_status(self, sls_path, status, failed_hosts=None):
+        for host in self.hosts.all():
+            healths.append(host.health)
+            activities.add(host.activity)
+
+        if Activity.DEAD in activities:
+            return Health.UNKNOWN if len(activities) == 1 else Health.UNHEALTHY
+
+        return Health.aggregate(healths)
+
+    def set_all_component_statuses(self, status):
+        """
+        Will set the status for all components on all hosts to the given status
+        :param status: the status to set to
+        :return:
+        """
+        for host in self.hosts.all():
+            for component in host.formula_components.all():
+                current_health = host.get_metadata_for_component(component).health
+                host.component_metadatas.create(formula_component=component,
+                                                status=status,
+                                                current_health=current_health)
+
+    def set_component_status(self, sls_path, status, include_list=None, exclude_list=None):
         """
         Will set the status for all hosts for the sls_path to be `status`,
         except anything in failed_hosts will be set to "failed".
         :param sls_path: The sls_path to set the status on
         :param status: The status to set to
-        :param failed_hosts: Any hosts that failed
+        :param include_list: The hosts that need to be set.  If None, defaults to all hosts
+        :param exclude_list: The hosts to be excluded.  If None, nothing is excluded
         :return:
         """
-        failed_hosts = failed_hosts or []
+        include_list = include_list or []
+        exclude_list = exclude_list or []
 
         for host in self.hosts.all():
+            # If we have an include list, and the host isn't in it, skip it
+            if include_list and host.hostname not in include_list:
+                continue
+            # if the host is in the exclude list, skip it
+            if host.hostname in exclude_list:
+                continue
+
             for component in host.formula_components.all():
                 if component.sls_path == sls_path:
                     current_health = host.get_metadata_for_component(component).health
-                    if host.hostname in failed_hosts:
-                        host.component_metadatas.create(formula_component=component,
-                                                        status=ComponentStatus.FAILED,
-                                                        current_health=current_health)
-                    else:
-                        host.component_metadatas.create(formula_component=component,
-                                                        status=status,
-                                                        current_health=current_health)
+                    host.component_metadatas.create(formula_component=component,
+                                                    status=status,
+                                                    current_health=current_health)
 
     def create_security_groups(self):
         for hostdef in self.blueprint.host_definitions.all():
@@ -566,8 +527,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                     blueprint_host_definition=hostdef,
                     instance_size=hostdef.size,
                     hostname=hostname,
-                    sir_price=hostdef.spot_price,
-                    state=Host.PENDING
+                    sir_price=hostdef.spot_price
                 )
 
                 if hostdef.cloud_image.account.vpc_enabled:
@@ -761,7 +721,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
                 groups.setdefault(component.order, set()).add(component.sls_path)
 
         orchestrate = {}
-        for order in sorted(groups.keys()):
+        for order in sorted(groups):
             for role in groups[order]:
                 orchestrate[role] = {
                     'salt.state': [
@@ -802,7 +762,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
             for component in account.formula_components.all():
                 groups.setdefault(component.order, set()).add(component.sls_path)
 
-            for order in sorted(groups.keys()):
+            for order in sorted(groups):
                 for role in groups[order]:
                     state_title = '{0}_{1}'.format(account.slug, role)
                     orchestrate[state_title] = {
@@ -998,11 +958,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         return host_result
 
     def get_root_directory(self):
-        if self.map_file:
-            return os.path.dirname(self.map_file.path)
-        if self.props_file:
-            return os.path.dirname(self.props_file.path)
-        return None
+        return os.path.join(stack_storage.location, '{0}-{1}'.format(self.pk, self.slug))
 
     def get_log_directory(self):
         root_dir = self.get_root_directory()
@@ -1023,31 +979,16 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel, StatusModel):
         return list(roles)
 
 
-class StackHistory(TimeStampedModel, StatusDetailModel):
+class StackHistory(TimeStampedModel):
     class Meta:
         verbose_name_plural = 'stack history'
         ordering = ['-created', '-id']
 
         default_permissions = ()
 
-    STATUS = Stack.STATUS
-
     stack = models.ForeignKey('Stack', related_name='history')
 
-    # What 'event' (method name, task name, etc) that caused
-    # this status update
-    event = models.CharField(max_length=128)
-
-    # The human-readable description of the event
-    # status = models.TextField(blank=True)
-
-    # Optional: level (DEBUG, INFO, WARNING, ERROR, etc)
-    level = models.CharField(max_length=16, choices=(
-        (Level.DEBUG, Level.DEBUG),
-        (Level.INFO, Level.INFO),
-        (Level.WARN, Level.WARN),
-        (Level.ERROR, Level.ERROR),
-    ))
+    message = models.CharField('Message', max_length=256)
 
 
 class StackCommand(TimeStampedModel, StatusModel):
@@ -1109,16 +1050,17 @@ class StackCommand(TimeStampedModel, StatusModel):
             return ''
 
 
-class Host(TimeStampedModel, StatusDetailModel):
-    PENDING = 'pending'
-    OK = 'ok'
-    DELETING = 'deleting'
-    STATUS = Choices(PENDING, OK, DELETING)
-
+class Host(TimeStampedModel):
     class Meta:
         ordering = ['blueprint_host_definition', '-index']
 
         default_permissions = ()
+
+    activity = models.CharField('Activity',
+                                max_length=32,
+                                blank=True,
+                                choices=Activity.ALL,
+                                default=Activity.QUEUED)
 
     stack = models.ForeignKey('Stack',
                               related_name='hosts')
@@ -1135,16 +1077,18 @@ class Host(TimeStampedModel, StatusDetailModel):
                                              related_name='hosts')
 
     # The machine state as provided by the cloud account
+    # Would like to have choices, but these vary per cloud provider
+    # This is hidden from the user - only used internally
     state = models.CharField('State', max_length=32, default='unknown')
-    state_reason = models.CharField('State Reason', max_length=255, default='', blank=True)
 
     # This must be updated automatically after the host is online.
     # After salt-cloud has launched VMs, we will need to look up
     # the DNS name set by whatever cloud provider is being used
     # and set it here
-    provider_dns = models.CharField('Provider DNS', max_length=64, blank=True)
-    provider_private_dns = models.CharField('Provider Private DNS', max_length=64, blank=True)
-    provider_private_ip = models.CharField('Provider Private IP Address', max_length=64, blank=True)
+    provider_public_dns = models.CharField('Provider Public DNS', max_length=64, null=True)
+    provider_public_ip = models.GenericIPAddressField('Provider Public IP', blank=True, null=True)
+    provider_private_dns = models.CharField('Provider Private DNS', max_length=64, null=True)
+    provider_private_ip = models.GenericIPAddressField('Provider Private IP', blank=True, null=True)
 
     # The FQDN for the host. This includes the hostname and the
     # domain if it was registered with DNS
@@ -1171,12 +1115,23 @@ class Host(TimeStampedModel, StatusDetailModel):
     def __unicode__(self):
         return self.hostname
 
+    def set_activity(self, activity):
+        self.activity = activity
+        self.save()
+
     @property
     def health(self):
         """
         Calculates the health of this host from its component healths
         """
-        return Health.aggregate([m.health for m in self.get_current_component_metadatas()])
+        # Get all the healths of the components
+        healths = [m.health for m in self.get_current_component_metadatas()]
+
+        # Add the health from the driver
+        healths.append(self.get_driver().get_health_from_state(self.state))
+
+        # Aggregate them together
+        return Health.aggregate(healths)
 
     def get_current_component_metadatas(self):
         """
@@ -1272,13 +1227,19 @@ class ComponentMetadata(TimeStampedModel):
     HEALTH_CHOICES = tuple((x, x) for x in set(HEALTH_MAP.values()) if x is not None)
 
     # Fields
-    formula_component = models.ForeignKey('formulas.FormulaComponent', related_name='statuses')
+    formula_component = models.ForeignKey('formulas.FormulaComponent', related_name='metadatas')
 
     host = models.ForeignKey('Host', related_name='component_metadatas')
 
-    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default=ComponentStatus.QUEUED)
+    status = models.CharField('Status',
+                              max_length=32,
+                              choices=STATUS_CHOICES,
+                              default=ComponentStatus.QUEUED)
 
-    health = models.CharField(max_length=32, choices=HEALTH_CHOICES, default=Health.UNKNOWN)
+    health = models.CharField('Health',
+                              max_length=32,
+                              choices=HEALTH_CHOICES,
+                              default=Health.UNKNOWN)
 
     objects = ComponentMetadataQuerySet.as_manager()
 

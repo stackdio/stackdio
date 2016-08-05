@@ -24,9 +24,9 @@
                     <label>Namespace</label>
                     <p class="form-control-static" data-bind="text: stack.namespace"></p>
                 </div>
-                <div id="status" class="form-group">
-                    <label>Status</label>
-                    <p class="form-control-static"><span class="label" data-bind="css: stack.labelClass, text: stack.status"></span></p>
+                <div id="activity" class="form-group">
+                    <label>Activity</label>
+                    <p class="form-control-static"><span class="label" data-bind="css: stack.labelClass, text: stack.activity"></span></p>
                 </div>
                 <div id="health" class="form-group">
                     <label>Health</label>
@@ -79,9 +79,8 @@
 
 <div class="col-sm-3 col-sm-pull-3">
     <div class="list-group" data-bind="foreach: stack.history" style="height: 500px; overflow-y: scroll">
-        <a class="list-group-item history-entry" data-bind="css: itemClass">
-            <h5><strong data-bind="text: status.capitalize()"></strong></h5>
-            <p data-bind="text: status_detail"></p>
+        <a class="list-group-item history-entry">
+            <h5><strong data-bind="text: message"></strong></h5>
             <p data-bind="text: timestamp.calendar()"></p>
         </a>
     </div>

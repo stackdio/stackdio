@@ -29,11 +29,11 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 import logging
 import os
 
-from django.contrib.messages import constants as messages
 import dj_database_url
+from celery.schedules import crontab
+from django.contrib.messages import constants as messages
 
 from stackdio.core.config import StackdioConfig
-
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'actstream',
     'guardian',
     'stackdio.core',
     'stackdio.api.users',
@@ -92,14 +93,14 @@ INSTALLED_APPS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'stackdio.core.middleware.LoginRedirectMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -113,6 +114,7 @@ ANONYMOUS_USER_ID = -1
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'debug': DEBUG,
@@ -120,6 +122,7 @@ TEMPLATES = [
                 'django.template.context_processors.csrf',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
+                'django.template.context_processors.tz',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -149,6 +152,25 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': dj_database_url.parse(STACKDIO_CONFIG.database_url)
 }
+
+
+# Password validation
+# https://docs.djangoproject.com/en/1.9/ref/settings/#auth-password-validators
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 
 # Internationalization
@@ -332,15 +354,14 @@ CELERY_ACCEPT_CONTENT = ['json']
 
 # Configure queues
 CELERY_ROUTES = {
-    'formulas.import_formula': {'queue': 'formulas'},
-    'formulas.update_formula': {'queue': 'formulas'},
+    'formulas.import_formula': {'queue': 'short'},
+    'formulas.update_formula': {'queue': 'short'},
     'stacks.cure_zombies': {'queue': 'stacks'},
     'stacks.destroy_hosts': {'queue': 'stacks'},
     'stacks.destroy_stack': {'queue': 'stacks'},
-    'stacks.execute_action': {'queue': 'stacks'},
+    'stacks.execute_action': {'queue': 'short'},
     'stacks.finish_stack': {'queue': 'stacks'},
     'stacks.global_orchestrate': {'queue': 'stacks'},
-    'stacks.handle_error': {'queue': 'stacks'},
     'stacks.highstate': {'queue': 'stacks'},
     'stacks.launch_hosts': {'queue': 'stacks'},
     'stacks.orchestrate': {'queue': 'stacks'},
@@ -348,11 +369,20 @@ CELERY_ROUTES = {
     'stacks.propagate_ssh': {'queue': 'stacks'},
     'stacks.register_dns': {'queue': 'stacks'},
     'stacks.register_volume_delete': {'queue': 'stacks'},
-    'stacks.run_command': {'queue': 'stacks'},
+    'stacks.run_command': {'queue': 'short'},
     'stacks.sync_all': {'queue': 'stacks'},
     'stacks.tag_infrastructure': {'queue': 'stacks'},
     'stacks.unregister_dns': {'queue': 'stacks'},
+    'stacks.update_host_info': {'queue': 'short'},
     'stacks.update_metadata': {'queue': 'stacks'},
+}
+
+CELERYBEAT_SCHEDULE = {
+    'update-host-info': {
+        'task': 'stacks.update_host_info',
+        'schedule': crontab(minute='*/5'),  # Execute every 5 minutes
+        'args': (),
+    },
 }
 
 ##

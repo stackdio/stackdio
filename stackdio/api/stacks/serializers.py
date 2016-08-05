@@ -21,6 +21,7 @@ import os
 import string
 from collections import OrderedDict
 
+import actstream
 import salt.cloud
 import six
 from django.conf import settings
@@ -34,6 +35,7 @@ from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerialize
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
 from stackdio.api.formulas.serializers import FormulaComponentSerializer, FormulaVersionSerializer
+from stackdio.core.constants import Action, Activity, ComponentStatus, Health
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
@@ -85,15 +87,27 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
 
 class HostComponentSerializer(FormulaComponentSerializer):
     status = serializers.SerializerMethodField()
+    health = serializers.SerializerMethodField()
     timestamp = serializers.SerializerMethodField()
+
+    def _get_metadata(self, obj):
+        if not hasattr(self, '_metadata'):
+            self._metadata = obj.get_metadata_for_host(self.parent.parent.host)
+        return self._metadata
 
     def get_status(self, obj):
         # This relies on the parent serializer setting the host attribute
         # (see to_representation() in the HostSerializer class)
-        return obj.get_status_for_host(self.parent.parent.host).status
+        meta = self._get_metadata(obj)
+        return meta.status if meta else ComponentStatus.UNKNOWN
+
+    def get_health(self, obj):
+        meta = self._get_metadata(obj)
+        return meta.health if meta else Health.UNKNOWN
 
     def get_timestamp(self, obj):
-        return obj.get_status_for_host(self.parent.parent.host).modified
+        meta = self._get_metadata(obj)
+        return meta.modified if meta else None
 
     class Meta(FormulaComponentSerializer.Meta):
         fields = (
@@ -103,6 +117,7 @@ class HostComponentSerializer(FormulaComponentSerializer):
             'sls_path',
             'order',
             'status',
+            'health',
             'timestamp',
         )
 
@@ -128,15 +143,13 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
         fields = (
             'url',
             'hostname',
-            'provider_dns',
+            'fqdn',
+            'provider_public_dns',
+            'provider_public_ip',
             'provider_private_dns',
             'provider_private_ip',
-            'fqdn',
             'health',
-            'state',
-            'state_reason',
-            'status',
-            'status_detail',
+            'activity',
             'availability_zone',
             'subnet_id',
             'created',
@@ -152,14 +165,13 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
 
         read_only_fields = (
             'hostname',
-            'provider_dns',
+            'provider_public_dns',
+            'provider_public_ip',
             'provider_private_dns',
             'provider_private_ip',
             'fqdn',
-            'state',
-            'state_reason',
-            'status',
-            'status_detail',
+            'health',
+            'activity',
             'subnet_id',
             'sir_id',
             'sir_price',
@@ -218,10 +230,10 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
                 errors.setdefault('count', []).append(err_msg)
 
         # Make sure the stack is in a valid state
-        if stack.status != models.Stack.FINISHED:
+        if stack.activity != Activity.IDLE:
             err_msg = 'You may not add hosts to the stack in its current state: {0}'
             raise serializers.ValidationError({
-                'stack': [err_msg.format(stack.status)]
+                'stack': [err_msg.format(stack.activity)]
             })
 
         # Make sure that the host definition belongs to the proper blueprint
@@ -268,8 +280,7 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
         host_ids = [h.id for h in hosts]
         if host_ids:
             models.Host.objects.filter(id__in=host_ids).update(
-                state=models.Host.DELETING,
-                state_reason='User initiated delete.'
+                activity=Activity.TERMINATING,
             )
 
             # Start the celery task chain to kill the hosts
@@ -295,11 +306,8 @@ class StackHistorySerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.StackHistory
         fields = (
-            'event',
-            'status',
-            'status_detail',
-            'level',
-            'created'
+            'message',
+            'created',
         )
 
 
@@ -367,7 +375,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'blueprint',
             'title',
             'description',
-            'status',
+            'activity',
             'health',
             'namespace',
             'create_users',
@@ -395,7 +403,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         )
 
         read_only_fields = (
-            'status',
+            'activity',
+            'health',
         )
 
         extra_kwargs = {
@@ -564,7 +573,7 @@ class StackLabelSerializer(StackdioLabelSerializer):
             logger.info('Tagging infrastructure...')
 
             # Spin up the task to tag everything
-            tasks.tag_infrastructure.si(label.object_id, None, False).apply_async()
+            tasks.tag_infrastructure.si(label.object_id).apply_async()
 
         return label
 
@@ -608,84 +617,32 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         action = attrs['action']
         request = self.context['request']
 
-        if stack.status not in models.Stack.SAFE_STATES:
-            raise serializers.ValidationError({
-                'action': ['You may not perform an action while the stack is in its current state.']
-            })
-
-        driver_hosts_map = stack.get_driver_hosts_map()
-        total_host_count = len(stack.get_hosts().exclude(instance_id=''))
-
-        available_actions = set()
-
-        # check the individual provider for available actions
-        for driver in driver_hosts_map:
-            host_available_actions = driver.get_available_actions()
-            if action not in host_available_actions:
-                err_msg = ('At least one of the hosts in this stack does not support '
-                           'the requested action.')
-                raise serializers.ValidationError({
-                    'action': [err_msg]
-                })
-            available_actions.update(host_available_actions)
-
-        if action not in available_actions:
+        if action not in Action.ALL:
             raise serializers.ValidationError({
                 'action': ['{0} is not a valid action.'.format(action)]
             })
 
+        if stack.activity not in Activity.action_map.get(action, []):
+            err_msg = 'You may not perform the {0} action while the stack is {1}.'
+            raise serializers.ValidationError({
+                'action': [err_msg.format(action, stack.activity)]
+            })
+
+        total_host_count = len(stack.get_hosts().exclude(instance_id=''))
+
         # Check to make sure the user is authorized to execute the action
-        if action not in utils.filter_actions(request.user, stack, available_actions):
+        if action not in utils.filter_actions(request.user, stack, Action.ALL):
             raise PermissionDenied(
                 'You are not authorized to run the "{0}" action on this stack'.format(action)
             )
 
         # All actions other than launch require hosts to be available
-        if action != 'launch' and total_host_count == 0:
+        if action != Action.LAUNCH and total_host_count == 0:
             err_msg = ('The submitted action requires the stack to have available hosts. '
                        'Perhaps you meant to run the launch action instead.')
             raise serializers.ValidationError({
                 'action': [err_msg]
             })
-
-        # Make sure the action is executable on all hosts
-        for driver, hosts in driver_hosts_map.items():
-            # check the action against current states (e.g., starting can't
-            # happen unless the hosts are in the stopped state.)
-            # XXX: Assuming that host metadata is accurate here
-            for host in hosts:
-                start_stop_msg = ('{0} action requires all hosts to be in the {1} '
-                                  'state first. At least one host is reporting an invalid '
-                                  'state: {2}')
-
-                if action == driver.ACTION_START and host.state != driver.STATE_STOPPED:
-                    raise serializers.ValidationError({
-                        'action': [start_stop_msg.format('Start', driver.STATE_STOPPED, host.state)]
-                    })
-                if action == driver.ACTION_STOP and host.state != driver.STATE_RUNNING:
-                    raise serializers.ValidationError({
-                        'action': [start_stop_msg.format('Stop', driver.STATE_RUNNING, host.state)]
-                    })
-                if action == driver.ACTION_TERMINATE and host.state not in (driver.STATE_RUNNING,
-                                                                            driver.STATE_STOPPED):
-                    raise serializers.ValidationError({
-                        'action': [start_stop_msg.format('Terminate',
-                                                         'running or stopped',
-                                                         host.state)]
-                    })
-
-                require_running = (
-                    driver.ACTION_PROVISION,
-                    driver.ACTION_ORCHESTRATE
-                )
-
-                if action in require_running and host.state != driver.STATE_RUNNING:
-                    err_msg = ('Provisioning actions require all hosts to be in the '
-                               'running state first. At least one host is reporting '
-                               'an invalid state: {0}'.format(host.state))
-                    raise serializers.ValidationError({
-                        'action': [err_msg]
-                    })
 
         return attrs
 
@@ -701,9 +658,8 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         action = self.validated_data['action']
         args = self.validated_data.get('args', [])
 
-        stack.set_status(models.Stack.EXECUTING_ACTION,
-                         models.Stack.EXECUTING_ACTION,
-                         'Stack is executing action \'{0}\''.format(action))
+        stack.set_activity(Activity.QUEUED)
+        actstream.action.send(self.request.user, verb='executed {0}'.format(action), target=stack)
 
         # Utilize our workflow to run the action
         workflow = workflows.ActionWorkflow(stack, action, args)

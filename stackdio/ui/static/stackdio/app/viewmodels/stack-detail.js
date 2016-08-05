@@ -71,7 +71,7 @@ define([
 
         // Functions
         self.refreshStack = function () {
-            self.stack.refreshStatus().fail(function () {
+            self.stack.refreshActivity().fail(function () {
                 window.location = '/stacks/';
             });
             self.stack.loadHistory();

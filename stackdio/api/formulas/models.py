@@ -30,8 +30,8 @@ from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 from model_utils import Choices
+from model_utils.models import StatusModel
 
-from stackdio.api.stacks.models import StatusDetailModel
 from stackdio.core.models import SearchQuerySet
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,20 @@ class FormulaVersion(models.Model):
     content_object = GenericForeignKey()
     formula = models.ForeignKey('formulas.Formula')
     version = models.CharField('Formula Version', max_length=100)
+
+
+class StatusDetailModel(StatusModel):
+    status_detail = models.TextField(blank=True)
+
+    class Meta:
+        abstract = True
+
+        default_permissions = ()
+
+    def set_status(self, status, detail=''):
+        self.status = status
+        self.status_detail = detail
+        return self.save()
 
 
 _formula_model_permissions = (
@@ -370,11 +384,11 @@ class FormulaComponent(TimeStampedModel):
             self._full_component = self.formula.components[self.sls_path]
         return self._full_component['description']
 
-    def get_status_for_host(self, host):
+    def get_metadata_for_host(self, host):
         """
         Get the current status of a given host
         """
-        return self.statuses.filter(host=host).order_by('-modified').first()
+        return self.metadatas.filter(host=host).order_by('-modified').first()
 
 
 ##

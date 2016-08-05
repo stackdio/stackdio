@@ -27,8 +27,8 @@ import git
 from celery import shared_task
 from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=import-error
 
-from .models import Formula
 from stackdio.api.formulas.validators import validate_specfile, validate_component
+from .models import Formula
 
 logger = logging.getLogger(__name__)
 
