@@ -23,6 +23,7 @@ from os import listdir
 from os.path import join, isfile
 
 import envoy
+from actstream import action
 from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
@@ -31,6 +32,7 @@ from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
 from six import StringIO
 
+from stackdio.core.constants import Activity
 from stackdio.core.models import Label
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
@@ -102,8 +104,8 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     def perform_destroy(self, instance):
         stack = instance
 
-        # Check the status
-        if stack.status not in models.Stack.SAFE_STATES:
+        # Check the activity
+        if stack.activity not in Activity.can_delete:
             err_msg = ('You may not delete this stack in its current state.  Please wait until '
                        'it is finished with the current action.')
             raise ValidationError({
@@ -111,9 +113,8 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             })
 
         # Update the status
-        msg = 'Stack will be removed upon successful termination of all machines'
-        stack.set_status(models.Stack.DESTROYING,
-                         models.Stack.DESTROYING, msg)
+        stack.set_activity(Activity.QUEUED)
+        action.send(self.request.user, verb='deleted', action_object=instance)
 
         # Execute the workflow to delete the infrastructure
         workflow = workflows.DestroyStackWorkflow(stack, opts=self.request.data)
@@ -159,11 +160,10 @@ class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         stack = self.get_stack()
-        driver_hosts_map = stack.get_driver_hosts_map()
-        available_actions = set()
-        for driver in driver_hosts_map:
-            available_actions.update(driver.get_available_actions())
+        # Grab the list of available actions for the current stack activity
+        available_actions = Activity.action_map.get(stack.activity, [])
 
+        # Filter them based on permissions
         available_actions = utils.filter_actions(request.user, stack, available_actions)
 
         return Response({
@@ -370,13 +370,14 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
     def perform_destroy(self, instance):
         stack = instance.stack
 
-        if stack.status != models.Stack.FINISHED:
+        if stack.activity not in Activity.can_delete:
             err_msg = 'You may not delete hosts on this stack in its current state: {0}'
             raise ValidationError({
-                'stack': [err_msg.format(stack.status)]
+                'stack': [err_msg.format(stack.activity)]
             })
 
-        instance.set_status(models.Host.DELETING, 'Deleting host.')
+        instance.set_activity(Activity.QUEUED)
+        action.send(self.request.user, verb='deleted', action_object=instance)
 
         host_ids = [instance.id]
 

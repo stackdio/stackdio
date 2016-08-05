@@ -38,7 +38,8 @@ from django.conf import settings
 from msgpack.exceptions import ExtraData
 from salt.log.setup import LOG_LEVELS
 
-from . import models
+from stackdio.api.volumes.models import Volume
+from stackdio.core.constants import Action, ComponentStatus
 
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
@@ -552,15 +553,15 @@ def process_orchestrate_result(result, stack, log_file, err_file):
                 )
                 # No changes, so set based on the comment
                 if ERROR_REQUISITE in sls_result['comment']:
-                    stack.set_component_status(sls_dict['name'], models.ComponentStatus.CANCELLED)
+                    stack.set_component_status(sls_dict['name'], ComponentStatus.CANCELLED)
                 else:
-                    stack.set_component_status(sls_dict['name'], models.ComponentStatus.FAILED)
+                    stack.set_component_status(sls_dict['name'], ComponentStatus.FAILED)
                 status_set = True
 
         if sls_result.get('result', False):
             # This whole sls is good!  Just continue on with the next one.
             if not status_set:
-                stack.set_component_status(sls_dict['name'], models.ComponentStatus.SUCCEEDED)
+                stack.set_component_status(sls_dict['name'], ComponentStatus.SUCCEEDED)
             continue
 
         # Process the data for this sls
@@ -575,13 +576,13 @@ def process_orchestrate_result(result, stack, log_file, err_file):
         if not status_set:
             # Set the status to FAILED on everything that failed
             stack.set_component_status(sls_dict['name'],
-                                       models.ComponentStatus.FAILED,
+                                       ComponentStatus.FAILED,
                                        local_failed_hosts)
 
             if local_failed and local_failed_hosts:
                 # Set the status to SUCCEEDED on everything that didn't fail
                 stack.set_component_status(sls_dict['name'],
-                                           models.ComponentStatus.SUCCEEDED,
+                                           ComponentStatus.SUCCEEDED,
                                            [],
                                            local_failed_hosts)
 
@@ -599,12 +600,75 @@ def filter_actions(user, stack, actions):
         the_action = action
         if action == 'command':
             the_action = 'execute'
-        elif action == 'propagate-ssh':
+        elif action == Action.PROPAGATE_SSH:
             the_action = 'admin'
         if user.has_perm('stacks.{0}_stack'.format(the_action.lower()), stack):
             ret.append(action)
 
     return ret
+
+
+def process_host_info(host_info, host):
+    """
+    Process the host info object received from salt cloud.
+    This *DOES NOT* save the host, it only updates fields on the host.
+    :param host_info: the salt-cloud host dict
+    :param host: the stackdio host object
+    """
+    # The instance id of the host
+    host.instance_id = host_info.get('instanceId') or ''
+
+    # Get the host's public IP/host set by the cloud provider. This
+    # is used later when we tie the machine to DNS
+    host.provider_public_dns = host_info.get('dnsName')
+    host.provider_private_dns = host_info.get('privateDnsName')
+
+    # If the instance is stopped, 'privateIpAddress' isn't in the returned dict, so this
+    # throws an exception if we don't use host_data.get().  I changed the above two
+    # keys to do the same for robustness
+    host.provider_public_ip = host_info.get('ipAddress')
+    host.provider_private_ip = host_info.get('privateIpAddress')
+
+    # update volume information
+    block_device_mappings_parent = host_info.get('blockDeviceMapping') or {}
+    block_device_mappings = block_device_mappings_parent.get('item') or []
+
+    if not isinstance(block_device_mappings, list):
+        block_device_mappings = [block_device_mappings]
+
+    # for each block device mapping found on the running host,
+    # try to match the device name up with that stored in the DB
+    # if a match is found, fill in the metadata and save the volume
+    for bdm in block_device_mappings:
+        bdm_volume_id = bdm['ebs']['volumeId']
+        try:
+            # attempt to get the volume for this host that
+            # has been created
+            volume = host.volumes.get(device=bdm['deviceName'])
+
+            # update the volume information if needed
+            if volume.volume_id != bdm_volume_id:
+                volume.volume_id = bdm['ebs']['volumeId']
+                volume.attach_time = bdm['ebs']['attachTime']
+
+                # save the new volume info
+                volume.save()
+
+        except Volume.DoesNotExist:
+            # This is most likely fine. Usually means that the
+            # EBS volume for the root drive was found instead.
+            pass
+        except Exception:
+            err_msg = 'Unhandled exception while updating volume metadata.'
+            logger.exception(err_msg)
+            logger.debug(block_device_mappings)
+            raise
+
+    # Update spot instance metadata
+    if 'spotInstanceRequestId' in host_info:
+        host.sir_id = host_info['spotInstanceRequestId']
+    else:
+        host.sir_id = ''
 
 
 def get_salt_cloud_log_file(stack, suffix):

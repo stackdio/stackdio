@@ -38,7 +38,7 @@ define([
             {name: 'namespace', displayName: 'Namespace', width: '10%'},
             {name: 'created', displayName: 'Launched', width: '15%'},
             {name: 'hostCount', displayName: 'Hosts', width: '8%'},
-            {name: 'status', displayName: 'Status', width: '10%'},
+            {name: 'activity', displayName: 'Activity', width: '10%'},
             {name: 'health', displayName: 'Health', width: '10%'}
         ],
         openActionStackId: null,
