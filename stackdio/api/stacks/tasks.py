@@ -1268,7 +1268,7 @@ def register_volume_delete(stack, host_ids=None):
     stack.log_history('Finished registering volumes for deletion.')
 
 
-@stack_task(name='stacks.destroy_hosts')
+@stack_task(name='stacks.destroy_hosts', final_task=True)
 def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_groups=True,
                   parallel=True):
     """
@@ -1350,6 +1350,8 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
     # delete hosts
     if delete_hosts and hosts:
         hosts.delete()
+
+    stack.log_history('Finished terminating hosts.', Activity.TERMINATED)
 
 
 @stack_task(name='stacks.destroy_stack', final_task=True)
