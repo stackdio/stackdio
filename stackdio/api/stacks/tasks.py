@@ -1487,7 +1487,9 @@ def update_host_info():
 
                 # If we're queued or launching, we may have just not been launched yet,
                 # so we don't want to be dead in that case
-                if host.activity not in (Activity.QUEUED, Activity.LAUNCHING):
+                # Also if we're terminating or terminated, we don't want to be set to dead
+                if host.activity not in (Activity.QUEUED, Activity.LAUNCHING,
+                                         Activity.TERMINATED, Activity.TERMINATING):
                     host.activity = Activity.DEAD
             else:
                 host.state = host_info['state']
