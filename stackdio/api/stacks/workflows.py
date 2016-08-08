@@ -148,7 +148,7 @@ class DestroyHostsWorkflow(BaseWorkflow):
             tasks.destroy_hosts.si(stack_id,
                                    host_ids=host_ids,
                                    delete_security_groups=False),
-            tasks.finish_stack.si(stack_id),
+            tasks.finish_stack.si(stack_id, Activity.TERMINATED),
         ]
 
 
@@ -221,6 +221,16 @@ class ActionWorkflow(BaseWorkflow):
             Action.PROPAGATE_SSH: Activity.PROVISIONING,
         }
 
+        action_to_end_activity = {
+            Action.LAUNCH: Activity.IDLE,
+            Action.TERMINATE: Activity.TERMINATED,
+            Action.PAUSE: Activity.PAUSED,
+            Action.RESUME: Activity.IDLE,
+            Action.PROVISION: Activity.IDLE,
+            Action.ORCHESTRATE: Activity.IDLE,
+            Action.PROPAGATE_SSH: Activity.IDLE,
+        }
+
         # Start off with the base
         task_list = base_tasks.get(self.action, [])
 
@@ -251,6 +261,6 @@ class ActionWorkflow(BaseWorkflow):
             task_list.append(tasks.orchestrate.si(self.stack.id, 2))
 
         # Always finish the stack
-        task_list.append(tasks.finish_stack.si(self.stack.id))
+        task_list.append(tasks.finish_stack.si(self.stack.id, action_to_end_activity[self.action]))
 
         return task_list
