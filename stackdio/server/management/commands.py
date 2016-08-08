@@ -479,20 +479,12 @@ class ConfigCommand(BaseCommand):
 
     def run(self):
         config = self.stackdio_config()
-        stackdio_root = self.load_resource()
         context = {
-            'stackdio_root': stackdio_root,
             'storage_dir': config.storage_dir,
         }
         if self.args.type == 'stackdio':
             print(json.dumps(config, indent=4))
             return
-        elif self.args.type == 'apache':
-            context.update({
-                'user': config.user,
-                'with_ssl': self.args.with_ssl,
-            })
-            tmpl = 'apache2.jinja2'
         elif self.args.type == 'nginx':
             context.update({
                 'with_ssl': self.args.with_ssl
