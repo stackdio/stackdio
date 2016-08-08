@@ -20,21 +20,25 @@ import getpass
 import os
 
 import yaml
-from django.core.exceptions import ImproperlyConfigured
 from django.utils.crypto import get_random_string
 from jinja2 import Template
 
-
+# Get the stackdio base dir.  Mostly only useful when not installing with pip.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 SECRET_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
 
 
+class StackdioConfigException(Exception):
+    pass
+
+
 class StackdioConfig(dict):
     CONFIG_LOCATIONS = (
-        '/etc/stackdio/stackdio.yaml',
+        os.environ.get('STACKDIO_CONFIG_FILE', ''),
+        '/etc/stackdio/server.yaml',
         'config/stackdio.yaml',
-        '~/.stackdio/server.yaml',
+        os.path.expanduser('~/.stackdio/server.yaml'),
     )
 
     REQUIRED_FIELDS = (
@@ -59,14 +63,13 @@ class StackdioConfig(dict):
 
     def _load_stackdio_config(self):
         for cfg_file in self.CONFIG_LOCATIONS:
-            cfg_file = os.path.expanduser(cfg_file)
             cfg_file = os.path.join(BASE_DIR, cfg_file)
             if os.path.isfile(cfg_file):
                 self.cfg_file = cfg_file
                 break
 
         if self.cfg_file is None:
-            raise ImproperlyConfigured(
+            raise StackdioConfigException(
                 'Missing stackdio configuration file. '
                 'To create the file, you may use `stackdio init`'
             )
@@ -76,7 +79,7 @@ class StackdioConfig(dict):
             stackdio_config = yaml.safe_load(template.render(**self.DEFAULT_CONTEXT))
 
         if not stackdio_config:
-            raise ImproperlyConfigured(
+            raise StackdioConfigException(
                 'stackdio configuration file appears to be empty or not valid yaml.'
             )
 
@@ -89,7 +92,7 @@ class StackdioConfig(dict):
             msg = 'stackdio configuration errors:\n'
             for err in errors:
                 msg += '  - {0}\n'.format(err)
-            raise ImproperlyConfigured(msg)
+            raise StackdioConfigException(msg)
 
         self.update(stackdio_config)
 
@@ -113,7 +116,7 @@ class StackdioConfig(dict):
         self.salt_profiles_dir = os.path.join(self.salt_config_root, 'cloud.profiles.d')
 
         if '{salt_version}' not in self.salt_bootstrap_args:
-            raise ImproperlyConfigured('salt_bootstrap_args must contain `{salt_version}`')
+            raise StackdioConfigException('salt_bootstrap_args must contain `{salt_version}`')
 
         # defaults
         if not self.salt_master_log_level:  # pylint: disable=access-member-before-definition
