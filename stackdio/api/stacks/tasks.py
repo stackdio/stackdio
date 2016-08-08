@@ -520,10 +520,11 @@ def cure_zombies(stack, max_retries=2):
             raise StackTaskException(err_msg)
 
 
-@stack_task(name='stacks.update_metadata')
-def update_metadata(stack, activity, host_ids=None, remove_absent=True):
-    # Update activity
-    stack.log_history('Collecting host metadata from cloud provider.', activity)
+@stack_task(name='stacks.update_metadata', final_task=True)
+def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
+    if activity is not None:
+        # Update activity
+        stack.log_history('Collecting host metadata from cloud provider.', activity)
 
     # All hosts are running (we hope!) so now we can pull the various
     # metadata and store what we want to keep track of.
@@ -578,6 +579,9 @@ def update_metadata(stack, activity, host_ids=None, remove_absent=True):
     for h in hosts_to_remove:
         h.delete()
 
+    if activity is not None:
+        stack.set_activity(Activity.QUEUED)
+
 
 @stack_task(name='stacks.tag_infrastructure', final_task=True)
 def tag_infrastructure(stack, activity=None, host_ids=None):
@@ -592,10 +596,8 @@ def tag_infrastructure(stack, activity=None, host_ids=None):
     logger.info('Tagging infrastructure for stack: {0!r}'.format(stack))
 
     if activity is not None:
-        stack.set_activity(activity)
-
-    # Log some history
-    stack.log_history('Tagging stack infrastructure.')
+        # Log some history
+        stack.log_history('Tagging stack infrastructure.', activity)
 
     # for each set of hosts on an account, use the driver implementation
     # to tag the various infrastructure
@@ -1234,11 +1236,11 @@ def orchestrate(stack, max_retries=2):
 
 
 @stack_task(name='stacks.finish_stack', final_task=True)
-def finish_stack(stack):
+def finish_stack(stack, activity=Activity.IDLE):
     logger.info('Finishing stack: {0!r}'.format(stack))
 
     # Update activity
-    stack.set_activity(Activity.IDLE)
+    stack.set_activity(activity)
 
 
 @stack_task(name='stacks.register_volume_delete')
@@ -1266,7 +1268,7 @@ def register_volume_delete(stack, host_ids=None):
     stack.log_history('Finished registering volumes for deletion.')
 
 
-@stack_task(name='stacks.destroy_hosts')
+@stack_task(name='stacks.destroy_hosts', final_task=True)
 def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_groups=True,
                   parallel=True):
     """
@@ -1348,6 +1350,8 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
     # delete hosts
     if delete_hosts and hosts:
         hosts.delete()
+
+    stack.log_history('Finished terminating hosts.', Activity.TERMINATED)
 
 
 @stack_task(name='stacks.destroy_stack', final_task=True)
@@ -1485,7 +1489,9 @@ def update_host_info():
 
                 # If we're queued or launching, we may have just not been launched yet,
                 # so we don't want to be dead in that case
-                if host.activity not in (Activity.QUEUED, Activity.LAUNCHING):
+                # Also if we're terminating or terminated, we don't want to be set to dead
+                if host.activity not in (Activity.QUEUED, Activity.LAUNCHING,
+                                         Activity.TERMINATED, Activity.TERMINATING):
                     host.activity = Activity.DEAD
             else:
                 host.state = host_info['state']
