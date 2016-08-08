@@ -29,6 +29,14 @@ class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer)
     """
     Override to use the appropriately namespaced url
     """
+
+    def add_extra_kwargs(self, kwargs):
+        """
+        Hook to be able to add in extra kwargs
+        (specifically for the StackdioParentHyperlinkedModelSerializer)
+        """
+        return kwargs
+
     def build_url_field(self, field_name, model_class):
         """
         Create a field representing the object's own URL.
@@ -37,19 +45,37 @@ class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer)
         app_label = getattr(self.Meta, 'app_label', model_class._meta.app_label)
         model_name = getattr(self.Meta, 'model_name', model_class._meta.object_name.lower())
         lookup_field = getattr(self.Meta, 'lookup_field', 'pk')
+        lookup_url_kwarg = getattr(self.Meta, 'lookup_url_kwarg', lookup_field)
 
         # Override user things
         if model_name in ('user', 'group', 'permission'):
             app_label = 'users'
+
         field_kwargs = {
             'view_name': 'api:%s:%s-detail' % (app_label, model_name),
             'lookup_field': lookup_field,
+            'lookup_url_kwarg': lookup_url_kwarg,
         }
+
+        field_kwargs = self.add_extra_kwargs(field_kwargs)
 
         return field_class, field_kwargs
 
 
-class LabelUrlField(serializers.HyperlinkedIdentityField):
+class ParentUrlField(serializers.HyperlinkedIdentityField):
+    parent_attr = None
+    parent_lookup_field = 'pk'
+    parent_lookup_url_kwarg = 'parent_pk'
+
+    def __init__(self, view_name=None, **kwargs):
+        self.parent_attr = kwargs.pop('parent_attr', self.parent_attr)
+
+        assert self.parent_attr is not None, 'The `parent_attr` argument is required.'
+
+        self.parent_lookup_field = kwargs.pop('parent_lookup_field', self.parent_lookup_field)
+        self.parent_lookup_url_kwarg = kwargs.pop('parent_lookup_url_kwarg',
+                                                  self.parent_lookup_url_kwarg)
+        super(ParentUrlField, self).__init__(view_name, **kwargs)
 
     def get_url(self, obj, view_name, request, format):
         """
@@ -59,17 +85,37 @@ class LabelUrlField(serializers.HyperlinkedIdentityField):
         attributes are not configured to correctly match the URL conf.
         """
         # Unsaved objects will not yet have a valid URL.
-        if hasattr(obj, 'pk') and obj.pk is None:
+        if hasattr(obj, 'pk') and obj.pk in (None, ''):
             return None
 
+        lookup_value = getattr(obj, self.lookup_field)
+        parent_obj = getattr(obj, self.parent_attr)
+        parent_lookup_value = getattr(parent_obj, self.parent_lookup_field)
         kwargs = {
-            'pk': obj.object_id,
-            'label_name': obj.key,
+            self.lookup_url_kwarg: lookup_value,
+            self.parent_lookup_url_kwarg: parent_lookup_value,
         }
         return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
-class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
+class StackdioParentHyperlinkedModelSerializer(StackdioHyperlinkedModelSerializer):
+
+    serializer_url_field = ParentUrlField
+
+    def add_extra_kwargs(self, kwargs):
+        parent_attr = getattr(self.Meta, 'parent_attr', None)
+        parent_lookup_field = getattr(self.Meta, 'parent_lookup_field', 'pk')
+        parent_lookup_url_kwarg = getattr(self.Meta, 'parent_lookup_url_kwarg', 'parent_pk')
+
+        kwargs['parent_attr'] = parent_attr
+        kwargs['parent_lookup_field'] = parent_lookup_field
+        kwargs['parent_lookup_url_kwarg'] = parent_lookup_url_kwarg
+
+        return kwargs
+
+
+class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin,
+                              StackdioParentHyperlinkedModelSerializer):
     """
     This is an abstract class meant to be extended for any type of object that needs to be labelled
     by setting the appropriate `app_label` and `model_name` attributes on the `Meta` class.
@@ -84,10 +130,11 @@ class StackdioLabelSerializer(mixins.CreateOnlyFieldsMixin, StackdioHyperlinkedM
     ```
     """
 
-    serializer_url_field = LabelUrlField
-
     class Meta:
         model = models.Label
+        parent_attr = 'content_object'
+        lookup_field = 'key'
+        lookup_url_kwarg = 'label_name'
 
         fields = (
             'url',

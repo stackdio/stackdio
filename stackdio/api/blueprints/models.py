@@ -223,7 +223,7 @@ class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
     to_port = models.IntegerField('End Port')
 
     # Rule is a string specifying the CIDR for what network has access
-    # to the given protocl and ports. For AWS, you may also specify
+    # to the given protocol and ports. For AWS, you may also specify
     # a rule of the form "owner_id:security_group", that will authorize
     # access to the given security group owned by the owner_id's account
     rule = models.CharField('Rule', max_length=255)
@@ -245,8 +245,7 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
         default_permissions = ()
 
     # The host definition this access rule applies to
-    host = models.ForeignKey('blueprints.BlueprintHostDefinition',
-                             related_name='volumes')
+    host = models.ForeignKey('blueprints.BlueprintHostDefinition', related_name='volumes')
 
     # The device that the volume should be attached to when a stack is created
     device = models.CharField('Device Name', max_length=32, choices=DEVICE_ID_CHOICES)
@@ -255,8 +254,4 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
     mount_point = models.CharField('Mount Point', max_length=64)
 
     # The snapshot ID to create the volume from
-    snapshot = models.ForeignKey('cloud.Snapshot',
-                                 related_name='blueprint_volumes')
-
-    def __unicode__(self):
-        return u'BlueprintVolume: {0}'.format(self.pk)
+    snapshot = models.ForeignKey('cloud.Snapshot', related_name='blueprint_volumes')

@@ -17,88 +17,70 @@
 
 import logging
 
-from rest_framework.generics import get_object_or_404
+from stackdio.core.mixins import ParentRelatedMixin
 
-from . import models, permissions
+from . import models
 
 logger = logging.getLogger(__name__)
 
 
-class CloudProviderRelatedMixin(object):
-    permission_classes = (permissions.CloudProviderParentObjectPermissions,)
+class CloudProviderRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.CloudProvider.objects.all()
+    parent_lookup_field = 'name'
 
     def get_cloudprovider(self):
-        queryset = models.CloudProvider.objects.all()
-
-        obj = get_object_or_404(queryset, name=self.kwargs.get('name'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+        return self.get_parent_object()
 
     def get_permissioned_object(self):
-        return self.get_cloudprovider()
+        return self.get_parent_object()
 
 
-class CloudRegionRelatedMixin(object):
+class CloudRegionRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.CloudRegion.objects.all()
+    parent_lookup_field = 'title'
 
     def get_cloudregion(self):
-        queryset = models.CloudRegion.objects.all()
-
-        obj = get_object_or_404(queryset, title=self.kwargs.get('title'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+        return self.get_parent_object()
 
     def get_permissioned_object(self):
-        return self.get_cloudregion()
+        return self.get_parent_object()
 
 
-class CloudAccountRelatedMixin(object):
-    permission_classes = (permissions.CloudAccountParentObjectPermissions,)
+class CloudAccountRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.CloudAccount.objects.all()
 
     def get_cloudaccount(self):
-        queryset = models.CloudAccount.objects.all()
-
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+        return self.get_parent_object()
 
     def get_permissioned_object(self):
-        return self.get_cloudaccount()
+        return self.get_parent_object()
 
 
-class CloudImageRelatedMixin(object):
+class CloudImageRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.CloudImage.objects.all()
 
     def get_cloudimage(self):
-        queryset = models.CloudImage.objects.all()
-
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+        return self.get_parent_object()
 
     def get_permissioned_object(self):
-        return self.get_cloudimage()
+        return self.get_parent_object()
 
 
-class SnapshotRelatedMixin(object):
+class SnapshotRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.Snapshot.objects.all()
 
     def get_snapshot(self):
-        queryset = models.Snapshot.objects.all()
-
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+        return self.get_parent_object()
 
     def get_permissioned_object(self):
-        return self.get_snapshot()
+        return self.get_parent_object()
 
 
-class SecurityGroupRelatedMixin(object):
+class SecurityGroupRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.SecurityGroup.objects.all()
 
     def get_securitygroup(self):
-        queryset = models.SecurityGroup.objects.all()
-
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+        return self.get_parent_object()
 
     def get_permissioned_object(self):
-        return self.get_securitygroup()
+        return self.get_parent_object()

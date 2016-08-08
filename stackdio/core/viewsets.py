@@ -26,6 +26,7 @@ from rest_framework import viewsets
 from rest_framework.serializers import ListField, SlugRelatedField, ValidationError
 
 from stackdio.api.users.models import get_user_queryset
+from .permissions import StackdioPermissionsObjectPermissions
 from .shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 from . import fields, serializers
 
@@ -80,6 +81,8 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
         super_cls = self.switch_model_object(serializers.StackdioModelPermissionsSerializer,
                                              serializers.StackdioObjectPermissionsSerializer)
 
+        default_parent_lookup_url_kwarg = 'parent_{}'.format(self.parent_lookup_field)
+
         url_field_kwargs = {
             'view_name': 'api:{0}:{1}-{2}-{3}-permissions-detail'.format(
                 app_label,
@@ -90,7 +93,7 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
             'permission_lookup_field': self.lookup_field,
             'permission_lookup_url_kwarg': self.lookup_url_kwarg or self.lookup_field,
             'lookup_field': self.parent_lookup_field,
-            'lookup_url_kwarg': self.parent_lookup_url_kwarg or self.parent_lookup_field,
+            'lookup_url_kwarg': self.parent_lookup_url_kwarg or default_parent_lookup_url_kwarg,
         }
 
         url_field = self.switch_model_object(
@@ -248,6 +251,7 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
     Viewset for creating permissions endpoints
     """
     model_or_object = 'object'
+    permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         raise NotImplementedError('`get_permissioned_object()` must be implemented.')

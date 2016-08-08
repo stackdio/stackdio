@@ -15,21 +15,9 @@
 # limitations under the License.
 #
 
-from stackdio.core.permissions import (
-    StackdioParentObjectPermissions,
-    StackdioPermissionsModelPermissions,
-    StackdioPermissionsObjectPermissions,
-)
+from stackdio.core.permissions import StackdioPermissionsModelPermissions
 from . import models
-
-
-class BlueprintParentObjectPermissions(StackdioParentObjectPermissions):
-    parent_model_cls = models.Blueprint
 
 
 class BlueprintPermissionsModelPermissions(StackdioPermissionsModelPermissions):
     model_cls = models.Blueprint
-
-
-class BlueprintPermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
-    parent_model_cls = models.Blueprint
