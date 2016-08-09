@@ -15,21 +15,24 @@
 # limitations under the License.
 #
 
-from rest_framework.generics import get_object_or_404
+from stackdio.core.mixins import ParentRelatedMixin
+from stackdio.core.permissions import (
+    StackdioPermissionsPermissions,
+    StackdioPermissionsObjectPermissions,
+)
+from . import models
 
-from . import models, permissions
+
+class StackRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.Stack.objects.all()
+
+    def get_stack(self):
+        return self.get_parent_object()
 
 
-class StackRelatedMixin(object):
-    permission_classes = (permissions.StackParentObjectPermissions,)
-
-    def get_stack(self, check_permissions=True):
-        queryset = models.Stack.objects.all()
-
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        if check_permissions:
-            self.check_object_permissions(self.request, obj)
-        return obj
+class StackPermissionsMixin(StackRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
+    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
-        return self.get_stack()
+        return self.get_parent_object()

@@ -142,13 +142,13 @@ urlpatterns = (
     ##
     # IMPORTS URLS FROM ALL APPS
     ##
-    url(r'^', include('stackdio.api.users.urls', namespace='users')),
     url(r'^cloud/', include('stackdio.api.cloud.urls', namespace='cloud')),
     url(r'^blueprints/', include('stackdio.api.blueprints.urls', namespace='blueprints')),
     url(r'^formulas/', include('stackdio.api.formulas.urls', namespace='formulas')),
-    url(r'^', include('stackdio.api.stacks.urls', namespace='stacks')),
+    url(r'^stacks/', include('stackdio.api.stacks.urls', namespace='stacks')),
     url(r'^volumes/', include('stackdio.api.volumes.urls', namespace='volumes')),
     url(r'^search/', include('stackdio.api.search.urls', namespace='search')),
+    url(r'^', include('stackdio.api.users.urls', namespace='users')),
 )
 
 # Format suffixes - this only should go on API endpoints, not everything!
