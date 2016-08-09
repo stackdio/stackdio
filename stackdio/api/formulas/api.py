@@ -33,7 +33,7 @@ from stackdio.core.viewsets import (
     StackdioObjectGroupPermissionsViewSet,
 )
 from stackdio.api.blueprints.models import Blueprint
-from . import permissions, mixins, models, filters, serializers
+from . import mixins, models, filters, serializers
 
 logger = logging.getLogger(__name__)
 
