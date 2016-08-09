@@ -80,9 +80,10 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         instance.delete()
 
 
-class FormulaPropertiesAPIView(mixins.FormulaRelatedMixin, generics.RetrieveAPIView):
+class FormulaPropertiesAPIView(generics.RetrieveAPIView):
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaPropertiesSerializer
+    permission_classes = (StackdioObjectPermissions,)
 
 
 class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIView):
@@ -153,20 +154,18 @@ class FormulaActionAPIView(mixins.FormulaRelatedMixin, generics.GenericAPIView):
 
 
 class FormulaModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.FormulaPermissionsModelPermissions,)
     model_cls = models.Formula
 
 
 class FormulaModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.FormulaPermissionsModelPermissions,)
     model_cls = models.Formula
 
 
-class FormulaObjectUserPermissionsViewSet(mixins.FormulaRelatedMixin,
+class FormulaObjectUserPermissionsViewSet(mixins.FormulaPermissionsMixin,
                                           StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
+    pass
 
 
-class FormulaObjectGroupPermissionsViewSet(mixins.FormulaRelatedMixin,
+class FormulaObjectGroupPermissionsViewSet(mixins.FormulaPermissionsMixin,
                                            StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.FormulaPermissionsObjectPermissions,)
+    pass

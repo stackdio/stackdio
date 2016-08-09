@@ -45,15 +45,20 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:formulas:formula-properties')
     components = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-component-list')
+        view_name='api:formulas:formula-component-list',
+        lookup_url_kwarg='parent_pk')
     valid_versions = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-valid-version-list')
+        view_name='api:formulas:formula-valid-version-list',
+        lookup_url_kwarg='parent_pk')
     action = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-action')
+        view_name='api:formulas:formula-action',
+        lookup_url_kwarg='parent_pk')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-object-user-permissions-list')
+        view_name='api:formulas:formula-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-object-group-permissions-list')
+        view_name='api:formulas:formula-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     class Meta:
         model = models.Formula

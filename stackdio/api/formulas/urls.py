@@ -55,18 +55,18 @@ urlpatterns = (
         api.FormulaPropertiesAPIView.as_view(),
         name='formula-properties'),
 
-    url(r'^(?P<pk>[0-9]+)/components/$',
+    url(r'^(?P<parent_pk>[0-9]+)/components/$',
         api.FormulaComponentListAPIView.as_view(),
         name='formula-component-list'),
 
-    url(r'^(?P<pk>[0-9]+)/valid_versions/$',
+    url(r'^(?P<parent_pk>[0-9]+)/valid_versions/$',
         api.FormulaValidVersionListAPIView.as_view(),
         name='formula-valid-version-list'),
 
-    url(r'^(?P<pk>[0-9]+)/action/$',
+    url(r'^(?P<parent_pk>[0-9]+)/action/$',
         api.FormulaActionAPIView.as_view(),
         name='formula-action'),
 
-    url(r'^(?P<pk>[0-9]+)/permissions/',
+    url(r'^(?P<parent_pk>[0-9]+)/permissions/',
         include(object_router.urls)),
 )
