@@ -54,14 +54,12 @@ class UserDetailAPIView(generics.RetrieveAPIView):
 
 
 class UserModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.UserPermissionsModelPermissions,)
     model_permissions = ('create', 'admin')
     parent_lookup_field = 'username'
     model_cls = get_user_model()
 
 
 class UserModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.UserPermissionsModelPermissions,)
     model_permissions = ('create', 'admin')
     parent_lookup_field = 'username'
     model_cls = get_user_model()
@@ -118,31 +116,25 @@ class GroupActionAPIView(mixins.GroupRelatedMixin, generics.GenericAPIView):
 
 
 class GroupModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.GroupPermissionsModelPermissions,)
     model_permissions = ('create', 'admin')
     parent_lookup_field = 'name'
     model_cls = Group
 
 
 class GroupModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.GroupPermissionsModelPermissions,)
     model_permissions = ('create', 'admin')
     parent_lookup_field = 'name'
     model_cls = Group
 
 
-class GroupObjectUserPermissionsViewSet(mixins.GroupRelatedMixin,
+class GroupObjectUserPermissionsViewSet(mixins.GroupPermissionsMixin,
                                         StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.GroupPermissionsObjectPermissions,)
     object_permissions = ('update', 'delete', 'admin', 'view')
-    parent_lookup_field = 'name'
 
 
-class GroupObjectGroupPermissionsViewSet(mixins.GroupRelatedMixin,
+class GroupObjectGroupPermissionsViewSet(mixins.GroupPermissionsMixin,
                                          StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.GroupPermissionsObjectPermissions,)
     object_permissions = ('update', 'delete', 'admin', 'view')
-    parent_lookup_field = 'name'
 
 
 class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):

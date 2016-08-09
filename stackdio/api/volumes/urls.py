@@ -51,6 +51,6 @@ urlpatterns = (
         api.VolumeDetailAPIView.as_view(),
         name='volume-detail'),
 
-    url(r'^(?P<pk>[0-9]+)/permissions/',
+    url(r'^(?P<parent_pk>[0-9]+)/permissions/',
         include(object_router.urls)),
 )

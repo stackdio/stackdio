@@ -68,7 +68,7 @@ class ParentUrlField(serializers.HyperlinkedIdentityField):
     parent_lookup_url_kwarg = 'parent_pk'
 
     def __init__(self, view_name=None, **kwargs):
-        self.parent_attr = kwargs.pop('parent_attr', self.parent_attr)
+        self.parent_attr = kwargs.pop('parent_attr')
 
         assert self.parent_attr is not None, 'The `parent_attr` argument is required.'
 
