@@ -26,7 +26,7 @@ from rest_framework import viewsets
 from rest_framework.serializers import ListField, SlugRelatedField, ValidationError
 
 from stackdio.api.users.models import get_user_queryset
-from .permissions import StackdioPermissionsObjectPermissions
+from .permissions import StackdioPermissionsModelPermissions
 from .shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 from . import fields, serializers
 
@@ -167,6 +167,7 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
 class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
     model_cls = None
     model_or_object = 'model'
+    permission_classes = (StackdioPermissionsModelPermissions,)
 
     def get_model_cls(self):
         assert self.model_cls, (
@@ -189,6 +190,22 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
         return getattr(self.get_model_cls(),
                        'model_permissions',
                        getattr(self, 'model_permissions', ()))
+
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        ret = []
+        for permission_cls in self.permission_classes:
+            permission = permission_cls()
+
+            # Inject our model_cls into the permission
+            if isinstance(permission, StackdioPermissionsModelPermissions) and permission.model_cls is None:
+                permission.model_cls = self.model_cls
+
+            ret.append(permission)
+
+        return ret
 
     def get_queryset(self):  # pylint: disable=method-hidden
         model_cls = self.get_model_cls()
@@ -251,7 +268,6 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
     Viewset for creating permissions endpoints
     """
     model_or_object = 'object'
-    permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         raise NotImplementedError('`get_permissioned_object()` must be implemented.')

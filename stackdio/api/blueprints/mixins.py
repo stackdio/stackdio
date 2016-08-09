@@ -16,6 +16,10 @@
 #
 
 from stackdio.core.mixins import ParentRelatedMixin
+from stackdio.core.permissions import (
+    StackdioPermissionsPermissions,
+    StackdioPermissionsObjectPermissions,
+)
 from . import models
 
 
@@ -24,6 +28,11 @@ class BlueprintRelatedMixin(ParentRelatedMixin):
 
     def get_blueprint(self):
         return self.get_parent_object()
+
+
+class BlueprintPermissionsMixin(BlueprintRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
+    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()

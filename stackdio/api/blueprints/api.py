@@ -23,10 +23,7 @@ from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.serializers import ValidationError
 
-from stackdio.core.permissions import (
-    StackdioModelPermissions,
-    StackdioObjectPermissions,
-)
+from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -127,26 +124,6 @@ class BlueprintHostDefinitionDetailAPIView(mixins.BlueprintRelatedMixin,
         return blueprint.host_definitions.all()
 
 
-class BlueprintModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
-    model_cls = models.Blueprint
-
-
-class BlueprintModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
-    model_cls = models.Blueprint
-
-
-class BlueprintObjectUserPermissionsViewSet(mixins.BlueprintRelatedMixin,
-                                            StackdioObjectUserPermissionsViewSet):
-    pass
-
-
-class BlueprintObjectGroupPermissionsViewSet(mixins.BlueprintRelatedMixin,
-                                             StackdioObjectGroupPermissionsViewSet):
-    pass
-
-
 class BlueprintFormulaVersionsAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):
     serializer_class = FormulaVersionSerializer
 
@@ -188,3 +165,22 @@ class BlueprintLabelDetailAPIView(mixins.BlueprintRelatedMixin,
         context = super(BlueprintLabelDetailAPIView, self).get_serializer_context()
         context['content_object'] = self.get_blueprint()
         return context
+
+
+# All the permissions things
+class BlueprintModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    model_cls = models.Blueprint
+
+
+class BlueprintModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    model_cls = models.Blueprint
+
+
+class BlueprintObjectUserPermissionsViewSet(mixins.BlueprintPermissionsMixin,
+                                            StackdioObjectUserPermissionsViewSet):
+    pass
+
+
+class BlueprintObjectGroupPermissionsViewSet(mixins.BlueprintPermissionsMixin,
+                                             StackdioObjectGroupPermissionsViewSet):
+    pass

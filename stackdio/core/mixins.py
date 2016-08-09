@@ -22,7 +22,7 @@ from django.db.models.query import QuerySet
 from rest_framework.generics import get_object_or_404
 from rest_framework.settings import api_settings
 
-from .permissions import StackdioParentObjectPermissions
+from .permissions import StackdioParentPermissions, StackdioParentObjectPermissions
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,8 @@ class ParentRelatedMixin(object):
 
     parent_lookup_field = 'pk'
     parent_lookup_url_kwarg = None
+
+    permission_classes = (StackdioParentPermissions,)
 
     parent_permission_classes = (StackdioParentObjectPermissions,)
     parent_filter_backends = api_settings.DEFAULT_FILTER_BACKENDS

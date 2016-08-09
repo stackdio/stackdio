@@ -59,6 +59,58 @@ class StackdioObjectPermissions(permissions.DjangoObjectPermissions):
         return True
 
 
+# Create a wrapper view that gives the superclass the right queryset when it tries
+class WrapperView(object):
+
+    def __init__(self, view):
+        super(WrapperView, self).__init__()
+        self.view = view
+
+    def get_queryset(self):
+        if hasattr(self.view, 'get_parent_queryset'):
+            queryset = self.view.get_parent_queryset()
+        else:
+            queryset = getattr(self.view, 'parent_queryset', None)
+
+        assert queryset is not None, (
+            'Cannot apply StackdioParentObjectPermissions on a view that '
+            'does not set `.parent_queryset` or have a `.get_parent_queryset()` method.'
+        )
+
+        return queryset
+
+    def __getattr__(self, item):
+        return getattr(self.view, item)
+
+
+class StackdioParentPermissions(permissions.DjangoObjectPermissions):
+    """
+    To be used on views that have parent objects to ensure the child view
+    has permission to view the parent object
+    """
+    perms_map = {
+        'GET': ['%(app_label)s.view_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.update_%(model_name)s'],
+        'PUT': ['%(app_label)s.update_%(model_name)s'],
+        'PATCH': ['%(app_label)s.update_%(model_name)s'],
+        'DELETE': ['%(app_label)s.update_%(model_name)s'],
+    }
+
+    def has_permission(self, request, view):
+        """
+        Check permissions on the parent object.
+        """
+        return super(StackdioParentPermissions,
+                     self).has_object_permission(request,
+                                                 WrapperView(view),
+                                                 view.get_parent_object())
+
+    def has_object_permission(self, request, view, obj):
+        return True
+
+
 class StackdioParentObjectPermissions(StackdioObjectPermissions):
     """
     Very similar to regular object permissions, except that we don't want to use the model_cls
@@ -81,34 +133,23 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
         Mostly the same as the version in the parent class,
         but we'll use parent_queryset and get_parent_queryset instead.
         """
-
-        # Create a wrapper view that gives the superclass the right queryset when it tries
-        class WrapperView(object):
-
-            def get_queryset(self):
-                if hasattr(view, 'get_parent_queryset'):
-                    queryset = view.get_parent_queryset()
-                else:
-                    queryset = getattr(view, 'parent_queryset', None)
-
-                assert queryset is not None, (
-                    'Cannot apply StackdioParentObjectPermissions on a view that '
-                    'does not set `.parent_queryset` or have a `.get_parent_queryset()` method.'
-                )
-
-                return queryset
-
-            def __getattr__(self, item):
-                return getattr(view, item)
-
         return super(StackdioParentObjectPermissions,
-                     self).has_object_permission(request, WrapperView(), obj)
+                     self).has_object_permission(request, WrapperView(view), obj)
+
+
+class StackdioPermissionsPermissions(StackdioParentPermissions):
+    perms_map = {
+        'GET': ['%(app_label)s.admin_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.admin_%(model_name)s'],
+        'PUT': ['%(app_label)s.admin_%(model_name)s'],
+        'PATCH': ['%(app_label)s.admin_%(model_name)s'],
+        'DELETE': ['%(app_label)s.admin_%(model_name)s'],
+    }
 
 
 class StackdioPermissionsModelPermissions(permissions.DjangoModelPermissions):
-    """
-    Override the default permission namings
-    """
     perms_map = {
         'GET': ['%(app_label)s.admin_%(model_name)s'],
         'OPTIONS': [],
