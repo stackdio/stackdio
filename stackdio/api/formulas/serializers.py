@@ -24,7 +24,10 @@ from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=impor
 
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioParentHyperlinkedModelSerializer,
+)
 from stackdio.core.utils import recursively_sort_dict
 from . import models, tasks, validators
 
@@ -266,13 +269,14 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
         return super(FormulaVersionSerializer, self).create(validated_data)
 
 
-class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+class FormulaComponentSerializer(StackdioParentHyperlinkedModelSerializer):
     # Possibly required
     formula = serializers.SlugRelatedField(slug_field='uri',
                                            queryset=models.Formula.objects.all(), required=False)
 
     class Meta:
         model = models.FormulaComponent
+        parent_attr = 'content_object'
         fields = (
             'formula',
             'title',

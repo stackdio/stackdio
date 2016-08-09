@@ -18,7 +18,10 @@
 import logging
 
 from stackdio.core.mixins import ParentRelatedMixin
-
+from stackdio.core.permissions import (
+    StackdioPermissionsPermissions,
+    StackdioPermissionsObjectPermissions,
+)
 from . import models
 
 logger = logging.getLogger(__name__)
@@ -31,16 +34,10 @@ class CloudProviderRelatedMixin(ParentRelatedMixin):
     def get_cloudprovider(self):
         return self.get_parent_object()
 
-    def get_permissioned_object(self):
-        return self.get_parent_object()
 
-
-class CloudRegionRelatedMixin(ParentRelatedMixin):
-    parent_queryset = models.CloudRegion.objects.all()
-    parent_lookup_field = 'title'
-
-    def get_cloudregion(self):
-        return self.get_parent_object()
+class CloudProviderPermissionsMixin(CloudProviderRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
+    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()
@@ -52,6 +49,11 @@ class CloudAccountRelatedMixin(ParentRelatedMixin):
     def get_cloudaccount(self):
         return self.get_parent_object()
 
+
+class CloudAccountPermissionsMixin(CloudAccountRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
+    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
+
     def get_permissioned_object(self):
         return self.get_parent_object()
 
@@ -61,6 +63,11 @@ class CloudImageRelatedMixin(ParentRelatedMixin):
 
     def get_cloudimage(self):
         return self.get_parent_object()
+
+
+class CloudImagePermissionsMixin(CloudImageRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
+    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()
@@ -72,6 +79,11 @@ class SnapshotRelatedMixin(ParentRelatedMixin):
     def get_snapshot(self):
         return self.get_parent_object()
 
+
+class SnapshotPermissionsMixin(SnapshotRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
+    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
+
     def get_permissioned_object(self):
         return self.get_parent_object()
 
@@ -81,6 +93,11 @@ class SecurityGroupRelatedMixin(ParentRelatedMixin):
 
     def get_securitygroup(self):
         return self.get_parent_object()
+
+
+class SecurityGroupPermissionsMixin(SecurityGroupRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
+    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()

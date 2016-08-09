@@ -118,12 +118,10 @@ class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer
     access_rules = BlueprintAccessRuleSerializer(many=True, required=False, read_only=True)
     volumes = BlueprintVolumeSerializer(many=True, required=False, read_only=True)
 
-    size = serializers.SlugRelatedField(slug_field='instance_id', read_only=True,
-                                        queryset=CloudInstanceSize.objects.all())
+    size = serializers.SlugRelatedField(slug_field='instance_id', read_only=True)
     zone = serializers.SlugRelatedField(slug_field='title', required=False, allow_null=True,
                                         queryset=CloudZone.objects.all())
-    cloud_image = serializers.SlugRelatedField(slug_field='slug', read_only=True,
-                                               queryset=CloudImage.objects.all())
+    cloud_image = serializers.SlugRelatedField(slug_field='slug', read_only=True)
 
     class Meta:
         model = models.BlueprintHostDefinition
@@ -237,22 +235,22 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-properties')
     host_definitions = serializers.HyperlinkedIdentityField(
-        lookup_url_kwarg='parent_pk',
-        view_name='api:blueprints:blueprint-host-definition-list')
+        view_name='api:blueprints:blueprint-host-definition-list',
+        lookup_url_kwarg='parent_pk')
     formula_versions = serializers.HyperlinkedIdentityField(
-        lookup_url_kwarg='parent_pk',
-        view_name='api:blueprints:blueprint-formula-versions')
+        view_name='api:blueprints:blueprint-formula-versions',
+        lookup_url_kwarg='parent_pk')
     labels = serializers.HyperlinkedIdentityField(
-        lookup_url_kwarg='parent_pk',
-        view_name='api:blueprints:blueprint-label-list')
+        view_name='api:blueprints:blueprint-label-list',
+        lookup_url_kwarg = 'parent_pk')
     export = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-export')
     user_permissions = serializers.HyperlinkedIdentityField(
-        lookup_url_kwarg='parent_pk',
-        view_name='api:blueprints:blueprint-object-user-permissions-list')
+        view_name='api:blueprints:blueprint-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
     group_permissions = serializers.HyperlinkedIdentityField(
-        lookup_url_kwarg='parent_pk',
-        view_name='api:blueprints:blueprint-object-group-permissions-list')
+        view_name='api:blueprints:blueprint-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     class Meta:
         model = models.Blueprint
