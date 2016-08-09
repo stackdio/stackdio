@@ -284,12 +284,6 @@ class FullBlueprintSerializer(BlueprintSerializer):
     formula_versions = FormulaVersionSerializer(many=True, required=False)
     labels = StackdioLiteralLabelsSerializer(many=True, required=False)
 
-    def to_representation(self, instance):
-        """
-        We want to return a blueprint representation here with links instead of the full object
-        """
-        return BlueprintSerializer(instance, context=self.context).to_representation(instance)
-
     def validate(self, attrs):
         host_definitions = attrs['host_definitions']
         formula_versions = attrs.get('formula_versions', [])
@@ -407,14 +401,6 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
             'host_definitions',
             'formula_versions',
         )
-
-    def to_representation(self, instance):
-        """
-        We want the full object here, not links.  That's the purpose of the export
-        """
-        # We can't use super() here, because FullBlueprintSerializer only returns links.  We
-        # need to skip over it all the way to BlueprintSerializer's implementation
-        return BlueprintSerializer.to_representation(self, instance)
 
 
 class BlueprintLabelSerializer(StackdioLabelSerializer):

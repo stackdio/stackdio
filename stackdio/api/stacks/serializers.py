@@ -534,12 +534,6 @@ class FullStackSerializer(StackSerializer):
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
     formula_versions = FormulaVersionSerializer(many=True, required=False)
 
-    def to_representation(self, instance):
-        """
-        We want to return links instead of the full object
-        """
-        return StackSerializer(instance, context=self.context).to_representation(instance)
-
     def create(self, validated_data):
         formula_versions = validated_data.pop('formula_versions', [])
 

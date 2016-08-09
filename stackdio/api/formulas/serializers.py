@@ -192,10 +192,7 @@ class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstra
         We just want to return a serialized formula object here.  Returning an object with
         the action in it just doesn't make much sense.
         """
-        return FormulaSerializer(
-            instance,
-            context=self.context
-        ).to_representation(instance)
+        return FormulaSerializer(instance, context=self.context).to_representation(instance)
 
     def do_update(self):
         formula = self.instance
