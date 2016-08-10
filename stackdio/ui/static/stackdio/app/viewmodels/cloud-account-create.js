@@ -181,7 +181,7 @@ define([
                             url: self.provider().required_fields
                         }).done(function (fields) {
                             var extras = [];
-                            fields.results.forEach(function (field) {
+                            fields.forEach(function (field) {
                                 if (field !== 'private_key') {
                                     var fieldObj = {
                                         apiName: field,
