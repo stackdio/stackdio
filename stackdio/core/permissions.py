@@ -19,6 +19,7 @@
 import logging
 
 from django.conf import settings
+from django.http import Http404
 from rest_framework import permissions
 
 
@@ -116,40 +117,14 @@ class StackdioObjectPermissions(permissions.DjangoObjectPermissions):
         return True
 
 
-class WrapperView(object):
-    """
-    Just a simple wrapper so that when parent permission classes call us, they check
-    permissions on the parent object instead of the current object.
-    """
-    def __init__(self, view, perm_obj):
-        super(WrapperView, self).__init__()
-        self.view = view
-        self.perm_obj = perm_obj
-
-    def get_queryset(self):
-        if hasattr(self.view, 'get_parent_queryset'):
-            queryset = self.view.get_parent_queryset()
-        else:
-            queryset = getattr(self.view, 'parent_queryset', None)
-
-        assert queryset is not None, (
-            'Cannot apply {} on a view that does not set `.parent_queryset` or have a '
-            '`.get_parent_queryset()` method.'.format(self.perm_obj.__class__.__name__)
-        )
-
-        return queryset
-
-    # Just in class we call something else
-    def __getattr__(self, item):
-        return getattr(self.view, item)
-
-
 @log_permissions
 class StackdioParentPermissions(permissions.DjangoObjectPermissions):
     """
     To be used on views that have parent objects to ensure the child view
     has permission to view the parent object
     """
+    base_required_perms = ['%(app_label)s.view_%(model_name)s']
+
     perms_map = {
         'GET': ['%(app_label)s.view_%(model_name)s'],
         'OPTIONS': [],
@@ -160,14 +135,53 @@ class StackdioParentPermissions(permissions.DjangoObjectPermissions):
         'DELETE': ['%(app_label)s.update_%(model_name)s'],
     }
 
+    def get_base_required_permissions(self, model_cls):
+        kwargs = {
+            'app_label': model_cls._meta.app_label,
+            'model_name': model_cls._meta.model_name
+        }
+        return [perm % kwargs for perm in self.base_required_perms]
+
     def has_permission(self, request, view):
         """
         Check permissions on the parent object.
         """
-        return super(StackdioParentPermissions,
-                     self).has_object_permission(request,
-                                                 WrapperView(view, self),
-                                                 view.get_parent_object())
+        if hasattr(view, 'get_parent_queryset'):
+            queryset = view.get_parent_queryset()
+        else:
+            queryset = getattr(view, 'parent_queryset', None)
+
+        assert queryset is not None, (
+            'Cannot apply {} on a view that does not set `.parent_queryset` or have a '
+            '`.get_parent_queryset()` method.'.format(self.__class__.__name__)
+        )
+
+        model_cls = queryset.model
+        user = request.user
+        obj = view.get_parent_object()
+
+        perms = self.get_required_object_permissions(request.method, model_cls)
+
+        if not user.has_perms(perms, obj):
+            # If the user does not have permissions we need to determine if
+            # they have read permissions to see 403, or not, and simply see
+            # a 404 response.
+
+            base_required_perms = self.get_base_required_permissions(model_cls)
+
+            if perms == base_required_perms:
+                # Read permissions already checked and failed, no need
+                # to make another lookup.
+                raise Http404
+
+            # Check for base required permissions
+            if not user.has_perms(base_required_perms, obj):
+                raise Http404
+
+            # Has permissions to view 403
+            return False
+
+        return True
 
     def has_object_permission(self, request, view, obj):
         return True
