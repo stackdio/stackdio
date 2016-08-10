@@ -20,7 +20,8 @@ import logging
 
 from rest_framework import serializers
 
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer, ParentUrlField
+from stackdio.core.fields import HyperlinkedParentField
+from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from . import models
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
         view_name='api:stacks:stack-detail', read_only=True, source='stack.pk')
     snapshot = serializers.HyperlinkedRelatedField(
         view_name='api:cloud:snapshot-detail', read_only=True, source='snapshot.pk')
-    host = ParentUrlField(
+    host = HyperlinkedParentField(
         view_name='api:stacks:stack-host-detail', parent_attr='stack',
         lookup_field='host_id', lookup_url_kwarg='pk')
 

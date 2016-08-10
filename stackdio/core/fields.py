@@ -83,38 +83,54 @@ class HyperlinkedField(relations.HyperlinkedIdentityField):
 
 
 class HyperlinkedParentField(relations.HyperlinkedIdentityField):
+    parent_attr = None
+    parent_lookup_field = 'pk'
+    parent_lookup_url_kwarg = None
 
-    def __init__(self, view_name, parent_relation_field, **kwargs):
-        assert parent_relation_field is not None, (
-            'The `parent_relation_field` argument is required.'
-        )
+    def __init__(self, view_name=None, **kwargs):
+        self.parent_attr = kwargs.pop('parent_attr', self.parent_attr)
 
-        self.parent_relation_field = parent_relation_field.split('.')
-        self.parent_lookup_field = kwargs.pop('parent_lookup_field', 'pk')
+        assert self.parent_attr is not None, 'The `parent_attr` argument is required.'
+
+        self.parent_attr = self.parent_attr.split('.')
+
+        self.parent_lookup_field = kwargs.pop('parent_lookup_field', self.parent_lookup_field)
+
+        # Set a default
+        default_parent_lookup_url_kwarg = self.parent_lookup_url_kwarg \
+            or 'parent_{}'.format(self.parent_lookup_field)
+
+        # set the parameter
         self.parent_lookup_url_kwarg = kwargs.pop('parent_lookup_url_kwarg',
-                                                  self.parent_lookup_field)
+                                                  default_parent_lookup_url_kwarg)
+
         super(HyperlinkedParentField, self).__init__(view_name, **kwargs)
 
     def get_url(self, obj, view_name, request, format):
+        """
+        Given an object, return the URL that hyperlinks to the object.
+
+        May raise a `NoReverseMatch` if the `view_name` and `lookup_field`
+        attributes are not configured to correctly match the URL conf.
+        """
         # Unsaved objects will not yet have a valid URL.
-        if hasattr(obj, 'pk') and obj.pk is None:
+        if hasattr(obj, 'pk') and obj.pk in (None, ''):
             return None
 
         middle_obj = obj
 
-        for field in self.parent_relation_field:
+        for field in self.parent_attr:
             middle_obj = getattr(middle_obj, field)
 
         parent_obj = middle_obj
-
         parent_lookup_value = getattr(parent_obj, self.parent_lookup_field)
+
         lookup_value = getattr(obj, self.lookup_field)
 
         kwargs = {
-            self.parent_lookup_url_kwarg: parent_lookup_value,
             self.lookup_url_kwarg: lookup_value,
+            self.parent_lookup_url_kwarg: parent_lookup_value,
         }
-
         return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 
     def get_object(self, view_name, view_args, view_kwargs):

@@ -20,7 +20,8 @@ import logging
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
-from stackdio.core import mixins, models, validators
+from .fields import HyperlinkedParentField
+from . import mixins, models, validators
 
 logger = logging.getLogger(__name__)
 
@@ -62,50 +63,17 @@ class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer)
         return field_class, field_kwargs
 
 
-class ParentUrlField(serializers.HyperlinkedIdentityField):
-    parent_attr = None
-    parent_lookup_field = 'pk'
-    parent_lookup_url_kwarg = 'parent_pk'
-
-    def __init__(self, view_name=None, **kwargs):
-        self.parent_attr = kwargs.pop('parent_attr')
-
-        assert self.parent_attr is not None, 'The `parent_attr` argument is required.'
-
-        self.parent_lookup_field = kwargs.pop('parent_lookup_field', self.parent_lookup_field)
-        self.parent_lookup_url_kwarg = kwargs.pop('parent_lookup_url_kwarg',
-                                                  self.parent_lookup_url_kwarg)
-        super(ParentUrlField, self).__init__(view_name, **kwargs)
-
-    def get_url(self, obj, view_name, request, format):
-        """
-        Given an object, return the URL that hyperlinks to the object.
-
-        May raise a `NoReverseMatch` if the `view_name` and `lookup_field`
-        attributes are not configured to correctly match the URL conf.
-        """
-        # Unsaved objects will not yet have a valid URL.
-        if hasattr(obj, 'pk') and obj.pk in (None, ''):
-            return None
-
-        lookup_value = getattr(obj, self.lookup_field)
-        parent_obj = getattr(obj, self.parent_attr)
-        parent_lookup_value = getattr(parent_obj, self.parent_lookup_field)
-        kwargs = {
-            self.lookup_url_kwarg: lookup_value,
-            self.parent_lookup_url_kwarg: parent_lookup_value,
-        }
-        return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
-
-
 class StackdioParentHyperlinkedModelSerializer(StackdioHyperlinkedModelSerializer):
 
-    serializer_url_field = ParentUrlField
+    serializer_url_field = HyperlinkedParentField
 
     def add_extra_kwargs(self, kwargs):
         parent_attr = getattr(self.Meta, 'parent_attr', None)
         parent_lookup_field = getattr(self.Meta, 'parent_lookup_field', 'pk')
-        parent_lookup_url_kwarg = getattr(self.Meta, 'parent_lookup_url_kwarg', 'parent_pk')
+        default_parent_lookup_url_kwarg = 'parent_{}'.format(parent_lookup_field)
+        parent_lookup_url_kwarg = getattr(self.Meta,
+                                          'parent_lookup_url_kwarg',
+                                          default_parent_lookup_url_kwarg)
 
         kwargs['parent_attr'] = parent_attr
         kwargs['parent_lookup_field'] = parent_lookup_field

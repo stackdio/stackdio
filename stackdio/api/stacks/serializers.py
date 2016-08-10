@@ -37,13 +37,13 @@ from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
 from stackdio.api.formulas.serializers import FormulaComponentSerializer, FormulaVersionSerializer
 from stackdio.core.constants import Action, Activity, ComponentStatus, Health
+from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
     StackdioLabelSerializer,
     StackdioLiteralLabelsSerializer,
-    ParentUrlField,
 )
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator, validate_hostname
@@ -686,7 +686,7 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
 
 
 class StackCommandSerializer(StackdioParentHyperlinkedModelSerializer):
-    zip_url = ParentUrlField(view_name='api:stacks:stack-command-zip', parent_attr='stack')
+    zip_url = HyperlinkedParentField(view_name='api:stacks:stack-command-zip', parent_attr='stack')
 
     class Meta:
         model = models.StackCommand

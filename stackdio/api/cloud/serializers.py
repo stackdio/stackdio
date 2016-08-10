@@ -25,7 +25,10 @@ from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioParentHyperlinkedModelSerializer,
+)
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.blueprints.models import PROTOCOL_CHOICES
@@ -349,18 +352,14 @@ class SnapshotSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializ
         return attrs
 
 
-class CloudInstanceSizeSerializer(StackdioHyperlinkedModelSerializer):
-    url = HyperlinkedParentField(
-        view_name='api:cloud:cloudinstancesize-detail',
-        parent_relation_field='provider',
-        parent_lookup_field='name',
-        lookup_field='instance_id',
-    )
-
+class CloudInstanceSizeSerializer(StackdioParentHyperlinkedModelSerializer):
     provider = serializers.CharField(source='provider.name')
 
     class Meta:
         model = models.CloudInstanceSize
+        parent_attr = 'provider'
+        parent_lookup_field = 'name'
+        lookup_field = 'instance_id'
         fields = (
             'url',
             'title',
@@ -371,25 +370,22 @@ class CloudInstanceSizeSerializer(StackdioHyperlinkedModelSerializer):
         )
 
 
-class CloudRegionSerializer(StackdioHyperlinkedModelSerializer):
-    url = HyperlinkedParentField(
-        view_name='api:cloud:cloudregion-detail',
-        parent_relation_field='provider',
-        parent_lookup_field='name',
-        lookup_field='title',
-    )
-
+class CloudRegionSerializer(StackdioParentHyperlinkedModelSerializer):
     provider = serializers.CharField(source='provider.name')
     zones = serializers.StringRelatedField(many=True, read_only=True)
+
     zones_url = HyperlinkedParentField(
         view_name='api:cloud:cloudregion-zones',
+        parent_attr='provider',
         parent_lookup_field='name',
-        parent_relation_field='provider',
         lookup_field='title',
     )
 
     class Meta:
         model = models.CloudRegion
+        parent_attr = 'provider'
+        parent_lookup_field = 'name'
+        lookup_field = 'title'
         fields = (
             'url',
             'title',
@@ -399,20 +395,16 @@ class CloudRegionSerializer(StackdioHyperlinkedModelSerializer):
         )
 
 
-class CloudZoneSerializer(StackdioHyperlinkedModelSerializer):
-    url = HyperlinkedParentField(
-        view_name='api:cloud:cloudzone-detail',
-        parent_relation_field='region.provider',
-        parent_lookup_field='name',
-        lookup_field='title',
-    )
-
+class CloudZoneSerializer(StackdioParentHyperlinkedModelSerializer):
     region = serializers.CharField(source='region.title')
 
     provider = serializers.CharField(source='region.provider.name')
 
     class Meta:
         model = models.CloudZone
+        parent_attr = 'provider'
+        parent_lookup_field = 'name'
+        lookup_field = 'title'
         fields = (
             'url',
             'title',
