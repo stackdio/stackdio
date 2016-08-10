@@ -22,7 +22,7 @@ from django.db.models.query import QuerySet
 from rest_framework.generics import get_object_or_404
 from rest_framework.settings import api_settings
 
-from .permissions import StackdioParentPermissions, StackdioParentObjectPermissions
+from .permissions import StackdioParentPermissions
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,6 @@ class ParentRelatedMixin(object):
 
     permission_classes = (StackdioParentPermissions,)
 
-    parent_permission_classes = (StackdioParentObjectPermissions,)
     parent_filter_backends = api_settings.DEFAULT_FILTER_BACKENDS
 
     def get_parent_queryset(self):
@@ -75,27 +74,11 @@ class ParentRelatedMixin(object):
         )
 
         filter_kwargs = {self.parent_lookup_field: self.kwargs[parent_lookup_url_kwarg]}
-        obj = get_object_or_404(queryset, **filter_kwargs)
 
-        # May raise a permission denied
-        self.check_parent_object_permissions(self.request, obj)
-        return obj
+        # NOTE:  NOT GOING TO CHECK PERMISSIONS HERE
+        # The permission class *should* call get_parent_object and check permissions on it.
 
-    def get_parent_permissions(self):
-        """
-        Like get_permissions, but for the parent object instead
-        """
-        return [permission() for permission in self.parent_permission_classes]
-
-    def check_parent_object_permissions(self, request, obj):
-        """
-        Like check_object_permissions, but for the parent object instead
-        """
-        for permission in self.get_parent_permissions():
-            if not permission.has_object_permission(request, self, obj):
-                self.permission_denied(
-                    request, message=getattr(permission, 'message', None)
-                )
+        return get_object_or_404(queryset, **filter_kwargs)
 
     def filter_parent_queryset(self, queryset):
         """

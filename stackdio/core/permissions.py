@@ -18,13 +18,69 @@
 
 import logging
 
+from django.conf import settings
 from rest_framework import permissions
 
 
 logger = logging.getLogger(__name__)
 
 
+def log_permissions(cls):
+    """
+    decorator to log some things about permissions.
+    """
+
+    # Log permissions only if we're debugging
+    if settings.DEBUG:
+        cur_has_perm = getattr(cls, 'has_permission')
+        cur_has_obj_perm = getattr(cls, 'has_object_permission')
+
+        def has_permission(self, request, view):
+            try:
+                ret = cur_has_perm(self, request, view)
+                logger.debug('{} has_permission for {} {} called: {}'.format(
+                    cls.__name__,
+                    request.method,
+                    request.get_full_path(),
+                    ret
+                ))
+                return ret
+            except Exception as e:
+                logger.debug('{} has_permission for {} {} threw an exception: {}'.format(
+                    cls.__name__,
+                    request.method,
+                    request.get_full_path(),
+                    e.message
+                ))
+                raise
+
+        def has_object_permission(self, request, view, obj):
+            try:
+                ret = cur_has_obj_perm(self, request, view, obj)
+                logger.debug('{} has_object_permission for {} {} called: {}'.format(
+                    cls.__name__,
+                    request.method,
+                    request.get_full_path(),
+                    ret
+                ))
+                return ret
+            except Exception as e:
+                logger.debug('{} has_object_permission for {} {} threw an exception: {}'.format(
+                    cls.__name__,
+                    request.method,
+                    request.get_full_path(),
+                    e.message
+                ))
+                raise
+
+        cls.has_permission = has_permission
+        cls.has_object_permission = has_object_permission
+
+    return cls
+
+
 # For list/create views
+@log_permissions
 class StackdioModelPermissions(permissions.DjangoModelPermissions):
     """
     Override the default permission namings
@@ -41,6 +97,7 @@ class StackdioModelPermissions(permissions.DjangoModelPermissions):
 
 
 # For detail views
+@log_permissions
 class StackdioObjectPermissions(permissions.DjangoObjectPermissions):
     """
     Override the default permission namings
@@ -59,12 +116,15 @@ class StackdioObjectPermissions(permissions.DjangoObjectPermissions):
         return True
 
 
-# Create a wrapper view that gives the superclass the right queryset when it tries
 class WrapperView(object):
-
-    def __init__(self, view):
+    """
+    Just a simple wrapper so that when parent permission classes call us, they check
+    permissions on the parent object instead of the current object.
+    """
+    def __init__(self, view, perm_obj):
         super(WrapperView, self).__init__()
         self.view = view
+        self.perm_obj = perm_obj
 
     def get_queryset(self):
         if hasattr(self.view, 'get_parent_queryset'):
@@ -73,16 +133,18 @@ class WrapperView(object):
             queryset = getattr(self.view, 'parent_queryset', None)
 
         assert queryset is not None, (
-            'Cannot apply StackdioParentObjectPermissions on a view that '
-            'does not set `.parent_queryset` or have a `.get_parent_queryset()` method.'
+            'Cannot apply {} on a view that does not set `.parent_queryset` or have a '
+            '`.get_parent_queryset()` method.'.format(self.perm_obj.__class__.__name__)
         )
 
         return queryset
 
+    # Just in class we call something else
     def __getattr__(self, item):
         return getattr(self.view, item)
 
 
+@log_permissions
 class StackdioParentPermissions(permissions.DjangoObjectPermissions):
     """
     To be used on views that have parent objects to ensure the child view
@@ -104,39 +166,14 @@ class StackdioParentPermissions(permissions.DjangoObjectPermissions):
         """
         return super(StackdioParentPermissions,
                      self).has_object_permission(request,
-                                                 WrapperView(view),
+                                                 WrapperView(view, self),
                                                  view.get_parent_object())
 
     def has_object_permission(self, request, view, obj):
         return True
 
 
-class StackdioParentObjectPermissions(StackdioObjectPermissions):
-    """
-    Very similar to regular object permissions, except that we don't want to use the model_cls
-    from the queryset, since the queryset may not be the same type of object that we want to
-    check permissions on.  Classic example being the `/api/stacks/<pk>/hosts/` endpoint - we want
-    to check permissions on a stack object, but the queryset consists of host objects.
-    """
-    perms_map = {
-        'GET': ['%(app_label)s.view_%(model_name)s'],
-        'OPTIONS': [],
-        'HEAD': [],
-        'POST': ['%(app_label)s.update_%(model_name)s'],
-        'PUT': ['%(app_label)s.update_%(model_name)s'],
-        'PATCH': ['%(app_label)s.update_%(model_name)s'],
-        'DELETE': ['%(app_label)s.update_%(model_name)s'],
-    }
-
-    def has_object_permission(self, request, view, obj):
-        """
-        Mostly the same as the version in the parent class,
-        but we'll use parent_queryset and get_parent_queryset instead.
-        """
-        return super(StackdioParentObjectPermissions,
-                     self).has_object_permission(request, WrapperView(view), obj)
-
-
+@log_permissions
 class StackdioPermissionsPermissions(StackdioParentPermissions):
     perms_map = {
         'GET': ['%(app_label)s.admin_%(model_name)s'],
@@ -149,6 +186,7 @@ class StackdioPermissionsPermissions(StackdioParentPermissions):
     }
 
 
+@log_permissions
 class StackdioPermissionsModelPermissions(permissions.DjangoModelPermissions):
     perms_map = {
         'GET': ['%(app_label)s.admin_%(model_name)s'],
@@ -182,15 +220,3 @@ class StackdioPermissionsModelPermissions(permissions.DjangoModelPermissions):
             (request.user.is_authenticated() or not self.authenticated_users_only) and
             request.user.has_perms(perms)
         )
-
-
-class StackdioPermissionsObjectPermissions(StackdioParentObjectPermissions):
-    perms_map = {
-        'GET': ['%(app_label)s.admin_%(model_name)s'],
-        'OPTIONS': [],
-        'HEAD': [],
-        'POST': ['%(app_label)s.admin_%(model_name)s'],
-        'PUT': ['%(app_label)s.admin_%(model_name)s'],
-        'PATCH': ['%(app_label)s.admin_%(model_name)s'],
-        'DELETE': ['%(app_label)s.admin_%(model_name)s'],
-    }

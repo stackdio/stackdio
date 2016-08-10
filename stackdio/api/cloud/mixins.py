@@ -18,10 +18,7 @@
 import logging
 
 from stackdio.core.mixins import ParentRelatedMixin
-from stackdio.core.permissions import (
-    StackdioPermissionsPermissions,
-    StackdioPermissionsObjectPermissions,
-)
+from stackdio.core.permissions import StackdioPermissionsPermissions
 from . import models
 
 logger = logging.getLogger(__name__)
@@ -37,7 +34,6 @@ class CloudProviderRelatedMixin(ParentRelatedMixin):
 
 class CloudProviderPermissionsMixin(CloudProviderRelatedMixin):
     permission_classes = (StackdioPermissionsPermissions,)
-    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()
@@ -52,7 +48,6 @@ class CloudAccountRelatedMixin(ParentRelatedMixin):
 
 class CloudAccountPermissionsMixin(CloudAccountRelatedMixin):
     permission_classes = (StackdioPermissionsPermissions,)
-    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()
@@ -67,7 +62,6 @@ class CloudImageRelatedMixin(ParentRelatedMixin):
 
 class CloudImagePermissionsMixin(CloudImageRelatedMixin):
     permission_classes = (StackdioPermissionsPermissions,)
-    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()
@@ -82,7 +76,6 @@ class SnapshotRelatedMixin(ParentRelatedMixin):
 
 class SnapshotPermissionsMixin(SnapshotRelatedMixin):
     permission_classes = (StackdioPermissionsPermissions,)
-    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()
@@ -97,7 +90,6 @@ class SecurityGroupRelatedMixin(ParentRelatedMixin):
 
 class SecurityGroupPermissionsMixin(SecurityGroupRelatedMixin):
     permission_classes = (StackdioPermissionsPermissions,)
-    parent_permission_classes = (StackdioPermissionsObjectPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()
