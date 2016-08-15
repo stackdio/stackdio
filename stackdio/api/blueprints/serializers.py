@@ -32,7 +32,7 @@ from stackdio.core.serializers import (
 )
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
-from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone, Snapshot
+from stackdio.api.cloud.models import CloudZone, Snapshot
 from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
 from stackdio.api.formulas.validators import validate_formula_components
 from . import models, validators
@@ -242,7 +242,7 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
         lookup_url_kwarg='parent_pk')
     labels = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-label-list',
-        lookup_url_kwarg = 'parent_pk')
+        lookup_url_kwarg='parent_pk')
     export = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-export')
     user_permissions = serializers.HyperlinkedIdentityField(

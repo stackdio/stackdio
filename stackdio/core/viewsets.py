@@ -200,7 +200,8 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
             permission = permission_cls()
 
             # Inject our model_cls into the permission
-            if isinstance(permission, StackdioPermissionsModelPermissions) and permission.model_cls is None:
+            if isinstance(permission, StackdioPermissionsModelPermissions) \
+                    and permission.model_cls is None:
                 permission.model_cls = self.model_cls
 
             ret.append(permission)
