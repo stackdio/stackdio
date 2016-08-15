@@ -26,12 +26,13 @@ from rest_framework import serializers
 
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
+    StackdioParentHyperlinkedModelSerializer,
     StackdioLabelSerializer,
     StackdioLiteralLabelsSerializer,
 )
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
-from stackdio.api.cloud.models import CloudInstanceSize, CloudImage, CloudZone, Snapshot
+from stackdio.api.cloud.models import CloudZone, Snapshot
 from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
 from stackdio.api.formulas.validators import validate_formula_components
 from . import models, validators
@@ -112,22 +113,23 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
         )
 
 
-class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
-    formula_components = FormulaComponentSerializer(many=True)
-    access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
-    volumes = BlueprintVolumeSerializer(many=True, required=False)
+class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer):
+    formula_components = FormulaComponentSerializer(many=True, read_only=True)
+    access_rules = BlueprintAccessRuleSerializer(many=True, required=False, read_only=True)
+    volumes = BlueprintVolumeSerializer(many=True, required=False, read_only=True)
 
-    size = serializers.SlugRelatedField(slug_field='instance_id',
-                                        queryset=CloudInstanceSize.objects.all())
+    size = serializers.SlugRelatedField(slug_field='instance_id', read_only=True)
     zone = serializers.SlugRelatedField(slug_field='title', required=False, allow_null=True,
                                         queryset=CloudZone.objects.all())
-    cloud_image = serializers.SlugRelatedField(slug_field='slug',
-                                               queryset=CloudImage.objects.all())
+    cloud_image = serializers.SlugRelatedField(slug_field='slug', read_only=True)
 
     class Meta:
         model = models.BlueprintHostDefinition
+        model_name = 'blueprint-host-definition'
+        parent_attr = 'blueprint'
         fields = (
             'id',
+            'url',
             'title',
             'description',
             'cloud_image',
@@ -140,6 +142,10 @@ class BlueprintHostDefinitionSerializer(StackdioHyperlinkedModelSerializer):
             'access_rules',
             'volumes',
             'spot_price',
+        )
+
+        read_only_fields = (
+            'count',
         )
 
         extra_kwargs = {
@@ -229,17 +235,22 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-properties')
     host_definitions = serializers.HyperlinkedIdentityField(
-        view_name='api:blueprints:blueprint-host-definition-list')
+        view_name='api:blueprints:blueprint-host-definition-list',
+        lookup_url_kwarg='parent_pk')
     formula_versions = serializers.HyperlinkedIdentityField(
-        view_name='api:blueprints:blueprint-formula-versions')
+        view_name='api:blueprints:blueprint-formula-versions',
+        lookup_url_kwarg='parent_pk')
     labels = serializers.HyperlinkedIdentityField(
-        view_name='api:blueprints:blueprint-label-list')
-    user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:blueprints:blueprint-object-user-permissions-list')
-    group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:blueprints:blueprint-object-group-permissions-list')
+        view_name='api:blueprints:blueprint-label-list',
+        lookup_url_kwarg='parent_pk')
     export = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-export')
+    user_permissions = serializers.HyperlinkedIdentityField(
+        view_name='api:blueprints:blueprint-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
+    group_permissions = serializers.HyperlinkedIdentityField(
+        view_name='api:blueprints:blueprint-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     class Meta:
         model = models.Blueprint
@@ -255,9 +266,9 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
             'host_definitions',
             'formula_versions',
             'labels',
+            'export',
             'user_permissions',
             'group_permissions',
-            'export',
         )
 
         extra_kwargs = {
@@ -272,12 +283,6 @@ class FullBlueprintSerializer(BlueprintSerializer):
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
     formula_versions = FormulaVersionSerializer(many=True, required=False)
     labels = StackdioLiteralLabelsSerializer(many=True, required=False)
-
-    def to_representation(self, instance):
-        """
-        We want to return a blueprint representation here with links instead of the full object
-        """
-        return BlueprintSerializer(instance, context=self.context).to_representation(instance)
 
     def validate(self, attrs):
         host_definitions = attrs['host_definitions']
@@ -396,14 +401,6 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
             'host_definitions',
             'formula_versions',
         )
-
-    def to_representation(self, instance):
-        """
-        We want the full object here, not links.  That's the purpose of the export
-        """
-        # We can't use super() here, because FullBlueprintSerializer only returns links.  We
-        # need to skip over it all the way to BlueprintSerializer's implementation
-        return BlueprintSerializer.to_representation(self, instance)
 
 
 class BlueprintLabelSerializer(StackdioLabelSerializer):

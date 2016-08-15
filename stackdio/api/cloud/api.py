@@ -31,8 +31,7 @@ from rest_framework.views import APIView
 
 from stackdio.api.blueprints.models import Blueprint
 from stackdio.api.cloud.providers.base import DeleteGroupException
-from stackdio.api.formulas.models import FormulaComponent
-from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
+from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.utils import FakeQuerySet
 from stackdio.core.viewsets import (
@@ -41,7 +40,7 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from . import filters, mixins, models, serializers, permissions
+from . import filters, mixins, models, serializers
 
 logger = logging.getLogger(__name__)
 
@@ -92,40 +91,29 @@ class CloudProviderDetailAPIView(generics.RetrieveAPIView):
     lookup_field = 'name'
 
 
-class CloudProviderObjectUserPermissionsViewSet(mixins.CloudProviderRelatedMixin,
-                                                StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
-    parent_lookup_field = 'name'
-
-
-class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderRelatedMixin,
-                                                 StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudProviderPermissionsObjectPermissions,)
-    parent_lookup_field = 'name'
-
-
-class CloudProviderRequiredFieldsAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
+class CloudProviderRequiredFieldsAPIView(generics.RetrieveAPIView):
     """
     This endpoint lists all the extra fields required when creating an account for this provider.
     """
+    queryset = models.CloudProvider.objects.all()
+    permission_classes = (StackdioObjectPermissions,)
+    lookup_field = 'name'
 
-    def get_queryset(self):
-        provider = self.get_cloudprovider()
+    # Just list the required fields instead of using a serializer
+    def retrieve(self, request, *args, **kwargs):
+        provider = self.get_object()
         driver = provider.get_driver()
+        return Response(driver.get_required_fields())
 
-        return driver.get_required_fields()
 
-    def list(self, request, *args, **kwargs):
-        """
-        Rewrite to get rid of using a serializer
-        """
-        queryset = self.filter_queryset(self.get_queryset())
+class CloudProviderObjectUserPermissionsViewSet(mixins.CloudProviderPermissionsMixin,
+                                                StackdioObjectUserPermissionsViewSet):
+    pass
 
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            return self.get_paginated_response(page)
 
-        return Response(queryset)
+class CloudProviderObjectGroupPermissionsViewSet(mixins.CloudProviderPermissionsMixin,
+                                                 StackdioObjectGroupPermissionsViewSet):
+    pass
 
 
 class CloudAccountListAPIView(generics.ListCreateAPIView):
@@ -168,36 +156,35 @@ class CloudAccountDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CloudAccountModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.CloudAccountPermissionsModelPermissions,)
     model_cls = models.CloudAccount
 
 
 class CloudAccountModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudAccountPermissionsModelPermissions,)
     model_cls = models.CloudAccount
 
 
-class CloudAccountObjectUserPermissionsViewSet(mixins.CloudAccountRelatedMixin,
+class CloudAccountObjectUserPermissionsViewSet(mixins.CloudAccountPermissionsMixin,
                                                StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.CloudAccountPermissionsObjectPermissions,)
+    pass
 
 
-class CloudAccountObjectGroupPermissionsViewSet(mixins.CloudAccountRelatedMixin,
+class CloudAccountObjectGroupPermissionsViewSet(mixins.CloudAccountPermissionsMixin,
                                                 StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudAccountPermissionsObjectPermissions,)
+    pass
 
 
 class GlobalOrchestrationComponentListAPIView(mixins.CloudAccountRelatedMixin,
                                               generics.ListCreateAPIView):
-    serializer_class = FormulaComponentSerializer
+    serializer_class = serializers.GlobalOrchestrationComponentSerializer
+
+    def get_queryset(self):
+        cloud_account = self.get_cloudaccount()
+        return cloud_account.formula_components.all()
 
     def get_serializer_context(self):
         context = super(GlobalOrchestrationComponentListAPIView, self).get_serializer_context()
         context['content_object'] = self.get_cloudaccount()
         return context
-
-    def get_queryset(self):
-        return self.get_cloudaccount().formula_components.all()
 
     def perform_create(self, serializer):
         serializer.save(content_object=self.get_cloudaccount())
@@ -205,14 +192,22 @@ class GlobalOrchestrationComponentListAPIView(mixins.CloudAccountRelatedMixin,
 
 class GlobalOrchestrationComponentDetailAPIView(mixins.CloudAccountRelatedMixin,
                                                 generics.RetrieveUpdateDestroyAPIView):
-    queryset = FormulaComponent.objects.all()
-    serializer_class = FormulaComponentSerializer
+    serializer_class = serializers.GlobalOrchestrationComponentSerializer
+
+    def get_queryset(self):
+        cloud_account = self.get_cloudaccount()
+        return cloud_account.formula_components.all()
+
+    def get_serializer_context(self):
+        context = super(GlobalOrchestrationComponentDetailAPIView, self).get_serializer_context()
+        context['content_object'] = self.get_cloudaccount()
+        return context
 
 
-class GlobalOrchestrationPropertiesAPIView(mixins.CloudAccountRelatedMixin,
-                                           generics.RetrieveUpdateAPIView):
+class GlobalOrchestrationPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.CloudAccount.objects.all()
     serializer_class = serializers.GlobalOrchestrationPropertiesSerializer
+    permission_classes = (StackdioObjectPermissions,)
 
 
 class CloudAccountVPCSubnetListAPIView(mixins.CloudAccountRelatedMixin, generics.ListAPIView):
@@ -245,7 +240,8 @@ class CloudAccountImageListAPIView(mixins.CloudAccountRelatedMixin, generics.Lis
     filter_class = filters.CloudImageFilter
 
     def get_queryset(self):
-        return models.CloudImage.objects.filter(account=self.get_cloudaccount())
+        cloud_account = self.get_cloudaccount()
+        return cloud_account.images.all()
 
 
 class CloudImageListAPIView(generics.ListCreateAPIView):
@@ -286,23 +282,21 @@ class CloudImageDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CloudImageModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.CloudImagePermissionsModelPermissions,)
     model_cls = models.CloudImage
 
 
 class CloudImageModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudImagePermissionsModelPermissions,)
     model_cls = models.CloudImage
 
 
-class CloudImageObjectUserPermissionsViewSet(mixins.CloudImageRelatedMixin,
+class CloudImageObjectUserPermissionsViewSet(mixins.CloudImagePermissionsMixin,
                                              StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.CloudImagePermissionsObjectPermissions,)
+    pass
 
 
-class CloudImageObjectGroupPermissionsViewSet(mixins.CloudImageRelatedMixin,
+class CloudImageObjectGroupPermissionsViewSet(mixins.CloudImagePermissionsMixin,
                                               StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.CloudImagePermissionsObjectPermissions,)
+    pass
 
 
 class SnapshotListAPIView(generics.ListCreateAPIView):
@@ -326,23 +320,21 @@ class SnapshotDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class SnapshotModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.SnapshotPermissionsModelPermissions,)
     model_cls = models.Snapshot
 
 
 class SnapshotModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.SnapshotPermissionsModelPermissions,)
     model_cls = models.Snapshot
 
 
-class SnapshotObjectUserPermissionsViewSet(mixins.SnapshotRelatedMixin,
+class SnapshotObjectUserPermissionsViewSet(mixins.SnapshotPermissionsMixin,
                                            StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.SnapshotPermissionsObjectPermissions,)
+    pass
 
 
-class SnapshotObjectGroupPermissionsViewSet(mixins.SnapshotRelatedMixin,
+class SnapshotObjectGroupPermissionsViewSet(mixins.SnapshotPermissionsMixin,
                                             StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.SnapshotPermissionsObjectPermissions,)
+    pass
 
 
 class CloudInstanceSizeListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
@@ -351,16 +343,17 @@ class CloudInstanceSizeListAPIView(mixins.CloudProviderRelatedMixin, generics.Li
     lookup_field = 'instance_id'
 
     def get_queryset(self):
-        return models.CloudInstanceSize.objects.filter(provider=self.get_cloudprovider())
+        cloud_provider = self.get_cloudprovider()
+        return cloud_provider.instance_sizes.all()
 
 
-class CloudInstanceSizeDetailAPIView(mixins.CloudProviderRelatedMixin,
-                                     generics.RetrieveAPIView):
+class CloudInstanceSizeDetailAPIView(mixins.CloudProviderRelatedMixin, generics.RetrieveAPIView):
     serializer_class = serializers.CloudInstanceSizeSerializer
     lookup_field = 'instance_id'
 
     def get_queryset(self):
-        return models.CloudInstanceSize.objects.filter(provider=self.get_cloudprovider())
+        cloud_provider = self.get_cloudprovider()
+        return cloud_provider.instance_sizes.all()
 
 
 class CloudRegionListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
@@ -369,7 +362,8 @@ class CloudRegionListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIV
     lookup_field = 'title'
 
     def get_queryset(self):
-        return models.CloudRegion.objects.filter(provider=self.get_cloudprovider())
+        cloud_provider = self.get_cloudprovider()
+        return cloud_provider.regions.all()
 
 
 class CloudRegionDetailAPIView(mixins.CloudProviderRelatedMixin, generics.RetrieveAPIView):
@@ -377,7 +371,8 @@ class CloudRegionDetailAPIView(mixins.CloudProviderRelatedMixin, generics.Retrie
     lookup_field = 'title'
 
     def get_queryset(self):
-        return models.CloudRegion.objects.filter(provider=self.get_cloudprovider())
+        cloud_provider = self.get_cloudprovider()
+        return cloud_provider.regions.all()
 
 
 class CloudRegionZoneListAPIView(mixins.CloudProviderRelatedMixin, generics.ListAPIView):
@@ -385,8 +380,8 @@ class CloudRegionZoneListAPIView(mixins.CloudProviderRelatedMixin, generics.List
     filter_class = filters.CloudZoneFilter
 
     def get_queryset(self):
-        region = models.CloudRegion.objects.get(provider=self.get_cloudprovider(),
-                                                title=self.kwargs.get('title'))
+        cloud_provider = self.get_cloudprovider()
+        region = cloud_provider.regions.get(title=self.kwargs.get('title'))
         return region.zones.all()
 
 

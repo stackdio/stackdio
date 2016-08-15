@@ -22,7 +22,7 @@ from celery import Celery
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.server.settings.production')
 
-from django.conf import settings  # pylint: disable=wrong-import-position
+from django.conf import settings  # nopep8 pylint: disable=wrong-import-position
 
 app = Celery('stackdio')
 

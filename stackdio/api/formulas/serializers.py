@@ -24,7 +24,10 @@ from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=impor
 
 from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioParentHyperlinkedModelSerializer,
+)
 from stackdio.core.utils import recursively_sort_dict
 from . import models, tasks, validators
 
@@ -42,15 +45,20 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:formulas:formula-properties')
     components = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-component-list')
+        view_name='api:formulas:formula-component-list',
+        lookup_url_kwarg='parent_pk')
     valid_versions = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-valid-version-list')
+        view_name='api:formulas:formula-valid-version-list',
+        lookup_url_kwarg='parent_pk')
     action = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-action')
+        view_name='api:formulas:formula-action',
+        lookup_url_kwarg='parent_pk')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-object-user-permissions-list')
+        view_name='api:formulas:formula-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:formulas:formula-object-group-permissions-list')
+        view_name='api:formulas:formula-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     class Meta:
         model = models.Formula
@@ -184,10 +192,7 @@ class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstra
         We just want to return a serialized formula object here.  Returning an object with
         the action in it just doesn't make much sense.
         """
-        return FormulaSerializer(
-            instance,
-            context=self.context
-        ).to_representation(instance)
+        return FormulaSerializer(instance, context=self.context).to_representation(instance)
 
     def do_update(self):
         formula = self.instance
@@ -266,13 +271,14 @@ class FormulaVersionSerializer(serializers.ModelSerializer):
         return super(FormulaVersionSerializer, self).create(validated_data)
 
 
-class FormulaComponentSerializer(serializers.HyperlinkedModelSerializer):
+class FormulaComponentSerializer(StackdioParentHyperlinkedModelSerializer):
     # Possibly required
     formula = serializers.SlugRelatedField(slug_field='uri',
                                            queryset=models.Formula.objects.all(), required=False)
 
     class Meta:
         model = models.FormulaComponent
+        parent_attr = 'content_object'
         fields = (
             'formula',
             'title',

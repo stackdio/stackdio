@@ -28,7 +28,7 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from . import filters, mixins, models, permissions, serializers
+from . import filters, mixins, models, serializers
 
 logger = logging.getLogger(__name__)
 
@@ -51,20 +51,18 @@ class VolumeDetailAPIView(generics.RetrieveAPIView):
 
 
 class VolumeModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.VolumePermissionsModelPermissions,)
     model_cls = models.Volume
 
 
 class VolumeModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.VolumePermissionsModelPermissions,)
     model_cls = models.Volume
 
 
-class VolumeObjectUserPermissionsViewSet(mixins.VolumeRelatedMixin,
+class VolumeObjectUserPermissionsViewSet(mixins.VolumePermissionsMixin,
                                          StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.VolumePermissionsObjectPermissions,)
+    pass
 
 
-class VolumeObjectGroupPermissionsViewSet(mixins.VolumeRelatedMixin,
+class VolumeObjectGroupPermissionsViewSet(mixins.VolumePermissionsMixin,
                                           StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.VolumePermissionsObjectPermissions,)
+    pass

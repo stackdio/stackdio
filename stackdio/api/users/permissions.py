@@ -15,18 +15,7 @@
 # limitations under the License.
 #
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-
-from stackdio.core.permissions import (
-    StackdioObjectPermissions,
-    StackdioPermissionsModelPermissions,
-    StackdioPermissionsObjectPermissions,
-)
-
-
-class UserPermissionsModelPermissions(StackdioPermissionsModelPermissions):
-    model_cls = get_user_model()
+from stackdio.core.permissions import StackdioObjectPermissions
 
 
 class GroupObjectPermissions(StackdioObjectPermissions):
@@ -42,11 +31,3 @@ class GroupObjectPermissions(StackdioObjectPermissions):
         'PATCH': ['%(app_label)s.update_%(model_name)s'],
         'DELETE': ['%(app_label)s.delete_%(model_name)s'],
     }
-
-
-class GroupPermissionsModelPermissions(StackdioPermissionsModelPermissions):
-    model_cls = Group
-
-
-class GroupPermissionsObjectPermissions(StackdioPermissionsObjectPermissions):
-    parent_model_cls = Group

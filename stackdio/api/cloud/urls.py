@@ -90,38 +90,38 @@ urlpatterns = (
         api.CloudProviderDetailAPIView.as_view(),
         name='cloudprovider-detail'),
 
-    url(r'^providers/(?P<name>[\w.@+-]+)/permissions/',
-        include(provider_object_router.urls)),
-
     url(r'^providers/(?P<name>[\w.@+-]+)/required_fields/$',
         api.CloudProviderRequiredFieldsAPIView.as_view(),
         name='cloudprovider-required'),
 
-    url(r'^providers/(?P<name>[\w.@+-]+)/instance_sizes/$',
+    url(r'^providers/(?P<parent_name>[\w.@+-]+)/permissions/',
+        include(provider_object_router.urls)),
+
+    url(r'^providers/(?P<parent_name>[\w.@+-]+)/instance_sizes/$',
         api.CloudInstanceSizeListAPIView.as_view(),
         name='cloudinstancesize-list'),
 
-    url(r'^providers/(?P<name>[\w.@+-]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
+    url(r'^providers/(?P<parent_name>[\w.@+-]+)/instance_sizes/(?P<instance_id>[\w.@+-]+)/$',
         api.CloudInstanceSizeDetailAPIView.as_view(),
         name='cloudinstancesize-detail'),
 
-    url(r'^providers/(?P<name>[\w.@+-]+)/regions/$',
+    url(r'^providers/(?P<parent_name>[\w.@+-]+)/regions/$',
         api.CloudRegionListAPIView.as_view(),
         name='cloudregion-list'),
 
-    url(r'^providers/(?P<name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/$',
+    url(r'^providers/(?P<parent_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/$',
         api.CloudRegionDetailAPIView.as_view(),
         name='cloudregion-detail'),
 
-    url(r'^providers/(?P<name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
+    url(r'^providers/(?P<parent_name>[\w.@+-]+)/regions/(?P<title>[\w.@+-]+)/zones/$',
         api.CloudRegionZoneListAPIView.as_view(),
         name='cloudregion-zones'),
 
-    url(r'^providers/(?P<name>[\w.@+-]+)/zones/$',
+    url(r'^providers/(?P<parent_name>[\w.@+-]+)/zones/$',
         api.CloudZoneListAPIView.as_view(),
         name='cloudzone-list'),
 
-    url(r'^providers/(?P<name>[\w.@+-]+)/zones/(?P<title>[\w.@+-]+)/$',
+    url(r'^providers/(?P<parent_name>[\w.@+-]+)/zones/(?P<title>[\w.@+-]+)/$',
         api.CloudZoneDetailAPIView.as_view(),
         name='cloudzone-detail'),
 
@@ -136,40 +136,40 @@ urlpatterns = (
         api.CloudAccountDetailAPIView.as_view(),
         name='cloudaccount-detail'),
 
-    url(r'^accounts/(?P<pk>[0-9]+)/images/$',
+    url(r'^accounts/(?P<parent_pk>[0-9]+)/images/$',
         api.CloudAccountImageListAPIView.as_view(),
         name='cloudaccount-cloudimage-list'),
 
-    url(r'^accounts/(?P<pk>[0-9]+)/security_groups/$',
+    url(r'^accounts/(?P<parent_pk>[0-9]+)/security_groups/$',
         api.CloudAccountSecurityGroupListAPIView.as_view(),
         name='cloudaccount-securitygroup-list'),
 
-    url(r'^accounts/(?P<pk>[0-9]+)/security_groups/all/$',
+    url(r'^accounts/(?P<parent_pk>[0-9]+)/security_groups/all/$',
         api.FullCloudAccountSecurityGroupListAPIView.as_view(),
         name='cloudaccount-fullsecuritygroup-list'),
 
-    url(r'^accounts/(?P<pk>[0-9]+)/vpc_subnets/$',
+    url(r'^accounts/(?P<parent_pk>[0-9]+)/vpc_subnets/$',
         api.CloudAccountVPCSubnetListAPIView.as_view(),
         name='cloudaccount-vpcsubnet-list'),
 
-    url(r'^accounts/(?P<pk>[0-9]+)/global_orchestration_components/$',
+    url(r'^accounts/(?P<parent_pk>[0-9]+)/global_orchestration_components/$',
         api.GlobalOrchestrationComponentListAPIView.as_view(),
         name='cloudaccount-global-orchestration-list'),
+
+    url(r'^accounts/(?P<parent_pk>[0-9]+)/global_orchestration_components/(?P<pk>[0-9]+)/$',
+        api.GlobalOrchestrationComponentDetailAPIView.as_view(),
+        name='cloudaccount-global-orchestration-detail'),
 
     url(r'^accounts/(?P<pk>[0-9]+)/global_orchestration_properties/$',
         api.GlobalOrchestrationPropertiesAPIView.as_view(),
         name='cloudaccount-global-orchestration-properties'),
 
-    url(r'^accounts/(?P<pk>[0-9]+)/formula_versions/$',
+    url(r'^accounts/(?P<parent_pk>[0-9]+)/formula_versions/$',
         api.CloudAccountFormulaVersionsAPIView.as_view(),
         name='cloudaccount-formula-versions'),
 
-    url(r'^accounts/(?P<pk>[0-9]+)/permissions/',
+    url(r'^accounts/(?P<parent_pk>[0-9]+)/permissions/',
         include(account_object_router.urls)),
-
-    url(r'^global_orchestration_components/(?P<pk>[0-9]+)/$',
-        api.GlobalOrchestrationComponentDetailAPIView.as_view(),
-        name='globalorchestrationformulacomponent-detail'),
 
     url(r'^images/$',
         api.CloudImageListAPIView.as_view(),
@@ -182,7 +182,7 @@ urlpatterns = (
         api.CloudImageDetailAPIView.as_view(),
         name='cloudimage-detail'),
 
-    url(r'^images/(?P<pk>[0-9]+)/permissions/',
+    url(r'^images/(?P<parent_pk>[0-9]+)/permissions/',
         include(image_object_router.urls)),
 
     url(r'^snapshots/$',
@@ -196,7 +196,7 @@ urlpatterns = (
         api.SnapshotDetailAPIView.as_view(),
         name='snapshot-detail'),
 
-    url(r'^snapshots/(?P<pk>[0-9]+)/permissions/',
+    url(r'^snapshots/(?P<parent_pk>[0-9]+)/permissions/',
         include(snapshot_object_router.urls)),
 
     url(r'^security_groups/$',
@@ -207,7 +207,7 @@ urlpatterns = (
         api.SecurityGroupDetailAPIView.as_view(),
         name='securitygroup-detail'),
 
-    url(r'^security_groups/(?P<pk>[0-9]+)/rules/$',
+    url(r'^security_groups/(?P<parent_pk>[0-9]+)/rules/$',
         api.SecurityGroupRulesAPIView.as_view(),
         name='securitygroup-rules'),
 )

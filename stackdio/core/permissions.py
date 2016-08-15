@@ -18,13 +18,70 @@
 
 import logging
 
+from django.conf import settings
+from django.http import Http404
 from rest_framework import permissions
 
 
 logger = logging.getLogger(__name__)
 
 
+def log_permissions(cls):
+    """
+    decorator to log some things about permissions.
+    """
+
+    # Log permissions only if we're debugging
+    if settings.DEBUG:
+        cur_has_perm = getattr(cls, 'has_permission')
+        cur_has_obj_perm = getattr(cls, 'has_object_permission')
+
+        def has_permission(self, request, view):
+            try:
+                ret = cur_has_perm(self, request, view)
+                logger.debug('{} has_permission for {} {} called: {}'.format(
+                    cls.__name__,
+                    request.method,
+                    request.get_full_path(),
+                    ret
+                ))
+                return ret
+            except Exception as e:
+                logger.debug('{} has_permission for {} {} threw an exception: {}'.format(
+                    cls.__name__,
+                    request.method,
+                    request.get_full_path(),
+                    e.message
+                ))
+                raise
+
+        def has_object_permission(self, request, view, obj):
+            try:
+                ret = cur_has_obj_perm(self, request, view, obj)
+                logger.debug('{} has_object_permission for {} {} called: {}'.format(
+                    cls.__name__,
+                    request.method,
+                    request.get_full_path(),
+                    ret
+                ))
+                return ret
+            except Exception as e:
+                logger.debug('{} has_object_permission for {} {} threw an exception: {}'.format(
+                    cls.__name__,
+                    request.method,
+                    request.get_full_path(),
+                    e.message
+                ))
+                raise
+
+        cls.has_permission = has_permission
+        cls.has_object_permission = has_object_permission
+
+    return cls
+
+
 # For list/create views
+@log_permissions
 class StackdioModelPermissions(permissions.DjangoModelPermissions):
     """
     Override the default permission namings
@@ -41,6 +98,7 @@ class StackdioModelPermissions(permissions.DjangoModelPermissions):
 
 
 # For detail views
+@log_permissions
 class StackdioObjectPermissions(permissions.DjangoObjectPermissions):
     """
     Override the default permission namings
@@ -59,13 +117,14 @@ class StackdioObjectPermissions(permissions.DjangoObjectPermissions):
         return True
 
 
-class StackdioParentObjectPermissions(StackdioObjectPermissions):
+@log_permissions
+class StackdioParentPermissions(permissions.DjangoObjectPermissions):
     """
-    Very similar to regular object permissions, except that we don't want to use the model_cls
-    from the queryset, since the queryset may not be the same type of object that we want to
-    check permissions on.  Classic example being the `/api/stacks/<pk>/hosts/` endpoint - we want
-    to check permissions on a stack object, but the queryset consists of host objects.
+    To be used on views that have parent objects to ensure the child view
+    has permission to view the parent object
     """
+    base_required_perms = ['%(app_label)s.view_%(model_name)s']
+
     perms_map = {
         'GET': ['%(app_label)s.view_%(model_name)s'],
         'OPTIONS': [],
@@ -76,54 +135,30 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
         'DELETE': ['%(app_label)s.update_%(model_name)s'],
     }
 
-    parent_model_cls = None
+    def get_base_required_permissions(self, model_cls):
+        kwargs = {
+            'app_label': model_cls._meta.app_label,
+            'model_name': model_cls._meta.model_name
+        }
+        return [perm % kwargs for perm in self.base_required_perms]
 
     def has_permission(self, request, view):
         """
-        Since this is for 'parent' object permissions, override this to check permissions on
-        the parent object.
+        Check permissions on the parent object.
         """
-        try:
-            model_name = self.parent_model_cls._meta.model_name
-        except AttributeError:
-            return False
+        if hasattr(view, 'get_parent_queryset'):
+            queryset = view.get_parent_queryset()
+        else:
+            queryset = getattr(view, 'parent_queryset', None)
 
-        # Grab the get_object method
-        get_object_method = getattr(view, 'get_%s' % model_name, None)
+        assert queryset is not None, (
+            'Cannot apply {} on a view that does not set `.parent_queryset` or have a '
+            '`.get_parent_queryset()` method.'.format(self.__class__.__name__)
+        )
 
-        # Couldn't find a method, no permission granted
-        if get_object_method is None:
-            return False
-
-        return self.has_object_permission(request, view, get_object_method())
-
-    def has_object_permission(self, request, view, obj):
-        assert self.parent_model_cls is not None, (
-            'Cannot apply %s directly. '
-            'You must subclass it and override the `parent_model_cls` '
-            'attribute.' % self.__class__.__name__)
-
-        model_cls = self.parent_model_cls
+        model_cls = queryset.model
         user = request.user
-
-        # There's a weird case sometimes where the BrowsableAPIRenderer checks permissions
-        # that it doesn't need to, and throws an exception.  We'll default to less permissions
-        # here rather than more.
-        try:
-            if obj._meta.app_label != model_cls._meta.app_label:
-                return False
-        except AttributeError:
-            # This means the BrowsableRenderer is trying to check object permissions on one of our
-            # permissions responses... which are just dicts, so it doesn't know what to do.  We'll
-            # check the parent object instead.
-            model_name = model_cls._meta.model_name
-            # All of our parent views have a `get_<model_name>` method, so we'll grab that and use
-            # it to get an object to check permissions on.
-            get_parent_obj = getattr(view, 'get_%s' % model_name)
-            if get_parent_obj:
-                return self.has_object_permission(request, view, get_parent_obj())
-            else:
-                return False
+        obj = view.get_parent_object()
 
         perms = self.get_required_object_permissions(request.method, model_cls)
 
@@ -132,25 +167,41 @@ class StackdioParentObjectPermissions(StackdioObjectPermissions):
             # they have read permissions to see 403, or not, and simply see
             # a 404 response.
 
-            if request.method in permissions.SAFE_METHODS:
+            base_required_perms = self.get_base_required_permissions(model_cls)
+
+            if perms == base_required_perms:
                 # Read permissions already checked and failed, no need
                 # to make another lookup.
-                raise permissions.Http404
+                raise Http404
 
-            read_perms = self.get_required_object_permissions('GET', model_cls)
-            if not user.has_perms(read_perms, obj):
-                raise permissions.Http404
+            # Check for base required permissions
+            if not user.has_perms(base_required_perms, obj):
+                raise Http404
 
-            # Has read permissions.
+            # Has permissions to view 403
             return False
 
         return True
 
+    def has_object_permission(self, request, view, obj):
+        return True
 
+
+@log_permissions
+class StackdioPermissionsPermissions(StackdioParentPermissions):
+    perms_map = {
+        'GET': ['%(app_label)s.admin_%(model_name)s'],
+        'OPTIONS': [],
+        'HEAD': [],
+        'POST': ['%(app_label)s.admin_%(model_name)s'],
+        'PUT': ['%(app_label)s.admin_%(model_name)s'],
+        'PATCH': ['%(app_label)s.admin_%(model_name)s'],
+        'DELETE': ['%(app_label)s.admin_%(model_name)s'],
+    }
+
+
+@log_permissions
 class StackdioPermissionsModelPermissions(permissions.DjangoModelPermissions):
-    """
-    Override the default permission namings
-    """
     perms_map = {
         'GET': ['%(app_label)s.admin_%(model_name)s'],
         'OPTIONS': [],
@@ -183,15 +234,3 @@ class StackdioPermissionsModelPermissions(permissions.DjangoModelPermissions):
             (request.user.is_authenticated() or not self.authenticated_users_only) and
             request.user.has_perms(perms)
         )
-
-
-class StackdioPermissionsObjectPermissions(StackdioParentObjectPermissions):
-    perms_map = {
-        'GET': ['%(app_label)s.admin_%(model_name)s'],
-        'OPTIONS': [],
-        'HEAD': [],
-        'POST': ['%(app_label)s.admin_%(model_name)s'],
-        'PUT': ['%(app_label)s.admin_%(model_name)s'],
-        'PATCH': ['%(app_label)s.admin_%(model_name)s'],
-        'DELETE': ['%(app_label)s.admin_%(model_name)s'],
-    }

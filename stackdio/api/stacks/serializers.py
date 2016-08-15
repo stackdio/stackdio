@@ -37,9 +37,11 @@ from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.serializers import SecurityGroupSerializer
 from stackdio.api.formulas.serializers import FormulaComponentSerializer, FormulaVersionSerializer
 from stackdio.core.constants import Action, Activity, ComponentStatus, Health
+from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
+    StackdioParentHyperlinkedModelSerializer,
     StackdioLabelSerializer,
     StackdioLiteralLabelsSerializer,
 )
@@ -123,7 +125,7 @@ class HostComponentSerializer(FormulaComponentSerializer):
         )
 
 
-class HostSerializer(StackdioHyperlinkedModelSerializer):
+class HostSerializer(StackdioParentHyperlinkedModelSerializer):
     # Read only fields
     availability_zone = serializers.PrimaryKeyRelatedField(read_only=True)
     blueprint_host_definition = serializers.ReadOnlyField(source='blueprint_host_definition.title')
@@ -141,6 +143,8 @@ class HostSerializer(StackdioHyperlinkedModelSerializer):
 
     class Meta:
         model = models.Host
+        parent_attr = 'stack'
+        model_name = 'stack-host'
         fields = (
             'url',
             'hostname',
@@ -343,30 +347,41 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
     label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
 
     # Identity links
-    hosts = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-hosts')
-    action = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-action')
-    commands = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-command-list')
-    logs = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-logs')
-    volumes = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-volumes')
-    labels = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-label-list')
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-properties')
+    hosts = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-host-list',
+        lookup_url_kwarg='parent_pk')
+    action = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-action',
+        lookup_url_kwarg='parent_pk')
+    commands = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-command-list',
+        lookup_url_kwarg='parent_pk')
+    logs = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-logs',
+        lookup_url_kwarg='parent_pk')
+    volumes = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-volume-list',
+        lookup_url_kwarg='parent_pk')
+    labels = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-label-list',
+        lookup_url_kwarg='parent_pk')
     history = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-history')
+        view_name='api:stacks:stack-history',
+        lookup_url_kwarg='parent_pk')
     security_groups = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-security-groups')
+        view_name='api:stacks:stack-security-groups',
+        lookup_url_kwarg='parent_pk')
     formula_versions = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-formula-versions')
+        view_name='api:stacks:stack-formula-versions',
+        lookup_url_kwarg='parent_pk')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-object-user-permissions-list')
+        view_name='api:stacks:stack-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-object-group-permissions-list')
+        view_name='api:stacks:stack-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     class Meta:
         model = models.Stack
@@ -384,8 +399,6 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'volume_count',
             'created',
             'label_list',
-            'user_permissions',
-            'group_permissions',
             'hosts',
             'volumes',
             'labels',
@@ -396,6 +409,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'security_groups',
             'formula_versions',
             'logs',
+            'user_permissions',
+            'group_permissions',
         )
 
         create_only_fields = (
@@ -518,12 +533,6 @@ class FullStackSerializer(StackSerializer):
     properties = StackPropertiesSerializer(required=False)
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
     formula_versions = FormulaVersionSerializer(many=True, required=False)
-
-    def to_representation(self, instance):
-        """
-        We want to return links instead of the full object
-        """
-        return StackSerializer(instance, context=self.context).to_representation(instance)
 
     def create(self, validated_data):
         formula_versions = validated_data.pop('formula_versions', [])
@@ -676,11 +685,13 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
         return self.instance
 
 
-class StackCommandSerializer(StackdioHyperlinkedModelSerializer):
-    zip_url = serializers.HyperlinkedIdentityField(view_name='api:stacks:stackcommand-zip')
+class StackCommandSerializer(StackdioParentHyperlinkedModelSerializer):
+    zip_url = HyperlinkedParentField(view_name='api:stacks:stack-command-zip', parent_attr='stack')
 
     class Meta:
         model = models.StackCommand
+        parent_attr = 'stack'
+        model_name = 'stack-command'
         fields = (
             'id',
             'url',

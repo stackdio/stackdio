@@ -25,7 +25,10 @@ from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioParentHyperlinkedModelSerializer,
+)
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
 from stackdio.api.blueprints.models import PROTOCOL_CHOICES
@@ -36,6 +39,7 @@ from stackdio.api.cloud.providers.base import (
     RuleNotFoundException,
     SecurityGroupRule,
 )
+from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from . import models
 from .utils import get_provider_driver_class
 
@@ -51,19 +55,19 @@ class CloudProviderSerializer(StackdioHyperlinkedModelSerializer):
         lookup_field='name')
     instance_sizes = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudinstancesize-list',
-        lookup_field='name')
+        lookup_field='name', lookup_url_kwarg='parent_name')
     regions = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudregion-list',
-        lookup_field='name')
+        lookup_field='name', lookup_url_kwarg='parent_name')
     zones = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudzone-list',
-        lookup_field='name')
+        lookup_field='name', lookup_url_kwarg='parent_name')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudprovider-object-user-permissions-list',
-        lookup_field='name')
+        lookup_field='name', lookup_url_kwarg='parent_name')
     group_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudprovider-object-group-permissions-list',
-        lookup_field='name')
+        lookup_field='name', lookup_url_kwarg='parent_name')
 
     class Meta:
         model = models.CloudProvider
@@ -90,23 +94,31 @@ class CloudAccountSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSeri
 
     # Hyperlinks
     images = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudaccount-cloudimage-list')
+        view_name='api:cloud:cloudaccount-cloudimage-list',
+        lookup_url_kwarg='parent_pk')
     security_groups = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudaccount-securitygroup-list')
+        view_name='api:cloud:cloudaccount-securitygroup-list',
+        lookup_url_kwarg='parent_pk')
     all_security_groups = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudaccount-fullsecuritygroup-list')
+        view_name='api:cloud:cloudaccount-fullsecuritygroup-list',
+        lookup_url_kwarg='parent_pk')
     vpc_subnets = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudaccount-vpcsubnet-list')
+        view_name='api:cloud:cloudaccount-vpcsubnet-list',
+        lookup_url_kwarg='parent_pk')
     global_orchestration_components = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudaccount-global-orchestration-list')
+        view_name='api:cloud:cloudaccount-global-orchestration-list',
+        lookup_url_kwarg='parent_pk')
     global_orchestration_properties = serializers.HyperlinkedIdentityField(
         view_name='api:cloud:cloudaccount-global-orchestration-properties')
     formula_versions = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudaccount-formula-versions')
+        view_name='api:cloud:cloudaccount-formula-versions',
+        lookup_url_kwarg='parent_pk')
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudaccount-object-user-permissions-list')
+        view_name='api:cloud:cloudaccount-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudaccount-object-group-permissions-list')
+        view_name='api:cloud:cloudaccount-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     class Meta:
         model = models.CloudAccount
@@ -217,6 +229,22 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
         return account
 
 
+class GlobalOrchestrationComponentSerializer(FormulaComponentSerializer):
+
+    class Meta(FormulaComponentSerializer.Meta):
+        app_label = 'cloud'
+        model_name = 'cloudaccount-global-orchestration'
+
+        fields = (
+            'url',
+            'formula',
+            'title',
+            'description',
+            'sls_path',
+            'order',
+        )
+
+
 class CloudImageSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=models.CloudAccount.objects.all()
@@ -227,9 +255,11 @@ class CloudImageSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerial
     )
 
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudimage-object-user-permissions-list')
+        view_name='api:cloud:cloudimage-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:cloudimage-object-group-permissions-list')
+        view_name='api:cloud:cloudimage-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     class Meta:
         model = models.CloudImage
@@ -279,9 +309,11 @@ class SnapshotSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializ
     )
 
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:snapshot-object-user-permissions-list')
+        view_name='api:cloud:snapshot-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:cloud:snapshot-object-group-permissions-list')
+        view_name='api:cloud:snapshot-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     class Meta:
         model = models.Snapshot
@@ -320,18 +352,14 @@ class SnapshotSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializ
         return attrs
 
 
-class CloudInstanceSizeSerializer(StackdioHyperlinkedModelSerializer):
-    url = HyperlinkedParentField(
-        view_name='api:cloud:cloudinstancesize-detail',
-        parent_relation_field='provider',
-        parent_lookup_field='name',
-        lookup_field='instance_id',
-    )
-
+class CloudInstanceSizeSerializer(StackdioParentHyperlinkedModelSerializer):
     provider = serializers.CharField(source='provider.name')
 
     class Meta:
         model = models.CloudInstanceSize
+        parent_attr = 'provider'
+        parent_lookup_field = 'name'
+        lookup_field = 'instance_id'
         fields = (
             'url',
             'title',
@@ -342,25 +370,22 @@ class CloudInstanceSizeSerializer(StackdioHyperlinkedModelSerializer):
         )
 
 
-class CloudRegionSerializer(StackdioHyperlinkedModelSerializer):
-    url = HyperlinkedParentField(
-        view_name='api:cloud:cloudregion-detail',
-        parent_relation_field='provider',
-        parent_lookup_field='name',
-        lookup_field='title',
-    )
-
+class CloudRegionSerializer(StackdioParentHyperlinkedModelSerializer):
     provider = serializers.CharField(source='provider.name')
     zones = serializers.StringRelatedField(many=True, read_only=True)
+
     zones_url = HyperlinkedParentField(
         view_name='api:cloud:cloudregion-zones',
+        parent_attr='provider',
         parent_lookup_field='name',
-        parent_relation_field='provider',
         lookup_field='title',
     )
 
     class Meta:
         model = models.CloudRegion
+        parent_attr = 'provider'
+        parent_lookup_field = 'name'
+        lookup_field = 'title'
         fields = (
             'url',
             'title',
@@ -370,20 +395,16 @@ class CloudRegionSerializer(StackdioHyperlinkedModelSerializer):
         )
 
 
-class CloudZoneSerializer(StackdioHyperlinkedModelSerializer):
-    url = HyperlinkedParentField(
-        view_name='api:cloud:cloudzone-detail',
-        parent_relation_field='region.provider',
-        parent_lookup_field='name',
-        lookup_field='title',
-    )
-
+class CloudZoneSerializer(StackdioParentHyperlinkedModelSerializer):
     region = serializers.CharField(source='region.title')
 
     provider = serializers.CharField(source='region.provider.name')
 
     class Meta:
         model = models.CloudZone
+        parent_attr = 'provider'
+        parent_lookup_field = 'name'
+        lookup_field = 'title'
         fields = (
             'url',
             'title',
@@ -401,7 +422,8 @@ class SecurityGroupSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSer
 
     name = serializers.CharField(default='')
 
-    rules = serializers.HyperlinkedIdentityField(view_name='api:cloud:securitygroup-rules')
+    rules = serializers.HyperlinkedIdentityField(view_name='api:cloud:securitygroup-rules',
+                                                 lookup_url_kwarg='parent_pk')
 
     default = serializers.BooleanField(source='is_default', required=False)
     managed = serializers.BooleanField(source='is_managed', read_only=True)

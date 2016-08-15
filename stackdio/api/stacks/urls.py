@@ -40,77 +40,77 @@ object_router.register(r'groups',
 
 
 urlpatterns = (
-    url(r'^hosts/(?P<pk>[0-9]+)/$',
-        api.HostDetailAPIView.as_view(),
-        name='host-detail'),
-
-    url(r'^commands/(?P<pk>[0-9]+)/$',
-        api.StackCommandDetailAPIView.as_view(),
-        name='stackcommand-detail'),
-
-    url(r'^commands/(?P<pk>[0-9]+)\.zip$',
-        api.StackCommandZipAPIView.as_view(),
-        name='stackcommand-zip'),
-
-    url(r'^stacks/$',
+    url(r'^$',
         api.StackListAPIView.as_view(),
         name='stack-list'),
 
-    url(r'^stacks/permissions/',
+    url(r'^permissions/',
         include(model_router.urls)),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/$',
+    url(r'^(?P<pk>[0-9]+)/$',
         api.StackDetailAPIView.as_view(),
         name='stack-detail'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/permissions/',
-        include(object_router.urls)),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/hosts/$',
-        api.StackHostsAPIView.as_view(),
-        name='stack-hosts'),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/volumes/$',
-        api.StackVolumesAPIView.as_view(),
-        name='stack-volumes'),
-
-    url(r'^stacks/(?P<pk>[0-9]+)/properties/$',
+    url(r'^(?P<pk>[0-9]+)/properties/$',
         api.StackPropertiesAPIView.as_view(),
         name='stack-properties'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/labels/$',
+    url(r'^(?P<parent_pk>[0-9]+)/permissions/',
+        include(object_router.urls)),
+
+    url(r'^(?P<parent_pk>[0-9]+)/hosts/$',
+        api.StackHostListAPIView.as_view(),
+        name='stack-host-list'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/hosts/(?P<pk>[0-9]+)/$',
+        api.StackHostDetailAPIView.as_view(),
+        name='stack-host-detail'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/volumes/$',
+        api.StackVolumeListAPIView.as_view(),
+        name='stack-volume-list'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/labels/$',
         api.StackLabelListAPIView.as_view(),
         name='stack-label-list'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
+    url(r'^(?P<parent_pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
         api.StackLabelDetailAPIView.as_view(),
         name='stack-label-detail'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/history/$',
+    url(r'^(?P<parent_pk>[0-9]+)/history/$',
         api.StackHistoryAPIView.as_view(),
         name='stack-history'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/logs/$',
+    url(r'^(?P<parent_pk>[0-9]+)/logs/$',
         api.StackLogsAPIView.as_view(),
         name='stack-logs'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/logs/(?P<log>.*)$',
+    url(r'^(?P<parent_pk>[0-9]+)/logs/(?P<log>.*)$',
         api.StackLogsDetailAPIView.as_view(),
         name='stack-logs-detail'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/action/$',
+    url(r'^(?P<parent_pk>[0-9]+)/action/$',
         api.StackActionAPIView.as_view(),
         name='stack-action'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/commands/$',
+    url(r'^(?P<parent_pk>[0-9]+)/commands/$',
         api.StackCommandListAPIView.as_view(),
         name='stack-command-list'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/security_groups/$',
+    url(r'^(?P<parent_pk>[0-9]+)/commands/(?P<pk>[0-9]+)/$',
+        api.StackCommandDetailAPIView.as_view(),
+        name='stack-command-detail'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/commands/(?P<pk>[0-9]+)\.zip$',
+        api.StackCommandZipAPIView.as_view(),
+        name='stack-command-zip'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/security_groups/$',
         api.StackSecurityGroupsAPIView.as_view(),
         name='stack-security-groups'),
 
-    url(r'^stacks/(?P<pk>[0-9]+)/formula_versions/$',
+    url(r'^(?P<parent_pk>[0-9]+)/formula_versions/$',
         api.StackFormulaVersionsAPIView.as_view(),
         name='stack-formula-versions'),
 )

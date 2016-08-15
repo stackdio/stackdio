@@ -231,7 +231,9 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     # '512MB Standard Instance'
 
     # link to the type of provider for this instance size
-    provider = models.ForeignKey('cloud.CloudProvider', verbose_name='Cloud Provider')
+    provider = models.ForeignKey('cloud.CloudProvider',
+                                 verbose_name='Cloud Provider',
+                                 related_name='instance_sizes')
 
     # The underlying size ID of the instance (e.g., t1.micro)
     instance_id = models.CharField('Instance ID', max_length=64)
@@ -382,7 +384,9 @@ class CloudRegion(TitleSlugDescriptionModel):
         default_permissions = ()
 
     # link to the type of provider for this zone
-    provider = models.ForeignKey('cloud.CloudProvider', verbose_name='Cloud Provider')
+    provider = models.ForeignKey('cloud.CloudProvider',
+                                 verbose_name='Cloud Provider',
+                                 related_name='regions')
 
     def __unicode__(self):
         return self.title
@@ -396,7 +400,9 @@ class CloudZone(TitleSlugDescriptionModel):
         default_permissions = ()
 
     # link to the region this AZ is in
-    region = models.ForeignKey('CloudRegion', related_name='zones')
+    region = models.ForeignKey('cloud.CloudRegion',
+                               verbose_name='Cloud Region',
+                               related_name='zones')
 
     def __unicode__(self):
         return self.title

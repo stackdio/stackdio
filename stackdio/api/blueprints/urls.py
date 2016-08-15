@@ -59,22 +59,26 @@ urlpatterns = (
         api.BlueprintPropertiesAPIView.as_view(),
         name='blueprint-properties'),
 
-    url(r'^(?P<pk>[0-9]+)/host_definitions/$',
+    url(r'^(?P<parent_pk>[0-9]+)/host_definitions/$',
         api.BlueprintHostDefinitionListAPIView.as_view(),
         name='blueprint-host-definition-list'),
 
-    url(r'^(?P<pk>[0-9]+)/formula_versions/$',
+    url(r'^(?P<parent_pk>[0-9]+)/host_definitions/(?P<pk>[0-9]+)/$',
+        api.BlueprintHostDefinitionDetailAPIView.as_view(),
+        name='blueprint-host-definition-detail'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/formula_versions/$',
         api.BlueprintFormulaVersionsAPIView.as_view(),
         name='blueprint-formula-versions'),
 
-    url(r'^(?P<pk>[0-9]+)/labels/$',
+    url(r'^(?P<parent_pk>[0-9]+)/labels/$',
         api.BlueprintLabelListAPIView.as_view(),
         name='blueprint-label-list'),
 
-    url(r'^(?P<pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
+    url(r'^(?P<parent_pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
         api.BlueprintLabelDetailAPIView.as_view(),
         name='blueprint-label-detail'),
 
-    url(r'^(?P<pk>[0-9]+)/permissions/',
+    url(r'^(?P<parent_pk>[0-9]+)/permissions/',
         include(object_router.urls)),
 )
