@@ -23,11 +23,7 @@ from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.serializers import ValidationError
 
-from stackdio.core.models import Label
-from stackdio.core.permissions import (
-    StackdioModelPermissions,
-    StackdioObjectPermissions,
-)
+from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -36,7 +32,7 @@ from stackdio.core.viewsets import (
 )
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
-from . import serializers, filters, models, permissions, mixins
+from . import serializers, filters, models, mixins
 
 logger = logging.getLogger(__name__)
 
@@ -102,13 +98,12 @@ class BlueprintExportAPIView(generics.RetrieveAPIView):
     permission_classes = (StackdioObjectPermissions,)
 
 
-class BlueprintPropertiesAPIView(mixins.BlueprintRelatedMixin, generics.RetrieveUpdateAPIView):
+class BlueprintPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
     serializer_class = serializers.BlueprintPropertiesSerializer
+    permission_classes = (StackdioObjectPermissions,)
 
 
-# TODO:  if / when we allow extra formula components to be created, we need to put the
-# content_object in the serializer context
 class BlueprintHostDefinitionListAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):
     serializer_class = serializers.BlueprintHostDefinitionSerializer
 
@@ -116,33 +111,17 @@ class BlueprintHostDefinitionListAPIView(mixins.BlueprintRelatedMixin, generics.
         blueprint = self.get_blueprint()
         return blueprint.host_definitions.all()
 
-    def get_serializer_context(self):
-        context = super(BlueprintHostDefinitionListAPIView, self).get_serializer_context()
-        context['content_object'] = self.get_blueprint()
-        return context
-
     def perform_create(self, serializer):
         serializer.save(blueprint=self.get_blueprint())
 
 
-class BlueprintModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
-    model_cls = models.Blueprint
+class BlueprintHostDefinitionDetailAPIView(mixins.BlueprintRelatedMixin,
+                                           generics.RetrieveUpdateAPIView):
+    serializer_class = serializers.BlueprintHostDefinitionSerializer
 
-
-class BlueprintModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.BlueprintPermissionsModelPermissions,)
-    model_cls = models.Blueprint
-
-
-class BlueprintObjectUserPermissionsViewSet(mixins.BlueprintRelatedMixin,
-                                            StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
-
-
-class BlueprintObjectGroupPermissionsViewSet(mixins.BlueprintRelatedMixin,
-                                             StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.BlueprintPermissionsObjectPermissions,)
+    def get_queryset(self):
+        blueprint = self.get_blueprint()
+        return blueprint.host_definitions.all()
 
 
 class BlueprintFormulaVersionsAPIView(mixins.BlueprintRelatedMixin, generics.ListCreateAPIView):
@@ -174,33 +153,34 @@ class BlueprintLabelListAPIView(mixins.BlueprintRelatedMixin, generics.ListCreat
 
 class BlueprintLabelDetailAPIView(mixins.BlueprintRelatedMixin,
                                   generics.RetrieveUpdateDestroyAPIView):
-    queryset = Label.objects.all()
     serializer_class = serializers.BlueprintLabelSerializer
+    lookup_field = 'key'
+    lookup_url_kwarg = 'label_name'
 
-    def get_object(self):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        # Lookup with both object ids
-        filter_kwargs = {
-            'object_id': self.kwargs['pk'],
-            'key': self.kwargs['label_name']
-        }
-        obj = generics.get_object_or_404(queryset, **filter_kwargs)
-
-        # May raise a permission denied
-        self.check_object_permissions(self.request, obj)
-
-        return obj
+    def get_queryset(self):
+        blueprint = self.get_blueprint()
+        return blueprint.labels.all()
 
     def get_serializer_context(self):
         context = super(BlueprintLabelDetailAPIView, self).get_serializer_context()
         context['content_object'] = self.get_blueprint()
         return context
 
-    def check_object_permissions(self, request, obj):
-        check_perms = super(BlueprintLabelDetailAPIView, self).check_object_permissions
-        if isinstance(obj, models.Blueprint):
-            check_perms(request, obj)
-        else:
-            # Check the permissions on the stack instead of the label
-            check_perms(request, obj.content_object)
+
+# All the permissions things
+class BlueprintModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    model_cls = models.Blueprint
+
+
+class BlueprintModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    model_cls = models.Blueprint
+
+
+class BlueprintObjectUserPermissionsViewSet(mixins.BlueprintPermissionsMixin,
+                                            StackdioObjectUserPermissionsViewSet):
+    pass
+
+
+class BlueprintObjectGroupPermissionsViewSet(mixins.BlueprintPermissionsMixin,
+                                             StackdioObjectGroupPermissionsViewSet):
+    pass

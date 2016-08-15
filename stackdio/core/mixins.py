@@ -18,7 +18,75 @@
 
 import logging
 
+from django.db.models.query import QuerySet
+from rest_framework.generics import get_object_or_404
+from rest_framework.settings import api_settings
+
+from .permissions import StackdioParentPermissions
+
 logger = logging.getLogger(__name__)
+
+
+class ParentRelatedMixin(object):
+    """
+    Meant to be used on models that have a parent.
+    """
+    parent_queryset = None
+
+    parent_lookup_field = 'pk'
+    parent_lookup_url_kwarg = None
+
+    permission_classes = (StackdioParentPermissions,)
+
+    parent_filter_backends = api_settings.DEFAULT_FILTER_BACKENDS
+
+    def get_parent_queryset(self):
+        """
+        Like get_queryset, but for the parent object
+        """
+        assert self.parent_queryset is not None, (
+            "'%s' should either include a `parent_queryset` attribute, "
+            "or override the `get_parent_queryset()` method."
+            % self.__class__.__name__
+        )
+
+        queryset = self.parent_queryset
+        if isinstance(queryset, QuerySet):
+            # Ensure queryset is re-evaluated on each request.
+            queryset = queryset.all()
+        return queryset
+
+    def get_parent_object(self):
+        """
+        Like get_object, but for the parent object
+        """
+        queryset = self.filter_parent_queryset(self.get_parent_queryset())
+
+        # Perform the lookup filtering.
+        default_parent_lookup_url_kwarg = 'parent_{}'.format(self.parent_lookup_field)
+        parent_lookup_url_kwarg = self.parent_lookup_url_kwarg or default_parent_lookup_url_kwarg
+
+        assert parent_lookup_url_kwarg in self.kwargs, (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.parent_lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, parent_lookup_url_kwarg)
+        )
+
+        filter_kwargs = {self.parent_lookup_field: self.kwargs[parent_lookup_url_kwarg]}
+
+        # NOTE:  NOT GOING TO CHECK PERMISSIONS HERE
+        # The permission class *should* call get_parent_object and check permissions on it.
+
+        return get_object_or_404(queryset, **filter_kwargs)
+
+    def filter_parent_queryset(self, queryset):
+        """
+        Like filter_queryset, but for the parent object instead
+        """
+        for backend in list(self.parent_filter_backends):
+            queryset = backend().filter_queryset(self.request, queryset, self)
+        return queryset
 
 
 class CreateOnlyFieldsMixin(object):
@@ -55,8 +123,7 @@ class SuperuserFieldsMixin(object):
             return fields
 
         # If superuser_fields has not been defined, keep the original
-        if not hasattr(self, 'Meta') or not hasattr(self.Meta,
-                                                    'superuser_fields'):
+        if not hasattr(self, 'Meta') or not hasattr(self.Meta, 'superuser_fields'):
             return fields
 
         # Remove superuser fields from outgoing serializable fields

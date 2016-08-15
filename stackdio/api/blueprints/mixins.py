@@ -15,20 +15,20 @@
 # limitations under the License.
 #
 
-from rest_framework.generics import get_object_or_404
+from stackdio.core.mixins import ParentRelatedMixin
+from stackdio.core.permissions import StackdioPermissionsPermissions
+from . import models
 
-from . import models, permissions
 
-
-class BlueprintRelatedMixin(object):
-    permission_classes = (permissions.BlueprintParentObjectPermissions,)
+class BlueprintRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.Blueprint.objects.all()
 
     def get_blueprint(self):
-        queryset = models.Blueprint.objects.all()
+        return self.get_parent_object()
 
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+
+class BlueprintPermissionsMixin(BlueprintRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
 
     def get_permissioned_object(self):
-        return self.get_blueprint()
+        return self.get_parent_object()

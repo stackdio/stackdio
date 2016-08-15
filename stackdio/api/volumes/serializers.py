@@ -20,6 +20,7 @@ import logging
 
 from rest_framework import serializers
 
+from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from . import models
 
@@ -32,14 +33,19 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
 
     # Link fields
     user_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:volumes:volume-object-user-permissions-list')
+        view_name='api:volumes:volume-object-user-permissions-list',
+        lookup_url_kwarg='parent_pk')
     group_permissions = serializers.HyperlinkedIdentityField(
-        view_name='api:volumes:volume-object-group-permissions-list')
+        view_name='api:volumes:volume-object-group-permissions-list',
+        lookup_url_kwarg='parent_pk')
 
     stack = serializers.HyperlinkedRelatedField(
         view_name='api:stacks:stack-detail', read_only=True, source='stack.pk')
     snapshot = serializers.HyperlinkedRelatedField(
         view_name='api:cloud:snapshot-detail', read_only=True, source='snapshot.pk')
+    host = HyperlinkedParentField(
+        view_name='api:stacks:stack-host-detail', parent_attr='stack',
+        lookup_field='host_id', lookup_url_kwarg='pk')
 
     class Meta:
         model = models.Volume
@@ -59,7 +65,3 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
             'user_permissions',
             'group_permissions',
         )
-
-        extra_kwargs = {
-            'host': {'view_name': 'api:stacks:host-detail'},
-        }

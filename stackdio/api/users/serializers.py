@@ -65,17 +65,17 @@ class GroupUserSerializer(StackdioHyperlinkedModelSerializer):
 
 class GroupSerializer(StackdioHyperlinkedModelSerializer):
     users = serializers.HyperlinkedIdentityField(
-        view_name='api:users:group-userlist', lookup_field='name')
+        view_name='api:users:group-userlist',
+        lookup_field='name', lookup_url_kwarg='parent_name')
     action = serializers.HyperlinkedIdentityField(
-        view_name='api:users:group-action', lookup_field='name')
+        view_name='api:users:group-action',
+        lookup_field='name', lookup_url_kwarg='parent_name')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:users:group-object-user-permissions-list',
-        lookup_field='name',
-    )
+        lookup_field='name', lookup_url_kwarg='parent_name')
     group_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:users:group-object-group-permissions-list',
-        lookup_field='name',
-    )
+        lookup_field='name', lookup_url_kwarg='parent_name')
 
     class Meta:
         model = Group
@@ -154,7 +154,7 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
 
     groups = serializers.HyperlinkedIdentityField(
         view_name='api:users:user-grouplist',
-        lookup_field='username'
+        lookup_field='username', lookup_url_kwarg='parent_username',
     )
 
     settings = UserSettingsSerializer()

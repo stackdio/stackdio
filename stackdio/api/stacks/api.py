@@ -33,7 +33,6 @@ from rest_framework.serializers import ValidationError
 from six import StringIO
 
 from stackdio.core.constants import Activity
-from stackdio.core.models import Label
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
 from stackdio.core.viewsets import (
@@ -46,7 +45,7 @@ from stackdio.api.cloud.filters import SecurityGroupFilter
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.api.volumes.serializers import VolumeSerializer
-from . import filters, mixins, models, permissions, serializers, utils, workflows
+from . import filters, mixins, models, serializers, utils, workflows
 
 logger = logging.getLogger(__name__)
 
@@ -121,29 +120,10 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         workflow.execute()
 
 
-class StackModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
-    permission_classes = (permissions.StackPermissionsModelPermissions,)
-    model_cls = models.Stack
-
-
-class StackModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
-    permission_classes = (permissions.StackPermissionsModelPermissions,)
-    model_cls = models.Stack
-
-
-class StackPropertiesAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateAPIView):
+class StackPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Stack.objects.all()
     serializer_class = serializers.StackPropertiesSerializer
-
-
-class StackObjectUserPermissionsViewSet(mixins.StackRelatedMixin,
-                                        StackdioObjectUserPermissionsViewSet):
-    permission_classes = (permissions.StackPermissionsObjectPermissions,)
-
-
-class StackObjectGroupPermissionsViewSet(mixins.StackRelatedMixin,
-                                         StackdioObjectGroupPermissionsViewSet):
-    permission_classes = (permissions.StackPermissionsObjectPermissions,)
+    permission_classes = (StackdioObjectPermissions,)
 
 
 class StackHistoryAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
@@ -156,7 +136,6 @@ class StackHistoryAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
 
 class StackActionAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
     serializer_class = serializers.StackActionSerializer
-    permission_classes = (permissions.StackActionObjectPermissions,)
 
     def get(self, request, *args, **kwargs):
         stack = self.get_stack()
@@ -189,33 +168,26 @@ class StackCommandListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIVi
 
     def get_queryset(self):
         stack = self.get_stack()
-        return models.StackCommand.objects.filter(stack=stack)
+        return stack.commands.all()
 
     def perform_create(self, serializer):
         serializer.save(stack=self.get_stack())
 
 
-class StackCommandDetailAPIView(generics.RetrieveDestroyAPIView):
-    queryset = models.StackCommand.objects.all()
+class StackCommandDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveDestroyAPIView):
     serializer_class = serializers.StackCommandSerializer
-    permission_classes = (permissions.StackParentObjectPermissions,)
 
-    def get_stack(self):
-        return self.get_object().stack
-
-    def check_object_permissions(self, request, obj):
-        # Check the permissions on the stack instead of the host
-        super(StackCommandDetailAPIView, self).check_object_permissions(request, obj.stack)
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.commands.all()
 
 
-class StackCommandZipAPIView(generics.GenericAPIView):
-    queryset = models.StackCommand.objects.all()
-    permission_classes = (permissions.StackParentObjectPermissions,)
+class StackCommandZipAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
     renderer_classes = (ZipRenderer,)
 
-    def check_object_permissions(self, request, obj):
-        # Check the permissions on the stack instead of the host
-        super(StackCommandZipAPIView, self).check_object_permissions(request, obj.stack)
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.commands.all()
 
     def get(self, request, *args, **kwargs):
         command = self.get_object()
@@ -261,39 +233,21 @@ class StackLabelListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView
 
 
 class StackLabelDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateDestroyAPIView):
-    queryset = Label.objects.all()
     serializer_class = serializers.StackLabelSerializer
+    lookup_field = 'key'
+    lookup_url_kwarg = 'label_name'
 
-    def get_object(self):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        # Lookup with both object ids
-        filter_kwargs = {
-            'object_id': self.kwargs['pk'],
-            'key': self.kwargs['label_name']
-        }
-        obj = generics.get_object_or_404(queryset, **filter_kwargs)
-
-        # May raise a permission denied
-        self.check_object_permissions(self.request, obj)
-
-        return obj
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.labels.all()
 
     def get_serializer_context(self):
         context = super(StackLabelDetailAPIView, self).get_serializer_context()
         context['content_object'] = self.get_stack()
         return context
 
-    def check_object_permissions(self, request, obj):
-        check_perms = super(StackLabelDetailAPIView, self).check_object_permissions
-        if isinstance(obj, models.Stack):
-            check_perms(request, obj)
-        else:
-            # Check the permissions on the stack instead of the label
-            check_perms(request, obj.content_object)
 
-
-class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
+class StackHostListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
     """
     Lists all hosts for the associated stack.
 
@@ -342,23 +296,17 @@ class StackHostsAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
         """
         We need the stack during serializer validation - so we'll throw it in the context
         """
-        context = super(StackHostsAPIView, self).get_serializer_context()
-        # No need to check perms - that happens in get_queryset
-        context['stack'] = self.get_stack(check_permissions=False)
+        context = super(StackHostListAPIView, self).get_serializer_context()
+        context['stack'] = self.get_stack()
         return context
 
 
-class HostDetailAPIView(generics.RetrieveDestroyAPIView):
-    queryset = models.Host.objects.all()
+class StackHostDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveDestroyAPIView):
     serializer_class = serializers.HostSerializer
-    permission_classes = (permissions.StackParentObjectPermissions,)
 
-    def get_stack(self):
-        return self.get_object().stack
-
-    def check_object_permissions(self, request, obj):
-        # Check the permissions on the stack instead of the host
-        super(HostDetailAPIView, self).check_object_permissions(request, obj.stack)
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.hosts.all()
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -385,7 +333,7 @@ class HostDetailAPIView(generics.RetrieveDestroyAPIView):
         workflows.DestroyHostsWorkflow(stack, host_ids).execute()
 
 
-class StackVolumesAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
+class StackVolumeListAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
     serializer_class = VolumeSerializer
 
     def get_queryset(self):
@@ -422,13 +370,13 @@ class StackLogsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
             if isfile(join(root_dir, log_file)):
                 latest[log_type] = reverse(
                     'api:stacks:stack-logs-detail',
-                    kwargs={'pk': stack.pk, 'log': log_file},
+                    kwargs={'parent_pk': stack.pk, 'log': log_file},
                     request=request,
                 )
 
         historical = [
             reverse('api:stacks:stack-logs-detail',
-                    kwargs={'pk': stack.pk, 'log': log},
+                    kwargs={'parent_pk': stack.pk, 'log': log},
                     request=request)
             for log in sorted(listdir(log_dir))
         ]
@@ -503,3 +451,21 @@ class StackFormulaVersionsAPIView(mixins.StackRelatedMixin, generics.ListCreateA
 
     def perform_create(self, serializer):
         serializer.save(content_object=self.get_stack())
+
+
+class StackModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
+    model_cls = models.Stack
+
+
+class StackModelGroupPermissionsViewSet(StackdioModelGroupPermissionsViewSet):
+    model_cls = models.Stack
+
+
+class StackObjectUserPermissionsViewSet(mixins.StackPermissionsMixin,
+                                        StackdioObjectUserPermissionsViewSet):
+    pass
+
+
+class StackObjectGroupPermissionsViewSet(mixins.StackPermissionsMixin,
+                                         StackdioObjectGroupPermissionsViewSet):
+    pass

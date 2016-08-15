@@ -15,20 +15,21 @@
 # limitations under the License.
 #
 
-from rest_framework.generics import get_object_or_404
 
-from . import permissions, models
+from stackdio.core.mixins import ParentRelatedMixin
+from stackdio.core.permissions import StackdioPermissionsPermissions
+from . import models
 
 
-class FormulaRelatedMixin(object):
-    permission_classes = (permissions.FormulaParentObjectPermissions,)
+class FormulaRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.Formula.objects.all()
 
     def get_formula(self):
-        queryset = models.Formula.objects.all()
+        return self.get_parent_object()
 
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+
+class FormulaPermissionsMixin(FormulaRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
 
     def get_permissioned_object(self):
-        return self.get_formula()
+        return self.get_parent_object()

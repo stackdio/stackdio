@@ -61,7 +61,7 @@ urlpatterns = (
         api.UserDetailAPIView.as_view(),
         name='user-detail'),
 
-    url(r'^users/(?P<username>[\w.@+-]+)/groups/$',
+    url(r'^users/(?P<parent_username>[\w.@+-]+)/groups/$',
         api.UserGroupListAPIView.as_view(),
         name='user-grouplist'),
 
@@ -76,14 +76,14 @@ urlpatterns = (
         api.GroupDetailAPIView.as_view(),
         name='group-detail'),
 
-    url(r'^groups/(?P<name>[\w.@+-]+)/permissions/',
+    url(r'^groups/(?P<parent_name>[\w.@+-]+)/permissions/',
         include(object_router.urls)),
 
-    url(r'^groups/(?P<name>[\w.@+-]+)/users/$',
+    url(r'^groups/(?P<parent_name>[\w.@+-]+)/users/$',
         api.GroupUserListAPIView.as_view(),
         name='group-userlist'),
 
-    url(r'^groups/(?P<name>[\w.@+-]+)/action/$',
+    url(r'^groups/(?P<parent_name>[\w.@+-]+)/action/$',
         api.GroupActionAPIView.as_view(),
         name='group-action'),
 

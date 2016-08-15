@@ -15,20 +15,21 @@
 # limitations under the License.
 #
 
-from rest_framework.generics import get_object_or_404
 
-from . import models, permissions
+from stackdio.core.mixins import ParentRelatedMixin
+from stackdio.core.permissions import StackdioPermissionsPermissions
+from . import models
 
 
-class VolumeRelatedMixin(object):
-    permission_classes = (permissions.VolumeParentObjectPermissions,)
+class VolumeRelatedMixin(ParentRelatedMixin):
+    parent_queryset = models.Volume.objects.all()
 
     def get_volume(self):
-        queryset = models.Volume.objects.all()
+        return self.get_parent_object()
 
-        obj = get_object_or_404(queryset, id=self.kwargs.get('pk'))
-        self.check_object_permissions(self.request, obj)
-        return obj
+
+class VolumePermissionsMixin(VolumeRelatedMixin):
+    permission_classes = (StackdioPermissionsPermissions,)
 
     def get_permissioned_object(self):
-        return self.get_volume()
+        return self.get_parent_object()
