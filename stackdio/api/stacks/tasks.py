@@ -1474,6 +1474,7 @@ def update_host_info():
     for stack in Stack.objects.all():
 
         host_activities = set()
+        dead_hosts = []
 
         for host in stack.hosts.all():
             account = host.cloud_account
@@ -1493,6 +1494,7 @@ def update_host_info():
                 if host.activity not in (Activity.QUEUED, Activity.LAUNCHING,
                                          Activity.TERMINATED, Activity.TERMINATING):
                     host.activity = Activity.DEAD
+                    dead_hosts.append(host.hostname)
             else:
                 host.state = host_info['state']
 
@@ -1508,11 +1510,17 @@ def update_host_info():
             if host.state in ('terminated',):
                 if host.activity not in (Activity.TERMINATING, Activity.TERMINATED):
                     host.activity = Activity.DEAD
+                    dead_hosts.append(host.hostname)
 
             host_activities.add(host.activity)
 
             # save the host
             host.save()
+
+        # Log some history if we've marked hosts as DEAD
+        if len(dead_hosts) > 0:
+            stack.log_history('The following hosts have now been marked '
+                              '\'{}\': {}'.format(Activity.DEAD, ','.join(dead_hosts)))
 
         # If all the hosts are dead, set the stack to dead also
         if len(host_activities) == 1 and Activity.DEAD in host_activities:
