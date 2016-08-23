@@ -20,7 +20,6 @@ import logging
 
 from django.db.models.query import QuerySet
 from rest_framework.generics import get_object_or_404
-from rest_framework.settings import api_settings
 
 from .permissions import StackdioParentPermissions
 
