@@ -3,14 +3,67 @@
 
 
 {% block detail-content %}
+<!-- modal for editing host definitions -->
+<div id="edit-host-definition-modal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form data-bind="submit: saveHostDefinition">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Edit Host Definition</h4>
+                </div>
+                <div class="modal-body" data-bind="if: currentHostDefinition">
+                    <div id="title" class="form-group">
+                        <label for="hostDefinitionTitle">Title</label>
+                        <input type="text" class="form-control" id="hostDefinitionTitle"
+                               data-bind="value: currentHostDefinition().title, valueUpdate: 'keyup'">
+                    </div>
+                    <div id="description" class="form-group">
+                        <label for="hostDefinitionDescription">Description</label>
+                        <input type="text" class="form-control" id="hostDefinitionDescription"
+                               data-bind="value: currentHostDefinition().description, valueUpdate: 'keyup'">
+                    </div>
+                    <div id="hostname_template" class="form-group">
+                        <label for="hostDefinitionHostnameTemplate">Hostname Template</label>
+                        <input type="text" class="form-control" id="hostDefinitionHostnameTemplate"
+                               data-bind="value: currentHostDefinition().hostnameTemplate, valueUpdate: 'keyup'">
+                    </div>
+                    <div id="zone" class="form-group">
+                        <label for="hostDefinitionZone">Zone</label>
+                        <input type="text" class="form-control" id="hostDefinitionZone"
+                               data-bind="value: currentHostDefinition().zone, valueUpdate: 'keyup'">
+                    </div>
+                    <div id="subnet_id" class="form-group">
+                        <label for="hostDefinitionSubnetId">Subnet ID</label>
+                        <input type="text" class="form-control" id="hostDefinitionSubnetId"
+                               data-bind="value: currentHostDefinition().subnetId, valueUpdate: 'keyup'">
+                    </div>
+                    <div id="spot_price" class="form-group">
+                        <label for="hostDefinitionSpotPrice">Spot Price</label>
+                        <input type="text" class="form-control" id="hostDefinitionSpotPrice"
+                               data-bind="value: currentHostDefinition().spotPrice, valueUpdate: 'keyup'">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="col-sm-9 col-sm-pull-3">
     <!-- ko foreach: blueprint.hostDefinitions -->
     <div class="row stackdio-hidden-on-load">
-        <div class="col-md-6">
+        <div class="col-md-5">
             <h4><strong>Title:</strong> <span data-bind="text: title"></span></h4>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-5">
             <h4><strong>Description:</strong> <span data-bind="text: description"></span></h4>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-info pull-right" data-bind="click: $root.editHostDefinition">Edit</button>
         </div>
     </div>
     <div class="row stackdio-hidden-on-load">

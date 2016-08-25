@@ -156,7 +156,12 @@ class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer
 
     def validate(self, attrs):
         hostname_template = attrs['hostname_template']
-        count = attrs['count']
+        count = attrs.get('count')
+        if count is None and not self.instance:
+            raise serializers.ValidationError({'count': 'Missing count'})
+        else:
+            # We still need the count to validate the hostname_template
+            count = self.instance.count
 
         # Validate hostname template
         formatter = string.Formatter()
@@ -170,7 +175,12 @@ class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer
             errors.setdefault('count', []).append(err_msg)
 
         # Validate zone / subnet id
-        image = attrs['cloud_image']
+        image = attrs.get('cloud_image')
+        if image is None and not self.instance:
+            raise serializers.ValidationError({'cloud_image': 'Missing cloud_image'})
+        else:
+            # We still need the count to validate the hostname_template
+            image = self.instance.cloud_image
         account = image.account
 
         if account.vpc_enabled:
