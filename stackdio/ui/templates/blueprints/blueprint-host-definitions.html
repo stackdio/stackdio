@@ -39,9 +39,16 @@
                                data-bind="value: currentHostDefinition().subnetId, valueUpdate: 'keyup'">
                     </div>
                     <div id="spot_price" class="form-group">
-                        <label for="hostDefinitionSpotPrice">Spot Price</label>
+                        <div class="checkbox">
+                            <label class="checkbox-custom" data-initialize="checkbox">
+                                <input class="sr-only" type="checkbox"
+                                       data-bind="checked: currentHostDefinition().isSpot">
+                                <span class="checkbox-label">Spot instances?</span>
+                            </label>
+                        </div>
+                        <label data-bind="visible: currentHostDefinition().isSpot" for="hostDefinitionSpotPrice">Spot Price</label>
                         <input type="text" class="form-control" id="hostDefinitionSpotPrice"
-                               data-bind="value: currentHostDefinition().spotPrice, valueUpdate: 'keyup'">
+                               data-bind="visible: currentHostDefinition().isSpot, value: currentHostDefinition().spotPrice, valueUpdate: 'keyup'">
                     </div>
                 </div>
                 <div class="modal-footer">

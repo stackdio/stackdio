@@ -46,6 +46,7 @@ define([
         this.count = ko.observable();
         this.hostnameTemplate = ko.observable();
         this.size = ko.observable();
+        this.isSpot = ko.observable();
         this.spotPrice = ko.observable();
 
 
@@ -76,6 +77,7 @@ define([
         this.zone(raw.zone);
         this.subnetId(raw.subnet_id);
         this.spotPrice(raw.spot_price);
+        this.isSpot(!!this.spotPrice());
 
         var self = this;
         this.components(raw.formula_components.map(function (component) {
@@ -111,7 +113,7 @@ define([
                 hostname_template: self.hostnameTemplate(),
                 subnet_id: self.subnetId(),
                 zone: self.zone(),
-                spot_price: self.spotPrice()
+                spot_price: self.isSpot() ? self.spotPrice() : null
             })
         }).done(function (hostDef) {
             utils.growlAlert('Successfully saved host definition.', 'success');

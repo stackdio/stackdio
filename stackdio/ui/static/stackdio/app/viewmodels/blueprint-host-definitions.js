@@ -29,6 +29,7 @@ define([
         self.blueprint = new Blueprint(window.stackdio.blueprintId);
         self.currentHostDefinition = ko.observable(null);
         self.hostDefinitionModal = $('#edit-host-definition-modal');
+        self.subsciption = null;
 
         self.breadcrumbs = [
             {
@@ -56,6 +57,13 @@ define([
         self.editHostDefinition = function (hostDefinition) {
             self.currentHostDefinition(new HostDefinition(hostDefinition.raw));
             self.hostDefinitionModal.modal('show');
+            var $el = $('.checkbox-custom');
+            // Set the initial value
+            if (self.currentHostDefinition().isSpot()) {
+                $el.checkbox('check');
+            } else {
+                $el.checkbox('uncheck')
+            }
         };
 
         self.saveHostDefinition = function () {
