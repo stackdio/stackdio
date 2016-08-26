@@ -17,8 +17,8 @@
 
 
 from django.conf.urls import include, url
-from stackdio.core import routers
 
+from stackdio.core import routers
 from . import api
 
 model_router = routers.SimpleBulkRouter()
