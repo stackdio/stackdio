@@ -17,6 +17,7 @@
 
 import logging
 
+from django.db import transaction
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
@@ -176,8 +177,9 @@ class StackdioModelPermissionsSerializer(serializers.Serializer):
         app_label = model_cls._meta.app_label
         model_name = model_cls._meta.model_name
 
-        for perm in validated_data['permissions']:
-            assign_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj)
+        with transaction.atomic():
+            for perm in validated_data['permissions']:
+                assign_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj)
 
         return self.to_internal_value(validated_data)
 
@@ -200,13 +202,16 @@ class StackdioModelPermissionsSerializer(serializers.Serializer):
         app_label = model_cls._meta.app_label
         model_name = model_cls._meta.model_name
 
-        if not self.partial:
-            # PUT request - delete all the permissions, then recreate them later
-            for perm in instance['permissions']:
-                remove_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj)
+        # Make sure we do this atomically - since we're removing all permissions on a PUT,
+        # don't commit the transaction until the permissions have been re-created
+        with transaction.atomic():
+            if not self.partial:
+                # PUT request - delete all the permissions, then recreate them later
+                for perm in instance['permissions']:
+                    remove_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj)
 
-        # We now want to do the same thing as create
-        return self.create(validated_data)
+            # We now want to do the same thing as create
+            return self.create(validated_data)
 
 
 class StackdioObjectPermissionsSerializer(serializers.Serializer):
@@ -240,8 +245,9 @@ class StackdioObjectPermissionsSerializer(serializers.Serializer):
         app_label = obj._meta.app_label
         model_name = obj._meta.model_name
 
-        for perm in validated_data['permissions']:
-            assign_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj, obj)
+        with transaction.atomic():
+            for perm in validated_data['permissions']:
+                assign_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj, obj)
 
         return self.to_internal_value(validated_data)
 
@@ -264,10 +270,13 @@ class StackdioObjectPermissionsSerializer(serializers.Serializer):
         app_label = obj._meta.app_label
         model_name = obj._meta.model_name
 
-        if not self.partial:
-            # PUT request - delete all the permissions, then recreate them later
-            for perm in instance['permissions']:
-                remove_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj, obj)
+        # Make sure we do this atomically - since we're removing all permissions on a PUT,
+        # don't commit the transaction until the permissions have been re-created
+        with transaction.atomic():
+            if not self.partial:
+                # PUT request - delete all the permissions, then recreate them later
+                for perm in instance['permissions']:
+                    remove_perm('%s.%s_%s' % (app_label, perm, model_name), auth_obj, obj)
 
-        # We now want to do the same thing as create
-        return self.create(validated_data)
+            # We now want to do the same thing as create
+            return self.create(validated_data)
