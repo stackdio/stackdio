@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+import inspect
 import logging
 
 from django.db import transaction
@@ -25,6 +26,76 @@ from .fields import HyperlinkedParentField
 from . import mixins, models, validators
 
 logger = logging.getLogger(__name__)
+
+
+class BulkListSerializer(serializers.ListSerializer):
+
+    def update(self, queryset, all_validated_data):
+        id_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
+
+        all_validated_data_by_id = {
+            i.pop(id_attr): i
+            for i in all_validated_data
+        }
+
+        if not all((bool(i) and not inspect.isclass(i)
+                    for i in all_validated_data_by_id.keys())):
+            raise serializers.ValidationError('')
+
+        # since this method is given a queryset which can have many
+        # model instances, first find all objects to update
+        # and only then update the models
+        objects_to_update = self.filter_queryset(queryset, id_attr, all_validated_data_by_id)
+
+        self.check_objects_to_update(objects_to_update, all_validated_data_by_id)
+
+        updated_objects = []
+
+        for obj in objects_to_update:
+            obj_validated_data = self.get_obj_validated_data(obj, id_attr, all_validated_data_by_id)
+
+            # use model serializer to actually update the model
+            # in case that method is overwritten
+            updated_objects.append(self.child.update(obj, obj_validated_data))
+
+        return updated_objects
+
+    def filter_queryset(self, queryset, id_attr, all_validated_data_by_id):
+        return queryset.filter(**{
+            '{}__in'.format(id_attr): all_validated_data_by_id.keys(),
+        })
+
+    def check_objects_to_update(self, objects_to_update, all_validated_data_by_id):
+        if len(all_validated_data_by_id) != objects_to_update.count():
+            raise serializers.ValidationError({
+                'bulk': 'Could not find all objects to update.',
+            })
+
+    def get_obj_validated_data(self, obj, id_attr, all_validated_data_by_id):
+        obj_id = getattr(obj, id_attr)
+        return all_validated_data_by_id.get(obj_id)
+
+
+class BulkSerializerMixin(object):
+
+    def to_internal_value(self, data):
+        ret = super(BulkSerializerMixin, self).to_internal_value(data)
+
+        id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
+        request_method = getattr(getattr(self.context.get('view'), 'request'), 'method', '')
+
+        # add update_lookup_field field back to validated data
+        # since super by default strips out read-only fields
+        # hence id will no longer be present in validated_data
+        if all((isinstance(self.root, BulkListSerializer),
+                id_attr,
+                request_method in ('PUT', 'PATCH'))):
+            id_field = self.fields[id_attr]
+            id_value = id_field.get_value(data)
+
+            ret[id_attr] = id_value
+
+        return ret
 
 
 class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer):
@@ -145,7 +216,42 @@ class StackdioLiteralLabelsSerializer(StackdioLabelSerializer):
         )
 
 
-class StackdioModelPermissionsSerializer(serializers.Serializer):
+class PermissionsBulkListSerializer(BulkListSerializer):
+
+    name_attr_map = {
+        'user': 'username',
+        'group': 'name',
+    }
+
+    def filter_queryset(self, queryset, id_attr, all_validated_data_by_id):
+        ret = []
+        for obj in queryset:
+            auth_obj = obj[id_attr]
+
+            name_attr = self.name_attr_map[id_attr]
+
+            if getattr(auth_obj, name_attr) in all_validated_data_by_id:
+                ret.append(obj)
+
+        return ret
+
+    def check_objects_to_update(self, objects_to_update, all_validated_data_by_id):
+        if len(all_validated_data_by_id) != len(objects_to_update):
+            raise serializers.ValidationError({
+                'bulk': 'Could not find all objects to update.',
+            })
+
+    def get_obj_validated_data(self, obj, id_attr, all_validated_data_by_id):
+        auth_obj = obj[id_attr]
+        name_attr = self.name_attr_map[id_attr]
+
+        return all_validated_data_by_id[getattr(auth_obj, name_attr)]
+
+
+class StackdioModelPermissionsSerializer(BulkSerializerMixin, serializers.Serializer):
+
+    class Meta:
+        list_serializer_class = PermissionsBulkListSerializer
 
     def validate(self, attrs):
         view = self.context['view']
@@ -214,7 +320,10 @@ class StackdioModelPermissionsSerializer(serializers.Serializer):
             return self.create(validated_data)
 
 
-class StackdioObjectPermissionsSerializer(serializers.Serializer):
+class StackdioObjectPermissionsSerializer(BulkSerializerMixin, serializers.Serializer):
+
+    class Meta:
+        list_serializer_class = PermissionsBulkListSerializer
 
     def validate(self, attrs):
         view = self.context['view']
