@@ -129,6 +129,7 @@ define([
         },
         savePermissions: function (userOrGroup, perms, availPerms) {
             var ajaxList = [];
+            var bulkUpdateList = [];
             perms.forEach(function (perm) {
                 var newPerms = [];
                 availPerms.forEach(function (availablePerm) {
@@ -143,24 +144,25 @@ define([
 
                 data[userOrGroup] = perm[userOrGroup];
 
-                data = JSON.stringify(data);
-
-                var request;
                 if (perm.hasOwnProperty('url')) {
-                    request = $.ajax({
-                        method: 'PUT',
-                        url: perm.url,
-                        data: data
-                    });
+                    // Already existing user/group - add it to the bulk update list
+                    bulkUpdateList.push(data);
                 } else {
-                    request = $.ajax({
+                    // This user/group didn't previously have permissions, need to create
+                    ajaxList.push($.ajax({
                         method: 'POST',
                         url: this.permsUrl + userOrGroup + 's/',
-                        data: data
-                    });
+                        data: JSON.stringify(data)
+                    }));
                 }
-                ajaxList.push(request);
             }, this);
+
+            // Do the bulk update, add it to the list too
+            ajaxList.push($.ajax({
+                method: 'PUT',
+                url: this.permsUrl + userOrGroup + 's/',
+                data: JSON.stringify(bulkUpdateList)
+            }));
 
             return ajaxList;
         },
