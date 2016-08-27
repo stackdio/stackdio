@@ -32,7 +32,7 @@
         "js-cookie": "~2.1.0",
         "knockout": "~3.4.0",
         "ladda": "~1.0.0",
-        "moment": "~2.13.0",
+        "moment": "~2.14.0",
         "requirejs": "~2.2.0",
         "requirejs-domReady": "~2.0.0",
         "select2": "~4.0.0",

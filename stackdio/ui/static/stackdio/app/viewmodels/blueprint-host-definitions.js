@@ -20,7 +20,8 @@ define([
     'jquery',
     'knockout',
     'models/blueprint',
-    'models/host-definition'
+    'models/host-definition',
+    'fuelux'
 ], function($, ko, Blueprint, HostDefinition) {
     'use strict';
     return function () {

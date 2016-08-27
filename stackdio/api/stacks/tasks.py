@@ -1520,7 +1520,7 @@ def update_host_info():
         # Log some history if we've marked hosts as DEAD
         if len(dead_hosts) > 0:
             stack.log_history('The following hosts have now been marked '
-                              '\'{}\': {}'.format(Activity.DEAD, ','.join(dead_hosts)))
+                              '\'{}\': {}'.format(Activity.DEAD, ', '.join(dead_hosts)))
 
         # If all the hosts are dead, set the stack to dead also
         if len(host_activities) == 1 and Activity.DEAD in host_activities:
