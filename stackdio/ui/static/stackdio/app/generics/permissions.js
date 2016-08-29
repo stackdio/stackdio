@@ -167,6 +167,7 @@ define([
                     data: JSON.stringify(bulkUpdateList)
                 }).done(function (perms) {
                     utils.growlAlert('Successfully saved ' + userOrGroup + ' permissions!', 'success');
+                    self.loadPermissions();
                 }).fail(function (jqxhr) {
                     utils.alertError(jqxhr, 'Error saving permissions');
                 });
