@@ -20,7 +20,6 @@ import logging
 
 from django.db.models.query import QuerySet
 from rest_framework.generics import get_object_or_404
-from rest_framework.settings import api_settings
 
 from .permissions import StackdioParentPermissions
 
@@ -37,8 +36,6 @@ class ParentRelatedMixin(object):
     parent_lookup_url_kwarg = None
 
     permission_classes = (StackdioParentPermissions,)
-
-    parent_filter_backends = api_settings.DEFAULT_FILTER_BACKENDS
 
     def get_parent_queryset(self):
         """
@@ -60,7 +57,7 @@ class ParentRelatedMixin(object):
         """
         Like get_object, but for the parent object
         """
-        queryset = self.filter_parent_queryset(self.get_parent_queryset())
+        queryset = self.get_parent_queryset()
 
         # Perform the lookup filtering.
         default_parent_lookup_url_kwarg = 'parent_{}'.format(self.parent_lookup_field)
@@ -79,14 +76,6 @@ class ParentRelatedMixin(object):
         # The permission class *should* call get_parent_object and check permissions on it.
 
         return get_object_or_404(queryset, **filter_kwargs)
-
-    def filter_parent_queryset(self, queryset):
-        """
-        Like filter_queryset, but for the parent object instead
-        """
-        for backend in list(self.parent_filter_backends):
-            queryset = backend().filter_queryset(self.request, queryset, self)
-        return queryset
 
 
 class CreateOnlyFieldsMixin(object):

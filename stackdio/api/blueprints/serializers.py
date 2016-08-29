@@ -155,22 +155,38 @@ class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer
         }
 
     def validate(self, attrs):
-        hostname_template = attrs['hostname_template']
-        count = attrs['count']
-
-        # Validate hostname template
-        formatter = string.Formatter()
-        template_vars = [x[1] for x in formatter.parse(hostname_template) if x[1]]
+        hostname_template = attrs.get('hostname_template')
 
         errors = {}
 
-        if count > 1 and 'index' not in template_vars:
-            err_msg = '`hostname_template` must contain "{index}" when `count` > 1'
-            errors.setdefault('hostname_template', []).append(err_msg)
-            errors.setdefault('count', []).append(err_msg)
+        # Only validate the hostname template if we have one
+        if hostname_template is not None:
+            count = attrs.get('count')
+            if count is None:
+                if not self.instance:
+                    raise ValueError('`count` not found and the serializer doesn\'t '
+                                     'have an instance attribute')
+                # Grab the count from the instance
+                count = self.instance.count
+
+            # Validate hostname template
+            formatter = string.Formatter()
+            template_vars = [x[1] for x in formatter.parse(hostname_template) if x[1]]
+
+            if count > 1 and 'index' not in template_vars:
+                err_msg = '`hostname_template` must contain "{index}" when `count` > 1'
+                errors.setdefault('hostname_template', []).append(err_msg)
+                errors.setdefault('count', []).append(err_msg)
 
         # Validate zone / subnet id
-        image = attrs['cloud_image']
+        image = attrs.get('cloud_image')
+        if image is None:
+            if not self.instance:
+                raise ValueError('`cloud_image` not found and the serializer doesn\'t '
+                                 'have an instance attribute')
+            # Grab the image from the instance
+            image = self.instance.cloud_image
+
         account = image.account
 
         if account.vpc_enabled:

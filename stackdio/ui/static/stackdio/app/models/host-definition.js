@@ -17,27 +17,18 @@
 */
 
 define([
+    'jquery',
     'knockout',
+    'utils/utils',
     'models/formula-component',
     'models/access-rule',
     'models/blueprint-volume'
-], function (ko, FormulaComponent, AccessRule, Volume) {
+], function ($, ko, utils, FormulaComponent, AccessRule, Volume) {
     'use strict';
 
-    // Define the stack model.
+    // Define the host definition model.
     function HostDefinition(raw, parent) {
         var needReload = false;
-        if (typeof raw === 'string') {
-            raw = parseInt(raw);
-        }
-        if (typeof raw === 'number') {
-            needReload = true;
-            // Set the things we need for the reload
-            raw = {
-                id: raw,
-                url: '/api/stacks/' + raw + '/hosts/'
-            }
-        }
 
         // Save the raw in order to get things like URLs
         this.raw = raw;
@@ -55,6 +46,7 @@ define([
         this.count = ko.observable();
         this.hostnameTemplate = ko.observable();
         this.size = ko.observable();
+        this.isSpot = ko.observable();
         this.spotPrice = ko.observable();
 
 
@@ -83,8 +75,9 @@ define([
         this.hostnameTemplate(raw.hostname_template);
         this.size(raw.size);
         this.zone(raw.zone);
-        this.subnetId(raw.subnetId);
+        this.subnetId(raw.subnet_id);
         this.spotPrice(raw.spot_price);
+        this.isSpot(!!this.spotPrice());
 
         var self = this;
         this.components(raw.formula_components.map(function (component) {
@@ -98,6 +91,35 @@ define([
         this.volumes(raw.volumes.map(function (volume) {
             return new Volume(volume, self.parent, self);
         }));
+    };
+
+    HostDefinition.prototype.save = function () {
+        var self = this;
+        var keys = ['title', 'description', 'hostname_template', 'subnet_id', 'zone', 'spot_price'];
+
+        keys.forEach(function (key) {
+            var el = $('#' + key);
+            el.removeClass('has-error');
+            var help = el.find('.help-block');
+            help.remove();
+        });
+
+        return $.ajax({
+            method: 'PUT',
+            url: self.raw.url,
+            data: JSON.stringify({
+                title: self.title(),
+                description: self.description(),
+                hostname_template: self.hostnameTemplate(),
+                subnet_id: self.subnetId(),
+                zone: self.zone(),
+                spot_price: self.isSpot() ? self.spotPrice() : null
+            })
+        }).done(function (hostDef) {
+            utils.growlAlert('Successfully saved host definition.', 'success');
+        }).fail(function (jqxhr) {
+            utils.parseSaveError(jqxhr, 'blueprint', keys);
+        });
     };
 
     return HostDefinition;

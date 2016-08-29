@@ -51,7 +51,6 @@ script:
 # Only build artifacts on success
 after_success:
   - coveralls
-  - export STACKDIO_VERSION=`python setup.py --version`
   - python setup.py sdist
   - python setup.py bdist_wheel
 
@@ -60,8 +59,8 @@ deploy:
   api_key:
     secure: dJIj78Kl5nvtE2OpYl2I4ICEw20kLVXyr+eGOcWVV3kbU+PS6zKqOtLM+sGuVYNSbqWviRR9um6zbzjqS3S2wjFOdeStMogo19EKepSc0S97t6BkmbH0KooFuFah/YFOzLu+UBzDa3EETvgd1/988Eoojr0Ea2kZRJcvx/S0vDI=
   file:
-    - dist/stackdio-server-${STACKDIO_VERSION}.tar.gz
-    - dist/stackdio_server-${STACKDIO_VERSION}-py2-none-any.whl
+    - dist/stackdio-server-${TRAVIS_TAG}.tar.gz
+    - dist/stackdio_server-${TRAVIS_TAG}-py2-none-any.whl
   skip_cleanup: true
   on:
     tags: true

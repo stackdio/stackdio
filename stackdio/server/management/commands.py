@@ -571,6 +571,22 @@ class UpgradeSaltCommand(BaseCommand):
 
 class SaltWrapperCommand(BaseCommand):
 
+    COMMANDS = {
+        'salt': 'salt_main',
+        'salt-api': 'salt_api',
+        'salt-call': 'salt_call',
+        'salt-cloud': 'salt_cloud',
+        'salt-cp': 'salt_cp',
+        'salt-key': 'salt_key',
+        'salt-master': 'salt_master',
+        'salt-minion': 'salt_minion',
+        'salt-proxy': 'salt_proxy_minion',
+        'salt-run': 'salt_run',
+        'salt-ssh': 'salt_ssh',
+        'salt-syndic': 'salt_syndic',
+        'spm': 'salt_spm',
+    }
+
     def run(self):
         import salt.scripts
         config = self.stackdio_config()
@@ -579,11 +595,7 @@ class SaltWrapperCommand(BaseCommand):
         args.insert(1, '--config-dir={0}'.format(config.salt_config_root))
 
         salt_cmd = self.args[0]
-        salt_func = salt_cmd.replace('-', '_')
-
-        # special cases
-        if salt_cmd == 'salt':
-            salt_func = 'salt_main'
+        salt_func = self.COMMANDS[salt_cmd]
 
         if not hasattr(salt.scripts, salt_func):
             raise RuntimeError(

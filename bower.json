@@ -32,11 +32,11 @@
         "js-cookie": "~2.1.0",
         "knockout": "~3.4.0",
         "ladda": "~1.0.0",
-        "moment": "~2.13.0",
+        "moment": "~2.14.0",
         "requirejs": "~2.2.0",
         "requirejs-domReady": "~2.0.0",
         "select2": "~4.0.0",
-        "select2-bootstrap-theme": "https://github.com/select2/select2-bootstrap-theme.git#0.1.0-beta.4",
+        "select2-bootstrap-theme": "https://github.com/select2/select2-bootstrap-theme.git#0.1.0-beta.8",
         "typeahead.js": "~0.11.0",
         "underscore": "~1.8.0"
     }

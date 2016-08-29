@@ -3,7 +3,7 @@
 
 .PHONY: all clean bower_install build_ui pep8 pylint test tar wheel
 
-all: clean build_ui pep8 pylint test tar wheel
+all: build_ui pep8 pylint test tar wheel
 
 clean:
 	rm -rf dist/ build/ *.egg-info/ htmlcov/ tests.xml stackdio/ui/static/stackdio/lib/ stackdio/ui/static/stackdio/build/
