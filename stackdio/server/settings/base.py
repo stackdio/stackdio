@@ -300,6 +300,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'stackdio.core.permissions': {
+            'handlers': ['null'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
         '': {
             'handlers': ['console', 'file'],
             'level': 'WARNING',

@@ -19,7 +19,10 @@
 import logging
 
 from django.db.models.query import QuerySet
+from rest_framework import status
 from rest_framework.generics import get_object_or_404
+from rest_framework.mixins import CreateModelMixin
+from rest_framework.response import Response
 
 from .permissions import StackdioParentPermissions
 
@@ -76,6 +79,34 @@ class ParentRelatedMixin(object):
         # The permission class *should* call get_parent_object and check permissions on it.
 
         return get_object_or_404(queryset, **filter_kwargs)
+
+
+class BulkUpdateModelMixin(object):
+    """
+    Mixin to allow for bulk updates on list endpoints
+    """
+
+    # Things for bulk updates
+    def bulk_update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+
+        # restrict the update to the filtered queryset
+        serializer = self.get_serializer(
+            self.filter_queryset(self.get_queryset()),
+            data=request.data,
+            many=True,
+            partial=partial,
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_bulk_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def partial_bulk_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.bulk_update(request, *args, **kwargs)
+
+    def perform_bulk_update(self, serializer):
+        return self.perform_update(serializer)
 
 
 class CreateOnlyFieldsMixin(object):

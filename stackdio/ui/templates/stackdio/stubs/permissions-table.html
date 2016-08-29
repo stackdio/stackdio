@@ -1,5 +1,5 @@
 <!-- Permissions for  {{ user_or_group }}s -->
-<div class="row"{% if user_or_group == 'group' %} style="margin-top: 20px"{% endif %}>
+<div class="row"{% if user_or_group == 'group' %} style="margin-top: 50px"{% endif %}>
     <div class="col-md-12">
         <table class="table table-hover table-striped table-condensed stackdio-hidden-on-load">
             <thead>
@@ -21,9 +21,17 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+</div>
 
-        <div id="add-{{ user_or_group }}" class="stackdio-hidden-on-load" style="width: 300px">
+<div class="row" style="margin-top: 20px">
+    <div class="col-md-6">
+        <div id="add-{{ user_or_group }}" class="stackdio-hidden-on-load">
             <input class="typeahead form-control" type="text" placeholder="Search for {{ user_or_group }}s...">
         </div>
+    </div>
+    <div class="col-md-6 text-right">
+        <button class="btn btn-primary" data-bind="click: function() { {{ user_or_group }}Save() }">Save</button>
+        <button class="btn btn-info" data-bind="click: loadPermissions">Refresh</button>
     </div>
 </div>

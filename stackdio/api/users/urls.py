@@ -17,12 +17,12 @@
 
 
 from django.conf.urls import include, url
-from rest_framework import routers
 
+from stackdio.core import routers
 from . import api
 
 
-user_model_router = routers.SimpleRouter()
+user_model_router = routers.SimpleBulkRouter()
 user_model_router.register(r'users',
                            api.UserModelUserPermissionsViewSet,
                            'user-model-user-permissions')
@@ -31,7 +31,7 @@ user_model_router.register(r'groups',
                            'user-model-group-permissions')
 
 
-model_router = routers.SimpleRouter()
+model_router = routers.SimpleBulkRouter()
 model_router.register(r'users',
                       api.GroupModelUserPermissionsViewSet,
                       'group-model-user-permissions')
@@ -40,7 +40,7 @@ model_router.register(r'groups',
                       'group-model-group-permissions')
 
 
-object_router = routers.SimpleRouter()
+object_router = routers.SimpleBulkRouter()
 object_router.register(r'users',
                        api.GroupObjectUserPermissionsViewSet,
                        'group-object-user-permissions')

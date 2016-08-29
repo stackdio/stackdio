@@ -17,11 +17,11 @@
 
 
 from django.conf.urls import include, url
-from rest_framework import routers
 
+from stackdio.core import routers
 from . import api
 
-model_router = routers.SimpleRouter()
+model_router = routers.SimpleBulkRouter()
 model_router.register(r'users',
                       api.FormulaModelUserPermissionsViewSet,
                       'formula-model-user-permissions')
@@ -30,7 +30,7 @@ model_router.register(r'groups',
                       'formula-model-group-permissions')
 
 
-object_router = routers.SimpleRouter()
+object_router = routers.SimpleBulkRouter()
 object_router.register(r'users',
                        api.FormulaObjectUserPermissionsViewSet,
                        'formula-object-user-permissions')
