@@ -261,17 +261,22 @@ class InitCommand(WizardCommand):
 
         self.QUESTIONS = [{
             'attr': 'user',
-            'short_desc': 'Which user will stackdio and salt run as?',
-            'long_desc': ('This user will own services, files, etc related to '
-                          'stackdio.'),
+            'short_desc': 'Which user will salt run as?',
+            'long_desc': 'This user will own services, files, etc related to salt.',
             'default': getpass.getuser(),
         }, {
             'attr': 'storage_dir',
             'short_desc': 'Where should stackdio and salt store their data?',
-            'long_desc': ('Root directory for stackdio to store its files, logs, '
+            'long_desc': ('Root directory for stackdio to store its files, '
                           'salt configuration, etc. We will attempt to create '
                           'this path if it does not already exist.'),
             'default': 'storage',
+        }, {
+            'attr': 'log_dir',
+            'short_desc': 'Where should stackdio and salt store their logs?',
+            'long_desc': ('Root directory for stackdio to store its logs.  '
+                          'We will attempt to create this path if it does not already exist.'),
+            'default': 'logs',
         }, {
             'attr': 'salt_bootstrap_script',
             'short_desc': ('Which bootstrap script should salt-cloud use when '
@@ -374,7 +379,7 @@ class InitCommand(WizardCommand):
                      **self.INFO_INDENT)
 
         # Render salt-master and salt-cloud configuration files
-        self.render_template('master.jinja2',
+        self.render_template('salt/master',
                              self.config.salt_master_config,
                              context=self.config)
         self.out('Salt master configuration written to '
@@ -383,7 +388,7 @@ class InitCommand(WizardCommand):
                  width=1024,
                  **self.INFO_INDENT)
 
-        self.render_template('cloud.jinja2',
+        self.render_template('salt/cloud',
                              self.config.salt_cloud_config,
                              context=self.config)
         self.out('Salt cloud configuration written to '
@@ -489,9 +494,9 @@ class ConfigCommand(BaseCommand):
             context.update({
                 'with_ssl': self.args.with_ssl
             })
-            tmpl = 'nginx.jinja2'
+            tmpl = 'nginx.conf'
         elif self.args.type == 'supervisord':
-            tmpl = 'supervisord.jinja2'
+            tmpl = 'supervisord.conf'
             context.update({
                 'with_gunicorn': self.args.with_gunicorn,
                 'with_celery': self.args.with_celery,

@@ -1,21 +1,28 @@
+## stackd.io config file
+#
+# This file will be run through jinja templating when the server starts up.
+# There are a few variables that will be available, such as "user" seen below.
+
+##
+# list of the available cloud provider driver classes
+cloud_providers:
+  - stackdio.api.cloud.providers.aws.AWSCloudProvider
+
 ##
 # Root directory for stackdio to store files, logs, etc.
-# It should already exist and be owned by the user 
-# defined below
-# Example: /mnt/stackdio
+# It will be created if it doesn't already exist.
+# Can be absolute or relative.
 storage_dir: {{ storage_dir }}
 
 ##
-# The user that will own the storage_dir above, run
-# the salt processes, celery workers, and Django dev
-# server. If you decide to use a wsgi server to serve
-# the application, then it will need to be running as
-# this user as well.
-user: {{ user }}
+# Root directory for stackdio to store log files.
+# It will be created if it doesn't already exist.
+# Can be absolute or relative.
+log_dir: logs
 
 ##
 # When bootstrapping salt minions, which bootstrap script
-# and arguments should salt-cloud use? Typically, 
+# and arguments should salt-cloud use? Typically,
 # 'bootstrap-salt' will be the script to use, and the
 # the args would be empty. However, if you need special
 # minion revisions, verbose logging, etc, you can control
@@ -25,13 +32,13 @@ salt_bootstrap_script: {{ salt_bootstrap_script }}
 salt_bootstrap_args: {{ salt_bootstrap_args }}
 
 ##
-# This should be a unique and unpredictable value that is 
+# This should be a unique and unpredictable value that is
 # used by Django for cryptographic signing. For more info,
 # see the Django settings docs.
 django_secret_key: "{{ django_secret_key }}"
 
 ##
-# The URL for the database stackdio will use. The host
+# The DSN for the database stackdio will use. The host
 # must running (for non-sqlite servers), the database
 # must already be created, and the user/pass must have
 # access to the database.
@@ -39,9 +46,62 @@ django_secret_key: "{{ django_secret_key }}"
 database_url: {{ database_url }}
 
 ##
-# User accounts will be created for all users that have ssh
-# permission if this is set to true.
-#
-# NOTE: This is just a default value.  It can be overridden
-# on a per-stack or per-blueprint basis.
+# Should ssh users be created on launched hosts by default?
 create_ssh_users: {{ create_ssh_users }}
+
+##
+# Optional LDAP configurations
+ldap:
+  # This must be set to true for anything below to take effect
+  enabled: false
+
+  # The url of your server (can be a comma-separated list of servers)
+  server_uri: ldaps://ldap.example.com
+
+  # Should we bind to LDAP as the user trying to login?
+  bind_as_authenticating_user: false
+
+  # if bind_as_authenticating_user is false, provide the bind user credentials
+  bind_dn: 'uid=binduser,ou=People,dc=example,dc=com'
+  bind_password: my_password
+
+  # Should groups in ldap be mirrored to django groups in the database?
+  mirror_groups: true
+
+  # Deny login if a valid LDAP user isn't in this list of groups
+  #require_group:
+  #  - 'cn=mygroup,ou=People,dc=example,dc=com'
+
+  # The search parameters for users.
+  #   The result of a search using these parameters should return EXACTLY ONE
+  #   user for this to work properly.
+  user_search_base: 'ou=People,dc=example,dc=com'
+  user_search_scope: SCOPE_SUBTREE
+  user_search_filter: '(&(objectClass=Person)(uid=%(user)s))'
+
+  # The search parameters for groups.
+  #   The result of a search using these parameters should return an exhaustive list
+  #   of groups you would like to make available.
+  group_search_base: 'ou=Group,dc=eample,dc=com'
+  group_search_scope: SCOPE_SUBTREE
+  #group_search_filter: '(objectClass=*)'
+
+  # The type of the ldap groups
+  group_type: GroupOfNamesType
+
+  # A map from django user object attributes to the associated attributes in LDAP
+  user_attr_map:
+    first_name: givenName
+    last_name: sn
+    email: mail
+
+  # A map that associates boolean user flags to LDAP groups
+  # i.e. if an LDAP user is in the specified LDAP group, the specified user flag is set to 'True'
+  user_flags_by_group:
+    is_superuser: 'cn=admin,ou=Group,dc=example,dc=com'
+    is_staff: 'cn=admin,ou=Group,dc=example,dc=com'
+
+  # Any connection options you need
+  connection_options:
+    OPT_X_TLS_REQUIRE_CERT: OPT_X_TLS_NEVER
+    OPT_X_TLS_NEWCTX: 0

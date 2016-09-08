@@ -21,14 +21,6 @@ storage_dir: storage
 log_dir: logs
 
 ##
-# The user that will own the storage_dir above, run
-# the salt processes, celery workers, and Django dev
-# server. If you decide to use a wsgi server to serve
-# the application, then it will need to be running as
-# this user as well.
-user: {{ user }}
-
-##
 # When bootstrapping salt minions, which bootstrap script
 # and arguments should salt-cloud use? Typically,
 # 'bootstrap-salt' will be the script to use, and the

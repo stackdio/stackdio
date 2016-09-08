@@ -48,12 +48,12 @@ class StackdioConfig(dict):
 
     REQUIRED_FIELDS = {
         'cloud_providers': list,
-        'user': six.string_types,
         'database_url': six.string_types,
         'storage_dir': six.string_types,
         'log_dir': six.string_types,
         'django_secret_key': six.string_types,
         'create_ssh_users': bool,
+        'salt_bootstrap_script': six.string_types,
         'salt_bootstrap_args': six.string_types,
     }
 
