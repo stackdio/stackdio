@@ -4,6 +4,11 @@
 # There are a few variables that will be available, such as "user" seen below.
 
 ##
+# list of the available cloud provider driver classes
+cloud_providers:
+  - stackdio.api.cloud.providers.aws.AWSCloudProvider
+
+##
 # Root directory for stackdio to store files, logs, etc.
 # It will be created if it doesn't already exist.
 # Can be absolute or relative.

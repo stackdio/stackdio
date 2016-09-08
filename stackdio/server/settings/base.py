@@ -338,12 +338,9 @@ REST_FRAMEWORK = {
 }
 
 ##
-# Available cloud providers
+# Available cloud providers - pull from config file
 ##
-CLOUD_PROVIDERS = (
-    'stackdio.api.cloud.providers.aws.AWSCloudProvider',
-    # 'stackdio.api.cloud.providers.rackspace.RackspaceCloudProvider',
-)
+CLOUD_PROVIDERS = STACKDIO_CONFIG.cloud_providers
 
 ##
 # Celery & RabbitMQ

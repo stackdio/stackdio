@@ -19,6 +19,7 @@ from __future__ import print_function, unicode_literals
 import getpass
 import os
 
+import six
 import yaml
 from django.utils.crypto import get_random_string
 from jinja2 import Template
@@ -41,15 +42,16 @@ class StackdioConfig(dict):
         os.path.expanduser('~/.stackdio/server.yaml'),
     )
 
-    REQUIRED_FIELDS = (
-        'user',
-        'database_url',
-        'storage_dir',
-        'log_dir',
-        'django_secret_key',
-        'create_ssh_users',
-        'salt_bootstrap_args',
-    )
+    REQUIRED_FIELDS = {
+        'cloud_providers': list,
+        'user': six.string_types,
+        'database_url': six.string_types,
+        'storage_dir': six.string_types,
+        'log_dir': six.string_types,
+        'django_secret_key': six.string_types,
+        'create_ssh_users': bool,
+        'salt_bootstrap_args': six.binary_type,
+    }
 
     DEFAULT_CONTEXT = {
         'user': getpass.getuser(),
@@ -84,9 +86,12 @@ class StackdioConfig(dict):
             )
 
         errors = []
-        for k in self.REQUIRED_FIELDS:
+        for k, t in self.REQUIRED_FIELDS.items():
             if k not in stackdio_config:
                 errors.append('Missing parameter `{0}`'.format(k))
+            if not isinstance(stackdio_config[k], t):
+                errors.append('Config parameter `{0}` must be of type `{1}`, '
+                              'got `{2}` instead'.format(k, t, type(stackdio_config[k])))
 
         if errors:
             msg = 'stackdio configuration errors:\n'
