@@ -18,7 +18,8 @@
 define([
     'jquery',
     'knockout',
-    'models/blueprint'
+    'models/blueprint',
+    'fuelux'
 ], function($, ko, Blueprint) {
     'use strict';
 

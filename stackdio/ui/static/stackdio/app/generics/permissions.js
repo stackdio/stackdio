@@ -128,7 +128,10 @@ define([
             };
         },
         savePermissions: function (userOrGroup, perms, availPerms) {
+            var self = this;
             var ajaxList = [];
+            var bulkUpdateList = [];
+
             perms.forEach(function (perm) {
                 var newPerms = [];
                 availPerms.forEach(function (availablePerm) {
@@ -143,26 +146,34 @@ define([
 
                 data[userOrGroup] = perm[userOrGroup];
 
-                data = JSON.stringify(data);
-
-                var request;
                 if (perm.hasOwnProperty('url')) {
-                    request = $.ajax({
-                        method: 'PUT',
-                        url: perm.url,
-                        data: data
-                    });
+                    // Already existing user/group - add it to the bulk update list
+                    bulkUpdateList.push(data);
                 } else {
-                    request = $.ajax({
+                    // This user/group didn't previously have permissions, need to create
+                    ajaxList.push($.ajax({
                         method: 'POST',
                         url: this.permsUrl + userOrGroup + 's/',
-                        data: data
-                    });
+                        data: JSON.stringify(data)
+                    }));
                 }
-                ajaxList.push(request);
             }, this);
 
-            return ajaxList;
+            // always do the create list first - then do the bulk update
+            return $.when.apply(this, ajaxList).done(function () {
+                return $.ajax({
+                    method: 'PUT',
+                    url: self.permsUrl + userOrGroup + 's/',
+                    data: JSON.stringify(bulkUpdateList)
+                }).done(function (perms) {
+                    utils.growlAlert('Successfully saved ' + userOrGroup + ' permissions!', 'success');
+                    self.loadPermissions();
+                }).fail(function (jqxhr) {
+                    utils.alertError(jqxhr, 'Error saving permissions');
+                });
+            }).fail(function (jqxhr) {
+                utils.alertError(jqxhr, 'Error saving permissions');
+            });
         },
         loadPermissions: function() {
             $.ajax({
@@ -179,17 +190,12 @@ define([
                 utils.alertError(jqxhr, 'Error fetching permissions');
             });
         },
-        save: function () {
-            var ajaxList = this.savePermissions('user', this.userPermissions(), this.availableUserPermissions());
-            ajaxList.push.apply(ajaxList, this.savePermissions('group', this.groupPermissions(), this.availableGroupPermissions()));
+        userSave: function () {
+            this.savePermissions('user', this.userPermissions(), this.availableUserPermissions());
 
-            var redirectUrl = this.saveUrl;
-            $.when.apply(this, ajaxList).done(function () {
-                window.location = redirectUrl;
-            }).fail(function (jqxhr) {
-                utils.alertError(jqxhr, 'Error saving permissions');
-            });
-
+        },
+        groupSave: function () {
+            this.savePermissions('group', this.groupPermissions(), this.availableGroupPermissions());
         }
     });
 });

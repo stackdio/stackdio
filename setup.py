@@ -66,25 +66,30 @@ with open('README.rst') as f:
     LONG_DESCRIPTION = f.read()
 
 requirements = [
-    'boto>=2.32.0',
-    'celery>=3.1',
+    # Heavily used, hold to a specific minor version
+    'celery~=3.1.0',
+    'Django~=1.9.0',
+    'djangorestframework~=3.4.0',
+    'salt~=2016.3.0',
+
+    # Used, but still hold an upper bound on the version
+    'boto~=2.32',
+    'django-activity-stream~=0.6.0',
+    'django-auth-ldap~=1.2.7',
+    'django-extensions~=1.6.0',
+    'django-filter~=0.9',
+    'django-guardian~=1.4.0',
+    'django-model-utils~=2.0',
+    'Jinja2~=2.0',
+
+    # Fairly stable, no need to have an upper bound on the version
     'dj-database-url>=0.3',
-    'Django>=1.9,<1.10',
-    'django-activity-stream>=0.6,<0.7',
-    'django-auth-ldap>=1.2.7',
-    'django-extensions>=1.6,<1.7',
-    'django-filter>=0.9',
-    'django-guardian>=1.4,<1.5',
-    'django-model-utils>=2.0,<2.3',
-    'djangorestframework>=3.3,<3.4',
-    'envoy>=0.0.2',
-    'GitPython>=1.0',
-    'Jinja2>=2.0,<3.0',
+    'envoy',
+    'GitPython>=2.0',
     'Markdown>=2.6',
     'pip>=6',
     'PyYAML>=3.10',
     'requests>=2.4',
-    'salt>=2016.3,<2016.4',
     'six>=1.6',
 ]
 

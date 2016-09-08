@@ -19,14 +19,18 @@
 define([
     'jquery',
     'knockout',
-    'bootbox',
-    'models/blueprint'
-], function($, ko, bootbox, Blueprint) {
+    'models/blueprint',
+    'models/host-definition',
+    'fuelux'
+], function($, ko, Blueprint, HostDefinition) {
     'use strict';
     return function () {
         var self = this;
 
         self.blueprint = new Blueprint(window.stackdio.blueprintId);
+        self.currentHostDefinition = ko.observable(null);
+        self.hostDefinitionModal = $('#edit-host-definition-modal');
+        self.subsciption = null;
 
         self.breadcrumbs = [
             {
@@ -47,6 +51,26 @@ define([
 
         self.reload = function () {
             self.blueprint.waiting.done(function () {
+                self.blueprint.loadHostDefinitions();
+            });
+        };
+
+        self.editHostDefinition = function (hostDefinition) {
+            self.currentHostDefinition(new HostDefinition(hostDefinition.raw));
+            self.hostDefinitionModal.modal('show');
+            var $el = $('.checkbox-custom');
+            // Set the initial value
+            if (self.currentHostDefinition().isSpot()) {
+                $el.checkbox('check');
+            } else {
+                $el.checkbox('uncheck')
+            }
+        };
+
+        self.saveHostDefinition = function () {
+            self.currentHostDefinition().save().done(function (hostDefinition) {
+                self.hostDefinitionModal.modal('hide');
+                self.currentHostDefinition(null);
                 self.blueprint.loadHostDefinitions();
             });
         };

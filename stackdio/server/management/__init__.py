@@ -32,14 +32,6 @@ from . import commands
 if sys.stdout.isatty():
     import readline  # pylint: disable=wrong-import-order
 
-SALT_COMMANDS = (
-    'salt',
-    'salt-master',
-    'salt-run',
-    'salt-cloud',
-    'salt-key',
-)
-
 
 def main():
     parser = argparse.ArgumentParser(prog='stackdio')
@@ -110,14 +102,14 @@ def main():
     # Runs the development Django server for stackdio API/UI
     managepy_parser = subparsers.add_parser(
         'manage.py',
-        help='convenience wrapper for Django\' manage.py command',
+        help='convenience wrapper for Django\'s manage.py command',
         add_help=False)
     managepy_parser.set_defaults(command=commands.DjangoManageWrapperCommand)
     managepy_parser.set_defaults(raw_args=True)
 
     # Expose salt-specific commands that we'll wrap and execute with
     # the appropriate arguments
-    for wrapper in SALT_COMMANDS:
+    for wrapper in commands.SaltWrapperCommand.COMMANDS:
         wrapper_parser = subparsers.add_parser(
             wrapper,
             add_help=False,

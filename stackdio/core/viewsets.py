@@ -28,7 +28,7 @@ from rest_framework.serializers import ListField, SlugRelatedField, ValidationEr
 from stackdio.api.users.models import get_user_queryset
 from .permissions import StackdioPermissionsModelPermissions
 from .shortcuts import get_groups_with_model_perms, get_users_with_model_perms
-from . import fields, serializers
+from . import fields, mixins, serializers
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class UserSlugRelatedField(SlugRelatedField):
             raise
 
 
-class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
+class StackdioBasePermissionsViewSet(mixins.BulkUpdateModelMixin, viewsets.ModelViewSet):
     """
     Viewset for creating permissions endpoints
     """
@@ -96,21 +96,27 @@ class StackdioBasePermissionsViewSet(viewsets.ModelViewSet):
             'lookup_url_kwarg': self.parent_lookup_url_kwarg or default_parent_lookup_url_kwarg,
         }
 
-        url_field = self.switch_model_object(
-            fields.HyperlinkedModelPermissionsField(**url_field_kwargs),
-            fields.HyperlinkedObjectPermissionsField(**url_field_kwargs),
+        url_field_cls = self.switch_model_object(
+            fields.HyperlinkedModelPermissionsField,
+            fields.HyperlinkedObjectPermissionsField,
         )
 
         # Create a class
         class StackdioUserPermissionsSerializer(super_cls):
             user = UserSlugRelatedField(slug_field='username', queryset=get_user_queryset())
-            url = url_field
+            url = url_field_cls(**url_field_kwargs)
             permissions = ListField()
+
+            class Meta(super_cls.Meta):
+                update_lookup_field = 'user'
 
         class StackdioGroupPermissionsSerializer(super_cls):
             group = SlugRelatedField(slug_field='name', queryset=Group.objects.all())
-            url = url_field
+            url = url_field_cls(**url_field_kwargs)
             permissions = ListField()
+
+            class Meta(super_cls.Meta):
+                update_lookup_field = 'group'
 
         return self.switch_user_group(StackdioUserPermissionsSerializer,
                                       StackdioGroupPermissionsSerializer)
@@ -214,10 +220,15 @@ class StackdioModelPermissionsViewSet(StackdioBasePermissionsViewSet):
         model_perms = self.get_model_permissions()
 
         # Grab the perms for either the users or groups
-        perm_map = self.switch_user_group(
-            get_users_with_model_perms(model_cls, attach_perms=True, with_group_users=False),
-            get_groups_with_model_perms(model_cls, attach_perms=True),
+        perm_map_func = self.switch_user_group(
+            lambda: get_users_with_model_perms(model_cls, attach_perms=True,
+                                               with_group_users=False),
+            lambda: get_groups_with_model_perms(model_cls, attach_perms=True),
         )
+
+        # Do this as a function so we don't fetch both the user AND group permissions on each
+        # request
+        perm_map = perm_map_func()
 
         ret = []
         sorted_perms = sorted(perm_map.items(), key=lambda x: getattr(x[0], self.lookup_field))
@@ -294,11 +305,13 @@ class StackdioObjectPermissionsViewSet(StackdioBasePermissionsViewSet):
         object_perms = self.get_object_permissions()
 
         # Grab the perms for either the users or groups
-        perm_map = self.switch_user_group(
-            get_users_with_perms(obj, attach_perms=True,
-                                 with_superusers=False, with_group_users=False),
-            get_groups_with_perms(obj, attach_perms=True),
+        perm_map_func = self.switch_user_group(
+            lambda: get_users_with_perms(obj, attach_perms=True,
+                                         with_superusers=False, with_group_users=False),
+            lambda: get_groups_with_perms(obj, attach_perms=True),
         )
+
+        perm_map = perm_map_func()
 
         ret = []
         sorted_perms = sorted(perm_map.items(), key=lambda x: getattr(x[0], self.lookup_field))
