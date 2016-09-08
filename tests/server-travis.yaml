@@ -1,5 +1,8 @@
 # Testing configuration for travis
 
+cloud_providers:
+  - stackdio.api.cloud.providers.aws.AWSCloudProvider
+
 storage_dir: storage
 
 log_dir: logs
