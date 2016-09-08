@@ -26,6 +26,7 @@ import shutil
 import sys
 import textwrap
 
+import django
 import dj_database_url
 import six
 import yaml
@@ -247,10 +248,10 @@ class WizardCommand(BaseCommand):
 
 class InitCommand(WizardCommand):
     # Default directory holding the stackdio configuration
-    CONFIG_DIR = os.path.expanduser('~/.stackdio')
+    DOT_DIRECTORY = os.path.expanduser('~/.stackdio')
 
     # Default config file
-    CONFIG_FILE = os.path.join(CONFIG_DIR, 'config')
+    CONFIG_FILE = os.path.join(DOT_DIRECTORY, 'server.yaml')
 
     def __init__(self, *args, **kwargs):
         super(InitCommand, self).__init__(*args, **kwargs)
@@ -270,13 +271,13 @@ class InitCommand(WizardCommand):
             'long_desc': ('Root directory for stackdio to store its files, '
                           'salt configuration, etc. We will attempt to create '
                           'this path if it does not already exist.'),
-            'default': 'storage',
+            'default': os.path.join(self.DOT_DIRECTORY, 'storage'),
         }, {
             'attr': 'log_dir',
             'short_desc': 'Where should stackdio and salt store their logs?',
             'long_desc': ('Root directory for stackdio to store its logs.  '
                           'We will attempt to create this path if it does not already exist.'),
-            'default': 'logs',
+            'default': os.path.join(self.DOT_DIRECTORY, 'logs'),
         }, {
             'attr': 'salt_bootstrap_script',
             'short_desc': ('Which bootstrap script should salt-cloud use when '
@@ -328,7 +329,9 @@ class InitCommand(WizardCommand):
         if self.answers:
             self.out()
             self.out('Existing configuration file found. Default values '
-                     'for questions below will use existing values.',
+                     'for questions below will use existing values, and '
+                     'the file will *NOT* be re-written.  If you wish to '
+                     'modify your settings, change the config file manually.',
                      Colors.WARN,
                      nl=2,
                      **self.WARNING_INDENT)
@@ -346,14 +349,16 @@ class InitCommand(WizardCommand):
         self.out('Finished', Colors.INFO)
 
     def _init_stackdio(self):
-        self.render_template('stackdio.yaml',
-                             self.CONFIG_FILE,
-                             context=self.answers)
-        self.out('stackdio configuration written to '
-                 '{0}'.format(self.CONFIG_FILE),
-                 Colors.INFO,
-                 width=1024,
-                 **self.INFO_INDENT)
+        # only write config if it wasn't already written before
+        if not os.path.isfile(self.CONFIG_FILE):
+            self.render_template('stackdio.yaml',
+                                 self.CONFIG_FILE,
+                                 context=self.answers)
+            self.out('stackdio configuration written to '
+                     '{0}'.format(self.CONFIG_FILE),
+                     Colors.INFO,
+                     width=1024,
+                     **self.INFO_INDENT)
 
         # grab a fresh copy of the config file to be used later
         self.config = self.stackdio_config()
@@ -458,17 +463,15 @@ class InitCommand(WizardCommand):
         return True, ''
 
     def _validate_database_url(self, question, url):
-        from django.conf import settings
-        if not settings.configured:
-            settings.configure()
+        # Ensure django is setup
+        django.setup()
 
         db = dj_database_url.parse(url)
         db['OPTIONS'] = {'connect_timeout': 3}
 
-        # These are django defaults - there seems to be a bug in dj-database-url that causes an
-        # exception if these keys are missing
-        db['CONN_MAX_AGE'] = 0
+        # These are django defaults - the cursor() call craps out if these are missing.
         db['AUTOCOMMIT'] = True
+        db['TIME_ZONE'] = 'UTC'
 
         try:
             engine = load_backend(db['ENGINE']).DatabaseWrapper(db)
