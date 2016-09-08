@@ -117,11 +117,11 @@ class StackdioConfig(dict):
             os.makedirs(self.log_dir)
 
         # additional helper attributes
-        self.salt_root = os.path.join(self.storage_dir)
-        self.salt_config_root = os.path.join(self.salt_root, 'salt')
+        self.salt_root = os.path.join(self.storage_dir, 'salt')
+        self.salt_config_root = os.path.join(self.salt_root, 'config')
         self.salt_master_config = os.path.join(self.salt_config_root, 'master')
         self.salt_cloud_config = os.path.join(self.salt_config_root, 'cloud')
-        self.salt_core_states = os.path.join(self.storage_dir, 'core_states')
+        self.salt_core_states = os.path.join(self.salt_root, 'core_states')
         self.salt_providers_dir = os.path.join(self.salt_config_root, 'cloud.providers.d')
         self.salt_profiles_dir = os.path.join(self.salt_config_root, 'cloud.profiles.d')
 
