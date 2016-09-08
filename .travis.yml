@@ -41,16 +41,21 @@ before_script:
   - pep8 stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
   - pylint stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
   - mkdir /home/travis/.stackdio
-  - cp tests/config-travis /home/travis/.stackdio/config
 
 script:
+  # Run migration and tests on the default config file first
   - python manage.py migrate
   - py.test --cov=stackdio stackdio
-  - python manage.py build_ui
+
+  # Then copy the config file and try again (for mysql)
+  - cp tests/config-travis /home/travis/.stackdio/config
+  - python manage.py migrate
+  - py.test --cov=stackdio stackdio
 
 # Only build artifacts on success
 after_success:
   - coveralls
+  - python manage.py build_ui
   - python setup.py sdist
   - python setup.py bdist_wheel
 

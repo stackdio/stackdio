@@ -4,8 +4,6 @@ storage_dir: storage
 
 log_dir: logs
 
-user: {{ user }}
-
 salt_bootstrap_script: bootstrap-salt
 salt_bootstrap_args: -K -D git v{salt_version}
 
