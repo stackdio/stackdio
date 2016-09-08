@@ -66,7 +66,7 @@ with open('README.rst') as f:
     LONG_DESCRIPTION = f.read()
 
 requirements = [
-    # Heavily used, hold to a specific minor version
+    # Heavily used, hold to a specific minor version (let the patch version update)
     'celery~=3.1.0',
     'Django~=1.9.0',
     'djangorestframework~=3.4.0',
@@ -82,7 +82,7 @@ requirements = [
     'django-model-utils~=2.0',
     'Jinja2~=2.0',
 
-    # Fairly stable, no need to have an upper bound on the version
+    # Light usage, no need to have an upper bound on the version
     'dj-database-url>=0.3',
     'envoy',
     'GitPython>=2.0',
