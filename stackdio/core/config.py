@@ -54,7 +54,7 @@ class StackdioConfig(dict):
         'log_dir': six.string_types,
         'django_secret_key': six.string_types,
         'create_ssh_users': bool,
-        'salt_bootstrap_args': six.binary_type,
+        'salt_bootstrap_args': six.string_types,
     }
 
     DEFAULT_CONTEXT = {
