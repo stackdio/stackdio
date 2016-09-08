@@ -56,3 +56,60 @@ database_url: sqlite:///storage/stackdio.db
 ##
 # Should ssh users be created on launched hosts by default?
 create_ssh_users: true
+
+##
+# Optional LDAP configurations
+ldap:
+  # This must be set to true for anything below to take effect
+  enabled: false
+
+  # The url of your server (can be a comma-separated list of servers)
+  server_uri: ldaps://ldap.example.com
+
+  # Should we bind to LDAP as the user trying to login?
+  bind_as_authenticating_user: false
+
+  # if bind_as_authenticating_user is false, provide the bind user credentials
+  bind_dn: 'uid=binduser,ou=People,dc=example,dc=com'
+  bind_password: my_password
+
+  # Should groups in ldap be mirrored to django groups in the database?
+  mirror_groups: true
+
+  # Deny login if a valid LDAP user isn't in this list of groups
+  #require_group:
+  #  - 'cn=mygroup,ou=People,dc=example,dc=com'
+
+  # The search parameters for users.
+  #   The result of a search using these parameters should return EXACTLY ONE
+  #   user for this to work properly.
+  user_search_base: 'ou=People,dc=example,dc=com'
+  user_search_scope: SCOPE_SUBTREE
+  user_search_filter: '(&(objectClass=Person)(uid=%(user)s))'
+
+  # The search parameters for groups.
+  #   The result of a search using these parameters should return an exhaustive list
+  #   of groups you would like to make available.
+  group_search_base: 'ou=Group,dc=eample,dc=com'
+  group_search_scope: SCOPE_SUBTREE
+  #group_search_filter: '(objectClass=*)'
+
+  # The type of the ldap groups
+  group_type: GroupOfNamesType
+
+  # A map from django user object attributes to the associated attributes in LDAP
+  user_attr_map:
+    first_name: givenName
+    last_name: sn
+    email: mail
+
+  # A map that associates boolean user flags to LDAP groups
+  # i.e. if an LDAP user is in the specified LDAP group, the specified user flag is set to 'True'
+  user_flags_by_group:
+    is_superuser: 'cn=admin,ou=Group,dc=example,dc=com'
+    is_staff: 'cn=admin,ou=Group,dc=example,dc=com'
+
+  # Any connection options you need
+  connection_options:
+    OPT_X_TLS_REQUIRE_CERT: OPT_X_TLS_NEVER
+    OPT_X_TLS_NEWCTX: 0

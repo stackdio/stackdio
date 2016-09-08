@@ -33,7 +33,7 @@ import dj_database_url
 from celery.schedules import crontab
 from django.contrib.messages import constants as messages
 
-from stackdio.core.config import StackdioConfig
+from stackdio.core.config import StackdioConfig, StackdioConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,10 @@ STATE_EXECUTION_FIELDS = ('module', 'declaration_id', 'name', 'func')
 # The Django local storage directory for storing its data
 ##
 FILE_STORAGE_DIRECTORY = STACKDIO_CONFIG.storage_dir
+
+LDAP_CONFIG = STACKDIO_CONFIG.get('ldap', {})
+
+LDAP_ENABLED = LDAP_CONFIG.get('enabled', False)
 
 ##
 # Some convenience variables
@@ -107,6 +111,10 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'guardian.backends.ObjectPermissionBackend',
 )
+
+# Add the LDAP backend if we're enabled
+if LDAP_ENABLED:
+    AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
 
 # For guardian
 ANONYMOUS_USER_ID = -1
@@ -389,13 +397,69 @@ CELERYBEAT_SCHEDULE = {
 }
 
 ##
-# LDAP configuration. To enable this, you should copy ldap_settings.py.template
-# to ldap_settings.py and modify the settings there.
+# LDAP configuration. To enable this, you should set ldap: enabled: true in your config file.
 ##
-try:
-    # pylint: disable=wildcard-import, unused-wildcard-import, import-error, wrong-import-position
-    from stackdio.server.settings.ldap_settings import *
-    LDAP_ENABLED = True
-    AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
-except ImportError:
-    LDAP_ENABLED = False
+
+# Throw in the rest of our LDAP config if ldap is enabled
+if LDAP_ENABLED:
+    import ldap
+    import django_auth_ldap.config
+    from django_auth_ldap.config import LDAPSearch
+
+    auth_ldap_search = ('group_type',)
+    call_value = ('group_type',)
+
+    def get_from_ldap_module(attr, module=ldap, fail_on_error=False):
+        try:
+            return getattr(module, attr)
+        except (AttributeError, TypeError):
+            if fail_on_error:
+                raise StackdioConfigException('Invalid config value: {}'.format(attr))
+            else:
+                # if we get an exception, just return the raw attribute
+                return attr
+
+    def get_search_object(user_or_group):
+        search_base = LDAP_CONFIG.get('{}_search_base'.format(user_or_group))
+        if not search_base:
+            raise StackdioConfigException('Missing ldap.{}_search_base '
+                                          'config parameter'.format(user_or_group))
+
+        search_scope_str = LDAP_CONFIG.get('{}_search_scope'.format(user_or_group), 'SCOPE_SUBTREE')
+        search_scope = get_from_ldap_module(search_scope_str, fail_on_error=True)
+        search_filter = LDAP_CONFIG.get('{}_search_filter'.format(user_or_group))
+
+        if search_filter is None:
+            return LDAPSearch(search_base, search_scope)
+        else:
+            return LDAPSearch(search_base, search_scope, search_filter)
+
+    # Set the search objects
+    AUTH_LDAP_USER_SEARCH = get_search_object('user')
+    AUTH_LDAP_GROUP_SEARCH = get_search_object('group')
+
+    for key, value in LDAP_CONFIG.items():
+        if key == 'enabled':
+            continue
+
+        settings_key = 'AUTH_LDAP_{}'.format(key.upper())
+
+        if key in auth_ldap_search:
+            search_module = django_auth_ldap.config
+        else:
+            search_module = ldap
+
+        if isinstance(value, dict):
+            settings_value = {}
+            for k, v in value.items():
+                sub_key = get_from_ldap_module(k, search_module)
+                sub_value = get_from_ldap_module(v, search_module)
+                settings_value[sub_key] = sub_value
+        else:
+            settings_value = get_from_ldap_module(value, search_module)
+
+        if key in call_value:
+            settings_value = settings_value()
+
+        # Set the attribute on this settings module
+        vars()[settings_key] = settings_value

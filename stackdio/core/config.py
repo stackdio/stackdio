@@ -16,6 +16,7 @@
 #
 from __future__ import print_function, unicode_literals
 
+import logging
 import getpass
 import os
 
@@ -23,6 +24,9 @@ import six
 import yaml
 from django.utils.crypto import get_random_string
 from jinja2 import Template
+
+logger = logging.getLogger(__name__)
+
 
 # Get the stackdio base dir.  Mostly only useful when not installing with pip.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -38,8 +42,8 @@ class StackdioConfig(dict):
     CONFIG_LOCATIONS = (
         os.environ.get('STACKDIO_CONFIG_FILE', ''),
         '/etc/stackdio/server.yaml',
-        'config/stackdio.yaml',
         os.path.expanduser('~/.stackdio/server.yaml'),
+        'config/stackdio.yaml',
     )
 
     REQUIRED_FIELDS = {
@@ -76,6 +80,7 @@ class StackdioConfig(dict):
                 'To create the file, you may use `stackdio init`'
             )
 
+        logger.info('Loading configuration from {}'.format(self.cfg_file))
         with open(self.cfg_file) as f:
             template = Template(f.read())
             stackdio_config = yaml.safe_load(template.render(**self.DEFAULT_CONTEXT))
