@@ -251,7 +251,7 @@ class InitCommand(WizardCommand):
     DOT_DIRECTORY = os.path.expanduser('~/.stackdio')
 
     # Default config file
-    CONFIG_FILE = os.path.join(DOT_DIRECTORY, 'server.yaml')
+    CONFIG_FILE = os.path.join(DOT_DIRECTORY, 'stackdio.yaml')
 
     def __init__(self, *args, **kwargs):
         super(InitCommand, self).__init__(*args, **kwargs)
@@ -517,12 +517,6 @@ class ConfigCommand(BaseCommand):
 
 
 class UpgradeSaltCommand(BaseCommand):
-
-    # Default directory holding the stackdio configuration
-    CONFIG_DIR = os.path.expanduser('~/.stackdio')
-
-    # Default config file
-    CONFIG_FILE = os.path.join(CONFIG_DIR, 'config')
 
     def run(self):
 
