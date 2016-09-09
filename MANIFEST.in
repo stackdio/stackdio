@@ -3,7 +3,7 @@ include CONTRIBUTING.rst
 include README.rst
 include LICENSE
 include MANIFEST.in
-recursive-include config/
+recursive-include config *
 recursive-include stackdio/api/cloud/fixtures *.json
 recursive-include stackdio/core/templates *
 recursive-include stackdio/server/management/saltdirs *

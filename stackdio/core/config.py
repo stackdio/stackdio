@@ -41,8 +41,8 @@ class StackdioConfigException(Exception):
 class StackdioConfig(dict):
     CONFIG_LOCATIONS = (
         os.environ.get('STACKDIO_CONFIG_FILE', ''),
-        os.path.expanduser('~/.stackdio/server.yaml'),
-        '/etc/stackdio/server.yaml',
+        os.path.expanduser('~/.stackdio/stackdio.yaml'),
+        '/etc/stackdio/stackdio.yaml',
         'config/stackdio.yaml',
     )
 

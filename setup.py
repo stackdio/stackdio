@@ -17,7 +17,6 @@
 
 from __future__ import print_function
 
-import json
 import os
 import sys
 
@@ -42,10 +41,9 @@ if (major, minor) not in supported_versions:
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
-with open(os.path.join(root_dir, '.bowerrc')) as f:
-    bowerrc = json.load(f)
+bower_dir = 'stackdio/ui/static/stackdio/lib/bower_components'
 
-components_dir = os.path.join(root_dir, bowerrc['directory'])
+components_dir = os.path.join(root_dir, bower_dir)
 
 # Force the user to install bower components first
 if not os.path.exists(components_dir):

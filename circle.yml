@@ -29,7 +29,7 @@ test:
     - py.test --cov=stackdio --cov-report=html --junit-xml=tests.xml stackdio
 
     # Then copy the config file and try again (for mysql)
-    - cp tests/server-circle.yaml /home/ubuntu/.stackdio/server.yaml
+    - cp tests/stackdio-circle.yaml /home/ubuntu/.stackdio/stackdio.yaml
     - python manage.py migrate
     - py.test --cov=stackdio --cov-report=html --junit-xml=tests.xml stackdio
 
