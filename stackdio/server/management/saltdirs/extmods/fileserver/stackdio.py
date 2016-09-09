@@ -66,23 +66,14 @@ def __virtual__():
 
 
 def _get_storage_dir():
-    root_dir = __opts__.get('root_dir')
+    salt_root_dir = __opts__.get('root_dir')
 
-    if root_dir is None:
+    if salt_root_dir is None:
         log.warn('stackdio fileserver root_dir configuration does not exist.')
-        return root_dir
+        return salt_root_dir
 
-    storage_dir = os.path.join(root_dir, 'storage')
-
-    if not os.path.exists(storage_dir):
-        # Create the directory if it doesn't exist
-        os.mkdir(storage_dir, 0755)
-
-    if not os.path.isdir(storage_dir):
-        log.warn('stackdio fileserver <root_dir>/storage configuration is not a directory.')
-        return storage_dir
-
-    return storage_dir
+    # The storage dir is the parent of the salt root dir.
+    return os.path.dirname(os.path.abspath(salt_root_dir))
 
 
 def _get_env_dir(saltenv):

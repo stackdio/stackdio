@@ -19,18 +19,25 @@
 from __future__ import print_function
 
 import getpass
+import json
 import os
+import pwd
 import shutil
 import sys
 import textwrap
 
-import jinja2
+import django
+import dj_database_url
 import six
 import yaml
 from django.core.exceptions import ImproperlyConfigured
+from django.db.utils import load_backend
 from django.utils.crypto import get_random_string
+from jinja2 import Environment, PackageLoader
+from pkg_resources import ResourceManager, get_provider
 from salt.utils import get_colors
 from salt.version import __version__ as salt_version
+from stackdio.core.config import StackdioConfig
 
 raw_input = six.moves.input
 
@@ -58,7 +65,7 @@ class BaseCommand(object):
     def __init__(self, args, parser=None):
         self.args = args
         self.parser = parser
-        from stackdio.core.config import StackdioConfig
+        self.env = Environment(loader=PackageLoader('stackdio.server.management', 'templates'))
         self.stackdio_config = StackdioConfig
 
     def __call__(self, *args, **kwargs):
@@ -130,7 +137,6 @@ class BaseCommand(object):
         Takes a relative path `rp`, and attempts to pull the full resource
         path using pkg_resources.
         """
-        from pkg_resources import ResourceManager, get_provider
         provider = get_provider(package)
         if rp is None:
             return os.path.dirname(provider.module_path)
@@ -140,9 +146,10 @@ class BaseCommand(object):
         if context is None:
             context = {}
 
-        tmpl = self.load_resource(tmpl)
-        with open(tmpl) as f:
-            t = jinja2.Template(f.read()).render(context)
+        template = self.env.get_template(tmpl)
+
+        t = template.render(context)
+
         if outfile:
             with open(outfile, 'w') as f:
                 f.write(t)
@@ -241,10 +248,10 @@ class WizardCommand(BaseCommand):
 
 class InitCommand(WizardCommand):
     # Default directory holding the stackdio configuration
-    CONFIG_DIR = os.path.expanduser('~/.stackdio')
+    DOT_DIRECTORY = os.path.expanduser('~/.stackdio')
 
     # Default config file
-    CONFIG_FILE = os.path.join(CONFIG_DIR, 'config')
+    CONFIG_FILE = os.path.join(DOT_DIRECTORY, 'stackdio.yaml')
 
     def __init__(self, *args, **kwargs):
         super(InitCommand, self).__init__(*args, **kwargs)
@@ -255,17 +262,22 @@ class InitCommand(WizardCommand):
 
         self.QUESTIONS = [{
             'attr': 'user',
-            'short_desc': 'Which user will stackdio and salt run as?',
-            'long_desc': ('This user will own services, files, etc related to '
-                          'stackdio.'),
+            'short_desc': 'Which user will salt run as?',
+            'long_desc': 'This user will own services, files, etc related to salt.',
             'default': getpass.getuser(),
         }, {
-            'attr': 'storage_root',
+            'attr': 'storage_dir',
             'short_desc': 'Where should stackdio and salt store their data?',
-            'long_desc': ('Root directory for stackdio to store its files, logs, '
+            'long_desc': ('Root directory for stackdio to store its files, '
                           'salt configuration, etc. We will attempt to create '
                           'this path if it does not already exist.'),
-            'default': self.CONFIG_DIR,
+            'default': os.path.join(self.DOT_DIRECTORY, 'storage'),
+        }, {
+            'attr': 'log_dir',
+            'short_desc': 'Where should stackdio and salt store their logs?',
+            'long_desc': ('Root directory for stackdio to store its logs.  '
+                          'We will attempt to create this path if it does not already exist.'),
+            'default': os.path.join(self.DOT_DIRECTORY, 'logs'),
         }, {
             'attr': 'salt_bootstrap_script',
             'short_desc': ('Which bootstrap script should salt-cloud use when '
@@ -283,7 +295,7 @@ class InitCommand(WizardCommand):
                           'it will be replaced by the current version of the salt master.'),
             'default': 'stable {{salt_version}}'
         }, {
-            'attr': 'db_dsn',
+            'attr': 'database_url',
             'short_desc': ('What database DSN should stackdio use to connect to '
                            'the DB?'),
             'long_desc': ('The database DSN the stackdio Django application will '
@@ -317,7 +329,9 @@ class InitCommand(WizardCommand):
         if self.answers:
             self.out()
             self.out('Existing configuration file found. Default values '
-                     'for questions below will use existing values.',
+                     'for questions below will use existing values, and '
+                     'the file will *NOT* be re-written.  If you wish to '
+                     'modify your settings, change the config file manually.',
                      Colors.WARN,
                      nl=2,
                      **self.WARNING_INDENT)
@@ -335,31 +349,30 @@ class InitCommand(WizardCommand):
         self.out('Finished', Colors.INFO)
 
     def _init_stackdio(self):
-        # create some directories we need
-        dirs = (
-            self.CONFIG_DIR,
-            os.path.join(self.CONFIG_DIR, 'var/log/web'),
-            os.path.join(self.CONFIG_DIR, 'var/log/supervisord'),
-            os.path.join(self.CONFIG_DIR, 'var/run'),
-        )
-
-        for d in dirs:
-            try:
-                os.makedirs(d, mode=0o0755)
-            except OSError:
-                pass
-
-        self.render_template('server/management/templates/config.jinja2',
-                             self.CONFIG_FILE,
-                             context=self.answers)
-        self.out('stackdio configuration written to '
-                 '{0}'.format(self.CONFIG_FILE),
-                 Colors.INFO,
-                 width=1024,
-                 **self.INFO_INDENT)
+        # only write config if it wasn't already written before
+        if not os.path.isfile(self.CONFIG_FILE):
+            self.render_template('stackdio.yaml',
+                                 self.CONFIG_FILE,
+                                 context=self.answers)
+            self.out('stackdio configuration written to '
+                     '{0}'.format(self.CONFIG_FILE),
+                     Colors.INFO,
+                     width=1024,
+                     **self.INFO_INDENT)
 
         # grab a fresh copy of the config file to be used later
         self.config = self.stackdio_config()
+
+        # create some directories we need
+        dirs = (
+            os.path.join(self.config.log_dir, 'web'),
+            os.path.join(self.config.log_dir, 'supervisord'),
+            os.path.join(self.config.storage_dir, 'run'),
+        )
+
+        for d in dirs:
+            if not os.path.isdir(d):
+                os.makedirs(d)
 
     def _init_salt(self):
         if not os.path.isdir(self.config.salt_config_root):
@@ -371,7 +384,7 @@ class InitCommand(WizardCommand):
                      **self.INFO_INDENT)
 
         # Render salt-master and salt-cloud configuration files
-        self.render_template('server/management/templates/master.jinja2',
+        self.render_template('salt/master',
                              self.config.salt_master_config,
                              context=self.config)
         self.out('Salt master configuration written to '
@@ -380,7 +393,7 @@ class InitCommand(WizardCommand):
                  width=1024,
                  **self.INFO_INDENT)
 
-        self.render_template('server/management/templates/cloud.jinja2',
+        self.render_template('salt/cloud',
                              self.config.salt_cloud_config,
                              context=self.config)
         self.out('Salt cloud configuration written to '
@@ -412,14 +425,13 @@ class InitCommand(WizardCommand):
                      **self.INFO_INDENT)
 
     def _validate_user(self, question, answer):
-        from pwd import getpwnam
         try:
-            getpwnam(answer)
+            pwd.getpwnam(answer)
         except KeyError:
             return False, 'User does not exist. Please try another user.\n'
         return True, ''
 
-    def _validate_storage_root(self, question, path):
+    def _validate_storage_dir(self, question, path):
         if not os.path.isabs(path):
             return False, ('Relative paths are not allowed. Please provide '
                            'the absolute path to the storage directory.')
@@ -441,9 +453,8 @@ class InitCommand(WizardCommand):
                                'are set.')
 
         # Check ownership
-        from pwd import getpwnam
         user = self.answers['user']
-        uid = getpwnam(user).pw_uid
+        uid = pwd.getpwnam(user).pw_uid
         stat = os.stat(path)
         if stat.st_uid != uid:
             return False, 'Directory is not owned by {0} user.\n'.format(user)
@@ -451,27 +462,22 @@ class InitCommand(WizardCommand):
             return False, 'Directory is not writable.\n'
         return True, ''
 
-    def _validate_db_dsn(self, question, dsn):
-        from django.conf import settings
-        if not settings.configured:
-            settings.configure()
+    def _validate_database_url(self, question, url):
+        # Ensure django is setup
+        django.setup()
 
-        from django.db.utils import load_backend
-        from dj_database_url import parse
-
-        db = parse(dsn)
+        db = dj_database_url.parse(url)
         db['OPTIONS'] = {'connect_timeout': 3}
 
-        # These are django defaults - there seems to be a bug in dj-database-url that causes an
-        # exception if these keys are missing
-        db['CONN_MAX_AGE'] = 0
+        # These are django defaults - the cursor() call craps out if these are missing.
         db['AUTOCOMMIT'] = True
+        db['TIME_ZONE'] = 'UTC'
 
         try:
             engine = load_backend(db['ENGINE']).DatabaseWrapper(db)
             engine.cursor()
         except KeyError:
-            return False, 'Invalid DSN provided.\n'
+            return False, 'Invalid database URL provided.\n'
         except Exception as e:
             return False, '{0}\n'.format(str(e))
         return True, ''
@@ -481,28 +487,19 @@ class ConfigCommand(BaseCommand):
 
     def run(self):
         config = self.stackdio_config()
-        stackdio_root = self.load_resource()
         context = {
-            'stackdio_root': stackdio_root,
-            'storage_root': config.storage_root,
+            'storage_dir': config.storage_dir,
         }
         if self.args.type == 'stackdio':
-            import json
             print(json.dumps(config, indent=4))
             return
-        elif self.args.type == 'apache':
-            context.update({
-                'user': config.user,
-                'with_ssl': self.args.with_ssl,
-            })
-            tmpl = 'server/management/templates/apache2.jinja2'
         elif self.args.type == 'nginx':
             context.update({
                 'with_ssl': self.args.with_ssl
             })
-            tmpl = 'server/management/templates/nginx.jinja2'
+            tmpl = 'nginx.conf'
         elif self.args.type == 'supervisord':
-            tmpl = 'server/management/templates/supervisord.jinja2'
+            tmpl = 'supervisord.conf'
             context.update({
                 'with_gunicorn': self.args.with_gunicorn,
                 'with_celery': self.args.with_celery,
@@ -520,12 +517,6 @@ class ConfigCommand(BaseCommand):
 
 
 class UpgradeSaltCommand(BaseCommand):
-
-    # Default directory holding the stackdio configuration
-    CONFIG_DIR = os.path.expanduser('~/.stackdio')
-
-    # Default config file
-    CONFIG_FILE = os.path.join(CONFIG_DIR, 'config')
 
     def run(self):
 

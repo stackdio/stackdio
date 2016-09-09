@@ -17,7 +17,6 @@
 
 from __future__ import print_function
 
-import json
 import os
 import sys
 
@@ -42,10 +41,9 @@ if (major, minor) not in supported_versions:
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
-with open(os.path.join(root_dir, '.bowerrc')) as f:
-    bowerrc = json.load(f)
+bower_dir = 'stackdio/ui/static/stackdio/lib/bower_components'
 
-components_dir = os.path.join(root_dir, bowerrc['directory'])
+components_dir = os.path.join(root_dir, bower_dir)
 
 # Force the user to install bower components first
 if not os.path.exists(components_dir):
@@ -66,7 +64,7 @@ with open('README.rst') as f:
     LONG_DESCRIPTION = f.read()
 
 requirements = [
-    # Heavily used, hold to a specific minor version
+    # Heavily used, hold to a specific minor version (let the patch version update)
     'celery~=3.1.0',
     'Django~=1.9.0',
     'djangorestframework~=3.4.0',
@@ -80,8 +78,9 @@ requirements = [
     'django-filter~=0.9',
     'django-guardian~=1.4.0',
     'django-model-utils~=2.0',
+    'Jinja2~=2.0',
 
-    # Fairly stable, no need to have an upper bound on the version
+    # Light usage, no need to have an upper bound on the version
     'dj-database-url>=0.3',
     'envoy',
     'GitPython>=2.0',

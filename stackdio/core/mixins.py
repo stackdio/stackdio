@@ -21,7 +21,6 @@ import logging
 from django.db.models.query import QuerySet
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
-from rest_framework.mixins import CreateModelMixin
 from rest_framework.response import Response
 
 from .permissions import StackdioParentPermissions
