@@ -33,10 +33,11 @@ import dj_database_url
 from celery.schedules import crontab
 from django.contrib.messages import constants as messages
 
-from stackdio.core.config import StackdioConfig
+from stackdio.core.config import StackdioConfig, StackdioConfigException
 
 logger = logging.getLogger(__name__)
 
+# Grab a stackdio config object
 STACKDIO_CONFIG = StackdioConfig()
 
 # The delimiter used in state execution results
@@ -48,20 +49,11 @@ STATE_EXECUTION_FIELDS = ('module', 'declaration_id', 'name', 'func')
 ##
 # The Django local storage directory for storing its data
 ##
-FILE_STORAGE_DIRECTORY = os.path.join(
-    STACKDIO_CONFIG['storage_root'],
-    'storage'
-)
+FILE_STORAGE_DIRECTORY = STACKDIO_CONFIG.storage_dir
 
-LOG_DIRECTORY = os.path.join(
-    STACKDIO_CONFIG['storage_root'],
-    'var',
-    'log',
-    'stackdio'
-)
+LDAP_CONFIG = STACKDIO_CONFIG.get('ldap', {})
 
-if not os.path.isdir(LOG_DIRECTORY):
-    os.makedirs(LOG_DIRECTORY)
+LDAP_ENABLED = LDAP_CONFIG.get('enabled', False)
 
 ##
 # Some convenience variables
@@ -79,7 +71,7 @@ JAVASCRIPT_DEBUG = False
 ALLOWED_HOSTS = ['*']
 
 
-SECRET_KEY = STACKDIO_CONFIG['django_secret_key']
+SECRET_KEY = STACKDIO_CONFIG.django_secret_key
 
 # Application definition
 
@@ -119,6 +111,10 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'guardian.backends.ObjectPermissionBackend',
 )
+
+# Add the LDAP backend if we're enabled
+if LDAP_ENABLED:
+    AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
 
 # For guardian
 ANONYMOUS_USER_ID = -1
@@ -162,7 +158,7 @@ MANAGERS = ADMINS
 # environment variable, we're loading it from the stackdio config
 ##
 DATABASES = {
-    'default': dj_database_url.parse(STACKDIO_CONFIG['db_dsn'])
+    'default': dj_database_url.parse(STACKDIO_CONFIG.database_url)
 }
 
 
@@ -190,7 +186,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'America/Chicago'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -215,7 +211,7 @@ STATIC_URL = '/static/'
 # Don't put anything in this directory yourself; store your static files
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/var/www/example.com/static/"
-STATIC_ROOT = '%s/static/' % STACKDIO_CONFIG.storage_root
+STATIC_ROOT = '%s/static/' % FILE_STORAGE_DIRECTORY
 
 # Additional locations of static files
 STATICFILES_DIRS = ()
@@ -227,7 +223,7 @@ MEDIA_URL = '/media/'
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/var/www/example.com/media/"
-MEDIA_ROOT = '%s/media/' % STACKDIO_CONFIG.storage_root
+MEDIA_ROOT = '%s/media/' % FILE_STORAGE_DIRECTORY
 
 # Override message tags for bootstrap
 MESSAGE_TAGS = {
@@ -274,7 +270,7 @@ LOGGING = {
             'level': 'DEBUG',
             'formatter': 'default',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(LOG_DIRECTORY, 'django.log'),
+            'filename': os.path.join(STACKDIO_CONFIG.log_dir, 'django.log'),
             'maxBytes': 5242880,
             'backupCount': 5,
         },
@@ -350,12 +346,9 @@ REST_FRAMEWORK = {
 }
 
 ##
-# Available cloud providers
+# Available cloud providers - pull from config file
 ##
-CLOUD_PROVIDERS = (
-    'stackdio.api.cloud.providers.aws.AWSCloudProvider',
-    # 'stackdio.api.cloud.providers.rackspace.RackspaceCloudProvider',
-)
+CLOUD_PROVIDERS = STACKDIO_CONFIG.cloud_providers
 
 ##
 # Celery & RabbitMQ
@@ -404,13 +397,69 @@ CELERYBEAT_SCHEDULE = {
 }
 
 ##
-# LDAP configuration. To enable this, you should copy ldap_settings.py.template
-# to ldap_settings.py and modify the settings there.
+# LDAP configuration. To enable this, you should set ldap: enabled: true in your config file.
 ##
-try:
-    # pylint: disable=wildcard-import, unused-wildcard-import, import-error, wrong-import-position
-    from stackdio.server.settings.ldap_settings import *
-    LDAP_ENABLED = True
-    AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
-except ImportError:
-    LDAP_ENABLED = False
+
+# Throw in the rest of our LDAP config if ldap is enabled
+if LDAP_ENABLED:
+    import ldap
+    import django_auth_ldap.config
+    from django_auth_ldap.config import LDAPSearch
+
+    auth_ldap_search = ('group_type',)
+    call_value = ('group_type',)
+
+    def get_from_ldap_module(attr, module=ldap, fail_on_error=False):
+        try:
+            return getattr(module, attr)
+        except (AttributeError, TypeError):
+            if fail_on_error:
+                raise StackdioConfigException('Invalid config value: {}'.format(attr))
+            else:
+                # if we get an exception, just return the raw attribute
+                return attr
+
+    def get_search_object(user_or_group):
+        search_base = LDAP_CONFIG.get('{}_search_base'.format(user_or_group))
+        if not search_base:
+            raise StackdioConfigException('Missing ldap.{}_search_base '
+                                          'config parameter'.format(user_or_group))
+
+        search_scope_str = LDAP_CONFIG.get('{}_search_scope'.format(user_or_group), 'SCOPE_SUBTREE')
+        search_scope = get_from_ldap_module(search_scope_str, fail_on_error=True)
+        search_filter = LDAP_CONFIG.get('{}_search_filter'.format(user_or_group))
+
+        if search_filter is None:
+            return LDAPSearch(search_base, search_scope)
+        else:
+            return LDAPSearch(search_base, search_scope, search_filter)
+
+    # Set the search objects
+    AUTH_LDAP_USER_SEARCH = get_search_object('user')
+    AUTH_LDAP_GROUP_SEARCH = get_search_object('group')
+
+    for key, value in LDAP_CONFIG.items():
+        if key == 'enabled':
+            continue
+
+        settings_key = 'AUTH_LDAP_{}'.format(key.upper())
+
+        if key in auth_ldap_search:
+            search_module = django_auth_ldap.config
+        else:
+            search_module = ldap
+
+        if isinstance(value, dict):
+            settings_value = {}
+            for k, v in value.items():
+                sub_key = get_from_ldap_module(k, search_module)
+                sub_value = get_from_ldap_module(v, search_module)
+                settings_value[sub_key] = sub_value
+        else:
+            settings_value = get_from_ldap_module(value, search_module)
+
+        if key in call_value:
+            settings_value = settings_value()
+
+        # Set the attribute on this settings module
+        vars()[settings_key] = settings_value

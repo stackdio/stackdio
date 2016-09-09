@@ -185,3 +185,5 @@ tests.xml
 stackdio/ui/static/stackdio/app/main.js
 stackdio/ui/static/stackdio/build/
 **/ldap_settings.py
+storage/
+log/

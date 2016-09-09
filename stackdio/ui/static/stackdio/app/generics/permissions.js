@@ -128,8 +128,10 @@ define([
             };
         },
         savePermissions: function (userOrGroup, perms, availPerms) {
+            var self = this;
             var ajaxList = [];
             var bulkUpdateList = [];
+
             perms.forEach(function (perm) {
                 var newPerms = [];
                 availPerms.forEach(function (availablePerm) {
@@ -157,14 +159,21 @@ define([
                 }
             }, this);
 
-            // Do the bulk update, add it to the list too
-            ajaxList.push($.ajax({
-                method: 'PUT',
-                url: this.permsUrl + userOrGroup + 's/',
-                data: JSON.stringify(bulkUpdateList)
-            }));
-
-            return ajaxList;
+            // always do the create list first - then do the bulk update
+            return $.when.apply(this, ajaxList).done(function () {
+                return $.ajax({
+                    method: 'PUT',
+                    url: self.permsUrl + userOrGroup + 's/',
+                    data: JSON.stringify(bulkUpdateList)
+                }).done(function (perms) {
+                    utils.growlAlert('Successfully saved ' + userOrGroup + ' permissions!', 'success');
+                    self.loadPermissions();
+                }).fail(function (jqxhr) {
+                    utils.alertError(jqxhr, 'Error saving permissions');
+                });
+            }).fail(function (jqxhr) {
+                utils.alertError(jqxhr, 'Error saving permissions');
+            });
         },
         loadPermissions: function() {
             $.ajax({
@@ -181,17 +190,12 @@ define([
                 utils.alertError(jqxhr, 'Error fetching permissions');
             });
         },
-        save: function () {
-            var ajaxList = this.savePermissions('user', this.userPermissions(), this.availableUserPermissions());
-            ajaxList.push.apply(ajaxList, this.savePermissions('group', this.groupPermissions(), this.availableGroupPermissions()));
+        userSave: function () {
+            this.savePermissions('user', this.userPermissions(), this.availableUserPermissions());
 
-            var redirectUrl = this.saveUrl;
-            $.when.apply(this, ajaxList).done(function () {
-                window.location = redirectUrl;
-            }).fail(function (jqxhr) {
-                utils.alertError(jqxhr, 'Error saving permissions');
-            });
-
+        },
+        groupSave: function () {
+            this.savePermissions('group', this.groupPermissions(), this.availableGroupPermissions());
         }
     });
 });

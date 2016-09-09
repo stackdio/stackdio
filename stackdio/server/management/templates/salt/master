@@ -3,6 +3,7 @@ root_dir: {{ salt_root }}
 verify_env: True
 worker_threads: 10
 failhard: false
+hash_type: sha256
 
 log_level: {{ salt_master_log_level }}
 
