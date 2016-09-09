@@ -85,6 +85,7 @@ INSTALLED_APPS = (
     'actstream',
     'guardian',
     'stackdio.core',
+    'stackdio.events',
     'stackdio.api.users',
     'stackdio.api.cloud',
     'stackdio.api.stacks',
