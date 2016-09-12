@@ -15,3 +15,4 @@
 # limitations under the License.
 #
 
+from .base import BaseNotifier

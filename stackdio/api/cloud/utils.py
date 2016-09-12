@@ -21,7 +21,7 @@ import re
 import importlib
 
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
+from stackdio.core.config import StackdioConfigException
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def get_provider_driver_class(provider):
 
 def check_cloud_provider_settings():
     if not hasattr(settings, 'CLOUD_PROVIDERS'):
-        raise ImproperlyConfigured(
+        raise StackdioConfigException(
             'settings.CLOUD_PROVIDERS must set with a list of supported cloud providers.'
         )
 
@@ -64,7 +64,7 @@ def get_cloud_providers():
         except ImportError as e:
             msg = 'Could not import {0} from settings.CLOUD_PROVIDERS'.format(class_path)
             logger.error(e)
-            raise ImproperlyConfigured(msg)
+            raise StackdioConfigException(msg)
 
     return providers
 

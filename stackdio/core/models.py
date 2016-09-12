@@ -52,3 +52,10 @@ class Label(models.Model):
     content_type = models.ForeignKey('contenttypes.ContentType')
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
+
+
+class Event(models.Model):
+    """
+    An event that can be generated.
+    """
+    tag = models.CharField('Tag', max_length=128, unique=True)

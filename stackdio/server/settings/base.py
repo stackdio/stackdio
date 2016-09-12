@@ -70,7 +70,6 @@ JAVASCRIPT_DEBUG = False
 # See https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ['*']
 
-
 SECRET_KEY = STACKDIO_CONFIG.django_secret_key
 
 # Application definition
@@ -85,7 +84,7 @@ INSTALLED_APPS = (
     'actstream',
     'guardian',
     'stackdio.core',
-    'stackdio.events',
+    'stackdio.notifications',
     'stackdio.api.users',
     'stackdio.api.cloud',
     'stackdio.api.stacks',
@@ -368,6 +367,9 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_ROUTES = {
     'formulas.import_formula': {'queue': 'short'},
     'formulas.update_formula': {'queue': 'short'},
+    'notifications.generate_notifications': {'queue': 'short'},
+    'notifications.send_notification': {'queue': 'short'},
+    'notifications.send_bulk_notifications': {'queue': 'short'},
     'stacks.cure_zombies': {'queue': 'stacks'},
     'stacks.destroy_hosts': {'queue': 'stacks'},
     'stacks.destroy_stack': {'queue': 'stacks'},

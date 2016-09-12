@@ -15,15 +15,14 @@
 # limitations under the License.
 #
 
+import logging
+
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 
+from stackdio.notifications.utils import get_notifier_class, get_notifier_instance
 
-class Event(models.Model):
-    """
-    An event that can be generated.
-    """
-    tag = models.CharField('Tag', max_length=128, unique=True)
+logger = logging.getLogger(__name__)
 
 
 class SubscribedObjectProxy(models.Model):
@@ -41,14 +40,14 @@ class NotificationChannel(models.Model):
     """
     name = models.CharField('Name', max_length=128)
 
-    events = models.ManyToManyField('events.Event', related_name='channels')
+    events = models.ManyToManyField('core.Event', related_name='channels')
 
     auth_object_content_type = models.ForeignKey('contenttypes.ContentType')
     auth_object_id = models.PositiveIntegerField()
     auth_object = GenericForeignKey('auth_object_content_type', 'auth_object_id')
 
     # The list of objects this channel is subscribed to
-    subscribed_objects = models.ManyToManyField('events.SubscribedObjectProxy',
+    subscribed_objects = models.ManyToManyField('notifications.SubscribedObjectProxy',
                                                 related_name='channels')
 
 
@@ -61,7 +60,14 @@ class NotificationHandler(models.Model):
 
     # metadata = models
 
-    channel = models.ForeignKey('events.NotificationChannel', related_name='handlers')
+    channel = models.ForeignKey('notifications.NotificationChannel', related_name='handlers')
+
+    # the caching logic is done in the utils methods
+    def get_nofifier_class(self):
+        return get_notifier_class(self.notifier)
+
+    def get_notifier_instance(self):
+        return get_notifier_instance(self.notifier)
 
 
 class Notification(models.Model):
@@ -71,9 +77,9 @@ class Notification(models.Model):
 
     sent = models.BooleanField('Sent', default=False)
 
-    event = models.ForeignKey('events.Event')
+    event = models.ForeignKey('core.Event')
 
-    handler = models.ForeignKey('events.NotificationHandler')
+    handler = models.ForeignKey('notifications.NotificationHandler')
 
     # The associated object
     content_type = models.ForeignKey('contenttypes.ContentType')

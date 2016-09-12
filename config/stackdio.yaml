@@ -50,6 +50,30 @@ database_url: sqlite:///storage/stackdio.db
 create_ssh_users: true
 
 ##
+# Set up the available notifiers
+notifiers:
+
+  # A basic email notifier
+  email:
+    class: stackdio.notifiations.notifiers.email.EmailNotifier
+    options:
+      send_from: noreply@example.com
+
+  # A basic webook notifier
+  webhook:
+    class: stackdio.notifications.notifers.webhook.WebhookNotifier
+    options:
+      timeout: 30
+
+  # A notifier to send text messages via Amazon's SES
+  text:
+    class: stackdio.notifications.notifiers.ses.SESNotifier
+    options:
+      aws_access_key: MY_ACCESS_KEY
+      aws_secret_key: MY_SECRET_KEY
+
+
+##
 # Optional LDAP configurations
 ldap:
   # This must be set to true for anything below to take effect
