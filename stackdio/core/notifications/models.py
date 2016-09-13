@@ -20,7 +20,7 @@ import logging
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 
-from stackdio.notifications.utils import get_notifier_class, get_notifier_instance
+from stackdio.core.notifications.utils import get_notifier_class, get_notifier_instance
 
 logger = logging.getLogger(__name__)
 

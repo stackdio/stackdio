@@ -17,7 +17,7 @@
 
 from django.core.mail import send_mail
 
-from stackdio.notifications.notifiers import BaseNotifier
+from stackdio.core.notifications.notifiers import BaseNotifier
 
 
 class EmailNotifier(BaseNotifier):

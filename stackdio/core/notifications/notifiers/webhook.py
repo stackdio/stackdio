@@ -17,7 +17,7 @@
 
 import requests
 
-from stackdio.notifications.notifiers import BaseNotifier
+from stackdio.core.notifications.notifiers import BaseNotifier
 
 
 class WebhookNotifier(BaseNotifier):

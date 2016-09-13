@@ -15,4 +15,4 @@
 # limitations under the License.
 #
 
-default_app_config = 'stackdio.notifications.apps.StackdioNotificationsAppConfig'
+default_app_config = 'stackdio.core.notifications.apps.StackdioNotificationsAppConfig'

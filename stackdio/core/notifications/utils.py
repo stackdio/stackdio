@@ -21,7 +21,7 @@ from collections import namedtuple
 from django.conf import settings
 
 from stackdio.core.config import StackdioConfigException
-from stackdio.notifications.notifiers import BaseNotifier
+from stackdio.core.notifications.notifiers import BaseNotifier
 
 NotifierConfig = namedtuple('NotifierConfig', ['name', 'class_path', 'options'])
 
@@ -46,7 +46,7 @@ def get_notifier_config(name):
     """
     Get the notifier config object from the notifier name
     :param name: the name of the notifier defined in the config file
-    :rtype: stackdio.notifications.utils.NotifierConfig
+    :rtype: stackdio.core.notifications.utils.NotifierConfig
     :return: the config object
     """
     if name not in notifier_configs:

@@ -36,7 +36,7 @@ class BaseNotifier(object):
         Override this method with logic to send a single notification.  Should return False
         (or something False-y) if the notification fails to send, or True (or something Truth-y)
         if the notification sends successfully.
-        :param notification: a stackdio.notifications.models.Notification object
+        :param notification: a stackdio.core.notifications.models.Notification object
         :rtype: bool
         :return: the success code
         """
@@ -49,7 +49,7 @@ class BaseNotifier(object):
         so this method will actually get called.
         Should return a list of successfully sent Notification objects.  Any notifications
         not in the return list will be set to be retried at a later time.
-        :param notifications: an iterable of stackdio.notifications.models.Notification objects
+        :param notifications: an iterable of stackdio.core.notifications.models.Notification objects
         :rtype: list
         :return: a list of successfully sent notifications
         """

@@ -19,5 +19,5 @@ from django.apps import AppConfig
 
 
 class StackdioNotificationsAppConfig(AppConfig):
-    name = 'stackdio.notifications'
+    name = 'stackdio.core.notifications'
     label = 'notifications'

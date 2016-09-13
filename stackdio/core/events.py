@@ -17,7 +17,7 @@
 
 from django.contrib.contenttypes.models import ContentType
 
-from stackdio.notifications.tasks import generate_notifications
+from stackdio.core.notifications.tasks import generate_notifications
 
 
 def trigger_event(event_tag, content_object):
