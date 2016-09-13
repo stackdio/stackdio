@@ -29,7 +29,7 @@ class EmailNotifier(BaseNotifier):
         self.send_from = send_from
 
     def send_notification(self, notification):
-        pass
+        send_mail(notification.event, notification.event, self.send_from, notification.handler)
 
     def send_notifications_in_bulk(self, notifications):
         pass
