@@ -160,7 +160,7 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
 
     settings = UserSettingsSerializer()
 
-    channels = HyperlinkedField(view_name='api:users:currentuser-channels')
+    channels = HyperlinkedField(view_name='api:users:currentuser-channel-list')
 
     change_password = HyperlinkedField(view_name='api:users:currentuser-password')
 
