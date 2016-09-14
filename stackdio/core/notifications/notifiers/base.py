@@ -31,6 +31,15 @@ class BaseNotifier(object):
     def __init__(self):
         super(BaseNotifier, self).__init__()
 
+    @classmethod
+    def get_required_options(cls):
+        """
+        Override this method to get the required options for your handler instance
+        :rtype: list
+        :return: A list of required options
+        """
+        raise NotImplementedError()
+
     def send_notification(self, notification):
         """
         Override this method with logic to send a single notification.  Should return False

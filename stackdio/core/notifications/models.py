@@ -15,9 +15,11 @@
 # limitations under the License.
 #
 
+import json
 import logging
 
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 from stackdio.core.notifications.utils import get_notifier_class, get_notifier_instance
@@ -29,15 +31,31 @@ class SubscribedObjectProxy(models.Model):
     """
     A proxy for the many-to-many relation between channels and generic objects
     """
+    class Meta:
+        unique_together = ('content_type', 'object_id')
+
     content_type = models.ForeignKey('contenttypes.ContentType')
     object_id = models.PositiveIntegerField()
     subscribed_object = GenericForeignKey()
+
+
+class NotificationChannelQuerySet(models.QuerySet):
+
+    def filter_on_auth_object(self, auth_object):
+        """
+        Get all the NotificationChannels for the given auth object.
+        """
+        ctype = ContentType.objects.get_for_model(auth_object)
+        return self.filter(auth_object_content_type=ctype, auth_object_id=auth_object.id)
 
 
 class NotificationChannel(models.Model):
     """
     A channel that can receive events.  If an object is configured to route events to
     """
+    class Meta:
+        unique_together = ('name', 'auth_object_content_type', 'auth_object_id')
+
     name = models.CharField('Name', max_length=128)
 
     events = models.ManyToManyField('core.Event', related_name='channels')
@@ -47,8 +65,26 @@ class NotificationChannel(models.Model):
     auth_object = GenericForeignKey('auth_object_content_type', 'auth_object_id')
 
     # The list of objects this channel is subscribed to
-    subscribed_objects = models.ManyToManyField('notifications.SubscribedObjectProxy',
-                                                related_name='channels')
+    subscribed_object_proxies = models.ManyToManyField('notifications.SubscribedObjectProxy',
+                                                       related_name='channels')
+
+    objects = NotificationChannelQuerySet.as_manager()
+
+    @property
+    def subscribed_objects(self):
+        proxies = self.subscribed_object_proxies.all()
+        return [object_proxy.subscribed_object for object_proxy in proxies]
+
+    def add_subscriber(self, subscriber):
+        # Find the content type
+        ctype = ContentType.objects.get_for_model(subscriber)
+
+        # Grab the object proxy
+        new_object_proxy = SubscribedObjectProxy.objects.get_or_create(content_type=ctype,
+                                                                       object_id=subscriber.pk)
+
+        # Add the proxy to the list of subscribed objects
+        self.subscribed_object_proxies.add(new_object_proxy)
 
 
 class NotificationHandler(models.Model):
@@ -58,9 +94,21 @@ class NotificationHandler(models.Model):
 
     notifier = models.CharField('Notifier', max_length=256)
 
-    # metadata = models
+    options_storage = models.TextField(default='{}')
 
     channel = models.ForeignKey('notifications.NotificationChannel', related_name='handlers')
+
+    def _get_options(self):
+        if self.options_storage:
+            return json.loads(self.options_storage)
+        else:
+            return {}
+
+    def _set_options(self, options):
+        self.options_storage = json.dumps(options)
+        self.save()
+
+    options = property(_get_options, _set_options)
 
     # the caching logic is done in the utils methods
     def get_nofifier_class(self):

@@ -19,12 +19,6 @@ from django.conf.urls import include, url
 
 from . import api
 
-
 urlpatterns = (
-    url(r'^api/version/$',
-        api.VersionAPIView.as_view(),
-        name='version'),
 
-    url(r'^api/notifications/',
-        include('stackdio.core.notifications.urls', namespace='notifications')),
 )

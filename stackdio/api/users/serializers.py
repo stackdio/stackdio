@@ -28,6 +28,7 @@ from django.utils.http import urlsafe_base64_encode
 from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedField, PasswordField
+from stackdio.core.notifications.serializers import NotificationChannelSerializer
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
 from . import models, utils
 
@@ -159,6 +160,8 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
 
     settings = UserSettingsSerializer()
 
+    channels = HyperlinkedField(view_name='api:users:currentuser-channels')
+
     change_password = HyperlinkedField(view_name='api:users:currentuser-password')
 
     class Meta:
@@ -172,6 +175,7 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
             'superuser',
             'last_login',
             'groups',
+            'channels',
             'change_password',
             'settings',
         )
@@ -320,3 +324,10 @@ class ChangePasswordSerializer(serializers.Serializer):  # pylint: disable=abstr
         self.instance.save()
 
         return self.instance
+
+
+class UserNotificationChannelSerializer(NotificationChannelSerializer):
+
+    class Meta(NotificationChannelSerializer.Meta):
+        app_label = 'users'
+        model_name = 'currentuser-channel'

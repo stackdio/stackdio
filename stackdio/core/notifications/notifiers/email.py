@@ -28,6 +28,12 @@ class EmailNotifier(BaseNotifier):
         super(EmailNotifier, self).__init__()
         self.send_from = send_from
 
+    @classmethod
+    def get_required_options(cls):
+        return [
+            'email_address',
+        ]
+
     def send_notification(self, notification):
         send_mail(notification.event, notification.event, self.send_from, notification.handler)
 

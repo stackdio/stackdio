@@ -23,6 +23,7 @@ from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
+from stackdio.core.notifications.models import NotificationChannel
 from stackdio.core.permissions import StackdioModelPermissions
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
@@ -143,6 +144,27 @@ class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class CurrentUserChannelsListAPIView(generics.ListCreateAPIView):
+    serializer_class = serializers.UserNotificationChannelSerializer
+
+    def get_queryset(self):
+        return NotificationChannel.objects.filter_on_auth_object(self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(auth_object=self.request.user)
+
+
+class CurrentUserChannelsDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = serializers.UserNotificationChannelSerializer
+    lookup_field = 'name'
+
+    def get_queryset(self):
+        return NotificationChannel.objects.filter_on_auth_object(self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(auth_object=self.request.user)
 
 
 class ChangePasswordAPIView(generics.GenericAPIView):

@@ -15,10 +15,13 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import inspect
 import logging
 
 from django.db import transaction
+from django.utils.translation import ugettext_lazy as _
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
@@ -115,6 +118,7 @@ class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer)
         Create a field representing the object's own URL.
         """
         field_class = self.serializer_url_field
+        root_namespace = getattr(self.Meta, 'root_namespace', 'api')
         app_label = getattr(self.Meta, 'app_label', model_class._meta.app_label)
         model_name = getattr(self.Meta, 'model_name', model_class._meta.object_name.lower())
         lookup_field = getattr(self.Meta, 'lookup_field', 'pk')
@@ -125,7 +129,7 @@ class StackdioHyperlinkedModelSerializer(serializers.HyperlinkedModelSerializer)
             app_label = 'users'
 
         field_kwargs = {
-            'view_name': 'api:%s:%s-detail' % (app_label, model_name),
+            'view_name': '%s:%s:%s-detail' % (root_namespace, app_label, model_name),
             'lookup_field': lookup_field,
             'lookup_url_kwarg': lookup_url_kwarg,
         }
@@ -389,3 +393,15 @@ class StackdioObjectPermissionsSerializer(BulkSerializerMixin, serializers.Seria
 
             # We now want to do the same thing as create
             return self.create(validated_data)
+
+
+class EventField(serializers.SlugRelatedField):
+    queryset = models.Event.objects.all()
+
+    default_error_messages = {
+        'does_not_exist': _('Event \'{value}\' does not exist.'),
+        'invalid': _('Invalid value.'),
+    }
+
+    def __init__(self, **kwargs):
+        super(EventField, self).__init__(slug_field='tag', **kwargs)
