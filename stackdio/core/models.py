@@ -18,6 +18,7 @@
 from functools import reduce
 from operator import or_
 
+import six
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.db.models import Q
@@ -34,6 +35,7 @@ class SearchQuerySet(models.QuerySet):
         return self.filter(qset).distinct()
 
 
+@six.python_2_unicode_compatible
 class Label(models.Model):
     """
     Allows us to add arbitrary key/value pairs to any object
@@ -53,9 +55,16 @@ class Label(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
 
+    def __str__(self):
+        return '{}:{} on {}'.format(self.key, self.value, self.content_object)
 
+
+@six.python_2_unicode_compatible
 class Event(models.Model):
     """
     An event that can be generated.
     """
     tag = models.CharField('Tag', max_length=128, unique=True)
+
+    def __str__(self):
+        return six.text_type(self.tag)

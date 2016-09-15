@@ -152,6 +152,11 @@ class CurrentUserChannelsListAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         return NotificationChannel.objects.filter_on_auth_object(self.request.user)
 
+    def get_serializer_context(self):
+        context = super(CurrentUserChannelsListAPIView, self).get_serializer_context()
+        context['auth_object'] = self.request.user
+        return context
+
     def perform_create(self, serializer):
         serializer.save(auth_object=self.request.user)
 
@@ -163,7 +168,12 @@ class CurrentUserChannelsDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return NotificationChannel.objects.filter_on_auth_object(self.request.user)
 
-    def perform_create(self, serializer):
+    def get_serializer_context(self):
+        context = super(CurrentUserChannelsDetailAPIView, self).get_serializer_context()
+        context['auth_object'] = self.request.user
+        return context
+
+    def perform_update(self, serializer):
         serializer.save(auth_object=self.request.user)
 
 

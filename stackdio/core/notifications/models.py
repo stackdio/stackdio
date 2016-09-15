@@ -18,6 +18,7 @@
 import json
 import logging
 
+import six
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -27,6 +28,7 @@ from stackdio.core.notifications.utils import get_notifier_class, get_notifier_i
 logger = logging.getLogger(__name__)
 
 
+@six.python_2_unicode_compatible
 class SubscribedObjectProxy(models.Model):
     """
     A proxy for the many-to-many relation between channels and generic objects
@@ -37,6 +39,9 @@ class SubscribedObjectProxy(models.Model):
     content_type = models.ForeignKey('contenttypes.ContentType')
     object_id = models.PositiveIntegerField()
     subscribed_object = GenericForeignKey()
+
+    def __str__(self):
+        return six.text_type(self.subscribed_object)
 
 
 class NotificationChannelQuerySet(models.QuerySet):
@@ -49,6 +54,7 @@ class NotificationChannelQuerySet(models.QuerySet):
         return self.filter(auth_object_content_type=ctype, auth_object_id=auth_object.id)
 
 
+@six.python_2_unicode_compatible
 class NotificationChannel(models.Model):
     """
     A channel that can receive events.  If an object is configured to route events to
@@ -70,6 +76,10 @@ class NotificationChannel(models.Model):
 
     objects = NotificationChannelQuerySet.as_manager()
 
+    def __str__(self):
+        events = [six.text_type(event for event in self.events.all())]
+        return 'Channel {}, subscribed to {}'.format(self.name, ', '.join(events))
+
     @property
     def subscribed_objects(self):
         proxies = self.subscribed_object_proxies.all()
@@ -87,6 +97,7 @@ class NotificationChannel(models.Model):
         self.subscribed_object_proxies.add(new_object_proxy)
 
 
+@six.python_2_unicode_compatible
 class NotificationHandler(models.Model):
     """
     A handler tying a notifier implementation to it's configuration
@@ -97,6 +108,9 @@ class NotificationHandler(models.Model):
     options_storage = models.TextField(default='{}')
 
     channel = models.ForeignKey('notifications.NotificationChannel', related_name='handlers')
+
+    def __str__(self):
+        return 'Handler {} on {}'.format(self.notifier, self.channel)
 
     def _get_options(self):
         if self.options_storage:
@@ -111,13 +125,14 @@ class NotificationHandler(models.Model):
     options = property(_get_options, _set_options)
 
     # the caching logic is done in the utils methods
-    def get_nofifier_class(self):
+    def get_notifier_class(self):
         return get_notifier_class(self.notifier)
 
     def get_notifier_instance(self):
         return get_notifier_instance(self.notifier)
 
 
+@six.python_2_unicode_compatible
 class Notification(models.Model):
     """
     A representation of a single notification to be sent
@@ -133,6 +148,11 @@ class Notification(models.Model):
     content_type = models.ForeignKey('contenttypes.ContentType')
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
+
+    def __str__(self):
+        return 'Notification for {} sent using {} on object {}'.format(self.event,
+                                                                       self.handler,
+                                                                       self.content_object)
 
     def send(self):
         # logic to send this notification (presumably using the notifier

@@ -22,7 +22,7 @@ from stackdio.core.notifications.notifiers import BaseNotifier
 
 class EmailNotifier(BaseNotifier):
 
-    prefer_send_in_bulk = True
+    # prefer_send_in_bulk = True
 
     def __init__(self, send_from):
         super(EmailNotifier, self).__init__()
@@ -35,7 +35,12 @@ class EmailNotifier(BaseNotifier):
         ]
 
     def send_notification(self, notification):
-        send_mail(notification.event, notification.event, self.send_from, notification.handler)
+        email_addr = notification.handler.options.get('email_address')
 
-    def send_notifications_in_bulk(self, notifications):
-        pass
+        if email_addr is None:
+            raise ValueError('Handler is missing email address')
+
+        send_mail(notification.event, notification.event, self.send_from, [email_addr])
+
+    # def send_notifications_in_bulk(self, notifications):
+    #     pass

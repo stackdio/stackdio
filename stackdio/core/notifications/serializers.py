@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-import json
 import logging
 
 from django.db import transaction
@@ -23,7 +22,7 @@ from rest_framework import serializers
 
 from stackdio.core.serializers import EventField, StackdioHyperlinkedModelSerializer
 from stackdio.core.utils import recursive_update
-from . import models, utils
+from . import models, utils, validators
 
 logger = logging.getLogger(__name__)
 
@@ -68,26 +67,28 @@ class NotificationHandlerSerializer(serializers.HyperlinkedModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        options = validated_data.pop('options', None)
+        options = validated_data.pop('options', {})
 
-        # Shove this into options_storage directly since it was already validated as JSON
-        if options is not None:
-            validated_data['options_storage'] = options
+        handler = super(NotificationHandlerSerializer, self).create(validated_data)
 
-        return super(NotificationHandlerSerializer, self).create(validated_data)
+        # Set the options
+        handler.options = options
+
+        return handler
 
     def update(self, instance, validated_data):
-        options_storage = validated_data.pop('options', '{}')
+        options = validated_data.pop('options', {})
 
         if self.partial:
             # This is a PATCH request - so merge the new options into the old ones
-            options = json.loads(options_storage)
-            options_storage = json.dumps(recursive_update(instance.options, options))
+            options = recursive_update(instance.options, options)
 
-        # Shove the options into the validated data
-        validated_data['options_storage'] = options_storage
+        handler = super(NotificationHandlerSerializer, self).update(instance, validated_data)
 
-        return super(NotificationHandlerSerializer, self).update(instance, validated_data)
+        # Set the options
+        handler.options = options
+
+        return handler
 
 
 class NotificationChannelSerializer(StackdioHyperlinkedModelSerializer):
@@ -106,6 +107,10 @@ class NotificationChannelSerializer(StackdioHyperlinkedModelSerializer):
             'events',
             'handlers',
         )
+
+        extra_kwargs = {
+            'name': {'validators': [validators.UniqueChannelValidator()]},
+        }
 
     def create(self, validated_data):
         # Grab the handlers

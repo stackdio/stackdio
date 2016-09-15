@@ -15,12 +15,16 @@
 # limitations under the License.
 #
 
+import logging
+
 from celery import shared_task
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 
 from stackdio.core.models import Event
 from . import models, utils
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationsTaskException(Exception):
@@ -72,7 +76,13 @@ def send_notification(notification_id):
 
     notifier = notification.handler.get_notifier_instance()
 
-    result = notifier.send_notification(notification)
+    try:
+        result = notifier.send_notification(notification)
+    except Exception as e:
+        notification.sent = False
+        notification.save()
+        logger.exception(e)
+        raise NotificationsTaskException('An exception occurred while sending a notification.')
 
     # Report that the notification sent properly
     if result:
