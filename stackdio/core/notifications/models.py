@@ -90,8 +90,10 @@ class NotificationChannel(models.Model):
         ctype = ContentType.objects.get_for_model(subscriber)
 
         # Grab the object proxy
-        new_object_proxy = SubscribedObjectProxy.objects.get_or_create(content_type=ctype,
-                                                                       object_id=subscriber.pk)
+        new_object_proxy, created = SubscribedObjectProxy.objects.get_or_create(
+            content_type=ctype,
+            object_id=subscriber.pk
+        )
 
         # Add the proxy to the list of subscribed objects
         self.subscribed_object_proxies.add(new_object_proxy)

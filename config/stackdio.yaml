@@ -57,11 +57,11 @@ notifiers:
   email:
     class: stackdio.core.notifiations.notifiers.email.EmailNotifier
     options:
-      send_from: noreply@example.com
+      from_email: noreply
 
   # A basic webook notifier
   webhook:
-    class: stackdio.core.notifications.notifers.webhook.WebhookNotifier
+    class: stackdio.core.notifications.notifiers.webhook.WebhookNotifier
     options:
       timeout: 30
 
