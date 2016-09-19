@@ -29,4 +29,4 @@ def trigger_event(event_tag, content_object):
     ctype = ContentType.objects.get_for_model(content_object)
 
     # Start up the celery task
-    generate_notifications.apply_async(event_tag, content_object.pk, ctype.id)
+    generate_notifications.si(event_tag, content_object.pk, ctype.id).apply_async()

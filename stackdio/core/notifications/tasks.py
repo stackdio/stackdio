@@ -57,13 +57,13 @@ def generate_notifications(event_tag, object_id, content_type_id):
             notifier_notification_map.setdefault(handler.notifier, []).append(notification.id)
 
     for notifier_name, notification_ids in notifier_notification_map.items():
-        if utils.get_notifier_class(notifier_name).can_send_in_bulk:
+        if utils.get_notifier_class(notifier_name).prefer_send_in_bulk:
             # Bulk is supported - only 1 task per handler
-            send_bulk_notifications.apply_async(notifier_name, notification_ids)
+            send_bulk_notifications.si(notifier_name, notification_ids).apply_async()
         else:
             # No bulk support, separate task for each notification
             for notification_id in notification_ids:
-                send_notification.apply_async(notification_id)
+                send_notification.si(notification_id).apply_async()
 
 
 @shared_task(name='notifications.send_notification')
@@ -94,6 +94,7 @@ def send_notification(notification_id):
 def send_bulk_notifications(notifier_name, notification_ids):
     notifier = utils.get_notifier_instance(notifier_name)
 
+    # This needs to be a list, not a QuerySet
     notifications = list(models.Notification.objects.filter(id__in=notification_ids))
 
     successful_notifications = notifier.send_notifications_in_bulk(notifications)

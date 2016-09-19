@@ -111,6 +111,6 @@ def get_notifier_instance(name):
         notifier_config = get_notifier_config(name)
         notifier_class = get_notifier_class(name)
 
-        notifier_instances[name] = notifier_class(notifier_config.options)
+        notifier_instances[name] = notifier_class(**notifier_config.options)
 
     return notifier_instances[name]
