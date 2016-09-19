@@ -40,6 +40,20 @@ class BaseNotifier(object):
         """
         raise NotImplementedError()
 
+    def get_option(self, notification, option):
+        """
+        Helper method to get an option value and raise an exception if it is required and missing.
+        :param notification: the notification object
+        :param option: the option to get the value for
+        :return: the value of the option
+        """
+        value = notification.handler.options.get(option)
+
+        if value is None and option in self.get_required_options():
+            raise ValueError('Handler is missing a required option `{}`'.format(option))
+
+        return value
+
     def send_notification(self, notification):
         """
         Override this method with logic to send a single notification.  Should return False

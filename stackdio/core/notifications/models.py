@@ -154,6 +154,5 @@ class Notification(models.Model):
                                                                        self.handler,
                                                                        self.content_object)
 
-    def send(self):
-        # logic to send this notification (presumably using the notifier
-        pass
+    def to_json(self):
+        return {}

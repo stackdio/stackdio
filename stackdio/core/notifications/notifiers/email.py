@@ -60,10 +60,7 @@ class EmailNotifier(BaseNotifier):
         :rtype: django.core.mail.EmailMessage
         :return: the email message
         """
-        email_addr = notification.handler.options.get('email_address')
-
-        if email_addr is None:
-            raise ValueError('Handler is missing email address')
+        email_addr = self.get_option(notification, 'email_address')
 
         message = mail.EmailMessage(
             subject=self.get_email_subject(notification),

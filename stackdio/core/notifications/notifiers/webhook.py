@@ -29,11 +29,19 @@ class WebhookNotifier(BaseNotifier):
         super(WebhookNotifier, self).__init__()
         self.timeout = timeout
 
+    @classmethod
+    def get_required_options(cls):
+        return [
+            'url',
+        ]
+
     def send_notification(self, notification):
         # just post to a URL
+        url = self.get_option(notification, 'url')
+
         r = requests.post(
-            notification.url,
-            json=notification.serialize(),
+            url,
+            json=notification.to_json(),
             timeout=self.timeout,
         )
 
