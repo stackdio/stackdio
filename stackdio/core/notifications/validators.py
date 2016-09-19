@@ -30,7 +30,6 @@ class UniqueChannelValidator(object):
     message = 'Must be a unique value.'
 
     def __init__(self, message=None):
-        self.serializer_field = None
         self.message = message or self.message
 
         # Give default values
@@ -56,7 +55,7 @@ class UniqueChannelValidator(object):
         return queryset
 
     def __call__(self, value):
-        queryset = models.NotificationChannel.objects.filter_on_auth_object(self.auth_object)
+        queryset = models.NotificationChannel.objects.filter(auth_object=self.auth_object)
         queryset = self.exclude_current_instance(queryset)
 
         if value is not None:
@@ -66,3 +65,25 @@ class UniqueChannelValidator(object):
             except models.NotificationChannel.DoesNotExist:
                 # Nothing exists with the new name, we're good
                 pass
+
+
+class ChannelExistsValidator(object):
+
+    message = 'No channel found with name={name}'
+
+    def __init__(self, message=None):
+        self.message = message or self.message
+
+        # Give default values
+        self.auth_object = None
+
+    def set_context(self, serializer):
+        self.auth_object = serializer.context.get('auth_object', None)
+
+    def __call__(self, value):
+        queryset = models.NotificationChannel.objects.filter(auth_object=self.auth_object)
+
+        try:
+            queryset.get(name=value)
+        except models.NotificationChannel.DoesNotExist:
+            raise ValidationError(self.message.format(name=value))

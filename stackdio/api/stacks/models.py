@@ -48,6 +48,7 @@ from stackdio.api.volumes.models import Volume
 from stackdio.core.constants import Health, ComponentStatus, Activity
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
+from stackdio.core.notifications.decorators import add_subscribed_channels
 from stackdio.core.utils import recursive_update
 
 logger = logging.getLogger(__name__)
@@ -137,6 +138,7 @@ def get_orchestrate_file_path(instance, filename):
     return '{0}-{1}/formulas/__stackdio__/{2}'.format(instance.pk, instance.slug, filename)
 
 
+@add_subscribed_channels
 class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     """
     The basic model for a stack

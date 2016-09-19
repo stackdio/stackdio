@@ -150,7 +150,7 @@ class CurrentUserChannelsListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.UserNotificationChannelSerializer
 
     def get_queryset(self):
-        return NotificationChannel.objects.filter_on_auth_object(self.request.user)
+        return NotificationChannel.objects.filter(auth_object=self.request.user)
 
     def get_serializer_context(self):
         context = super(CurrentUserChannelsListAPIView, self).get_serializer_context()
@@ -166,7 +166,7 @@ class CurrentUserChannelsDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'name'
 
     def get_queryset(self):
-        return NotificationChannel.objects.filter_on_auth_object(self.request.user)
+        return NotificationChannel.objects.filter(auth_object=self.request.user)
 
     def get_serializer_context(self):
         context = super(CurrentUserChannelsDetailAPIView, self).get_serializer_context()

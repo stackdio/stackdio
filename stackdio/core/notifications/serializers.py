@@ -91,6 +91,53 @@ class NotificationHandlerSerializer(serializers.HyperlinkedModelSerializer):
         return handler
 
 
+class SubscriberNotificationChannelSerializer(StackdioHyperlinkedModelSerializer):
+
+    events = EventField(many=True, read_only=True)
+
+    handlers = NotificationHandlerSerializer(many=True, read_only=True)
+
+    action = serializers.ChoiceField(('add', 'remove'), write_only=True)
+
+    class Meta:
+        model = models.NotificationChannel
+        lookup_field = 'name'
+
+        app_label = 'users'
+        model_name = 'currentuser-channel'
+
+        fields = (
+            'action',
+            'url',
+            'name',
+            'events',
+            'handlers',
+        )
+
+        extra_kwargs = {
+            'name': {'validators': [validators.ChannelExistsValidator()]},
+        }
+
+    def save(self, **kwargs):
+        queryset = self.Meta.model.objects.filter(auth_object=kwargs['auth_object'])
+
+        # Just get the channel
+        channel = queryset.get(name=self.validated_data['name'])
+
+        action = self.validated_data['action']
+
+        # Either add or remove the subscribed object depending on the action
+        if action == 'add':
+            channel.add_subscriber(kwargs['subscribed_object'])
+        elif action == 'remove':
+            channel.remove_subscriber(kwargs['subscribed_object'])
+
+        # DRF gets angry if this is missing
+        self.instance = channel
+
+        return channel
+
+
 class NotificationChannelSerializer(StackdioHyperlinkedModelSerializer):
 
     events = EventField(many=True, required=True)

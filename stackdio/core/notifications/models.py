@@ -22,6 +22,7 @@ import six
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.dispatch import receiver
 
 from stackdio.core.notifications.utils import get_notifier_class, get_notifier_instance
 
@@ -46,12 +47,26 @@ class SubscribedObjectProxy(models.Model):
 
 class NotificationChannelQuerySet(models.QuerySet):
 
-    def filter_on_auth_object(self, auth_object):
+    def filter(self, *args, **kwargs):
         """
-        Get all the NotificationChannels for the given auth object.
+        Add the ability to filter on the auth_object or subscribed_object
         """
-        ctype = ContentType.objects.get_for_model(auth_object)
-        return self.filter(auth_object_content_type=ctype, auth_object_id=auth_object.id)
+        auth_object = kwargs.pop('auth_object', None)
+
+        if auth_object is not None:
+            ctype = ContentType.objects.get_for_model(auth_object)
+            kwargs['auth_object_content_type'] = ctype
+            kwargs['auth_object_id'] = auth_object.pk
+
+        subscribed_object = kwargs.pop('subscribed_object', None)
+
+        if subscribed_object is not None:
+            ctype = ContentType.objects.get_for_model(subscribed_object)
+            proxies = SubscribedObjectProxy.objects.filter(content_type=ctype,
+                                                           object_id=subscribed_object.pk)
+            kwargs['subscribed_object_proxies__in'] = proxies
+
+        return super(NotificationChannelQuerySet, self).filter(*args, **kwargs)
 
 
 @six.python_2_unicode_compatible
@@ -97,6 +112,40 @@ class NotificationChannel(models.Model):
 
         # Add the proxy to the list of subscribed objects
         self.subscribed_object_proxies.add(new_object_proxy)
+
+    def remove_subscriber(self, subscriber):
+        # Find the content type
+        ctype = ContentType.objects.get_for_model(subscriber)
+
+        # Grab the object proxy
+        try:
+            object_proxy = SubscribedObjectProxy.objects.get(
+                content_type=ctype,
+                object_id=subscriber.pk
+            )
+        except SubscribedObjectProxy.DoesNotExist:
+            # if the proxy doesn't exist, we don't need to do anything else
+            return
+
+        # Otherwise remove the proxy
+        self.subscribed_object_proxies.remove(object_proxy)
+
+
+@receiver(models.signals.m2m_changed, sender=NotificationChannel.subscribed_object_proxies.through)
+def delete_empty_proxies(sender, instance, action, reverse, pk_set, **kwargs):
+    """
+    This is used as a fool-proof method
+    """
+    if action == 'post_remove':
+        # We only care about the post_remove action
+        if reverse:
+            proxies = [instance]
+        else:
+            proxies = list(SubscribedObjectProxy.objects.filter(pk__in=pk_set))
+
+        for proxy in proxies:
+            if proxy.channels.count() == 0:
+                proxy.delete()
 
 
 @six.python_2_unicode_compatible

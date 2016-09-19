@@ -32,7 +32,12 @@ from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
 from six import StringIO
 
+from stackdio.api.cloud.filters import SecurityGroupFilter
+from stackdio.api.formulas.models import FormulaVersion
+from stackdio.api.formulas.serializers import FormulaVersionSerializer
+from stackdio.api.volumes.serializers import VolumeSerializer
 from stackdio.core.constants import Activity
+from stackdio.core.notifications.serializers import SubscriberNotificationChannelSerializer
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
 from stackdio.core.viewsets import (
@@ -41,10 +46,6 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from stackdio.api.cloud.filters import SecurityGroupFilter
-from stackdio.api.formulas.models import FormulaVersion
-from stackdio.api.formulas.serializers import FormulaVersionSerializer
-from stackdio.api.volumes.serializers import VolumeSerializer
 from . import filters, mixins, models, serializers, utils, workflows
 
 logger = logging.getLogger(__name__)
@@ -245,6 +246,22 @@ class StackLabelDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateD
         context = super(StackLabelDetailAPIView, self).get_serializer_context()
         context['content_object'] = self.get_stack()
         return context
+
+
+class StackChannelsListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = SubscriberNotificationChannelSerializer
+
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.subscribed_channels.filter(auth_object=self.request.user)
+
+    def get_serializer_context(self):
+        context = super(StackChannelsListAPIView, self).get_serializer_context()
+        context['auth_object'] = self.request.user
+        return context
+
+    def perform_create(self, serializer):
+        serializer.save(auth_object=self.request.user, subscribed_object=self.get_stack())
 
 
 class StackHostListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):

@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from __future__ import unicode_literals
-
 import inspect
 import logging
 
