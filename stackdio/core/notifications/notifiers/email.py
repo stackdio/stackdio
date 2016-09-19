@@ -15,10 +15,14 @@
 # limitations under the License.
 #
 
+import logging
+
 from django.conf import settings
 from django.core import mail
 
 from stackdio.core.notifications.notifiers import BaseNotifier
+
+logger = logging.getLogger(__name__)
 
 
 class EmailNotifier(BaseNotifier):
@@ -61,13 +65,17 @@ class EmailNotifier(BaseNotifier):
         if email_addr is None:
             raise ValueError('Handler is missing email address')
 
-        return mail.EmailMessage(
+        message = mail.EmailMessage(
             subject=self.get_email_subject(notification),
             body=self.get_email_body(notification),
             from_email=self.from_email,
             to=[email_addr],
             connection=self.get_connection(),
         )
+
+        logger.debug('Sending email notification to {}'.format(', '.join(message.recipients())))
+
+        return message
 
     def get_connection(self):
         """
@@ -84,20 +92,31 @@ class EmailNotifier(BaseNotifier):
         # This will open & close the connection automatically.
         num_sent = message.send()
 
+        logger.debug('Successfully delivered {} message(s)'.format(num_sent))
+
         # Success means 1 email was sent.
         return num_sent == 1
 
     def send_notifications_in_bulk(self, notifications):
         successful_notifications = []
 
+        logger.debug('Attempting to send {} notifications in bulk'.format(len(notifications)))
+
         # Send them all on the same connection object
         with self.get_connection() as conn:
             for notification in notifications:
                 message = self.get_email_message(notification)
 
+                # We need to call once for each message since we need to know which messages
+                # sent successfully, not just the number of successfully sent messages.
+                # This is still more efficient than calling send_notification() since we're
+                # using a single connection object here.
                 num_sent = conn.send_messages([message])
 
+                # Add it to the success list
                 if num_sent == 1:
                     successful_notifications.append(notification)
+
+        logger.debug('Successfully delivered {} message(s)'.format(len(successful_notifications)))
 
         return successful_notifications

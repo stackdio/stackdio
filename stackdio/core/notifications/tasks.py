@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+import collections
 import logging
 
 from celery import shared_task
@@ -45,7 +46,7 @@ def generate_notifications(event_tag, object_id, content_type_id):
     except ObjectDoesNotExist:
         raise NotificationsTaskException('Failed to look up content object.')
 
-    notifier_notification_map = {}
+    notifier_notification_map = collections.defaultdict(list)
 
     for channel in event.channels.all():
         for handler in channel.handlers.all():
@@ -54,7 +55,7 @@ def generate_notifications(event_tag, object_id, content_type_id):
                                                               handler=handler,
                                                               content_object=content_object)
 
-            notifier_notification_map.setdefault(handler.notifier, []).append(notification.id)
+            notifier_notification_map[handler.notifier].append(notification.id)
 
     for notifier_name, notification_ids in notifier_notification_map.items():
         if utils.get_notifier_class(notifier_name).prefer_send_in_bulk:
