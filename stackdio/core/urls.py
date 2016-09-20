@@ -25,6 +25,10 @@ urlpatterns = (
         api.VersionAPIView.as_view(),
         name='version'),
 
+    url(r'^api/events/$',
+        api.EventListAPIView.as_view(),
+        name='event-list'),
+
     url(r'^api/notifications/',
         include('stackdio.core.notifications.urls', namespace='notifications')),
 )

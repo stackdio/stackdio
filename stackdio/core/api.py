@@ -18,10 +18,11 @@
 from collections import OrderedDict
 
 import pip
-from rest_framework import permissions, views
+from rest_framework import generics, permissions, views
 from rest_framework.response import Response
 
 from stackdio.server import __version__ as stackdio_version
+from . import models, serializers
 
 # Do this once at the module level so we don't have to load it multiple times
 versions = dict((x.project_name, x) for x in pip.get_installed_distributions())
@@ -45,3 +46,12 @@ class VersionAPIView(views.APIView):
             'version': stackdio_version,
             'dependency_versions': dep_versions,
         })
+
+
+class EventListAPIView(generics.ListAPIView):
+    """
+    Get a list of all available events to subscribe to
+    """
+    queryset = models.Event.objects.all()
+    serializer_class = serializers.EventSerializer
+    permission_classes = (permissions.IsAuthenticated,)

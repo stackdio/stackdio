@@ -404,3 +404,9 @@ class EventField(serializers.SlugRelatedField):
         if not kwargs.get('read_only', False):
             kwargs.setdefault('queryset', models.Event.objects.all())
         super(EventField, self).__init__(slug_field='tag', **kwargs)
+
+
+class EventSerializer(serializers.ModelSerializer):
+
+    def to_representation(self, instance):
+        return instance.tag
