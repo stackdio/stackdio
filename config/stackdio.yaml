@@ -55,19 +55,19 @@ notifiers:
 
   # A basic email notifier
   email:
-    class: stackdio.core.notifiations.notifiers.email.EmailNotifier
+    class: stackdio.core.notifiers.EmailNotifier
     options:
       from_email: noreply
 
   # A basic webook notifier
   webhook:
-    class: stackdio.core.notifications.notifiers.webhook.WebhookNotifier
+    class: stackdio.core.notifiers.WebhookNotifier
     options:
       timeout: 30
 
   # A notifier to send text messages via Amazon's SES
   text:
-    class: stackdio.core.notifications.notifiers.ses.SESNotifier
+    class: stackdio.core.notifiers.ses.SESNotifier
     options:
       aws_access_key: MY_ACCESS_KEY
       aws_secret_key: MY_SECRET_KEY

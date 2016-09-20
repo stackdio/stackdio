@@ -20,7 +20,7 @@ import logging
 from django.conf import settings
 from django.core import mail
 
-from stackdio.core.notifications.notifiers import BaseNotifier
+from stackdio.core.notifiers.base import BaseNotifier
 
 logger = logging.getLogger(__name__)
 

@@ -21,7 +21,7 @@ from collections import namedtuple
 from django.conf import settings
 
 from stackdio.core.config import StackdioConfigException
-from stackdio.core.notifications.notifiers import BaseNotifier
+from stackdio.core.notifiers import BaseNotifier
 
 NotifierConfig = namedtuple('NotifierConfig', ['name', 'class_path', 'options'])
 

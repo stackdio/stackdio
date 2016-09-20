@@ -16,5 +16,7 @@
 #
 
 from .base import BaseNotifier
+from .email import EmailNotifier
+from .webhook import WebhookNotifier
 
-__all__ = ['BaseNotifier']
+__all__ = ['BaseNotifier', 'EmailNotifier', 'WebhookNotifier']
