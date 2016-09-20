@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import absolute_import
+
 import json
 import logging
 import six
@@ -27,6 +29,7 @@ from rest_framework import relations
 from rest_framework.fields import CharField
 
 from stackdio.core.utils import PasswordStr
+from stackdio.core.warnings import StackdioWarning
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +159,8 @@ else:
             if not cls._warned:
                 warnings.warn(
                     'Using stackdio.core.fields.JSONField on a non-postgres database is NOT '
-                    'recommended for production.  Please switch to postgres.'
+                    'recommended for production.  Please switch to postgres.',
+                    StackdioWarning,
                 )
                 cls._warned = True
             return super(JSONField, cls).__new__(cls, *args, **kwargs)
