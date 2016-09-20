@@ -18,6 +18,8 @@
 import logging
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core import mail
 
 from stackdio.core.notifiers.base import BaseNotifier
@@ -27,9 +29,10 @@ logger = logging.getLogger(__name__)
 
 class EmailNotifier(BaseNotifier):
     """
-    A notifier that sends emails.  If you prefer to send with a different email backend,
-    just set the `email_backend` attribute to the dotted path to your backend class or
-    override the `get_connection()` method to return an EmailBackend instance.
+    A notifier that sends emails to the email address on file.
+    If you prefer to send with a different email backend, just set the `email_backend` attribute
+    to the dotted path to your backend class or override the `get_connection()` method
+    to return an EmailBackend instance.
     """
 
     prefer_send_in_bulk = True
@@ -41,17 +44,21 @@ class EmailNotifier(BaseNotifier):
         super(EmailNotifier, self).__init__()
         self.from_email = from_email
 
-    @classmethod
-    def get_required_options(cls):
-        return [
-            'email_address',
-        ]
-
     def get_email_subject(self, notification):
         return notification.event.tag
 
     def get_email_body(self, notification):
         return notification.event.tag
+
+    def get_recipients(self, notification):
+        auth_object = notification.handler.channel.auth_object
+
+        if isinstance(auth_object, get_user_model()):
+            return [auth_object.email]
+        elif isinstance(auth_object, Group):
+            return [user.email for user in auth_object.user_set.all()]
+        else:
+            raise TypeError('Channel has an auth_object that isn\'t a User or Group')
 
     def get_email_message(self, notification):
         """
@@ -60,13 +67,11 @@ class EmailNotifier(BaseNotifier):
         :rtype: django.core.mail.EmailMessage
         :return: the email message
         """
-        email_addr = self.get_option(notification, 'email_address')
-
         message = mail.EmailMessage(
             subject=self.get_email_subject(notification),
             body=self.get_email_body(notification),
             from_email=self.from_email,
-            to=[email_addr],
+            to=self.get_recipients(notification),
             connection=self.get_connection(),
         )
 
@@ -117,3 +122,19 @@ class EmailNotifier(BaseNotifier):
         logger.debug('Successfully delivered {} message(s)'.format(len(successful_notifications)))
 
         return successful_notifications
+
+
+class ExtraEmailNotifier(EmailNotifier):
+    """
+    A notifier that sends emails to a supplied email address rather
+    than the default email for the user.
+    """
+
+    @classmethod
+    def get_required_options(cls):
+        return [
+            'email_address',
+        ]
+
+    def get_recipients(self, notification):
+        return [self.get_option(notification, 'email_address')]

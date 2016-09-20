@@ -38,7 +38,7 @@ class BaseNotifier(object):
         :rtype: list
         :return: A list of required options
         """
-        raise NotImplementedError()
+        return []
 
     def get_option(self, notification, option):
         """
