@@ -66,29 +66,17 @@ class NotificationHandlerSerializer(serializers.HyperlinkedModelSerializer):
 
         return attrs
 
-    def create(self, validated_data):
-        options = validated_data.pop('options', {})
-
-        handler = super(NotificationHandlerSerializer, self).create(validated_data)
-
-        # Set the options
-        handler.options = options
-
-        return handler
-
     def update(self, instance, validated_data):
-        options = validated_data.pop('options', {})
-
+        """
+        Need to override this so we can add custom logic for PUT vs PATCH
+        """
         if self.partial:
             # This is a PATCH request - so merge the new options into the old ones
-            options = recursive_update(instance.options, options)
+            new_options = validated_data.get('options', {})
 
-        handler = super(NotificationHandlerSerializer, self).update(instance, validated_data)
+            validated_data['options'] = recursive_update(instance.options, new_options)
 
-        # Set the options
-        handler.options = options
-
-        return handler
+        return super(NotificationHandlerSerializer, self).update(instance, validated_data)
 
 
 class SubscriberNotificationChannelSerializer(StackdioHyperlinkedModelSerializer):

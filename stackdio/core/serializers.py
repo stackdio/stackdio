@@ -394,7 +394,6 @@ class StackdioObjectPermissionsSerializer(BulkSerializerMixin, serializers.Seria
 
 
 class EventField(serializers.SlugRelatedField):
-    queryset = models.Event.objects.all()
 
     default_error_messages = {
         'does_not_exist': _('Event \'{value}\' does not exist.'),
@@ -402,4 +401,6 @@ class EventField(serializers.SlugRelatedField):
     }
 
     def __init__(self, **kwargs):
+        if not kwargs.get('read_only', False):
+            kwargs.setdefault('queryset', models.Event.objects.all())
         super(EventField, self).__init__(slug_field='tag', **kwargs)

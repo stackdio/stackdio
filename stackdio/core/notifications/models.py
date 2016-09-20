@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-import json
 import logging
 
 import six
@@ -24,6 +23,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.dispatch import receiver
 
+from stackdio.core.fields import JSONField
 from stackdio.core.notifications.utils import get_notifier_class, get_notifier_instance
 
 logger = logging.getLogger(__name__)
@@ -134,18 +134,28 @@ class NotificationChannel(models.Model):
 @receiver(models.signals.m2m_changed, sender=NotificationChannel.subscribed_object_proxies.through)
 def delete_empty_proxies(sender, instance, action, reverse, pk_set, **kwargs):
     """
-    This is used as a fool-proof method
+    Use this method to ensure emtpy proxies are cleaned up.
     """
-    if action == 'post_remove':
-        # We only care about the post_remove action
-        if reverse:
-            proxies = [instance]
-        else:
-            proxies = list(SubscribedObjectProxy.objects.filter(pk__in=pk_set))
+    # if the action isn't post_remove, we don't care about it
+    if action != 'post_remove':
+        return
 
-        for proxy in proxies:
-            if proxy.channels.count() == 0:
-                proxy.delete()
+    # Find the proxies, how to find them depends on if this was triggered from
+    # the reverse relation or not
+    if reverse:
+        # reverse relation
+        # i.e. subscribed_object_proxy.channels.remove(channel)
+        proxies = [instance]
+    else:
+        # forward relation
+        # i.e. channel.subscribed_object_proxies.remove(subscribed_object_proxy, ...)
+        # OR  channel.remove_subscriber(subscribed_object)
+        proxies = SubscribedObjectProxy.objects.filter(pk__in=pk_set)
+
+    # Delete the proxies with no channels left
+    for proxy in proxies:
+        if proxy.channels.count() == 0:
+            proxy.delete()
 
 
 @six.python_2_unicode_compatible
@@ -156,24 +166,12 @@ class NotificationHandler(models.Model):
 
     notifier = models.CharField('Notifier', max_length=256)
 
-    options_storage = models.TextField(default='{}')
+    options = JSONField()
 
     channel = models.ForeignKey('notifications.NotificationChannel', related_name='handlers')
 
     def __str__(self):
         return 'Handler {} on {}'.format(self.notifier, self.channel)
-
-    def _get_options(self):
-        if self.options_storage:
-            return json.loads(self.options_storage)
-        else:
-            return {}
-
-    def _set_options(self, options):
-        self.options_storage = json.dumps(options)
-        self.save()
-
-    options = property(_get_options, _set_options)
 
     # the caching logic is done in the utils methods
     def get_notifier_class(self):

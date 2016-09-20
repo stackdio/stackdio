@@ -278,12 +278,17 @@ LOGGING = {
     'loggers': {
         'django.db.backends': {
             'handlers': ['null'],
-            'level': 'ERROR',
+            'level': 'WARNING',
             'propagate': True,
         },
         'django_auth_ldap': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'MARKDOWN': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
             'propagate': False,
         },
         'boto': {

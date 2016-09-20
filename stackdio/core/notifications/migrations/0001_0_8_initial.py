@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 import django.db.models.deletion
+import stackdio.core.fields
 
 
 class Migration(migrations.Migration):
@@ -41,7 +42,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('notifier', models.CharField(max_length=256, verbose_name=b'Notifier')),
-                ('options_storage', models.TextField(default=b'{}')),
+                ('options', stackdio.core.fields.JSONField()),
                 ('channel', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='handlers', to='notifications.NotificationChannel')),
             ],
         ),
