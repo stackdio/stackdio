@@ -92,7 +92,7 @@ def send_notification(notification_id):
         notification = models.Notification.objects.get(id=notification_id)
     except models.Notification.DoesNotExist:
         raise NotificationTaskException('Could not find notification '
-                                         'with id={}'.format(notification_id))
+                                        'with id={}'.format(notification_id))
 
     notifier = notification.handler.get_notifier_instance()
 
@@ -108,19 +108,29 @@ def send_notification(notification_id):
     # Report that the notification sent properly
     if result:
         notification.sent = True
-        notification.save()
+    else:
+        notification.sent = False
+        notification.failed_count += 1
+
+    notification.save()
 
 
 @shared_task(name='notifications.send_bulk_notifications')
 def send_bulk_notifications(notifier_name, notification_ids):
     notifier = utils.get_notifier_instance(notifier_name)
 
-    # This needs to be a list, not a QuerySet
-    notifications = list(models.Notification.objects.filter(id__in=notification_ids))
+    notifications = models.Notification.objects.filter(id__in=notification_ids)
 
-    successful_notifications = notifier.send_notifications_in_bulk(notifications)
+    # Need to pass in a list, not a QuerySet
+    successful_notifications = notifier.send_notifications_in_bulk(list(notifications))
 
     # Report that the notifications sent properly
     for notification in successful_notifications:
         notification.sent = True
+        notification.save()
+
+    # Report that any other notifications failed
+    for notification in notifications.exclude(successful_notifications):
+        notification.sent = False
+        notification.failed_count += 1
         notification.save()
