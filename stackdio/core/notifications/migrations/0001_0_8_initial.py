@@ -22,6 +22,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('sent', models.BooleanField(default=False, verbose_name=b'Sent')),
+                ('failed_count', models.PositiveIntegerField(default=0, verbose_name=b'Failed Count')),
                 ('object_id', models.PositiveIntegerField()),
                 ('content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType')),
                 ('event', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.Event')),

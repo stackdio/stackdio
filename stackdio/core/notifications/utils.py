@@ -16,7 +16,7 @@
 #
 
 import importlib
-from collections import namedtuple
+from collections import defaultdict, namedtuple
 
 from django.conf import settings
 

@@ -291,6 +291,11 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
+        'pip': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'boto': {
             'handlers': ['null'],
             'level': 'DEBUG',
@@ -373,6 +378,7 @@ CELERY_ROUTES = {
     'formulas.import_formula': {'queue': 'short'},
     'formulas.update_formula': {'queue': 'short'},
     'notifications.generate_notifications': {'queue': 'short'},
+    'notifications.resend_failed_notifications': {'queue': 'short'},
     'notifications.send_notification': {'queue': 'short'},
     'notifications.send_bulk_notifications': {'queue': 'short'},
     'stacks.cure_zombies': {'queue': 'stacks'},
@@ -402,6 +408,11 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(minute='*/5'),  # Execute every 5 minutes
         'args': (),
     },
+    'resend-failed-notifications': {
+        'task': 'notifications.resend_failed_notifications',
+        'schedule': crontab(minute='*/10'),  # Execute every 10 minutes
+        'args': (),
+    }
 }
 
 ##

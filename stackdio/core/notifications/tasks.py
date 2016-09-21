@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 
-import collections
 import logging
+from collections import defaultdict
 
 from celery import shared_task
 from django.contrib.contenttypes.models import ContentType
@@ -28,34 +28,15 @@ from . import models, utils
 logger = logging.getLogger(__name__)
 
 
-class NotificationsTaskException(Exception):
+class NotificationTaskException(Exception):
     pass
 
 
-@shared_task(name='notifications.generate_notifications')
-def generate_notifications(event_tag, object_id, content_type_id):
+def generate_notification_tasks(notifications):
+    notifier_notification_map = defaultdict(list)
 
-    try:
-        event = Event.objects.get(tag=event_tag)
-    except Event.DoesNotExist:
-        raise NotificationsTaskException('Event with tag `{}` does not exist.'.format(event_tag))
-
-    try:
-        content_type = ContentType.objects.get_for_id(content_type_id)
-        content_object = content_type.get_object_for_this_type(id=object_id)
-    except ObjectDoesNotExist:
-        raise NotificationsTaskException('Failed to look up content object.')
-
-    notifier_notification_map = collections.defaultdict(list)
-
-    for channel in event.channels.all():
-        for handler in channel.handlers.all():
-            # Create the notification object
-            notification = models.Notification.objects.create(event=event,
-                                                              handler=handler,
-                                                              content_object=content_object)
-
-            notifier_notification_map[handler.notifier].append(notification.id)
+    for notification in notifications:
+        notifier_notification_map[notification.handler.notifier].append(notification.id)
 
     for notifier_name, notification_ids in notifier_notification_map.items():
         if utils.get_notifier_class(notifier_name).prefer_send_in_bulk:
@@ -67,12 +48,50 @@ def generate_notifications(event_tag, object_id, content_type_id):
                 send_notification.si(notification_id).apply_async()
 
 
+@shared_task(name='notifications.generate_notifications')
+def generate_notifications(event_tag, object_id, content_type_id):
+
+    try:
+        event = Event.objects.get(tag=event_tag)
+    except Event.DoesNotExist:
+        raise NotificationTaskException('Event with tag `{}` does not exist.'.format(event_tag))
+
+    try:
+        content_type = ContentType.objects.get_for_id(content_type_id)
+        content_object = content_type.get_object_for_this_type(id=object_id)
+    except ObjectDoesNotExist:
+        raise NotificationTaskException('Failed to look up content object.')
+
+    new_notifications = []
+
+    for channel in event.channels.all():
+        for handler in channel.handlers.all():
+            # Create the notification object
+            notification = models.Notification.objects.create(event=event,
+                                                              handler=handler,
+                                                              content_object=content_object)
+
+            new_notifications.append(notification)
+
+    # start up the tasks
+    generate_notification_tasks(new_notifications)
+
+
+@shared_task(name='notifications.resend_failed_notifications')
+def resend_failed_notifications():
+    # We only care about notifications that failed and we've retried less than 5 times
+    failed_notifications = models.Notification.objects.filter(sent=False, failed_count__lte=5)
+
+    # start up the tasks
+    generate_notification_tasks(failed_notifications)
+
+
 @shared_task(name='notifications.send_notification')
 def send_notification(notification_id):
     try:
         notification = models.Notification.objects.get(id=notification_id)
     except models.Notification.DoesNotExist:
-        raise NotificationsTaskException('Could not find notification '
+        raise NotificationTaskException('Could not find notification '
                                          'with id={}'.format(notification_id))
 
     notifier = notification.handler.get_notifier_instance()
@@ -81,9 +100,10 @@ def send_notification(notification_id):
         result = notifier.send_notification(notification)
     except Exception as e:
         notification.sent = False
+        notification.failed_count += 1
         notification.save()
         logger.exception(e)
-        raise NotificationsTaskException('An exception occurred while sending a notification.')
+        raise NotificationTaskException('An exception occurred while sending a notification.')
 
     # Report that the notification sent properly
     if result:

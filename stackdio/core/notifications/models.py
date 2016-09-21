@@ -189,6 +189,8 @@ class Notification(models.Model):
 
     sent = models.BooleanField('Sent', default=False)
 
+    failed_count = models.PositiveIntegerField('Failed Count', default=0)
+
     event = models.ForeignKey('core.Event')
 
     handler = models.ForeignKey('notifications.NotificationHandler')
