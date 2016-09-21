@@ -41,6 +41,7 @@ from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.tasks import update_formula
 from stackdio.core.constants import Activity, ComponentStatus
+from stackdio.core.events import trigger_event
 from . import utils
 from .models import Stack, StackCommand
 
@@ -1241,6 +1242,9 @@ def finish_stack(stack, activity=Activity.IDLE):
 
     # Update activity
     stack.set_activity(activity)
+
+    # Trigger our event
+    trigger_event('stack-finished', stack)
 
 
 @stack_task(name='stacks.register_volume_delete')

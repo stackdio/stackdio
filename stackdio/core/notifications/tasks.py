@@ -124,13 +124,15 @@ def send_bulk_notifications(notifier_name, notification_ids):
     # Need to pass in a list, not a QuerySet
     successful_notifications = notifier.send_notifications_in_bulk(list(notifications))
 
+    successful_ids = [n.id for n in successful_notifications]
+
     # Report that the notifications sent properly
-    for notification in successful_notifications:
+    for notification in notifications.filter(id__in=successful_ids):
         notification.sent = True
         notification.save()
 
     # Report that any other notifications failed
-    for notification in notifications.exclude(successful_notifications):
+    for notification in notifications.exclude(id__in=successful_ids):
         notification.sent = False
         notification.failed_count += 1
         notification.save()
