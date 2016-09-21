@@ -18,11 +18,11 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.models import Group
-from django_auth_ldap.backend import LDAPBackend
 from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
+from stackdio.core.config import StackdioConfigException
 from stackdio.core.notifications.models import NotificationChannel
 from stackdio.core.permissions import StackdioModelPermissions
 from stackdio.core.viewsets import (
@@ -32,6 +32,11 @@ from stackdio.core.viewsets import (
     StackdioObjectGroupPermissionsViewSet,
 )
 from . import filters, mixins, permissions, serializers
+
+try:
+    from django_auth_ldap.backend import LDAPBackend
+except ImportError:
+    LDAPBackend = None
 
 
 class UserListAPIView(generics.ListCreateAPIView):
@@ -43,6 +48,9 @@ class UserListAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         if settings.LDAP_ENABLED and 'username' in self.request.query_params:
+            if LDAPBackend is None:
+                raise StackdioConfigException('LDAP is enabled, but django_auth_ldap isn\'t '
+                                              'installed.  Please install django_auth_ldap')
             # Try populating the user first
             LDAPBackend().populate_user(self.request.query_params['username'])
         return super(UserListAPIView, self).get_queryset()

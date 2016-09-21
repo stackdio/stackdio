@@ -20,15 +20,20 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.http import Http404
-from django_auth_ldap.backend import LDAPBackend
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms, remove_perm
 from rest_framework import viewsets
 from rest_framework.serializers import ListField, SlugRelatedField, ValidationError
 
 from stackdio.api.users.models import get_user_queryset
+from stackdio.core.config import StackdioConfigException
 from .permissions import StackdioPermissionsModelPermissions
 from .shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 from . import fields, mixins, serializers
+
+try:
+    from django_auth_ldap.backend import LDAPBackend
+except ImportError:
+    LDAPBackend = None
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +53,9 @@ class UserSlugRelatedField(SlugRelatedField):
             return super(UserSlugRelatedField, self).to_internal_value(data)
         except ValidationError:
             if settings.LDAP_ENABLED:
+                if LDAPBackend is None:
+                    raise StackdioConfigException('LDAP is enabled, but django_auth_ldap isn\'t '
+                                                  'installed.  Please install django_auth_ldap')
                 # Grab the ldap user and try again
                 user = LDAPBackend().populate_user(data)
                 if user is not None:

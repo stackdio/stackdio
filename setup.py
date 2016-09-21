@@ -73,7 +73,6 @@ requirements = [
     # Used, but still hold an upper bound on the version
     'boto~=2.32',
     'django-activity-stream~=0.6.0',
-    'django-auth-ldap~=1.2.7',
     'django-extensions~=1.6.0',
     'django-filter~=0.9',
     'django-guardian~=1.4.0',
@@ -125,7 +124,10 @@ setup(
             'mysqlclient==1.3.7',
         ],
         'postgresql': [
-            'psycopg2==2.6.1'
+            'psycopg2==2.6.1',
+        ],
+        'ldap': [
+            'django-auth-ldap~=1.2.7',
         ],
         'development': testing_requirements + ['ipython>=2.0'],
         'testing': testing_requirements,

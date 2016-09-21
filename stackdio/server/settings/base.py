@@ -421,9 +421,13 @@ CELERYBEAT_SCHEDULE = {
 
 # Throw in the rest of our LDAP config if ldap is enabled
 if LDAP_ENABLED:
-    import ldap
-    import django_auth_ldap.config
-    from django_auth_ldap.config import LDAPSearch
+    try:
+        import ldap
+        import django_auth_ldap.config
+        from django_auth_ldap.config import LDAPSearch
+    except ImportError:
+        raise StackdioConfigException('LDAP is enabled, but django_auth_ldap is missing.  '
+                                      'Please install django_auth_ldap.')
 
     auth_ldap_search = ('group_type',)
     call_value = ('group_type',)
