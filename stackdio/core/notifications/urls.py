@@ -15,10 +15,18 @@
 # limitations under the License.
 #
 
-from django.conf.urls import include, url
+from __future__ import unicode_literals
+
+from django.conf.urls import url
 
 from . import api
 
 urlpatterns = (
+    url(r'^$',
+        api.NotificationsRootView.as_view(),
+        name='root'),
 
+    url(r'^notifiers/$',
+        api.NotifierListApiView.as_view(),
+        name='notifier-list'),
 )

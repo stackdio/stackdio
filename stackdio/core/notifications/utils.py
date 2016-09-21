@@ -42,6 +42,17 @@ def get_notifier_list():
     return notifier_config.keys()
 
 
+def get_all_notifiers():
+    notifier_list = get_notifier_list()
+
+    ret = []
+
+    for notifier in notifier_list:
+        ret.append(get_notifier_config(notifier))
+
+    return ret
+
+
 def get_notifier_config(name):
     """
     Get the notifier config object from the notifier name

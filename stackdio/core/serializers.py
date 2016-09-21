@@ -408,5 +408,9 @@ class EventField(serializers.SlugRelatedField):
 
 class EventSerializer(serializers.ModelSerializer):
 
-    def to_representation(self, instance):
-        return instance.tag
+    class Meta:
+        model = models.Event
+
+        fields = (
+            'tag',
+        )

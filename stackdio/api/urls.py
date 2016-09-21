@@ -31,12 +31,6 @@ from rest_framework.views import APIView
 
 
 class APIRootView(APIView):
-    """
-    Root of the stackd.io API. Below are all of the API endpoints that
-    are currently accessible. Each API will have its own documentation
-    and particular parameters that may discoverable by browsing directly
-    to them.
-    """
 
     def get(self, request, format=None):
         api = OrderedDict((
@@ -46,6 +40,9 @@ class APIRootView(APIView):
             ('events', reverse('stackdio:event-list',
                                request=request,
                                format=format)),
+            ('notifications', reverse('stackdio:notifications:root',
+                                      request=request,
+                                      format=format)),
             ('users', reverse('api:users:user-list',
                               request=request,
                               format=format)),

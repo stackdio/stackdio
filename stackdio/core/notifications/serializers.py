@@ -32,6 +32,12 @@ def validate_notifier(value):
         raise serializers.ValidationError('No notifier named {}'.format(value))
 
 
+class NotifierSerializer(serializers.Serializer):
+
+    name = serializers.CharField()
+    backend = serializers.CharField(source='class_path')
+
+
 class NotificationHandlerSerializer(serializers.HyperlinkedModelSerializer):
 
     options = serializers.JSONField()

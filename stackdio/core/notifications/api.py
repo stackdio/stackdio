@@ -15,3 +15,36 @@
 # limitations under the License.
 #
 
+from collections import OrderedDict
+
+from rest_framework import generics, permissions
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.views import APIView
+
+from .utils import get_all_notifiers
+from . import serializers
+
+
+class NotificationsRootView(APIView):
+    """
+    Root of the stackd.io API. Below are all of the API endpoints that
+    are currently accessible. Each API will have its own documentation
+    and particular parameters that may discoverable by browsing directly
+    to them.
+    """
+
+    def get(self, request, format=None):
+        notifications = OrderedDict((
+            ('notifiers', reverse('stackdio:notifications:notifier-list',
+                                  request=request,
+                                  format=format)),
+        ))
+
+        return Response(notifications)
+
+
+class NotifierListApiView(generics.ListAPIView):
+    queryset = get_all_notifiers()
+    serializer_class = serializers.NotifierSerializer
+    permission_classes = (permissions.IsAuthenticated,)
