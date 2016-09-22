@@ -25,10 +25,10 @@ from stackdio.core.notifications import registry
 from stackdio.core.notifiers.base import BaseNotifier
 
 
-class DummyRequest(Request):
+class DummyRequest(HttpRequest):
 
     def __init__(self, prod_url):
-        super(DummyRequest, self).__init__(HttpRequest())
+        super(DummyRequest, self).__init__()
         self.prod_url = prod_url
 
     def build_absolute_uri(self, location=None):
@@ -53,7 +53,7 @@ class WebhookNotifier(BaseNotifier):
         from stackdio.core.notifications.serializers import AbstractNotificationSerializer
         self.abstract_serializer_class = AbstractNotificationSerializer
         self.serializer_context = {
-            'request': DummyRequest(prod_url),
+            'request': Request(DummyRequest(prod_url)),
         }
 
     @classmethod
