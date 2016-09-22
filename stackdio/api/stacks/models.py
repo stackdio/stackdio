@@ -139,6 +139,7 @@ def get_orchestrate_file_path(instance, filename):
 
 
 @add_subscribed_channels
+@six.python_2_unicode_compatible
 class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     """
     The basic model for a stack
@@ -239,8 +240,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     # Use our custom manager object
     objects = StackQuerySet.as_manager()
 
-    def __unicode__(self):
-        return u'{0} (id={1})'.format(self.title, self.id)
+    def __str__(self):
+        return 'Stack {0} - {1}'.format(self.title, self.health)
 
     def log_history(self, message, activity=None):
         """

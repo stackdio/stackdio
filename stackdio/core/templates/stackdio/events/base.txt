@@ -3,6 +3,6 @@ The {{ notification.event }} event has been triggered on {{ notification.content
 
 The new object:
 
-{% for attr, val in object.items() %}
+{% for attr, val in object %}
 {{ attr }}: {{ val }}
 {% endfor %}

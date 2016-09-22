@@ -51,7 +51,10 @@ class EmailNotifier(BaseNotifier):
         self.from_email = from_email
 
     def get_email_subject(self, notification):
-        return SUBJECT_PATTERN.format(object=notification.content_object)
+        subject = SUBJECT_PATTERN.format(object=notification.content_object)
+
+        # no newlines allowed in subject!!
+        return ' '.join(subject.splitlines())
 
     def get_email_text_body(self, notification):
         context = self.get_template_context(notification)
@@ -78,7 +81,7 @@ class EmailNotifier(BaseNotifier):
         return {
             'notification': notification,
             'serializer': serializer,
-            'object': serializer.data,
+            'object': serializer.data.items(),
         }
 
     def get_recipient(self, notification):
@@ -101,7 +104,7 @@ class EmailNotifier(BaseNotifier):
             connection=self.get_connection(),
         )
 
-        message.attach_alternative(self.get_email_html_body(notification), 'text/html')
+        # message.attach_alternative(self.get_email_html_body(notification), 'text/html')
 
         logger.debug('Sending email notification to {}'.format(', '.join(message.recipients())))
 

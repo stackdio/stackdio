@@ -38,7 +38,7 @@ class WebhookNotifier(BaseNotifier):
         ]
 
     def get_request_data(self, notification):
-        return registry.get_notification_serializer(notification)
+        return registry.get_notification_serializer(notification).data
 
     def send_notification(self, notification):
         # just post to a URL

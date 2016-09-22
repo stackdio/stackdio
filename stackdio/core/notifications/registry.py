@@ -84,7 +84,9 @@ class NotifiableModelRegistry(dict):
     def get_notification_serializer(self, notification):
         from stackdio.core.notifications.serializers import AbstractNotificationSerializer
 
-        object_serializer_class = self.get_model_serializer_class(notification.content_type.get_model())
+        model_class = notification.content_type.model_class()
+
+        object_serializer_class = self.get_model_serializer_class(model_class)
 
         # Create a dynamic class that has the object set to the appropriate serializer
         class NotificationSerializer(AbstractNotificationSerializer):
