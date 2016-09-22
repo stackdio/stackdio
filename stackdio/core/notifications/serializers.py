@@ -193,3 +193,23 @@ class NotificationChannelSerializer(StackdioHyperlinkedModelSerializer):
                 self.fields['handlers'].create(handlers)
 
         return channel
+
+
+class AbstractNotificationSerializer(serializers.ModelSerializer):
+    """
+    This is abstract, it won't work on purpose.
+    """
+
+    event = EventField()
+
+    object_type = serializers.CharField(source='content_type.name')
+
+    class Meta:
+        model = models.Notification
+
+        fields = (
+            'event',
+            # 'timestamp',
+            'object_type',
+            'object',
+        )

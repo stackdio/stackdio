@@ -16,6 +16,7 @@
 #
 
 import logging
+from collections import OrderedDict
 
 import six
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -206,4 +207,9 @@ class Notification(models.Model):
                                                                        self.content_object)
 
     def to_json(self):
-        return {}
+        return OrderedDict((
+            ('event', self.notification.event.to_json()),
+            ('timestamp', ''),
+            ('object_type', self.content_type),
+            ('object', ''),
+        ))
