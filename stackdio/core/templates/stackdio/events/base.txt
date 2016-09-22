@@ -1,8 +1,6 @@
 
 The {{ notification.event }} event has been triggered on {{ notification.content_object }}.
 
-The new object:
+Check the url below for more information:
 
-{% for attr, val in object %}
-{{ attr }}: {{ val }}
-{% endfor %}
+{{ ui_url }}

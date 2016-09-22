@@ -82,6 +82,7 @@ class EmailNotifier(BaseNotifier):
             'notification': notification,
             'serializer': serializer,
             'object': serializer.data.items(),
+            'ui_url': registry.get_ui_url(notification.content_object),
         }
 
     def get_recipient(self, notification):

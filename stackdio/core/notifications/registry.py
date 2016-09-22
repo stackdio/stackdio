@@ -22,12 +22,13 @@ from django.db.models.base import ModelBase
 from django.http.request import HttpRequest
 from django.utils.encoding import iri_to_uri
 from rest_framework.request import Request
+from rest_framework.reverse import reverse
 from rest_framework.serializers import BaseSerializer
 from six.moves.urllib_parse import urljoin, urlsplit  # pylint: disable=import-error
 
 from stackdio.core.config import StackdioConfigException
 
-NotifiableModelConfig = namedtuple('NotifiableModelConfig', ['serializer_class'])
+NotifiableModelConfig = namedtuple('NotifiableModelConfig', ['serializer_class', 'url_name'])
 
 
 class DummyRequest(HttpRequest):
@@ -75,11 +76,11 @@ class NotifiableModelRegistry(dict):
         'request': Request(DummyRequest(settings.STACKDIO_CONFIG.server_url)),
     }
 
-    def register(self, model_class, serializer_class):
+    def register(self, model_class, serializer_class, url_name):
         model_class = validate_model_class(model_class)
         serializer_class = validate_serializer_class(serializer_class)
         if model_class not in self:
-            self[model_class] = NotifiableModelConfig(serializer_class)
+            self[model_class] = NotifiableModelConfig(serializer_class, url_name)
 
     def get_notification_serializer(self, notification):
         from stackdio.core.notifications.serializers import AbstractNotificationSerializer
@@ -105,8 +106,20 @@ class NotifiableModelRegistry(dict):
         serializer_class = self.get_model_serializer_class(content_object._meta.model)
         return serializer_class(content_object, context=self.serializer_context)
 
+    def get_ui_url(self, content_object):
+        model_class = content_object._meta.model
+        if model_class not in self:
+            raise StackdioConfigException('Model %r is not registered with the '
+                                          'notification registry.' % model_class)
+
+        url_name = self[model_class].url_name
+        return reverse(url_name,
+                       request=self.serializer_context['request'],
+                       kwargs={'pk': content_object.pk})
+
 
 registry = NotifiableModelRegistry()
 register = registry.register
 get_notification_serializer = registry.get_notification_serializer
 get_object_serializer = registry.get_object_serializer
+get_ui_url = registry.get_ui_url

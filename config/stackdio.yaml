@@ -62,13 +62,13 @@ notifiers:
   email:
     class: stackdio.core.notifiers.EmailNotifier
     options:
-      from_email: noreply
+      from_email: stackd.io <noreply>
 
   # Custom emails to be able to send to other email addrs than the ones on file
   custom_email:
     class: stackdio.core.notifiers.ExtraEmailNotifier
     options:
-      from_email: noreply
+      from_email: stackd.io <noreply>
 
   # A basic webook notifier
   webhook:
