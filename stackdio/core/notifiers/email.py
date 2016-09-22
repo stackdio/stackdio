@@ -18,13 +18,17 @@
 import logging
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.core import mail
+from django.template import loader
 
+from stackdio.core.notifications import registry
 from stackdio.core.notifiers.base import BaseNotifier
 
 logger = logging.getLogger(__name__)
+
+SUBJECT_PATTERN = '[stackd.io] {object}'
+HTML_TEMPLATE_PATTERN = 'stackdio/events/{event}.html'
+TEXT_TEMPLATE_PATTERN = 'stackdio/events/{event}.txt'
 
 
 class EmailNotifier(BaseNotifier):
@@ -37,6 +41,8 @@ class EmailNotifier(BaseNotifier):
 
     prefer_send_in_bulk = True
 
+    split_group_notifications = True
+
     # Override this to change how email is sent
     email_backend = settings.EMAIL_BACKEND
 
@@ -45,20 +51,40 @@ class EmailNotifier(BaseNotifier):
         self.from_email = from_email
 
     def get_email_subject(self, notification):
-        return notification.event.tag
+        return SUBJECT_PATTERN.format(object=notification.content_object)
 
-    def get_email_body(self, notification):
-        return notification.event.tag
+    def get_email_text_body(self, notification):
+        context = self.get_template_context(notification)
+        return loader.render_to_string(
+            [
+                TEXT_TEMPLATE_PATTERN.format(event=notification.event.tag),
+                TEXT_TEMPLATE_PATTERN.format(event='default'),
+            ],
+            context=context,
+        )
 
-    def get_recipients(self, notification):
-        auth_object = notification.handler.channel.auth_object
+    def get_email_html_body(self, notification):
+        context = self.get_template_context(notification)
+        return loader.render_to_string(
+            [
+                HTML_TEMPLATE_PATTERN.format(event=notification.event.tag),
+                HTML_TEMPLATE_PATTERN.format(event='default'),
+            ],
+            context=context,
+        )
 
-        if isinstance(auth_object, get_user_model()):
-            return [auth_object.email]
-        elif isinstance(auth_object, Group):
-            return [user.email for user in auth_object.user_set.all()]
-        else:
-            raise TypeError('Channel has an auth_object that isn\'t a User or Group')
+    def get_template_context(self, notification):
+        serializer = registry.get_object_serializer(notification.content_object)
+        return {
+            'notification': notification,
+            'serializer': serializer,
+            'object': serializer.data,
+        }
+
+    def get_recipient(self, notification):
+        # We are guaranteed that auth_object is a user since we
+        # set split_group_notifications above.
+        return notification.auth_object.email
 
     def get_email_message(self, notification):
         """
@@ -67,13 +93,15 @@ class EmailNotifier(BaseNotifier):
         :rtype: django.core.mail.EmailMessage
         :return: the email message
         """
-        message = mail.EmailMessage(
+        message = mail.EmailMultiAlternatives(
             subject=self.get_email_subject(notification),
-            body=self.get_email_body(notification),
+            body=self.get_email_text_body(notification),
             from_email=self.from_email,
-            to=self.get_recipients(notification),
+            to=[self.get_recipient(notification)],
             connection=self.get_connection(),
         )
+
+        message.attach_alternative(self.get_email_html_body(notification), 'text/html')
 
         logger.debug('Sending email notification to {}'.format(', '.join(message.recipients())))
 
@@ -130,11 +158,14 @@ class ExtraEmailNotifier(EmailNotifier):
     than the default email for the user.
     """
 
+    # re-set this to False since we're not pulling the email address from the user objects.
+    split_group_notifications = False
+
     @classmethod
     def get_required_options(cls):
         return [
             'email_address',
         ]
 
-    def get_recipients(self, notification):
-        return [self.get_option(notification, 'email_address')]
+    def get_recipient(self, notification):
+        return self.get_option(notification, 'email_address')

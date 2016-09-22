@@ -17,12 +17,33 @@
 
 from collections import namedtuple
 
+from django.conf import settings
 from django.db.models.base import ModelBase
+from django.http.request import HttpRequest
+from django.utils.encoding import iri_to_uri
+from rest_framework.request import Request
 from rest_framework.serializers import BaseSerializer
+from six.moves.urllib_parse import urljoin, urlsplit  # pylint: disable=import-error
 
 from stackdio.core.config import StackdioConfigException
 
 NotifiableModelConfig = namedtuple('NotifiableModelConfig', ['serializer_class'])
+
+
+class DummyRequest(HttpRequest):
+
+    def __init__(self, prod_url):
+        super(DummyRequest, self).__init__()
+        self.prod_url = prod_url
+
+    def build_absolute_uri(self, location=None):
+        if location is None:
+            return None
+
+        bits = urlsplit(location)
+        if not (bits.scheme and bits.netloc):
+            location = urljoin(self.prod_url, location)
+        return iri_to_uri(location)
 
 
 def validate_model_class(model_class):
@@ -50,12 +71,40 @@ def validate_serializer_class(serializer_class):
 
 class NotifiableModelRegistry(dict):
 
+    serializer_context = {
+        'request': Request(DummyRequest(settings.STACKDIO_CONFIG.server_url)),
+    }
+
     def register(self, model_class, serializer_class):
         model_class = validate_model_class(model_class)
         serializer_class = validate_serializer_class(serializer_class)
         if model_class not in self:
             self[model_class] = NotifiableModelConfig(serializer_class)
 
+    def get_notification_serializer(self, notification):
+        from stackdio.core.notifications.serializers import AbstractNotificationSerializer
+
+        object_serializer_class = self.get_model_serializer_class(notification.content_type.get_model())
+
+        # Create a dynamic class that has the object set to the appropriate serializer
+        class NotificationSerializer(AbstractNotificationSerializer):
+
+            object = object_serializer_class(source='content_object')
+
+        return NotificationSerializer(notification, context=self.serializer_context)
+
+    def get_model_serializer_class(self, model_class):
+        if model_class not in self:
+            raise StackdioConfigException('Model %r is not registered with the '
+                                          'notification registry.' % model_class)
+        return self[model_class].serializer_class
+
+    def get_object_serializer(self, content_object):
+        serializer_class = self.get_model_serializer_class(content_object._meta.model)
+        return serializer_class(content_object, context=self.serializer_context)
+
+
 registry = NotifiableModelRegistry()
 register = registry.register
-get = registry.get
+get_notification_serializer = registry.get_notification_serializer
+get_object_serializer = registry.get_object_serializer

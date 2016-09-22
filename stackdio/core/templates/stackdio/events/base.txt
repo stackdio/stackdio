@@ -1,0 +1,8 @@
+
+The {{ notification.event }} event has been triggered on {{ notification.content_object }}.
+
+The new object:
+
+{% for attr, val in object.items() %}
+{{ attr }}: {{ val }}
+{% endfor %}

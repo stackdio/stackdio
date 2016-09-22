@@ -19,6 +19,8 @@ import logging
 from collections import defaultdict
 
 from celery import shared_task
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -65,13 +67,27 @@ def generate_notifications(event_tag, object_id, content_type_id):
     new_notifications = []
 
     for channel in event.channels.all():
-        for handler in channel.handlers.all():
-            # Create the notification object
-            notification = models.Notification.objects.create(event=event,
-                                                              handler=handler,
-                                                              content_object=content_object)
+        auth_object = channel.auth_object
 
-            new_notifications.append(notification)
+        for handler in channel.handlers.all():
+            if utils.get_notifier_class(handler.notifier).split_group_notifications:
+                if isinstance(auth_object, get_user_model()):
+                    auth_objects = [auth_object]
+                elif isinstance(auth_object, Group):
+                    auth_objects = auth_object.user_set.all()
+                else:
+                    raise TypeError('Channel has an auth_object that isn\'t a User or Group.')
+            else:
+                auth_objects = [auth_object]
+
+            for auth_obj in auth_objects:
+                # Create the notification object
+                notification = models.Notification.objects.create(event=event,
+                                                                  handler=handler,
+                                                                  auth_object=auth_obj,
+                                                                  content_object=content_object)
+
+                new_notifications.append(notification)
 
     # start up the tasks
     generate_notification_tasks(new_notifications)

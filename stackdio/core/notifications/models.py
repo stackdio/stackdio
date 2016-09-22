@@ -19,6 +19,7 @@ import logging
 from collections import OrderedDict
 
 import six
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -28,6 +29,14 @@ from stackdio.core.fields import JSONField
 from stackdio.core.notifications.utils import get_notifier_class, get_notifier_instance
 
 logger = logging.getLogger(__name__)
+
+
+def get_auth_object_limit():
+    user_app_label, user_model_name = settings.AUTH_USER_MODEL.split('.')
+    user_q = models.Q(app_label=user_app_label, model=user_model_name)
+    group_q = models.Q(app_label='auth', model='Group')
+
+    return user_q | group_q
 
 
 @six.python_2_unicode_compatible
@@ -82,7 +91,8 @@ class NotificationChannel(models.Model):
 
     events = models.ManyToManyField('core.Event', related_name='channels')
 
-    auth_object_content_type = models.ForeignKey('contenttypes.ContentType')
+    auth_object_content_type = models.ForeignKey('contenttypes.ContentType',
+                                                 limit_choices_to=get_auth_object_limit())
     auth_object_id = models.PositiveIntegerField()
     auth_object = GenericForeignKey('auth_object_content_type', 'auth_object_id')
 
@@ -197,9 +207,18 @@ class Notification(models.Model):
     handler = models.ForeignKey('notifications.NotificationHandler')
 
     # The associated object
-    content_type = models.ForeignKey('contenttypes.ContentType')
+    content_type = models.ForeignKey('contenttypes.ContentType',
+                                     related_name='+')
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
+
+    # The associated user - channels can have users or groups - but we want the ability to
+    # split a channel group up into several notifications associated with a single user.
+    auth_object_content_type = models.ForeignKey('contenttypes.ContentType',
+                                                 limit_choices_to=get_auth_object_limit(),
+                                                 related_name='+')
+    auth_object_id = models.PositiveIntegerField()
+    auth_object = GenericForeignKey('auth_object_content_type', 'auth_object_id')
 
     def __str__(self):
         return 'Notification for {} sent using {} on object {}'.format(self.event,

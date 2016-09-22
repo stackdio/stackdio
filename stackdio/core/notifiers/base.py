@@ -28,6 +28,12 @@ class BaseNotifier(object):
     # only be performed once before sending several notifications.
     prefer_send_in_bulk = False
 
+    # Set this to True if the notification system should generate one notification per user in
+    # a group.  If set to True, it is guaranteed that the auth_object on every notification
+    # passed in to your notifier will be a User object, otherwise you could get
+    # a User or a Group. (useful when sending email)
+    split_group_notifications = False
+
     def __init__(self):
         super(BaseNotifier, self).__init__()
 
