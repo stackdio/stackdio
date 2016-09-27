@@ -126,7 +126,7 @@ class SimpleJSONField(models.TextField):
         return self.to_python(value)
 
     def get_prep_value(self, value):
-        value = super(models.TextField, self).get_prep_value(value)
+        value = models.Field.get_prep_value(self, value)
 
         if value is None and self.null:
             return None
