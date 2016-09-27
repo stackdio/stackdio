@@ -19,9 +19,9 @@ from __future__ import absolute_import
 
 import json
 import logging
-import six
 import warnings
 
+import six
 from django.conf import settings
 from django.db import models
 from django.db.utils import DEFAULT_DB_ALIAS
@@ -158,6 +158,7 @@ else:
     class JSONField(SimpleJSONField):
         _warned = False
 
+        @staticmethod
         def __new__(cls, *args, **kwargs):
             if not cls._warned:
                 warnings.warn(
@@ -166,7 +167,7 @@ else:
                     StackdioWarning,
                 )
                 cls._warned = True
-            return super(JSONField, cls).__new__(cls, *args, **kwargs)
+            return SimpleJSONField.__new__(cls, *args, **kwargs)
 
 
 class PasswordField(CharField):

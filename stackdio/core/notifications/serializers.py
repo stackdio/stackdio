@@ -32,7 +32,7 @@ def validate_notifier(value):
         raise serializers.ValidationError('No notifier named {}'.format(value))
 
 
-class NotifierSerializer(serializers.Serializer):
+class NotifierSerializer(serializers.Serializer):  # pylint: disable=abstract-method
 
     name = serializers.CharField()
     backend = serializers.CharField(source='class_path')
