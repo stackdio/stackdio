@@ -18,6 +18,7 @@ sudo: false
 
 # Make sure our pip install works
 addons:
+  postgres: 9.4
   apt:
     packages:
       - swig
