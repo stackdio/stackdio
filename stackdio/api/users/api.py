@@ -124,6 +124,37 @@ class GroupActionAPIView(mixins.GroupRelatedMixin, generics.GenericAPIView):
         return Response(serializer.data)
 
 
+class GroupChannelListAPIView(mixins.GroupRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = serializers.GroupNotificationChannelSerializer
+
+    def get_queryset(self):
+        return NotificationChannel.objects.filter(auth_object=self.get_group())
+
+    def get_serializer_context(self):
+        context = super(GroupChannelListAPIView, self).get_serializer_context()
+        context['auth_object'] = self.get_group()
+        return context
+
+    def perform_create(self, serializer):
+        serializer.save(auth_object=self.get_group())
+
+
+class GroupChannelDetailAPIView(mixins.GroupRelatedMixin, generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = serializers.GroupNotificationChannelSerializer
+    lookup_field = 'name'
+
+    def get_queryset(self):
+        return NotificationChannel.objects.filter(auth_object=self.get_group())
+
+    def get_serializer_context(self):
+        context = super(GroupChannelDetailAPIView, self).get_serializer_context()
+        context['auth_object'] = self.get_group()
+        return context
+
+    def perform_update(self, serializer):
+        serializer.save(auth_object=self.get_group())
+
+
 class GroupModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
     model_permissions = ('create', 'admin')
     parent_lookup_field = 'name'
@@ -154,14 +185,14 @@ class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
-class CurrentUserChannelsListAPIView(generics.ListCreateAPIView):
+class CurrentUserChannelListAPIView(generics.ListCreateAPIView):
     serializer_class = serializers.UserNotificationChannelSerializer
 
     def get_queryset(self):
         return NotificationChannel.objects.filter(auth_object=self.request.user)
 
     def get_serializer_context(self):
-        context = super(CurrentUserChannelsListAPIView, self).get_serializer_context()
+        context = super(CurrentUserChannelListAPIView, self).get_serializer_context()
         context['auth_object'] = self.request.user
         return context
 
@@ -169,7 +200,7 @@ class CurrentUserChannelsListAPIView(generics.ListCreateAPIView):
         serializer.save(auth_object=self.request.user)
 
 
-class CurrentUserChannelsDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+class CurrentUserChannelDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = serializers.UserNotificationChannelSerializer
     lookup_field = 'name'
 
@@ -177,7 +208,7 @@ class CurrentUserChannelsDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         return NotificationChannel.objects.filter(auth_object=self.request.user)
 
     def get_serializer_context(self):
-        context = super(CurrentUserChannelsDetailAPIView, self).get_serializer_context()
+        context = super(CurrentUserChannelDetailAPIView, self).get_serializer_context()
         context['auth_object'] = self.request.user
         return context
 

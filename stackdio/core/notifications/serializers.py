@@ -40,7 +40,7 @@ class NotifierSerializer(serializers.Serializer):
 
 class NotificationHandlerSerializer(serializers.HyperlinkedModelSerializer):
 
-    options = serializers.JSONField()
+    options = serializers.JSONField(required=False)
 
     class Meta:
         model = models.NotificationHandler

@@ -20,7 +20,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
 from stackdio.core.mixins import ParentRelatedMixin
-from stackdio.core.permissions import StackdioPermissionsPermissions
+from . import permissions
 
 
 class UserRelatedMixin(ParentRelatedMixin):
@@ -34,13 +34,14 @@ class UserRelatedMixin(ParentRelatedMixin):
 class GroupRelatedMixin(ParentRelatedMixin):
     parent_queryset = Group.objects.all()
     parent_lookup_field = 'name'
+    permission_classes = (permissions.GroupParentPermissions,)
 
     def get_group(self):
         return self.get_parent_object()
 
 
 class GroupPermissionsMixin(GroupRelatedMixin):
-    permission_classes = (StackdioPermissionsPermissions,)
+    permission_classes = (permissions.GroupPermissionsPermissions,)
 
     def get_permissioned_object(self):
         return self.get_parent_object()

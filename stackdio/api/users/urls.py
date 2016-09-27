@@ -88,16 +88,24 @@ urlpatterns = (
         api.GroupActionAPIView.as_view(),
         name='group-action'),
 
+    url(r'^groups/(?P<parent_name>[\w.@+-]+)/channels/$',
+        api.GroupChannelListAPIView.as_view(),
+        name='group-channel-list'),
+
+    url(r'^groups/(?P<parent_name>[\w.@+-]+)/channels/(?P<name>[\w.@+-]+)/$',
+        api.GroupChannelDetailAPIView.as_view(),
+        name='group-channel-detail'),
+
     url(r'^user/$',
         api.CurrentUserDetailAPIView.as_view(),
         name='currentuser-detail'),
 
     url(r'^user/channels/$',
-        api.CurrentUserChannelsListAPIView.as_view(),
+        api.CurrentUserChannelListAPIView.as_view(),
         name='currentuser-channel-list'),
 
     url(r'^user/channels/(?P<name>[\w.@+-]+)/$',
-        api.CurrentUserChannelsDetailAPIView.as_view(),
+        api.CurrentUserChannelDetailAPIView.as_view(),
         name='currentuser-channel-detail'),
 
     url(r'^user/password/$',

@@ -29,7 +29,10 @@ from rest_framework import serializers
 
 from stackdio.core.fields import HyperlinkedField, PasswordField
 from stackdio.core.notifications.serializers import NotificationChannelSerializer
-from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import (
+    StackdioHyperlinkedModelSerializer,
+    StackdioParentHyperlinkedModelSerializer,
+)
 from . import models, utils
 
 
@@ -71,6 +74,9 @@ class GroupSerializer(StackdioHyperlinkedModelSerializer):
     action = serializers.HyperlinkedIdentityField(
         view_name='api:users:group-action',
         lookup_field='name', lookup_url_kwarg='parent_name')
+    channels = serializers.HyperlinkedIdentityField(
+        view_name='api:users:group-channel-list',
+        lookup_field='name', lookup_url_kwarg='parent_name')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:users:group-object-user-permissions-list',
         lookup_field='name', lookup_url_kwarg='parent_name')
@@ -86,6 +92,7 @@ class GroupSerializer(StackdioHyperlinkedModelSerializer):
             'name',
             'users',
             'action',
+            'channels',
             'user_permissions',
             'group_permissions',
         )
@@ -331,3 +338,13 @@ class UserNotificationChannelSerializer(NotificationChannelSerializer):
     class Meta(NotificationChannelSerializer.Meta):
         app_label = 'users'
         model_name = 'currentuser-channel'
+
+
+class GroupNotificationChannelSerializer(StackdioParentHyperlinkedModelSerializer,
+                                         NotificationChannelSerializer):
+
+    class Meta(NotificationChannelSerializer.Meta):
+        app_label = 'users'
+        model_name = 'group-channel'
+        parent_attr = 'auth_object'
+        parent_lookup_field = 'name'
