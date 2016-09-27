@@ -34,6 +34,9 @@ from stackdio.core.warnings import StackdioWarning
 logger = logging.getLogger(__name__)
 
 
+POSTGRES_ENGINES = ('django.db.backends.postgresql', 'django.db.backends.postgresql_psycopg2')
+
+
 class DeletingFileField(models.FileField):
     """
     Borrowed from: https://gist.github.com/889692
@@ -141,7 +144,7 @@ class SimpleJSONField(models.TextField):
         return name, path, args, kwargs
 
 
-if settings.DATABASES[DEFAULT_DB_ALIAS]['ENGINE'] == 'django.db.backends.postgresql':
+if settings.DATABASES[DEFAULT_DB_ALIAS]['ENGINE'] in POSTGRES_ENGINES:
     # postgres is available!  use the built-in json field
 
     from django.contrib.postgres.fields import JSONField as DjangoJSONField

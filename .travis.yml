@@ -23,10 +23,10 @@ addons:
       - swig
 
 services:
-  - mysql
+  - postgresql
 
 before_install:
-  - mysql -e "CREATE DATABASE IF NOT EXISTS stackdio;" -u root
+  - psql -c "CREATE DATABASE IF NOT EXISTS stackdio;" -U postgres
 
 ## Customize dependencies
 install:
@@ -34,7 +34,7 @@ install:
   - bower install
   - pip install -U pip
   - pip install -U wheel
-  - pip install -U -e .[testing,mysql]
+  - pip install -U -e .[testing,postgresql]
 
 ## Customize test commands
 before_script:
@@ -47,7 +47,7 @@ script:
   - python manage.py migrate
   - py.test --cov=stackdio stackdio
 
-  # Then copy the config file and try again (for mysql)
+  # Then copy the config file and try again (for postgresql)
   - cp tests/stackdio-travis.yaml /home/travis/.stackdio/stackdio.yaml
   - python manage.py migrate
   - py.test --cov=stackdio stackdio
