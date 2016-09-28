@@ -15,10 +15,35 @@
 # limitations under the License.
 #
 
+from abc import ABCMeta, abstractmethod
 
-class BaseNotifier(object):
+import six
+
+
+NOTIFIER_REQUIRED_METHODS = (
+    'get_required_options',
+    'send_notification',
+    'send_notifications_in_bulk',
+    'prefer_send_in_bulk',
+    'split_group_notifications',
+)
+
+
+def _hasattr(klass, attr):
+    try:
+        return any(attr in superklass.__dict__ for superklass in klass.__mro__)
+    except AttributeError:
+        # Old-style class
+        return hasattr(klass, attr)
+
+
+def _has_all_attrs(klass, attr_list):
+    return all(_hasattr(klass, attr) for attr in attr_list)
+
+
+class BaseNotifier(six.with_metaclass(ABCMeta)):
     """
-    Base class for all notifiers.
+    Abstract Base class for all notifiers.
     Any overridden methods should NOT modify any Notification objects that are passed in.
     """
 
@@ -36,6 +61,17 @@ class BaseNotifier(object):
 
     def __init__(self):
         super(BaseNotifier, self).__init__()
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        """
+        Allow any class that has all the required methods to be considered
+        a subclass of BaseNotifier
+        """
+        if cls is BaseNotifier:
+            if _has_all_attrs(subclass, NOTIFIER_REQUIRED_METHODS):
+                return True
+        return NotImplemented
 
     @classmethod
     def get_required_options(cls):
@@ -60,6 +96,7 @@ class BaseNotifier(object):
 
         return value
 
+    @abstractmethod
     def send_notification(self, notification):
         """
         Override this method with logic to send a single notification.  Should return False
