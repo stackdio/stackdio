@@ -17,10 +17,15 @@
 
 import logging
 
+from django.contrib.auth.models import Group
 from django.db import transaction
 from rest_framework import serializers
 
-from stackdio.core.serializers import EventField, StackdioHyperlinkedModelSerializer
+from stackdio.core.serializers import (
+    EventField,
+    StackdioHyperlinkedModelSerializer,
+    StackdioParentHyperlinkedModelSerializer,
+)
 from stackdio.core.utils import recursive_update
 from . import models, utils, validators
 
@@ -85,7 +90,10 @@ class NotificationHandlerSerializer(serializers.HyperlinkedModelSerializer):
         return super(NotificationHandlerSerializer, self).update(instance, validated_data)
 
 
-class SubscriberNotificationChannelSerializer(StackdioHyperlinkedModelSerializer):
+class UserSubscriberNotificationChannelSerializer(StackdioHyperlinkedModelSerializer):
+    """
+    Serializer for adding user channels as subscribers for objects.
+    """
 
     events = EventField(many=True, read_only=True)
 
@@ -109,11 +117,14 @@ class SubscriberNotificationChannelSerializer(StackdioHyperlinkedModelSerializer
         )
 
         extra_kwargs = {
-            'name': {'validators': [validators.ChannelExistsValidator()]},
+            'name': {'validators': [validators.UserChannelExistsValidator()]},
         }
 
+    def get_available_channels(self, **kwargs):
+        return self.Meta.model.objects.filter(auth_object=kwargs['auth_object'])
+
     def save(self, **kwargs):
-        queryset = self.Meta.model.objects.filter(auth_object=kwargs['auth_object'])
+        queryset = self.get_available_channels(**kwargs)
 
         # Just get the channel
         channel = queryset.get(name=self.validated_data['name'])
@@ -130,6 +141,58 @@ class SubscriberNotificationChannelSerializer(StackdioHyperlinkedModelSerializer
         self.instance = channel
 
         return channel
+
+
+class GroupSubscriberNotificationChannelSerializer(StackdioParentHyperlinkedModelSerializer,
+                                                   UserSubscriberNotificationChannelSerializer):
+    """
+    Serializer for adding group channels as subscribers for objects.
+    Mostly the same as the User serializer, just need to pass in the group name as well.
+    """
+
+    group = serializers.SlugRelatedField(queryset=Group.objects.all(),
+                                         slug_field='name',
+                                         source='auth_object')
+
+    class Meta(UserSubscriberNotificationChannelSerializer.Meta):
+        model_name = 'group-channel'
+        parent_attr = 'auth_object'
+        parent_lookup_field = 'name'
+
+        fields = (
+            'action',
+            'url',
+            'group',
+            'name',
+            'events',
+            'handlers',
+        )
+
+        # No validator here
+        extra_kwargs = {
+            'name': {},
+        }
+
+    def get_available_channels(self, **kwargs):
+        auth_object = self.validated_data['auth_object']
+        return self.Meta.model.objects.filter(auth_object=auth_object)
+
+    def validate(self, attrs):
+        auth_object = attrs.get('auth_object')
+        name = attrs.get('name')
+
+        logger.debug(attrs)
+
+        queryset = self.Meta.model.objects.filter(auth_object=auth_object)
+
+        try:
+            queryset.get(name=name)
+        except self.Meta.model.DoesNotExist:
+            raise serializers.ValidationError({
+                'name': ['No channel found with name={name}'.format(name=name)],
+            })
+
+        return attrs
 
 
 class NotificationChannelSerializer(StackdioHyperlinkedModelSerializer):

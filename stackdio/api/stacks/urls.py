@@ -79,9 +79,13 @@ urlpatterns = (
         api.StackLabelDetailAPIView.as_view(),
         name='stack-label-detail'),
 
-    url(r'^(?P<parent_pk>[0-9]+)/channels/$',
-        api.StackChannelsListAPIView.as_view(),
-        name='stack-channel-list'),
+    url(r'^(?P<parent_pk>[0-9]+)/user_channels/$',
+        api.StackUserChannelsListAPIView.as_view(),
+        name='stack-user-channel-list'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/group_channels/$',
+        api.StackGroupChannelsListAPIView.as_view(),
+        name='stack-group-channel-list'),
 
     url(r'^(?P<parent_pk>[0-9]+)/history/$',
         api.StackHistoryAPIView.as_view(),

@@ -376,8 +376,11 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
     formula_versions = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-formula-versions',
         lookup_url_kwarg='parent_pk')
-    channels = serializers.HyperlinkedIdentityField(
-        view_name='api:stacks:stack-channel-list',
+    user_channels = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-user-channel-list',
+        lookup_url_kwarg='parent_pk')
+    group_channels = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-group-channel-list',
         lookup_url_kwarg='parent_pk')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-object-user-permissions-list',
@@ -412,7 +415,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'security_groups',
             'formula_versions',
             'logs',
-            'channels',
+            'user_channels',
+            'group_channels',
             'user_permissions',
             'group_permissions',
         )

@@ -67,7 +67,7 @@ class UniqueChannelValidator(object):
                 pass
 
 
-class ChannelExistsValidator(object):
+class UserChannelExistsValidator(object):
 
     message = 'No channel found with name={name}'
 
