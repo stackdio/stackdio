@@ -32,7 +32,7 @@ from stackdio.core.serializers import (
 )
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
-from stackdio.api.cloud.models import CloudZone, Snapshot
+from stackdio.api.cloud.models import CloudImage, CloudInstanceSize, CloudZone, Snapshot
 from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
 from stackdio.api.formulas.validators import validate_formula_components
 from . import models, validators
@@ -114,14 +114,16 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
 
 
 class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer):
-    formula_components = FormulaComponentSerializer(many=True, read_only=True)
-    access_rules = BlueprintAccessRuleSerializer(many=True, required=False, read_only=True)
-    volumes = BlueprintVolumeSerializer(many=True, required=False, read_only=True)
+    formula_components = FormulaComponentSerializer(many=True)
+    access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
+    volumes = BlueprintVolumeSerializer(many=True, required=False)
 
-    size = serializers.SlugRelatedField(slug_field='instance_id', read_only=True)
+    size = serializers.SlugRelatedField(slug_field='instance_id',
+                                        queryset=CloudInstanceSize.objects.all())
     zone = serializers.SlugRelatedField(slug_field='title', required=False, allow_null=True,
                                         queryset=CloudZone.objects.all())
-    cloud_image = serializers.SlugRelatedField(slug_field='slug', read_only=True)
+    cloud_image = serializers.SlugRelatedField(slug_field='slug',
+                                               queryset=CloudImage.objects.all())
 
     class Meta:
         model = models.BlueprintHostDefinition
@@ -142,10 +144,6 @@ class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer
             'access_rules',
             'volumes',
             'spot_price',
-        )
-
-        read_only_fields = (
-            'count',
         )
 
         extra_kwargs = {
