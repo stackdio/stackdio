@@ -17,12 +17,14 @@
 
 # pylint: disable=too-many-lines
 
+import collections
 import json
 import logging
 import os
 import shutil
 import subprocess
 import time
+import types
 from datetime import datetime
 from functools import wraps
 
@@ -548,8 +550,8 @@ def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
         host_data = query_results.get(host.hostname)
         is_absent = host_data is None
 
-        if isinstance(host_data, six.string_types):
-            raise TypeError('Expected dict, received {0}'.format(type(host_data)))
+        if not isinstance(host_data, (types.NoneType, collections.Mapping)):
+            raise TypeError('Expected a dict from salt cloud, received {0}'.format(type(host_data)))
 
         # Check for terminated host state
         if is_absent or ('state' in host_data and host_data['state'] in bad_states):
