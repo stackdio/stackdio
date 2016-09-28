@@ -121,10 +121,10 @@ setup(
             'supervisor>=3.0',
         ],
         'mysql': [
-            'mysqlclient==1.3.7',
+            'mysqlclient>=1.3.3',
         ],
         'postgresql': [
-            'psycopg2==2.6.1',
+            'psycopg2>=2.5.0',
         ],
         'ldap': [
             'django-auth-ldap~=1.2.7',
