@@ -116,8 +116,8 @@ AUTHENTICATION_BACKENDS = (
 if LDAP_ENABLED:
     AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
 
-# For guardian
-ANONYMOUS_USER_ID = -1
+# For guardian - we don't need the anonymous user
+ANONYMOUS_USER_NAME = None
 
 TEMPLATES = [
     {

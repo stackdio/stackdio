@@ -87,7 +87,7 @@ def get_notifier_class(name):
     """
     Get the imported notifier class
     :param name: the notifier name
-    :rtype: type
+    :rtype: abc.ABCMeta
     :return: the notifier class object
     """
     if name not in notifier_classes:

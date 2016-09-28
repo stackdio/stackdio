@@ -24,7 +24,7 @@ from . import permissions
 
 
 class UserRelatedMixin(ParentRelatedMixin):
-    parent_queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
+    parent_queryset = get_user_model().objects.all()
     parent_lookup_field = 'username'
 
     def get_user(self):

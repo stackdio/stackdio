@@ -75,7 +75,7 @@ requirements = [
     'django-activity-stream~=0.6.0',
     'django-extensions~=1.6.0',
     'django-filter~=0.9',
-    'django-guardian~=1.4.0',
+    'django-guardian~=1.4.2',
     'django-model-utils~=2.0',
     'Jinja2~=2.0',
 

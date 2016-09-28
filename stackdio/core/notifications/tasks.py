@@ -66,7 +66,12 @@ def generate_notifications(event_tag, object_id, content_type_id):
 
     new_notifications = []
 
-    for channel in event.channels.all():
+    subscribed_channels = models.NotificationChannel.objects.filter(
+        subscribed_object=content_object,
+        events=event,
+    )
+
+    for channel in subscribed_channels:
         auth_object = channel.auth_object
 
         for handler in channel.handlers.all():

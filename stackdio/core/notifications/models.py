@@ -103,7 +103,7 @@ class NotificationChannel(models.Model):
     objects = NotificationChannelQuerySet.as_manager()
 
     def __str__(self):
-        events = [six.text_type(event for event in self.events.all())]
+        events = [six.text_type(event) for event in self.events.all()]
         return 'Channel {}, subscribed to {}'.format(self.name, ', '.join(events))
 
     @property
