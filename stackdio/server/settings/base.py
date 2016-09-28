@@ -158,7 +158,7 @@ MANAGERS = ADMINS
 # environment variable, we're loading it from the stackdio config
 ##
 DATABASES = {
-    'default': dj_database_url.parse(STACKDIO_CONFIG.database_url)
+    'default': dj_database_url.parse(STACKDIO_CONFIG.database_url, conn_max_age=600)
 }
 
 
