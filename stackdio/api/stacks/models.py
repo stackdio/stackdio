@@ -1248,7 +1248,18 @@ class ComponentMetadata(TimeStampedModel):
 
     @property
     def sls_path(self):
-        return self.formula_component.sls_path
+        # Cache this
+        cache_key = 'component-metadata-{}-sls-path'.format(self.id)
+
+        cached_path = cache.get(cache_key)
+
+        if cached_path is None:
+            cached_path = self.formula_component.sls_path
+
+            # Cache this forever - it should never change
+            cache.set(cache_key, cached_path, None)
+
+        return cached_path
 
     def set_status(self, status):
         # Make sure it's a valid status

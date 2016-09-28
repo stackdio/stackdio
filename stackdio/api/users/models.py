@@ -54,6 +54,10 @@ def user_post_save(sender, **kwargs):
     Catch the post_save signal for all User objects and create a
     UserSettings objects if needed
     """
+    if kwargs.get('raw'):
+        # Don't do this on loaddata
+        return
+
     user = kwargs.pop('instance')
     created = kwargs.pop('created', False)
 
