@@ -342,9 +342,8 @@ class StackCreateUserDefault(object):
 
 class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     # Read only fields
-    host_count = serializers.ReadOnlyField(source='hosts.count')
-    volume_count = serializers.ReadOnlyField(source='volumes.count')
-    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
+    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True,
+                                                 source='get_cached_label_list')
 
     # Identity links
     properties = serializers.HyperlinkedIdentityField(

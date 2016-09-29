@@ -20,8 +20,10 @@ from operator import or_
 
 import six
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Q
+from django.dispatch import receiver
 
 
 class SearchQuerySet(models.QuerySet):
@@ -56,7 +58,7 @@ class Label(models.Model):
     content_object = GenericForeignKey()
 
     def __str__(self):
-        return '{}:{} on {}'.format(self.key, self.value, self.content_object)
+        return six.text_type('{}:{} on {}'.format(self.key, self.value, self.content_object))
 
 
 @six.python_2_unicode_compatible
@@ -68,3 +70,12 @@ class Event(models.Model):
 
     def __str__(self):
         return six.text_type(self.tag)
+
+
+@receiver([models.signals.post_save, models.signals.post_delete], sender=Label)
+def label_post_save(sender, **kwargs):
+    label = kwargs.pop('instance')
+
+    # Delete from the cache
+    cache_key = '{}-{}-label-list'.format(label.content_type_id, label.object_id)
+    cache.delete(cache_key)

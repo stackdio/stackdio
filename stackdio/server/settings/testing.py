@@ -22,3 +22,6 @@ from stackdio.server.settings.base import *
 # Add additional testing settings here
 
 REST_FRAMEWORK['TEST_REQUEST_DEFAULT_FORMAT'] = 'json'
+
+# Use the plain old db engine for testing so we don't need redis on the server
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'

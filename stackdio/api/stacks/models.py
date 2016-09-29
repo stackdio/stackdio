@@ -22,12 +22,14 @@ import logging
 import os
 import re
 import socket
+from functools import wraps
 
 import salt.cloud
 import six
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
@@ -62,6 +64,32 @@ PROTOCOL_CHOICES = [
 ]
 
 HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
+
+
+def django_cache(cache_key, timeout=None):
+    """
+    decorator to cache the result of a function in the django cache
+    """
+
+    def wrapper(func):
+
+        @wraps(func)
+        def wrapped(self):
+            ctype = ContentType.objects.get_for_model(self)
+
+            final_cache_key = cache_key.format(ctype=ctype.pk, id=self.id)
+
+            cached_item = cache.get(final_cache_key)
+
+            if cached_item is None:
+                cached_item = func(self)
+                cache.set(final_cache_key, cached_item, timeout)
+
+            return cached_item
+
+        return wrapped
+
+    return wrapper
 
 
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
@@ -273,6 +301,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def volumes(self):
         return Volume.objects.filter(host__in=self.hosts.all())
 
+    @django_cache('{ctype}-{id}-label-list')
+    def get_cached_label_list(self):
+        return self.labels.all()
+
     def get_driver_hosts_map(self, host_ids=None):
         """
         Stacks are comprised of multiple hosts. Each host may be
@@ -299,16 +331,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return result
 
+    @django_cache('stack-{id}-hosts')
     def get_cached_hosts(self):
-        cache_key = 'stack-{}-hosts'.format(self.id)
+        return self.hosts.all()
 
-        cached_hosts = cache.get(cache_key)
+    @django_cache('stack-{id}-host-count')
+    def host_count(self):
+        return self.hosts.count()
 
-        if cached_hosts is None:
-            cached_hosts = self.hosts.all()
-            cache.set(cache_key, cached_hosts, None)
-
-        return cached_hosts
+    @django_cache('stack-{id}-volume-count')
+    def volume_count(self):
+        return self.volumes.count()
 
     def get_hosts(self, host_ids=None):
         """
@@ -1228,12 +1261,10 @@ class Host(TimeStampedModel):
         return self.blueprint_host_definition.size
 
     @property
-    @lru_cache()
     def availability_zone(self):
         return self.blueprint_host_definition.zone
 
     @property
-    @lru_cache()
     def subnet_id(self):
         return self.blueprint_host_definition.subnet_id
 
@@ -1309,19 +1340,9 @@ class ComponentMetadata(TimeStampedModel):
         ))
 
     @property
+    @django_cache('component-metadata-{id}-sls-path')
     def sls_path(self):
-        # Cache this
-        cache_key = 'component-metadata-{}-sls-path'.format(self.id)
-
-        cached_path = cache.get(cache_key)
-
-        if cached_path is None:
-            cached_path = self.formula_component.sls_path
-
-            # Cache this forever - it should never change
-            cache.set(cache_key, cached_path, None)
-
-        return cached_path
+        return self.formula_component.sls_path
 
     def set_status(self, status):
         # Make sure it's a valid status
