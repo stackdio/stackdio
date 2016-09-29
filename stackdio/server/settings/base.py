@@ -233,6 +233,16 @@ MESSAGE_TAGS = {
 # Caching - only do 1 minute
 CACHE_MIDDLEWARE_SECONDS = 60
 
+CACHES = {
+    'default': {
+        'BACKEND': 'redis_cache.RedisCache',
+        'LOCATION': STACKDIO_CONFIG.redis_url,
+        'OPTIONS': {
+            'DB': 1,
+        }
+    }
+}
+
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error when DEBUG=False.
@@ -363,7 +373,7 @@ CLOUD_PROVIDERS = STACKDIO_CONFIG.cloud_providers
 ##
 # Celery & RabbitMQ
 ##
-BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+BROKER_URL = '{}/0'.format(STACKDIO_CONFIG.redis_url)
 CELERY_REDIRECT_STDOUTS = False
 CELERY_DEFAULT_QUEUE = 'default'
 

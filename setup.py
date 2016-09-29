@@ -65,7 +65,7 @@ with open('README.rst') as f:
 
 requirements = [
     # Heavily used, hold to a specific minor version (let the patch version update)
-    'celery~=3.1.0',
+    'celery[redis]~=3.1.0',
     'Django~=1.9.0',
     'djangorestframework~=3.4.0',
     'salt~=2016.3.0',
@@ -77,6 +77,7 @@ requirements = [
     'django-filter~=0.9',
     'django-guardian~=1.4.2',
     'django-model-utils~=2.0',
+    'django-redis-cache~=1.7.0',
     'Jinja2~=2.0',
 
     # Light usage, no need to have an upper bound on the version

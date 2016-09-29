@@ -299,6 +299,17 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return result
 
+    def get_cached_hosts(self):
+        cache_key = 'stack-{}-hosts'.format(self.id)
+
+        cached_hosts = cache.get(cache_key)
+
+        if cached_hosts is None:
+            cached_hosts = self.hosts.all()
+            cache.set(cache_key, cached_hosts, None)
+
+        return cached_hosts
+
     def get_hosts(self, host_ids=None):
         """
         Quick way of getting all hosts or a subset for this stack.
@@ -350,7 +361,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         healths = []
         activities = set()
 
-        for host in self.hosts.all():
+        for host in self.get_cached_hosts():
             healths.append(host.health)
             activities.add(host.activity)
 
@@ -1328,7 +1339,7 @@ class ComponentMetadata(TimeStampedModel):
 
 
 @receiver(models.signals.post_save, sender=ComponentMetadata)
-def user_post_save(sender, **kwargs):
+def metadata_post_save(sender, **kwargs):
     """
     Catch the post_save signal for all ComponentMetadata
     objects and add the health to the cache
@@ -1338,9 +1349,18 @@ def user_post_save(sender, **kwargs):
     host_id = metadata.host_id
     sls_path = metadata.sls_path
 
-    logger.debug('Pre-caching health for component: '.format(metadata))
+    logger.debug('Pre-caching health for component: {}'.format(metadata))
 
     # Go ahead and add this health to the cache - if it is being created,
     # it is definitely the most recent (which is always what we want)
     cache_key = 'host-{}-component-health-for-{}'.format(host_id, sls_path)
     cache.set(cache_key, metadata.health, None)
+
+
+@receiver([models.signals.post_save, models.signals.post_delete], sender=Host)
+def host_post_save(sender, **kwargs):
+    host = kwargs.pop('instance')
+
+    # Delete from the cache
+    cache_key = 'stack-{}-hosts'.format(host.stack_id)
+    cache.delete(cache_key)

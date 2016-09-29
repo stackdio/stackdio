@@ -14,6 +14,11 @@ cloud_providers:
 server_url: http://localhost:8000
 
 ##
+# The url of the redis server
+# Used for caching and celery
+redis_url: redis://localhost:6379
+
+##
 # Root directory for stackdio to store files, logs, etc.
 # It will be created if it doesn't already exist.
 # Can be absolute or relative.

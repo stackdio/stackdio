@@ -49,6 +49,7 @@ class StackdioConfig(dict):
     REQUIRED_FIELDS = {
         'cloud_providers': list,
         'database_url': six.string_types,
+        'redis_url': six.string_types,
         'storage_dir': six.string_types,
         'log_dir': six.string_types,
         'django_secret_key': six.string_types,
