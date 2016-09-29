@@ -243,6 +243,9 @@ CACHES = {
     }
 }
 
+# Use the cache session engine
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error when DEBUG=False.
