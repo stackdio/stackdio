@@ -22,6 +22,7 @@ import logging
 import os
 import re
 import socket
+from functools import wraps
 
 import salt.cloud
 import six
@@ -33,6 +34,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.db import models, transaction
 from django.utils.timezone import now
+from django.utils.lru_cache import lru_cache
 from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
@@ -1173,33 +1175,41 @@ class Host(TimeStampedModel):
         return metadata[self.hostname]
 
     @property
+    @lru_cache()
     def formula_components(self):
         return self.blueprint_host_definition.formula_components
 
     @property
+    @lru_cache()
     def instance_size(self):
         return self.blueprint_host_definition.size
 
     @property
+    @lru_cache()
     def availability_zone(self):
         return self.blueprint_host_definition.zone
 
     @property
+    @lru_cache()
     def subnet_id(self):
         return self.blueprint_host_definition.subnet_id
 
     @property
+    @lru_cache()
     def cloud_image(self):
         return self.blueprint_host_definition.cloud_image
 
     @property
+    @lru_cache()
     def cloud_account(self):
         return self.cloud_image.account
 
     @property
+    @lru_cache()
     def cloud_provider(self):
         return self.cloud_account.provider
 
+    @lru_cache()
     def get_driver(self):
         return self.cloud_account.get_driver()
 
