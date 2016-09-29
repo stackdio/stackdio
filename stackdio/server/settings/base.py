@@ -237,9 +237,6 @@ CACHES = {
     'default': {
         'BACKEND': 'redis_cache.RedisCache',
         'LOCATION': STACKDIO_CONFIG.redis_url,
-        'OPTIONS': {
-            'DB': 1,
-        }
     }
 }
 
@@ -376,7 +373,7 @@ CLOUD_PROVIDERS = STACKDIO_CONFIG.cloud_providers
 ##
 # Celery & RabbitMQ
 ##
-BROKER_URL = '{}/0'.format(STACKDIO_CONFIG.redis_url)
+BROKER_URL = STACKDIO_CONFIG.celery_broker_url
 CELERY_REDIRECT_STDOUTS = False
 CELERY_DEFAULT_QUEUE = 'default'
 

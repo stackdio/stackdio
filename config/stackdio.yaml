@@ -14,9 +14,13 @@ cloud_providers:
 server_url: http://localhost:8000
 
 ##
+# The url to use for the celery broker - can be redis, rabbitmq, sqs, etc
+celery_broker_url: redis://localhost:6379/0
+
+##
 # The url of the redis server
-# Used for caching and celery
-redis_url: redis://localhost:6379
+# Used for caching
+redis_url: redis://localhost:6379/1
 
 ##
 # Root directory for stackdio to store files, logs, etc.

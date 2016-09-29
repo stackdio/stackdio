@@ -5,7 +5,9 @@ cloud_providers:
 
 server_url: http://localhost:8000
 
-redis_url: redis://localhost:6379
+celery_broker_url: redis://localhost:6379/0
+
+redis_url: redis://localhost:6379/1
 
 storage_dir: storage
 

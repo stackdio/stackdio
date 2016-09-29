@@ -50,6 +50,7 @@ class StackdioConfig(dict):
         'cloud_providers': list,
         'database_url': six.string_types,
         'server_url': six.string_types,
+        'celery_broker_url': six.string_types,
         'redis_url': six.string_types,
         'storage_dir': six.string_types,
         'log_dir': six.string_types,
