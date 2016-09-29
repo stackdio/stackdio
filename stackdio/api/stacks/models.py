@@ -1383,5 +1383,9 @@ def host_post_save(sender, **kwargs):
     host = kwargs.pop('instance')
 
     # Delete from the cache
-    cache_key = 'stack-{}-hosts'.format(host.stack_id)
-    cache.delete(cache_key)
+    cache_keys = [
+        'stack-{}-hosts'.format(host.stack_id),
+        'stack-{}-host-count'.format(host.stack_id),
+        'stack-{}-volume-count'.format(host.stack_id),
+    ]
+    cache.delete_many(cache_keys)
