@@ -3,6 +3,10 @@
 cloud_providers:
   - stackdio.api.cloud.providers.aws.AWSCloudProvider
 
+server_url: http://localhost:8000
+
+redis_url: redis://localhost:6379
+
 storage_dir: storage
 
 log_dir: logs
