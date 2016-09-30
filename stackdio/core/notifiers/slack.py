@@ -15,11 +15,24 @@
 # limitations under the License.
 #
 
+import logging
+
 import six
 from django.conf import settings
-from slackclient import SlackClient
+from stackdio.core.config import StackdioConfigException
 from stackdio.core.notifications import registry
 from stackdio.core.notifiers.base import BaseNotifier
+
+logger = logging.getLogger(__name__)
+
+
+try:
+    from slackclient import SlackClient
+except ImportError as e:
+    logger.exception(e)
+    raise StackdioConfigException('Could not load the slack client.  Be sure you have '
+                                  'installed stackdio-server with the `slack` extra.  '
+                                  '(pip install stackdio-server[slack])')
 
 
 class SlackNotifier(BaseNotifier):
