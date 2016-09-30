@@ -42,7 +42,7 @@ install:
   - bower install
   - pip install -U pip
   - pip install -U wheel
-  - pip install -U -e .[testing,postgresql]
+  - pip install -U -e .[testing,mysql,postgresql]
 
 ## Customize test commands
 before_script:
