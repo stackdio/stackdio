@@ -72,6 +72,7 @@ requirements = [
 
     # Used, but still hold an upper bound on the version
     'boto~=2.32',
+    'boto3~=1.4.0',
     'django-activity-stream~=0.6.0',
     'django-extensions~=1.6.0',
     'django-filter~=0.9',
