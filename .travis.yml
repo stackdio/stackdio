@@ -11,7 +11,10 @@ cache:
 
 # Set up our environment
 env:
-  DJANGO_SETTINGS_MODULE: stackdio.server.settings.testing
+  - DJANGO_SETTINGS_MODULE=stackdio.server.settings.testing
+  - DB=default
+  - DB=postgres
+  - DB=mysql
 
 # So that we get a docker container
 sudo: false
@@ -25,8 +28,10 @@ addons:
 
 services:
   - postgresql
+  - mysql
 
 before_install:
+  - mysql -e "CREATE DATABASE IF NOT EXISTS stackdio;" -u root
   - psql -c "CREATE DATABASE stackdio;" -U postgres
 
 ## Customize dependencies
@@ -41,15 +46,12 @@ install:
 before_script:
   - pep8 stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
   - pylint stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
-  - mkdir /home/travis/.stackdio
 
 script:
-  # Run migration and tests on the default config file first
-  - python manage.py migrate
-  - py.test --cov=stackdio stackdio
+  # Place the proper config file in place based on the environment
+  - tests/place_config.sh
 
-  # Then copy the config file and try again (for postgresql)
-  - cp tests/stackdio-travis.yaml /home/travis/.stackdio/stackdio.yaml
+  # Run migration and tests
   - python manage.py migrate
   - py.test --cov=stackdio stackdio
 

@@ -5,6 +5,8 @@ cloud_providers:
 
 server_url: http://localhost:8000
 
+database_url: postgresql://travis@localhost/stackdio
+
 celery_broker_url: redis://localhost:6379/0
 
 redis_url: redis://localhost:6379/1
@@ -17,8 +19,6 @@ salt_bootstrap_script: bootstrap-salt
 salt_bootstrap_args: -K -D git v{salt_version}
 
 django_secret_key: "{{ random_secret_key }}"
-
-database_url: postgresql://travis@localhost/stackdio
 
 create_ssh_users: true
 
