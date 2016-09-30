@@ -57,6 +57,25 @@ class SlackNotifier(BaseNotifier):
         notification_text = 'Event {} triggered on {}'.format(notification.event.tag,
                                                               notification.content_object.title)
 
+        fields = []
+
+        health = getattr(notification.content_object, 'health')
+        activity = getattr(notification.content_object, 'activity')
+
+        if health is not None:
+            fields.append({
+                'title': 'Health',
+                'value': health,
+                'short': True,
+            })
+
+        if activity is not None:
+            fields.append({
+                'title': 'Activity',
+                'value': activity or '-',
+                'short': True,
+            })
+
         chat_kwargs = {
             'channel': self.get_option(notification, 'channel'),
             'as_user': self.post_as_user,
@@ -68,18 +87,7 @@ class SlackNotifier(BaseNotifier):
                     'title': six.text_type(notification.content_object.title),
                     'title_link': ui_url,
                     'text': notification_text,
-                    'fields': [
-                        {
-                            'title': 'Health',
-                            'value': notification.content_object.health,
-                            'short': True
-                        },
-                        {
-                            'title': 'Activity',
-                            'value': notification.content_object.activity,
-                            'short': True
-                        },
-                    ],
+                    'fields': fields,
                     'footer': 'sent from stackd.io',
                     # 'ts': 123456789  # TODO add the notification timestamp
                 }
