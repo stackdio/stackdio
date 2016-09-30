@@ -11,10 +11,12 @@ cache:
 
 # Set up our environment
 env:
-  - DJANGO_SETTINGS_MODULE=stackdio.server.settings.testing
-  - DB=default
-  - DB=postgres
-  - DB=mysql
+  global:
+    - DJANGO_SETTINGS_MODULE=stackdio.server.settings.testing
+  matrix:
+    - DB=default
+    - DB=postgres
+    - DB=mysql
 
 # So that we get a docker container
 sudo: false
