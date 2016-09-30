@@ -39,9 +39,11 @@ class StackdioConfigException(Exception):
 
 
 class StackdioConfig(dict):
+    DOT_DIR_CONFIG_LOCATION = os.path.expanduser('~/.stackdio/stackdio.yaml')
+
     CONFIG_LOCATIONS = (
         os.environ.get('STACKDIO_CONFIG_FILE', ''),
-        os.path.expanduser('~/.stackdio/stackdio.yaml'),
+        DOT_DIR_CONFIG_LOCATION,
         '/etc/stackdio/stackdio.yaml',
         'config/stackdio.yaml',
     )
@@ -65,13 +67,19 @@ class StackdioConfig(dict):
         'random_secret_key': get_random_string(50, SECRET_CHARS),
     }
 
-    def __init__(self):
+    def __init__(self, home_only=False):
         super(StackdioConfig, self).__init__()
         self.cfg_file = None
+        self.home_only = home_only
         self._load_stackdio_config()
 
     def _load_stackdio_config(self):
-        for cfg_file in self.CONFIG_LOCATIONS:
+        if self.home_only:
+            config_locations = [self.DOT_DIR_CONFIG_LOCATION]
+        else:
+            config_locations = self.CONFIG_LOCATIONS
+
+        for cfg_file in config_locations:
             cfg_file = os.path.join(BASE_DIR, cfg_file)
             if os.path.isfile(cfg_file):
                 self.cfg_file = cfg_file

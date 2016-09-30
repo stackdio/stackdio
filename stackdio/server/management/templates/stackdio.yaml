@@ -9,6 +9,28 @@ cloud_providers:
   - stackdio.api.cloud.providers.aws.AWSCloudProvider
 
 ##
+# The url where your stackdio server should is accessed from.
+# Used to generate links when sending notifications.
+server_url: {{ server_url }}
+
+##
+# The database url stackdio will use. The host
+# must running (for non-sqlite servers), the database
+# must already be created, and the user/pass must have
+# access to the database.
+# Example: mysql://user:pass@host:port/db_name
+database_url: {{ database_url }}
+
+##
+# The url to use for the celery broker - can be redis, rabbitmq, sqs, etc
+celery_broker_url: {{ celery_broker_url }}
+
+##
+# The url of the redis server
+# Used for caching.
+redis_url: {{ redis_url }}
+
+##
 # Root directory for stackdio to store files, logs, etc.
 # It will be created if it doesn't already exist.
 # Can be absolute or relative.
@@ -18,7 +40,7 @@ storage_dir: {{ storage_dir }}
 # Root directory for stackdio to store log files.
 # It will be created if it doesn't already exist.
 # Can be absolute or relative.
-log_dir: logs
+log_dir: {{ log_dir }}
 
 ##
 # When bootstrapping salt minions, which bootstrap script
@@ -38,16 +60,30 @@ salt_bootstrap_args: {{ salt_bootstrap_args }}
 django_secret_key: "{{ django_secret_key }}"
 
 ##
-# The DSN for the database stackdio will use. The host
-# must running (for non-sqlite servers), the database
-# must already be created, and the user/pass must have
-# access to the database.
-# Example: mysql://user:pass@host:port/db_name
-database_url: {{ database_url }}
-
-##
 # Should ssh users be created on launched hosts by default?
 create_ssh_users: {{ create_ssh_users }}
+
+##
+# Set up the available notifiers
+notifiers:
+
+  # A basic email notifier
+  email:
+    class: stackdio.core.notifiers.EmailNotifier
+    options:
+      from_email: stackd.io <noreply>
+
+  # Custom emails to be able to send to other email addrs than the ones on file
+  custom_email:
+    class: stackdio.core.notifiers.ExtraEmailNotifier
+    options:
+      from_email: stackd.io <noreply>
+
+  # A basic webook notifier
+  webhook:
+    class: stackdio.core.notifiers.WebhookNotifier
+    options:
+      timeout: 30
 
 ##
 # Optional LDAP configurations
