@@ -28,17 +28,20 @@ logger = logging.getLogger(__name__)
 
 try:
     from slackclient import SlackClient
-except ImportError as e:
-    logger.exception(e)
-    raise StackdioConfigException('Could not load the slack client.  Be sure you have '
-                                  'installed stackdio-server with the `slack` extra.  '
-                                  '(pip install stackdio-server[slack])')
+except ImportError:
+    SlackClient = None
 
 
 class SlackNotifier(BaseNotifier):
 
     def __init__(self, slack_api_token, post_as_user=True):
         super(SlackNotifier, self).__init__()
+
+        if SlackClient is None:
+            raise StackdioConfigException('Could not load the slack client.  Be sure you have '
+                                          'installed stackdio-server with the `slack` extra.  '
+                                          '(pip install stackdio-server[slack])')
+
         self.slackclient = SlackClient(slack_api_token)
         self.post_as_user = post_as_user
 
