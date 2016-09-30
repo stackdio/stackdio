@@ -130,6 +130,9 @@ setup(
         'ldap': [
             'django-auth-ldap~=1.2.7',
         ],
+        'slack': [
+            'slackclient>=1.0.0',
+        ],
         'development': testing_requirements + ['ipython>=2.0'],
         'testing': testing_requirements,
     },
