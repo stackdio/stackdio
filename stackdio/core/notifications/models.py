@@ -18,7 +18,6 @@
 from __future__ import unicode_literals
 
 import logging
-from collections import OrderedDict
 
 import six
 from django.conf import settings
@@ -27,7 +26,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel
-
 from stackdio.core.fields import JSONField
 from stackdio.core.notifications.utils import get_notifier_class, get_notifier_instance
 
