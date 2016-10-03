@@ -15,15 +15,26 @@
 # limitations under the License.
 #
 
-import logging
+from __future__ import absolute_import
 
+import json
+import logging
+import warnings
+
+import six
+from django.conf import settings
 from django.db import models
+from django.db.utils import DEFAULT_DB_ALIAS
 from rest_framework import relations
 from rest_framework.fields import CharField
 
 from stackdio.core.utils import PasswordStr
+from stackdio.core.warnings import StackdioWarning
 
 logger = logging.getLogger(__name__)
+
+
+POSTGRES_ENGINES = ('django.db.backends.postgresql', 'django.db.backends.postgresql_psycopg2')
 
 
 class DeletingFileField(models.FileField):
@@ -52,6 +63,111 @@ class DeletingFileField(models.FileField):
         elif file:
             # Otherwise, just close the file, so it doesn't tie up resources.
             file.close()
+
+
+class JSONDict(dict):
+    """
+    Hack so repr() called by dumpdata will output JSON instead of
+    Python formatted data.  This way fixtures will work!
+    """
+    def __repr__(self):
+        return json.dumps(self)
+
+
+class JSONUnicode(six.text_type):
+    """
+    As above
+    """
+    def __repr__(self):
+        return json.dumps(self)
+
+
+class JSONList(list):
+    """
+    As above
+    """
+    def __repr__(self):
+        return json.dumps(self)
+
+
+# Define our custom JSON field - this should just be used for
+# storage, you can't search on this field
+class SimpleJSONField(models.TextField):
+    """
+    Pulled from django-extensions, adapted for our needs
+    """
+
+    def __init__(self, *args, **kwargs):
+        default = kwargs.get('default', None)
+        if default is None:
+            kwargs['default'] = '{}'
+        elif isinstance(default, (list, dict)):
+            kwargs['default'] = json.dumps(default)
+        super(SimpleJSONField, self).__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        """Convert our string value to JSON after we load it from the DB"""
+        if value is None or value == '':
+            return {}
+        elif isinstance(value, six.string_types):
+            res = json.loads(value)
+            if isinstance(res, dict):
+                return JSONDict(**res)
+            elif isinstance(res, six.string_types):
+                return JSONUnicode(res)
+            elif isinstance(res, list):
+                return JSONList(res)
+            return res
+        else:
+            return value
+
+    def from_db_value(self, value, expression, connection, context):
+        # Should be the same as to_python, just need to implement it
+        return self.to_python(value)
+
+    def get_prep_value(self, value):
+        value = models.Field.get_prep_value(self, value)
+
+        if value is None and self.null:
+            return None
+        # default values come in as strings; only non-strings should be
+        # run through `dumps`
+        if not isinstance(value, six.string_types):
+            value = json.dumps(value)
+
+        return value
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(SimpleJSONField, self).deconstruct()
+        if self.default == '{}':
+            del kwargs['default']
+        return name, path, args, kwargs
+
+
+if settings.DATABASES[DEFAULT_DB_ALIAS]['ENGINE'] in POSTGRES_ENGINES:
+    # postgres is available!  use the built-in json field
+
+    from django.contrib.postgres.fields import JSONField as DjangoJSONField
+
+    class JSONField(DjangoJSONField):
+        pass
+
+else:
+    # no postgres :( for testing only, use our custom JSONField
+
+    class JSONField(SimpleJSONField):
+        _warned = False
+
+        @staticmethod
+        def __new__(cls, *args, **kwargs):
+            if not cls._warned:
+                warnings.warn(
+                    'Using stackdio.core.fields.JSONField on a non-postgres database is NOT '
+                    'recommended for production.  Please switch to postgres.',
+                    StackdioWarning,
+                )
+                cls._warned = True
+            return SimpleJSONField.__new__(cls, *args, **kwargs)
 
 
 class PasswordField(CharField):

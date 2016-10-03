@@ -70,7 +70,6 @@ JAVASCRIPT_DEBUG = False
 # See https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ['*']
 
-
 SECRET_KEY = STACKDIO_CONFIG.django_secret_key
 
 # Application definition
@@ -85,6 +84,7 @@ INSTALLED_APPS = (
     'actstream',
     'guardian',
     'stackdio.core',
+    'stackdio.core.notifications',
     'stackdio.api.users',
     'stackdio.api.cloud',
     'stackdio.api.stacks',
@@ -116,8 +116,8 @@ AUTHENTICATION_BACKENDS = (
 if LDAP_ENABLED:
     AUTHENTICATION_BACKENDS += ('django_auth_ldap.backend.LDAPBackend',)
 
-# For guardian
-ANONYMOUS_USER_ID = -1
+# For guardian - we don't need the anonymous user
+ANONYMOUS_USER_NAME = None
 
 TEMPLATES = [
     {
@@ -158,7 +158,7 @@ MANAGERS = ADMINS
 # environment variable, we're loading it from the stackdio config
 ##
 DATABASES = {
-    'default': dj_database_url.parse(STACKDIO_CONFIG.database_url)
+    'default': dj_database_url.parse(STACKDIO_CONFIG.database_url, conn_max_age=600)
 }
 
 
@@ -233,6 +233,16 @@ MESSAGE_TAGS = {
 # Caching - only do 1 minute
 CACHE_MIDDLEWARE_SECONDS = 60
 
+CACHES = {
+    'default': {
+        'BACKEND': 'redis_cache.RedisCache',
+        'LOCATION': STACKDIO_CONFIG.redis_url,
+    }
+}
+
+# Use the cache session engine
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error when DEBUG=False.
@@ -278,10 +288,20 @@ LOGGING = {
     'loggers': {
         'django.db.backends': {
             'handlers': ['null'],
-            'level': 'ERROR',
+            'level': 'WARNING',
             'propagate': True,
         },
         'django_auth_ldap': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'MARKDOWN': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'pip': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
@@ -353,7 +373,7 @@ CLOUD_PROVIDERS = STACKDIO_CONFIG.cloud_providers
 ##
 # Celery & RabbitMQ
 ##
-BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+BROKER_URL = STACKDIO_CONFIG.celery_broker_url
 CELERY_REDIRECT_STDOUTS = False
 CELERY_DEFAULT_QUEUE = 'default'
 
@@ -367,6 +387,10 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_ROUTES = {
     'formulas.import_formula': {'queue': 'short'},
     'formulas.update_formula': {'queue': 'short'},
+    'notifications.generate_notifications': {'queue': 'short'},
+    'notifications.resend_failed_notifications': {'queue': 'short'},
+    'notifications.send_notification': {'queue': 'short'},
+    'notifications.send_bulk_notifications': {'queue': 'short'},
     'stacks.cure_zombies': {'queue': 'stacks'},
     'stacks.destroy_hosts': {'queue': 'stacks'},
     'stacks.destroy_stack': {'queue': 'stacks'},
@@ -394,6 +418,11 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(minute='*/5'),  # Execute every 5 minutes
         'args': (),
     },
+    'resend-failed-notifications': {
+        'task': 'notifications.resend_failed_notifications',
+        'schedule': crontab(minute='*/10'),  # Execute every 10 minutes
+        'args': (),
+    }
 }
 
 ##
@@ -402,9 +431,13 @@ CELERYBEAT_SCHEDULE = {
 
 # Throw in the rest of our LDAP config if ldap is enabled
 if LDAP_ENABLED:
-    import ldap
-    import django_auth_ldap.config
-    from django_auth_ldap.config import LDAPSearch
+    try:
+        import ldap
+        import django_auth_ldap.config
+        from django_auth_ldap.config import LDAPSearch
+    except ImportError:
+        raise StackdioConfigException('LDAP is enabled, but django_auth_ldap is missing.  '
+                                      'Please install django_auth_ldap.')
 
     auth_ldap_search = ('group_type',)
     call_value = ('group_type',)

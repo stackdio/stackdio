@@ -17,12 +17,14 @@
 
 # pylint: disable=too-many-lines
 
+import collections
 import json
 import logging
 import os
 import shutil
 import subprocess
 import time
+import types
 from datetime import datetime
 from functools import wraps
 
@@ -30,17 +32,17 @@ import salt.client
 import salt.cloud
 import salt.config
 import salt.runner
-import six
 import yaml
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
-
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.api.formulas.tasks import update_formula
 from stackdio.core.constants import Activity, ComponentStatus
+from stackdio.core.events import trigger_event
+
 from . import utils
 from .models import Stack, StackCommand
 
@@ -547,8 +549,8 @@ def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
         host_data = query_results.get(host.hostname)
         is_absent = host_data is None
 
-        if isinstance(host_data, six.string_types):
-            raise TypeError('Expected dict, received {0}'.format(type(host_data)))
+        if not isinstance(host_data, (types.NoneType, collections.Mapping)):
+            raise TypeError('Expected a dict from salt cloud, received {0}'.format(type(host_data)))
 
         # Check for terminated host state
         if is_absent or ('state' in host_data and host_data['state'] in bad_states):
@@ -1242,6 +1244,9 @@ def finish_stack(stack, activity=Activity.IDLE):
     # Update activity
     stack.set_activity(activity)
 
+    # Trigger our event
+    trigger_event('stack-finished', stack)
+
 
 @stack_task(name='stacks.register_volume_delete')
 def register_volume_delete(stack, host_ids=None):
@@ -1468,13 +1473,23 @@ def update_host_info():
     salt_cloud = salt.cloud.CloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
     query_results = salt_cloud.full_query()
 
+    if not isinstance(query_results, collections.Mapping):
+        raise TypeError('Expected a dict from salt-cloud, received {}'.format(type(query_results)))
+
+    if not query_results:
+        logger.warning('salt-cloud didn\'t return anything, this usually means '
+                       'there was an error querying the provider API and we '
+                       'shouldn\'t base any statuses off this response.')
+        return
+
     logger.info('Received host info from salt cloud.')
 
     # Iterate through all the stacks & hosts and check their state / activity
     for stack in Stack.objects.all():
 
-        host_activities = set()
-        dead_hosts = []
+        newly_dead_hosts = []
+
+        new_host_activities = []
 
         for host in stack.hosts.all():
             account = host.cloud_account
@@ -1483,18 +1498,14 @@ def update_host_info():
             host_info = account_info.get(host.hostname)
 
             old_state = host.state
+            old_activity = host.activity
 
             # Check for terminated host state
             if not host_info:
-                host.state = Activity.DEAD
-
                 # If we're queued or launching, we may have just not been launched yet,
-                # so we don't want to be dead in that case
-                # Also if we're terminating or terminated, we don't want to be set to dead
-                if host.activity not in (Activity.QUEUED, Activity.LAUNCHING,
-                                         Activity.TERMINATED, Activity.TERMINATING):
-                    host.activity = Activity.DEAD
-                    dead_hosts.append(host.hostname)
+                # so we don't want to be terminated in that case
+                if host.activity not in (Activity.QUEUED, Activity.LAUNCHING):
+                    host.state = 'terminated'
             else:
                 host.state = host_info['state']
 
@@ -1506,23 +1517,38 @@ def update_host_info():
                                                                             old_state,
                                                                             host.state))
 
-            # Only change the host activity
+            # Only change the host activity if the state is terminated and we are
+            # not currently terminated or terminating
             if host.state in ('terminated',):
                 if host.activity not in (Activity.TERMINATING, Activity.TERMINATED):
                     host.activity = Activity.DEAD
-                    dead_hosts.append(host.hostname)
 
-            host_activities.add(host.activity)
+            # Change the activity back to idle if we're no longer dead
+            if host.activity == Activity.DEAD and host.state not in ('terminated',):
+                host.activity = Activity.IDLE
+
+            new_host_activities.append(host.activity)
+
+            if old_activity != Activity.DEAD and host.activity == Activity.DEAD:
+                newly_dead_hosts.append(host.hostname)
 
             # save the host
             host.save()
 
         # Log some history if we've marked hosts as DEAD
-        if len(dead_hosts) > 0:
+        if len(newly_dead_hosts) > 0:
             stack.log_history('The following hosts have now been marked '
-                              '\'{}\': {}'.format(Activity.DEAD, ', '.join(dead_hosts)))
+                              '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
+
+        all_dead = all([a == Activity.DEAD for a in new_host_activities])
 
         # If all the hosts are dead, set the stack to dead also
-        if len(host_activities) == 1 and Activity.DEAD in host_activities:
+        if all_dead:
             stack.activity = Activity.DEAD
-            stack.save()
+
+        # If the stack is currently marked dead and all the hosts are NOT dead, then set the
+        # activity to idle.
+        if stack.activity == Activity.DEAD and not all_dead:
+            stack.activity = Activity.IDLE
+
+        stack.save()

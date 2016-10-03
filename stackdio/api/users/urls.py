@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 from django.conf.urls import include, url
 
@@ -87,9 +88,25 @@ urlpatterns = (
         api.GroupActionAPIView.as_view(),
         name='group-action'),
 
+    url(r'^groups/(?P<parent_name>[\w.@+-]+)/channels/$',
+        api.GroupChannelListAPIView.as_view(),
+        name='group-channel-list'),
+
+    url(r'^groups/(?P<parent_name>[\w.@+-]+)/channels/(?P<name>[\w.@+-]+)/$',
+        api.GroupChannelDetailAPIView.as_view(),
+        name='group-channel-detail'),
+
     url(r'^user/$',
         api.CurrentUserDetailAPIView.as_view(),
         name='currentuser-detail'),
+
+    url(r'^user/channels/$',
+        api.CurrentUserChannelListAPIView.as_view(),
+        name='currentuser-channel-list'),
+
+    url(r'^user/channels/(?P<name>[\w.@+-]+)/$',
+        api.CurrentUserChannelDetailAPIView.as_view(),
+        name='currentuser-channel-detail'),
 
     url(r'^user/password/$',
         api.ChangePasswordAPIView.as_view(),

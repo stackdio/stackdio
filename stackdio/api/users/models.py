@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_user_queryset():
-    return get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
+    return get_user_model().objects.all()
 
 
 class UserSettings(models.Model):
@@ -54,8 +54,12 @@ def user_post_save(sender, **kwargs):
     Catch the post_save signal for all User objects and create a
     UserSettings objects if needed
     """
+    if kwargs.get('raw'):
+        # Don't do this on loaddata
+        return
+
     user = kwargs.pop('instance')
     created = kwargs.pop('created', False)
 
-    if created and user.id != settings.ANONYMOUS_USER_ID:
+    if created:
         UserSettings.objects.create(user=user)

@@ -18,11 +18,12 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.models import Group
-from django_auth_ldap.backend import LDAPBackend
 from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 
+from stackdio.core.config import StackdioConfigException
+from stackdio.core.notifications.models import NotificationChannel
 from stackdio.core.permissions import StackdioModelPermissions
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
@@ -32,9 +33,14 @@ from stackdio.core.viewsets import (
 )
 from . import filters, mixins, permissions, serializers
 
+try:
+    from django_auth_ldap.backend import LDAPBackend
+except ImportError:
+    LDAPBackend = None
+
 
 class UserListAPIView(generics.ListCreateAPIView):
-    queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID).order_by('username')
+    queryset = get_user_model().objects.order_by('username')
     serializer_class = serializers.PublicUserSerializer
     permission_classes = (StackdioModelPermissions,)
     lookup_field = 'username'
@@ -42,13 +48,16 @@ class UserListAPIView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         if settings.LDAP_ENABLED and 'username' in self.request.query_params:
+            if LDAPBackend is None:
+                raise StackdioConfigException('LDAP is enabled, but django_auth_ldap isn\'t '
+                                              'installed.  Please install django_auth_ldap')
             # Try populating the user first
             LDAPBackend().populate_user(self.request.query_params['username'])
         return super(UserListAPIView, self).get_queryset()
 
 
 class UserDetailAPIView(generics.RetrieveAPIView):
-    queryset = get_user_model().objects.exclude(id=settings.ANONYMOUS_USER_ID)
+    queryset = get_user_model().objects.all()
     serializer_class = serializers.PublicUserSerializer
     lookup_field = 'username'
 
@@ -115,6 +124,37 @@ class GroupActionAPIView(mixins.GroupRelatedMixin, generics.GenericAPIView):
         return Response(serializer.data)
 
 
+class GroupChannelListAPIView(mixins.GroupRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = serializers.GroupNotificationChannelSerializer
+
+    def get_queryset(self):
+        return NotificationChannel.objects.filter(auth_object=self.get_group())
+
+    def get_serializer_context(self):
+        context = super(GroupChannelListAPIView, self).get_serializer_context()
+        context['auth_object'] = self.get_group()
+        return context
+
+    def perform_create(self, serializer):
+        serializer.save(auth_object=self.get_group())
+
+
+class GroupChannelDetailAPIView(mixins.GroupRelatedMixin, generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = serializers.GroupNotificationChannelSerializer
+    lookup_field = 'name'
+
+    def get_queryset(self):
+        return NotificationChannel.objects.filter(auth_object=self.get_group())
+
+    def get_serializer_context(self):
+        context = super(GroupChannelDetailAPIView, self).get_serializer_context()
+        context['auth_object'] = self.get_group()
+        return context
+
+    def perform_update(self, serializer):
+        serializer.save(auth_object=self.get_group())
+
+
 class GroupModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):
     model_permissions = ('create', 'admin')
     parent_lookup_field = 'name'
@@ -143,6 +183,37 @@ class CurrentUserDetailAPIView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class CurrentUserChannelListAPIView(generics.ListCreateAPIView):
+    serializer_class = serializers.UserNotificationChannelSerializer
+
+    def get_queryset(self):
+        return NotificationChannel.objects.filter(auth_object=self.request.user)
+
+    def get_serializer_context(self):
+        context = super(CurrentUserChannelListAPIView, self).get_serializer_context()
+        context['auth_object'] = self.request.user
+        return context
+
+    def perform_create(self, serializer):
+        serializer.save(auth_object=self.request.user)
+
+
+class CurrentUserChannelDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = serializers.UserNotificationChannelSerializer
+    lookup_field = 'name'
+
+    def get_queryset(self):
+        return NotificationChannel.objects.filter(auth_object=self.request.user)
+
+    def get_serializer_context(self):
+        context = super(CurrentUserChannelDetailAPIView, self).get_serializer_context()
+        context['auth_object'] = self.request.user
+        return context
+
+    def perform_update(self, serializer):
+        serializer.save(auth_object=self.request.user)
 
 
 class ChangePasswordAPIView(generics.GenericAPIView):

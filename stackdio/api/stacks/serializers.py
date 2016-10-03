@@ -342,9 +342,8 @@ class StackCreateUserDefault(object):
 
 class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     # Read only fields
-    host_count = serializers.ReadOnlyField(source='hosts.count')
-    volume_count = serializers.ReadOnlyField(source='volumes.count')
-    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
+    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True,
+                                                 source='get_cached_label_list')
 
     # Identity links
     properties = serializers.HyperlinkedIdentityField(
@@ -375,6 +374,12 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         lookup_url_kwarg='parent_pk')
     formula_versions = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-formula-versions',
+        lookup_url_kwarg='parent_pk')
+    user_channels = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-user-channel-list',
+        lookup_url_kwarg='parent_pk')
+    group_channels = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-group-channel-list',
         lookup_url_kwarg='parent_pk')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-object-user-permissions-list',
@@ -409,6 +414,8 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'security_groups',
             'formula_versions',
             'logs',
+            'user_channels',
+            'group_channels',
             'user_permissions',
             'group_permissions',
         )

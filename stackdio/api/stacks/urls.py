@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 from django.conf.urls import include, url
 
@@ -77,6 +78,14 @@ urlpatterns = (
     url(r'^(?P<parent_pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
         api.StackLabelDetailAPIView.as_view(),
         name='stack-label-detail'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/user_channels/$',
+        api.StackUserChannelsListAPIView.as_view(),
+        name='stack-user-channel-list'),
+
+    url(r'^(?P<parent_pk>[0-9]+)/group_channels/$',
+        api.StackGroupChannelsListAPIView.as_view(),
+        name='stack-group-channel-list'),
 
     url(r'^(?P<parent_pk>[0-9]+)/history/$',
         api.StackHistoryAPIView.as_view(),

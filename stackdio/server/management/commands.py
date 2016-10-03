@@ -23,6 +23,7 @@ import json
 import os
 import pwd
 import shutil
+import socket
 import sys
 import textwrap
 
@@ -30,14 +31,13 @@ import django
 import dj_database_url
 import six
 import yaml
-from django.core.exceptions import ImproperlyConfigured
 from django.db.utils import load_backend
 from django.utils.crypto import get_random_string
 from jinja2 import Environment, PackageLoader
 from pkg_resources import ResourceManager, get_provider
 from salt.utils import get_colors
 from salt.version import __version__ as salt_version
-from stackdio.core.config import StackdioConfig
+from stackdio.core.config import StackdioConfig, StackdioConfigException
 
 raw_input = six.moves.input
 
@@ -266,6 +266,36 @@ class InitCommand(WizardCommand):
             'long_desc': 'This user will own services, files, etc related to salt.',
             'default': getpass.getuser(),
         }, {
+            'attr': 'server_url',
+            'short_desc': 'What is the url that should be used to access the stackd.io webserver?',
+            'long_desc': 'This is used to build urls in notifications that get sent.',
+            'default': 'http://{}'.format(socket.getfqdn()),
+        }, {
+            'attr': 'database_url',
+            'short_desc': 'What is the URL for your database?',
+            'long_desc': ('stackd.io needs a relational database to store data in.  '
+                          'The server must be running, the database must already exist, '
+                          'and the user must have access to it.  See '
+                          'https://github.com/kennethreitz/dj-database-url for more information '
+                          'about how to construct this url.'),
+            'default': 'postgres://stackdio:password@localhost:5432/stackdio',
+        }, {
+            'attr': 'celery_broker_url',
+            'short_desc': 'What is the url of the celery broker?',
+            'long_desc': ('Celery needs a broker to get task information from stackd.io.  '
+                          'This can be redis, rabbitmq, or many other options.  '
+                          'See http://docs.celeryproject.org/en/latest/getting-started/brokers/ '
+                          'for more information.  If you are using redis for both celery and '
+                          'caching, it is recommended to use different DB numbers for each.'),
+            'default': 'redis://localhost:6379/0',
+        }, {
+            'attr': 'redis_url',
+            'short_desc': 'What is the url of your redis server?',
+            'long_desc': ('Redis is used as the cache backend for stackd.io.  '
+                          'If you are using redis for both celery and caching, '
+                          'it is recommended to use different DB numbers for each.'),
+            'default': 'redis://localhost:6379/1',
+        }, {
             'attr': 'storage_dir',
             'short_desc': 'Where should stackdio and salt store their data?',
             'long_desc': ('Root directory for stackdio to store its files, '
@@ -295,15 +325,6 @@ class InitCommand(WizardCommand):
                           'it will be replaced by the current version of the salt master.'),
             'default': 'stable {{salt_version}}'
         }, {
-            'attr': 'database_url',
-            'short_desc': ('What database DSN should stackdio use to connect to '
-                           'the DB?'),
-            'long_desc': ('The database DSN the stackdio Django application will '
-                          'use to acccess the database server. The server must be '
-                          'running, the database must already exist, and the user '
-                          'must have access to it.'),
-            'default': 'mysql://stackdio:password@localhost:3306/stackdio',
-        }, {
             'attr': 'create_ssh_users',
             'short_desc': 'Should stackd.io create ssh user accounts on launched stacks?',
             'long_desc': ('When machines are launched and provisioned with core '
@@ -320,8 +341,8 @@ class InitCommand(WizardCommand):
 
     def pre_run(self):
         try:
-            self.answers = self.stackdio_config()
-        except ImproperlyConfigured:
+            self.answers = self.stackdio_config(self.CONFIG_FILE)
+        except StackdioConfigException:
             self.answers = {}
 
         # Let the user know we've changed the defaults by reusing the
@@ -383,10 +404,15 @@ class InitCommand(WizardCommand):
                      width=1024,
                      **self.INFO_INDENT)
 
+        salt_config = self.config.copy()
+
+        # Put the user in the context
+        salt_config['user'] = self.answers['user']
+
         # Render salt-master and salt-cloud configuration files
         self.render_template('salt/master',
                              self.config.salt_master_config,
-                             context=self.config)
+                             context=salt_config)
         self.out('Salt master configuration written to '
                  '{0}'.format(self.config.salt_master_config),
                  Colors.INFO,
@@ -395,7 +421,7 @@ class InitCommand(WizardCommand):
 
         self.render_template('salt/cloud',
                              self.config.salt_cloud_config,
-                             context=self.config)
+                             context=salt_config)
         self.out('Salt cloud configuration written to '
                  '{0}'.format(self.config.salt_cloud_config),
                  Colors.INFO,
@@ -466,12 +492,21 @@ class InitCommand(WizardCommand):
         # Ensure django is setup
         django.setup()
 
-        db = dj_database_url.parse(url)
-        db['OPTIONS'] = {'connect_timeout': 3}
+        try:
+            db = dj_database_url.parse(url)
+        except KeyError:
+            return False, 'Failed to parse database URL.\n'
+
+        options = {}
+
+        if 'sqlite' not in db['ENGINE']:
+            options['connect_timeout'] = 3
+
+        db['OPTIONS'] = options
 
         # These are django defaults - the cursor() call craps out if these are missing.
         db['AUTOCOMMIT'] = True
-        db['TIME_ZONE'] = 'UTC'
+        db['TIME_ZONE'] = None
 
         try:
             engine = load_backend(db['ENGINE']).DatabaseWrapper(db)

@@ -1,0 +1,6 @@
+
+The {{ notification.event }} event has been triggered on {{ notification.content_object }}.
+
+Check the url below for more information:
+
+{{ ui_url }}

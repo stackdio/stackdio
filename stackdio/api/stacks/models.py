@@ -22,16 +22,20 @@ import logging
 import os
 import re
 import socket
+from functools import wraps
 
 import salt.cloud
 import six
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.db import models, transaction
+from django.dispatch import receiver
+from django.utils.lru_cache import lru_cache
 from django.utils.timezone import now
 from django_extensions.db.models import (
     TimeStampedModel,
@@ -41,13 +45,13 @@ from guardian.shortcuts import get_users_with_perms
 from model_utils import Choices
 from model_utils.models import StatusModel
 from rest_framework.exceptions import APIException
-
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import GroupExistsException
 from stackdio.api.volumes.models import Volume
 from stackdio.core.constants import Health, ComponentStatus, Activity
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
+from stackdio.core.notifications.decorators import add_subscribed_channels
 from stackdio.core.utils import recursive_update
 
 logger = logging.getLogger(__name__)
@@ -60,6 +64,32 @@ PROTOCOL_CHOICES = [
 ]
 
 HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
+
+
+def django_cache(cache_key, timeout=None):
+    """
+    decorator to cache the result of a function in the django cache
+    """
+
+    def wrapper(func):
+
+        @wraps(func)
+        def wrapped(self):
+            ctype = ContentType.objects.get_for_model(self)
+
+            final_cache_key = cache_key.format(ctype=ctype.pk, id=self.id)
+
+            cached_item = cache.get(final_cache_key)
+
+            if cached_item is None:
+                cached_item = func(self)
+                cache.set(final_cache_key, cached_item, timeout)
+
+            return cached_item
+
+        return wrapped
+
+    return wrapper
 
 
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
@@ -137,6 +167,8 @@ def get_orchestrate_file_path(instance, filename):
     return '{0}-{1}/formulas/__stackdio__/{2}'.format(instance.pk, instance.slug, filename)
 
 
+@add_subscribed_channels
+@six.python_2_unicode_compatible
 class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     """
     The basic model for a stack
@@ -237,8 +269,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     # Use our custom manager object
     objects = StackQuerySet.as_manager()
 
-    def __unicode__(self):
-        return u'{0} (id={1})'.format(self.title, self.id)
+    def __str__(self):
+        return six.text_type('Stack {0} - {1}'.format(self.title, self.health))
 
     def log_history(self, message, activity=None):
         """
@@ -269,6 +301,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def volumes(self):
         return Volume.objects.filter(host__in=self.hosts.all())
 
+    @django_cache('{ctype}-{id}-label-list')
+    def get_cached_label_list(self):
+        return self.labels.all()
+
     def get_driver_hosts_map(self, host_ids=None):
         """
         Stacks are comprised of multiple hosts. Each host may be
@@ -294,6 +330,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             result[account.get_driver()] = host_queryset.filter(id__in=[h.id for h in hosts])
 
         return result
+
+    @django_cache('stack-{id}-hosts')
+    def get_cached_hosts(self):
+        return self.hosts.all()
+
+    @django_cache('stack-{id}-host-count')
+    def host_count(self):
+        return self.hosts.count()
+
+    @django_cache('stack-{id}-volume-count')
+    def volume_count(self):
+        return self.volumes.count()
 
     def get_hosts(self, host_ids=None):
         """
@@ -346,7 +394,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         healths = []
         activities = set()
 
-        for host in self.hosts.all():
+        for host in self.get_cached_hosts():
             healths.append(host.health)
             activities.add(host.activity)
 
@@ -979,6 +1027,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return list(roles)
 
 
+@six.python_2_unicode_compatible
 class StackHistory(TimeStampedModel):
     class Meta:
         verbose_name_plural = 'stack history'
@@ -990,7 +1039,11 @@ class StackHistory(TimeStampedModel):
 
     message = models.CharField('Message', max_length=256)
 
+    def __str__(self):
+        return six.text_type('{} on {}'.format(self.message, self.stack))
 
+
+@six.python_2_unicode_compatible
 class StackCommand(TimeStampedModel, StatusModel):
     WAITING = 'waiting'
     RUNNING = 'running'
@@ -1019,6 +1072,9 @@ class StackCommand(TimeStampedModel, StatusModel):
 
     # The error output from the action
     std_err_storage = models.TextField()
+
+    def __str__(self):
+        return six.text_type('{} on {}'.format(self.command, self.host_target))
 
     @property
     def std_out(self):
@@ -1050,6 +1106,7 @@ class StackCommand(TimeStampedModel, StatusModel):
             return ''
 
 
+@six.python_2_unicode_compatible
 class Host(TimeStampedModel):
     class Meta:
         ordering = ['blueprint_host_definition', '-index']
@@ -1112,8 +1169,8 @@ class Host(TimeStampedModel):
                                     decimal_places=2,
                                     null=True)
 
-    def __unicode__(self):
-        return self.hostname
+    def __str__(self):
+        return six.text_type(self.hostname)
 
     def set_activity(self, activity):
         self.activity = activity
@@ -1125,7 +1182,7 @@ class Host(TimeStampedModel):
         Calculates the health of this host from its component healths
         """
         # Get all the healths of the components
-        healths = [m.health for m in self.get_current_component_metadatas()]
+        healths = self.get_current_component_healths().values()
 
         # Add the health from the driver
         healths.append(self.get_driver().get_health_from_state(self.state))
@@ -1133,20 +1190,44 @@ class Host(TimeStampedModel):
         # Aggregate them together
         return Health.aggregate(healths)
 
-    def get_current_component_metadatas(self):
+    def get_current_component_healths(self):
         """
-        Get a list of only the newest version of each component metadata
+        Get a map of component -> current health
         """
-        yielded = set()
 
-        ret = []
+        # Build all the cache keys first
+        cache_key_map = {}
+        for component in self.formula_components:
+            cache_key = 'host-{}-component-health-for-{}'.format(self.id, component.sls_path)
+            cache_key_map[cache_key] = component
 
-        for metadata in self.component_metadatas.order_by('-modified'):
-            if metadata.sls_path not in yielded:
-                yielded.add(metadata.sls_path)
-                ret.append(metadata)
+        # Then grab them all from the cache at once
+        cached_healths = cache.get_many(cache_key_map.keys())
 
-        return ret
+        # Keep track of healths we need to put back in the cache
+        healths_to_cache = {}
+
+        # Keep track of the healths we need to return
+        healths = {}
+
+        for cache_key, component in cache_key_map.items():
+            cached_health = cached_healths.get(cache_key)
+
+            if cached_health is None:
+                logger.debug('{} is not cached, getting health'.format(cache_key))
+                cached_health = self.get_metadata_for_component(component).health
+
+                # Add it to the healths we need to cache
+                healths_to_cache[cache_key] = cached_health
+
+            # Add it to the health map
+            healths[component] = cached_health
+
+        # Cache the healths forever - we'll invalidate the cache when the health is updated
+        if healths_to_cache:
+            cache.set_many(healths_to_cache, None)
+
+        return healths
 
     def get_metadata_for_component(self, component):
         """
@@ -1170,10 +1251,12 @@ class Host(TimeStampedModel):
         return metadata[self.hostname]
 
     @property
+    @lru_cache()
     def formula_components(self):
-        return self.blueprint_host_definition.formula_components
+        return self.blueprint_host_definition.formula_components.all()
 
     @property
+    @lru_cache()
     def instance_size(self):
         return self.blueprint_host_definition.size
 
@@ -1186,17 +1269,21 @@ class Host(TimeStampedModel):
         return self.blueprint_host_definition.subnet_id
 
     @property
+    @lru_cache()
     def cloud_image(self):
         return self.blueprint_host_definition.cloud_image
 
     @property
+    @lru_cache()
     def cloud_account(self):
         return self.cloud_image.account
 
     @property
+    @lru_cache()
     def cloud_provider(self):
         return self.cloud_account.provider
 
+    @lru_cache()
     def get_driver(self):
         return self.cloud_account.get_driver()
 
@@ -1212,6 +1299,7 @@ class ComponentMetadataQuerySet(models.QuerySet):
         return super(ComponentMetadataQuerySet, self).create(**kwargs)
 
 
+@six.python_2_unicode_compatible
 class ComponentMetadata(TimeStampedModel):
 
     HEALTH_MAP = {
@@ -1243,7 +1331,16 @@ class ComponentMetadata(TimeStampedModel):
 
     objects = ComponentMetadataQuerySet.as_manager()
 
+    def __str__(self):
+        return six.text_type('Component {} for host {} - {} ({})'.format(
+            self.sls_path,
+            self.host.hostname,
+            self.status,
+            self.health,
+        ))
+
     @property
+    @django_cache('component-metadata-{id}-sls-path')
     def sls_path(self):
         return self.formula_component.sls_path
 
@@ -1260,3 +1357,35 @@ class ComponentMetadata(TimeStampedModel):
             self.health = new_health
 
         self.save()
+
+
+@receiver(models.signals.post_save, sender=ComponentMetadata)
+def metadata_post_save(sender, **kwargs):
+    """
+    Catch the post_save signal for all ComponentMetadata
+    objects and add the health to the cache
+    """
+    metadata = kwargs.pop('instance')
+
+    host_id = metadata.host_id
+    sls_path = metadata.sls_path
+
+    logger.debug('Pre-caching health for component: {}'.format(metadata))
+
+    # Go ahead and add this health to the cache - if it is being created,
+    # it is definitely the most recent (which is always what we want)
+    cache_key = 'host-{}-component-health-for-{}'.format(host_id, sls_path)
+    cache.set(cache_key, metadata.health, None)
+
+
+@receiver([models.signals.post_save, models.signals.post_delete], sender=Host)
+def host_post_save(sender, **kwargs):
+    host = kwargs.pop('instance')
+
+    # Delete from the cache
+    cache_keys = [
+        'stack-{}-hosts'.format(host.stack_id),
+        'stack-{}-host-count'.format(host.stack_id),
+        'stack-{}-volume-count'.format(host.stack_id),
+    ]
+    cache.delete_many(cache_keys)

@@ -90,12 +90,14 @@ def recursive_update(d, u):
     :return: the merged dict object
     :rtype: dict
     """
-    for k, v in u.items():
-        if isinstance(v, collections.Mapping):
-            r = recursive_update(d.get(k, {}), v)
-            d[k] = r
+    for key, new_val in u.items():
+        old_val = d.get(key, {})
+        if isinstance(new_val, collections.Mapping) and isinstance(old_val, collections.Mapping):
+            # Only make the recursive call if both the old and new values are mappings
+            d[key] = recursive_update(old_val, new_val)
         else:
-            d[k] = u[k]
+            # Otherwise just directly assign the new value
+            d[key] = new_val
     return d
 
 

@@ -9,6 +9,28 @@ cloud_providers:
   - stackdio.api.cloud.providers.aws.AWSCloudProvider
 
 ##
+# The url where your stackdio server should is accessed from.
+# Used to generate links when sending notifications.
+server_url: http://localhost:8000
+
+##
+# The database url stackdio will use. The host
+# must running (for non-sqlite servers), the database
+# must already be created, and the user/pass must have
+# access to the database.
+# Example: mysql://user:pass@host:port/db_name
+database_url: sqlite:///storage/stackdio.db
+
+##
+# The url to use for the celery broker - can be redis, rabbitmq, sqs, etc
+celery_broker_url: redis://localhost:6379/0
+
+##
+# The url of the redis server
+# Used for caching
+redis_url: redis://localhost:6379/1
+
+##
 # Root directory for stackdio to store files, logs, etc.
 # It will be created if it doesn't already exist.
 # Can be absolute or relative.
@@ -38,16 +60,30 @@ salt_bootstrap_args: -K -D git v{salt_version}
 django_secret_key: "{{ random_secret_key }}"
 
 ##
-# The DSN for the database stackdio will use. The host
-# must running (for non-sqlite servers), the database
-# must already be created, and the user/pass must have
-# access to the database.
-# Example: mysql://user:pass@host:port/db_name
-database_url: sqlite:///storage/stackdio.db
-
-##
 # Should ssh users be created on launched hosts by default?
 create_ssh_users: true
+
+##
+# Set up the available notifiers
+notifiers:
+
+  # A basic email notifier
+  email:
+    class: stackdio.core.notifiers.EmailNotifier
+    options:
+      from_email: stackd.io <noreply>
+
+  # Custom emails to be able to send to other email addrs than the ones on file
+  custom_email:
+    class: stackdio.core.notifiers.ExtraEmailNotifier
+    options:
+      from_email: stackd.io <noreply>
+
+  # A basic webook notifier
+  webhook:
+    class: stackdio.core.notifiers.WebhookNotifier
+    options:
+      timeout: 30
 
 ##
 # Optional LDAP configurations

@@ -24,6 +24,8 @@ from os.path import join, isfile
 
 import envoy
 from actstream import action
+from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
 from guardian.shortcuts import assign_perm
 from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
@@ -32,7 +34,15 @@ from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
 from six import StringIO
 
+from stackdio.api.cloud.filters import SecurityGroupFilter
+from stackdio.api.formulas.models import FormulaVersion
+from stackdio.api.formulas.serializers import FormulaVersionSerializer
+from stackdio.api.volumes.serializers import VolumeSerializer
 from stackdio.core.constants import Activity
+from stackdio.core.notifications.serializers import (
+    UserSubscriberNotificationChannelSerializer,
+    GroupSubscriberNotificationChannelSerializer,
+)
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
 from stackdio.core.viewsets import (
@@ -41,10 +51,6 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from stackdio.api.cloud.filters import SecurityGroupFilter
-from stackdio.api.formulas.models import FormulaVersion
-from stackdio.api.formulas.serializers import FormulaVersionSerializer
-from stackdio.api.volumes.serializers import VolumeSerializer
 from . import filters, mixins, models, serializers, utils, workflows
 
 logger = logging.getLogger(__name__)
@@ -245,6 +251,35 @@ class StackLabelDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateD
         context = super(StackLabelDetailAPIView, self).get_serializer_context()
         context['content_object'] = self.get_stack()
         return context
+
+
+class StackUserChannelsListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = UserSubscriberNotificationChannelSerializer
+
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.subscribed_channels.filter(auth_object=self.request.user)
+
+    def get_serializer_context(self):
+        context = super(StackUserChannelsListAPIView, self).get_serializer_context()
+        context['auth_object'] = self.request.user
+        return context
+
+    def perform_create(self, serializer):
+        serializer.save(auth_object=self.request.user, subscribed_object=self.get_stack())
+
+
+class StackGroupChannelsListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
+    serializer_class = GroupSubscriberNotificationChannelSerializer
+
+    def get_queryset(self):
+        stack = self.get_stack()
+        group_ctype = ContentType.objects.get_for_model(Group)
+        # We want all the subscribed channels that are associated with groups
+        return stack.subscribed_channels.filter(auth_object_content_type=group_ctype)
+
+    def perform_create(self, serializer):
+        serializer.save(subscribed_object=self.get_stack())
 
 
 class StackHostListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):

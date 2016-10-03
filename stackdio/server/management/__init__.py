@@ -26,8 +26,9 @@
 import argparse
 import sys
 
+from stackdio.server.management import commands
 from stackdio.server.version import __version__
-from . import commands
+
 
 if sys.stdout.isatty():
     import readline  # pylint: disable=wrong-import-order

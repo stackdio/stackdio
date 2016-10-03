@@ -23,7 +23,10 @@ import string
 from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
-
+from stackdio.api.cloud.models import CloudImage, CloudInstanceSize, CloudZone, Snapshot
+from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
+from stackdio.api.formulas.validators import validate_formula_components
+from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
@@ -32,9 +35,7 @@ from stackdio.core.serializers import (
 )
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
-from stackdio.api.cloud.models import CloudZone, Snapshot
-from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
-from stackdio.api.formulas.validators import validate_formula_components
+
 from . import models, validators
 
 logger = logging.getLogger(__name__)
@@ -113,15 +114,18 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
         )
 
 
-class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer):
-    formula_components = FormulaComponentSerializer(many=True, read_only=True)
-    access_rules = BlueprintAccessRuleSerializer(many=True, required=False, read_only=True)
-    volumes = BlueprintVolumeSerializer(many=True, required=False, read_only=True)
+class BlueprintHostDefinitionSerializer(CreateOnlyFieldsMixin,
+                                        StackdioParentHyperlinkedModelSerializer):
+    formula_components = FormulaComponentSerializer(many=True)
+    access_rules = BlueprintAccessRuleSerializer(many=True, required=False)
+    volumes = BlueprintVolumeSerializer(many=True, required=False)
 
-    size = serializers.SlugRelatedField(slug_field='instance_id', read_only=True)
+    size = serializers.SlugRelatedField(slug_field='instance_id',
+                                        queryset=CloudInstanceSize.objects.all())
     zone = serializers.SlugRelatedField(slug_field='title', required=False, allow_null=True,
                                         queryset=CloudZone.objects.all())
-    cloud_image = serializers.SlugRelatedField(slug_field='slug', read_only=True)
+    cloud_image = serializers.SlugRelatedField(slug_field='slug',
+                                               queryset=CloudImage.objects.all())
 
     class Meta:
         model = models.BlueprintHostDefinition
@@ -138,14 +142,18 @@ class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer
             'size',
             'zone',
             'subnet_id',
+            'spot_price',
             'formula_components',
             'access_rules',
             'volumes',
-            'spot_price',
         )
 
-        read_only_fields = (
-            'count',
+        create_only_fields = (
+            'cloud_image',
+            'size',
+            'formula_components',
+            'access_rules',
+            'volumes',
         )
 
         extra_kwargs = {
@@ -245,7 +253,7 @@ class BlueprintHostDefinitionSerializer(StackdioParentHyperlinkedModelSerializer
 
 
 class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
-    stack_count = serializers.ReadOnlyField(source='stacks.count')
+    stack_count = serializers.ReadOnlyField(source='stacks.count', read_only=True)
     label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
 
     properties = serializers.HyperlinkedIdentityField(

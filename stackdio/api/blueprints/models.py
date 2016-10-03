@@ -28,6 +28,7 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
+from stackdio.core.notifications.decorators import add_subscribed_channels
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -74,6 +75,7 @@ _blueprint_object_permissions = (
 )
 
 
+@add_subscribed_channels
 class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
     Blueprints are a template of reusable configuration used to launch

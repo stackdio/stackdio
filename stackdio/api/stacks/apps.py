@@ -23,7 +23,18 @@ class StackdioStacksAppConfig(AppConfig):
     label = 'stacks'
 
     def ready(self):
+        # Do the actstram registration
         from actstream import registry
         registry.register(self.get_model('Stack'))
         registry.register(self.get_model('Host'))
         registry.register(self.get_model('StackCommand'))
+
+        # Do the notifications registration
+        from stackdio.core.notifications import registry as notifications_registry
+        from .serializers import StackSerializer, StackCommandSerializer
+        notifications_registry.register(self.get_model('Stack'),
+                                        StackSerializer,
+                                        'ui:stack-detail')
+        notifications_registry.register(self.get_model('StackCommand'),
+                                        StackCommandSerializer,
+                                        'ui:stack-command-detail')

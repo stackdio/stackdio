@@ -3,6 +3,12 @@
 cloud_providers:
   - stackdio.api.cloud.providers.aws.AWSCloudProvider
 
+server_url: http://localhost:8000
+
+celery_broker_url: redis://localhost:6379/0
+
+redis_url: redis://localhost:6379/1
+
 storage_dir: storage
 
 log_dir: logs
@@ -15,3 +21,11 @@ django_secret_key: "{{ random_secret_key }}"
 database_url: mysql://ubuntu@localhost/circle_test
 
 create_ssh_users: true
+
+notifiers:
+
+  # A basic webook notifier
+  webhook:
+    class: stackdio.core.notifiers.WebhookNotifier
+    options:
+      timeout: 30

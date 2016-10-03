@@ -114,7 +114,8 @@ class StackdioObjectPermissions(permissions.DjangoObjectPermissions):
     }
 
     def has_permission(self, request, view):
-        return True
+        # We still need to make sure we have an authenticated user!!
+        return request.user and request.user.is_authenticated()
 
 
 @log_permissions
