@@ -52,11 +52,15 @@ class NotificationHandlerSerializer(serializers.HyperlinkedModelSerializer):
 
         fields = (
             'notifier',
+            'verified',
+            'disabled',
             'options',
         )
 
         extra_kwargs = {
-            'notifier': {'validators': [validate_notifier]}
+            'notifier': {'validators': [validate_notifier]},
+            'verified': {'read_only': True},
+            'disabled': {'read_only': True},
         }
 
     def validate(self, attrs):
@@ -76,6 +80,14 @@ class NotificationHandlerSerializer(serializers.HyperlinkedModelSerializer):
             })
 
         return attrs
+
+    def create(self, validated_data):
+        notifier_cls = utils.get_notifier_class(validated_data['notifier'])
+
+        # Set the verified field to the appropriate value based on the notifier
+        validated_data['verified'] = not notifier_cls.needs_verification
+
+        return super(NotificationHandlerSerializer, self).create(validated_data)
 
     def update(self, instance, validated_data):
         """
@@ -240,11 +252,8 @@ class NotificationChannelSerializer(StackdioHyperlinkedModelSerializer):
             channel = super(NotificationChannelSerializer, self).update(instance, validated_data)
 
             # Update the handlers
-            if self.partial:
-                # This is a PATCH request
-                pass
-            else:
-                # This is a PUT request
+            if not self.partial:
+                # This is a PUT request - let's not do anything for a PATCH request currently.
 
                 # delete all the handlers first
                 for handler in channel.handlers.all():

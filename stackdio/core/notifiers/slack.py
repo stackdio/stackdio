@@ -35,6 +35,8 @@ except ImportError:
 
 class SlackNotifier(BaseNotifier):
 
+    needs_verification = False
+
     def __init__(self, slack_api_token, post_as_user=True):
         super(SlackNotifier, self).__init__()
 

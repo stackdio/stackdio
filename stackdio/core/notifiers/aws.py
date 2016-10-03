@@ -22,6 +22,8 @@ from stackdio.core.notifiers.base import BaseNotifier
 
 class Boto3Notifier(BaseNotifier):
 
+    needs_verification = False
+
     def __init__(self, aws_access_key, aws_secret_key, region, resource_name):
         super(Boto3Notifier, self).__init__()
         session = boto3.Session(aws_access_key_id=aws_access_key,
