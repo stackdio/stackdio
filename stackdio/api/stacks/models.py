@@ -1363,3 +1363,14 @@ def host_post_save(sender, **kwargs):
         'stack-{}-volume-count'.format(host.stack_id),
     ]
     cache.delete_many(cache_keys)
+
+
+@receiver([models.signals.post_save, models.signals.post_delete], sender=Stack)
+def stack_post_save(sender, **kwargs):
+    stack = kwargs.pop('instance')
+
+    # Delete from the cache
+    cache_keys = [
+        'blueprint-{}-stack-count'.format(stack.blueprint_id),
+    ]
+    cache.delete_many(cache_keys)
