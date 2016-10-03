@@ -24,6 +24,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.dispatch import receiver
+from django_extensions.db.models import TimeStampedModel
 
 from stackdio.core.fields import JSONField
 from stackdio.core.notifications.utils import get_notifier_class, get_notifier_instance
@@ -193,7 +194,7 @@ class NotificationHandler(models.Model):
 
 
 @six.python_2_unicode_compatible
-class Notification(models.Model):
+class Notification(TimeStampedModel):
     """
     A representation of a single notification to be sent
     """
