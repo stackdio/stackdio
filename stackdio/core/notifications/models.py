@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 from collections import OrderedDict
 
@@ -105,7 +107,7 @@ class NotificationChannel(models.Model):
 
     def __str__(self):
         events = [six.text_type(event) for event in self.events.all()]
-        return 'Channel {}, subscribed to {}'.format(self.name, ', '.join(events))
+        return six.text_type('Channel {}, subscribed to {}'.format(self.name, ', '.join(events)))
 
     @property
     def subscribed_objects(self):
@@ -183,7 +185,7 @@ class NotificationHandler(models.Model):
     channel = models.ForeignKey('notifications.NotificationChannel', related_name='handlers')
 
     def __str__(self):
-        return 'Handler {} on {}'.format(self.notifier, self.channel)
+        return six.text_type('Handler {} on {}'.format(self.notifier, self.channel))
 
     # the caching logic is done in the utils methods
     def get_notifier_class(self):
@@ -222,14 +224,8 @@ class Notification(TimeStampedModel):
     auth_object = GenericForeignKey('auth_object_content_type', 'auth_object_id')
 
     def __str__(self):
-        return 'Notification for {} sent using {} on object {}'.format(self.event,
-                                                                       self.handler,
-                                                                       self.content_object)
-
-    def to_json(self):
-        return OrderedDict((
-            ('event', self.notification.event.to_json()),
-            ('timestamp', ''),
-            ('object_type', self.content_type),
-            ('object', ''),
+        return six.text_type('Notification for {} sent using {} on object {}'.format(
+            self.event,
+            self.handler,
+            self.content_object
         ))

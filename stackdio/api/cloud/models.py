@@ -15,11 +15,13 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 import json
 import os
 
+import six
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -60,6 +62,7 @@ _cloudprovider_model_permissions = ()
 _cloudprovider_object_permissions = ('view', 'admin')
 
 
+@six.python_2_unicode_compatible
 class CloudProvider(models.Model):
 
     model_permissions = _cloudprovider_model_permissions
@@ -76,8 +79,8 @@ class CloudProvider(models.Model):
         choices=PROVIDER_CHOICES,
         unique=True)
 
-    def __unicode__(self):
-        return self.name
+    def __str__(self):
+        return six.text_type(self.name)
 
     def get_driver(self):
         # determine the provider driver class
@@ -100,6 +103,7 @@ _cloudaccount_object_permissions = (
 )
 
 
+@six.python_2_unicode_compatible
 class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
 
     model_permissions = _cloudaccount_model_permissions
@@ -157,8 +161,8 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
         default=None,
         storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
 
-    def __unicode__(self):
-        return self.title
+    def __str__(self):
+        return six.text_type(self.title)
 
     @property
     def vpc_enabled(self):
@@ -220,6 +224,7 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
         return list(formulas)
 
 
+@six.python_2_unicode_compatible
 class CloudInstanceSize(TitleSlugDescriptionModel):
     class Meta:
         ordering = ('id',)
@@ -238,8 +243,8 @@ class CloudInstanceSize(TitleSlugDescriptionModel):
     # The underlying size ID of the instance (e.g., t1.micro)
     instance_id = models.CharField('Instance ID', max_length=64)
 
-    def __unicode__(self):
-        return '{0} ({1})'.format(self.description, self.instance_id)
+    def __str__(self):
+        return six.text_type('{0} ({1})'.format(self.description, self.instance_id))
 
 
 _cloudimage_model_permissions = (
@@ -255,6 +260,7 @@ _cloudimage_object_permissions = (
 )
 
 
+@six.python_2_unicode_compatible
 class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
 
     model_permissions = _cloudimage_model_permissions
@@ -297,8 +303,8 @@ class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
         )
     )
 
-    def __unicode__(self):
-        return self.title
+    def __str__(self):
+        return six.text_type(self.title)
 
     def update_config(self):
         """
@@ -349,6 +355,7 @@ _snapshot_object_permissions = (
 )
 
 
+@six.python_2_unicode_compatible
 class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 
     model_permissions = _snapshot_model_permissions
@@ -375,7 +382,11 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
     filesystem_type = models.CharField(max_length=16,
                                        choices=FILESYSTEM_CHOICES)
 
+    def __str__(self):
+        return six.text_type(self.snapshot_id)
 
+
+@six.python_2_unicode_compatible
 class CloudRegion(TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'provider')
@@ -388,10 +399,11 @@ class CloudRegion(TitleSlugDescriptionModel):
                                  verbose_name='Cloud Provider',
                                  related_name='regions')
 
-    def __unicode__(self):
-        return self.title
+    def __str__(self):
+        return six.text_type(self.title)
 
 
+@six.python_2_unicode_compatible
 class CloudZone(TitleSlugDescriptionModel):
     class Meta:
         unique_together = ('title', 'region')
@@ -404,8 +416,8 @@ class CloudZone(TitleSlugDescriptionModel):
                                verbose_name='Cloud Region',
                                related_name='zones')
 
-    def __unicode__(self):
-        return self.title
+    def __str__(self):
+        return six.text_type(self.title)
 
     @property
     def provider(self):
@@ -448,6 +460,7 @@ _securitygroup_object_permissions = (
 )
 
 
+@six.python_2_unicode_compatible
 class SecurityGroup(TimeStampedModel, models.Model):
 
     model_permissions = _securitygroup_model_permissions
@@ -502,8 +515,8 @@ class SecurityGroup(TimeStampedModel, models.Model):
     # based on the blueprint used to create the stack
     is_managed = models.BooleanField(default=False)
 
-    def __unicode__(self):
-        return self.name
+    def __str__(self):
+        return six.text_type(self.name)
 
     def get_active_hosts(self):
         return self.hosts.count()
