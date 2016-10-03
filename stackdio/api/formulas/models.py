@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 from collections import OrderedDict
@@ -22,6 +23,7 @@ from os.path import exists, join, isdir, split, splitext
 from shutil import rmtree
 
 import git
+import six
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -37,6 +39,7 @@ from stackdio.core.models import SearchQuerySet
 logger = logging.getLogger(__name__)
 
 
+@six.python_2_unicode_compatible
 class FormulaVersion(models.Model):
     class Meta:
         default_permissions = ()
@@ -46,6 +49,9 @@ class FormulaVersion(models.Model):
     content_object = GenericForeignKey()
     formula = models.ForeignKey('formulas.Formula')
     version = models.CharField('Formula Version', max_length=100)
+
+    def __str__(self):
+        return six.text_type('{}, version {}'.format(self.formula, self.version))
 
 
 class StatusDetailModel(StatusModel):
@@ -118,6 +124,7 @@ class FormulaQuerySet(SearchQuerySet):
         return (result or component_matches).distinct()
 
 
+@six.python_2_unicode_compatible
 class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     """
     The intention here is to be able to install an entire formula along
@@ -221,8 +228,8 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     access_token = models.BooleanField('Access Token', default=False)
 
-    def __unicode__(self):
-        return '%s (%s)' % (self.title, self.uri)
+    def __str__(self):
+        return six.text_type('{} ({})'.format(self.title, self.uri))
 
     def get_repo_dir(self):
         return join(
@@ -340,6 +347,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             return yaml_data.get('pillar_defaults', {})
 
 
+@six.python_2_unicode_compatible
 class FormulaComponent(TimeStampedModel):
     """
     An extension of an existing FormulaComponent to add additional metadata
@@ -366,11 +374,11 @@ class FormulaComponent(TimeStampedModel):
     # The order in which the component should be provisioned
     order = models.IntegerField('Order', default=0)
 
-    def __unicode__(self):
-        return u'{0}:{1}'.format(
+    def __str__(self):
+        return six.text_type('{0}:{1}'.format(
             self.sls_path,
             self.content_object,
-        )
+        ))
 
     @property
     def title(self):
