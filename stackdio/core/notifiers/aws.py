@@ -17,7 +17,7 @@
 
 import boto3
 
-from stackdio.core.notifiers.base import BaseNotifier
+from stackdio.core.notifiers.base import BaseNotifier, abstractmethod
 
 
 class Boto3Notifier(BaseNotifier):
@@ -30,6 +30,11 @@ class Boto3Notifier(BaseNotifier):
                                 aws_secret_access_key=aws_secret_key,
                                 region_name=region)
         self.resource = session.resource(resource_name)
+
+    # Still mark this as abstract
+    @abstractmethod
+    def send_notification(self, notification):
+        raise NotImplementedError()
 
 
 class SNSNotifier(Boto3Notifier):
