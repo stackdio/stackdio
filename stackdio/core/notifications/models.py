@@ -178,9 +178,15 @@ class NotificationHandler(models.Model):
 
     notifier = models.CharField('Notifier', max_length=256)
 
-    options = JSONField()
+    options = JSONField('Options')
 
     channel = models.ForeignKey('notifications.NotificationChannel', related_name='handlers')
+
+    # Some notifiers might need to be verified before we can send notifications using them
+    verified = models.BooleanField('Verified', default=False)
+
+    # If too many notifications fail to send, we'll disable the handler.
+    disabled = models.BooleanField('Disabled', default=False)
 
     def __str__(self):
         return six.text_type('Handler {} on {}'.format(self.notifier, self.channel))
