@@ -16,6 +16,7 @@
 #
 
 import logging
+import time
 
 import six
 from django.conf import settings
@@ -88,11 +89,11 @@ class SlackNotifier(BaseNotifier):
                     'title_link': ui_url,
                     'text': notification_text,
                     'fields': fields,
-                    'footer': 'sent from stackd.io',
-                    # 'ts': 123456789  # TODO add the notification timestamp
+                    'ts': int(notification.created.strftime('%s')),
                 }
             ]
         }
+        time.time()
 
         result = self.slackclient.api_call('chat.postMessage', **chat_kwargs)
 

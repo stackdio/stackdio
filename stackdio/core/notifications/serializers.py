@@ -265,6 +265,10 @@ class AbstractNotificationSerializer(serializers.ModelSerializer):
 
     event = EventField()
 
+    timestamp = serializers.DateTimeField(source='created')
+
+    sent = serializers.DateTimeField(source='modified')
+
     object_type = serializers.CharField(source='content_type.name')
 
     class Meta:
@@ -272,7 +276,8 @@ class AbstractNotificationSerializer(serializers.ModelSerializer):
 
         fields = (
             'event',
-            # 'timestamp',
+            'timestamp',
+            'sent',
             'object_type',
             'object',
         )
