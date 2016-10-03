@@ -22,7 +22,6 @@ import logging
 import os
 import re
 import socket
-from functools import wraps
 
 import salt.cloud
 import six
@@ -49,6 +48,7 @@ from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import GroupExistsException
 from stackdio.api.volumes.models import Volume
 from stackdio.core.constants import Health, ComponentStatus, Activity
+from stackdio.core.decorators import django_cache
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.notifications.decorators import add_subscribed_channels
@@ -64,32 +64,6 @@ PROTOCOL_CHOICES = [
 ]
 
 HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
-
-
-def django_cache(cache_key, timeout=None):
-    """
-    decorator to cache the result of a function in the django cache
-    """
-
-    def wrapper(func):
-
-        @wraps(func)
-        def wrapped(self):
-            ctype = ContentType.objects.get_for_model(self)
-
-            final_cache_key = cache_key.format(ctype=ctype.pk, id=self.id)
-
-            cached_item = cache.get(final_cache_key)
-
-            if cached_item is None:
-                cached_item = func(self)
-                cache.set(final_cache_key, cached_item, timeout)
-
-            return cached_item
-
-        return wrapped
-
-    return wrapper
 
 
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):

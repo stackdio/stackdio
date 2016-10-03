@@ -26,6 +26,7 @@ from django.core.files.storage import FileSystemStorage
 from django.db import models
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
+from stackdio.core.decorators import django_cache
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.notifications.decorators import add_subscribed_channels
@@ -116,6 +117,14 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     @property
     def host_definition_count(self):
         return self.host_definitions.count()
+
+    @django_cache('{ctype}-{id}-label-list')
+    def get_cached_label_list(self):
+        return self.labels.all()
+
+    @django_cache('blueprint-{id}-stack-count')
+    def stack_count(self):
+        return self.stacks.count()
 
     def _get_properties(self):
         if not self.props_file:
