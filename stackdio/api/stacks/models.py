@@ -66,6 +66,8 @@ PROTOCOL_CHOICES = [
 
 HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
 
+DEFAULT_FILESYSTEM_TYPE = settings.STACKDIO_CONFIG.get('default_fs_type', 'ext4')
+
 
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
     hostnames = []
@@ -501,10 +503,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             hosts = self.hosts.all()
 
             if count is None:
-                start, end = 0, hostdef.count
+                start = 0
+                end = hostdef.count
                 indexes = range(start, end)
             elif not hosts:
-                start, end = 0, count
+                start = 0
+                end = count
                 indexes = range(start, end)
             else:
                 if backfill:
@@ -582,12 +586,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     host.security_groups.add(security_group)
 
                 for volumedef in hostdef.volumes.all():
-                    host.volumes.create(
-                        blueprint_volume=volumedef,
-                        hostname=hostname,
-                        device=volumedef.device,
-                        mount_point=volumedef.mount_point
-                    )
+                    host.volumes.create(blueprint_volume=volumedef)
 
                 for component in host.formula_components.all():
                     host.component_metadatas.create(formula_component=component)
@@ -629,17 +628,31 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # mount the devices)
             map_volumes = []
             for vol in volumes:
+                if vol.snapshot:
+                    fstype = vol.snapshot.filesystem_type
+                else:
+                    fstype = DEFAULT_FILESYSTEM_TYPE
+
                 v = {
                     'device': vol.device,
                     'mount_point': vol.mount_point,
-                    # filesystem_type doesn't matter, should remove soon
-                    'filesystem_type': vol.snapshot.filesystem_type,
+                    'filesystem_type': fstype,
+                    'create_fs': False,
                     'type': 'gp2',
                 }
+
+                # Set the appropriate volume attribute
                 if vol.volume_id:
                     v['volume_id'] = vol.volume_id
-                else:
+                elif vol.snapshot:
                     v['snapshot'] = vol.snapshot.snapshot_id
+                else:
+                    v['size'] = vol.size_in_gb
+                    # This should be the only time we need to create the FS
+                    v['create_fs'] = True
+
+                # Update with the extra_options
+                v.update(vol.extra_options)
 
                 map_volumes.append(v)
 

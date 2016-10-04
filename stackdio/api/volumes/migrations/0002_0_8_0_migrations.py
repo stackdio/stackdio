@@ -72,4 +72,20 @@ class Migration(migrations.Migration):
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
+        migrations.RemoveField(
+            model_name='volume',
+            name='attach_time',
+        ),
+        migrations.RemoveField(
+            model_name='volume',
+            name='device',
+        ),
+        migrations.RemoveField(
+            model_name='volume',
+            name='hostname',
+        ),
+        migrations.RemoveField(
+            model_name='volume',
+            name='mount_point',
+        ),
     ]

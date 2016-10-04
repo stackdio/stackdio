@@ -5,8 +5,7 @@
 
 # CentOS apparently needs yum-utils for pkg.installed to work, but we can't install it with pkg.installed
 install-yum-utils:
-  cmd:
-    - run
+  cmd.run:
     - name: 'yum install -y yum-utils'
     - user: root
     - require_in:
@@ -15,8 +14,7 @@ install-yum-utils:
 {% endif %}
 
 install-ntpd:
-  pkg:
-    - installed
+  pkg.installed:
     - pkgs:
       - ntp
       - ntpdate
@@ -29,8 +27,7 @@ sync-ntpd:
       - pkg: install-ntpd
 
 start-ntpd:
-  service:
-    - running
+  service.running:
     - name: {{ ntp_name }}
     - enable: true
     - require:

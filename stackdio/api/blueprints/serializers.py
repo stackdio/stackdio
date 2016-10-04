@@ -105,13 +105,32 @@ class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
 class BlueprintVolumeSerializer(serializers.ModelSerializer):
     snapshot = serializers.SlugRelatedField(slug_field='slug', queryset=Snapshot.objects.all())
 
+    extra_options = serializers.JSONField()
+
     class Meta:
         model = models.BlueprintVolume
         fields = (
             'device',
             'mount_point',
             'snapshot',
+            'size_in_gb',
+            'encrypted',
+            'extra_options',
         )
+
+    def validate(self, attrs):
+        snapshot = attrs.get('snapshot')
+
+        size = attrs.get('size_in_gb')
+
+        if snapshot and size:
+            err_msg = 'You may only specify one of `snapshot` or `size_in_gb`.'
+            raise serializers.ValidationError({
+                'snapshot': [err_msg],
+                'size_in_gb': [err_msg],
+            })
+
+        return attrs
 
 
 class BlueprintHostDefinitionSerializer(CreateOnlyFieldsMixin,

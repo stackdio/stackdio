@@ -28,8 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class VolumeSerializer(StackdioHyperlinkedModelSerializer):
-    snapshot_id = serializers.ReadOnlyField(source='snapshot.snapshot_id')
-    size_in_gb = serializers.ReadOnlyField(source='snapshot.size_in_gb')
+    extra_options = serializers.JSONField()
 
     # Link fields
     user_permissions = serializers.HyperlinkedIdentityField(
@@ -53,15 +52,15 @@ class VolumeSerializer(StackdioHyperlinkedModelSerializer):
             'id',
             'url',
             'volume_id',
-            'attach_time',
             'stack',
-            'hostname',
             'host',
             'snapshot',
             'snapshot_id',
             'size_in_gb',
             'device',
             'mount_point',
+            'encrypted',
+            'extra_options',
             'user_permissions',
             'group_permissions',
         )

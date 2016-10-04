@@ -11,9 +11,21 @@
 {% set device_name = salt['mount.find_ebs_device'](vol['device']) %}
 
 {% if device_name %}
+
+{% if vol['create_fs'] %}
+
+# First create the FS if it's an empty volume
+{{ vol['mount_point'] }}_create_fs:
+  cmd.run:
+    - name: 'mkfs -t {{ vol['filesystem_type'] }} {{ device_name }}'
+    - user: root
+    - require_in:
+      - mount: {{ vol['mount_point'] }}
+{% endif %}
+
+# Mount the volume
 {{ vol['mount_point'] }}:
-  mount:
-    - mounted
+  mount.mounted:
     - device: {{ device_name }}
     - fstype: {{ vol['filesystem_type'] }}
     - mount: true

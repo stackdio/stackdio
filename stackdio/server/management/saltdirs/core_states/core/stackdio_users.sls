@@ -8,15 +8,13 @@
 
 # Create the group
 {{ username }}_group:
-  group:
-    - present
+  group.present:
     - name: {{ username }}
     - gid: {{ uid }}
 
 # Create the user
 {{ username }}_user:
-  user:
-    - present
+  user.present:
     - name: {{ username }}
     - shell: /bin/bash
     - uid: {{ uid }}
@@ -27,8 +25,7 @@
 
 # Add the public key to authorized_keys file
 {{ username }}_authorized_keys:
-  ssh_auth:
-    - present
+  ssh_auth.present:
     - user: {{ username }}
     - name: {{ publickey }}
     - require:
@@ -36,8 +33,7 @@
 
 # Add a sudoers entry
 {{ username }}_sudoers:
-  file:
-    - managed
+  file.managed:
     - name: /etc/sudoers.d/{{ username | replace('.', '_') }}
     - contents: "{{ username }} ALL=(ALL) NOPASSWD:ALL"
     - mode: 400

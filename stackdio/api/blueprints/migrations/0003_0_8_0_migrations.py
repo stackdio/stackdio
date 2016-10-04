@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 from django.db import migrations, models
 import django.db.models.deletion
 import django_extensions.db.fields
+import stackdio.core.fields
 
 
 class Migration(migrations.Migration):
@@ -47,7 +48,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='blueprintvolume',
             name='snapshot',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='blueprint_volumes', to='cloud.Snapshot'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='blueprint_volumes', to='cloud.Snapshot'),
         ),
         migrations.AlterField(
             model_name='blueprintvolume',
@@ -58,5 +59,22 @@ class Migration(migrations.Migration):
             model_name='blueprintvolume',
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
+        ),
+
+        migrations.AddField(
+            model_name='blueprintvolume',
+            name='encrypted',
+            field=models.BooleanField(default=False, verbose_name='Encrypted'),
+        ),
+        migrations.AddField(
+            model_name='blueprintvolume',
+            name='extra_options',
+            field=stackdio.core.fields.JSONField(default={}, verbose_name='Extra Options'),
+            preserve_default=False,
+        ),
+        migrations.AddField(
+            model_name='blueprintvolume',
+            name='size_in_gb',
+            field=models.IntegerField(null=True, verbose_name='Size in GB'),
         ),
     ]

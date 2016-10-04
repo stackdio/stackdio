@@ -18,6 +18,10 @@ class Migration(migrations.Migration):
             model_name='cloudaccount',
             name='account_id',
         ),
+        migrations.RemoveField(
+            model_name='snapshot',
+            name='size_in_gb',
+        ),
         migrations.AlterField(
             model_name='cloudaccount',
             name='created',
@@ -72,5 +76,15 @@ class Migration(migrations.Migration):
             model_name='cloudzone',
             name='region',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='zones', to='cloud.CloudRegion', verbose_name='Cloud Region'),
+        ),
+        migrations.AlterField(
+            model_name='snapshot',
+            name='filesystem_type',
+            field=models.CharField(choices=[('ext2', 'ext2'), ('ext3', 'ext3'), ('ext4', 'ext4'), ('fuse', 'fuse'), ('xfs', 'xfs')], max_length=16, verbose_name='Filesystem Type'),
+        ),
+        migrations.AlterField(
+            model_name='snapshot',
+            name='snapshot_id',
+            field=models.CharField(max_length=32, verbose_name='Snapshot ID'),
         ),
     ]

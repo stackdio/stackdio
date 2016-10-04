@@ -325,7 +325,6 @@ class SnapshotSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializ
             'description',
             'account',
             'snapshot_id',
-            'size_in_gb',
             'filesystem_type',
             'user_permissions',
             'group_permissions',

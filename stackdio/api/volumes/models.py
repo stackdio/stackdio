@@ -42,10 +42,6 @@ class Volume(TimeStampedModel):
     class Meta:
         default_permissions = tuple(set(_volume_model_permissions + _volume_object_permissions))
 
-    # The hostname is used to match up volumes to hosts as they
-    # come online.
-    hostname = models.CharField('Hostname', max_length=64)
-
     # The host is the actual host this volume is attached to, but
     # it can only be assigned after the host is up and the volume is
     # actually attached
@@ -60,14 +56,6 @@ class Volume(TimeStampedModel):
     # blank values
     volume_id = models.CharField('Volume ID', max_length=32, blank=True)
 
-    # when the last attach time for the volume was. This is also set
-    # after the volume has been created
-    attach_time = models.DateTimeField('Attach Time', default=None, null=True, blank=True)
-
-    # the device id (e.g, /dev/sdb, dev/sdc, etc) the volume will assume when
-    # it's attached to its host
-    device = models.CharField('Device', max_length=32)
-
     def __str__(self):
         return six.text_type(self.volume_id)
 
@@ -80,16 +68,25 @@ class Volume(TimeStampedModel):
         return self.blueprint_volume.mount_point
 
     @property
-    def size_in_gb(self):
-        return self.get_driver()
+    def snapshot(self):
+        return self.blueprint_volume.snapshot
 
-    def get_driver(self):
-        return self.host.get_driver()
+    @property
+    def snapshot_id(self):
+        return self.snapshot.snapshot_id if self.snapshot else None
+
+    @property
+    def size_in_gb(self):
+        return self.blueprint_volume.size_in_gb
+
+    @property
+    def encrypted(self):
+        return self.blueprint_volume.encrypted
+
+    @property
+    def extra_options(self):
+        return self.blueprint_volume.extra_options
 
     @property
     def stack(self):
         return self.host.stack if self.host else None
-
-    @property
-    def snapshot(self):
-        return self.blueprint_volume.snapshot
