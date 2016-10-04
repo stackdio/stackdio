@@ -42,6 +42,7 @@ install:
   - bower install
   - pip install -U pip
   - pip install -U wheel
+  - pip install -U twine
   - pip install -U -e .[testing,mysql,postgresql]
 
 ## Customize test commands
@@ -77,12 +78,13 @@ deploy:
       repo: stackdio/stackdio
       python: "2.7"
       condition: $DB = postgres
-  - provider: pypi
-    user: clarkperkins
-    password:
-      secure: RjhRD33KC7Le9hhp8VPvLXEjVn9gRmGiaxpLAVTrCULhXtmuUN6NgqFjGIrD5p86A5jMsV3SbsZB1wJMrVgasT8WnSYZpaQpsaedE8UNN0pUCaSo+p5KJg2XOGkTWUosIMPQ2UqcW1eZnmvkkFuleK9fEt6gcfpuSP5Nb/SO3GU=
-    skip_cleanup: true
-    distributions: sdist bdist_wheel
+
+  # Upload to pypi.  Do this instead of the pypi provider so that we
+  # ensure the exact same artifact is uploaded to github and pypi.
+  # The pypi provider will re-build the 2 artifacts, which is not ideal.
+  # This requires setting TWINE_USERNAME and TWINE_PASSWORD in travis.
+  - provider: script
+    script: twine upload dist/stackdio-server-${TRAVIS_TAG}.tar.gz dist/stackdio_server-${TRAVIS_TAG}-py2-none-any.whl
     on:
       tags: true
       repo: stackdio/stackdio
