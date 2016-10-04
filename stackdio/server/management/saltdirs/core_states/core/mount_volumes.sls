@@ -18,9 +18,8 @@
 {{ vol['mount_point'] }}_create_fs:
   module.run:
     - name: extfs.mkfs
-    - kwargs:
-        device: {{ device_name }}
-        fs_type: {{ vol['filesystem_type'] }}
+    - device: {{ device_name }}
+    - fs_type: {{ vol['filesystem_type'] }}
     - require_in:
       - mount: {{ vol['mount_point'] }}
 {% endif %}
