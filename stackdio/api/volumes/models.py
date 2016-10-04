@@ -68,11 +68,23 @@ class Volume(TimeStampedModel):
     # it's attached to its host
     device = models.CharField('Device', max_length=32)
 
-    # where on the machine should this volume be mounted?
-    mount_point = models.CharField('Mount Point', max_length=255)
-
     def __str__(self):
         return six.text_type(self.volume_id)
+
+    @property
+    def device(self):
+        return self.blueprint_volume.device
+
+    @property
+    def mount_point(self):
+        return self.blueprint_volume.mount_point
+
+    @property
+    def size_in_gb(self):
+        return self.get_driver()
+
+    def get_driver(self):
+        return self.host.get_driver()
 
     @property
     def stack(self):

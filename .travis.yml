@@ -85,6 +85,7 @@ deploy:
   # This requires setting TWINE_USERNAME and TWINE_PASSWORD in travis.
   - provider: script
     script: twine upload dist/stackdio-server-${TRAVIS_TAG}.tar.gz dist/stackdio_server-${TRAVIS_TAG}-py2-none-any.whl
+    skip_cleanup: true
     on:
       tags: true
       repo: stackdio/stackdio
