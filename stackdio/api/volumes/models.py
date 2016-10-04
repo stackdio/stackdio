@@ -15,9 +15,10 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
+import six
 from django.db import models
-
 from django_extensions.db.models import TimeStampedModel
 
 _volume_model_permissions = (
@@ -33,6 +34,7 @@ _volume_object_permissions = (
 )
 
 
+@six.python_2_unicode_compatible
 class Volume(TimeStampedModel):
     model_permissions = _volume_model_permissions
     object_permissions = _volume_object_permissions
@@ -69,8 +71,8 @@ class Volume(TimeStampedModel):
     # where on the machine should this volume be mounted?
     mount_point = models.CharField('Mount Point', max_length=255)
 
-    def __unicode__(self):
-        return '{0}'.format(self.volume_id)
+    def __str__(self):
+        return six.text_type(self.volume_id)
 
     @property
     def stack(self):

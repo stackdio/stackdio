@@ -74,7 +74,8 @@ def generate_notifications(event_tag, object_id, content_type_id):
     for channel in subscribed_channels:
         auth_object = channel.auth_object
 
-        for handler in channel.handlers.all():
+        # We only care about the handlers that are both verified and enabled
+        for handler in channel.handlers.filter(verified=True, disabled=False):
             if utils.get_notifier_class(handler.notifier).split_group_notifications:
                 if isinstance(auth_object, get_user_model()):
                     auth_objects = [auth_object]
@@ -134,6 +135,11 @@ def send_notification(notification_id):
         notification.failed_count += 1
 
     notification.save()
+
+    # Disable the handler if we fail too many times
+    if notification.failed_count > 5:
+        notification.handler.disabled = True
+        notification.handler.save()
 
 
 @shared_task(name='notifications.send_bulk_notifications')

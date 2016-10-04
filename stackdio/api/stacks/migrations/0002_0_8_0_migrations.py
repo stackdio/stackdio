@@ -74,22 +74,22 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='host',
             name='provider_public_dns',
-            field=models.CharField(max_length=64, null=True, verbose_name=b'Provider Public DNS'),
+            field=models.CharField(max_length=64, null=True, verbose_name='Provider Public DNS'),
         ),
         migrations.AlterField(
             model_name='host',
             name='provider_private_dns',
-            field=models.CharField(max_length=64, null=True, verbose_name=b'Provider Private DNS'),
+            field=models.CharField(max_length=64, null=True, verbose_name='Provider Private DNS'),
         ),
         migrations.AddField(
             model_name='host',
             name='provider_public_ip',
-            field=models.GenericIPAddressField(blank=True, null=True, verbose_name=b'Provider Public IP'),
+            field=models.GenericIPAddressField(blank=True, null=True, verbose_name='Provider Public IP'),
         ),
         migrations.AlterField(
             model_name='host',
             name='provider_private_ip',
-            field=models.GenericIPAddressField(blank=True, null=True, verbose_name=b'Provider Private IP'),
+            field=models.GenericIPAddressField(blank=True, null=True, verbose_name='Provider Private IP'),
         ),
         migrations.RemoveField(
             model_name='host',
@@ -111,7 +111,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='host',
             name='activity',
-            field=models.CharField(blank=True, choices=[(b'unknown', b'unknown'), (b'queued', b'queued'), (b'launching', b'launching'), (b'provisioning', b'provisioning'), (b'orchestrating', b'orchestrating'), (b'', b''), (b'pausing', b'pausing'), (b'paused', b'paused'), (b'resuming', b'resuming'), (b'terminating', b'terminating'), (b'terminated', b'terminated'), (b'executing', b'executing'), (b'dead', b'dead')], default=b'queued', max_length=32, verbose_name=b'Activity'),
+            field=models.CharField(blank=True, choices=[('unknown', 'unknown'), ('queued', 'queued'), ('launching', 'launching'), ('provisioning', 'provisioning'), ('orchestrating', 'orchestrating'), ('', ''), ('pausing', 'pausing'), ('paused', 'paused'), ('resuming', 'resuming'), ('terminating', 'terminating'), ('terminated', 'terminated'), ('executing', 'executing'), ('dead', 'dead')], default='queued', max_length=32, verbose_name='Activity'),
         ),
 
         # Stack things
@@ -137,7 +137,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='stack',
             name='activity',
-            field=models.CharField(blank=True, choices=[(b'unknown', b'unknown'), (b'queued', b'queued'), (b'launching', b'launching'), (b'provisioning', b'provisioning'), (b'orchestrating', b'orchestrating'), (b'', b''), (b'pausing', b'pausing'), (b'paused', b'paused'), (b'resuming', b'resuming'), (b'terminating', b'terminating'), (b'terminated', b'terminated'), (b'executing', b'executing'), (b'dead', b'dead')], default=b'queued', max_length=32, verbose_name=b'Activity'),
+            field=models.CharField(blank=True, choices=[('unknown', 'unknown'), ('queued', 'queued'), ('launching', 'launching'), ('provisioning', 'provisioning'), ('orchestrating', 'orchestrating'), ('', ''), ('pausing', 'pausing'), ('paused', 'paused'), ('resuming', 'resuming'), ('terminating', 'terminating'), ('terminated', 'terminated'), ('executing', 'executing'), ('dead', 'dead')], default='queued', max_length=32, verbose_name='Activity'),
         ),
         migrations.AlterModelOptions(
             name='stack',
@@ -158,7 +158,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='stackcommand',
             name='status',
-            field=model_utils.fields.StatusField(default=b'waiting', max_length=100, no_check_for_status=True, verbose_name='status'),
+            field=model_utils.fields.StatusField(default='waiting', max_length=100, no_check_for_status=True, verbose_name='status'),
         ),
 
         # Stack History things
@@ -196,7 +196,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='stackhistory',
             name='message',
-            field=models.CharField(max_length=256, verbose_name=b'Message'),
+            field=models.CharField(max_length=256, verbose_name='Message'),
         ),
 
         # New things
@@ -206,8 +206,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified')),
-                ('status', models.CharField(choices=[(b'succeeded', b'succeeded'), (b'unknown', b'unknown'), (b'failed', b'failed'), (b'running', b'running'), (b'cancelled', b'cancelled'), (b'queued', b'queued')], default=b'queued', max_length=32, verbose_name=b'Status')),
-                ('health', models.CharField(choices=[(b'healthy', b'healthy'), (b'unknown', b'unknown'), (b'unstable', b'unstable'), (b'unhealthy', b'unhealthy')], default=b'unknown', max_length=32, verbose_name=b'Health')),
+                ('status', models.CharField(choices=[('succeeded', 'succeeded'), ('unknown', 'unknown'), ('failed', 'failed'), ('running', 'running'), ('cancelled', 'cancelled'), ('queued', 'queued')], default='queued', max_length=32, verbose_name='Status')),
+                ('health', models.CharField(choices=[('healthy', 'healthy'), ('unknown', 'unknown'), ('unstable', 'unstable'), ('unhealthy', 'unhealthy')], default='unknown', max_length=32, verbose_name='Health')),
                 ('formula_component', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='metadatas', to='formulas.FormulaComponent')),
                 ('host', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='component_metadatas', to='stacks.Host')),
             ],

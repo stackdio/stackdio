@@ -15,8 +15,9 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
-from collections import OrderedDict
 
 import six
 from django.conf import settings
@@ -24,7 +25,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.dispatch import receiver
-
+from django_extensions.db.models import TimeStampedModel
 from stackdio.core.fields import JSONField
 from stackdio.core.notifications.utils import get_notifier_class, get_notifier_instance
 
@@ -104,7 +105,7 @@ class NotificationChannel(models.Model):
 
     def __str__(self):
         events = [six.text_type(event) for event in self.events.all()]
-        return 'Channel {}, subscribed to {}'.format(self.name, ', '.join(events))
+        return six.text_type('Channel {}, subscribed to {}'.format(self.name, ', '.join(events)))
 
     @property
     def subscribed_objects(self):
@@ -177,12 +178,18 @@ class NotificationHandler(models.Model):
 
     notifier = models.CharField('Notifier', max_length=256)
 
-    options = JSONField()
+    options = JSONField('Options')
 
     channel = models.ForeignKey('notifications.NotificationChannel', related_name='handlers')
 
+    # Some notifiers might need to be verified before we can send notifications using them
+    verified = models.BooleanField('Verified', default=False)
+
+    # If too many notifications fail to send, we'll disable the handler.
+    disabled = models.BooleanField('Disabled', default=False)
+
     def __str__(self):
-        return 'Handler {} on {}'.format(self.notifier, self.channel)
+        return six.text_type('Handler {} on {}'.format(self.notifier, self.channel))
 
     # the caching logic is done in the utils methods
     def get_notifier_class(self):
@@ -193,7 +200,7 @@ class NotificationHandler(models.Model):
 
 
 @six.python_2_unicode_compatible
-class Notification(models.Model):
+class Notification(TimeStampedModel):
     """
     A representation of a single notification to be sent
     """
@@ -221,14 +228,8 @@ class Notification(models.Model):
     auth_object = GenericForeignKey('auth_object_content_type', 'auth_object_id')
 
     def __str__(self):
-        return 'Notification for {} sent using {} on object {}'.format(self.event,
-                                                                       self.handler,
-                                                                       self.content_object)
-
-    def to_json(self):
-        return OrderedDict((
-            ('event', self.notification.event.to_json()),
-            ('timestamp', ''),
-            ('object_type', self.content_type),
-            ('object', ''),
+        return six.text_type('Notification for {} sent using {} on object {}'.format(
+            self.event,
+            self.handler,
+            self.content_object
         ))

@@ -59,7 +59,7 @@ class Migration(migrations.Migration):
     ]
 
     replaces = [
-        (b'cloud', '0003_initial_data'),
+        ('cloud', '0003_initial_data'),
     ]
 
     operations = [

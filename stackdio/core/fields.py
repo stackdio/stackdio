@@ -167,7 +167,10 @@ else:
                     StackdioWarning,
                 )
                 cls._warned = True
-            return SimpleJSONField.__new__(cls, *args, **kwargs)
+
+            # SimpleJSONField.__new__ goes all the way up to object(), so we don't need to
+            # pass it any of the args or kwargs
+            return SimpleJSONField.__new__(cls)
 
 
 class PasswordField(CharField):

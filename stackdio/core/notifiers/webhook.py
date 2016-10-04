@@ -26,6 +26,8 @@ class WebhookNotifier(BaseNotifier):
     A basic webhook notifier.  Takes a single timeout parameter.
     """
 
+    needs_verification = False
+
     def __init__(self, default_method='POST', timeout=30):
         super(WebhookNotifier, self).__init__()
         self.default_method = default_method

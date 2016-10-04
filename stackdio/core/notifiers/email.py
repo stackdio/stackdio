@@ -39,6 +39,8 @@ class EmailNotifier(BaseNotifier):
     to return an EmailBackend instance.
     """
 
+    needs_verification = False
+
     prefer_send_in_bulk = True
 
     split_group_notifications = True
@@ -161,6 +163,8 @@ class ExtraEmailNotifier(EmailNotifier):
     A notifier that sends emails to a supplied email address rather
     than the default email for the user.
     """
+
+    needs_verification = True
 
     # re-set this to False since we're not pulling the email address from the user objects.
     split_group_notifications = False

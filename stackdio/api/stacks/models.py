@@ -17,19 +17,19 @@
 
 # pylint: disable=too-many-lines
 
+from __future__ import unicode_literals
+
 import json
 import logging
 import os
 import re
 import socket
-from functools import wraps
 
 import salt.cloud
 import six
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
-from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
@@ -49,6 +49,7 @@ from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import GroupExistsException
 from stackdio.api.volumes.models import Volume
 from stackdio.core.constants import Health, ComponentStatus, Activity
+from stackdio.core.decorators import django_cache
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.notifications.decorators import add_subscribed_channels
@@ -64,32 +65,6 @@ PROTOCOL_CHOICES = [
 ]
 
 HOST_INDEX_PATTERN = re.compile(r'.*-.*-(\d+)')
-
-
-def django_cache(cache_key, timeout=None):
-    """
-    decorator to cache the result of a function in the django cache
-    """
-
-    def wrapper(func):
-
-        @wraps(func)
-        def wrapped(self):
-            ctype = ContentType.objects.get_for_model(self)
-
-            final_cache_key = cache_key.format(ctype=ctype.pk, id=self.id)
-
-            cached_item = cache.get(final_cache_key)
-
-            if cached_item is None:
-                cached_item = func(self)
-                cache.set(final_cache_key, cached_item, timeout)
-
-            return cached_item
-
-        return wrapped
-
-    return wrapper
 
 
 def get_hostnames_from_hostdefs(hostdefs, username='', namespace=''):
@@ -1387,5 +1362,16 @@ def host_post_save(sender, **kwargs):
         'stack-{}-hosts'.format(host.stack_id),
         'stack-{}-host-count'.format(host.stack_id),
         'stack-{}-volume-count'.format(host.stack_id),
+    ]
+    cache.delete_many(cache_keys)
+
+
+@receiver([models.signals.post_save, models.signals.post_delete], sender=Stack)
+def stack_post_save(sender, **kwargs):
+    stack = kwargs.pop('instance')
+
+    # Delete from the cache
+    cache_keys = [
+        'blueprint-{}-stack-count'.format(stack.blueprint_id),
     ]
     cache.delete_many(cache_keys)

@@ -253,8 +253,8 @@ class BlueprintHostDefinitionSerializer(CreateOnlyFieldsMixin,
 
 
 class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
-    stack_count = serializers.ReadOnlyField(source='stacks.count', read_only=True)
-    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
+    label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True,
+                                                 source='get_cached_label_list')
 
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:blueprints:blueprint-properties')

@@ -61,16 +61,16 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='cloudinstancesize',
             name='provider',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='instance_sizes', to='cloud.CloudProvider', verbose_name=b'Cloud Provider'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='instance_sizes', to='cloud.CloudProvider', verbose_name='Cloud Provider'),
         ),
         migrations.AlterField(
             model_name='cloudregion',
             name='provider',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='regions', to='cloud.CloudProvider', verbose_name=b'Cloud Provider'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='regions', to='cloud.CloudProvider', verbose_name='Cloud Provider'),
         ),
         migrations.AlterField(
             model_name='cloudzone',
             name='region',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='zones', to='cloud.CloudRegion', verbose_name=b'Cloud Region'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='zones', to='cloud.CloudRegion', verbose_name='Cloud Region'),
         ),
     ]

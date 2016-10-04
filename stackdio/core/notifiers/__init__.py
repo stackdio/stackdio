@@ -18,5 +18,7 @@
 from .base import BaseNotifier
 from .email import EmailNotifier, ExtraEmailNotifier
 from .webhook import WebhookNotifier
+from .slack import SlackNotifier
 
-__all__ = ['BaseNotifier', 'EmailNotifier', 'ExtraEmailNotifier', 'WebhookNotifier']
+__all__ = ['BaseNotifier', 'EmailNotifier', 'ExtraEmailNotifier', 'WebhookNotifier',
+           'SlackNotifier']

@@ -15,10 +15,12 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import json
 import logging
 
+import six
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.base import ContentFile
@@ -26,6 +28,7 @@ from django.core.files.storage import FileSystemStorage
 from django.db import models
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
+from stackdio.core.decorators import django_cache
 from stackdio.core.fields import DeletingFileField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.notifications.decorators import add_subscribed_channels
@@ -76,6 +79,7 @@ _blueprint_object_permissions = (
 
 
 @add_subscribed_channels
+@six.python_2_unicode_compatible
 class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     """
     Blueprints are a template of reusable configuration used to launch
@@ -110,12 +114,20 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
 
     objects = BlueprintQuerySet.as_manager()
 
-    def __unicode__(self):
-        return u'{0} (id={1})'.format(self.title, self.id)
+    def __str__(self):
+        return six.text_type('{0} (id={1})'.format(self.title, self.id))
 
     @property
     def host_definition_count(self):
         return self.host_definitions.count()
+
+    @django_cache('{ctype}-{id}-label-list')
+    def get_cached_label_list(self):
+        return self.labels.all()
+
+    @django_cache('blueprint-{id}-stack-count')
+    def stack_count(self):
+        return self.stacks.count()
 
     def _get_properties(self):
         if not self.props_file:
@@ -143,6 +155,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
         return list(formulas)
 
 
+@six.python_2_unicode_compatible
 class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
 
     class Meta:
@@ -194,10 +207,11 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
     def formula_components_count(self):
         return self.formula_components.count()
 
-    def __unicode__(self):
-        return self.title
+    def __str__(self):
+        return six.text_type(self.title)
 
 
+@six.python_2_unicode_compatible
 class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
     """
     Access rules are a white list of rules for a host that defines
@@ -230,15 +244,16 @@ class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
     # access to the given security group owned by the owner_id's account
     rule = models.CharField('Rule', max_length=255)
 
-    def __unicode__(self):
-        return u'{0} {1}-{2} {3}'.format(
+    def __str__(self):
+        return six.text_type('{0} {1}-{2} {3}'.format(
             self.protocol,
             self.from_port,
             self.to_port,
             self.rule
-        )
+        ))
 
 
+@six.python_2_unicode_compatible
 class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
 
     class Meta:
@@ -257,3 +272,6 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
 
     # The snapshot ID to create the volume from
     snapshot = models.ForeignKey('cloud.Snapshot', related_name='blueprint_volumes')
+
+    def __str__(self):
+        return six.text_type('{} mounted at {}'.format(self.device, self.mount_point))

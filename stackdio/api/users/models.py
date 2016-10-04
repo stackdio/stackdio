@@ -15,8 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
+import six
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -29,6 +32,7 @@ def get_user_queryset():
     return get_user_model().objects.all()
 
 
+@six.python_2_unicode_compatible
 class UserSettings(models.Model):
 
     class Meta:
@@ -44,8 +48,8 @@ class UserSettings(models.Model):
     # Is the advanced view on?
     advanced_view = models.BooleanField('Advanced View', default=False)
 
-    def __unicode__(self):
-        return self.user.username
+    def __str__(self):
+        return six.text_type('Settings for {}'.format(self.user.username))
 
 
 @receiver(models.signals.post_save, sender=settings.AUTH_USER_MODEL)

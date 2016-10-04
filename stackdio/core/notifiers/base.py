@@ -24,6 +24,7 @@ NOTIFIER_REQUIRED_METHODS = (
     'get_required_options',
     'send_notification',
     'send_notifications_in_bulk',
+    'needs_verification',
     'prefer_send_in_bulk',
     'split_group_notifications',
 )
@@ -46,6 +47,10 @@ class BaseNotifier(six.with_metaclass(ABCMeta)):
     Abstract Base class for all notifiers.
     Any overridden methods should NOT modify any Notification objects that are passed in.
     """
+
+    # Set this to False if a handler with this notifier does not need to be verified
+    # before sending notifications.
+    needs_verification = True
 
     # Set this to True if your notifier should have send_notifications_in_bulk() called instead
     # of send_notification().
