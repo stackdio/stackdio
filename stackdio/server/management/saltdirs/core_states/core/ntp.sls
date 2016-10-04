@@ -2,15 +2,6 @@
     {% set ntp_name = 'ntp' %}
 {% else %}
     {% set ntp_name = 'ntpd' %}
-
-# CentOS apparently needs yum-utils for pkg.installed to work, but we can't install it with pkg.installed
-install-yum-utils:
-  cmd.run:
-    - name: 'yum install -y yum-utils'
-    - user: root
-    - require_in:
-      - pkg: install-ntpd
-
 {% endif %}
 
 install-ntpd:

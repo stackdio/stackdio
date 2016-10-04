@@ -639,6 +639,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     'filesystem_type': fstype,
                     'create_fs': False,
                     'type': 'gp2',
+                    'encrypted': vol.encrypted,
                 }
 
                 # Set the appropriate volume attribute

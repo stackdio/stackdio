@@ -12,13 +12,15 @@
 
 {% if device_name %}
 
-{% if vol['create_fs'] %}
+{% if vol['create_fs'] and salt['extfs.fs_exists'](device_name) %}
 
 # First create the FS if it's an empty volume
 {{ vol['mount_point'] }}_create_fs:
-  cmd.run:
-    - name: 'mkfs -t {{ vol['filesystem_type'] }} {{ device_name }}'
-    - user: root
+  module.run:
+    - name: extfs.mkfs
+    - kwargs:
+        device: {{ device_name }}
+        fs_type: {{ vol['filesystem_type'] }}
     - require_in:
       - mount: {{ vol['mount_point'] }}
 {% endif %}

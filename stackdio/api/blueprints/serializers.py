@@ -103,7 +103,8 @@ class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
 
 
 class BlueprintVolumeSerializer(serializers.ModelSerializer):
-    snapshot = serializers.SlugRelatedField(slug_field='slug', queryset=Snapshot.objects.all())
+    snapshot = serializers.SlugRelatedField(slug_field='slug', queryset=Snapshot.objects.all(),
+                                            allow_null=True)
 
     extra_options = serializers.JSONField()
 
