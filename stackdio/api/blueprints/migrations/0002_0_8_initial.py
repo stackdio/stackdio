@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
     ]
 
     replaces = [
-        (b'blueprints', '0001_initial'),
-        (b'blueprints', '0002_v0_7_migrations'),
-        (b'blueprints', '0003_v0_7b_migrations'),
-        (b'blueprints', '0004_v0_7c_migrations'),
-        (b'blueprints', '0005_v0_7d_migrations'),
+        ('blueprints', '0001_initial'),
+        ('blueprints', '0002_v0_7_migrations'),
+        ('blueprints', '0003_v0_7b_migrations'),
+        ('blueprints', '0004_v0_7c_migrations'),
+        ('blueprints', '0005_v0_7d_migrations'),
     ]
 
     operations = [

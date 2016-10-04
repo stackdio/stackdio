@@ -19,11 +19,11 @@ class Migration(migrations.Migration):
     ]
 
     replaces = [
-        (b'blueprints', '0001_initial'),
-        (b'blueprints', '0002_v0_7_migrations'),
-        (b'blueprints', '0003_v0_7b_migrations'),
-        (b'blueprints', '0004_v0_7c_migrations'),
-        (b'blueprints', '0005_v0_7d_migrations'),
+        ('blueprints', '0001_initial'),
+        ('blueprints', '0002_v0_7_migrations'),
+        ('blueprints', '0003_v0_7b_migrations'),
+        ('blueprints', '0004_v0_7c_migrations'),
+        ('blueprints', '0005_v0_7d_migrations'),
     ]
 
     operations = [
@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255, verbose_name='title')),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
-                ('create_users', models.BooleanField(verbose_name=b'Create SSH Users')),
+                ('create_users', models.BooleanField(verbose_name='Create SSH Users')),
                 ('props_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.blueprints.models.get_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY), max_length=255, blank=True, null=True)),
             ],
             options={
@@ -53,10 +53,10 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255, verbose_name='title')),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
-                ('protocol', models.CharField(max_length=4, verbose_name=b'Protocol', choices=[(b'tcp', b'TCP'), (b'udp', b'UDP'), (b'icmp', b'ICMP'), (b'-1', b'all')])),
-                ('from_port', models.IntegerField(verbose_name=b'Start Port')),
-                ('to_port', models.IntegerField(verbose_name=b'End Port')),
-                ('rule', models.CharField(max_length=255, verbose_name=b'Rule')),
+                ('protocol', models.CharField(max_length=4, verbose_name='Protocol', choices=[('tcp', 'TCP'), ('udp', 'UDP'), ('icmp', 'ICMP'), ('-1', 'all')])),
+                ('from_port', models.IntegerField(verbose_name='Start Port')),
+                ('to_port', models.IntegerField(verbose_name='End Port')),
+                ('rule', models.CharField(max_length=255, verbose_name='Rule')),
             ],
             options={
                 'default_permissions': (),
@@ -72,9 +72,9 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255, verbose_name='title')),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
-                ('count', models.PositiveIntegerField(verbose_name=b'Count')),
-                ('hostname_template', models.CharField(max_length=64, verbose_name=b'Hostname Template')),
-                ('subnet_id', models.CharField(default=b'', max_length=32, verbose_name=b'Subnet ID', blank=True)),
+                ('count', models.PositiveIntegerField(verbose_name='Count')),
+                ('hostname_template', models.CharField(max_length=64, verbose_name='Hostname Template')),
+                ('subnet_id', models.CharField(default='', max_length=32, verbose_name='Subnet ID', blank=True)),
                 ('spot_price', models.DecimalField(null=True, max_digits=5, decimal_places=2, blank=True)),
             ],
             options={
@@ -91,8 +91,8 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255, verbose_name='title')),
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
-                ('device', models.CharField(max_length=32, verbose_name=b'Device Name', choices=[(b'/dev/sdb', b'/dev/sdb'), (b'/dev/sdc', b'/dev/sdc'), (b'/dev/sdd', b'/dev/sdd'), (b'/dev/sde', b'/dev/sde'), (b'/dev/sdf', b'/dev/sdf'), (b'/dev/sdg', b'/dev/sdg'), (b'/dev/sdh', b'/dev/sdh'), (b'/dev/sdi', b'/dev/sdi'), (b'/dev/sdj', b'/dev/sdj'), (b'/dev/sdk', b'/dev/sdk'), (b'/dev/sdl', b'/dev/sdl')])),
-                ('mount_point', models.CharField(max_length=64, verbose_name=b'Mount Point')),
+                ('device', models.CharField(max_length=32, verbose_name='Device Name', choices=[('/dev/sdb', '/dev/sdb'), ('/dev/sdc', '/dev/sdc'), ('/dev/sdd', '/dev/sdd'), ('/dev/sde', '/dev/sde'), ('/dev/sdf', '/dev/sdf'), ('/dev/sdg', '/dev/sdg'), ('/dev/sdh', '/dev/sdh'), ('/dev/sdi', '/dev/sdi'), ('/dev/sdj', '/dev/sdj'), ('/dev/sdk', '/dev/sdk'), ('/dev/sdl', '/dev/sdl')])),
+                ('mount_point', models.CharField(max_length=64, verbose_name='Mount Point')),
                 ('host', models.ForeignKey(related_name='volumes', to='blueprints.BlueprintHostDefinition')),
             ],
             options={

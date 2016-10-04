@@ -14,13 +14,13 @@ class Migration(migrations.Migration):
     ]
 
     replaces = [
-        (b'cloud', '0001_initial'),
-        (b'cloud', '0002_initial'),
-        (b'cloud', '0004_v0_7_migrations'),
-        (b'cloud', '0005_v0_7b_migrations'),
-        (b'cloud', '0006_v0_7c_migrations'),
-        (b'cloud', '0007_v0_7d_migrations'),
-        (b'cloud', '0008_v0_7e_migrations'),
+        ('cloud', '0001_initial'),
+        ('cloud', '0002_initial'),
+        ('cloud', '0004_v0_7_migrations'),
+        ('cloud', '0005_v0_7b_migrations'),
+        ('cloud', '0006_v0_7c_migrations'),
+        ('cloud', '0007_v0_7d_migrations'),
+        ('cloud', '0008_v0_7e_migrations'),
     ]
 
     operations = [
@@ -37,12 +37,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cloudregion',
             name='provider',
-            field=models.ForeignKey(verbose_name=b'Cloud Provider', to='cloud.CloudProvider'),
+            field=models.ForeignKey(verbose_name='Cloud Provider', to='cloud.CloudProvider'),
         ),
         migrations.AddField(
             model_name='cloudinstancesize',
             name='provider',
-            field=models.ForeignKey(verbose_name=b'Cloud Provider', to='cloud.CloudProvider'),
+            field=models.ForeignKey(verbose_name='Cloud Provider', to='cloud.CloudProvider'),
         ),
         migrations.AddField(
             model_name='cloudimage',
@@ -52,17 +52,17 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='cloudimage',
             name='default_instance_size',
-            field=models.ForeignKey(verbose_name=b'Default Instance Size', to='cloud.CloudInstanceSize'),
+            field=models.ForeignKey(verbose_name='Default Instance Size', to='cloud.CloudInstanceSize'),
         ),
         migrations.AddField(
             model_name='cloudaccount',
             name='provider',
-            field=models.ForeignKey(verbose_name=b'Cloud Provider', to='cloud.CloudProvider'),
+            field=models.ForeignKey(verbose_name='Cloud Provider', to='cloud.CloudProvider'),
         ),
         migrations.AddField(
             model_name='cloudaccount',
             name='region',
-            field=models.ForeignKey(verbose_name=b'Region', to='cloud.CloudRegion'),
+            field=models.ForeignKey(verbose_name='Region', to='cloud.CloudRegion'),
         ),
         migrations.AlterUniqueTogether(
             name='snapshot',

@@ -16,12 +16,12 @@ class Migration(migrations.Migration):
     ]
 
     replaces = [
-        (b'formulas', '0001_initial'),
-        (b'formulas', '0002_v0_7_migrations'),
-        (b'formulas', '0003_v0_7b_migrations'),
-        (b'formulas', '0004_v0_7c_migrations'),
-        (b'formulas', '0005_v0_7d_migrations'),
-        (b'formulas', '0006_v0_7e_migrations'),
+        ('formulas', '0001_initial'),
+        ('formulas', '0002_v0_7_migrations'),
+        ('formulas', '0003_v0_7b_migrations'),
+        ('formulas', '0004_v0_7c_migrations'),
+        ('formulas', '0005_v0_7d_migrations'),
+        ('formulas', '0006_v0_7e_migrations'),
     ]
 
     operations = [
@@ -37,10 +37,10 @@ class Migration(migrations.Migration):
                 ('status', model_utils.fields.StatusField(default=b'error', max_length=100, verbose_name='status', no_check_for_status=True, choices=[(b'error', b'error'), (b'complete', b'complete'), (b'importing', b'importing')])),
                 ('status_changed', model_utils.fields.MonitorField(default=django.utils.timezone.now, verbose_name='status changed', monitor='status')),
                 ('status_detail', models.TextField(blank=True)),
-                ('uri', models.URLField(unique=True, verbose_name=b'Repository URI')),
-                ('root_path', models.CharField(max_length=64, verbose_name=b'Root Path')),
-                ('git_username', models.CharField(max_length=64, verbose_name=b'Git Username', blank=True)),
-                ('access_token', models.BooleanField(default=False, verbose_name=b'Access Token')),
+                ('uri', models.URLField(unique=True, verbose_name='Repository URI')),
+                ('root_path', models.CharField(max_length=64, verbose_name='Root Path')),
+                ('git_username', models.CharField(max_length=64, verbose_name='Git Username', blank=True)),
+                ('access_token', models.BooleanField(default=False, verbose_name='Access Token')),
             ],
             options={
                 'ordering': ['title'],
@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
                 ('modified', django_extensions.db.fields.ModificationDateTimeField(default=django.utils.timezone.now, verbose_name='modified', editable=False, blank=True)),
                 ('sls_path', models.CharField(max_length=255)),
                 ('object_id', models.PositiveIntegerField()),
-                ('order', models.IntegerField(default=0, verbose_name=b'Order')),
+                ('order', models.IntegerField(default=0, verbose_name='Order')),
                 ('content_type', models.ForeignKey(to='contenttypes.ContentType')),
                 ('formula', models.ForeignKey(to='formulas.Formula')),
             ],
@@ -70,7 +70,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('object_id', models.PositiveIntegerField()),
-                ('version', models.CharField(max_length=100, verbose_name=b'Formula Version')),
+                ('version', models.CharField(max_length=100, verbose_name='Formula Version')),
                 ('content_type', models.ForeignKey(to='contenttypes.ContentType')),
                 ('formula', models.ForeignKey(to='formulas.Formula')),
             ],

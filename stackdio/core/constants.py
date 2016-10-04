@@ -16,6 +16,9 @@
 #
 
 
+from __future__ import unicode_literals
+
+
 class Health(object):
     """
     Define valid values for the health of stacks / hosts / components
