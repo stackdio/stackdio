@@ -12,9 +12,9 @@
 
 {% if device_name %}
 
-{% if vol['create_fs'] and salt['extfs.fs_exists'](device_name) %}
+{% if vol['create_fs'] and not salt['extfs.fs_exists'](device_name) %}
 
-# First create the FS if it's an empty volume
+# First create the FS if it's an empty volume and there's not already a filesystem on it
 {{ vol['mount_point'] }}_create_fs:
   module.run:
     - name: extfs.mkfs
