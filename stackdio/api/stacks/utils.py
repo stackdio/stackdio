@@ -636,33 +636,21 @@ def process_host_info(host_info, host):
     if not isinstance(block_device_mappings, list):
         block_device_mappings = [block_device_mappings]
 
-    # for each block device mapping found on the running host,
-    # try to match the device name up with that stored in the DB
-    # if a match is found, fill in the metadata and save the volume
-    for bdm in block_device_mappings:
-        bdm_volume_id = bdm['ebs']['volumeId']
-        try:
-            # attempt to get the volume for this host that
-            # has been created
-            volume = host.volumes.get(device=bdm['deviceName'])
+    # Build up a map of device name -> device mapping
+    bdm_map = {bdm['deviceName']: bdm for bdm in block_device_mappings}
 
-            # update the volume information if needed
-            if volume.volume_id != bdm_volume_id:
-                volume.volume_id = bdm['ebs']['volumeId']
-                volume.attach_time = bdm['ebs']['attachTime']
+    # For each volume we allegedly have, make sure it is attached to the host.
+    # If we can't find it, forget the volume_id
+    # Otherwise update the volume_id
+    for volume in host.volumes.all():
+        if volume.device in bdm_map:
+            # update the volume_id info
+            volume.volume_id = bdm_map[volume.device]['ebs']['volumeId']
+        else:
+            # The volume is gone - reflect this on the volume model
+            volume.volume_id = ''
 
-                # save the new volume info
-                volume.save()
-
-        except Volume.DoesNotExist:
-            # This is most likely fine. Usually means that the
-            # EBS volume for the root drive was found instead.
-            pass
-        except Exception:
-            err_msg = 'Unhandled exception while updating volume metadata.'
-            logger.exception(err_msg)
-            logger.debug(block_device_mappings)
-            raise
+        volume.save()
 
     # Update spot instance metadata
     if 'spotInstanceRequestId' in host_info:
