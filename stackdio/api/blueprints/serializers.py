@@ -146,10 +146,6 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    def create(self, validated_data):
-        logger.debug(validated_data)
-        return super(BlueprintVolumeSerializer, self).create(validated_data)
-
 
 class BlueprintHostDefinitionSerializer(CreateOnlyFieldsMixin,
                                         StackdioParentHyperlinkedModelSerializer):
