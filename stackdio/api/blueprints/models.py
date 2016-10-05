@@ -200,6 +200,9 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
                                      blank=True,
                                      null=True)
 
+    # Any extra options we need to pass on to the host
+    extra_options = JSONField('Extra Options')
+
     # Grab the list of formula components
     formula_components = GenericRelation('formulas.FormulaComponent')
 

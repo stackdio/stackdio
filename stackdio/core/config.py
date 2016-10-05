@@ -16,9 +16,11 @@
 #
 from __future__ import print_function, unicode_literals
 
+import collections
 import logging
 import getpass
 import os
+import socket
 
 import six
 import yaml
@@ -54,6 +56,7 @@ class StackdioConfig(dict):
         'server_url': six.string_types,
         'celery_broker_url': six.string_types,
         'redis_url': six.string_types,
+        'salt_master_fqdn': collections.Sequence,
         'storage_dir': six.string_types,
         'log_dir': six.string_types,
         'django_secret_key': six.string_types,
@@ -63,6 +66,7 @@ class StackdioConfig(dict):
     }
 
     DEFAULT_CONTEXT = {
+        'current_fqdn': socket.getfqdn(),
         'user': getpass.getuser(),
         'random_secret_key': get_random_string(50, SECRET_CHARS),
     }
@@ -105,6 +109,7 @@ class StackdioConfig(dict):
         for k, t in self.REQUIRED_FIELDS.items():
             if k not in stackdio_config:
                 errors.append('Missing parameter `{0}`'.format(k))
+                continue
             if not isinstance(stackdio_config[k], t):
                 errors.append('Config parameter `{0}` must be of type `{1}`, '
                               'got `{2}` instead'.format(k, t, type(stackdio_config[k])))

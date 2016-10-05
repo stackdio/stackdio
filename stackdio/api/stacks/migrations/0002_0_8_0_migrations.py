@@ -6,6 +6,7 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django_extensions.db.fields
 import model_utils.fields
+import stackdio.core.fields
 
 
 def fix_fields_forwards(apps, schema_editor):
@@ -112,6 +113,12 @@ class Migration(migrations.Migration):
             model_name='host',
             name='activity',
             field=models.CharField(blank=True, choices=[('unknown', 'unknown'), ('queued', 'queued'), ('launching', 'launching'), ('provisioning', 'provisioning'), ('orchestrating', 'orchestrating'), ('', ''), ('pausing', 'pausing'), ('paused', 'paused'), ('resuming', 'resuming'), ('terminating', 'terminating'), ('terminated', 'terminated'), ('executing', 'executing'), ('dead', 'dead')], default='queued', max_length=32, verbose_name='Activity'),
+        ),
+        migrations.AddField(
+            model_name='host',
+            name='extra_options',
+            field=stackdio.core.fields.JSONField(default={}, verbose_name='Extra Options'),
+            preserve_default=False,
         ),
 
         # Stack things

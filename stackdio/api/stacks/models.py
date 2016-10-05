@@ -19,11 +19,11 @@
 
 from __future__ import unicode_literals
 
+import collections
 import json
 import logging
 import os
 import re
-import socket
 
 import salt.cloud
 import six
@@ -37,10 +37,7 @@ from django.db import models, transaction
 from django.dispatch import receiver
 from django.utils.lru_cache import lru_cache
 from django.utils.timezone import now
-from django_extensions.db.models import (
-    TimeStampedModel,
-    TitleSlugDescriptionModel,
-)
+from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 from guardian.shortcuts import get_users_with_perms
 from model_utils import Choices
 from model_utils.models import StatusModel
@@ -50,13 +47,17 @@ from stackdio.api.cloud.providers.base import GroupExistsException
 from stackdio.api.volumes.models import Volume
 from stackdio.core.constants import Health, ComponentStatus, Activity
 from stackdio.core.decorators import django_cache
-from stackdio.core.fields import DeletingFileField
+from stackdio.core.fields import DeletingFileField, JSONField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.notifications.decorators import add_subscribed_channels
 from stackdio.core.utils import recursive_update
 
 logger = logging.getLogger(__name__)
 
+# Set any options that are not allowed to be in a host's EXTRA_OPTIONS
+INSTANCE_OPTION_BLACKLIST = ['name', 'minion', 'size', 'securitygroupid', 'volumes',
+                             'driver', 'id', 'key', 'keyname', 'private_key', 'append_domain',
+                             'location', 'ssh_interface', 'image', 'provider', 'ssh_username']
 
 PROTOCOL_CHOICES = [
     ('tcp', 'TCP'),
@@ -554,7 +555,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     blueprint_host_definition=hostdef,
                     instance_size=hostdef.size,
                     hostname=hostname,
-                    sir_price=hostdef.spot_price
+                    sir_price=hostdef.spot_price,
+                    extra_options=hostdef.extra_options,
                 )
 
                 if hostdef.cloud_image.account.vpc_enabled:
@@ -600,9 +602,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         # TODO: Should we store this somewhere instead of assuming
 
-        master = socket.getfqdn()
+        master = settings.STACKDIO_CONFIG.salt_master_fqdn
 
-        images = {}
+        images = collections.defaultdict(dict)
 
         hosts = self.hosts.all()
         cluster_size = len(hosts)
@@ -710,7 +712,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                     'spot_price': str(host.sir_price)  # convert to string
                 }
 
-            images.setdefault(host.cloud_image.slug, {})[host.hostname] = host_metadata
+            # Set our extra options - as long as they're not in the blacklist
+            for key, value in host.extra_options:
+                if key not in INSTANCE_OPTION_BLACKLIST:
+                    host_metadata[key] = value
+
+            images[host.cloud_image.slug][host.hostname] = host_metadata
 
         return images
 
@@ -1157,6 +1164,9 @@ class Host(TimeStampedModel):
                                     max_digits=5,
                                     decimal_places=2,
                                     null=True)
+
+    # Any extra options we need to pass on to the host
+    extra_options = JSONField('Extra Options')
 
     def __str__(self):
         return six.text_type(self.hostname)

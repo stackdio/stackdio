@@ -25,6 +25,7 @@ class Migration(migrations.Migration):
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
+
         migrations.AlterField(
             model_name='blueprintaccessrule',
             name='created',
@@ -35,6 +36,7 @@ class Migration(migrations.Migration):
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
+
         migrations.AlterField(
             model_name='blueprinthostdefinition',
             name='created',
@@ -45,6 +47,13 @@ class Migration(migrations.Migration):
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
+        migrations.AddField(
+            model_name='blueprinthostdefinition',
+            name='extra_options',
+            field=stackdio.core.fields.JSONField(default={}, verbose_name='Extra Options'),
+            preserve_default=False,
+        ),
+
         migrations.AlterField(
             model_name='blueprintvolume',
             name='snapshot',
@@ -60,7 +69,6 @@ class Migration(migrations.Migration):
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
-
         migrations.AddField(
             model_name='blueprintvolume',
             name='encrypted',

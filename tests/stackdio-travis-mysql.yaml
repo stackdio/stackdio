@@ -11,6 +11,8 @@ celery_broker_url: redis://localhost:6379/0
 
 redis_url: redis://localhost:6379/1
 
+salt_master_fqdn: {{ current_fqdn }}
+
 storage_dir: storage
 
 log_dir: logs
