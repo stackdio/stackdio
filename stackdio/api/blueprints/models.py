@@ -275,10 +275,11 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
 
     # The snapshot ID to create the volume from - allow this to be null so we can create
     # empty volumes without a snapshot
-    snapshot = models.ForeignKey('cloud.Snapshot', related_name='blueprint_volumes', null=True)
+    snapshot = models.ForeignKey('cloud.Snapshot', related_name='blueprint_volumes',
+                                 null=True, default=None)
 
     # The size of the volume to create - also allow this to be null if we're using a snapshot
-    size_in_gb = models.IntegerField('Size in GB', null=True)
+    size_in_gb = models.IntegerField('Size in GB', null=True, default=None)
 
     # Should this volume be encrypted?
     encrypted = models.BooleanField('Encrypted', default=False)

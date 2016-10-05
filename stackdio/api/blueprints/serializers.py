@@ -17,6 +17,8 @@
 
 # pylint: disable=abstract-method
 
+from __future__ import unicode_literals
+
 import logging
 import string
 
@@ -104,9 +106,9 @@ class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
 
 class BlueprintVolumeSerializer(serializers.ModelSerializer):
     snapshot = serializers.SlugRelatedField(slug_field='slug', queryset=Snapshot.objects.all(),
-                                            allow_null=True)
+                                            allow_null=True, default=None)
 
-    extra_options = serializers.JSONField()
+    extra_options = serializers.JSONField(default={})
 
     class Meta:
         model = models.BlueprintVolume
@@ -118,6 +120,10 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
             'encrypted',
             'extra_options',
         )
+
+        extra_kwargs = {
+            'size_in_gb': {'default': None},
+        }
 
     def validate(self, attrs):
         snapshot = attrs.get('snapshot')
@@ -131,7 +137,18 @@ class BlueprintVolumeSerializer(serializers.ModelSerializer):
                 'size_in_gb': [err_msg],
             })
 
+        if not snapshot and not size:
+            err_msg = 'You must specify either `snapshot` or `size_in_gb`.'
+            raise serializers.ValidationError({
+                'snapshot': [err_msg],
+                'size_in_gb': [err_msg],
+            })
+
         return attrs
+
+    def create(self, validated_data):
+        logger.debug(validated_data)
+        return super(BlueprintVolumeSerializer, self).create(validated_data)
 
 
 class BlueprintHostDefinitionSerializer(CreateOnlyFieldsMixin,
@@ -146,6 +163,7 @@ class BlueprintHostDefinitionSerializer(CreateOnlyFieldsMixin,
                                         queryset=CloudZone.objects.all())
     cloud_image = serializers.SlugRelatedField(slug_field='slug',
                                                queryset=CloudImage.objects.all())
+    extra_options = serializers.JSONField(default={})
 
     class Meta:
         model = models.BlueprintHostDefinition
@@ -166,6 +184,7 @@ class BlueprintHostDefinitionSerializer(CreateOnlyFieldsMixin,
             'formula_components',
             'access_rules',
             'volumes',
+            'extra_options',
         )
 
         create_only_fields = (

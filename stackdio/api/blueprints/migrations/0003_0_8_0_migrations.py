@@ -65,7 +65,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='blueprintvolume',
             name='snapshot',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='blueprint_volumes', to='cloud.Snapshot'),
+            field=models.ForeignKey(null=True, default=None, on_delete=django.db.models.deletion.CASCADE, related_name='blueprint_volumes', to='cloud.Snapshot'),
         ),
         migrations.RunPython(lambda a, s: None, delete_bad_volumes),
         migrations.AlterField(
@@ -92,6 +92,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='blueprintvolume',
             name='size_in_gb',
-            field=models.IntegerField(null=True, verbose_name='Size in GB'),
+            field=models.IntegerField(null=True, default=None, verbose_name='Size in GB'),
         ),
     ]
