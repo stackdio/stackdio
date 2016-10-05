@@ -36,8 +36,8 @@ define([
         sortableFields: [
             {name: 'title', displayName: 'Title', width: '30%'},
             {name: 'description', displayName: 'Description', width: '30%'},
-            {name: 'snapshotId', displayName: 'ID', width: '20%' },
-            {name: 'filesystemType', displayName: 'Filesystem Type', width: '20%'}
+            {name: 'snapshotId', displayName: 'ID', width: '15%' },
+            {name: 'filesystemType', displayName: 'Filesystem Type', width: '15%'}
         ]
     });
 });
