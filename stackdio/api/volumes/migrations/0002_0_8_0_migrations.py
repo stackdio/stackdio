@@ -23,7 +23,18 @@ def reverse_func(apps, schema_editor):
 
     # Just put the snapshot back in place
     for volume in Volume.objects.all():
-        volume.snapshot = volume.blueprint_volume.snapshot
+        snapshot = volume.blueprint_volume.snapshot
+
+        if snapshot is None:
+            # If the snapshot is null, just delete this volume... it's an invalid configuration
+            # going backwards.
+            volume.delete()
+            continue
+
+        volume.snapshot = snapshot
+        volume.hostname = volume.host.hostname
+        volume.device = volume.blueprint_volume.device
+        volume.mount_point = volume.blueprint_volume.mount_point
         volume.save()
 
 
@@ -39,24 +50,61 @@ class Migration(migrations.Migration):
             model_name='volume',
             name='stack',
         ),
+        # They are null at first, but we don't allow them to be null later after the values are populated
         migrations.AddField(
             model_name='volume',
             name='blueprint_volume',
             field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='volumes', to='blueprints.BlueprintVolume'),
         ),
-        # Populate the blueprint_volumes
+        # Allow some other fields to be null for a bit (only matters for reverse)
+        migrations.AlterField(
+            model_name='volume',
+            name='snapshot',
+            field=models.ForeignKey(to='cloud.Snapshot', null=True),
+        ),
+        migrations.AlterField(
+            model_name='volume',
+            name='device',
+            field=models.CharField(max_length=32, verbose_name='Device', null=True),
+        ),
+        migrations.AlterField(
+            model_name='volume',
+            name='hostname',
+            field=models.CharField(max_length=64, verbose_name='Hostname', null=True),
+        ),
+        migrations.AlterField(
+            model_name='volume',
+            name='mount_point',
+            field=models.CharField(max_length=255, verbose_name='Mount Point', null=True),
+        ),
+        # Set the appropriate fields
         migrations.RunPython(forwards_func, reverse_func),
-        # Make them non-nullable
+        # Make the blueprint_volumes non-nullable
         migrations.AlterField(
             model_name='volume',
             name='blueprint_volume',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='volumes', to='blueprints.BlueprintVolume'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
+                                    related_name='volumes', to='blueprints.BlueprintVolume'),
         ),
-        # delete snapshot
+        # Remove the fields we don't need anymore
         migrations.RemoveField(
             model_name='volume',
             name='snapshot',
         ),
+        migrations.RemoveField(
+            model_name='volume',
+            name='device',
+        ),
+        migrations.RemoveField(
+            model_name='volume',
+            name='hostname',
+        ),
+        migrations.RemoveField(
+            model_name='volume',
+            name='mount_point',
+        ),
+
+        # Everything else that needs to be changed
         migrations.AlterField(
             model_name='volume',
             name='host',
@@ -75,17 +123,5 @@ class Migration(migrations.Migration):
         migrations.RemoveField(
             model_name='volume',
             name='attach_time',
-        ),
-        migrations.RemoveField(
-            model_name='volume',
-            name='device',
-        ),
-        migrations.RemoveField(
-            model_name='volume',
-            name='hostname',
-        ),
-        migrations.RemoveField(
-            model_name='volume',
-            name='mount_point',
         ),
     ]

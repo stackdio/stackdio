@@ -8,6 +8,14 @@ import django_extensions.db.fields
 import stackdio.core.fields
 
 
+def delete_bad_volumes(apps, schema_migration):
+    BlueprintVolume = apps.get_model('blueprints', 'BlueprintVolume')
+
+    # Delete any volumes with null snapshots - they are invalid going backwards
+    for volume in BlueprintVolume.objects.filter(snapshot=None):
+        volume.delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -59,6 +67,7 @@ class Migration(migrations.Migration):
             name='snapshot',
             field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='blueprint_volumes', to='cloud.Snapshot'),
         ),
+        migrations.RunPython(lambda a, s: None, delete_bad_volumes),
         migrations.AlterField(
             model_name='blueprintvolume',
             name='created',
