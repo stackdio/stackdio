@@ -48,12 +48,11 @@ define([
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/volumes/',
         sortableFields: [
             {name: 'volumeId', displayName: 'Volume ID', width: '15%'},
-            {name: 'snapshotName', displayName: 'Snapshot', width: '15%'},
-            {name: 'attachTime', displayName: 'Attach Time', width: '15%'},
-            {name: 'hostname', displayName: 'Hostname', width: '15%'},
-            {name: 'size', displayName: 'Size', width: '10%'},
+            {name: 'snapshotId', displayName: 'Snapshot', width: '20%'},
+            {name: 'size', displayName: 'Size', width: '15%'},
             {name: 'device', displayName: 'Device', width: '15%'},
-            {name: 'mountPoint', displayName: 'Mount Point', width: '15%'}
+            {name: 'mountPoint', displayName: 'Mount Point', width: '20%'},
+            {name: 'encrypted', displayName: 'Encrypted', width: '15%'}
         ]
     });
 });

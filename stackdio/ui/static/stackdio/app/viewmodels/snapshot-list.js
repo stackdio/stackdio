@@ -34,11 +34,10 @@ define([
         initialUrl: '/api/cloud/snapshots/',
         detailRequiresAdvanced: true,
         sortableFields: [
-            {name: 'title', displayName: 'Title', width: '20%'},
-            {name: 'description', displayName: 'Description', width: '20%'},
+            {name: 'title', displayName: 'Title', width: '30%'},
+            {name: 'description', displayName: 'Description', width: '30%'},
             {name: 'snapshotId', displayName: 'ID', width: '20%' },
-            {name: 'sizeInGB', displayName: 'Size', width: '15%'},
-            {name: 'filesystemType', displayName: 'Filesystem Type', width: '15%'}
+            {name: 'filesystemType', displayName: 'Filesystem Type', width: '20%'}
         ]
     });
 });
