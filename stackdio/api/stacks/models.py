@@ -713,7 +713,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 }
 
             # Set our extra options - as long as they're not in the blacklist
-            for key, value in host.extra_options:
+            for key, value in host.extra_options.items():
                 if key not in INSTANCE_OPTION_BLACKLIST:
                     host_metadata[key] = value
 
