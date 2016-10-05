@@ -40,7 +40,6 @@ def fix_stack_fields_reverse(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('blueprints', '0002_0_8_initial'),
         ('stacks', '0001_0_8_initial'),
         ('formulas', '0002_0_8_0_migrations'),
     ]

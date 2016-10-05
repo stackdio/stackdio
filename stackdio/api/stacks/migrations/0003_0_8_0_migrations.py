@@ -41,19 +41,23 @@ def fix_host_fields_forwards(apps, schema_editor):
 
 def fix_host_fields_reverse(apps, schema_editor):
     Host = apps.get_model('stacks', 'Host')
+    BHD = apps.get_model('blueprints', 'BlueprintHostDefinition')
 
     # Fix the fields on the host
     for host in Host.objects.all():
-        host.availability_zone = host.blueprint_host_definition.zone
-        host.cloud_image = host.blueprint_host_definition.cloud_image
-        host.instance_size = host.blueprint_host_definition.size
-        host.subnet_id = host.blueprint_host_definition.subnet_id
+        bhd = BHD.objects.get(hosts=host)
+
+        host.availability_zone = bhd.zone
+        host.cloud_image = bhd.cloud_image
+        host.instance_size = bhd.size
+        host.subnet_id = bhd.subnet_id
         host.save()
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('blueprints', '0003_0_8_0_migrations'),
         ('stacks', '0002_0_8_0_migrations'),
     ]
 

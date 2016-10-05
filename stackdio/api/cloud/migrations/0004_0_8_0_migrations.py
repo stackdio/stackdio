@@ -14,9 +14,19 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterField(
+            model_name='cloudaccount',
+            name='account_id',
+            field=models.CharField(default='INVALID_ACCOUNT_ID', max_length=64, verbose_name='Account ID'),
+        ),
         migrations.RemoveField(
             model_name='cloudaccount',
             name='account_id',
+        ),
+        migrations.AlterField(
+            model_name='snapshot',
+            name='size_in_gb',
+            field=models.IntegerField(default=1),
         ),
         migrations.RemoveField(
             model_name='snapshot',
