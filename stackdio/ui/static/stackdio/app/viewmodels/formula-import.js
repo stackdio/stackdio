@@ -58,10 +58,7 @@ define([
 
         // View variables
         self.uri = ko.observable();
-        self.username = ko.observable();
-        self.password = ko.observable();
-        self.accessToken = ko.observable();
-        self.usernameText = ko.observable();
+        self.sshPrivateKey = ko.observable();
 
         self.subscription = null;
 
@@ -112,18 +109,7 @@ define([
         // Necessary functions
         self.reset = function() {
             self.uri('');
-            self.username('');
-            self.password('');
-
-            self.accessToken.subscribe(function (newVal) {
-                if (newVal) {
-                    self.usernameText('GitHub access token');
-                } else {
-                    self.usernameText('Git username');
-                }
-            });
-
-            self.accessToken(false);
+            self.sshPrivateKey('');
         };
 
         self.removeErrors = function(keys) {
@@ -137,7 +123,7 @@ define([
 
         self.importFormula = function() {
             // First remove all the old error messages
-            var keys = ['uri', 'username', 'password', 'access_token'];
+            var keys = ['uri', 'ssh_private_key'];
 
             self.removeErrors(keys);
 
@@ -153,9 +139,7 @@ define([
                 'url': '/api/formulas/',
                 'data': JSON.stringify({
                     uri: self.uri(),
-                    git_username: self.username(),
-                    git_password: self.password(),
-                    access_token: self.accessToken()
+                    ssh_private_key: self.sshPrivateKey()
                 })
             }).always(function () {
                 // Stop our spinning buttons FIRST

@@ -18,8 +18,8 @@
 from __future__ import unicode_literals
 
 import logging
+import os
 from collections import OrderedDict
-from os.path import exists, join, isdir, split, splitext
 from shutil import rmtree
 
 import git
@@ -30,6 +30,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.cache import cache
 from django.db import models
 from django.dispatch import receiver
+from django.utils.lru_cache import lru_cache
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 from model_utils import Choices
 from model_utils.models import StatusModel
@@ -88,9 +89,6 @@ class FormulaQuerySet(SearchQuerySet):
     searchable_fields = ('title', 'description', 'uri')
 
     def create(self, **kwargs):
-        # Should already be a PasswordStr object from the serializer
-        git_password = kwargs.pop('git_password', '')
-
         kwargs['status'] = Formula.IMPORTING
         kwargs['status_detail'] = 'Importing formula...this could take a while.'
 
@@ -100,7 +98,7 @@ class FormulaQuerySet(SearchQuerySet):
         from . import tasks
 
         # Start up the task to import the formula
-        tasks.import_formula.si(formula.id, git_password).apply_async()
+        tasks.import_formula.si(formula.id).apply_async()
 
         return formula
 
@@ -224,50 +222,37 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     # All components in this formula should start with this prefix
     root_path = models.CharField('Root Path', max_length=64)
 
-    git_username = models.CharField('Git Username', max_length=64, blank=True)
-
-    access_token = models.BooleanField('Access Token', default=False)
+    ssh_private_key = models.TextField('SSH Private Key', blank=True)
 
     def __str__(self):
         return six.text_type('{} ({})'.format(self.title, self.uri))
 
-    def get_repo_dir(self):
-        return join(
+    def get_repos_dir(self):
+        return os.path.join(
             settings.FILE_STORAGE_DIRECTORY,
             'formulas',
             '{0}-{1}'.format(self.pk, self.get_repo_name())
         )
 
     def get_repo_name(self):
-        return splitext(split(self.uri)[-1])[0]
+        return os.path.splitext(os.path.split(self.uri)[-1])[0]
 
-    @property
-    def private_git_repo(self):
-        return self.git_username != ''
+    @lru_cache()
+    def get_repo(self, version='HEAD'):
+        repo_dir = os.path.join(self.get_repos_dir(), version)
 
-    @property
-    def repo(self):
-        if not exists(self.get_repo_dir()):
-            return None
-
-        # Cache the repo obj
-        if getattr(self, '_repo', None) is None:
-            self._repo = git.Repo(self.get_repo_dir())
-        return self._repo
+        return git.Repo(repo_dir)
 
     def get_valid_versions(self):
-        if self.repo is None:
-            return []
+        main_repo = self.get_repo()
 
-        # This will grab all the tags, remote branches, and local branches
+        remote = main_repo.remote()
+
+        # This will grab all the remote branches & tags
         refs = set()
-        for r in self.repo.refs:
-            if r.is_remote():
-                # This is a remote branch
-                refs.add(str(r.remote_head))
-            else:
-                # local branch
-                refs.add(str(r.name))
+        for r in remote.refs:
+            # local branch
+            refs.add(r.remote_head)
 
         refs.remove('HEAD')
 
@@ -275,37 +260,20 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     @property
     def default_version(self):
-        if not self.repo:
-            return None
         # This will be the name of the default branch.
-        return str(self.repo.remotes.origin.refs.HEAD.ref.remote_head)
+        return self.get_repo().remote().refs.HEAD.ref.remote_head
 
-    def components_for_version(self, version):
-        if self.repo is None:
-            return {}
+    def components(self, version):
+        repo = self.get_repo(version)
 
-        if version in self.get_valid_versions():
-            # Checkout version, but only if it's valid
-            self.repo.git.checkout(version)
-
-        # Grab the components
-        components = self.components
-
-        # Go back to HEAD
-        self.repo.git.checkout(self.default_version)
-
-        return components
-
-    @property
-    def components(self):
-        cache_key = 'formula-components-{0}-{1}'.format(self.id, self.repo.head.commit)
+        cache_key = 'formula-{}-components-{}-{}'.format(self.id, version, repo.head.commit)
 
         cached_components = cache.get(cache_key)
 
         if cached_components:
             return cached_components
 
-        with open(join(self.get_repo_dir(), 'SPECFILE')) as f:
+        with open(os.path.join(repo.working_dir, 'SPECFILE')) as f:
             yaml_data = yaml.safe_load(f)
             ret = OrderedDict()
             # Create a map of sls_path -> component pairs
@@ -331,18 +299,17 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         for formula in cls.objects.all():
             if formula in version_map:
                 # Use the specified version
-                components = formula.components_for_version(version_map[formula])
+                components = formula.components(version_map[formula])
             else:
                 # Otherwise use the default version
-                components = formula.components_for_version(formula.default_version)
+                components = formula.components(formula.default_version)
 
             for component in components:
                 ret.setdefault(component, []).append(formula)
         return ret
 
-    @property
-    def properties(self):
-        with open(join(self.get_repo_dir(), 'SPECFILE')) as f:
+    def properties(self, version):
+        with open(os.path.join(self.get_repos_dir(), version, 'SPECFILE')) as f:
             yaml_data = yaml.safe_load(f)
             return yaml_data.get('pillar_defaults', {})
 
@@ -411,7 +378,7 @@ def cleanup_formula(sender, instance, **kwargs):
     the formula is deleted.
     """
 
-    repo_dir = instance.get_repo_dir()
-    logger.debug('cleanup_formula called. Path to remove: {0}'.format(repo_dir))
-    if isdir(repo_dir):
-        rmtree(repo_dir)
+    repos_dir = instance.get_repos_dir()
+    logger.debug('cleanup_formula called. Path to remove: {0}'.format(repos_dir))
+    if os.path.isdir(repos_dir):
+        rmtree(repos_dir)

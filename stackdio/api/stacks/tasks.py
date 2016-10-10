@@ -136,7 +136,7 @@ def copy_formulas(stack_or_account):
 
         # Blow away the private repo and re-copy.  This way we get the most recent states
         # that have been updated
-        if formula.private_git_repo and os.path.exists(formula_dir):
+        if os.path.exists(formula_dir):
             shutil.rmtree(formula_dir)
 
         if not os.path.isdir(formula_dir):
@@ -145,15 +145,8 @@ def copy_formulas(stack_or_account):
         else:
             logger.debug('Formula not copied, already exists: {0}'.format(formula.uri))
 
-        if formula.private_git_repo:
-            # If it's private, we can't update it but we can at least checkout the right branch
-            if formula.repo is not None:
-                formula.repo.git.checkout(version)
-            logger.debug('Skipping update of private formula: {0}'.format(formula.uri))
-            continue
-
         # Update the formula
-        update_formula.si(formula.id, None, version, formula_dir, raise_exception=False)()
+        update_formula.si(formula.id, version, formula_dir, raise_exception=False)()
 
 
 def copy_global_orchestrate(stack):

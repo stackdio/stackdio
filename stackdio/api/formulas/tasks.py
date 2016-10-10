@@ -46,71 +46,43 @@ def replace_all(rep_file, search_exp, replace_exp):
         sys.stdout.write(line)
 
 
-def clone_to_temp(formula, git_password):
+def clone_to_temp(formula):
     # temporary directory to clone into so we can read the
     # SPECFILE and do some initial validation
     tmpdir = mkdtemp(prefix='stackdio-')
     reponame = formula.get_repo_name()
     repodir = os.path.join(tmpdir, reponame)
-    origin = None
-    repo = None
-
-    uri = formula.uri
-    # Add the password for a private repo
-    if formula.private_git_repo:
-        parsed = urlsplit(uri)
-        uri = urlunsplit((
-            parsed.scheme,
-            '{0}:{1}@{2}'.format(formula.git_username, git_password, parsed.netloc),
-            parsed.path,
-            parsed.query,
-            parsed.fragment
-        ))
 
     try:
         # Clone the repo into a temp dir
-        repo = git.Repo.clone_from(uri, repodir)
-
-        origin = repo.remotes.origin.name
-
+        git.Repo.clone_from(formula.uri, repodir)
     except git.GitCommandError:
         raise FormulaTaskException(
             formula,
             'Unable to clone provided URI. This is either not '
-            'a git repository, or you don\'t have permission to clone it.  '
-            'Note that private repositories require the https protocol.')
-    finally:
-        if repo and not origin:
-            origin = repo.remotes.origin.name
-
-        if repo and formula and formula.private_git_repo:
-            # remove the password from the config
-            repo.git.remote('set-url', origin, formula.uri)
-
-            # Remove the logs which also store the password
-            log_dir = os.path.join(repodir, '.git', 'logs')
-            if os.path.isdir(log_dir):
-                shutil.rmtree(log_dir)
+            'a git repository, or you don\'t have permission to clone it.'
+        )
 
     # return the path where the repo is
     return repodir
 
 
 @shared_task(name='formulas.import_formula')
-def import_formula(formula_id, git_password):
+def import_formula(formula_id):
     formula = None
     try:
         formula = Formula.objects.get(id=formula_id)
         formula.set_status(Formula.IMPORTING, 'Cloning and importing formula.')
 
-        repodir = clone_to_temp(formula, git_password)
+        repodir = clone_to_temp(formula)
 
-        root_dir = formula.get_repo_dir()
+        root_dir = formula.get_repos_dir()
 
         if os.path.isdir(root_dir):
             raise FormulaTaskException(
                 formula,
-                'Formula root path already exists.')
+                'Formula root path already exists.'
+            )
 
         formula_title, formula_description, root_path, components = validate_specfile(formula,
                                                                                       repodir)
@@ -150,7 +122,7 @@ def import_formula(formula_id, git_password):
 
 # TODO: Ignoring complexity issues
 @shared_task(name='formulas.update_formula')
-def update_formula(formula_id, git_password, version, repodir=None, raise_exception=True):
+def update_formula(formula_id, version, repodir=None, raise_exception=True):
     repo = None
     current_commit = None
     formula = None
@@ -172,20 +144,6 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
         current_commit = repo.head.commit
 
         origin = repo.remotes.origin.name
-
-        # Add the username / password for a private repo
-        if formula.private_git_repo:
-            parsed = urlsplit(formula.uri)
-            uri = urlunsplit((
-                parsed.scheme,
-                '{0}:{1}@{2}'.format(formula.git_username, git_password, parsed.netloc),
-                parsed.path,
-                parsed.query,
-                parsed.fragment
-            ))
-
-            # add the password to the config
-            repo.git.remote('set-url', origin, uri)
 
         result = repo.remotes.origin.pull()
         if len(result) == 1 and result[0].commit == current_commit:
@@ -227,12 +185,3 @@ def update_formula(formula_id, git_password, version, repodir=None, raise_except
                 formula,
                 'An unhandled exception occurred.  Your formula was not changed'
             )
-    finally:
-        if formula and origin and formula.private_git_repo:
-            # remove the password from the config
-            repo.git.remote('set-url', origin, formula.uri)
-
-            # Remove the logs which also store the password
-            log_dir = os.path.join(repodir, '.git', 'logs')
-            if os.path.isdir(log_dir):
-                shutil.rmtree(log_dir)

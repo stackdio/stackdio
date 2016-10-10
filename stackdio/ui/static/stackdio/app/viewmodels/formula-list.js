@@ -34,9 +34,8 @@ define([
         initialUrl: '/api/formulas/',
         sortableFields: [
             {name: 'title', displayName: 'Title', width: '25%'},
-            {name: 'uri', displayName: 'Repo URL', width: '50%'},
-            {name: 'status', displayName: 'Status', width: '10%'},
-            {name: 'privateGitRepo', displayName: 'Private', width: '5%'}
+            {name: 'uri', displayName: 'Repo URL', width: '55%'},
+            {name: 'status', displayName: 'Status', width: '10%'}
         ],
         openActionFormulaId: null,
         actionMap: {},

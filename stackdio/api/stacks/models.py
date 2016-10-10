@@ -885,17 +885,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # Update the formulas if requested
         if update_formulas:
             for formula in formulas:
-                # Update the formula, and fail silently if there was an error.
-                if formula.private_git_repo:
-                    logger.debug('Skipping private formula: {0}'.format(formula.uri))
-                    continue
-
                 try:
                     version = self.formula_versions.get(formula=formula).version
                 except FormulaVersion.DoesNotExist:
                     version = formula.default_version
 
-                update_formula.si(formula.id, None, version, raise_exception=False)()
+                update_formula.si(formula.id, version, raise_exception=False)()
 
         # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
@@ -933,16 +928,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         if update_formulas:
             for formula in global_formulas:
                 # Update the formula, and fail silently if there was an error.
-                if formula.private_git_repo:
-                    logger.debug('Skipping private formula: {0}'.format(formula.uri))
-                    continue
-
                 try:
                     version = self.formula_versions.get(formula=formula).version
                 except FormulaVersion.DoesNotExist:
                     version = formula.default_version
 
-                update_formula.si(formula.id, None, version, raise_exception=False)()
+                update_formula.si(formula.id, version, raise_exception=False)()
 
         # Add the global formulas into the props
         for formula in set(global_formulas):

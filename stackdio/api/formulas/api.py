@@ -42,8 +42,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     """
     Displays a list of all formulas visible to you.
     You may import a formula here also by providing a URI to a git repository containing a valid
-    SPECFILE at the root of the repo.  You may optionally provide a git_username and git_password
-    if your repository requires authentication.
+    SPECFILE at the root of the repo.
     """
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer

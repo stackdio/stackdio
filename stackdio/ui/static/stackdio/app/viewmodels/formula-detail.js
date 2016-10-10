@@ -60,14 +60,6 @@ define([
                 window.location = '/formulas/';
             });
 
-            this.usernameText = ko.computed(function () {
-                if (self.formula.accessToken()) {
-                    return 'GitHub access token';
-                } else {
-                    return 'Git username';
-                }
-            });
-
             // Create the version selector
             this.versionSelector = $('#formulaVersion');
 

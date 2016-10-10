@@ -34,17 +34,9 @@
     <div class="row" style="margin-top: 15px; margin-bottom: 15px">
         <form data-bind="submit: function() { formula.save(); }">
             <div class="col-sm-6">
-                <div id="git_username" class="form-group">
-                    <label for="formulaUsername" class="sr-only">Git username required for private repositories only</label>
-                    <input id="formulaUsername" data-bind="value: formula.gitUsername, attr: {placeholder: usernameText}" class="form-control" type="text">
-                </div>
-            </div>
-            <div id="access_token" class="col-sm-4">
-                <div class="checkbox">
-                    <label class="checkbox-custom" data-initialize="checkbox">
-                        <input class="sr-only" type="checkbox" data-bind="checked: formula.accessToken">
-                        <span class="checkbox-label">Use access token</span>
-                    </label>
+                <div id="ssh_private_key" class="form-group">
+                    <label for="formulaSshPrivateKey" class="sr-only">SSH private key required for private repositories only</label>
+                    <input id="formulaSshPrivateKey" data-bind="value: formula.sshPrivateKey" class="form-control" type="text">
                 </div>
             </div>
             <div class="col-sm-2">

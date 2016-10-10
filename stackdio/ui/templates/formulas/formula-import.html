@@ -38,30 +38,15 @@
 
         <div class="row" style="margin-top: 15px">
             <div class="col-md-12">
-                <label>Git authentication required for private repositories only.
-                    Your password will NOT be stored.</label>
+                <label>Git authentication required for private repositories only.</label>
             </div>
         </div>
 
         <div class="row">
             <div class="col-md-5 col-lg-3">
-                <div id="git_username" class="form-group">
-                    <label for="formulaUsername" class="sr-only">Git username required for private repositories only</label>
-                    <input id="formulaUsername" data-bind="value: username, attr: {placeholder: usernameText}" class="form-control" type="text">
-                </div>
-            </div>
-            <div class="col-md-5 col-lg-3" data-bind="visible: !accessToken()">
-                <div id="git_password" class="form-group">
-                    <label for="formulaPassword" class="sr-only">Git password required for private repositories only</label>
-                    <input id="formulaPassword" data-bind="value: password" type="password" class="form-control" placeholder="Git password">
-                </div>
-            </div>
-            <div id="access_token" class="col-md-2 col-lg-2">
-                <div class="checkbox">
-                    <label class="checkbox-custom" data-initialize="checkbox">
-                        <input class="sr-only" type="checkbox" data-bind="checked: accessToken">
-                        <span class="checkbox-label">Use access token</span>
-                    </label>
+                <div id="ssh_private_key" class="form-group">
+                    <label for="formulaSshPrivateKey" class="sr-only">SSH private key required for private repositories only</label>
+                    <input id="formulaSshPrivateKey" data-bind="value: sshPrivateKey" class="form-control" type="text">
                 </div>
             </div>
         </div>
