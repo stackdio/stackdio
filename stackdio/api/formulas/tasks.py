@@ -124,11 +124,15 @@ def import_formula(formula):
     repos_dir = formula.get_repos_dir()
 
     # Copy to the HEAD version
-    shutil.copy(tmp_repo_dir, os.path.join(repos_dir, 'HEAD'))
+    shutil.copytree(tmp_repo_dir, os.path.join(repos_dir, 'HEAD'))
 
     invalid_versions = []
 
     for ref in tmp_repo.remote().refs:
+        # We don't care about HEAD
+        if ref.remote_head == 'HEAD':
+            continue
+
         # Checkout the branch
         try:
             ref.checkout(force=True)
@@ -151,10 +155,10 @@ def import_formula(formula):
         version_dir = os.path.join(repos_dir, ref.remote_head)
 
         # Copy to the new version dir
-        shutil.copy(tmp_repo_dir, version_dir)
+        shutil.copytree(tmp_repo_dir, version_dir)
 
-    for tag in tmp_repo:
-        tmp_repo.checkout(tag.name)
+    for tag in tmp_repo.tags:
+        tmp_repo.git.checkout(tag.name)
 
         try:
             # Validate the formula
@@ -170,7 +174,7 @@ def import_formula(formula):
         version_dir = os.path.join(repos_dir, tag.name)
 
         # Copy to the new version dir
-        shutil.copy(tmp_repo_dir, version_dir)
+        shutil.copytree(tmp_repo_dir, version_dir)
 
     tmpdir = os.path.dirname(tmp_repo_dir)
 
@@ -194,6 +198,10 @@ def update_formula(formula, version=None):
     formula.set_status(Formula.IMPORTING, 'Updating formula.')
 
     repo = formula.get_repo(version)
+
+    if repo is None:
+        raise FormulaTaskException('Could not find the repo.  Formula never got cloned.')
+
     repo_dir = repo.working_dir
 
     # Save the current commit

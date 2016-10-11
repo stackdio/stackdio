@@ -251,9 +251,10 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             with open(ssh_key_file, 'w') as f:
                 f.write(self.ssh_private_key)
 
+            # Create our ssh wrapper script to make ssh w/ private key work
             git_wrapper = os.path.join(self.get_root_dir(), 'git.sh')
             with open(git_wrapper, 'w') as f:
-                f.write('#!/bin/sh\n')
+                f.write('#!/bin/bash\n')
                 f.write('SSH=$(which ssh)\n')
                 f.write('exec $SSH -o StrictHostKeyChecking=no -i {} "$@"\n'.format(ssh_key_file))
 
@@ -265,6 +266,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return repo_env
 
     def get_repo_from_directory(self, repo_dir):
+        if not os.path.exists(repo_dir):
+            return None
+
         repo = git.Repo(repo_dir)
 
         repo.git.update_environment(**self.get_repo_env())
@@ -297,6 +301,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     def get_valid_versions(self):
         main_repo = self.get_repo()
 
+        if main_repo is None:
+            return []
+
         remote = main_repo.remote()
 
         # This will grab all the remote branches & tags
@@ -317,11 +324,19 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
     @property
     def default_version(self):
+        default_repo = self.get_repo()
+
+        if default_repo is None:
+            return None
+
         # This will be the name of the default branch.
-        return self.get_repo().remote().refs.HEAD.ref.remote_head
+        return default_repo.remote().refs.HEAD.ref.remote_head
 
     def components(self, version=None):
         repo = self.get_repo(version)
+
+        if repo is None:
+            return {}
 
         cache_key = 'formula-{}-components-{}-{}'.format(self.id, version, repo.head.commit)
 

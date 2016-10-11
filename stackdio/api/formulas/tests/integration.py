@@ -41,7 +41,9 @@ class FormulaTestCase(StackdioTestCase, PermissionsMixin):
                 'perm': 'view', 'method': 'get'
             },
             {
-                'perm': 'update', 'method': 'patch', 'data': {'git_username': 'test2'}
+                'perm': 'update',
+                'method': 'patch',
+                'data': {'uri': 'https://test2@github.com/stackdio-formulas/java-formula.git'},
             },
             {
                 'perm': 'delete', 'method': 'delete', 'code': status.HTTP_204_NO_CONTENT

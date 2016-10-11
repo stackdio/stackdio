@@ -3,8 +3,59 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+from six.moves.urllib_parse import urljoin, urlsplit  # pylint: disable=import-error
 import django_extensions.db.fields
 import model_utils.fields
+
+
+def add_user_to_uri(apps, schema_editor):
+    Formula = apps.get_model('formulas', 'Formula')
+
+    for formula in Formula.objects.all():
+        if not formula.git_username:
+            continue
+
+        url_bits = urlsplit(formula.uri)
+
+        # rebuild the uri with the username in it
+        formula.uri = urljoin((
+            url_bits.scheme,
+            '{}:{}'.format(formula.git_username, url_bits.netloc),
+            url_bits.path,
+            url_bits.query,
+            url_bits.fragment,
+        ))
+
+        formula.save()
+
+
+def remove_user_from_uri(apps, schema_editor):
+    Formula = apps.get_model('formulas', 'Formula')
+
+    for formula in Formula.objects.all():
+        url_bits = urlsplit(formula.uri)
+
+        # don't do it if it's an ssh formula
+        if 'ssh' in url_bits.scheme:
+            continue
+
+        if url_bits.username:
+            formula.git_username = url_bits.username
+
+            if url_bits.port:
+                new_netloc = '{}:{}'.format(url_bits.hostname, url_bits.port)
+            else:
+                new_netloc = url_bits.hostname
+
+            formula.uri = urljoin((
+                url_bits.scheme,
+                new_netloc,
+                url_bits.path,
+                url_bits.query,
+                url_bits.fragment,
+            ))
+
+            formula.save()
 
 
 class Migration(migrations.Migration):
@@ -39,6 +90,7 @@ class Migration(migrations.Migration):
             name='modified',
             field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
         ),
+        migrations.RunPython(add_user_to_uri, remove_user_from_uri),
         migrations.RemoveField(
             model_name='formula',
             name='access_token',
