@@ -15,12 +15,21 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
+import collections
 import os
 
 import yaml
 from django.core.validators import URLValidator
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.serializers import CharField, ValidationError
+
+from stackdio.api.formulas.exceptions import InvalidFormula, InvalidFormulaComponent
+
+
+FormulaInfo = collections.namedtuple('FormulaInfo',
+                                     ['title', 'description', 'root_path', 'components'])
 
 
 class FormulaURLValidator(URLValidator):
@@ -40,14 +49,13 @@ class FormulaURLField(CharField):
         self.validators.append(validator)
 
 
-def validate_specfile(formula, repodir):
-    from .tasks import FormulaTaskException
+def validate_specfile(repodir):
     specfile_path = os.path.join(repodir, 'SPECFILE')
     if not os.path.isfile(specfile_path):
-        raise FormulaTaskException(
-            formula,
+        raise InvalidFormula(
             'Formula did not have a SPECFILE. Each formula must define a '
-            'SPECFILE in the root of the repository.')
+            'SPECFILE in the root of the repository.'
+        )
 
     # Load and validate the SPECFILE
     with open(specfile_path) as f:
@@ -59,40 +67,35 @@ def validate_specfile(formula, repodir):
     components = specfile.get('components', [])
 
     if not formula_title:
-        raise FormulaTaskException(
-            formula,
-            "Formula SPECFILE 'title' field is required.")
+        raise InvalidFormula('Formula SPECFILE \'title\' field is required.')
 
     if not root_path:
-        raise FormulaTaskException(
-            formula,
-            "Formula SPECFILE 'root_path' field is required.")
+        raise InvalidFormula('Formula SPECFILE \'root_path\' field is required.')
 
     # check root path location
     if not os.path.isdir(os.path.join(repodir, root_path)):
-        raise FormulaTaskException(
-            formula,
+        raise InvalidFormula(
             'Formula SPECFILE \'root_path\' must exist in the formula. '
-            'Unable to locate directory: {0}'.format(root_path))
+            'Unable to locate directory: {0}'.format(root_path)
+        )
 
     if not components:
-        raise FormulaTaskException(
-            formula,
+        raise InvalidFormula(
             'Formula SPECFILE \'components\' field must be a non-empty '
-            'list of components.')
+            'list of components.'
+        )
 
     # Give back the components
-    return formula_title, formula_description, root_path, components
+    return FormulaInfo(formula_title, formula_description, root_path, components)
 
 
-def validate_component(formula, repodir, component):
-    from .tasks import FormulaTaskException
+def validate_component(repodir, component):
     # check for required fields
     if 'title' not in component or 'sls_path' not in component:
-        raise FormulaTaskException(
-            formula,
+        raise InvalidFormulaComponent(
             'Each component in the SPECFILE must contain a \'title\' '
-            'and \'sls_path\' field.')
+            'and \'sls_path\' field.'
+        )
 
     # determine if the sls_path is valid...we're looking for either
     # a directory with an init.sls or an sls file of the same name
@@ -104,14 +107,11 @@ def validate_component(formula, repodir, component):
     abs_init_file = os.path.join(repodir, init_file)
     abs_sls_file = os.path.join(repodir, sls_file)
 
+    err_msg = ('Could not locate an SLS file for component \'{0}\'. Expected to find either '
+               '\'{1}\' or \'{2}\'.'.format(component_title, init_file, sls_file))
+
     if not os.path.isfile(abs_init_file) and not os.path.isfile(abs_sls_file):
-        raise FormulaTaskException(
-            formula,
-            'Could not locate an SLS file for component \'{0}\'. '
-            'Expected to find either \'{1}\' or \'{2}\'.'.format(component_title,
-                                                                 init_file,
-                                                                 sls_file)
-        )
+        raise InvalidFormulaComponent(err_msg)
 
 
 def validate_formula_components(components, versions):
@@ -136,7 +136,7 @@ def validate_formula_components(components, versions):
 
             version = version_map.get(formula)
 
-            component_list = formula.components_for_version(version)
+            component_list = formula.components(version)
 
             if sls_path not in component_list:
                 err_msg = 'formula `{0}` does not contain an sls_path called `{1}`.'
@@ -164,7 +164,7 @@ def validate_formula_component(component, versions=()):
     formula = component.get('formula')
     sls_path = component['sls_path']
     version = version_map.get(formula, formula.default_version)
-    component_list = formula.components_for_version(version)
+    component_list = formula.components(version)
 
     if sls_path not in component_list:
         err_msg = 'formula `{0}` does not contain an sls_path called `{1}`.'

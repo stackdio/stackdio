@@ -449,7 +449,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                                                      sg_description,
                                                      delete_if_exists=True)
             except GroupExistsException as e:
-                err_msg = 'Error creating security group: {0}'.format(str(e))
+                err_msg = 'Error creating security group: {0}'.format(e)
                 raise APIException({'error': err_msg})
 
             logger.debug('Created security group {0}: {1}'.format(
@@ -709,7 +709,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # Add in spot instance config if needed
             if host.sir_price:
                 host_metadata['spot_config'] = {
-                    'spot_price': str(host.sir_price)  # convert to string
+                    'spot_price': six.text_type(host.sir_price)  # convert to string
                 }
 
             # Set our extra options - as long as they're not in the blacklist

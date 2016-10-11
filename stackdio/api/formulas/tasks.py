@@ -15,28 +15,25 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import fileinput
 import logging
 import os
 import shutil
 import sys
+from functools import wraps
 from tempfile import mkdtemp
 
 import git
+import six
 from celery import shared_task
-from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=import-error
 
+from stackdio.api.formulas.exceptions import FormulaTaskException, InvalidFormula
+from stackdio.api.formulas.models import Formula
 from stackdio.api.formulas.validators import validate_specfile, validate_component
-from .models import Formula
 
 logger = logging.getLogger(__name__)
-
-
-class FormulaTaskException(Exception):
-    def __init__(self, formula, error):
-        formula.set_status(Formula.ERROR, error)
-        super(FormulaTaskException, self).__init__(error)
 
 
 def replace_all(rep_file, search_exp, replace_exp):
@@ -46,7 +43,7 @@ def replace_all(rep_file, search_exp, replace_exp):
         sys.stdout.write(line)
 
 
-def clone_to_temp(formula):
+def get_tmp_repo(formula):
     # temporary directory to clone into so we can read the
     # SPECFILE and do some initial validation
     tmpdir = mkdtemp(prefix='stackdio-')
@@ -55,7 +52,7 @@ def clone_to_temp(formula):
 
     try:
         # Clone the repo into a temp dir
-        git.Repo.clone_from(formula.uri, repodir)
+        return formula.clone_to(repodir)
     except git.GitCommandError:
         raise FormulaTaskException(
             formula,
@@ -63,105 +60,177 @@ def clone_to_temp(formula):
             'a git repository, or you don\'t have permission to clone it.'
         )
 
-    # return the path where the repo is
-    return repodir
+
+def formula_task(*args, **kwargs):
+    """
+    Create a formula celery task that performs some common functionality and handles errors
+    """
+    def wrapped(func):
+
+        # Pass the args from stack_task to shared_task
+        @shared_task(*args, **kwargs)
+        @wraps(func)
+        def task(formula_id, *task_args, **task_kwargs):
+            try:
+                formula = Formula.objects.get(id=formula_id)
+            except Formula.DoesNotExist:
+                raise ValueError('No formula found with id {}'.format(formula_id))
+
+            try:
+                # Call our actual task function and catch some common errors
+                return func(formula, *task_args, **task_kwargs)
+
+            except FormulaTaskException as e:
+                formula.set_status(Formula.ERROR, six.text_type(e))
+                logger.exception(e)
+                raise
+            except InvalidFormula as e:
+                formula.set_status(Formula.ERROR, six.text_type(e))
+                logger.exception(e)
+                raise
+            except Exception as e:
+                err_msg = 'Unhandled exception: {}'.format(e)
+                formula.set_status(Formula.ERROR, err_msg)
+                logger.exception(e)
+                raise
+
+        return task
+
+    return wrapped
 
 
-@shared_task(name='formulas.import_formula')
-def import_formula(formula_id):
-    formula = None
+@formula_task(name='formulas.import_formula')
+def import_formula(formula):
+    formula.set_status(Formula.IMPORTING, 'Cloning and importing formula.')
+
+    tmp_repo = get_tmp_repo(formula)
+    tmp_repo_dir = tmp_repo.working_dir
+
+    # If the main branch fails, don't catch it's exception.
+    formula_info = validate_specfile(tmp_repo_dir)
+
+    # update the formula title and description
+    formula.title = formula_info.title
+    formula.description = formula_info.description
+    formula.root_path = formula_info.root_path
+    formula.save()
+
+    components = formula_info.components
+
+    # validate components
+    for component in components:
+        validate_component(tmp_repo_dir, component)
+
+    repos_dir = formula.get_repos_dir()
+
+    # Copy to the HEAD version
+    shutil.copy(tmp_repo_dir, os.path.join(repos_dir, 'HEAD'))
+
+    invalid_versions = []
+
+    for ref in tmp_repo.remote().refs:
+        # Checkout the branch
+        try:
+            ref.checkout(force=True)
+        except TypeError as e:
+            # checkout raises a TypeError if you checkout a remote ref :(
+            if 'is a detached symbolic reference as it points to' not in e.message:
+                raise
+
+        try:
+            # Validate the formula
+            _, _, _, components = validate_specfile(tmp_repo_dir)
+            for component in components:
+                validate_component(tmp_repo_dir, component)
+
+        except InvalidFormula:
+            # Just add it to the invalid versions, but continue on
+            invalid_versions.append(ref.remote_head)
+            continue
+
+        version_dir = os.path.join(repos_dir, ref.remote_head)
+
+        # Copy to the new version dir
+        shutil.copy(tmp_repo_dir, version_dir)
+
+    for tag in tmp_repo:
+        tmp_repo.checkout(tag.name)
+
+        try:
+            # Validate the formula
+            _, _, _, components = validate_specfile(tmp_repo_dir)
+            for component in components:
+                validate_component(tmp_repo_dir, component)
+
+        except InvalidFormula:
+            # Just add it to the invalid versions, but continue on
+            invalid_versions.append(tag.name)
+            continue
+
+        version_dir = os.path.join(repos_dir, tag.name)
+
+        # Copy to the new version dir
+        shutil.copy(tmp_repo_dir, version_dir)
+
+    tmpdir = os.path.dirname(tmp_repo_dir)
+
+    # remove tmpdir now that we're finished
+    if os.path.isdir(tmpdir):
+        shutil.rmtree(tmpdir)
+
+    if invalid_versions:
+        status_msg = ('Import complete. Formula is ready, but the following '
+                      'versions were not valid: {}'.format(', '.join(invalid_versions)))
+    else:
+        status_msg = 'Import complete. Formula is now ready to be used.'
+
+    formula.set_status(Formula.COMPLETE, status_msg)
+
+    return True
+
+
+@formula_task(name='formulas.update_formula')
+def update_formula(formula, version=None):
+    formula.set_status(Formula.IMPORTING, 'Updating formula.')
+
+    repo = formula.get_repo(version)
+    repo_dir = repo.working_dir
+
+    # Save the current commit
+    old_commit = repo.head.commit
+
     try:
-        formula = Formula.objects.get(id=formula_id)
-        formula.set_status(Formula.IMPORTING, 'Cloning and importing formula.')
+        # Do a fetch first
+        repo.remote().fetch(prune=True)
 
-        repodir = clone_to_temp(formula)
+        # Then checkout the remote branch
+        try:
+            repo.remote().refs[version].checkout()
+        except TypeError as e:
+            # checkout raises a TypeError if you checkout a remote ref :(
+            if 'is a detached symbolic reference as it points to' not in e.message:
+                raise
 
-        root_dir = formula.get_repos_dir()
+        # Grab the new commit
+        new_commit = repo.head.commit
 
-        if os.path.isdir(root_dir):
-            raise FormulaTaskException(
-                formula,
-                'Formula root path already exists.'
-            )
-
-        formula_title, formula_description, root_path, components = validate_specfile(formula,
-                                                                                      repodir)
-
-        # update the formula title and description
-        formula.title = formula_title
-        formula.description = formula_description
-        formula.root_path = root_path
-        formula.save()
-
-        # validate components
-        for component in components:
-            validate_component(formula, repodir, component)
-
-        root_dir = formula.get_repo_dir()
-
-        # move the cloned formula repository to a location known by salt
-        # so we can start using the states in this formula
-        shutil.move(repodir, root_dir)
-
-        tmpdir = os.path.dirname(repodir)
-
-        # remove tmpdir now that we're finished
-        if os.path.isdir(tmpdir):
-            shutil.rmtree(tmpdir)
-
-        formula.set_status(Formula.COMPLETE,
-                           'Import complete. Formula is now ready to be used.')
-
-        return True
-    except FormulaTaskException:
-        raise
-    except Exception as e:
-        logger.exception(e)
-        raise FormulaTaskException(formula, 'An unhandled exception occurred.')
-
-
-# TODO: Ignoring complexity issues
-@shared_task(name='formulas.update_formula')
-def update_formula(formula_id, version, repodir=None, raise_exception=True):
-    repo = None
-    current_commit = None
-    formula = None
-    origin = None
-
-    try:
-        formula = Formula.objects.get(pk=formula_id)
-        formula.set_status(Formula.IMPORTING, 'Updating formula.')
-
-        if repodir is None:
-            repodir = formula.get_repo_dir()
-            repo = formula.repo
-        else:
-            repo = git.Repo(repodir)
-
-        # Ensure that the proper version is active
-        repo.git.checkout(version)
-
-        current_commit = repo.head.commit
-
-        origin = repo.remotes.origin.name
-
-        result = repo.remotes.origin.pull()
-        if len(result) == 1 and result[0].commit == current_commit:
-            formula.set_status(Formula.COMPLETE,
-                               'There were no changes to the repository.')
+        # If nothing changed, we're good
+        if new_commit == old_commit:
+            formula.set_status(Formula.COMPLETE, 'There were no changes to the repository.')
             return True
 
-        formula_title, formula_description, root_path, components = validate_specfile(formula,
-                                                                                      repodir)
+        formula_info = validate_specfile(repo_dir)
+
+        components = formula_info.components
 
         # Validate all the new components
         for component in components:
-            validate_component(formula, repodir, component)
+            validate_component(repo_dir, component)
 
         # Everything was validated, update the database
-        formula.title = formula_title
-        formula.description = formula_description
-        formula.root_path = root_path
+        formula.title = formula_info.title
+        formula.description = formula_info.description
+        formula.root_path = formula_info.root_path
         formula.save()
 
         formula.set_status(Formula.COMPLETE,
@@ -169,19 +238,7 @@ def update_formula(formula_id, version, repodir=None, raise_exception=True):
 
         return True
 
-    except Exception as e:
+    except Exception:
         # Roll back the pull
-        if repo is not None and current_commit is not None:
-            repo.git.reset('--hard', current_commit)
-        if isinstance(e, FormulaTaskException):
-            if raise_exception:
-                raise FormulaTaskException(
-                    formula,
-                    e.message + ' Your formula was not changed.'
-                )
-        logger.warning(e)
-        if raise_exception:
-            raise FormulaTaskException(
-                formula,
-                'An unhandled exception occurred.  Your formula was not changed'
-            )
+        repo.git.reset('--hard', old_commit)
+        raise

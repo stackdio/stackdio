@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import logging
 import multiprocessing
@@ -38,8 +38,9 @@ from django.conf import settings
 from msgpack.exceptions import ExtraData
 from salt.log.setup import LOG_LEVELS
 
-from stackdio.api.volumes.models import Volume
 from stackdio.core.constants import Action, ComponentStatus
+
+from .exceptions import StackTaskException
 
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
@@ -419,7 +420,6 @@ def process_sls_result(sls_result, err_file):
     if 'out' in sls_result and sls_result['out'] != 'highstate':
         logger.debug('This isn\'t highstate data... it may not process correctly.')
 
-        from .tasks import StackTaskException
         raise StackTaskException('Missing highstate data from the orchestrate runner.')
 
     if 'ret' not in sls_result:
@@ -500,22 +500,21 @@ def process_orchestrate_result(result, stack, log_file, err_file):
     if not isinstance(result, dict):
         with open(err_file, 'a') as f:
             f.write('Orchestration failed.  See below.\n\n')
-            f.write(str(result))
+            f.write(six.text_type(result))
         return True, set()
 
     if opts['id'] not in result:
         with open(err_file, 'a') as f:
             f.write('Orchestration result is missing information:\n\n')
-            f.write(str(result))
+            f.write(six.text_type(result))
         return True, set()
 
     result = result[opts['id']]
 
     if not isinstance(result, dict):
         with open(err_file, 'a') as f:
-            f.write(str(result))
+            f.write(six.text_type(result))
 
-        from .tasks import StackTaskException
         raise StackTaskException(result)
 
     failed = False

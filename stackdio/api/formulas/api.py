@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 from collections import OrderedDict
@@ -96,17 +97,10 @@ class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIVi
         # determine if a version was specified
         version = request.query_params.get('version')
 
-        if version in formula.get_valid_versions():
-            components = formula.components_for_version(version)
-        else:
+        if version not in formula.get_valid_versions():
             version = formula.default_version
-            if formula.repo is None:
-                components = {}
-            else:
-                formula.repo.git.checkout(version)
-                components = formula.components
 
-        components = components.values()
+        components = formula.components(version).values()
 
         data = OrderedDict((
             ('count', len(components)),
@@ -124,7 +118,7 @@ class FormulaValidVersionListAPIView(mixins.FormulaRelatedMixin, generics.ListAP
     def list(self, request, *args, **kwargs):
         formula = self.get_formula()
 
-        versions = formula.get_valid_versions()
+        versions = sorted(formula.get_valid_versions())
 
         data = OrderedDict((
             ('count', len(versions)),

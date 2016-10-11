@@ -227,21 +227,72 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
     def __str__(self):
         return six.text_type('{} ({})'.format(self.title, self.uri))
 
-    def get_repos_dir(self):
+    def get_root_dir(self):
         return os.path.join(
             settings.FILE_STORAGE_DIRECTORY,
             'formulas',
-            '{0}-{1}'.format(self.pk, self.get_repo_name())
+            '{0}-{1}'.format(self.pk, self.get_repo_name()),
+        )
+
+    def get_repos_dir(self):
+        return os.path.join(
+            self.get_root_dir(),
+            'checkouts',
         )
 
     def get_repo_name(self):
         return os.path.splitext(os.path.split(self.uri)[-1])[0]
 
+    def get_repo_env(self):
+        repo_env = {}
+
+        if self.ssh_private_key:
+            ssh_key_file = os.path.join(self.get_root_dir(), 'id_rsa')
+            with open(ssh_key_file, 'w') as f:
+                f.write(self.ssh_private_key)
+
+            git_wrapper = os.path.join(self.get_root_dir(), 'git.sh')
+            with open(git_wrapper, 'w') as f:
+                f.write('#!/bin/sh\n')
+                f.write('SSH=$(which ssh)\n')
+                f.write('exec $SSH -o StrictHostKeyChecking=no -i {} "$@"\n'.format(ssh_key_file))
+
+            # Make the git wrapper executable
+            os.chmod(git_wrapper, 0o755)
+
+            repo_env['GIT_SSH'] = git_wrapper
+
+        return repo_env
+
+    def get_repo_from_directory(self, repo_dir):
+        repo = git.Repo(repo_dir)
+
+        repo.git.update_environment(**self.get_repo_env())
+
+        return repo
+
     @lru_cache()
-    def get_repo(self, version='HEAD'):
+    def get_repo(self, version=None):
+        version = version or 'HEAD'
+
         repo_dir = os.path.join(self.get_repos_dir(), version)
 
-        return git.Repo(repo_dir)
+        return self.get_repo_from_directory(repo_dir)
+
+    def clone_to(self, to_path, *args, **kwargs):
+        repo_env = self.get_repo_env()
+
+        if 'env' in kwargs:
+            kwargs['env'].update(repo_env)
+        else:
+            kwargs['env'] = repo_env
+
+        repo = git.Repo.clone_from(self.uri, to_path, *args, **kwargs)
+
+        # Now update the environment on the actual repo object
+        repo.git.update_environment(**repo_env)
+
+        return repo
 
     def get_valid_versions(self):
         main_repo = self.get_repo()
@@ -250,10 +301,16 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
 
         # This will grab all the remote branches & tags
         refs = set()
+
+        # First get all the remote branches
         for r in remote.refs:
-            # local branch
             refs.add(r.remote_head)
 
+        # Then get all the tags
+        for t in main_repo.tags:
+            refs.add(t.name)
+
+        # remove HEAD as a valid version
         refs.remove('HEAD')
 
         return list(refs)
@@ -263,7 +320,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         # This will be the name of the default branch.
         return self.get_repo().remote().refs.HEAD.ref.remote_head
 
-    def components(self, version):
+    def components(self, version=None):
         repo = self.get_repo(version)
 
         cache_key = 'formula-{}-components-{}-{}'.format(self.id, version, repo.head.commit)
