@@ -48,12 +48,12 @@ define([
 
         // Editable fields
         this.volumeId = ko.observable();
-        this.attachTime = ko.observable();
-        this.hostname = ko.observable();
         this.snapshotId = ko.observable();
         this.size = ko.observable();
         this.device = ko.observable();
         this.mountPoint = ko.observable();
+        this.encrypted = ko.observable();
+        this.extraOptions = ko.observable();
 
         if (needReload) {
             this.reload();
@@ -66,12 +66,12 @@ define([
 
     Volume.prototype._process = function (raw) {
         this.volumeId(raw.volume_id);
-        this.attachTime(raw.attach_time);
-        this.hostname(raw.hostname);
         this.snapshotId(raw.snapshot_id);
         this.size(raw.size_in_gb);
         this.device(raw.device);
         this.mountPoint(raw.mount_point);
+        this.encrypted(raw.encrypted);
+        this.extraOptions(raw.extra_options);
     };
 
     // Reload the current volume

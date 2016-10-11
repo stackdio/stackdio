@@ -296,6 +296,11 @@ class InitCommand(WizardCommand):
                           'it is recommended to use different DB numbers for each.'),
             'default': 'redis://localhost:6379/1',
         }, {
+            'attr': 'salt_master_fqdn',
+            'short_desc': 'What is the fqdn of your salt-master server?',
+            'long_desc': 'stackd.io needs to know where your salt-master is running.',
+            'default': socket.getfqdn(),
+        }, {
             'attr': 'storage_dir',
             'short_desc': 'Where should stackdio and salt store their data?',
             'long_desc': ('Root directory for stackdio to store its files, '

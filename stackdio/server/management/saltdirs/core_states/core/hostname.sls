@@ -7,8 +7,7 @@
 
 # Edit the appropriate hostname file
 hostname_file:
-  file:
-    - replace
+  file.replace:
 {% if grains['os_family'] == 'Debian' %}
     - name: /etc/hostname
     - pattern: "^.*$"
@@ -21,8 +20,7 @@ hostname_file:
 
 # Add an IP->FQDN mapping for each machine in the stack
 stack_hostnames:
-  file:
-    - managed
+  file.managed:
     - user: root
     - group: root
     - mode: 644
@@ -32,8 +30,7 @@ stack_hostnames:
 
 # Set the hostname of the machine based on the FQDN defined in a grain
 set_hostname:
-  cmd:
-    - run
+  cmd.run:
     - user: root
     - name: "hostname {{ grains['fqdn'] }}"
     - unless: "hostname | grep {{ grains['fqdn'] }}"
@@ -42,8 +39,7 @@ set_hostname:
 
 # Restart the apropriate service for this change to take effect
 hostname-svc:
-  service:
-    - running
+  service.running:
     - name: {{ hostname_service }}
     - watch:
       - cmd: set_hostname

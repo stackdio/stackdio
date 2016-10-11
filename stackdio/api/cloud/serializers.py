@@ -286,7 +286,7 @@ class CloudImageSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerial
         image_id = attrs.get('image_id')
         # Don't validate when it's a PATCH request and image_id doesn't exist
         if not self.partial or image_id is not None:
-            account = attrs['account']
+            account = attrs.get('account') or self.instance.account
 
             driver = account.get_driver()
 
@@ -325,7 +325,6 @@ class SnapshotSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializ
             'description',
             'account',
             'snapshot_id',
-            'size_in_gb',
             'filesystem_type',
             'user_permissions',
             'group_permissions',
@@ -337,10 +336,7 @@ class SnapshotSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializ
 
     def validate(self, attrs):
         if 'snapshot_id' in attrs:
-            if self.instance:
-                account = self.instance.account
-            else:
-                account = attrs['account']
+            account = attrs.get('account') or self.instance.account
 
             # validate that the snapshot exists by looking it up in the cloud
             # account

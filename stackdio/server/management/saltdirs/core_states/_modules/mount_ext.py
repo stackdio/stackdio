@@ -44,8 +44,8 @@ def find_ebs_device(device):
 
     CLI Example::
 
-        salt '*' mount.exists /dev/sdj
-        salt '*' mount.exists /dev/xvdj
+        salt '*' mount.find_ebs_device /dev/sdj
+        salt '*' mount.find_ebs_device /dev/xvdj
 
     """
     if os.path.exists(device):

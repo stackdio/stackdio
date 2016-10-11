@@ -31,6 +31,11 @@ celery_broker_url: {{ celery_broker_url }}
 redis_url: {{ redis_url }}
 
 ##
+# The FQDN of the salt master
+# Can be a list or a string
+salt_master_fqdn: {{ salt_master_fqdn }}
+
+##
 # Root directory for stackdio to store files, logs, etc.
 # It will be created if it doesn't already exist.
 # Can be absolute or relative.

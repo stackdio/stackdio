@@ -43,9 +43,6 @@
                     <td data-bind="text: title, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
                     <td data-bind="text: description, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
                     <td data-bind="text: snapshotId, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
-                    <td data-bind="click: function (snapshot) { $root.goToDetailPage(snapshot) }">
-                        <span data-bind="text: sizeInGB"></span> GB
-                    </td>
                     <td data-bind="text: filesystemType, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete, if: !$root.permissionsMap[$data.id] || $root.permissionsMap[$data.id].delete">

@@ -11,9 +11,22 @@
 {% set device_name = salt['mount.find_ebs_device'](vol['device']) %}
 
 {% if device_name %}
+
+{% if vol['create_fs'] and not salt['extfs.fs_exists'](device_name) %}
+
+# First create the FS if it's an empty volume and there's not already a filesystem on it
+{{ vol['mount_point'] }}_create_fs:
+  module.run:
+    - name: extfs.mkfs
+    - device: {{ device_name }}
+    - fs_type: {{ vol['filesystem_type'] }}
+    - require_in:
+      - mount: {{ vol['mount_point'] }}
+{% endif %}
+
+# Mount the volume
 {{ vol['mount_point'] }}:
-  mount:
-    - mounted
+  mount.mounted:
     - device: {{ device_name }}
     - fstype: {{ vol['filesystem_type'] }}
     - mount: true

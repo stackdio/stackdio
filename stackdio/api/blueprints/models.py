@@ -29,7 +29,7 @@ from django.db import models
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
 from stackdio.core.decorators import django_cache
-from stackdio.core.fields import DeletingFileField
+from stackdio.core.fields import DeletingFileField, JSONField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.notifications.decorators import add_subscribed_channels
 
@@ -200,6 +200,9 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
                                      blank=True,
                                      null=True)
 
+    # Any extra options we need to pass on to the host
+    extra_options = JSONField('Extra Options')
+
     # Grab the list of formula components
     formula_components = GenericRelation('formulas.FormulaComponent')
 
@@ -270,8 +273,19 @@ class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
     # Where the volume will be mounted after created and attached
     mount_point = models.CharField('Mount Point', max_length=64)
 
-    # The snapshot ID to create the volume from
-    snapshot = models.ForeignKey('cloud.Snapshot', related_name='blueprint_volumes')
+    # The snapshot ID to create the volume from - allow this to be null so we can create
+    # empty volumes without a snapshot
+    snapshot = models.ForeignKey('cloud.Snapshot', related_name='blueprint_volumes',
+                                 null=True, default=None)
+
+    # The size of the volume to create - also allow this to be null if we're using a snapshot
+    size_in_gb = models.IntegerField('Size in GB', null=True, default=None)
+
+    # Should this volume be encrypted?
+    encrypted = models.BooleanField('Encrypted', default=False)
+
+    # Any extra options we need about the volume to be created (i.e. the encryption key)
+    extra_options = JSONField('Extra Options')
 
     def __str__(self):
         return six.text_type('{} mounted at {}'.format(self.device, self.mount_point))

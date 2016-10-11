@@ -25,9 +25,7 @@ from . import models
 class VolumeAdmin(GuardedModelAdmin):
     list_display = [
         'volume_id',
-        'attach_time',
         'stack',
-        'hostname',
         'host',
         'snapshot',
         'device',

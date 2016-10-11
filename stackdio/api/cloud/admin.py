@@ -75,7 +75,6 @@ class SnapshotAdmin(GuardedModelAdmin):
         'slug',
         'account',
         'snapshot_id',
-        'size_in_gb',
         'filesystem_type',
     ]
 

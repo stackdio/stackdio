@@ -23,11 +23,12 @@
                 <tr class="stackdio-hidden-on-load">
                     <td data-bind="text: volumeId"></td>
                     <td data-bind="text: snapshotId"></td>
-                    <td data-bind="text: attachTime"></td>
-                    <td data-bind="text: hostname"></td>
-                    <td data-bind="text: size"></td>
+                    <td>
+                        <span data-bind="text: size"></span> GB
+                    </td>
                     <td data-bind="text: device"></td>
                     <td data-bind="text: mountPoint"></td>
+                    <td data-bind="text: encrypted"></td>
                 </tr>
             </tbody>
             </table>

@@ -81,7 +81,6 @@ define([
         self.title = ko.observable();
         self.description = ko.observable();
         self.snapshotId = ko.observable();
-        self.sizeInGB = ko.observable();
         self.filesystemType = ko.observable();
 
         // Necessary functions
@@ -90,7 +89,6 @@ define([
             self.title('');
             self.description('');
             self.snapshotId('');
-            self.sizeInGB(0);
             self.filesystemType('');
         };
 
@@ -105,8 +103,7 @@ define([
 
         self.createSnapshot = function() {
             // First remove all the old error messages
-            var keys = ['account', 'title', 'description',
-                'snapshot_id', 'size_in_gb', 'filesystem_type'];
+            var keys = ['account', 'title', 'description', 'snapshot_id', 'filesystem_type'];
 
             self.removeErrors(keys);
 
@@ -125,7 +122,6 @@ define([
                     title: self.title(),
                     description: self.description(),
                     snapshot_id: self.snapshotId(),
-                    size_in_gb: self.sizeInGB(),
                     filesystem_type: self.filesystemType()
                 })
             }).always(function () {

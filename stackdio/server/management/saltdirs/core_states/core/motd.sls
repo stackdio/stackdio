@@ -1,6 +1,5 @@
 /etc/motd:
-   file:
-     - managed
+   file.managed:
      - template: jinja
      - user: root
      - group: root

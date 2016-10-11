@@ -1540,7 +1540,7 @@ def update_host_info():
             stack.log_history('The following hosts have now been marked '
                               '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
 
-        all_dead = all([a == Activity.DEAD for a in new_host_activities])
+        all_dead = new_host_activities and all([a == Activity.DEAD for a in new_host_activities])
 
         # If all the hosts are dead, set the stack to dead also
         if all_dead:

@@ -372,15 +372,10 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 
     # The snapshot id. Must exist already, be preformatted, and available
     # to the associated cloud account
-    snapshot_id = models.CharField(max_length=32)
-
-    # How big the snapshot is...this doesn't actually affect the actual
-    # volume size, but mainly a useful hint to the user
-    size_in_gb = models.IntegerField()
+    snapshot_id = models.CharField('Snapshot ID', max_length=32)
 
     # the type of file system the volume uses
-    filesystem_type = models.CharField(max_length=16,
-                                       choices=FILESYSTEM_CHOICES)
+    filesystem_type = models.CharField('Filesystem Type', max_length=16, choices=FILESYSTEM_CHOICES)
 
     def __str__(self):
         return six.text_type(self.snapshot_id)
