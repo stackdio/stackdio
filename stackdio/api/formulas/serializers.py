@@ -26,7 +26,6 @@ from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
 )
-from stackdio.core.utils import recursively_sort_dict
 
 from . import models, tasks, validators
 
@@ -92,21 +91,6 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
     # Add in our custom URL field
     serializer_field_mapping = serializers.ModelSerializer.serializer_field_mapping
     serializer_field_mapping[URLField] = validators.FormulaURLField
-
-
-class FormulaPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    def to_representation(self, obj):
-        ret = {}
-        if obj is not None:
-            # Make it work two different ways.. ooooh
-            if isinstance(obj, models.Formula):
-                ret = obj.properties
-            else:
-                ret = obj
-        return recursively_sort_dict(ret)
-
-    def to_internal_value(self, data):
-        return data
 
 
 class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstract-method

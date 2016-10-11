@@ -27,6 +27,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from stackdio.core.utils import recursively_sort_dict
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -82,8 +83,20 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):
     queryset = models.Formula.objects.all()
-    serializer_class = serializers.FormulaPropertiesSerializer
     permission_classes = (StackdioObjectPermissions,)
+
+    def retrieve(self, request, *args, **kwargs):
+        formula = self.get_object()
+
+        # determine if a version was specified
+        version = request.query_params.get('version')
+
+        if version not in formula.get_valid_versions():
+            version = formula.default_version
+
+        properties = formula.properties(version)
+
+        return Response(properties)
 
 
 class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIView):
