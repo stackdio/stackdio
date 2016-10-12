@@ -233,7 +233,7 @@ define([
 
     Formula.prototype.save = function () {
         var self = this;
-        var keys = ['ssh_private_key'];
+        var keys = ['ssh_private_key', 'uri'];
 
         keys.forEach(function (key) {
             var el = $('#' + key);

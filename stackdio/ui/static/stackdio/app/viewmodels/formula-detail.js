@@ -47,7 +47,6 @@ define([
         ],
         autoRefresh: false,
         formula: null,
-        formulaUrl: ko.observable(''),
         init: function () {
             this._super();
             var self = this;
