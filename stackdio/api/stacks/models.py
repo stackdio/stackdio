@@ -882,19 +882,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         for host in self.hosts.all():
             formulas.update([c.formula for c in host.formula_components.all()])
 
-        # Update the formulas if requested
-        if update_formulas:
-            for formula in formulas:
-                try:
-                    version = self.formula_versions.get(formula=formula).version
-                except FormulaVersion.DoesNotExist:
-                    version = formula.default_version
-
-                update_formula.si(formula.id, version)()
-
         # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
-            recursive_update(pillar_props, formula.properties)
+            # Grab the formula version
+            try:
+                version = self.formula_versions.get(formula=formula).version
+            except FormulaVersion.DoesNotExist:
+                version = formula.default_version
+
+            if update_formulas:
+                # Update the formulas if requested
+                update_formula.si(formula.id, version)()
+            recursive_update(pillar_props, formula.properties(version))
 
         # Add in properties that were supplied via the blueprint and during
         # stack creation
@@ -924,20 +923,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         for account in accounts:
             global_formulas.extend(account.get_formulas())
 
-        # Update the formulas if requested
-        if update_formulas:
-            for formula in global_formulas:
-                # Update the formula, and fail silently if there was an error.
-                try:
-                    version = self.formula_versions.get(formula=formula).version
-                except FormulaVersion.DoesNotExist:
-                    version = formula.default_version
-
-                update_formula.si(formula.id, version)()
-
-        # Add the global formulas into the props
+        # for each unique formula, pull the properties from the SPECFILE
         for formula in set(global_formulas):
-            recursive_update(pillar_props, formula.properties)
+            # Grab the formula version
+            try:
+                version = self.formula_versions.get(formula=formula).version
+            except FormulaVersion.DoesNotExist:
+                version = formula.default_version
+
+            if update_formulas:
+                # Update the formulas if requested
+                update_formula.si(formula.id, version)()
+            recursive_update(pillar_props, formula.properties(version))
 
         # Add in the account properties AFTER the stack properties
         for account in accounts:
