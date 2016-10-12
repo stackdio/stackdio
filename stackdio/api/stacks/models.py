@@ -890,7 +890,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 except FormulaVersion.DoesNotExist:
                     version = formula.default_version
 
-                update_formula.si(formula.id, version, raise_exception=False)()
+                update_formula.si(formula.id, version)()
 
         # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
@@ -933,7 +933,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 except FormulaVersion.DoesNotExist:
                     version = formula.default_version
 
-                update_formula.si(formula.id, version, raise_exception=False)()
+                update_formula.si(formula.id, version)()
 
         # Add the global formulas into the props
         for formula in set(global_formulas):
