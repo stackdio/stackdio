@@ -450,7 +450,7 @@ def cleanup_formula(sender, instance, **kwargs):
     the formula is deleted.
     """
 
-    repos_dir = instance.get_repos_dir()
+    repos_dir = instance.get_root_dir()
     logger.debug('cleanup_formula called. Path to remove: {0}'.format(repos_dir))
     if os.path.isdir(repos_dir):
         rmtree(repos_dir)
