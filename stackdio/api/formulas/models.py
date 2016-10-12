@@ -108,7 +108,7 @@ class FormulaQuerySet(SearchQuerySet):
         # Find formula component matches
         formula_ids = []
         for formula in self.all():
-            for sls_path, component in formula.components.items():
+            for sls_path, component in formula.components(formula.default_version).items():
                 if query.lower() in sls_path.lower():
                     formula_ids.append(formula.id)
                 elif query.lower() in component['title'].lower():
@@ -429,13 +429,15 @@ class FormulaComponent(TimeStampedModel):
     @property
     def title(self):
         if not hasattr(self, '_full_component'):
-            self._full_component = self.formula.components[self.sls_path]
+            version = self.formula.default_version
+            self._full_component = self.formula.components(version)[self.sls_path]
         return self._full_component['title']
 
     @property
     def description(self):
         if not hasattr(self, '_full_component'):
-            self._full_component = self.formula.components[self.sls_path]
+            version = self.formula.default_version
+            self._full_component = self.formula.components(version)[self.sls_path]
         return self._full_component['description']
 
     def get_metadata_for_host(self, host):
