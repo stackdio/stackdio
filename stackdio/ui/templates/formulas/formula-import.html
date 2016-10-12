@@ -21,6 +21,12 @@
                     <a href="https://github.com/stackdio-formulas">https://github.com/stackdio-formulas</a>.
                     Either select one of these formulas from the dropdown, or copy-and-paste the
                     clone URL from a different repository.</p>
+                <p><strong>Note:</strong> If your repository requires username/password authentication,
+                    you must include them in the repository URL like this:
+                    <br>
+                    <code>https://&lt;user&gt;:&lt;pass&gt;@&lt;hostname&gt;/&lt;repo&gt;.git</code>
+                    <br>
+                    PLEASE do not use your real user password here, as it will be stored in plain text.</p>
             </div>
         </div>
 
@@ -37,29 +43,27 @@
         </div>
 
         <div class="row" style="margin-top: 15px">
-            <div class="col-md-12">
-                <label>Git authentication required for private repositories only.</label>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-5 col-lg-3">
-                <div id="ssh_private_key" class="form-group">
-                    <label for="formulaSshPrivateKey" class="sr-only">SSH private key required for private repositories only</label>
-                    <input id="formulaSshPrivateKey" data-bind="value: sshPrivateKey" class="form-control" type="text">
-                </div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-12">
+            <div class="col-md-6 col-md-push-6">
                 <div>
-                    <p><strong>Tip:</strong> If using GitHub, you can generate a personal access
-                        token in your user settings and use it here by checking the 'Use access
-                        token' box.<br> If you have GitHub two-factor authentication enabled,
-                        you <strong>MUST</strong> use a personal access token.</p>
+                    <p>
+                        <strong>Tip:</strong> If using GitHub, you can generate a personal access
+                        token in your user settings and use it here by inserting it in the url as
+                        your username with an empty password.<br> If you have GitHub two-factor
+                        authentication enabled, you <strong>MUST</strong> use a personal access token.
+                    </p>
                 </div>
+            </div>
+            <div class="col-md-6 col-md-pull-6">
+                <div id="ssh_private_key" class="form-group">
+                    <label for="formulaSshPrivateKey">SSH private key (optional)</label>
+                    <textarea class="form-control" id="formulaSshPrivateKey" rows="25"
+                              data-bind="value: sshPrivateKey, valueUpdate: 'keyup'"></textarea>
+                </div>
+            </div>
+        </div>
 
+        <div class="row">
+            <div class="col-md-12">
                 <div>
                     <button type="submit" id="import-button" data-style="slide-left"
                         class="btn btn-success ladda-button" style="margin-top: 10px">
