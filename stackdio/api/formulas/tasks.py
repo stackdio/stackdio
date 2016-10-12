@@ -28,7 +28,6 @@ from tempfile import mkdtemp
 import git
 import six
 from celery import shared_task
-
 from stackdio.api.formulas.exceptions import FormulaTaskException, InvalidFormula
 from stackdio.api.formulas.models import Formula
 from stackdio.api.formulas.validators import validate_specfile, validate_component
@@ -55,7 +54,6 @@ def get_tmp_repo(formula):
         return formula.clone_to(repodir)
     except git.GitCommandError:
         raise FormulaTaskException(
-            formula,
             'Unable to clone provided URI. This is either not '
             'a git repository, or you don\'t have permission to clone it.'
         )
