@@ -27,6 +27,20 @@ def fix_formulas_forwards(apps, schema_editor):
 def fix_formulas_reverse(apps, schema_editor):
     Formula = apps.get_model('formulas', 'Formula')
 
+    formula_dir = os.path.join(settings.FILE_STORAGE_DIRECTORY, 'formulas')
+
+    for formula in Formula.objects.all():
+        repo_name = os.path.splitext(os.path.split(formula.uri)[-1])[0]
+        dir_name = '{}-{}'.format(formula.id, repo_name)
+
+        new_dir = os.path.join(formula_dir, dir_name)
+
+        # Copy the HEAD over
+        shutil.move(os.path.join(new_dir, 'checkouts', 'HEAD'), new_dir)
+
+        # Blow away the old checkouts
+        shutil.rmtree(os.path.join(new_dir, 'checkouts'))
+
 
 class Migration(migrations.Migration):
 
