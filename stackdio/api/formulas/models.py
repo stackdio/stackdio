@@ -228,11 +228,15 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return six.text_type('{} ({})'.format(self.title, self.uri))
 
     def get_root_dir(self):
-        return os.path.join(
+        root_dir = os.path.join(
             settings.FILE_STORAGE_DIRECTORY,
             'formulas',
             '{0}-{1}'.format(self.pk, self.get_repo_name()),
         )
+
+        if not os.path.exists(root_dir):
+            os.makedirs(root_dir)
+        return root_dir
 
     def get_repos_dir(self):
         return os.path.join(
@@ -250,6 +254,9 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
             ssh_key_file = os.path.join(self.get_root_dir(), 'id_rsa')
             with open(ssh_key_file, 'w') as f:
                 f.write(self.ssh_private_key)
+
+            # fix permissions on the private key
+            os.chmod(ssh_key_file, 0o600)
 
             # Create our ssh wrapper script to make ssh w/ private key work
             git_wrapper = os.path.join(self.get_root_dir(), 'git.sh')
