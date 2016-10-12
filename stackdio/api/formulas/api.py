@@ -96,7 +96,7 @@ class FormulaPropertiesAPIView(generics.RetrieveAPIView):
 
         properties = formula.properties(version)
 
-        return Response(properties)
+        return Response(recursively_sort_dict(properties))
 
 
 class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIView):
