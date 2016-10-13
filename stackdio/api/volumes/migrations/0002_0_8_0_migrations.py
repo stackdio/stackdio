@@ -3,39 +3,7 @@
 from __future__ import unicode_literals
 
 import django.db.models.deletion
-import django_extensions.db.fields
 from django.db import migrations, models
-
-
-def forwards_func(apps, schema_editor):
-    Volume = apps.get_model('volumes', 'Volume')
-
-    # Get the blueprint volume from the host def
-    for volume in Volume.objects.all():
-        for blueprint_volume in volume.host.blueprint_host_definition.volumes.all():
-            if blueprint_volume.snapshot == volume.snapshot:
-                volume.blueprint_volume = blueprint_volume
-                volume.save()
-
-
-def reverse_func(apps, schema_editor):
-    Volume = apps.get_model('volumes', 'Volume')
-
-    # Just put the snapshot back in place
-    for volume in Volume.objects.all():
-        snapshot = volume.blueprint_volume.snapshot
-
-        if snapshot is None:
-            # If the snapshot is null, just delete this volume... it's an invalid configuration
-            # going backwards.
-            volume.delete()
-            continue
-
-        volume.snapshot = snapshot
-        volume.hostname = volume.host.hostname
-        volume.device = volume.blueprint_volume.device
-        volume.mount_point = volume.blueprint_volume.mount_point
-        volume.save()
 
 
 class Migration(migrations.Migration):
@@ -76,52 +44,5 @@ class Migration(migrations.Migration):
             model_name='volume',
             name='mount_point',
             field=models.CharField(max_length=255, verbose_name='Mount Point', null=True),
-        ),
-        # Set the appropriate fields
-        migrations.RunPython(forwards_func, reverse_func),
-        # Make the blueprint_volumes non-nullable
-        migrations.AlterField(
-            model_name='volume',
-            name='blueprint_volume',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,
-                                    related_name='volumes', to='blueprints.BlueprintVolume'),
-        ),
-        # Remove the fields we don't need anymore
-        migrations.RemoveField(
-            model_name='volume',
-            name='snapshot',
-        ),
-        migrations.RemoveField(
-            model_name='volume',
-            name='device',
-        ),
-        migrations.RemoveField(
-            model_name='volume',
-            name='hostname',
-        ),
-        migrations.RemoveField(
-            model_name='volume',
-            name='mount_point',
-        ),
-
-        # Everything else that needs to be changed
-        migrations.AlterField(
-            model_name='volume',
-            name='host',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='volumes', to='stacks.Host'),
-        ),
-        migrations.AlterField(
-            model_name='volume',
-            name='created',
-            field=django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created'),
-        ),
-        migrations.AlterField(
-            model_name='volume',
-            name='modified',
-            field=django_extensions.db.fields.ModificationDateTimeField(auto_now=True, verbose_name='modified'),
-        ),
-        migrations.RemoveField(
-            model_name='volume',
-            name='attach_time',
         ),
     ]
