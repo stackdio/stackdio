@@ -15,32 +15,24 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
 from django.db.models import URLField
 from rest_framework import serializers
-from six.moves.urllib_parse import urlsplit, urlunsplit  # pylint: disable=import-error
-
-from stackdio.core.fields import PasswordField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
 )
-from stackdio.core.utils import recursively_sort_dict
+
 from . import models, tasks, validators
 
 logger = logging.getLogger(__name__)
 
 
 class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
-    # Non-model fields
-    git_password = PasswordField(write_only=True, required=False,
-                                 allow_blank=True, label='Git Password')
-
-    default_version = serializers.ReadOnlyField()
-
     # Link fields
     properties = serializers.HyperlinkedIdentityField(
         view_name='api:formulas:formula-properties')
@@ -68,10 +60,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
             'title',
             'description',
             'uri',
-            'private_git_repo',
-            'git_username',
-            'git_password',
-            'access_token',
+            'ssh_private_key',
             'default_version',
             'root_path',
             'created',
@@ -89,103 +78,25 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
         read_only_fields = (
             'title',
             'description',
-            'private_git_repo',
+            'default_version',
             'root_path',
             'status',
             'status_detail',
         )
 
-        create_only_fields = (
-            'uri',
-            'git_password',
-        )
-
         extra_kwargs = {
-            'access_token': {'default': serializers.CreateOnlyDefault(False)},
+            'ssh_private_key': {'write_only': True},
         }
 
     # Add in our custom URL field
     serializer_field_mapping = serializers.ModelSerializer.serializer_field_mapping
     serializer_field_mapping[URLField] = validators.FormulaURLField
 
-    def validate(self, attrs):
-        git_username = attrs.get('git_username')
-
-        errors = {}
-
-        if git_username and not self.instance:
-            # We only need validation if a non-empty username is provided
-            # We only care about this if we're importing
-            access_token = attrs.get('access_token')
-            git_password = attrs.get('git_password')
-
-            if not access_token and not git_password:
-                err_msg = 'Your git password is required if you\'re not using an access token.'
-                errors.setdefault('access_token', []).append(err_msg)
-                errors.setdefault('git_password', []).append(err_msg)
-
-            if access_token and git_password:
-                err_msg = 'If you are using an access_token, you may not provide a password.'
-                errors.setdefault('access_token', []).append(err_msg)
-                errors.setdefault('git_password', []).append(err_msg)
-
-        if self.instance:
-            uri = attrs.get('uri') if 'uri' in attrs else self.instance.uri
-        else:
-            uri = attrs['uri']
-
-        # Remove the git username from the uri if it's a private formula
-        if git_username:
-            parse_res = urlsplit(uri)
-            if '@' in parse_res.netloc:
-                new_netloc = parse_res.netloc.split('@')[-1]
-                attrs['uri'] = urlunsplit((
-                    parse_res.scheme,
-                    new_netloc,
-                    parse_res.path,
-                    parse_res.query,
-                    parse_res.fragment,
-                ))
-
-        if errors:
-            raise serializers.ValidationError(errors)
-
-        return attrs
-
-
-class FormulaPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    def to_representation(self, obj):
-        ret = {}
-        if obj is not None:
-            # Make it work two different ways.. ooooh
-            if isinstance(obj, models.Formula):
-                ret = obj.properties
-            else:
-                ret = obj
-        return recursively_sort_dict(ret)
-
-    def to_internal_value(self, data):
-        return data
-
 
 class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     available_actions = ('update',)
 
     action = serializers.ChoiceField(available_actions, write_only=True)
-    git_password = PasswordField(write_only=True, required=False,
-                                 allow_blank=True, label='Git Password')
-
-    def validate(self, attrs):
-        formula = self.instance
-
-        git_password = attrs.get('git_password')
-        if formula.private_git_repo and not formula.access_token:
-            if not git_password:
-                raise serializers.ValidationError({
-                    'git_password': ['This is a required field on private formulas.']
-                })
-
-        return attrs
 
     def to_representation(self, instance):
         """
@@ -196,13 +107,11 @@ class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstra
 
     def do_update(self):
         formula = self.instance
-        git_password = self.validated_data.get('git_password', '')
-        logger.debug(type(git_password))
         formula.set_status(
             models.Formula.IMPORTING,
             'Importing formula...this could take a while.'
         )
-        tasks.update_formula.si(formula.id, git_password, formula.default_version).apply_async()
+        tasks.update_formula.si(formula.id, formula.default_version).apply_async()
 
     def save(self, **kwargs):
         action = self.validated_data['action']

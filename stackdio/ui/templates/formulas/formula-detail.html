@@ -10,52 +10,45 @@
 {% block detail-content %}
 <div class="col-sm-9 col-sm-pull-3">
     <div class="row">
-        <div class="col-md-12">
-            <h2 data-bind="text: formula.title" style="margin-top: 0"></h2>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
-            <p data-bind="text: formula.description"></p>
-        </div>
-        <div class="col-md-6">
-            <a data-bind="text: formula.uri, attr: {href: formula.uri}"></a>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-12">
-            <p><span class="label" data-bind="css: formula.labelClass, text: formula.status"></span> -
-                <span data-bind="text: formula.statusDetail"></span></p>
-        </div>
-    </div>
-
-    <div class="row" style="margin-top: 15px; margin-bottom: 15px">
-        <form data-bind="submit: function() { formula.save(); }">
-            <div class="col-sm-6">
-                <div id="git_username" class="form-group">
-                    <label for="formulaUsername" class="sr-only">Git username required for private repositories only</label>
-                    <input id="formulaUsername" data-bind="value: formula.gitUsername, attr: {placeholder: usernameText}" class="form-control" type="text">
+        <div class="col-sm-12">
+            <form data-bind="submit: function() { formula.save(); }">
+                <div id="title" class="form-group">
+                    <label>Title</label>
+                    <p class="form-control-static" data-bind="text: formula.title"></p>
                 </div>
-            </div>
-            <div id="access_token" class="col-sm-4">
-                <div class="checkbox">
-                    <label class="checkbox-custom" data-initialize="checkbox">
-                        <input class="sr-only" type="checkbox" data-bind="checked: formula.accessToken">
-                        <span class="checkbox-label">Use access token</span>
-                    </label>
+                <div id="description" class="form-group">
+                    <label>Description</label>
+                    <p class="form-control-static" data-bind="text: formula.description"></p>
                 </div>
-            </div>
-            <div class="col-sm-2">
-                {% if has_update %}
-                <button type="submit" class="btn btn-success">Save</button>
-                {% endif %}
-            </div>
-        </form>
+                <div id="status" class="form-group">
+                    <label>Status</label>
+                    <p class="form-control-static">
+                        <span class="label" data-bind="css: formula.labelClass, text: formula.status"></span> -
+                        <span data-bind="text: formula.statusDetail"></span>
+                    </p>
+                </div>
+
+                <div id="uri" class="form-group">
+                    <label for="formulaUri">URI</label>
+                    <input id="formulaUri" data-bind="value: formula.uri" class="form-control" type="text">
+                </div>
+
+                <div id="ssh_private_key" class="form-group">
+                    <label for="formulaSshPrivateKey">SSH private key (optional)</label>
+                    <textarea class="form-control" id="formulaSshPrivateKey" rows="5"
+                              data-bind="value: formula.sshPrivateKey, valueUpdate: 'keyup'"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-top: 15px">
+                    {% if has_update %}
+                    <button type="submit" class="btn btn-success">Save</button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="row" style="border-top: 1px solid #eee">
+    <div class="row" style="margin-top: 15px; border-top: 1px solid #eee">
         <div class="col-md-12">
             <h3>Components</h3>
         </div>

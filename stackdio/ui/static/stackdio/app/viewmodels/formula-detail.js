@@ -47,7 +47,6 @@ define([
         ],
         autoRefresh: false,
         formula: null,
-        formulaUrl: ko.observable(''),
         init: function () {
             this._super();
             var self = this;
@@ -58,14 +57,6 @@ define([
             }).fail(function () {
                 // Just go back to the main page if we fail
                 window.location = '/formulas/';
-            });
-
-            this.usernameText = ko.computed(function () {
-                if (self.formula.accessToken()) {
-                    return 'GitHub access token';
-                } else {
-                    return 'Git username';
-                }
             });
 
             // Create the version selector

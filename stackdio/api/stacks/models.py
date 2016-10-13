@@ -449,7 +449,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                                                      sg_description,
                                                      delete_if_exists=True)
             except GroupExistsException as e:
-                err_msg = 'Error creating security group: {0}'.format(str(e))
+                err_msg = 'Error creating security group: {0}'.format(e)
                 raise APIException({'error': err_msg})
 
             logger.debug('Created security group {0}: {1}'.format(
@@ -709,7 +709,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # Add in spot instance config if needed
             if host.sir_price:
                 host_metadata['spot_config'] = {
-                    'spot_price': str(host.sir_price)  # convert to string
+                    'spot_price': six.text_type(host.sir_price)  # convert to string
                 }
 
             # Set our extra options - as long as they're not in the blacklist
@@ -882,24 +882,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         for host in self.hosts.all():
             formulas.update([c.formula for c in host.formula_components.all()])
 
-        # Update the formulas if requested
-        if update_formulas:
-            for formula in formulas:
-                # Update the formula, and fail silently if there was an error.
-                if formula.private_git_repo:
-                    logger.debug('Skipping private formula: {0}'.format(formula.uri))
-                    continue
-
-                try:
-                    version = self.formula_versions.get(formula=formula).version
-                except FormulaVersion.DoesNotExist:
-                    version = formula.default_version
-
-                update_formula.si(formula.id, None, version, raise_exception=False)()
-
         # for each unique formula, pull the properties from the SPECFILE
         for formula in formulas:
-            recursive_update(pillar_props, formula.properties)
+            # Grab the formula version
+            try:
+                version = self.formula_versions.get(formula=formula).version
+            except FormulaVersion.DoesNotExist:
+                version = formula.default_version
+
+            if update_formulas:
+                # Update the formulas if requested
+                update_formula.si(formula.id, version)()
+            recursive_update(pillar_props, formula.properties(version))
 
         # Add in properties that were supplied via the blueprint and during
         # stack creation
@@ -929,24 +923,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         for account in accounts:
             global_formulas.extend(account.get_formulas())
 
-        # Update the formulas if requested
-        if update_formulas:
-            for formula in global_formulas:
-                # Update the formula, and fail silently if there was an error.
-                if formula.private_git_repo:
-                    logger.debug('Skipping private formula: {0}'.format(formula.uri))
-                    continue
-
-                try:
-                    version = self.formula_versions.get(formula=formula).version
-                except FormulaVersion.DoesNotExist:
-                    version = formula.default_version
-
-                update_formula.si(formula.id, None, version, raise_exception=False)()
-
-        # Add the global formulas into the props
+        # for each unique formula, pull the properties from the SPECFILE
         for formula in set(global_formulas):
-            recursive_update(pillar_props, formula.properties)
+            # Grab the formula version
+            try:
+                version = self.formula_versions.get(formula=formula).version
+            except FormulaVersion.DoesNotExist:
+                version = formula.default_version
+
+            if update_formulas:
+                # Update the formulas if requested
+                update_formula.si(formula.id, version)()
+            recursive_update(pillar_props, formula.properties(version))
 
         # Add in the account properties AFTER the stack properties
         for account in accounts:

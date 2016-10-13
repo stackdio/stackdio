@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 from collections import OrderedDict
@@ -26,6 +27,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from stackdio.core.utils import recursively_sort_dict
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -42,8 +44,7 @@ class FormulaListAPIView(generics.ListCreateAPIView):
     """
     Displays a list of all formulas visible to you.
     You may import a formula here also by providing a URI to a git repository containing a valid
-    SPECFILE at the root of the repo.  You may optionally provide a git_username and git_password
-    if your repository requires authentication.
+    SPECFILE at the root of the repo.
     """
     queryset = models.Formula.objects.all()
     serializer_class = serializers.FormulaSerializer
@@ -82,8 +83,20 @@ class FormulaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 class FormulaPropertiesAPIView(generics.RetrieveAPIView):
     queryset = models.Formula.objects.all()
-    serializer_class = serializers.FormulaPropertiesSerializer
     permission_classes = (StackdioObjectPermissions,)
+
+    def retrieve(self, request, *args, **kwargs):
+        formula = self.get_object()
+
+        # determine if a version was specified
+        version = request.query_params.get('version')
+
+        if version not in formula.get_valid_versions():
+            version = formula.default_version
+
+        properties = formula.properties(version)
+
+        return Response(recursively_sort_dict(properties))
 
 
 class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIView):
@@ -97,17 +110,10 @@ class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIVi
         # determine if a version was specified
         version = request.query_params.get('version')
 
-        if version in formula.get_valid_versions():
-            components = formula.components_for_version(version)
-        else:
+        if version not in formula.get_valid_versions():
             version = formula.default_version
-            if formula.repo is None:
-                components = {}
-            else:
-                formula.repo.git.checkout(version)
-                components = formula.components
 
-        components = components.values()
+        components = formula.components(version).values()
 
         data = OrderedDict((
             ('count', len(components)),
@@ -125,7 +131,7 @@ class FormulaValidVersionListAPIView(mixins.FormulaRelatedMixin, generics.ListAP
     def list(self, request, *args, **kwargs):
         formula = self.get_formula()
 
-        versions = formula.get_valid_versions()
+        versions = sorted(formula.get_valid_versions())
 
         data = OrderedDict((
             ('count', len(versions)),

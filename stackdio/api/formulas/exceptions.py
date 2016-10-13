@@ -16,22 +16,13 @@
 #
 
 
-import django_filters
-
-from stackdio.core.filters import OrFieldsFilter
-from . import models
+class FormulaTaskException(Exception):
+    pass
 
 
-class FormulaFilter(django_filters.FilterSet):
-    title = django_filters.CharFilter(lookup_type='icontains')
-    q = OrFieldsFilter(field_names=('title', 'description', 'uri', 'root_path'),
-                       lookup_type='icontains')
+class InvalidFormula(Exception):
+    pass
 
-    class Meta:
-        model = models.Formula
-        fields = (
-            'title',
-            'uri',
-            'root_path',
-            'q',
-        )
+
+class InvalidFormulaComponent(InvalidFormula):
+    pass

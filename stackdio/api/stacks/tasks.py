@@ -17,6 +17,8 @@
 
 # pylint: disable=too-many-lines
 
+from __future__ import unicode_literals
+
 import collections
 import json
 import logging
@@ -28,10 +30,12 @@ import types
 from datetime import datetime
 from functools import wraps
 
+import git
 import salt.client
 import salt.cloud
 import salt.config
 import salt.runner
+import six
 import yaml
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -39,11 +43,11 @@ from django.conf import settings
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
-from stackdio.api.formulas.tasks import update_formula
 from stackdio.core.constants import Activity, ComponentStatus
 from stackdio.core.events import trigger_event
 
 from . import utils
+from .exceptions import StackTaskException
 from .models import Stack, StackCommand
 
 logger = get_task_logger(__name__)
@@ -53,10 +57,6 @@ root_logger = logging.getLogger()
 ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
 ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found already running'
 ERROR_ALREADY_RUNNING = 'Already running'
-
-
-class StackTaskException(Exception):
-    pass
 
 
 def stack_task(*args, **kwargs):
@@ -85,13 +85,13 @@ def stack_task(*args, **kwargs):
                     stack.set_activity(Activity.QUEUED)
 
             except StackTaskException as e:
-                stack.log_history(str(e), Activity.IDLE)
-                logger.exception(str(e))
+                stack.log_history(six.text_type(e), Activity.IDLE)
+                logger.exception(e)
                 raise
             except Exception as e:
-                err_msg = 'Unhandled exception: {0}'.format(str(e))
+                err_msg = 'Unhandled exception: {0}'.format(e)
                 stack.log_history(err_msg, Activity.IDLE)
-                logger.exception(err_msg)
+                logger.exception(e)
                 raise
 
         return task
@@ -115,7 +115,7 @@ def is_state_error(state_meta):
     return not state_meta['result']
 
 
-def copy_formulas(stack_or_account):
+def clone_formulas(stack_or_account):
     dest_dir = os.path.join(stack_or_account.get_root_directory(), 'formulas')
 
     # Be sure to create a formula version for all formulas needed
@@ -134,26 +134,26 @@ def copy_formulas(stack_or_account):
 
         formula_dir = os.path.join(dest_dir, formula.get_repo_name())
 
-        # Blow away the private repo and re-copy.  This way we get the most recent states
-        # that have been updated
-        if formula.private_git_repo and os.path.exists(formula_dir):
-            shutil.rmtree(formula_dir)
-
-        if not os.path.isdir(formula_dir):
-            # Copy over the formula - but just bail if it already exists
-            shutil.copytree(formula.get_repo_dir(), formula_dir)
+        if os.path.exists(formula_dir):
+            # We already have the repo - just do a fetch
+            try:
+                repo = formula.get_repo_from_directory(formula_dir)
+                repo.remote().fetch(prune=True)
+            except (git.InvalidGitRepositoryError, git.GitCommandError):
+                # If we run into issues, just re-clone
+                shutil.rmtree(formula_dir)
+                repo = formula.clone_to(formula_dir)
         else:
-            logger.debug('Formula not copied, already exists: {0}'.format(formula.uri))
+            # We need to clone
+            repo = formula.clone_to(formula_dir)
 
-        if formula.private_git_repo:
-            # If it's private, we can't update it but we can at least checkout the right branch
-            if formula.repo is not None:
-                formula.repo.git.checkout(version)
-            logger.debug('Skipping update of private formula: {0}'.format(formula.uri))
-            continue
-
-        # Update the formula
-        update_formula.si(formula.id, None, version, formula_dir, raise_exception=False)()
+        # Checkout the appropriate version
+        try:
+            repo.remote().refs[version].checkout()
+        except TypeError as e:
+            # checkout raises a TypeError if you checkout a remote ref :(
+            if 'is a detached symbolic reference as it points to' not in e.message:
+                raise
 
 
 def copy_global_orchestrate(stack):
@@ -724,7 +724,7 @@ def sync_all(stack):
             logger.warning('Host {0} missing a retcode... assuming failure'.format(host))
 
         if data.get('retcode', 1) != 0:
-            err_msg = str(data['ret'])
+            err_msg = six.text_type(data['ret'])
             raise StackTaskException('Error syncing salt data on stack {0}: '
                                      '{1!r}'.format(stack.id, err_msg))
 
@@ -1030,7 +1030,7 @@ def global_orchestrate(stack, max_retries=2):
 
     for host_definition in stack.blueprint.host_definitions.all():
         account = host_definition.cloud_image.account
-        copy_formulas(account)
+        clone_formulas(account)
         accounts.add(account)
 
     accounts = list(accounts)
@@ -1144,8 +1144,8 @@ def orchestrate(stack, max_retries=2):
 
     logger.info('Executing orchestration for stack: {0!r}'.format(stack))
 
-    # Copy the formulas to somewhere useful
-    copy_formulas(stack)
+    # Clone the formulas to somewhere useful
+    clone_formulas(stack)
 
     # Set the pillar file back to the regular pillar
     change_pillar(stack, stack.pillar_file.path)

@@ -55,9 +55,7 @@ define([
         this.title = ko.observable();
         this.description = ko.observable();
         this.uri = ko.observable();
-        this.privateGitRepo = ko.observable();
-        this.gitUsername = ko.observable();
-        this.accessToken = ko.observable();
+        this.sshPrivateKey = ko.observable();
         this.rootPath = ko.observable();
         this.status = ko.observable();
         this.statusDetail = ko.observable();
@@ -87,9 +85,6 @@ define([
         this.title(raw.title);
         this.description(raw.description);
         this.uri(raw.uri);
-        this.privateGitRepo(raw.private_git_repo);
-        this.gitUsername(raw.git_username);
-        this.accessToken(raw.access_token);
         this.rootPath(raw.root_path);
         this.status(raw.status);
         this.statusDetail(raw.status_detail);
@@ -204,53 +199,32 @@ define([
             },
             callback: function (result) {
                 if (result) {
-                    var doAction = function(gitPassword) {
-                        if (typeof gitPassword === 'undefined') {
-                            gitPassword = '';
+                    $.ajax({
+                        method: 'POST',
+                        url: self.raw.action,
+                        data: JSON.stringify({
+                            action: action
+                        })
+                    }).done(function () {
+                        if (self.parent && typeof self.parent.reload === 'function') {
+                            self.parent.reload();
+                        } else {
+                            self.reload();
                         }
-
-                        $.ajax({
-                            method: 'POST',
-                            url: self.raw.action,
-                            data: JSON.stringify({
-                                action: action,
-                                git_password: gitPassword
-                            })
-                        }).done(function () {
-                            if (self.parent && typeof self.parent.reload === 'function') {
-                                self.parent.reload();
-                            } else {
-                                self.reload();
-                            }
-                        }).fail(function (jqxhr) {
-                            var message;
-                            try {
-                                var resp = JSON.parse(jqxhr.responseText);
-                                message = resp.action.join('<br>');
-                            } catch (e) {
-                                message = 'Oops... there was a server error.  This has been ' +
-                                    'reported to your administrators.';
-                            }
-                            bootbox.alert({
-                                title: 'Error performing the "' + action + '" action',
-                                message: message
-                            });
+                    }).fail(function (jqxhr) {
+                        var message;
+                        try {
+                            var resp = JSON.parse(jqxhr.responseText);
+                            message = resp.action.join('<br>');
+                        } catch (e) {
+                            message = 'Oops... there was a server error.  This has been ' +
+                                'reported to your administrators.';
+                        }
+                        bootbox.alert({
+                            title: 'Error performing the "' + action + '" action',
+                            message: message
                         });
-                    };
-
-                    if (self.privateGitRepo() && !self.accessToken()) {
-                        bootbox.prompt({
-                            title: 'Password for private repo',
-                            inputType: 'password',
-                            callback: function (result) {
-                                if (result) {
-                                    doAction(result);
-                                }
-                            }
-                        });
-                    } else {
-                        doAction();
-                    }
+                    });
                 }
             }
         });
@@ -259,7 +233,7 @@ define([
 
     Formula.prototype.save = function () {
         var self = this;
-        var keys = ['git_username', 'access_token'];
+        var keys = ['ssh_private_key', 'uri'];
 
         keys.forEach(function (key) {
             var el = $('#' + key);
@@ -272,8 +246,8 @@ define([
             method: 'PUT',
             url: self.raw.url,
             data: JSON.stringify({
-                git_username: self.gitUsername(),
-                access_token: self.accessToken()
+                uri: self.uri(),
+                ssh_private_key: self.sshPrivateKey()
             })
         }).done(function (formula) {
             utils.growlAlert('Successfully saved formula!', 'success');
