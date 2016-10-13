@@ -215,7 +215,7 @@ class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
 
 
 @six.python_2_unicode_compatible
-class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
+class BlueprintAccessRule(TimeStampedModel):
     """
     Access rules are a white list of rules for a host that defines
     what protocols and ports are available for the corresponding
@@ -257,7 +257,7 @@ class BlueprintAccessRule(TitleSlugDescriptionModel, TimeStampedModel):
 
 
 @six.python_2_unicode_compatible
-class BlueprintVolume(TitleSlugDescriptionModel, TimeStampedModel):
+class BlueprintVolume(TimeStampedModel):
 
     class Meta:
         verbose_name_plural = 'volumes'
