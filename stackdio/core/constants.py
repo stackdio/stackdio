@@ -31,7 +31,7 @@ class Health(object):
     @classmethod
     def aggregate(cls, health_list):
         # Make sure everything in the list is a valid health
-        assert len([h for h in health_list if h not in vars(cls)]) == 0
+        assert len([h for h in health_list if h not in vars(cls).values()]) == 0
 
         if len(health_list) == 0:
             # We can get an empty list sometimes when we're deleting a stack, so we'll
