@@ -1383,14 +1383,21 @@ def metadata_post_save(sender, **kwargs):
 @receiver([models.signals.post_save, models.signals.post_delete], sender=Host)
 def host_post_save(sender, **kwargs):
     host = kwargs.pop('instance')
+    stack = host.stack
 
     # Delete from the cache
     cache_keys = [
         'stack-{}-hosts'.format(host.stack_id),
         'stack-{}-host-count'.format(host.stack_id),
         'stack-{}-volume-count'.format(host.stack_id),
+        'stack-{}-health'.format(stack.id),
+        'host-{}-health'.format(host.id),
     ]
     cache.delete_many(cache_keys)
+
+    # Accessing them will cause them to re-cache now rather than when they are requested later
+    host.health  # pylint: disable=pointless-statement
+    stack.health  # pylint: disable=pointless-statement
 
 
 @receiver([models.signals.post_save, models.signals.post_delete], sender=Stack)
@@ -1400,5 +1407,9 @@ def stack_post_save(sender, **kwargs):
     # Delete from the cache
     cache_keys = [
         'blueprint-{}-stack-count'.format(stack.blueprint_id),
+        'stack-{}-health'.format(stack.id),
     ]
     cache.delete_many(cache_keys)
+
+    # Accessing them will cause them to re-cache now rather than when they are requested later
+    stack.health  # pylint: disable=pointless-statement
