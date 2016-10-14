@@ -365,6 +365,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     properties = property(_get_properties, _set_properties)
 
     @property
+    @django_cache('stack-{id}-health')
     def health(self):
         """
         Calculates the health of this stack from its hosts
@@ -1164,6 +1165,7 @@ class Host(TimeStampedModel):
         self.save()
 
     @property
+    @django_cache('host-{id}-health')
     def health(self):
         """
         Calculates the health of this host from its component healths
@@ -1238,35 +1240,37 @@ class Host(TimeStampedModel):
         return metadata[self.hostname]
 
     @property
-    @lru_cache()
+    @django_cache('host-{id}-components')
     def formula_components(self):
         return self.blueprint_host_definition.formula_components.all()
 
     @property
-    @lru_cache()
+    @django_cache('host-{id}-size')
     def instance_size(self):
         return self.blueprint_host_definition.size
 
     @property
+    @django_cache('host-{id}-zone')
     def availability_zone(self):
         return self.blueprint_host_definition.zone
 
     @property
+    @django_cache('host-{id}-subnet-id')
     def subnet_id(self):
         return self.blueprint_host_definition.subnet_id
 
     @property
-    @lru_cache()
+    @django_cache('host-{id}-image')
     def cloud_image(self):
         return self.blueprint_host_definition.cloud_image
 
     @property
-    @lru_cache()
+    @django_cache('host-{id}-account')
     def cloud_account(self):
         return self.cloud_image.account
 
     @property
-    @lru_cache()
+    @django_cache('host-{id}-provider')
     def cloud_provider(self):
         return self.cloud_account.provider
 
@@ -1354,15 +1358,27 @@ def metadata_post_save(sender, **kwargs):
     """
     metadata = kwargs.pop('instance')
 
-    host_id = metadata.host_id
+    host = metadata.host
     sls_path = metadata.sls_path
+    stack = host.stack
 
     logger.debug('Pre-caching health for component: {}'.format(metadata))
 
     # Go ahead and add this health to the cache - if it is being created,
     # it is definitely the most recent (which is always what we want)
-    cache_key = 'host-{}-component-health-for-{}'.format(host_id, sls_path)
+    cache_key = 'host-{}-component-health-for-{}'.format(host.id, sls_path)
     cache.set(cache_key, metadata.health, None)
+
+    # Then delete these from the cache
+    cache_keys = [
+        'stack-{}-health'.format(stack.id),
+        'host-{}-health'.format(host.id),
+    ]
+    cache.delete_many(cache_keys)
+
+    # Accessing them will cause them to re-cache now rather than when they are requested later
+    host.health
+    stack.health
 
 
 @receiver([models.signals.post_save, models.signals.post_delete], sender=Host)
