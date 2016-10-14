@@ -35,7 +35,6 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.db import models, transaction
 from django.dispatch import receiver
-from django.utils.lru_cache import lru_cache
 from django.utils.timezone import now
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 from guardian.shortcuts import get_users_with_perms
@@ -1204,7 +1203,8 @@ class Host(TimeStampedModel):
 
             if cached_health is None:
                 logger.debug('{} is not cached, getting health'.format(cache_key))
-                cached_health = self.get_metadata_for_component(component).health
+                metadata = self.get_metadata_for_component(component)
+                cached_health = metadata.health if metadata else Health.UNKNOWN
 
                 # Add it to the healths we need to cache
                 healths_to_cache[cache_key] = cached_health
@@ -1274,7 +1274,6 @@ class Host(TimeStampedModel):
     def cloud_provider(self):
         return self.cloud_account.provider
 
-    @lru_cache()
     def get_driver(self):
         return self.cloud_account.get_driver()
 
