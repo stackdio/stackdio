@@ -1,20 +1,18 @@
 Preparing Ubuntu for stackd.io installation
 ===========================================
 
-The steps below were written using Ubuntu 13.10 from a Ubuntu-provided
-AMI on Amazon Web Services (AWS). The exact AMI we used is
-``ami-2f252646``, and you should be able to easily launch an EC2
-instance using this AMI from the
+The steps below were written using Ubuntu 13.10 from a Ubuntu-provided AMI on Amazon Web Services (AWS).
+The exact AMI we used is ``ami-2f252646``, and you should be able to easily launch an EC2 instance using this AMI from the
 `AWS EC2 Console <https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-2f252646>`__.
 
 Prerequisites
 -------------
 
-| All of these steps require ``root`` or ``sudo`` access. Before installing anything
-| with ``apt-get`` you should run ``apt-get update`` first.
+All of these steps require ``root`` or ``sudo`` access.
+Before installing anything with ``apt-get`` you should run ``apt-get update`` first.
 
-MySQL
------
+Postgres
+--------
 
 .. note::
 
@@ -22,16 +20,13 @@ MySQL
     database or already have a supported database server running
     elsewhere.
 
-Install MySQL server:
+Install Postgres server:
 
 .. code:: bash
 
-    sudo apt-get install mysql-server mysql-client
+    sudo apt-get install postgresql-server
 
-    # When prompted, provide a password for the root user to access the MySQL server.
-
-Below we'll create a ``stackdio`` database and grant permissions to the
-``stackdio`` user for that database.
+Below we'll create a ``stackdio`` database and grant permissions to the ``stackdio`` user for that database.
 
     **WARNING**: we're not focusing on security here, so the default
     MySQL setup definitely needs to be tweaked, passwords changed, etc.,
@@ -42,7 +37,7 @@ Below we'll create a ``stackdio`` database and grant permissions to the
 
     echo "create database stackdio; \
     grant all on stackdio.* to stackdio@'localhost' identified by 'password';" | \
-    mysql -hlocalhost -uroot -ppassword
+    psql -u root
 
 virtualenvwrapper
 -----------------
@@ -60,10 +55,10 @@ Core requirements
 
 -  gcc and other development tools
 -  git
--  mysql-devel
+-  postgres-devel
 -  swig
 -  python-devel
--  rabbitmq-server
+-  redis-server
 
 To quickly get up and running, you can run the following to install the
 required packages.
@@ -72,7 +67,7 @@ required packages.
 
     # Install requirements needed to install stackd.io
     sudo apt-get install python-dev libssl-dev libncurses5-dev libyaml-dev swig nodejs npm \
-        libmysqlclient-dev rabbitmq-server git nginx libldap2-dev libsasl2-dev
+        libpsqlclient-dev redis-server git nginx libldap2-dev libsasl2-dev
 
 .. code:: bash
 
@@ -83,5 +78,4 @@ Next Steps
 ----------
 
 You're now finished with the Ubuntu-specific requirements for stackd.io.
-You can head back over to the :ref:`Manual Install <installation>` and
-continue the installation of stackd.io.
+You can head back over to the :ref:`Manual Install <installation>` and continue the installation of stackd.io.

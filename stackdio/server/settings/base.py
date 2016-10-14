@@ -19,10 +19,10 @@
 Django settings for stackdio project.
 
 For more information on this file, see
-https://docs.djangoproject.com/en/1.8/topics/settings/
+https://docs.djangoproject.com/en/1.9/topics/settings/
 
 For the full list of settings and their values, see
-https://docs.djangoproject.com/en/1.8/ref/settings/
+https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -71,7 +71,7 @@ DEBUG = False
 JAVASCRIPT_DEBUG = False
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
-# See https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
+# See https://docs.djangoproject.com/en/1.9/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ['*']
 
 SECRET_KEY = STACKDIO_CONFIG.django_secret_key
@@ -155,7 +155,7 @@ MANAGERS = ADMINS
 
 ##
 # Database
-# https://docs.djangoproject.com/en/1.8/ref/settings/#databases
+# https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 #
 # We're using dj-database-url to simplify
 # the required settings and instead of pulling the DSN from an
@@ -186,7 +186,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/1.8/topics/i18n/
+# https://docs.djangoproject.com/en/1.9/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
@@ -208,7 +208,7 @@ LOGOUT_URL = '/logout/'
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.8/howto/static-files/
+# https://docs.djangoproject.com/en/1.9/howto/static-files/
 STATIC_URL = '/static/'
 
 # Absolute path to the directory static files should be collected to.
