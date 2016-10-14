@@ -55,6 +55,10 @@ LDAP_CONFIG = STACKDIO_CONFIG.get('ldap', {})
 
 LDAP_ENABLED = LDAP_CONFIG.get('enabled', False)
 
+OPBEAT_CONFIG = STACKDIO_CONFIG.get('opbeat', {})
+
+OPBEAT_ENABLED = OPBEAT_CONFIG.get('enabled', False)
+
 ##
 # Some convenience variables
 ##
@@ -424,6 +428,39 @@ CELERYBEAT_SCHEDULE = {
         'args': (),
     }
 }
+
+
+# opbeat things
+if OPBEAT_ENABLED:
+    INSTALLED_APPS += ('opbeat.contrib.django',)
+
+    MIDDLEWARE_CLASSES = (
+        'opbeat.contrib.django.middleware.OpbeatAPMMiddleware',
+    ) + MIDDLEWARE_CLASSES
+
+    OPBEAT = {
+        'ORGANIZATION_ID': OPBEAT_CONFIG.get('organization_id'),
+        'APP_ID': OPBEAT_CONFIG.get('app_id'),
+        'SECRET_TOKEN': OPBEAT_CONFIG.get('secret_token'),
+    }
+
+    # Set up the logging
+    LOGGING['handlers']['opbeat'] = {
+        'level': 'WARNING',
+        'class': 'opbeat.contrib.django.handlers.OpbeatHandler',
+    }
+
+    LOGGING['loggers']['opbeat.errors'] = {
+        'level': 'ERROR',
+        'handlers': ['console'],
+        'propagate': False,
+    }
+
+    LOGGING['loggers']['opbeat.instrumentation.packages.base'] = {
+        'level': 'WARNING',
+        'handlers': ['console'],
+        'propagate': False,
+    }
 
 ##
 # LDAP configuration. To enable this, you should set ldap: enabled: true in your config file.

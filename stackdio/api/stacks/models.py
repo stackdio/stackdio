@@ -1376,8 +1376,8 @@ def metadata_post_save(sender, **kwargs):
     cache.delete_many(cache_keys)
 
     # Accessing them will cause them to re-cache now rather than when they are requested later
-    host.health
-    stack.health
+    host.health  # pylint: disable=pointless-statement
+    stack.health  # pylint: disable=pointless-statement
 
 
 @receiver([models.signals.post_save, models.signals.post_delete], sender=Host)
