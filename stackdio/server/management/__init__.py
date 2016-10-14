@@ -30,10 +30,6 @@ from stackdio.server.management import commands
 from stackdio.server.version import __version__
 
 
-if sys.stdout.isatty():
-    import readline  # pylint: disable=wrong-import-order
-
-
 def main():
     parser = argparse.ArgumentParser(prog='stackdio')
 
