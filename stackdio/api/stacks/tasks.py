@@ -1317,9 +1317,6 @@ def single_sls(stack, component, host_target, max_retries=2):
         try:
             salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
-            logger.debug(target)
-            logger.debug(expr_form)
-
             ret = salt_client.cmd_iter(
                 target,
                 'state.sls',
