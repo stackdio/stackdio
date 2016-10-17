@@ -1254,7 +1254,7 @@ def single_sls(stack, component, max_retries=2):
     """
     stack.set_activity(Activity.ORCHESTRATING)
 
-    logger.info('Executing single sls {} for stack: {1!r}'.format(component, stack))
+    logger.info('Executing single sls {0} for stack: {1!r}'.format(component, stack))
 
     # Clone the formulas to somewhere useful
     clone_formulas(stack)
