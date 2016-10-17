@@ -1250,22 +1250,20 @@ class Host(TimeStampedModel):
         return self.blueprint_host_definition.size
 
     @property
-    @django_cache('host-{id}-zone')
     def availability_zone(self):
         return self.blueprint_host_definition.zone
 
     @property
-    @django_cache('host-{id}-subnet-id')
     def subnet_id(self):
         return self.blueprint_host_definition.subnet_id
 
     @property
-    @django_cache('host-{id}-image')
+    @django_cache('host-{id}-image', timeout=30)
     def cloud_image(self):
         return self.blueprint_host_definition.cloud_image
 
     @property
-    @django_cache('host-{id}-account')
+    @django_cache('host-{id}-account', timeout=30)
     def cloud_account(self):
         return self.cloud_image.account
 
