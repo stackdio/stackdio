@@ -1,9 +1,9 @@
 Preparing Ubuntu for stackd.io installation
 ===========================================
 
-The steps below were written using Ubuntu 13.10 from a Ubuntu-provided AMI on Amazon Web Services (AWS).
-The exact AMI we used is ``ami-2f252646``, and you should be able to easily launch an EC2 instance using this AMI from the
-`AWS EC2 Console <https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-2f252646>`__.
+The steps below were written using Ubuntu 16.04 from a Ubuntu-provided AMI on Amazon Web Services (AWS).
+The exact AMI we used is ``ami-29f96d3e``, and you should be able to easily launch an EC2 instance using this AMI from the
+`AWS EC2 Console <https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-29f96d3e>`__.
 
 Prerequisites
 -------------
@@ -24,20 +24,22 @@ Install Postgres server:
 
 .. code:: bash
 
-    sudo apt-get install postgresql-server
+    sudo apt-get install postgresql
 
 Below we'll create a ``stackdio`` database and grant permissions to the ``stackdio`` user for that database.
 
     **WARNING**: we're not focusing on security here, so the default
-    MySQL setup definitely needs to be tweaked, passwords changed, etc.,
+    Postgres setup definitely needs to be tweaked, passwords changed, etc.,
     but for a quick-start guide this is out of scope. Please, don't run
     this as-is in production :)
 
 .. code:: bash
 
-    echo "create database stackdio; \
-    grant all on stackdio.* to stackdio@'localhost' identified by 'password';" | \
-    psql -u root
+    sudo -u postgres psql postgres <<EOF
+    CREATE USER stackdio WITH UNENCRYPTED PASSWORD 'password';
+    CREATE DATABASE stackdio;
+    ALTER DATABASE stackdio OWNER to stackdio;
+    EOF
 
 virtualenvwrapper
 -----------------
@@ -55,9 +57,8 @@ Core requirements
 
 -  gcc and other development tools
 -  git
--  postgres-devel
--  swig
--  python-devel
+-  libpq-dev (the c header files for compiling the python postgres client)
+-  python-dev
 -  redis-server
 
 To quickly get up and running, you can run the following to install the
@@ -66,8 +67,7 @@ required packages.
 .. code:: bash
 
     # Install requirements needed to install stackd.io
-    sudo apt-get install python-dev libssl-dev libncurses5-dev libyaml-dev swig nodejs npm \
-        libpsqlclient-dev redis-server git nginx libldap2-dev libsasl2-dev
+    sudo apt-get install python-dev libpq-dev nodejs npm redis-server git nginx gcc
 
 .. code:: bash
 

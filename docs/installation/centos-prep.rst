@@ -1,9 +1,9 @@
 Preparing CentOS for stackd.io installation
 ===========================================
 
-The steps below were written using CentOS 6 from a CentOS-provided AMI on Amazon Web Services (AWS).
-The exact AMI we used is ``ami-bf5021d6``, and you should be able to easily launch an EC2 instance using this AMI from the
-`AWS Marketplace <https://aws.amazon.com/marketplace/pp/B00DGYP804/ref=sp_mpg_product_title?ie=UTF8&sr=0-4>`__.
+The steps below were written using CentOS 7 from a CentOS-provided AMI on Amazon Web Services (AWS).
+The exact AMI we used is ``ami-6d1c2007``, and you should be able to easily launch an EC2 instance using this AMI from the
+`AWS Marketplace <https://aws.amazon.com/marketplace/pp/B00O7WM7QW>`__.
 
 Prerequisites
 -------------
@@ -75,8 +75,8 @@ Postgres
 Install Postgres server:
 
 .. code:: bash
-    rpm install https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-6-x86_64/pgdg-centos95-9.5-3.noarch.rpm
-    sudo yum install postgresql-server
+    sudo yum install https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-7-x86_64/pgdg-centos95-9.5-3.noarch.rpm
+    sudo yum install postgresql
 
 Start Postgres server:
 
@@ -95,9 +95,11 @@ Below we'll create a ``stackdio`` database and grant permissions to the
 
 .. code:: bash
 
-    echo "create database stackdio; \
-    grant all on stackdio.* to stackdio@'localhost' identified by 'password';" | \
-    psql -u root
+    sudo -u postgres psql postgres <<EOF
+    CREATE USER stackdio WITH UNENCRYPTED PASSWORD 'password';
+    CREATE DATABASE stackdio;
+    ALTER DATABASE stackdio OWNER to stackdio;
+    EOF
 
 virtualenvwrapper
 -----------------
@@ -119,8 +121,7 @@ Core requirements
 
 -  gcc and other development tools
 -  git
--  postgres-devel
--  swig
+-  libpq-devel (the c header files for compiling the python postgres client)
 -  python-devel
 -  redis-server
 -  nginx
@@ -134,7 +135,7 @@ required packages.
     sudo yum groupinstall "Development Tools"
 
     # Install the other requirements needed to install stackd.io
-    sudo yum install git postgresql-devel swig python-devel redis-server nginx nodejs npm
+    sudo yum install git libpq-devel python-devel redis-server nginx nodejs npm
 
 Next Steps
 ----------
