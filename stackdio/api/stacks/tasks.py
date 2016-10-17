@@ -1385,7 +1385,7 @@ def single_sls(stack, component, host_target, max_retries=2):
         # it worked?
         break
 
-    stack.log_history('Finished executing single sls {} all hosts.'.format(component))
+    stack.log_history('Finished executing single sls {} on all hosts.'.format(component))
 
 
 @stack_task(name='stacks.finish_stack', final_task=True)

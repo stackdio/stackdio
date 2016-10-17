@@ -242,7 +242,7 @@ class ActionWorkflow(BaseWorkflow):
         task_list = base_tasks.get(self.action, [])
 
         # Update the metadata after the main action has been executed
-        if self.action != Action.TERMINATE:
+        if self.action not in (Action.SINGLE_SLS, Action.TERMINATE):
             task_list.append(tasks.update_metadata.si(self.stack.id,
                                                       action_to_activity[self.action]))
 
