@@ -6,7 +6,7 @@ Its purpose is to provide a common platform for deploying and configuring hardwa
 We currently only support AWS EC2, but the driver framework is expandable to support other cloud providers.
 
 stackd.io is built on top of `Django`_.
-We currently use `salt-cloud`_ to create infrastructure, and `salt`_ to orchestrate that infrastructure.
+We currently use `salt-cloud`_ to build infrastructure, and `salt`_ to orchestrate that infrastructure.
 
 .. _Django: https://www.djangoproject.com/
 .. _salt: http://saltstack.com/
