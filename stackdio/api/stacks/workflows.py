@@ -15,13 +15,14 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
 import actstream
 from celery import chain
-
 from stackdio.core.constants import Action, Activity
+
 from . import tasks
 
 logger = logging.getLogger(__name__)
@@ -209,6 +210,9 @@ class ActionWorkflow(BaseWorkflow):
             Action.PROPAGATE_SSH: [
                 tasks.propagate_ssh.si(self.stack.id),
             ],
+            Action.SINGLE_SLS: [
+                tasks.single_sls(self.stack.id, arg['component']) for arg in self.args
+            ],
         }
 
         action_to_activity = {
@@ -219,6 +223,7 @@ class ActionWorkflow(BaseWorkflow):
             Action.PROVISION: Activity.PROVISIONING,
             Action.ORCHESTRATE: Activity.ORCHESTRATING,
             Action.PROPAGATE_SSH: Activity.PROVISIONING,
+            Action.SINGLE_SLS: Activity.ORCHESTRATING,
         }
 
         action_to_end_activity = {
@@ -229,6 +234,7 @@ class ActionWorkflow(BaseWorkflow):
             Action.PROVISION: Activity.IDLE,
             Action.ORCHESTRATE: Activity.IDLE,
             Action.PROPAGATE_SSH: Activity.IDLE,
+            Action.SINGLE_SLS: Activity.IDLE,
         }
 
         # Start off with the base

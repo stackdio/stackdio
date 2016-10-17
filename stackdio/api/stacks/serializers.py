@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 import os
@@ -47,7 +48,7 @@ from stackdio.core.serializers import (
 )
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator, validate_hostname
-from . import models, tasks, utils, workflows
+from . import models, tasks, utils, validators, workflows
 
 logger = logging.getLogger(__name__)
 
@@ -668,6 +669,26 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
                        'Perhaps you meant to run the launch action instead.')
             raise serializers.ValidationError({
                 'action': [err_msg]
+            })
+
+        single_sls_errors = []
+
+        if action == Action.SINGLE_SLS:
+            args = attrs.get('args', [])
+            for arg in args:
+                if 'component' not in arg:
+                    single_sls_errors.append('arg is missing a component')
+                component = arg['component']
+
+                # This can raise a ValidationError
+                try:
+                    validators.can_run_component_on_stack(component, stack)
+                except serializers.ValidationError as e:
+                    single_sls_errors.append(e.detail)
+
+        if single_sls_errors:
+            raise serializers.ValidationError({
+                'args': single_sls_errors,
             })
 
         return attrs

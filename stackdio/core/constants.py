@@ -76,10 +76,11 @@ class Action(object):
     RESUME = 'resume'
 
     ORCHESTRATE = 'orchestrate'
+    SINGLE_SLS = 'single-sls'
     PROVISION = 'provision'
     PROPAGATE_SSH = 'propagate-ssh'
 
-    ALL = [LAUNCH, TERMINATE, PAUSE, RESUME, ORCHESTRATE, PROVISION, PROPAGATE_SSH]
+    ALL = [LAUNCH, TERMINATE, PAUSE, RESUME, ORCHESTRATE, PROVISION, SINGLE_SLS, PROPAGATE_SSH]
 
 
 class Activity(object):
@@ -130,7 +131,8 @@ class Activity(object):
     # For stacks
     action_map = {
         IDLE: [Action.LAUNCH, Action.TERMINATE, Action.PAUSE,
-               Action.PROPAGATE_SSH, Action.PROVISION, Action.ORCHESTRATE],
+               Action.PROPAGATE_SSH, Action.PROVISION, Action.ORCHESTRATE,
+               Action.SINGLE_SLS],
         PAUSED: [Action.RESUME, Action.TERMINATE],
         TERMINATED: [Action.LAUNCH],
         DEAD: [Action.LAUNCH],

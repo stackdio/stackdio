@@ -24,7 +24,6 @@ import yaml
 from django.core.validators import URLValidator
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.serializers import CharField, ValidationError
-
 from stackdio.api.formulas.exceptions import InvalidFormula, InvalidFormulaComponent
 
 

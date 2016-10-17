@@ -43,10 +43,10 @@ from django.conf import settings
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
-from stackdio.core.constants import Activity, ComponentStatus
+from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.events import trigger_event
 
-from . import utils
+from . import utils, validators
 from .exceptions import StackTaskException
 from .models import Stack, StackCommand
 
@@ -85,7 +85,7 @@ def stack_task(*args, **kwargs):
                     stack.set_activity(Activity.QUEUED)
 
             except StackTaskException as e:
-                stack.log_history(six.text_type(e), Activity.IDLE)
+                stack.log_history(e.message, Activity.IDLE)
                 logger.exception(e)
                 raise
             except Exception as e:
@@ -1059,7 +1059,8 @@ def global_orchestrate(stack, max_retries=2):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             global_orchestrate.name,
             current_try,
-            stack))
+            stack,
+        ))
 
         # Update status
         stack.log_history(
@@ -1235,6 +1236,157 @@ def orchestrate(stack, max_retries=2):
         break
 
     stack.log_history('Finished executing orchestration all hosts.')
+
+
+@stack_task(name='stacks.single_sls')
+def single_sls(stack, component, max_retries=2):
+    """
+    Executes the runners.state.over function with the custom orchestrate
+    file  generated via the stacks.models._generate_orchestrate_file. This
+    will only target the user's environment and provision the hosts with
+    the formulas defined in the blueprint and in the order specified.
+
+    TODO: We aren't allowing users to provision from formulas owned by
+    others at the moment, but if we do want to support that without
+    forcing them to clone those formulas into their own account, we
+    will need to support executing multiple orchestrate files in different
+    environments.
+    """
+    stack.set_activity(Activity.ORCHESTRATING)
+
+    logger.info('Executing single sls {} for stack: {1!r}'.format(component, stack))
+
+    # Clone the formulas to somewhere useful
+    clone_formulas(stack)
+
+    # Set the pillar file back to the regular pillar
+    change_pillar(stack, stack.pillar_file.path)
+
+    # Set up logging for this task
+    log_dir = stack.get_log_directory()
+
+    try:
+        host_list = validators.can_run_component_on_stack(component, stack)
+    except validators.ValidationError as e:
+        raise StackTaskException(e.detail)
+
+    target = [h.hostname for h in host_list]
+
+    # we'll break out of the loop based on the given number of retries
+    current_try = 0
+    while True:
+        current_try += 1
+        logger.info('Task {0} try #{1} for stack {2!r}'.format(
+            orchestrate.name,
+            current_try,
+            stack,
+        ))
+
+        # Update status
+        stack.log_history(
+            'Executing sls {0} try {1} of {2}. This '
+            'may take a while.'.format(
+                component,
+                current_try,
+                max_retries + 1,
+            )
+        )
+
+        now = datetime.now().strftime('%Y%m%d-%H%M%S')
+        log_file = os.path.join(log_dir,
+                                '{0}.single.log'.format(now))
+        err_file = os.path.join(log_dir,
+                                '{0}.single.err'.format(now))
+
+        file_log_handler = utils.setup_logfile_logger(log_file)
+
+        # Remove the other handlers, but save them so we can put them back later
+        old_handlers = []
+        for handler in root_logger.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                old_handlers.append(handler)
+                root_logger.removeHandler(handler)
+
+        try:
+            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
+
+            ret = salt_client.cmd_iter(
+                target,
+                'state.sls',
+                [
+                    component,
+                    'stacks.{0}-{1}'.format(stack.pk, stack.slug),
+                ],
+                expr_form='list',
+            )
+
+            result = {}
+
+            # cmd_iter returns a generator that blocks until jobs finish, so
+            # we want to loop through it until the jobs are done
+            for i in ret:
+                for k, v in i.items():
+                    result[k] = v
+
+        finally:
+            root_logger.removeHandler(file_log_handler)
+            for handler in old_handlers:
+                root_logger.addHandler(handler)
+
+        with open(log_file, 'a') as f:
+            f.write(yaml.safe_dump(result))
+
+        if len(result) != len(host_list):
+            logger.debug('salt did not propagate ssh keys to all hosts')
+            if current_try <= max_retries:
+                continue
+            err_msg = 'Salt errored and did not orchestrate {} on all hosts'.format(component)
+            raise StackTaskException('Error running single sls: {0!r}'.format(err_msg))
+
+        else:
+            # each key in the dict is a host, and the value of the host
+            # is either a list or dict. Those that are lists we can
+            # assume to be a list of errors
+            errors = {}
+            for host, ret in result.items():
+                states = ret['ret']
+
+                if ret['retcode'] != 0:
+                    errors[host] = states
+
+                if isinstance(states, list):
+                    errors[host] = states
+                    continue
+
+                # iterate over the individual states in the host
+                # looking for state failures
+                for state_str, state_meta in states.items():
+                    if not is_state_error(state_meta):
+                        continue
+
+                    if not utils.is_requisite_error(state_meta):
+                        err, recoverable = utils.state_error(state_str, state_meta)
+                        errors.setdefault(host, []).append(err)
+
+            if errors:
+                # write the errors to the err_file
+                with open(err_file, 'a') as f:
+                    f.write(yaml.safe_dump(errors))
+
+                if current_try <= max_retries:
+                    continue
+
+                err_msg = 'Single sls errors on hosts: ' \
+                          '{0}. Please see the orchestration errors API ' \
+                          'or the log file for more details: {1}'.format(
+                              ', '.join(errors.keys()),
+                              os.path.basename(log_file))
+                raise StackTaskException(err_msg)
+
+        # it worked?
+        break
+
+    stack.log_history('Finished executing single sls {} all hosts.'.format(component))
 
 
 @stack_task(name='stacks.finish_stack', final_task=True)
