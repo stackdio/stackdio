@@ -211,7 +211,8 @@ class ActionWorkflow(BaseWorkflow):
                 tasks.propagate_ssh.si(self.stack.id),
             ],
             Action.SINGLE_SLS: [
-                tasks.single_sls.si(self.stack.id, arg['component']) for arg in self.args
+                tasks.single_sls.si(self.stack.id, arg['component'], arg.get('host_target'))
+                for arg in self.args
             ],
         }
 

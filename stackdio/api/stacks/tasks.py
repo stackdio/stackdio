@@ -1239,7 +1239,7 @@ def orchestrate(stack, max_retries=2):
 
 
 @stack_task(name='stacks.single_sls')
-def single_sls(stack, component, max_retries=2):
+def single_sls(stack, component, host_target, max_retries=2):
     """
     Executes the runners.state.over function with the custom orchestrate
     file  generated via the stacks.models._generate_orchestrate_file. This
@@ -1270,14 +1270,21 @@ def single_sls(stack, component, max_retries=2):
     except validators.ValidationError as e:
         raise StackTaskException(e.detail)
 
-    target = [h.hostname for h in host_list]
+    list_target = [h.hostname for h in host_list]
+
+    if host_target:
+        target = '{0} and L@{1}'.format(host_target, ','.join(list_target))
+        expr_form = 'compound'
+    else:
+        target = list_target
+        expr_form = 'list'
 
     # we'll break out of the loop based on the given number of retries
     current_try = 0
     while True:
         current_try += 1
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
-            orchestrate.name,
+            single_sls.name,
             current_try,
             stack,
         ))
@@ -1310,6 +1317,9 @@ def single_sls(stack, component, max_retries=2):
         try:
             salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
+            logger.debug(target)
+            logger.debug(expr_form)
+
             ret = salt_client.cmd_iter(
                 target,
                 'state.sls',
@@ -1317,7 +1327,7 @@ def single_sls(stack, component, max_retries=2):
                     component,
                     'stacks.{0}-{1}'.format(stack.pk, stack.slug),
                 ],
-                expr_form='list',
+                expr_form=expr_form,
             )
 
             result = {}
@@ -1336,52 +1346,44 @@ def single_sls(stack, component, max_retries=2):
         with open(log_file, 'a') as f:
             f.write(yaml.safe_dump(result))
 
-        if len(result) != len(host_list):
-            logger.debug('salt did not propagate ssh keys to all hosts')
+        # each key in the dict is a host, and the value of the host
+        # is either a list or dict. Those that are lists we can
+        # assume to be a list of errors
+        errors = {}
+        for host, ret in result.items():
+            states = ret['ret']
+
+            if ret['retcode'] != 0:
+                errors[host] = states
+
+            if isinstance(states, list):
+                errors[host] = states
+                continue
+
+            # iterate over the individual states in the host
+            # looking for state failures
+            for state_str, state_meta in states.items():
+                if not is_state_error(state_meta):
+                    continue
+
+                if not utils.is_requisite_error(state_meta):
+                    err, recoverable = utils.state_error(state_str, state_meta)
+                    errors.setdefault(host, []).append(err)
+
+        if errors:
+            # write the errors to the err_file
+            with open(err_file, 'a') as f:
+                f.write(yaml.safe_dump(errors))
+
             if current_try <= max_retries:
                 continue
-            err_msg = 'Salt errored and did not orchestrate {} on all hosts'.format(component)
-            raise StackTaskException('Error running single sls: {0!r}'.format(err_msg))
 
-        else:
-            # each key in the dict is a host, and the value of the host
-            # is either a list or dict. Those that are lists we can
-            # assume to be a list of errors
-            errors = {}
-            for host, ret in result.items():
-                states = ret['ret']
-
-                if ret['retcode'] != 0:
-                    errors[host] = states
-
-                if isinstance(states, list):
-                    errors[host] = states
-                    continue
-
-                # iterate over the individual states in the host
-                # looking for state failures
-                for state_str, state_meta in states.items():
-                    if not is_state_error(state_meta):
-                        continue
-
-                    if not utils.is_requisite_error(state_meta):
-                        err, recoverable = utils.state_error(state_str, state_meta)
-                        errors.setdefault(host, []).append(err)
-
-            if errors:
-                # write the errors to the err_file
-                with open(err_file, 'a') as f:
-                    f.write(yaml.safe_dump(errors))
-
-                if current_try <= max_retries:
-                    continue
-
-                err_msg = 'Single sls errors on hosts: ' \
-                          '{0}. Please see the orchestration errors API ' \
-                          'or the log file for more details: {1}'.format(
-                              ', '.join(errors.keys()),
-                              os.path.basename(log_file))
-                raise StackTaskException(err_msg)
+            err_msg = 'Single sls errors on hosts: ' \
+                      '{0}. Please see the orchestration errors API ' \
+                      'or the log file for more details: {1}'.format(
+                          ', '.join(errors.keys()),
+                          os.path.basename(log_file))
+            raise StackTaskException(err_msg)
 
         # it worked?
         break
