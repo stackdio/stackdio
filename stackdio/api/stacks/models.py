@@ -247,7 +247,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     objects = StackQuerySet.as_manager()
 
     def __str__(self):
-        return six.text_type('Stack {0} - {1}'.format(self.title, self.health))
+        return six.text_type('Stack {0} - {1}'.format(self.title, self.activity))
 
     def log_history(self, message, activity=None):
         """
