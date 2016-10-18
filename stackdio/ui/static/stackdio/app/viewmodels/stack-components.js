@@ -50,11 +50,23 @@ define([
             self.stack = new Stack(window.stackdio.stackId, self);
         };
 
+        self.openId = null;
+
         // Functions
         self.refreshComponents = function () {
             self.stack.loadComponents().done(function () {
-                $('.panel-collapse').on('show.bs.collapse', function (e) {
-                    console.log(e.target.id);
+                if (self.openId) {
+                    // re-open the component that was open (adding the 'in' class does that)
+                    $('#' + self.openId).addClass('in');
+                }
+                var collapse = $('.panel-collapse');
+
+                // Listen so we know which panel is open
+                collapse.on('show.bs.collapse', function (e) {
+                    self.openId = e.target.id;
+                });
+                collapse.on('hide.bs.collapse', function () {
+                    self.openId = null;
                 });
             });
         };
@@ -62,6 +74,6 @@ define([
         // Start everything up
         self.reset();
         self.refreshComponents();
-//        setInterval(self.refreshComponents, 3000);
+        setInterval(self.refreshComponents, 3000);
     };
 });
