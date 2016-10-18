@@ -83,6 +83,7 @@ define([
         this.blueprint = ko.observable();
         this.availableActions = ko.observableArray([]);
         this.history = ko.observableArray([]);
+        this.components = ko.observableArray([]);
         this.hosts = ko.observableArray([]);
         this.volumes = ko.observableArray([]);
         this.commands = ko.observableArray([]);
@@ -377,6 +378,51 @@ define([
             }
         });
 
+    };
+
+    Stack.prototype.loadComponents = function () {
+        var self = this;
+        if (!this.raw.hasOwnProperty('components')) {
+            this.raw.components = this.raw.url + 'components/';
+        }
+        return $.ajax({
+            method: 'GET',
+            url: this.raw.components
+        }).done(function (components) {
+            components.results.forEach(function (component) {
+                component.timestamp = moment(component.timestamp);
+                component.htmlId = component.sls_path.replace(/\./g, '-');
+                switch (component.status)
+                {
+                    case 'queued':
+                        component.statusPanel = 'panel-info';
+                        component.statusLabel = 'label-info';
+                        break;
+
+                    case 'running':
+                        component.statusPanel = 'panel-warning';
+                        component.statusLabel = 'label-warning';
+                        break;
+
+                    case 'succeeded':
+                        component.statusPanel = 'panel-success';
+                        component.statusLabel = 'label-success';
+                        break;
+
+                    case 'failed':
+                        component.statusPanel = 'panel-danger';
+                        component.statusLabel = 'label-danger';
+                        break;
+
+                    case 'cancelled':
+                    case 'unknown':
+                    default:
+                        component.statusPanel = 'panel-default';
+                        component.statusLabel = 'label-default';
+                }
+            });
+            self.components(components.results);
+        });
     };
 
     Stack.prototype.loadHistory = function () {

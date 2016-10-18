@@ -391,7 +391,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
                 component_map[component.sls_path].add_metadata(metadata)
 
-        return list(component_map.values())
+        sorted_by_sls = sorted(component_map.values(), key=lambda x: x.component.sls_path)
+
+        return sorted(sorted_by_sls, key=lambda x: x.component.order)
 
     def set_all_component_statuses(self, status):
         """
@@ -1255,7 +1257,8 @@ class Host(TimeStampedModel):
         """
         current_metadatas = self.get_current_component_metadatas()
 
-        return {component: metadata.health for component, metadata in current_metadatas.items()}
+        return {component: metadata.health if metadata else Health.UNKNOWN
+                for component, metadata in current_metadatas.items()}
 
     def get_metadata_for_component(self, component):
         """
