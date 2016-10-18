@@ -75,6 +75,7 @@ Postgres
 Install Postgres server:
 
 .. code:: bash
+
     sudo yum install https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-7-x86_64/pgdg-centos95-9.5-3.noarch.rpm
     sudo yum install postgresql
 
