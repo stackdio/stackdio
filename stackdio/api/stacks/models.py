@@ -381,6 +381,18 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return Health.aggregate(healths)
 
+    def get_components(self):
+        component_map = {}
+
+        for host in self.hosts.all():
+            for component, metadata in host.get_current_component_metadatas().items():
+                if component.sls_path not in component_map:
+                    component_map[component.sls_path] = StackComponent(self, component)
+
+                component_map[component.sls_path].add_metadata(metadata)
+
+        return list(component_map.values())
+
     def set_all_component_statuses(self, status):
         """
         Will set the status for all components on all hosts to the given status
@@ -1011,6 +1023,26 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return list(roles)
 
 
+class StackComponent(object):
+
+    def __init__(self, stack, component):
+        super(StackComponent, self).__init__()
+        self.stack = stack
+        self.component = component
+        self.metadatas = []
+
+    def add_metadata(self, metadata):
+        self.metadatas.append(metadata)
+
+    @property
+    def health(self):
+        return Health.aggregate([m.health for m in self.metadatas])
+
+    @property
+    def status(self):
+        return ComponentStatus.aggregate([m.status for m in self.metadatas])
+
+
 @six.python_2_unicode_compatible
 class StackHistory(TimeStampedModel):
     class Meta:
@@ -1178,45 +1210,52 @@ class Host(TimeStampedModel):
         # Aggregate them together
         return Health.aggregate(healths)
 
-    def get_current_component_healths(self):
+    def get_current_component_metadatas(self):
         """
-        Get a map of component -> current health
+        Get a map of component -> current metadata
         """
 
         # Build all the cache keys first
         cache_key_map = {}
         for component in self.formula_components:
-            cache_key = 'host-{}-component-health-for-{}'.format(self.id, component.sls_path)
+            cache_key = 'host-{}-component-metadata-for-{}'.format(self.id, component.sls_path)
             cache_key_map[cache_key] = component
 
         # Then grab them all from the cache at once
-        cached_healths = cache.get_many(cache_key_map.keys())
+        cached_metadatas = cache.get_many(cache_key_map.keys())
 
-        # Keep track of healths we need to put back in the cache
-        healths_to_cache = {}
+        # Keep track of metadatas we need to put back in the cache
+        metadatas_to_cache = {}
 
-        # Keep track of the healths we need to return
-        healths = {}
+        # Keep track of the metadatas we need to return
+        metadatas = {}
 
         for cache_key, component in cache_key_map.items():
-            cached_health = cached_healths.get(cache_key)
+            cached_metadata = cached_metadatas.get(cache_key)
 
-            if cached_health is None:
-                logger.debug('{} is not cached, getting health'.format(cache_key))
-                metadata = self.get_metadata_for_component(component)
-                cached_health = metadata.health if metadata else Health.UNKNOWN
+            if cached_metadata is None:
+                logger.debug('{} is not cached, getting metadata'.format(cache_key))
+                cached_metadata = self.get_metadata_for_component(component)
 
-                # Add it to the healths we need to cache
-                healths_to_cache[cache_key] = cached_health
+                # Add it to the metadatas we need to cache
+                metadatas_to_cache[cache_key] = cached_metadata
 
             # Add it to the health map
-            healths[component] = cached_health
+            metadatas[component] = cached_metadata
 
-        # Cache the healths forever - we'll invalidate the cache when the health is updated
-        if healths_to_cache:
-            cache.set_many(healths_to_cache, None)
+        # Cache the healths forever - we'll invalidate the cache when the metadata is updated
+        if metadatas_to_cache:
+            cache.set_many(metadatas_to_cache, None)
 
-        return healths
+        return metadatas
+
+    def get_current_component_healths(self):
+        """
+        Get a map of component -> current health
+        """
+        current_metadatas = self.get_current_component_metadatas()
+
+        return {component: metadata.health for component, metadata in current_metadatas.items()}
 
     def get_metadata_for_component(self, component):
         """
@@ -1359,12 +1398,12 @@ def metadata_post_save(sender, **kwargs):
     sls_path = metadata.sls_path
     stack = host.stack
 
-    logger.debug('Pre-caching health for component: {}'.format(metadata))
+    logger.debug('Pre-caching metadata for component: {}'.format(metadata))
 
-    # Go ahead and add this health to the cache - if it is being created,
+    # Go ahead and add this metadata to the cache - if it is being created,
     # it is definitely the most recent (which is always what we want)
-    cache_key = 'host-{}-component-health-for-{}'.format(host.id, sls_path)
-    cache.set(cache_key, metadata.health, None)
+    cache_key = 'host-{}-component-metadata-for-{}'.format(host.id, sls_path)
+    cache.set(cache_key, metadata, None)
 
     # Then delete these from the cache
     cache_keys = [

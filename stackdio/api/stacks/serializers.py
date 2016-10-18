@@ -53,16 +53,10 @@ from . import models, tasks, utils, validators, workflows
 logger = logging.getLogger(__name__)
 
 
-class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    def to_representation(self, obj):
-        ret = {}
-        if obj is not None:
-            # Make it work two different ways.. ooooh
-            if isinstance(obj, models.Stack):
-                ret = obj.properties
-            else:
-                ret = obj
-        return recursively_sort_dict(ret)
+class StackPropertiesSerializer(serializers.Serializer):
+
+    def to_representation(self, instance):
+        return recursively_sort_dict(instance.properties)
 
     def to_internal_value(self, data):
         return data
@@ -71,22 +65,25 @@ class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abst
         PropertiesValidator().validate(attrs)
         return attrs
 
-    def update(self, stack, validated_data):
+    def create(self, validated_data):
+        raise NotImplementedError('Cannot create properties.')
+
+    def update(self, instance, validated_data):
         if self.partial:
             # This is a PATCH, so properly merge in the old data
-            old_properties = stack.properties
-            stack.properties = recursive_update(old_properties, validated_data)
+            old_properties = instance.properties
+            instance.properties = recursive_update(old_properties, validated_data)
         else:
             # This is a PUT, so just add the data directly
-            stack.properties = validated_data
+            instance.properties = validated_data
 
         # Regenerate the pillar file now too
-        stack.generate_pillar_file()
+        instance.generate_pillar_file()
 
         # Be sure to save the instance
-        stack.save()
+        instance.save()
 
-        return stack
+        return instance
 
 
 class HostComponentSerializer(FormulaComponentSerializer):
@@ -311,6 +308,40 @@ class HostSerializer(StackdioParentHyperlinkedModelSerializer):
         return action_map[action](stack, validated_data)
 
 
+class ComponentMetadataSerializer(serializers.ModelSerializer):
+
+    host = serializers.CharField(source='host.hostname')
+    timestamp = serializers.DateTimeField(source='modified')
+
+    class Meta:
+        model = models.ComponentMetadata
+
+        fields = (
+            'host',
+            'status',
+            'health',
+            'timestamp',
+        )
+
+
+class StackComponentSerializer(serializers.Serializer):
+
+    formula = serializers.CharField(source='component.formula.uri')
+    title = serializers.CharField(source='component.title')
+    description = serializers.CharField(source='component.description')
+    sls_path = serializers.CharField(source='component.sls_path')
+    order = serializers.IntegerField(source='component.order')
+    status = serializers.CharField()
+    health = serializers.CharField()
+    hosts = ComponentMetadataSerializer(many=True, source='metadatas')
+
+    def create(self, validated_data):
+        raise NotImplementedError('Cannot create components.')
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError('Cannot update components.')
+
+
 class StackHistorySerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.StackHistory
@@ -364,6 +395,9 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
     logs = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-logs',
         lookup_url_kwarg='parent_pk')
+    components = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-component-list',
+        lookup_url_kwarg='parent_pk')
     volumes = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-volume-list',
         lookup_url_kwarg='parent_pk')
@@ -409,6 +443,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'created',
             'label_list',
             'hosts',
+            'components',
             'volumes',
             'labels',
             'properties',

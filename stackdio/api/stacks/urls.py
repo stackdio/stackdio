@@ -59,6 +59,10 @@ urlpatterns = (
     url(r'^(?P<parent_pk>[0-9]+)/permissions/',
         include(object_router.urls)),
 
+    url(r'^(?P<parent_pk>[0-9]+)/components/$',
+        api.StackComponentListAPIView.as_view(),
+        name='stack-component-list'),
+
     url(r'^(?P<parent_pk>[0-9]+)/hosts/$',
         api.StackHostListAPIView.as_view(),
         name='stack-host-list'),

@@ -64,6 +64,21 @@ class ComponentStatus(object):
     CANCELLED = 'cancelled'
     UNKNOWN = 'unknown'
 
+    @classmethod
+    def aggregate(cls, status_list):
+        # Make sure everything in the list is a valid status
+        assert len([s for s in status_list if s not in vars(cls).values()]) == 0
+
+        if len(status_list) == 0:
+            # We can get an empty list sometimes when we're deleting a stack, so we'll
+            # just aggregate that to unknown
+            return cls.UNKNOWN
+
+        if len(set(status_list)) != 1:
+            raise ValueError('Status list has inconsistent statuses.')
+
+        return status_list[0]
+
 
 class Action(object):
     """

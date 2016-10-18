@@ -253,6 +253,14 @@ class StackLabelDetailAPIView(mixins.StackRelatedMixin, generics.RetrieveUpdateD
         return context
 
 
+class StackComponentListAPIView(mixins.StackRelatedMixin, generics.ListAPIView):
+    serializer_class = serializers.StackComponentSerializer
+
+    def get_queryset(self):
+        stack = self.get_stack()
+        return stack.get_components()
+
+
 class StackUserChannelsListAPIView(mixins.StackRelatedMixin, generics.ListCreateAPIView):
     serializer_class = UserSubscriberNotificationChannelSerializer
 
