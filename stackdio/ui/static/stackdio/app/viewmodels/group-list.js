@@ -35,12 +35,6 @@ define([
         detailRequiresAdvanced: true,
         sortableFields: [
             {name: 'name', displayName: 'Group Name', width: '90%'}
-        ],
-        goToDetailPage: function (object) {
-            if (this.detailRequiresAdvanced && !window.stackdio.advancedView) {
-                return;
-            }
-            window.location = this.baseUrl + object.name() + '/members/';
-        }
+        ]
     });
 });

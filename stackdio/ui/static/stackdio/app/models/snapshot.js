@@ -20,9 +20,8 @@ define([
     'jquery',
     'knockout',
     'bootbox',
-    'utils/utils',
-    'models/host-definition'
-], function ($, ko, bootbox, utils, HostDefinition) {
+    'utils/utils'
+], function ($, ko, bootbox, utils) {
     'use strict';
 
     // Define the snapshot model.
@@ -48,6 +47,7 @@ define([
 
         // Save the id
         this.id = raw.id;
+        this.detailUrl = '/snapshots/' + this.id + '/';
 
         // Editable fields
         this.title = ko.observable();

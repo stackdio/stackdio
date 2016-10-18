@@ -23,9 +23,16 @@
             </thead>
             <tbody data-bind="foreach: sortedObjects">
                 <tr class="stackdio-hidden-on-load">
-                    <td data-bind="text: title, click: function (image) { $root.goToDetailPage(image) }"></td>
-                    <td data-bind="text: description, click: function (image) { $root.goToDetailPage(image) }"></td>
-                    <td data-bind="text: imageId, click: function (image) { $root.goToDetailPage(image) }"></td>
+                    <td>
+                        <!-- ko if: $root.canDisplayDetail -->
+                        <a data-bind="text: title, attr: {href: detailUrl, title: title}"></a>
+                        <!-- /ko -->
+                        <!-- ko ifnot: $root.canDisplayDetail -->
+                        <p data-bind="text: title"></p>
+                        <!-- /ko -->
+                    </td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: imageId"></td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>

@@ -50,6 +50,7 @@ define([
 
         // Save the id
         this.id = raw.id;
+        this.detailUrl = '/formulas/' + this.id + '/';
 
         // Editable fields
         this.title = ko.observable();

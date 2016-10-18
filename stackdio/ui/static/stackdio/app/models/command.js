@@ -44,7 +44,7 @@ define([
             // Set the things we need for the reload
             raw = {
                 id: raw,
-                url: '/api/commands/' + raw + '/'
+                url: '/api/stacks/' + window.stackdio.stackId + '/commands/' + raw + '/'
             }
         }
 
@@ -56,6 +56,7 @@ define([
 
         // Save the id
         this.id = raw.id;
+        this.detailUrl = '/stacks/' + window.stackdio.stackId + '/commands/' + this.id + '/';
 
         // Editable fields
         this.downloadUrl = ko.observable();

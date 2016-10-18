@@ -48,8 +48,8 @@ define([
         baseUrl: '/stacks/' + window.stackdio.stackId + '/commands/',
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/commands/',
         sortableFields: [
-            {name: 'hostTarget', displayName: 'Host Target', width: '15%'},
             {name: 'command', displayName: 'Command', width: '40%'},
+            {name: 'hostTarget', displayName: 'Host Target', width: '15%'},
             {name: 'finishTime', displayName: 'Finished', width: '25%'},
             {name: 'status', displayName: 'Status', width: '10%'}
         ],

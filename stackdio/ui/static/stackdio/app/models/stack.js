@@ -61,6 +61,7 @@ define([
 
         // Save the id
         this.id = raw.id;
+        this.detailUrl = '/stacks/' + this.id + '/';
 
         // Editable fields
         this.title = ko.observable();
