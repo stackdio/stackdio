@@ -28,7 +28,10 @@
                     </td>
                     <td data-bind="text: device"></td>
                     <td data-bind="text: mountPoint"></td>
-                    <td data-bind="text: encrypted"></td>
+                    <td>
+                        <i class="fa fa-lg fa-check text-success" data-bind="visible: encrypted"></i>
+                        <i class="fa fa-lg fa-times text-danger" data-bind="visible: !encrypted()"></i>
+                    </td>
                 </tr>
             </tbody>
             </table>
