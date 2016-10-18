@@ -57,11 +57,25 @@
                     </div>
                     <div class="panel-collapse collapse" role="tabpanel"
                          data-bind="attr: {id: htmlId, 'aria-labelledby': htmlId + '-header'}">
-                        <div class="panel-body">
-                            Title: <p data-bind="text: title"></p>
-                            Description: <p data-bind="text: description"></p>
-                            Timestamp: <p data-bind="text: timestamp.calendar()"></p>
-                        </div>
+                        <div class="panel-body"></div>
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <td style="width: 25%">Host</td>
+                                <td style="width: 25%">Status</td>
+                                <td style="width: 25%">Health</td>
+                                <td style="width: 25%">Timestamp</td>
+                            </tr>
+                            </thead>
+                            <tbody data-bind="foreach: hosts">
+                            <tr>
+                                <td data-bind="text: host"></td>
+                                <td><span class="label" data-bind="css: statusLabel, text: status"></span></td>
+                                <td><span class="label" data-bind="css: healthLabel, text: health"></span></td>
+                                <td data-bind="text: timestamp.calendar()"></td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

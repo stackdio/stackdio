@@ -379,6 +379,62 @@ define([
         });
 
     };
+    
+    Stack.prototype._processStatus = function (obj) {
+        switch (obj.status)
+        {
+            case 'queued':
+                obj.statusPanel = 'panel-info';
+                obj.statusLabel = 'label-info';
+                break;
+
+            case 'running':
+                obj.statusPanel = 'panel-warning';
+                obj.statusLabel = 'label-warning';
+                break;
+
+            case 'succeeded':
+                obj.statusPanel = 'panel-success';
+                obj.statusLabel = 'label-success';
+                break;
+
+            case 'failed':
+                obj.statusPanel = 'panel-danger';
+                obj.statusLabel = 'label-danger';
+                break;
+
+            case 'cancelled':
+            case 'unknown':
+            default:
+                obj.statusPanel = 'panel-default';
+                obj.statusLabel = 'label-default';
+        }
+    };
+    
+    Stack.prototype._processHostHealth = function (obj) {
+        switch (obj.health)
+        {
+            case 'healthy':
+                obj.healthPanel = 'panel-success';
+                obj.healthLabel = 'label-success';
+                break;
+
+            case 'unstable':
+                obj.healthPanel = 'panel-warning';
+                obj.healthLabel = 'label-warning';
+                break;
+
+            case 'unhealthy':
+                obj.healthPanel = 'panel-danger';
+                obj.healthLabel = 'label-danger';
+                break;
+
+            case 'unknown':
+            default:
+                obj.healthPanel = 'panel-default';
+                obj.healthLabel = 'label-default';
+        }
+    };
 
     Stack.prototype.loadComponents = function () {
         var self = this;
@@ -390,36 +446,14 @@ define([
             url: this.raw.components
         }).done(function (components) {
             components.results.forEach(function (component) {
-                component.timestamp = moment(component.timestamp);
                 component.htmlId = component.sls_path.replace(/\./g, '-');
-                switch (component.status)
-                {
-                    case 'queued':
-                        component.statusPanel = 'panel-info';
-                        component.statusLabel = 'label-info';
-                        break;
-
-                    case 'running':
-                        component.statusPanel = 'panel-warning';
-                        component.statusLabel = 'label-warning';
-                        break;
-
-                    case 'succeeded':
-                        component.statusPanel = 'panel-success';
-                        component.statusLabel = 'label-success';
-                        break;
-
-                    case 'failed':
-                        component.statusPanel = 'panel-danger';
-                        component.statusLabel = 'label-danger';
-                        break;
-
-                    case 'cancelled':
-                    case 'unknown':
-                    default:
-                        component.statusPanel = 'panel-default';
-                        component.statusLabel = 'label-default';
-                }
+                component.hosts.forEach(function (host) {
+                    host.timestamp = moment(host.timestamp);
+                    self._processStatus(host);
+                    self._processHostHealth(host);
+                });
+                self._processStatus(component);
+                self._processHostHealth(component);
             });
             self.components(components.results);
         });

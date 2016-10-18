@@ -50,24 +50,33 @@ define([
             self.stack = new Stack(window.stackdio.stackId, self);
         };
 
-        self.openId = null;
+        self.openMap = {};
 
         // Functions
         self.refreshComponents = function () {
             self.stack.loadComponents().done(function () {
+                Object.keys(self.openMap).forEach(function (id) {
+                    if (self.openMap[id]) {
+                        $('#' + id).addClass('in');
+                    }
+                });
+
+                self.stack.components().forEach(function (component) {
+                     var collapse = $('#' + component.htmlId);
+
+                    // Listen so we know which panel is open
+                    collapse.on('show.bs.collapse', function () {
+                        self.openMap[component.htmlId] = true;
+                    });
+                    collapse.on('hide.bs.collapse', function () {
+                        self.openMap[component.htmlId] = false;
+                    });
+                });
                 if (self.openId) {
                     // re-open the component that was open (adding the 'in' class does that)
-                    $('#' + self.openId).addClass('in');
-                }
-                var collapse = $('.panel-collapse');
 
-                // Listen so we know which panel is open
-                collapse.on('show.bs.collapse', function (e) {
-                    self.openId = e.target.id;
-                });
-                collapse.on('hide.bs.collapse', function () {
-                    self.openId = null;
-                });
+                }
+
             });
         };
 
