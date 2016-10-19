@@ -1255,12 +1255,16 @@ def single_sls(stack, component, host_target, max_retries=2):
     environments.
     """
     # Grab all the hosts that match
-    host_ids = []
-    included_hostnames = []
-    for host in stack.hosts.all():
-        if fnmatch(host.hostname, host_target):
-            host_ids.append(host.id)
-            included_hostnames.append(host.hostname)
+    if host_target:
+        host_ids = []
+        included_hostnames = []
+        for host in stack.hosts.all():
+            if fnmatch(host.hostname, host_target):
+                host_ids.append(host.id)
+                included_hostnames.append(host.hostname)
+    else:
+        host_ids = None
+        included_hostnames = None
 
     stack.set_activity(Activity.ORCHESTRATING, host_ids)
 
