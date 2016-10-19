@@ -145,7 +145,7 @@ class DestroyHostsWorkflow(BaseWorkflow):
         return [
             tasks.update_metadata.si(stack_id, Activity.TERMINATING, host_ids=host_ids),
             tasks.register_volume_delete.si(stack_id, host_ids=host_ids),
-            tasks.unregister_dns.si(stack_id, host_ids=host_ids),
+            tasks.unregister_dns.si(stack_id, Activity.TERMINATING, host_ids=host_ids),
             tasks.destroy_hosts.si(stack_id,
                                    host_ids=host_ids,
                                    delete_security_groups=False),
