@@ -74,10 +74,21 @@ class ComponentStatus(object):
             # just aggregate that to unknown
             return cls.UNKNOWN
 
-        if len(set(status_list)) != 1:
-            raise ValueError('Status list has inconsistent statuses.')
+        elif cls.FAILED in status_list:
+            return cls.FAILED
+        elif cls.CANCELLED in status_list:
+            return cls.CANCELLED
+        elif cls.RUNNING in status_list:
+            return cls.RUNNING
+        elif cls.UNKNOWN in status_list:
+            return cls.UNKNOWN
+        elif cls.QUEUED in status_list:
+            return cls.QUEUED
+        elif cls.SUCCEEDED in status_list:
+            return cls.SUCCEEDED
 
-        return status_list[0]
+        raise ValueError('This state should never be reached...  Make sure you are '
+                         'assigning proper status values')
 
 
 class Action(object):
