@@ -30,6 +30,7 @@ import six
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
@@ -1359,7 +1360,6 @@ def metadata_post_save(sender, **kwargs):
 
     host = metadata.host
     sls_path = metadata.sls_path
-    stack = host.stack
 
     logger.debug('Pre-caching health for component: {}'.format(metadata))
 
@@ -1370,46 +1370,76 @@ def metadata_post_save(sender, **kwargs):
 
     # Then delete these from the cache
     cache_keys = [
-        'stack-{}-health'.format(stack.id),
+        'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
     ]
     cache.delete_many(cache_keys)
 
-    # Accessing them will cause them to re-cache now rather than when they are requested later
-    host.health  # pylint: disable=pointless-statement
-    stack.health  # pylint: disable=pointless-statement
 
-
-@receiver([models.signals.post_save, models.signals.post_delete], sender=Host)
+@receiver(models.signals.post_save, sender=Host)
 def host_post_save(sender, **kwargs):
     host = kwargs.pop('instance')
-    stack = host.stack
 
     # Delete from the cache
     cache_keys = [
         'stack-{}-hosts'.format(host.stack_id),
         'stack-{}-host-count'.format(host.stack_id),
         'stack-{}-volume-count'.format(host.stack_id),
-        'stack-{}-health'.format(stack.id),
+        'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
     ]
     cache.delete_many(cache_keys)
 
-    # Accessing them will cause them to re-cache now rather than when they are requested later
-    host.health  # pylint: disable=pointless-statement
-    stack.health  # pylint: disable=pointless-statement
+
+@receiver(models.signals.post_delete, sender=Host)
+def host_post_delete(sender, **kwargs):
+    host = kwargs.pop('instance')
+
+    # Delete from the cache
+    cache_keys = [
+        'stack-{}-hosts'.format(host.stack_id),
+        'stack-{}-host-count'.format(host.stack_id),
+        'stack-{}-volume-count'.format(host.stack_id),
+        'stack-{}-health'.format(host.stack_id),
+
+        # Delete anything about this host, not needed anymore
+        'host-{}-health'.format(host.id),
+        'host-{}-components'.format(host.id),
+        'host-{}-size'.format(host.id),
+        'host-{}-zone'.format(host.id),
+        'host-{}-subnet-id'.format(host.id),
+        'host-{}-image'.format(host.id),
+        'host-{}-account'.format(host.id),
+        'host-{}-provider'.format(host.id),
+    ]
+    cache.delete_many(cache_keys)
 
 
-@receiver([models.signals.post_save, models.signals.post_delete], sender=Stack)
+@receiver(models.signals.post_save, sender=Stack)
 def stack_post_save(sender, **kwargs):
     stack = kwargs.pop('instance')
 
     # Delete from the cache
     cache_keys = [
-        'blueprint-{}-stack-count'.format(stack.blueprint_id),
         'stack-{}-health'.format(stack.id),
     ]
     cache.delete_many(cache_keys)
 
-    # Accessing them will cause them to re-cache now rather than when they are requested later
-    stack.health  # pylint: disable=pointless-statement
+
+@receiver(models.signals.post_delete, sender=Stack)
+def stack_post_save(sender, **kwargs):
+    stack = kwargs.pop('instance')
+
+    ctype = ContentType.objects.get_for_model(Stack)
+
+    # Delete from the cache
+    cache_keys = [
+        'blueprint-{}-stack-count'.format(stack.blueprint_id),
+        '{}-{}-label-list'.format(ctype.pk, stack.id),
+        'stack-{}-hosts'.format(stack.id),
+        'stack-{}-host-count'.format(stack.id),
+        'stack-{}-volume-count'.format(stack.id),
+        'stack-{}-health'.format(stack.id),
+    ]
+    cache.delete_many(cache_keys)
+
