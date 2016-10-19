@@ -28,6 +28,7 @@ import subprocess
 import time
 import types
 from datetime import datetime
+from fnmatch import fnmatch
 from functools import wraps
 
 import git
@@ -1253,7 +1254,15 @@ def single_sls(stack, component, host_target, max_retries=2):
     will need to support executing multiple orchestrate files in different
     environments.
     """
-    stack.set_activity(Activity.ORCHESTRATING)
+    # Grab all the hosts that match
+    host_ids = []
+    included_hostnames = []
+    for host in stack.hosts.all():
+        if fnmatch(host.hostname, host_target):
+            host_ids.append(host.id)
+            included_hostnames.append(host.hostname)
+
+    stack.set_activity(Activity.ORCHESTRATING, host_ids)
 
     logger.info('Executing single sls {0} for stack: {1!r}'.format(component, stack))
 
@@ -1315,7 +1324,8 @@ def single_sls(stack, component, host_target, max_retries=2):
                 old_handlers.append(handler)
                 root_logger.removeHandler(handler)
 
-        stack.set_component_status(component, ComponentStatus.RUNNING)
+        stack.set_component_status(component, ComponentStatus.RUNNING,
+                                   include_list=included_hostnames)
 
         try:
             salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
@@ -1371,7 +1381,8 @@ def single_sls(stack, component, host_target, max_retries=2):
                     errors.setdefault(host, []).append(err)
 
         if errors:
-            stack.set_component_status(component, ComponentStatus.FAILED)
+            stack.set_component_status(component, ComponentStatus.FAILED,
+                                       include_list=included_hostnames)
             # write the errors to the err_file
             with open(err_file, 'a') as f:
                 f.write(yaml.safe_dump(errors))
@@ -1390,7 +1401,8 @@ def single_sls(stack, component, host_target, max_retries=2):
         break
 
     # Everything worked, set the status appropriately
-    stack.set_component_status(component, ComponentStatus.SUCCEEDED)
+    stack.set_component_status(component, ComponentStatus.SUCCEEDED,
+                               include_list=included_hostnames)
 
     stack.log_history('Finished executing single sls {} on all hosts.'.format(component))
 
