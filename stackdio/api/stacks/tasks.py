@@ -583,7 +583,7 @@ def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
         h.delete()
 
     if activity is not None:
-        stack.set_activity(Activity.QUEUED)
+        stack.set_activity(Activity.QUEUED, host_ids)
 
 
 @stack_task(name='stacks.tag_infrastructure', final_task=True)
@@ -611,7 +611,7 @@ def tag_infrastructure(stack, activity=None, host_ids=None):
         driver.tag_resources(stack, hosts, volumes)
 
     if activity is not None:
-        stack.set_activity(Activity.QUEUED)
+        stack.set_activity(Activity.QUEUED, host_ids)
 
 
 @stack_task(name='stacks.register_dns')
