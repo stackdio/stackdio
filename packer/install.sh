@@ -28,19 +28,20 @@ chown root:root /usr/bin/stackdio
 chmod 755 /usr/bin/stackdio
 
 # Create the database
-mysql -u root <<EOF
-create database stackdio;
-grant all on stackdio.* to stackdio@'localhost' identified by 'password';
+sudo -u postgres psql postgres <<EOF
+CREATE USER stackdio WITH UNENCRYPTED PASSWORD 'password';
+CREATE DATABASE stackdio;
+ALTER DATABASE stackdio OWNER to stackdio;
 EOF
 
 # Create the virtualenv
 virtualenv /usr/share/stackdio
 . /usr/share/stackdio/bin/activate
 
-pip install -U pip
+pip install -U pip wheel setuptools
 
 # Install stackdio-server from pypi
-pip install stackdio-server[mysql,production]==${STACKDIO_VERSION}
+pip install "stackdio-server[postgresql,production]==${STACKDIO_VERSION}"
 
 # Configure Nginx
 mv /tmp/stackdio-nginx /etc/nginx/sites-available/stackdio
@@ -53,6 +54,9 @@ rm /etc/nginx/sites-enabled/default
 # Configure supervisor
 mv /tmp/stackdio-supervisord /etc/stackdio/supervisord.conf
 chown root:root /etc/stackdio/supervisord.conf
+
+mv /tmp/stackdio.yaml /etc/stackdio/stackdio.yaml
+chown root:root /etc/stackdio/stackdio.yaml
 
 # Make sure stackdio starts at boot
 update-rc.d stackdio defaults

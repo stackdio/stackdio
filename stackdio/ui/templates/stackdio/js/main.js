@@ -77,7 +77,7 @@ require([
     'domReady!'
 ], function($, Cookie) {
     // Check for safe methods
-    // pulled from Django 1.8 documentation
+    // pulled from Django 1.9 documentation
     function csrfSafeMethod(method) {
         // these HTTP methods do not require CSRF protection
         return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));

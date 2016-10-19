@@ -2,8 +2,8 @@ Using the Amazon AMI
 ====================
 
 To make installation easier, we provide an `packer`_ build that creates an Amazon Machine Image (AMI).
-This AMI is built from an Ubuntu 14.04 LTS image, and is HVM based.  While our ultimate plan is to
-provide this AMI on the `AWS Marketplace`_, we don't have this set up yet.
+This AMI is built from an Ubuntu 16.04 LTS image, and is HVM based.
+While our ultimate plan is to provide this AMI on the `AWS Marketplace`_, we don't have this set up yet.
 
 
 Building an AMI
@@ -24,8 +24,7 @@ We recommend using homebrew for the installation if you're using OSX.
 ~~~~~~~~~~~~~~~~~
 
 Before building with packer, you must accept the license agreement for the base Ubuntu AMI:
-http://aws.amazon.com/marketplace/pp?sku=b3dl4415quatdndl4qa6kcu45
-
+https://aws.amazon.com/marketplace/pp/B01JBL2M0O
 
 3. Clone Repository
 ~~~~~~~~~~~~~~~~~~~
@@ -63,8 +62,8 @@ After a few minutes, you should have a usable AMI.
 Using the AMI
 -------------
 
-After you've built the AMI, you can launch an instance from it.  Once the instance is running,
-you can navigate to ``http://<instance-ip>/`` and login using the following credentials:
+After you've built the AMI, you can launch an instance from it.
+Once the instance is running, you can navigate to ``http://<instance-ip>/`` and login using the following credentials:
 
 ::
 
