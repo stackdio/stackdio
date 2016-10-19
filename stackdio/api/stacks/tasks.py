@@ -1715,8 +1715,11 @@ def update_host_info():
 
         # Log some history if we've marked hosts as DEAD
         if len(newly_dead_hosts) > 0:
-            stack.log_history('The following hosts have now been marked '
-                              '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
+            err_msg = ('The following hosts have now been marked '
+                       '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
+            if len(err_msg) > 256:
+                err_msg = 'Several hosts have been marked \'{}\'.'.format(Activity.DEAD)
+            stack.log_history(err_msg)
 
         all_dead = new_host_activities and all([a == Activity.DEAD for a in new_host_activities])
 
