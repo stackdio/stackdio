@@ -30,50 +30,16 @@ from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaC
 from stackdio.api.formulas.validators import validate_formula_components
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
+    PropertiesField,
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
     StackdioLabelSerializer,
     StackdioLiteralLabelsSerializer,
 )
-from stackdio.core.utils import recursive_update, recursively_sort_dict
-from stackdio.core.validators import PropertiesValidator
 
 from . import models, validators
 
 logger = logging.getLogger(__name__)
-
-
-class BlueprintPropertiesSerializer(serializers.Serializer):
-    def to_representation(self, obj):
-        ret = {}
-        if obj is not None:
-            # Make it work two different ways.. ooooh
-            if isinstance(obj, models.Blueprint):
-                ret = obj.properties
-            else:
-                ret = obj
-        return recursively_sort_dict(ret)
-
-    def to_internal_value(self, data):
-        return data
-
-    def validate(self, attrs):
-        PropertiesValidator().validate(attrs)
-        return attrs
-
-    def update(self, instance, validated_data):
-        blueprint = instance
-        if self.partial:
-            # This is a PATCH, so properly merge in the old data
-            old_properties = blueprint.properties
-            blueprint.properties = recursive_update(old_properties, validated_data)
-        else:
-            # This is a PUT, so just add the data directly
-            blueprint.properties = validated_data
-
-        # Be sure to persist the data
-        blueprint.save()
-        return blueprint
 
 
 class BlueprintAccessRuleSerializer(serializers.ModelSerializer):
@@ -338,7 +304,7 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
 
 
 class FullBlueprintSerializer(BlueprintSerializer):
-    properties = BlueprintPropertiesSerializer(required=False)
+    properties = PropertiesField(required=False)
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
     formula_versions = FormulaVersionSerializer(many=True, required=False)
     labels = StackdioLiteralLabelsSerializer(many=True, required=False)

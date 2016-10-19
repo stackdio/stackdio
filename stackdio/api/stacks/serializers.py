@@ -24,14 +24,12 @@ from collections import OrderedDict
 
 import actstream
 import salt.cloud
-import six
 from celery import chain
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
-
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
 from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
 from stackdio.api.cloud.models import SecurityGroup
@@ -41,49 +39,17 @@ from stackdio.core.constants import Action, Activity, ComponentStatus, Health
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
+    PropertiesField,
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
     StackdioLabelSerializer,
     StackdioLiteralLabelsSerializer,
 )
-from stackdio.core.utils import recursive_update, recursively_sort_dict
-from stackdio.core.validators import PropertiesValidator, validate_hostname
+from stackdio.core.validators import validate_hostname
+
 from . import models, tasks, utils, validators, workflows
 
 logger = logging.getLogger(__name__)
-
-
-class StackPropertiesSerializer(serializers.Serializer):
-
-    def to_representation(self, instance):
-        return recursively_sort_dict(instance.properties)
-
-    def to_internal_value(self, data):
-        return data
-
-    def validate(self, attrs):
-        PropertiesValidator().validate(attrs)
-        return attrs
-
-    def create(self, validated_data):
-        raise NotImplementedError('Cannot create properties.')
-
-    def update(self, instance, validated_data):
-        if self.partial:
-            # This is a PATCH, so properly merge in the old data
-            old_properties = instance.properties
-            instance.properties = recursive_update(old_properties, validated_data)
-        else:
-            # This is a PUT, so just add the data directly
-            instance.properties = validated_data
-
-        # Regenerate the pillar file now too
-        instance.generate_pillar_file()
-
-        # Be sure to save the instance
-        instance.save()
-
-        return instance
 
 
 class HostComponentSerializer(FormulaComponentSerializer):
@@ -555,7 +521,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
 
 
 class FullStackSerializer(StackSerializer):
-    properties = StackPropertiesSerializer(required=False)
+    properties = PropertiesField(required=False)
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
     formula_versions = FormulaVersionSerializer(many=True, required=False)
 

@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import inspect
 import logging
 
@@ -24,7 +26,7 @@ from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
 
 from .fields import HyperlinkedParentField
-from . import mixins, models, validators
+from . import mixins, models, utils, validators
 
 logger = logging.getLogger(__name__)
 
@@ -391,6 +393,52 @@ class StackdioObjectPermissionsSerializer(BulkSerializerMixin, serializers.Seria
 
             # We now want to do the same thing as create
             return self.create(validated_data)
+
+
+class ObjectPropertiesSerializer(serializers.Serializer):
+
+    def to_representation(self, instance):
+        return utils.recursively_sort_dict(instance.properties)
+
+    def to_internal_value(self, data):
+        return data
+
+    def validate(self, attrs):
+        validators.PropertiesValidator().validate(attrs)
+        return attrs
+
+    def create(self, validated_data):
+        raise NotImplementedError('Cannot create properties.')
+
+    def update(self, instance, validated_data):
+        if self.partial:
+            # This is a PATCH, so properly merge in the old data
+            old_properties = instance.properties
+            instance.properties = utils.recursive_update(old_properties, validated_data)
+        else:
+            # This is a PUT, so just add the data directly
+            instance.properties = validated_data
+
+        # Regenerate the pillar file now too
+        if hasattr(instance, 'generate_pillar_file'):
+            instance.generate_pillar_file()
+
+        # Be sure to save the instance
+        instance.save()
+
+        return instance
+
+
+class PropertiesField(serializers.JSONField):
+
+    def __init__(self, *args, **kwargs):
+        # Add our properties validator
+        kwargs.setdefault('validators', []).append(validators.PropertiesValidator())
+        super(PropertiesField, self).__init__(*args, **kwargs)
+
+    def to_representation(self, value):
+        ret = super(PropertiesField, self).to_representation(value)
+        return utils.recursively_sort_dict(ret)
 
 
 class EventField(serializers.SlugRelatedField):

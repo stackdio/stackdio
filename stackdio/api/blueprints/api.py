@@ -24,6 +24,7 @@ from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsF
 from rest_framework.serializers import ValidationError
 
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from stackdio.core.serializers import ObjectPropertiesSerializer
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -100,7 +101,7 @@ class BlueprintExportAPIView(generics.RetrieveAPIView):
 
 class BlueprintPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
-    serializer_class = serializers.BlueprintPropertiesSerializer
+    serializer_class = ObjectPropertiesSerializer
     permission_classes = (StackdioObjectPermissions,)
 
 

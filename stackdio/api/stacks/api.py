@@ -45,6 +45,7 @@ from stackdio.core.notifications.serializers import (
 )
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer, ZipRenderer
+from stackdio.core.serializers import ObjectPropertiesSerializer
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
@@ -128,7 +129,7 @@ class StackDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 class StackPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Stack.objects.all()
-    serializer_class = serializers.StackPropertiesSerializer
+    serializer_class = ObjectPropertiesSerializer
     permission_classes = (StackdioObjectPermissions,)
 
 
