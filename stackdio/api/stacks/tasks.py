@@ -44,7 +44,7 @@ from django.conf import settings
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
-from stackdio.core.constants import Activity, ComponentStatus, Health
+from stackdio.core.constants import Activity, ComponentStatus
 from stackdio.core.events import trigger_event
 
 from . import utils, validators
@@ -1381,7 +1381,7 @@ def single_sls(stack, component, host_target, max_retries=2):
                     continue
 
                 if not utils.is_requisite_error(state_meta):
-                    err, recoverable = utils.state_error(state_str, state_meta)
+                    err, _ = utils.state_error(state_str, state_meta)
                     errors.setdefault(host, []).append(err)
 
         if errors:

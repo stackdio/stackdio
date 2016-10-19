@@ -1470,7 +1470,7 @@ def stack_post_save(sender, **kwargs):
 
 
 @receiver(models.signals.post_delete, sender=Stack)
-def stack_post_save(sender, **kwargs):
+def stack_post_delete(sender, **kwargs):
     stack = kwargs.pop('instance')
 
     ctype = ContentType.objects.get_for_model(Stack)
@@ -1485,4 +1485,3 @@ def stack_post_save(sender, **kwargs):
         'stack-{}-health'.format(stack.id),
     ]
     cache.delete_many(cache_keys)
-
