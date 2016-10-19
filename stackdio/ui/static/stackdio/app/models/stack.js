@@ -364,6 +364,9 @@ define([
                         args: [arg]
                     })
                 }).done(function () {
+                    if (self.parent && typeof self.parent.reload === 'function') {
+                        self.parent.reload();
+                    }
                     utils.growlAlert('Triggered ' + component + '.', 'success');
                 }).fail(function (jqxhr) {
                     var message;

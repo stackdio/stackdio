@@ -92,8 +92,16 @@ define([
             });
         };
 
+        self.reload = function () {
+            self.refreshComponents();
+            self.selectedComponent(null);
+            self.hostTarget(null);
+        };
+
         self.runSingle = function () {
-            self.stack.runSingleSls(self.selectedComponent().sls_path, self.hostTarget());
+            self.stack.runSingleSls(self.selectedComponent().sls_path, self.hostTarget()).done(function () {
+
+            });
         };
 
         // Start everything up
