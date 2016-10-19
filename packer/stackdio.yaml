@@ -1,0 +1,148 @@
+## stackd.io config file
+#
+# This file will be run through jinja templating when the server starts up.
+# There are a few variables that will be available, such as "user" seen below.
+
+##
+# list of the available cloud provider driver classes
+cloud_providers:
+  - stackdio.api.cloud.providers.aws.AWSCloudProvider
+
+##
+# The url where your stackdio server should is accessed from.
+# Used to generate links when sending notifications.
+server_url: http://{{ current_fqdn }}:8000
+
+##
+# The database url stackdio will use. The host
+# must running (for non-sqlite servers), the database
+# must already be created, and the user/pass must have
+# access to the database.
+# Example: mysql://user:pass@host:port/db_name
+database_url: postgresql://stackdio:password@localhost:5432/stackdio
+
+##
+# The url to use for the celery broker - can be redis, rabbitmq, sqs, etc
+celery_broker_url: redis://localhost:6379/0
+
+##
+# The url of the redis server
+# Used for caching
+redis_url: redis://localhost:6379/1
+
+##
+# The FQDN of the salt master
+# Can be a list or a string
+salt_master_fqdn: {{ current_fqdn }}
+
+##
+# Root directory for stackdio to store files, logs, etc.
+# It will be created if it doesn't already exist.
+# Can be absolute or relative.
+storage_dir: /var/lib/stackdio
+
+##
+# Root directory for stackdio to store log files.
+# It will be created if it doesn't already exist.
+# Can be absolute or relative.
+log_dir: /var/log/stackdio
+
+##
+# When bootstrapping salt minions, which bootstrap script
+# and arguments should salt-cloud use? Typically,
+# 'bootstrap-salt' will be the script to use, and the
+# the args would be empty. However, if you need special
+# minion revisions, verbose logging, etc, you can control
+# that here. See http://bootstrap.saltstack.org for the
+# allowed arguments.
+salt_bootstrap_script: bootstrap-salt
+salt_bootstrap_args: stable {salt_version}
+
+##
+# This should be a unique and unpredictable value that is
+# used by Django for cryptographic signing. For more info,
+# see the Django settings docs.
+django_secret_key: "{{ random_secret_key }}"
+
+##
+# Should ssh users be created on launched hosts by default?
+create_ssh_users: true
+
+##
+# Set up the available notifiers
+notifiers:
+
+  # A basic email notifier
+  email:
+    class: stackdio.core.notifiers.EmailNotifier
+    options:
+      from_email: stackd.io <noreply>
+
+  # Custom emails to be able to send to other email addrs than the ones on file
+  custom_email:
+    class: stackdio.core.notifiers.ExtraEmailNotifier
+    options:
+      from_email: stackd.io <noreply>
+
+  # A basic webook notifier
+  webhook:
+    class: stackdio.core.notifiers.WebhookNotifier
+    options:
+      timeout: 30
+
+##
+# Optional LDAP configurations
+ldap:
+  # This must be set to true for anything below to take effect
+  enabled: false
+
+  # The url of your server (can be a comma-separated list of servers)
+  server_uri: ldaps://ldap.example.com
+
+  # Should we bind to LDAP as the user trying to login?
+  bind_as_authenticating_user: false
+
+  # if bind_as_authenticating_user is false, provide the bind user credentials
+  bind_dn: 'uid=binduser,ou=People,dc=example,dc=com'
+  bind_password: my_password
+
+  # Should groups in ldap be mirrored to django groups in the database?
+  mirror_groups: true
+
+  # Deny login if a valid LDAP user isn't in this list of groups
+  #require_group:
+  #  - 'cn=mygroup,ou=People,dc=example,dc=com'
+
+  # The search parameters for users.
+  #   The result of a search using these parameters should return EXACTLY ONE
+  #   user for this to work properly.
+  user_search_base: 'ou=People,dc=example,dc=com'
+  user_search_scope: SCOPE_SUBTREE
+  user_search_filter: '(&(objectClass=Person)(uid=%(user)s))'
+
+  # The search parameters for groups.
+  #   The result of a search using these parameters should return an exhaustive list
+  #   of groups you would like to make available.
+  group_search_base: 'ou=Group,dc=eample,dc=com'
+  group_search_scope: SCOPE_SUBTREE
+  #group_search_filter: '(objectClass=*)'
+
+  # The type of the ldap groups
+  group_type: GroupOfNamesType
+
+  # A map from django user object attributes to the associated attributes in LDAP
+  user_attr_map:
+    first_name: givenName
+    last_name: sn
+    email: mail
+
+  # A map that associates boolean user flags to LDAP groups
+  # i.e. if an LDAP user is in the specified LDAP group, the specified user flag is set to 'True'
+  user_flags_by_group:
+    is_superuser: 'cn=admin,ou=Group,dc=example,dc=com'
+    is_staff: 'cn=admin,ou=Group,dc=example,dc=com'
+
+  # Any connection options you need
+  connection_options:
+    OPT_X_TLS_REQUIRE_CERT: OPT_X_TLS_NEVER
+    OPT_X_TLS_NEWCTX: 0

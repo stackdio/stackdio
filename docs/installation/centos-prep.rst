@@ -1,29 +1,26 @@
 Preparing CentOS for stackd.io installation
 ===========================================
 
-The steps below were written using CentOS 6.4 from a CentOS-provided AMI
-on Amazon Web Services (AWS). The exact AMI we used is ``ami-bf5021d6``,
-and you should be able to easily launch an EC2 instance using this AMI from the
-`AWS Marketplace <https://aws.amazon.com/marketplace/pp/B00DGYP804/ref=sp_mpg_product_title?ie=UTF8&sr=0-4>`__.
+The steps below were written using CentOS 7 from a CentOS-provided AMI on Amazon Web Services (AWS).
+The exact AMI we used is ``ami-6d1c2007``, and you should be able to easily launch an EC2 instance using this AMI from the
+`AWS Marketplace <https://aws.amazon.com/marketplace/pp/B00O7WM7QW>`__.
 
 Prerequisites
 -------------
 
-All of the CentOS-provided AMIs have SELinux and iptables enabled. We
-disabled both of these to be as straight forward as possible during this
-guide. SELinux causes issues that are beyond the scope of the guide, and
-we disabled iptables because we leverage EC2's security groups for
-firewall access.
+All of the CentOS-provided AMIs have SELinux and iptables enabled.
+We disabled both of these to be as straight forward as possible during this guide.
+SELinux causes issues that are beyond the scope of the guide,
+and we disabled iptables because we leverage EC2's security groups for firewall access.
 
 iptables
 --------
 
-Let's just turn it off for now. Please note, if you're using EC2 or some
-other cloud provider that has firewall rules enabled by default, you
-will need to configure the particular firewall rules to gain access to
-the web server we'll start in the guide. The default port for the
-webserver is 8000, so open this port up at a minimum. (Port 22 for SSH
-will obviously be needed as well.)
+Let's just turn it off for now.
+Please note, if you're using EC2 or some other cloud provider that has firewall rules enabled by default,
+you will need to configure the particular firewall rules to gain access to the web server we'll start in the guide.
+The default port for the webserver is 8000, so open this port up at a minimum.
+(Port 22 for SSH will obviously be needed as well.)
 
 .. code:: bash
 
@@ -32,9 +29,8 @@ will obviously be needed as well.)
 SELinux
 -------
 
-Getting things working using SELinux could be an entirely separate
-guide. For our purposes, it's completely out of scope, so we're going to
-disable it.
+Getting things working using SELinux could be an entirely separate guide.
+For our purposes, it's completely out of scope, so we're going to disable it.
 
 .. note::
 
@@ -68,41 +64,43 @@ EPEL
 
     sudo rpm -Uvh http://mirror.steadfast.net/epel/6/i386/epel-release-6-8.noarch.rpm
 
-MySQL
------
+Postgres
+--------
 
 .. note::
 
     Please skip this section if you are using a different database or
     already have a supported database server running elsewhere.
 
-Install MySQL server:
+Install Postgres server:
 
 .. code:: bash
 
-    sudo yum install mysql-server
+    sudo yum install https://download.postgresql.org/pub/repos/yum/9.5/redhat/rhel-7-x86_64/pgdg-centos95-9.5-3.noarch.rpm
+    sudo yum install postgresql
 
-Start MySQL server:
+Start Postgres server:
 
 .. code:: bash
 
-    sudo service mysqld start
+    sudo service postgresql start
 
 Below we'll create a ``stackdio`` database and grant permissions to the
 ``stackdio`` user for that database.
 
 .. warning::
 
-    We're not focusing on security here, so the default
-    MySQL setup definitely needs to be tweaked, passwords changed, etc.,
-    but for a quick-start guide this is out of scope. Please, don't run
-    this as-is in production :)
+    We're not focusing on security here, so the default postgres setup definitely needs to be tweaked,
+    passwords changed, etc., but for a quick-start guide this is out of scope.
+    Please, don't run this as-is in production :)
 
 .. code:: bash
 
-    echo "create database stackdio; \
-    grant all on stackdio.* to stackdio@'localhost' identified by 'password';" | \
-    mysql -h localhost -u root
+    sudo -u postgres psql postgres <<EOF
+    CREATE USER stackdio WITH UNENCRYPTED PASSWORD 'password';
+    CREATE DATABASE stackdio;
+    ALTER DATABASE stackdio OWNER to stackdio;
+    EOF
 
 virtualenvwrapper
 -----------------
@@ -124,10 +122,9 @@ Core requirements
 
 -  gcc and other development tools
 -  git
--  mysql-devel
--  swig
+-  libpq-devel (the c header files for compiling the python postgres client)
 -  python-devel
--  rabbitmq-server
+-  redis-server
 -  nginx
 
 To quickly get up and running, you can run the following to install the
@@ -139,11 +136,10 @@ required packages.
     sudo yum groupinstall "Development Tools"
 
     # Install the other requirements needed to install stackd.io
-    sudo yum install git mysql-devel swig python-devel rabbitmq-server nginx nodejs npm
+    sudo yum install git libpq-devel python-devel redis-server nginx nodejs npm
 
 Next Steps
 ----------
 
 You're now finished with the CentOS-specific requirements for stackd.io.
-You can head back over to the :ref:`Manual Install <installation>` and
-continue the installation of stackd.io.
+You can head back over to the :ref:`Manual Install <installation>` and continue the installation of stackd.io.

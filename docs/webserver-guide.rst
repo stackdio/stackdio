@@ -1,23 +1,19 @@
 Webserver Guide
 ===============
 
-This guide will help you quickly get the web portion of stackd.io
-running behind Nginx.  **Seeing as stackd.io is just a wsgi app, you
-can also run it behind apache using mod_wsgi if you'd like, but
-that is beyond the scope of this guide.**  You should've already worked
-through this manual install guide before running through
-the steps below. As with this guide, our focus is not entirely on
-building out a production-ready system, but merely helping you quickly
-get a system stood up to become familiar with stackd.io. Once you
-understand how it works, then we can start hardening the system for
-production use.
+This guide will help you quickly get the web portion of stackd.io running behind Nginx.
+**Seeing as stackd.io is just a wsgi app, you can also run it behind apache using mod_wsgi if you'd like,
+but that is beyond the scope of this guide.**
+You should've already worked through this manual install guide before running through the steps below.
+As with this guide, our focus is not entirely on building out a production-ready system,
+but merely helping you quickly get a system stood up to become familiar with stackd.io.
+Once you understand how it works, then we can start hardening the system for production use.
 
 Common Steps
 ------------
 
-To do some of the steps below you will need to have already installed
-stackdio and be in the virtual environment. To make sure you're in the
-virtualenv:
+To do some of the steps below you will need to have already installed stackdio and be in the virtual environment.
+To make sure you're in the virtualenv:
 
 .. code:: bash
 
@@ -32,17 +28,13 @@ This step should be run before proceeding with configuring Nginx.
     stackdio manage.py collectstatic --noinput
 
 
-In our configuration, Nginx will be used to serve static files and as a
-proxy to send requests down to the Django application running via
-gunicorn on port 8000. The configuration we'll generate is useful to use
-a quick start mechanism to get you up and running behind Nginx/gunicorn
-very quickly.
+In our configuration, Nginx will be used to serve static files and as a proxy to send requests down to the Django application running via gunicorn on port 8000.
+The configuration we'll generate is useful to use a quick start mechanism to get you up and running behind Nginx/gunicorn very quickly.
 
 CentOS Installation
 -------------------
 
-Install required packaged, generate and write configuration file, and
-restart server:
+Install required packaged, generate and write configuration file, and restart server:
 
 .. code:: bash
 

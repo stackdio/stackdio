@@ -2,16 +2,6 @@
 
 set -e
 
-stackdio init <<EOF
-stackdio
-/var/lib/stackdio
-curl-bootstrap
-stable {salt_version}
-mysql://stackdio:password@localhost:3306/stackdio
-true
-yes
-EOF
-
 stackdio manage.py migrate
 
 # Create our superuser
