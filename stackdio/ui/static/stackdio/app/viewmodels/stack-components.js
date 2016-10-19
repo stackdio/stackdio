@@ -17,8 +17,9 @@
 
 define([
     'jquery',
+    'knockout',
     'models/stack'
-], function ($, Stack) {
+], function ($, ko, Stack) {
     'use strict';
 
     return function() {
@@ -45,9 +46,14 @@ define([
             }
         ];
 
+        self.selectedComponent = ko.observable();
+        self.hostTarget = ko.observable();
+
         self.reset = function() {
             // Create the stack object.  Pass in the stack id, and let the model load itself.
             self.stack = new Stack(window.stackdio.stackId, self);
+            self.selectedComponent(null);
+            self.hostTarget(null);
         };
 
         self.openMap = {};
@@ -78,6 +84,10 @@ define([
                 }
 
             });
+        };
+
+        self.runSingle = function () {
+            self.stack.runSingleSls(self.selectedComponent().sls_path, self.hostTarget());
         };
 
         // Start everything up

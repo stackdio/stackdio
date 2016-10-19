@@ -331,6 +331,62 @@ define([
         });
     };
 
+    Stack.prototype.runSingleSls = function (component, hostTarget) {
+        var self = this;
+        var stackTitle = _.escape(self.title());
+        bootbox.confirm({
+            title: 'Confirm component run for <strong>' + stackTitle + '</strong>',
+            message: 'Are you sure you want to run ' + component + ' on ' + stackTitle + '?',
+            buttons: {
+                confirm: {
+                    label: 'Run',
+                    className: 'btn-primary'
+                }
+            },
+            callback: function (result) {
+                if (!result) {
+                    return;
+                }
+
+                var arg = {
+                    component: component
+                };
+
+                if (hostTarget) {
+                    arg.host_target = hostTarget;
+                }
+
+                $.ajax({
+                    method: 'POST',
+                    url: self.raw.action,
+                    data: JSON.stringify({
+                        action: 'single-sls',
+                        args: [arg]
+                    })
+                }).done(function () {
+                    if (self.parent && typeof self.parent.reload === 'function') {
+                        self.parent.reload();
+                    } else {
+                        self.reload();
+                    }
+                }).fail(function (jqxhr) {
+                    var message;
+                    try {
+                        var resp = JSON.parse(jqxhr.responseText);
+                        message = resp.action.join('<br>');
+                    } catch (e) {
+                        message = 'Oops... there was a server error.  This has been ' +
+                            'reported to your administrators.';
+                    }
+                    bootbox.alert({
+                        title: 'Error running component',
+                        message: message
+                    });
+                });
+            }
+        });
+    };
+
     // Peform an action
     Stack.prototype.performAction = function (action) {
         var self = this;
