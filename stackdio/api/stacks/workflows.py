@@ -142,11 +142,6 @@ class DestroyHostsWorkflow(BaseWorkflow):
         stack_id = self.stack.pk
         host_ids = self.host_ids
 
-        final_activity = Activity.IDLE
-
-        if len(host_ids) == self.stack.host_count:
-            final_activity = Activity.TERMINATED
-
         return [
             tasks.update_metadata.si(stack_id, Activity.TERMINATING, host_ids=host_ids),
             tasks.register_volume_delete.si(stack_id, host_ids=host_ids),
@@ -154,7 +149,7 @@ class DestroyHostsWorkflow(BaseWorkflow):
             tasks.destroy_hosts.si(stack_id,
                                    host_ids=host_ids,
                                    delete_security_groups=False),
-            tasks.finish_stack.si(stack_id, final_activity),
+            tasks.finish_stack.si(stack_id, Activity.IDLE),
         ]
 
 
