@@ -250,28 +250,31 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def __str__(self):
         return six.text_type('Stack {0} - {1}'.format(self.title, self.activity))
 
-    def log_history(self, message, activity=None):
+    def log_history(self, message, activity=None, host_ids=None):
         """
         Create a new history message and optionally set the activity on all hosts.
         :param message: the history message to create
         :param activity: the activity value to set on all hosts
+        :param host_ids: the hosts to set the activity on.
+        If activity isn't passed, host_ids is ignored.
         """
         if activity is not None:
-            self.set_activity(activity)
+            self.set_activity(activity, host_ids)
 
         # Create a history
         self.history.create(message=message)
 
-    def set_activity(self, activity):
+    def set_activity(self, activity, host_ids=None):
         """
         Set the activity on all hosts in the stack
         :param activity: the activity to set
+        :param host_ids: the hosts to set the activity on
         """
         # Make sure all host activities are saved atomically
         with transaction.atomic(using=Stack.objects.db):
             self.activity = activity
             self.save()
-            for host in self.hosts.all():
+            for host in self.get_hosts(host_ids):
                 host.activity = activity
                 host.save()
 

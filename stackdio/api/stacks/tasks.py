@@ -82,7 +82,8 @@ def stack_task(*args, **kwargs):
 
                 if not final_task:
                     # Everything went OK, set back to queued
-                    stack.set_activity(Activity.QUEUED)
+                    stack.activity = Activity.QUEUED
+                    stack.save()
 
             except StackTaskException as e:
                 stack.log_history(e.message, Activity.IDLE)
@@ -526,7 +527,7 @@ def cure_zombies(stack, max_retries=2):
 def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
     if activity is not None:
         # Update activity
-        stack.log_history('Collecting host metadata from cloud provider.', activity)
+        stack.log_history('Collecting host metadata from cloud provider.', activity, host_ids)
 
     # All hosts are running (we hope!) so now we can pull the various
     # metadata and store what we want to keep track of.
@@ -599,7 +600,7 @@ def tag_infrastructure(stack, activity=None, host_ids=None):
 
     if activity is not None:
         # Log some history
-        stack.log_history('Tagging stack infrastructure.', activity)
+        stack.log_history('Tagging stack infrastructure.', activity, host_ids)
 
     # for each set of hosts on an account, use the driver implementation
     # to tag the various infrastructure
@@ -619,7 +620,7 @@ def register_dns(stack, activity, host_ids=None):
     Must be ran after a Stack is up and running and all host information has
     been pulled and stored in the database.
     """
-    stack.log_history('Registering hosts with DNS provider.', activity)
+    stack.log_history('Registering hosts with DNS provider.', activity, host_ids)
 
     logger.info('Registering DNS for stack: {0!r}'.format(stack))
 
@@ -1406,7 +1407,7 @@ def register_volume_delete(stack, host_ids=None):
     that will automatically delete the volumes when the machines are
     terminated.
     """
-    stack.log_history('Registering volumes for deletion.', Activity.TERMINATING)
+    stack.log_history('Registering volumes for deletion.', Activity.TERMINATING, host_ids)
 
     # use the stack driver to register all volumes on the hosts to
     # automatically delete after the host is terminated
@@ -1424,7 +1425,7 @@ def register_volume_delete(stack, host_ids=None):
     stack.log_history('Finished registering volumes for deletion.')
 
 
-@stack_task(name='stacks.destroy_hosts', final_task=True)
+@stack_task(name='stacks.destroy_hosts')
 def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_groups=True,
                   parallel=True):
     """
@@ -1433,7 +1434,7 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
     up any managed security groups on the stack.
     """
     stack.log_history('Terminating stack infrastructure. This may take a while.',
-                      Activity.TERMINATING)
+                      Activity.TERMINATING, host_ids)
     hosts = stack.get_hosts(host_ids)
 
     if hosts:
@@ -1507,7 +1508,7 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
     if delete_hosts and hosts:
         hosts.delete()
 
-    stack.log_history('Finished terminating hosts.', Activity.TERMINATED)
+    stack.log_history('Finished terminating hosts.')
 
 
 @stack_task(name='stacks.destroy_stack', final_task=True)
@@ -1533,7 +1534,7 @@ def unregister_dns(stack, activity, host_ids=None):
     stack is terminated or stopped or put into some state where DNS no longer
     applies.
     """
-    stack.log_history('Unregistering hosts with DNS provider.', activity)
+    stack.log_history('Unregistering hosts with DNS provider.', activity, host_ids)
 
     logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
 
