@@ -46,12 +46,14 @@ define([
             }
         ];
 
+        self.availableComponents = ko.observableArray();
         self.selectedComponent = ko.observable();
         self.hostTarget = ko.observable();
 
         self.reset = function() {
             // Create the stack object.  Pass in the stack id, and let the model load itself.
             self.stack = new Stack(window.stackdio.stackId, self);
+            self.availableComponents([]);
             self.selectedComponent(null);
             self.hostTarget(null);
         };
@@ -61,6 +63,10 @@ define([
         // Functions
         self.refreshComponents = function () {
             self.stack.loadComponents().done(function () {
+                if (self.availableComponents().length == 0) {
+                    self.availableComponents(self.stack.components());
+                }
+
                 Object.keys(self.openMap).forEach(function (id) {
                     if (self.openMap[id]) {
                         $('#' + id).addClass('in');

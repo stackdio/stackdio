@@ -1389,6 +1389,9 @@ def single_sls(stack, component, host_target, max_retries=2):
         # it worked?
         break
 
+    # Everything worked, set the status appropriately
+    stack.set_component_status(component, ComponentStatus.SUCCEEDED)
+
     stack.log_history('Finished executing single sls {} on all hosts.'.format(component))
 
 
