@@ -1668,7 +1668,11 @@ def update_host_info():
         for host in stack.hosts.all():
             account = host.cloud_account
 
-            account_info = query_results.get(account.slug, {}).get(account.provider.name, {})
+            if account.slug not in query_results:
+                # If the account is missing, then we shouldn't do anything.
+                continue
+
+            account_info = query_results[account.slug].get(account.provider.name, {})
             host_info = account_info.get(host.hostname)
 
             old_state = host.state
