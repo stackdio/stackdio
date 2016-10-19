@@ -140,7 +140,7 @@ class HostSerializer(StackdioParentHyperlinkedModelSerializer):
     )
     count = serializers.IntegerField(write_only=True, min_value=1)
     backfill = serializers.BooleanField(default=False, write_only=True)
-    extra_options = serializers.JSONField(default={}, read_only=True)
+    extra_options = serializers.JSONField(read_only=True)
 
     class Meta:
         model = models.Host
@@ -266,7 +266,6 @@ class HostSerializer(StackdioParentHyperlinkedModelSerializer):
         return attrs
 
     def do_add(self, stack, validated_data):
-        validated_data.pop('extra_options', None)
         hosts = stack.create_hosts(**validated_data)
 
         if hosts:
