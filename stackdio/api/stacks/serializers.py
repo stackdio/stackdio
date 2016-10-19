@@ -351,30 +351,6 @@ class StackHistorySerializer(StackdioHyperlinkedModelSerializer):
         )
 
 
-class StackCreateUserDefault(object):
-    """
-    Used to set the default value of create_users to be that of the blueprint
-    """
-    def __init__(self):
-        super(StackCreateUserDefault, self).__init__()
-        self._context = None
-
-    def set_context(self, field):
-        self._context = field.parent
-
-    def __call__(self):
-        blueprint_id = self._context.initial_data.get('blueprint', None)
-        if blueprint_id is None:
-            return None
-        if not isinstance(blueprint_id, six.integer_types):
-            return None
-        try:
-            blueprint = Blueprint.objects.get(pk=blueprint_id)
-            return blueprint.create_users
-        except Blueprint.DoesNotExist:
-            return None
-
-
 class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
     # Read only fields
     label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True,
@@ -470,7 +446,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         )
 
         extra_kwargs = {
-            'create_users': {'default': serializers.CreateOnlyDefault(StackCreateUserDefault())},
+            'create_users': {'required': False},
             'blueprint': {'view_name': 'api:blueprints:blueprint-detail'},
         }
 
@@ -495,6 +471,9 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         # Check to see if the launching user has permission to launch from the blueprint
         user = request.user
         blueprint = self.instance.blueprint if self.instance else attrs['blueprint']
+
+        if 'create_users' not in attrs:
+            attrs['create_users'] = blueprint.create_users
 
         if not user.has_perm('blueprints.view_blueprint', blueprint):
             err_msg = 'You do not have permission to launch a stack from this blueprint.'
