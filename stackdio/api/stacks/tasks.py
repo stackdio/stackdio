@@ -49,7 +49,7 @@ from stackdio.core.events import trigger_event
 
 from . import utils, validators
 from .exceptions import StackTaskException
-from .models import Stack, StackCommand
+from .models import Stack, StackCommand, StackHistory
 
 logger = get_task_logger(__name__)
 
@@ -1717,7 +1717,7 @@ def update_host_info():
         if len(newly_dead_hosts) > 0:
             err_msg = ('The following hosts have now been marked '
                        '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
-            if len(err_msg) > 256:
+            if len(err_msg) > StackHistory._meta.get_field('message').max_length:
                 err_msg = 'Several hosts have been marked \'{}\'.'.format(Activity.DEAD)
             stack.log_history(err_msg)
 
