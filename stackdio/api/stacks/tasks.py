@@ -1315,6 +1315,8 @@ def single_sls(stack, component, host_target, max_retries=2):
                 old_handlers.append(handler)
                 root_logger.removeHandler(handler)
 
+        stack.set_component_status(component, ComponentStatus.RUNNING)
+
         try:
             salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
@@ -1369,6 +1371,7 @@ def single_sls(stack, component, host_target, max_retries=2):
                     errors.setdefault(host, []).append(err)
 
         if errors:
+            stack.set_component_status(component, ComponentStatus.FAILED)
             # write the errors to the err_file
             with open(err_file, 'a') as f:
                 f.write(yaml.safe_dump(errors))
