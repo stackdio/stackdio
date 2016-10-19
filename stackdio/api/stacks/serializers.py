@@ -546,6 +546,10 @@ class FullStackSerializer(StackSerializer):
 
         return stack
 
+    def to_representation(self, instance):
+        super_serializer = StackSerializer(instance, context=self.context)
+        return super_serializer.to_representation(instance)
+
 
 class StackLabelSerializer(StackdioLabelSerializer):
 

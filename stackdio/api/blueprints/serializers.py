@@ -413,6 +413,10 @@ class FullBlueprintSerializer(BlueprintSerializer):
 
         return blueprint
 
+    def to_representation(self, instance):
+        super_serializer = BlueprintSerializer(instance, context=self.context)
+        return super_serializer.to_representation(instance)
+
 
 class BlueprintExportSerializer(FullBlueprintSerializer):
     class Meta:
