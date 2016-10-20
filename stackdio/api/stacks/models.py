@@ -1404,17 +1404,13 @@ def metadata_post_save(sender, **kwargs):
     host = metadata.host
     sls_path = metadata.sls_path
 
-    logger.debug('Pre-caching metadata for component: {}'.format(metadata))
-
-    # Go ahead and add this metadata to the cache - if it is being created,
-    # it is definitely the most recent (which is always what we want)
-    cache_key = 'host-{}-component-metadata-for-{}'.format(host.id, sls_path)
-    cache.set(cache_key, metadata, None)
+    logger.debug('Deleting metadata from cache for component: {}'.format(metadata))
 
     # Then delete these from the cache
     cache_keys = [
         'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
+        'host-{}-component-metadata-for-{}'.format(host.id, sls_path),
     ]
     cache.delete_many(cache_keys)
 
