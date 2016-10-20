@@ -1415,6 +1415,24 @@ def metadata_post_save(sender, **kwargs):
     cache.delete_many(cache_keys)
 
 
+@receiver(models.signals.post_delete, sender=ComponentMetadata)
+def metadata_post_delete(sender, **kwargs):
+    """
+    Catch the post_delete signal for all ComponentMetadata
+    objects and delete from the cache
+    """
+    metadata = kwargs.pop('instance')
+
+    sls_path = metadata.sls_path
+
+    # Then delete these from the cache
+    cache_keys = [
+        'component-metadata-{}-sls-path'.format(metadata.id),
+        'host-{}-component-metadata-for-{}'.format(metadata.host_id, sls_path),
+    ]
+    cache.delete_many(cache_keys)
+
+
 @receiver(models.signals.post_save, sender=Host)
 def host_post_save(sender, **kwargs):
     host = kwargs.pop('instance')
