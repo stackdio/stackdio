@@ -28,7 +28,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
-from stackdio.core.serializers import NoOpSerialier
+from stackdio.core.serializers import NoOpSerializer
 from stackdio.core.utils import recursively_sort_dict
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
@@ -121,7 +121,7 @@ class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIVi
     Returns a list of formula components available for this formula.  If the `version`
     query parameter is specified, it will show a list for that version.
     """
-    serializer_class = NoOpSerialier
+    serializer_class = NoOpSerializer
     pagination_class = FormulaComponentPaginator
 
     def get_queryset(self):
