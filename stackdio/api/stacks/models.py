@@ -1440,8 +1440,6 @@ def host_post_save(sender, **kwargs):
     # Delete from the cache
     cache_keys = [
         'stack-{}-hosts'.format(host.stack_id),
-        'stack-{}-host-count'.format(host.stack_id),
-        'stack-{}-volume-count'.format(host.stack_id),
         'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
     ]
@@ -1468,17 +1466,6 @@ def host_post_delete(sender, **kwargs):
         'host-{}-image'.format(host.id),
         'host-{}-account'.format(host.id),
         'host-{}-provider'.format(host.id),
-    ]
-    cache.delete_many(cache_keys)
-
-
-@receiver(models.signals.post_save, sender=Stack)
-def stack_post_save(sender, **kwargs):
-    stack = kwargs.pop('instance')
-
-    # Delete from the cache
-    cache_keys = [
-        'stack-{}-health'.format(stack.id),
     ]
     cache.delete_many(cache_keys)
 
