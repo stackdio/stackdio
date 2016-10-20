@@ -31,6 +31,21 @@ from . import mixins, models, utils, validators
 logger = logging.getLogger(__name__)
 
 
+class NoOpSerialier(serializers.Serializer):
+
+    def to_representation(self, instance):
+        return instance
+
+    def to_internal_value(self, data):
+        return data
+
+    def create(self, validated_data):
+        return super(NoOpSerialier, self).create(validated_data)
+
+    def update(self, instance, validated_data):
+        return super(NoOpSerialier, self).update(instance, validated_data)
+
+
 class BulkListSerializer(serializers.ListSerializer):
 
     def update(self, queryset, all_validated_data):

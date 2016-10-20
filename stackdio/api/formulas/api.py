@@ -23,10 +23,12 @@ from collections import OrderedDict
 from guardian.shortcuts import assign_perm
 from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from stackdio.core.serializers import NoOpSerialier
 from stackdio.core.utils import recursively_sort_dict
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
@@ -99,29 +101,40 @@ class FormulaPropertiesAPIView(generics.RetrieveAPIView):
         return Response(recursively_sort_dict(properties))
 
 
+class FormulaComponentPaginator(PageNumberPagination):
+
+    def paginate_queryset(self, queryset, request, view=None):
+        # Save the view
+        self.view = view
+        return super(FormulaComponentPaginator, self).paginate_queryset(queryset, request, view)
+
+    def get_paginated_response(self, data):
+        return Response(OrderedDict([
+            ('count', self.page.paginator.count),
+            ('version', self.view.formula_version),
+            ('results', data),
+        ]))
+
+
 class FormulaComponentListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIView):
     """
     Returns a list of formula components available for this formula.  If the `version`
     query parameter is specified, it will show a list for that version.
     """
-    def list(self, request, *args, **kwargs):
+    serializer_class = NoOpSerialier
+    pagination_class = FormulaComponentPaginator
+
+    def get_queryset(self):
         formula = self.get_formula()
 
         # determine if a version was specified
-        version = request.query_params.get('version')
+        version = self.request.query_params.get('version')
 
         if version not in formula.get_valid_versions():
             version = formula.default_version
 
-        components = formula.components(version).values()
-
-        data = OrderedDict((
-            ('count', len(components)),
-            ('version', version),
-            ('results', components),
-        ))
-
-        return Response(data)
+        self.formula_version = version
+        return formula.components(version).values()
 
 
 class FormulaValidVersionListAPIView(mixins.FormulaRelatedMixin, generics.ListAPIView):
