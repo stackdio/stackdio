@@ -28,26 +28,27 @@ class Health(object):
     UNHEALTHY = 'unhealthy'  # red
     UNKNOWN = 'unknown'  # grey
 
+    priority = {
+        UNHEALTHY: 3,
+        UNSTABLE: 2,
+        UNKNOWN: 1,
+        HEALTHY: 0,
+    }
+
     @classmethod
     def aggregate(cls, health_list):
         # Make sure everything in the list is a valid health
-        assert len([h for h in health_list if h not in vars(cls).values()]) == 0
+        if len([h for h in health_list if h not in cls.priority]) != 0:
+            raise ValueError('An invalid health was passed in.')
 
         if len(health_list) == 0:
             # We can get an empty list sometimes when we're deleting a stack, so we'll
             # just aggregate that to unknown
             return cls.UNKNOWN
-        elif cls.UNHEALTHY in health_list:
-            return cls.UNHEALTHY
-        elif cls.UNSTABLE in health_list:
-            return cls.UNSTABLE
-        elif cls.UNKNOWN in health_list:
-            return cls.UNKNOWN
-        elif cls.HEALTHY in health_list:
-            return cls.HEALTHY
 
-        raise ValueError('This state should never be reached...  Make sure you are '
-                         'assigning proper health values')
+        sorted_healths = sorted(health_list, key=lambda x: cls.priority[x], reverse=True)
+
+        return sorted_healths[0]
 
 
 class ComponentStatus(object):
@@ -64,31 +65,29 @@ class ComponentStatus(object):
     CANCELLED = 'cancelled'
     UNKNOWN = 'unknown'
 
+    priority = {
+        FAILED: 5,
+        CANCELLED: 4,
+        RUNNING: 3,
+        UNKNOWN: 2,
+        QUEUED: 1,
+        SUCCEEDED: 0,
+    }
+
     @classmethod
     def aggregate(cls, status_list):
         # Make sure everything in the list is a valid status
-        assert len([s for s in status_list if s not in vars(cls).values()]) == 0
+        if len([s for s in status_list if s not in cls.priority]) != 0:
+            raise ValueError('An invalid status was passed in.')
 
         if len(status_list) == 0:
             # We can get an empty list sometimes when we're deleting a stack, so we'll
             # just aggregate that to unknown
             return cls.UNKNOWN
 
-        elif cls.FAILED in status_list:
-            return cls.FAILED
-        elif cls.CANCELLED in status_list:
-            return cls.CANCELLED
-        elif cls.RUNNING in status_list:
-            return cls.RUNNING
-        elif cls.UNKNOWN in status_list:
-            return cls.UNKNOWN
-        elif cls.QUEUED in status_list:
-            return cls.QUEUED
-        elif cls.SUCCEEDED in status_list:
-            return cls.SUCCEEDED
+        sorted_statuses = sorted(status_list, key=lambda x: cls.priority[x], reverse=True)
 
-        raise ValueError('This state should never be reached...  Make sure you are '
-                         'assigning proper status values')
+        return sorted_statuses[0]
 
 
 class Action(object):
