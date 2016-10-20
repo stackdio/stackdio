@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 import os
@@ -23,14 +24,12 @@ from collections import OrderedDict
 
 import actstream
 import salt.cloud
-import six
 from celery import chain
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
-
 from stackdio.api.blueprints.models import Blueprint, BlueprintHostDefinition
 from stackdio.api.blueprints.serializers import BlueprintHostDefinitionSerializer
 from stackdio.api.cloud.models import SecurityGroup
@@ -40,52 +39,17 @@ from stackdio.core.constants import Action, Activity, ComponentStatus, Health
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
+    PropertiesField,
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
     StackdioLabelSerializer,
     StackdioLiteralLabelsSerializer,
 )
-from stackdio.core.utils import recursive_update, recursively_sort_dict
-from stackdio.core.validators import PropertiesValidator, validate_hostname
-from . import models, tasks, utils, workflows
+from stackdio.core.validators import validate_hostname
+
+from . import models, tasks, utils, validators, workflows
 
 logger = logging.getLogger(__name__)
-
-
-class StackPropertiesSerializer(serializers.Serializer):  # pylint: disable=abstract-method
-    def to_representation(self, obj):
-        ret = {}
-        if obj is not None:
-            # Make it work two different ways.. ooooh
-            if isinstance(obj, models.Stack):
-                ret = obj.properties
-            else:
-                ret = obj
-        return recursively_sort_dict(ret)
-
-    def to_internal_value(self, data):
-        return data
-
-    def validate(self, attrs):
-        PropertiesValidator().validate(attrs)
-        return attrs
-
-    def update(self, stack, validated_data):
-        if self.partial:
-            # This is a PATCH, so properly merge in the old data
-            old_properties = stack.properties
-            stack.properties = recursive_update(old_properties, validated_data)
-        else:
-            # This is a PUT, so just add the data directly
-            stack.properties = validated_data
-
-        # Regenerate the pillar file now too
-        stack.generate_pillar_file()
-
-        # Be sure to save the instance
-        stack.save()
-
-        return stack
 
 
 class HostComponentSerializer(FormulaComponentSerializer):
@@ -310,6 +274,40 @@ class HostSerializer(StackdioParentHyperlinkedModelSerializer):
         return action_map[action](stack, validated_data)
 
 
+class ComponentMetadataSerializer(serializers.ModelSerializer):
+
+    host = serializers.CharField(source='host.hostname')
+    timestamp = serializers.DateTimeField(source='modified')
+
+    class Meta:
+        model = models.ComponentMetadata
+
+        fields = (
+            'host',
+            'status',
+            'health',
+            'timestamp',
+        )
+
+
+class StackComponentSerializer(serializers.Serializer):
+
+    formula = serializers.CharField(source='component.formula.uri')
+    title = serializers.CharField(source='component.title')
+    description = serializers.CharField(source='component.description')
+    sls_path = serializers.CharField(source='component.sls_path')
+    order = serializers.IntegerField(source='component.order')
+    status = serializers.CharField()
+    health = serializers.CharField()
+    hosts = ComponentMetadataSerializer(many=True, source='metadatas')
+
+    def create(self, validated_data):
+        raise NotImplementedError('Cannot create components.')
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError('Cannot update components.')
+
+
 class StackHistorySerializer(StackdioHyperlinkedModelSerializer):
     class Meta:
         model = models.StackHistory
@@ -317,30 +315,6 @@ class StackHistorySerializer(StackdioHyperlinkedModelSerializer):
             'message',
             'created',
         )
-
-
-class StackCreateUserDefault(object):
-    """
-    Used to set the default value of create_users to be that of the blueprint
-    """
-    def __init__(self):
-        super(StackCreateUserDefault, self).__init__()
-        self._context = None
-
-    def set_context(self, field):
-        self._context = field.parent
-
-    def __call__(self):
-        blueprint_id = self._context.initial_data.get('blueprint', None)
-        if blueprint_id is None:
-            return None
-        if not isinstance(blueprint_id, six.integer_types):
-            return None
-        try:
-            blueprint = Blueprint.objects.get(pk=blueprint_id)
-            return blueprint.create_users
-        except Blueprint.DoesNotExist:
-            return None
 
 
 class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer):
@@ -362,6 +336,9 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         lookup_url_kwarg='parent_pk')
     logs = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-logs',
+        lookup_url_kwarg='parent_pk')
+    components = serializers.HyperlinkedIdentityField(
+        view_name='api:stacks:stack-component-list',
         lookup_url_kwarg='parent_pk')
     volumes = serializers.HyperlinkedIdentityField(
         view_name='api:stacks:stack-volume-list',
@@ -408,6 +385,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
             'created',
             'label_list',
             'hosts',
+            'components',
             'volumes',
             'labels',
             'properties',
@@ -434,7 +412,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         )
 
         extra_kwargs = {
-            'create_users': {'default': serializers.CreateOnlyDefault(StackCreateUserDefault())},
+            'create_users': {'required': False},
             'blueprint': {'view_name': 'api:blueprints:blueprint-detail'},
         }
 
@@ -444,10 +422,17 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         # make sure the user has a public key or they won't be able to SSH
         # later
         request = self.context['request']
+
+        blueprint = self.instance.blueprint if self.instance else attrs['blueprint']
         if 'create_users' in attrs:
             create_users = attrs['create_users']
         else:
-            create_users = self.instance.create_users
+            if self.instance:
+                create_users = self.instance.create_users
+            else:
+                attrs['create_users'] = blueprint.create_users
+                create_users = attrs['create_users']
+
         if create_users and not request.user.settings.public_key:
             errors.setdefault('public_key', []).append(
                 'You have not added a public key to your user '
@@ -458,7 +443,6 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
 
         # Check to see if the launching user has permission to launch from the blueprint
         user = request.user
-        blueprint = self.instance.blueprint if self.instance else attrs['blueprint']
 
         if not user.has_perm('blueprints.view_blueprint', blueprint):
             err_msg = 'You do not have permission to launch a stack from this blueprint.'
@@ -540,7 +524,7 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
 
 
 class FullStackSerializer(StackSerializer):
-    properties = StackPropertiesSerializer(required=False)
+    properties = PropertiesField(required=False)
     blueprint = serializers.PrimaryKeyRelatedField(queryset=Blueprint.objects.all())
     formula_versions = FormulaVersionSerializer(many=True, required=False)
 
@@ -564,6 +548,10 @@ class FullStackSerializer(StackSerializer):
         workflow.execute()
 
         return stack
+
+    def to_representation(self, instance):
+        super_serializer = StackSerializer(instance, context=self.context)
+        return super_serializer.to_representation(instance)
 
 
 class StackLabelSerializer(StackdioLabelSerializer):
@@ -668,6 +656,26 @@ class StackActionSerializer(serializers.Serializer):  # pylint: disable=abstract
                        'Perhaps you meant to run the launch action instead.')
             raise serializers.ValidationError({
                 'action': [err_msg]
+            })
+
+        single_sls_errors = []
+
+        if action == Action.SINGLE_SLS:
+            args = attrs.get('args', [])
+            for arg in args:
+                if 'component' not in arg:
+                    single_sls_errors.append('arg is missing a component')
+                component = arg['component']
+
+                # This can raise a ValidationError
+                try:
+                    validators.can_run_component_on_stack(component, stack)
+                except serializers.ValidationError as e:
+                    single_sls_errors.append(e.detail)
+
+        if single_sls_errors:
+            raise serializers.ValidationError({
+                'args': single_sls_errors,
             })
 
         return attrs

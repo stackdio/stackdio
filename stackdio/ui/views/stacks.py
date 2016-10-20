@@ -126,6 +126,12 @@ class StackHostsView(StackDetailView):
     page_id = 'hosts'
 
 
+class StackComponentsView(StackDetailView):
+    template_name = 'stacks/stack-components.html'
+    viewmodel = 'viewmodels/stack-components'
+    page_id = 'components'
+
+
 class StackVolumesView(StackDetailView):
     template_name = 'stacks/stack-volumes.html'
     viewmodel = 'viewmodels/stack-volumes'

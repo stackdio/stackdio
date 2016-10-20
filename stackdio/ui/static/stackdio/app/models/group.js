@@ -45,6 +45,7 @@ define([
 
         // Editable fields
         this.name = ko.observable();
+        this.detailUrl = ko.observable();
 
         if (needReload) {
             this.waiting = this.reload();
@@ -57,6 +58,7 @@ define([
 
     Group.prototype._process = function (raw) {
         this.name(raw.name);
+        this.detailUrl('/groups/' + raw.name + '/members/');
     };
 
     // Reload the current group

@@ -40,10 +40,17 @@
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
                 <tr class="stackdio-hidden-on-load">
-                    <td data-bind="text: title, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
-                    <td data-bind="text: description, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
-                    <td data-bind="text: snapshotId, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
-                    <td data-bind="text: filesystemType, click: function (snapshot) { $root.goToDetailPage(snapshot) }"></td>
+                    <td>
+                        <!-- ko if: $root.canDisplayDetail -->
+                        <a data-bind="text: title, attr: {href: detailUrl, title: title}"></a>
+                        <!-- /ko -->
+                        <!-- ko ifnot: $root.canDisplayDetail -->
+                        <p data-bind="text: title"></p>
+                        <!-- /ko -->
+                    </td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: snapshotId"></td>
+                    <td data-bind="text: filesystemType"></td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete, if: !$root.permissionsMap[$data.id] || $root.permissionsMap[$data.id].delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>

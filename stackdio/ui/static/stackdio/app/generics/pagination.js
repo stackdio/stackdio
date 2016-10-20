@@ -171,11 +171,8 @@ define([
             }
         },
 
-        goToDetailPage: function (object) {
-            if (this.detailRequiresAdvanced && !window.stackdio.advancedView) {
-                return;
-            }
-            window.location = this.baseUrl + object.id + '/';
+        canDisplayDetail: function () {
+            return !this.detailRequiresAdvanced || window.stackdio.advancedView;
         },
 
         goToNextPage: function () {

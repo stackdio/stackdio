@@ -409,6 +409,7 @@ CELERY_ROUTES = {
     'stacks.register_dns': {'queue': 'stacks'},
     'stacks.register_volume_delete': {'queue': 'stacks'},
     'stacks.run_command': {'queue': 'short'},
+    'stacks.single_sls': {'queue': 'stacks'},
     'stacks.sync_all': {'queue': 'stacks'},
     'stacks.tag_infrastructure': {'queue': 'stacks'},
     'stacks.unregister_dns': {'queue': 'stacks'},

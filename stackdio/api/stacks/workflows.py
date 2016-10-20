@@ -15,13 +15,14 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
 import actstream
 from celery import chain
-
 from stackdio.core.constants import Action, Activity
+
 from . import tasks
 
 logger = logging.getLogger(__name__)
@@ -144,11 +145,11 @@ class DestroyHostsWorkflow(BaseWorkflow):
         return [
             tasks.update_metadata.si(stack_id, Activity.TERMINATING, host_ids=host_ids),
             tasks.register_volume_delete.si(stack_id, host_ids=host_ids),
-            tasks.unregister_dns.si(stack_id, host_ids=host_ids),
+            tasks.unregister_dns.si(stack_id, Activity.TERMINATING, host_ids=host_ids),
             tasks.destroy_hosts.si(stack_id,
                                    host_ids=host_ids,
                                    delete_security_groups=False),
-            tasks.finish_stack.si(stack_id, Activity.TERMINATED),
+            tasks.finish_stack.si(stack_id, Activity.IDLE),
         ]
 
 
@@ -209,6 +210,10 @@ class ActionWorkflow(BaseWorkflow):
             Action.PROPAGATE_SSH: [
                 tasks.propagate_ssh.si(self.stack.id),
             ],
+            Action.SINGLE_SLS: [
+                tasks.single_sls.si(self.stack.id, arg['component'], arg.get('host_target'))
+                for arg in self.args
+            ],
         }
 
         action_to_activity = {
@@ -219,6 +224,7 @@ class ActionWorkflow(BaseWorkflow):
             Action.PROVISION: Activity.PROVISIONING,
             Action.ORCHESTRATE: Activity.ORCHESTRATING,
             Action.PROPAGATE_SSH: Activity.PROVISIONING,
+            Action.SINGLE_SLS: Activity.ORCHESTRATING,
         }
 
         action_to_end_activity = {
@@ -229,13 +235,14 @@ class ActionWorkflow(BaseWorkflow):
             Action.PROVISION: Activity.IDLE,
             Action.ORCHESTRATE: Activity.IDLE,
             Action.PROPAGATE_SSH: Activity.IDLE,
+            Action.SINGLE_SLS: Activity.IDLE,
         }
 
         # Start off with the base
         task_list = base_tasks.get(self.action, [])
 
         # Update the metadata after the main action has been executed
-        if self.action != Action.TERMINATE:
+        if self.action not in (Action.SINGLE_SLS, Action.TERMINATE):
             task_list.append(tasks.update_metadata.si(self.stack.id,
                                                       action_to_activity[self.action]))
 

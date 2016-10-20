@@ -61,6 +61,7 @@ define([
 
         // Save the id
         this.id = raw.id;
+        this.detailUrl = '/stacks/' + this.id + '/';
 
         // Editable fields
         this.title = ko.observable();
@@ -82,6 +83,7 @@ define([
         this.blueprint = ko.observable();
         this.availableActions = ko.observableArray([]);
         this.history = ko.observableArray([]);
+        this.components = ko.observableArray([]);
         this.hosts = ko.observableArray([]);
         this.volumes = ko.observableArray([]);
         this.commands = ko.observableArray([]);
@@ -329,6 +331,61 @@ define([
         });
     };
 
+    Stack.prototype.runSingleSls = function (component, hostTarget) {
+        var self = this;
+        var stackTitle = _.escape(self.title());
+        bootbox.confirm({
+            title: 'Confirm component run for <strong>' + stackTitle + '</strong>',
+            message: 'Are you sure you want to run ' + component + ' on ' + stackTitle + '?',
+            buttons: {
+                confirm: {
+                    label: 'Run',
+                    className: 'btn-primary'
+                }
+            },
+            callback: function (result) {
+                if (!result) {
+                    return;
+                }
+
+                var arg = {
+                    component: component
+                };
+
+                if (hostTarget) {
+                    arg.host_target = hostTarget;
+                }
+
+                $.ajax({
+                    method: 'POST',
+                    url: self.raw.action,
+                    data: JSON.stringify({
+                        action: 'single-sls',
+                        args: [arg]
+                    })
+                }).done(function () {
+                    if (self.parent && typeof self.parent.reload === 'function') {
+                        self.parent.reload();
+                    }
+                    utils.growlAlert('Triggered ' + component + '.', 'success');
+                }).fail(function (jqxhr) {
+                    var message;
+                    try {
+                        var resp = JSON.parse(jqxhr.responseText);
+                        message = resp.action.join('<br>');
+                    } catch (e) {
+                        message = 'Oops... there was a server error.  This has been ' +
+                            'reported to your administrators.';
+                    }
+                    bootbox.alert({
+                        title: 'Error running component',
+                        message: message
+                    });
+                });
+            }
+        });
+    };
+
     // Peform an action
     Stack.prototype.performAction = function (action) {
         var self = this;
@@ -376,6 +433,85 @@ define([
             }
         });
 
+    };
+    
+    Stack.prototype._processStatus = function (obj) {
+        switch (obj.status)
+        {
+            case 'queued':
+                obj.statusPanel = 'panel-info';
+                obj.statusLabel = 'label-info';
+                break;
+
+            case 'running':
+                obj.statusPanel = 'panel-warning';
+                obj.statusLabel = 'label-warning';
+                break;
+
+            case 'succeeded':
+                obj.statusPanel = 'panel-success';
+                obj.statusLabel = 'label-success';
+                break;
+
+            case 'failed':
+                obj.statusPanel = 'panel-danger';
+                obj.statusLabel = 'label-danger';
+                break;
+
+            case 'cancelled':
+            case 'unknown':
+            default:
+                obj.statusPanel = 'panel-default';
+                obj.statusLabel = 'label-default';
+        }
+    };
+    
+    Stack.prototype._processHostHealth = function (obj) {
+        switch (obj.health)
+        {
+            case 'healthy':
+                obj.healthPanel = 'panel-success';
+                obj.healthLabel = 'label-success';
+                break;
+
+            case 'unstable':
+                obj.healthPanel = 'panel-warning';
+                obj.healthLabel = 'label-warning';
+                break;
+
+            case 'unhealthy':
+                obj.healthPanel = 'panel-danger';
+                obj.healthLabel = 'label-danger';
+                break;
+
+            case 'unknown':
+            default:
+                obj.healthPanel = 'panel-default';
+                obj.healthLabel = 'label-default';
+        }
+    };
+
+    Stack.prototype.loadComponents = function () {
+        var self = this;
+        if (!this.raw.hasOwnProperty('components')) {
+            this.raw.components = this.raw.url + 'components/';
+        }
+        return $.ajax({
+            method: 'GET',
+            url: this.raw.components
+        }).done(function (components) {
+            components.results.forEach(function (component) {
+                component.htmlId = component.sls_path.replace(/\./g, '-');
+                component.hosts.forEach(function (host) {
+                    host.timestamp = moment(host.timestamp);
+                    self._processStatus(host);
+                    self._processHostHealth(host);
+                });
+                self._processStatus(component);
+                self._processHostHealth(component);
+            });
+            self.components(components.results);
+        });
     };
 
     Stack.prototype.loadHistory = function () {

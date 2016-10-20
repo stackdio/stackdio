@@ -1,0 +1,93 @@
+{% extends 'stacks/stack-detail-base.html' %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    {% if has_update %}
+    <h4 class="text-center">Run a single component on this stack</h4>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="well">
+                <form class="form-inline" data-bind="submit: function () { runSingle() }">
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label for="component" class="sr-only">Component</label>
+                            <select id="component" class="form-control"
+                                    style="width: 100%"
+                                    data-bind="options: availableComponents,
+                                               optionsText: 'sls_path',
+                                               value: selectedComponent,
+                                               optionsCation: 'Choose a component...'"></select>
+                        </div>
+                        <div class="form-group col-md-5">
+                            <label for="count" class="sr-only">Host Target</label>
+                            <input id="count" type="text" class="form-control"
+                                   placeholder="Host Target (optional)"
+                                   style="width: 100%" data-bind="value: hostTarget">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-block">Run</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel-group" id="stack-components" role="tablist"
+                 aria-multiselectable="true" data-bind="foreach: stack.components">
+                <div class="panel stackdio-hidden-on-load" data-bind="css: statusPanel">
+                    <div class="panel-heading" role="tab" data-bind="attr: {id: htmlId + '-header'}">
+                        <h4 class="panel-title">
+                            <a role="button" data-toggle="collapse" data-parent="#stack-components"
+                               aria-expanded="true"
+                               data-bind="text: sls_path, attr: {href: '#' + htmlId, 'aria-controls': htmlId}">
+                            </a>
+                            &nbsp;|&nbsp;
+                            <span class="label" data-bind="css: statusLabel, text: status"></span>
+                            <span class="pull-right">Order: <span data-bind="text: order"></span></span>
+                        </h4>
+                    </div>
+                    <div class="panel-collapse collapse" role="tabpanel"
+                         data-bind="attr: {id: htmlId, 'aria-labelledby': htmlId + '-header'}">
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Title:</strong> <span data-bind="text: title"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Description:</strong> <span data-bind="text: description"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>SLS Path:</strong> <code data-bind="text: sls_path"></code>
+                                </div>
+                            </div>
+                        </div>
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <td style="width: 25%">Host</td>
+                                <td style="width: 25%">Status</td>
+                                <td style="width: 25%">Health</td>
+                                <td style="width: 25%">Timestamp</td>
+                            </tr>
+                            </thead>
+                            <tbody data-bind="foreach: hosts">
+                            <tr>
+                                <td data-bind="text: host"></td>
+                                <td><span class="label" data-bind="css: statusLabel, text: status"></span></td>
+                                <td><span class="label" data-bind="css: healthLabel, text: health"></span></td>
+                                <td data-bind="text: timestamp.calendar()"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

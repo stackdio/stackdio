@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
@@ -22,16 +23,17 @@ from guardian.shortcuts import assign_perm
 from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.serializers import ValidationError
-
+from stackdio.api.formulas.models import FormulaVersion
+from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from stackdio.core.serializers import ObjectPropertiesSerializer
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
     StackdioModelGroupPermissionsViewSet,
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from stackdio.api.formulas.models import FormulaVersion
-from stackdio.api.formulas.serializers import FormulaVersionSerializer
+
 from . import serializers, filters, models, mixins
 
 logger = logging.getLogger(__name__)
@@ -100,7 +102,7 @@ class BlueprintExportAPIView(generics.RetrieveAPIView):
 
 class BlueprintPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Blueprint.objects.all()
-    serializer_class = serializers.BlueprintPropertiesSerializer
+    serializer_class = ObjectPropertiesSerializer
     permission_classes = (StackdioObjectPermissions,)
 
 

@@ -28,6 +28,7 @@ import subprocess
 import time
 import types
 from datetime import datetime
+from fnmatch import fnmatch
 from functools import wraps
 
 import git
@@ -46,9 +47,9 @@ from stackdio.api.formulas.models import FormulaVersion
 from stackdio.core.constants import Activity, ComponentStatus
 from stackdio.core.events import trigger_event
 
-from . import utils
+from . import utils, validators
 from .exceptions import StackTaskException
-from .models import Stack, StackCommand
+from .models import Stack, StackCommand, StackHistory
 
 logger = get_task_logger(__name__)
 
@@ -82,10 +83,11 @@ def stack_task(*args, **kwargs):
 
                 if not final_task:
                     # Everything went OK, set back to queued
-                    stack.set_activity(Activity.QUEUED)
+                    stack.activity = Activity.QUEUED
+                    stack.save()
 
             except StackTaskException as e:
-                stack.log_history(six.text_type(e), Activity.IDLE)
+                stack.log_history(e.message, Activity.IDLE)
                 logger.exception(e)
                 raise
             except Exception as e:
@@ -526,7 +528,7 @@ def cure_zombies(stack, max_retries=2):
 def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
     if activity is not None:
         # Update activity
-        stack.log_history('Collecting host metadata from cloud provider.', activity)
+        stack.log_history('Collecting host metadata from cloud provider.', activity, host_ids)
 
     # All hosts are running (we hope!) so now we can pull the various
     # metadata and store what we want to keep track of.
@@ -582,7 +584,7 @@ def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
         h.delete()
 
     if activity is not None:
-        stack.set_activity(Activity.QUEUED)
+        stack.set_activity(Activity.QUEUED, host_ids)
 
 
 @stack_task(name='stacks.tag_infrastructure', final_task=True)
@@ -599,7 +601,7 @@ def tag_infrastructure(stack, activity=None, host_ids=None):
 
     if activity is not None:
         # Log some history
-        stack.log_history('Tagging stack infrastructure.', activity)
+        stack.log_history('Tagging stack infrastructure.', activity, host_ids)
 
     # for each set of hosts on an account, use the driver implementation
     # to tag the various infrastructure
@@ -610,7 +612,7 @@ def tag_infrastructure(stack, activity=None, host_ids=None):
         driver.tag_resources(stack, hosts, volumes)
 
     if activity is not None:
-        stack.set_activity(Activity.QUEUED)
+        stack.set_activity(Activity.QUEUED, host_ids)
 
 
 @stack_task(name='stacks.register_dns')
@@ -619,7 +621,7 @@ def register_dns(stack, activity, host_ids=None):
     Must be ran after a Stack is up and running and all host information has
     been pulled and stored in the database.
     """
-    stack.log_history('Registering hosts with DNS provider.', activity)
+    stack.log_history('Registering hosts with DNS provider.', activity, host_ids)
 
     logger.info('Registering DNS for stack: {0!r}'.format(stack))
 
@@ -1059,7 +1061,8 @@ def global_orchestrate(stack, max_retries=2):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             global_orchestrate.name,
             current_try,
-            stack))
+            stack,
+        ))
 
         # Update status
         stack.log_history(
@@ -1237,6 +1240,177 @@ def orchestrate(stack, max_retries=2):
     stack.log_history('Finished executing orchestration all hosts.')
 
 
+@stack_task(name='stacks.single_sls')
+def single_sls(stack, component, host_target, max_retries=2):
+    """
+    Executes the runners.state.over function with the custom orchestrate
+    file  generated via the stacks.models._generate_orchestrate_file. This
+    will only target the user's environment and provision the hosts with
+    the formulas defined in the blueprint and in the order specified.
+
+    TODO: We aren't allowing users to provision from formulas owned by
+    others at the moment, but if we do want to support that without
+    forcing them to clone those formulas into their own account, we
+    will need to support executing multiple orchestrate files in different
+    environments.
+    """
+    # Grab all the hosts that match
+    if host_target:
+        host_ids = []
+        included_hostnames = []
+        for host in stack.hosts.all():
+            if fnmatch(host.hostname, host_target):
+                host_ids.append(host.id)
+                included_hostnames.append(host.hostname)
+    else:
+        host_ids = None
+        included_hostnames = None
+
+    stack.set_activity(Activity.ORCHESTRATING, host_ids)
+
+    logger.info('Executing single sls {0} for stack: {1!r}'.format(component, stack))
+
+    # Clone the formulas to somewhere useful
+    clone_formulas(stack)
+
+    # Set the pillar file back to the regular pillar
+    change_pillar(stack, stack.pillar_file.path)
+
+    # Set up logging for this task
+    log_dir = stack.get_log_directory()
+
+    try:
+        host_list = validators.can_run_component_on_stack(component, stack)
+    except validators.ValidationError as e:
+        raise StackTaskException(e.detail)
+
+    list_target = [h.hostname for h in host_list]
+
+    if host_target:
+        target = '{0} and L@{1}'.format(host_target, ','.join(list_target))
+        expr_form = 'compound'
+    else:
+        target = list_target
+        expr_form = 'list'
+
+    # we'll break out of the loop based on the given number of retries
+    current_try = 0
+    while True:
+        current_try += 1
+        logger.info('Task {0} try #{1} for stack {2!r}'.format(
+            single_sls.name,
+            current_try,
+            stack,
+        ))
+
+        # Update status
+        stack.log_history(
+            'Executing sls {0} try {1} of {2}. This '
+            'may take a while.'.format(
+                component,
+                current_try,
+                max_retries + 1,
+            )
+        )
+
+        now = datetime.now().strftime('%Y%m%d-%H%M%S')
+        log_file = os.path.join(log_dir,
+                                '{0}.single.log'.format(now))
+        err_file = os.path.join(log_dir,
+                                '{0}.single.err'.format(now))
+
+        file_log_handler = utils.setup_logfile_logger(log_file)
+
+        # Remove the other handlers, but save them so we can put them back later
+        old_handlers = []
+        for handler in root_logger.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                old_handlers.append(handler)
+                root_logger.removeHandler(handler)
+
+        stack.set_component_status(component, ComponentStatus.RUNNING,
+                                   include_list=included_hostnames)
+
+        try:
+            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
+
+            ret = salt_client.cmd_iter(
+                target,
+                'state.sls',
+                [
+                    component,
+                    'stacks.{0}-{1}'.format(stack.pk, stack.slug),
+                ],
+                expr_form=expr_form,
+            )
+
+            result = {}
+
+            # cmd_iter returns a generator that blocks until jobs finish, so
+            # we want to loop through it until the jobs are done
+            for i in ret:
+                for k, v in i.items():
+                    result[k] = v
+
+        finally:
+            root_logger.removeHandler(file_log_handler)
+            for handler in old_handlers:
+                root_logger.addHandler(handler)
+
+        with open(log_file, 'a') as f:
+            f.write(yaml.safe_dump(result))
+
+        # each key in the dict is a host, and the value of the host
+        # is either a list or dict. Those that are lists we can
+        # assume to be a list of errors
+        errors = {}
+        for host, ret in result.items():
+            states = ret['ret']
+
+            if ret['retcode'] != 0:
+                errors[host] = states
+
+            if isinstance(states, list):
+                errors[host] = states
+                continue
+
+            # iterate over the individual states in the host
+            # looking for state failures
+            for state_str, state_meta in states.items():
+                if not is_state_error(state_meta):
+                    continue
+
+                if not utils.is_requisite_error(state_meta):
+                    err, _ = utils.state_error(state_str, state_meta)
+                    errors.setdefault(host, []).append(err)
+
+        if errors:
+            stack.set_component_status(component, ComponentStatus.FAILED,
+                                       include_list=included_hostnames)
+            # write the errors to the err_file
+            with open(err_file, 'a') as f:
+                f.write(yaml.safe_dump(errors))
+
+            if current_try <= max_retries:
+                continue
+
+            err_msg = 'Single sls errors on hosts: ' \
+                      '{0}. Please see the orchestration errors API ' \
+                      'or the log file for more details: {1}'.format(
+                          ', '.join(errors.keys()),
+                          os.path.basename(log_file))
+            raise StackTaskException(err_msg)
+
+        # it worked?
+        break
+
+    # Everything worked, set the status appropriately
+    stack.set_component_status(component, ComponentStatus.SUCCEEDED,
+                               include_list=included_hostnames)
+
+    stack.log_history('Finished executing single sls {} on all hosts.'.format(component))
+
+
 @stack_task(name='stacks.finish_stack', final_task=True)
 def finish_stack(stack, activity=Activity.IDLE):
     logger.info('Finishing stack: {0!r}'.format(stack))
@@ -1255,7 +1429,7 @@ def register_volume_delete(stack, host_ids=None):
     that will automatically delete the volumes when the machines are
     terminated.
     """
-    stack.log_history('Registering volumes for deletion.', Activity.TERMINATING)
+    stack.log_history('Registering volumes for deletion.', Activity.TERMINATING, host_ids)
 
     # use the stack driver to register all volumes on the hosts to
     # automatically delete after the host is terminated
@@ -1273,7 +1447,7 @@ def register_volume_delete(stack, host_ids=None):
     stack.log_history('Finished registering volumes for deletion.')
 
 
-@stack_task(name='stacks.destroy_hosts', final_task=True)
+@stack_task(name='stacks.destroy_hosts')
 def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_groups=True,
                   parallel=True):
     """
@@ -1282,7 +1456,7 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
     up any managed security groups on the stack.
     """
     stack.log_history('Terminating stack infrastructure. This may take a while.',
-                      Activity.TERMINATING)
+                      Activity.TERMINATING, host_ids)
     hosts = stack.get_hosts(host_ids)
 
     if hosts:
@@ -1356,7 +1530,7 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
     if delete_hosts and hosts:
         hosts.delete()
 
-    stack.log_history('Finished terminating hosts.', Activity.TERMINATED)
+    stack.log_history('Finished terminating hosts.')
 
 
 @stack_task(name='stacks.destroy_stack', final_task=True)
@@ -1382,7 +1556,7 @@ def unregister_dns(stack, activity, host_ids=None):
     stack is terminated or stopped or put into some state where DNS no longer
     applies.
     """
-    stack.log_history('Unregistering hosts with DNS provider.', activity)
+    stack.log_history('Unregistering hosts with DNS provider.', activity, host_ids)
 
     logger.info('Unregistering DNS for stack: {0!r}'.format(stack))
 
@@ -1494,7 +1668,11 @@ def update_host_info():
         for host in stack.hosts.all():
             account = host.cloud_account
 
-            account_info = query_results.get(account.slug, {}).get(account.provider.name, {})
+            if account.slug not in query_results:
+                # If the account is missing, then we shouldn't do anything.
+                continue
+
+            account_info = query_results[account.slug].get(account.provider.name, {})
             host_info = account_info.get(host.hostname)
 
             old_state = host.state
@@ -1537,8 +1715,11 @@ def update_host_info():
 
         # Log some history if we've marked hosts as DEAD
         if len(newly_dead_hosts) > 0:
-            stack.log_history('The following hosts have now been marked '
-                              '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
+            err_msg = ('The following hosts have now been marked '
+                       '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
+            if len(err_msg) > StackHistory._meta.get_field('message').max_length:
+                err_msg = 'Several hosts have been marked \'{}\'.'.format(Activity.DEAD)
+            stack.log_history(err_msg)
 
         all_dead = new_host_activities and all([a == Activity.DEAD for a in new_host_activities])
 

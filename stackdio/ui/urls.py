@@ -153,6 +153,10 @@ urlpatterns = (
                stacks.StackHostsView.as_view(),
                name='stack-hosts'),
 
+    cached_url(r'^stacks/(?P<pk>[0-9]+)/components/$',
+               stacks.StackComponentsView.as_view(),
+               name='stack-components'),
+
     cached_url(r'^stacks/(?P<pk>[0-9]+)/volumes/$',
                stacks.StackVolumesView.as_view(),
                name='stack-volumes'),

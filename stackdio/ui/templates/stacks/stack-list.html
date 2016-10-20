@@ -42,15 +42,22 @@
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
                 <tr class="stackdio-hidden-on-load">
-                    <td data-bind="text: title, click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="text: description, click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="text: namespace, click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="text: created().calendar(), click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="text: hostCount, click: function (stack) { $root.goToDetailPage(stack) }"></td>
-                    <td data-bind="click: function (stack) { $root.goToDetailPage(stack) }">
+                    <td>
+                        <!-- ko if: $root.canDisplayDetail -->
+                        <a data-bind="text: title, attr: {href: detailUrl, title: title}"></a>
+                        <!-- /ko -->
+                        <!-- ko ifnot: $root.canDisplayDetail -->
+                        <p data-bind="text: title"></p>
+                        <!-- /ko -->
+                    </td>
+                    <td data-bind="text: description"></td>
+                    <td data-bind="text: namespace"></td>
+                    <td data-bind="text: created().calendar()"></td>
+                    <td data-bind="text: hostCount"></td>
+                    <td>
                         <span class="label" data-bind="css: labelClass, text: activity"></span>
                     </td>
-                    <td data-bind="click: function (stack) { $root.goToDetailPage(stack) }">
+                    <td>
                         <span class="label" data-bind="css: healthLabelClass, text: health"></span>
                     </td>
                     <td>

@@ -43,9 +43,16 @@
             </tr>
             </thead>
             <tbody data-bind="foreach: sortedObjects">
-                <tr class="stackdio-hidden-on-load" data-bind="click: function (command) { $root.goToDetailPage(command) }">
+                <tr class="stackdio-hidden-on-load">
+                    <td>
+                        <!-- ko if: $root.canDisplayDetail -->
+                        <a data-bind="text: command, attr: {href: detailUrl, title: command}"></a>
+                        <!-- /ko -->
+                        <!-- ko ifnot: $root.canDisplayDetail -->
+                        <p data-bind="text: command"></p>
+                        <!-- /ko -->
+                    </td>
                     <td data-bind="text: hostTarget"></td>
-                    <td data-bind="text: command"></td>
                     <td data-bind="text: finishTime().calendar()"></td>
                     <td><span class="label" data-bind="css: labelClass, text: status"></span></td>
                     <td><button class="btn btn-xs btn-info" data-bind="click: function (command) { $root.runAgain(command) }">Run Again</button></td>

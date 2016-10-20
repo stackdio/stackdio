@@ -23,9 +23,12 @@ import logging
 import six
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.db import models
+from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 
 from stackdio.core.decorators import django_cache
@@ -289,3 +292,17 @@ class BlueprintVolume(TimeStampedModel):
 
     def __str__(self):
         return six.text_type('{} mounted at {}'.format(self.device, self.mount_point))
+
+
+@receiver(models.signals.post_delete, sender=Blueprint)
+def blueprint_post_delete(sender, **kwargs):
+    blueprint = kwargs.pop('instance')
+
+    ctype = ContentType.objects.get_for_model(Blueprint)
+
+    # Delete from the cache
+    cache_keys = [
+        'blueprint-{}-stack-count'.format(blueprint.id),
+        '{}-{}-label-list'.format(ctype.pk, blueprint.id),
+    ]
+    cache.delete_many(cache_keys)

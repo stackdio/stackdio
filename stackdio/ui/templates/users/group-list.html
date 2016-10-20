@@ -40,7 +40,14 @@
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
                 <tr class="stackdio-hidden-on-load">
-                    <td data-bind="text: name, click: function (group) { $root.goToDetailPage(group) }"></td>
+                    <td>
+                        <!-- ko if: $root.canDisplayDetail -->
+                        <a data-bind="text: name, attr: {href: detailUrl, title: name}"></a>
+                        <!-- /ko -->
+                        <!-- ko ifnot: $root.canDisplayDetail -->
+                        <p data-bind="text: name"></p>
+                        <!-- /ko -->
+                    </td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete, if: !$root.permissionsMap[$data.name()] || $root.permissionsMap[$data.name()].delete">
                             <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>

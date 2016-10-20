@@ -28,26 +28,27 @@ class Health(object):
     UNHEALTHY = 'unhealthy'  # red
     UNKNOWN = 'unknown'  # grey
 
+    priority = {
+        UNHEALTHY: 3,
+        UNSTABLE: 2,
+        UNKNOWN: 1,
+        HEALTHY: 0,
+    }
+
     @classmethod
     def aggregate(cls, health_list):
         # Make sure everything in the list is a valid health
-        assert len([h for h in health_list if h not in vars(cls).values()]) == 0
+        if len([h for h in health_list if h not in cls.priority]) != 0:
+            raise ValueError('An invalid health was passed in.')
 
         if len(health_list) == 0:
             # We can get an empty list sometimes when we're deleting a stack, so we'll
             # just aggregate that to unknown
             return cls.UNKNOWN
-        elif cls.UNHEALTHY in health_list:
-            return cls.UNHEALTHY
-        elif cls.UNSTABLE in health_list:
-            return cls.UNSTABLE
-        elif cls.UNKNOWN in health_list:
-            return cls.UNKNOWN
-        elif cls.HEALTHY in health_list:
-            return cls.HEALTHY
 
-        raise ValueError('This state should never be reached...  Make sure you are '
-                         'assigning proper health values')
+        sorted_healths = sorted(health_list, key=lambda x: cls.priority[x], reverse=True)
+
+        return sorted_healths[0]
 
 
 class ComponentStatus(object):
@@ -64,6 +65,30 @@ class ComponentStatus(object):
     CANCELLED = 'cancelled'
     UNKNOWN = 'unknown'
 
+    priority = {
+        FAILED: 5,
+        CANCELLED: 4,
+        RUNNING: 3,
+        UNKNOWN: 2,
+        QUEUED: 1,
+        SUCCEEDED: 0,
+    }
+
+    @classmethod
+    def aggregate(cls, status_list):
+        # Make sure everything in the list is a valid status
+        if len([s for s in status_list if s not in cls.priority]) != 0:
+            raise ValueError('An invalid status was passed in.')
+
+        if len(status_list) == 0:
+            # We can get an empty list sometimes when we're deleting a stack, so we'll
+            # just aggregate that to unknown
+            return cls.UNKNOWN
+
+        sorted_statuses = sorted(status_list, key=lambda x: cls.priority[x], reverse=True)
+
+        return sorted_statuses[0]
+
 
 class Action(object):
     """
@@ -76,10 +101,11 @@ class Action(object):
     RESUME = 'resume'
 
     ORCHESTRATE = 'orchestrate'
+    SINGLE_SLS = 'single-sls'
     PROVISION = 'provision'
     PROPAGATE_SSH = 'propagate-ssh'
 
-    ALL = [LAUNCH, TERMINATE, PAUSE, RESUME, ORCHESTRATE, PROVISION, PROPAGATE_SSH]
+    ALL = [LAUNCH, TERMINATE, PAUSE, RESUME, ORCHESTRATE, PROVISION, SINGLE_SLS, PROPAGATE_SSH]
 
 
 class Activity(object):
@@ -130,7 +156,8 @@ class Activity(object):
     # For stacks
     action_map = {
         IDLE: [Action.LAUNCH, Action.TERMINATE, Action.PAUSE,
-               Action.PROPAGATE_SSH, Action.PROVISION, Action.ORCHESTRATE],
+               Action.PROPAGATE_SSH, Action.PROVISION, Action.ORCHESTRATE,
+               Action.SINGLE_SLS],
         PAUSED: [Action.RESUME, Action.TERMINATE],
         TERMINATED: [Action.LAUNCH],
         DEAD: [Action.LAUNCH],
