@@ -422,10 +422,17 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
         # make sure the user has a public key or they won't be able to SSH
         # later
         request = self.context['request']
+
+        blueprint = self.instance.blueprint if self.instance else attrs['blueprint']
         if 'create_users' in attrs:
             create_users = attrs['create_users']
         else:
-            create_users = self.instance.create_users
+            if self.instance:
+                create_users = self.instance.create_users
+            else:
+                attrs['create_users'] = blueprint.create_users
+                create_users = attrs['create_users']
+
         if create_users and not request.user.settings.public_key:
             errors.setdefault('public_key', []).append(
                 'You have not added a public key to your user '
@@ -436,10 +443,6 @@ class StackSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerializer)
 
         # Check to see if the launching user has permission to launch from the blueprint
         user = request.user
-        blueprint = self.instance.blueprint if self.instance else attrs['blueprint']
-
-        if 'create_users' not in attrs:
-            attrs['create_users'] = blueprint.create_users
 
         if not user.has_perm('blueprints.view_blueprint', blueprint):
             err_msg = 'You do not have permission to launch a stack from this blueprint.'
