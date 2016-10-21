@@ -540,7 +540,7 @@ def cure_zombies(stack, max_retries=2):
 
 
 @stack_task(name='stacks.update_metadata', final_task=True)
-def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
+def update_metadata(stack, activity=None, host_ids=None):
     if activity is not None:
         # Update activity
         stack.log_history('Collecting host metadata from cloud provider.', activity, host_ids)
@@ -552,9 +552,6 @@ def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
     # Use salt-cloud to look up host information we need now that
     # the machines are running
     query_results = stack.query_hosts(force=True)
-
-    # keep track of terminated hosts for future removal
-    hosts_to_remove = []
 
     bad_states = ('terminated', 'shutting-down')
 
@@ -571,10 +568,6 @@ def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
 
         # Check for terminated host state
         if is_absent or ('state' in host_data and host_data['state'] in bad_states):
-            if is_absent and remove_absent:
-                hosts_to_remove.append(host)
-                continue
-
             # udpate relevant metadata
             host.instance_id = ''
             host.sir_id = 'NA'
@@ -594,9 +587,6 @@ def update_metadata(stack, activity=None, host_ids=None, remove_absent=True):
 
         # save the host
         host.save()
-
-    for h in hosts_to_remove:
-        h.delete()
 
     if activity is not None:
         stack.set_activity(Activity.QUEUED, host_ids)

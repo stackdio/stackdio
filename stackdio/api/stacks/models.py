@@ -1344,11 +1344,12 @@ class Host(TimeStampedModel):
 class ComponentMetadataQuerySet(models.QuerySet):
 
     def create(self, **kwargs):
-        current_health = kwargs.pop('current_health', None)
-        if 'status' in kwargs:
-            kwargs['health'] = ComponentMetadata.HEALTH_MAP[kwargs['status']] \
-                               or current_health \
-                               or Health.UNKNOWN
+        if 'health' not in kwargs:
+            current_health = kwargs.pop('current_health', None)
+            if 'status' in kwargs:
+                kwargs['health'] = ComponentMetadata.HEALTH_MAP[kwargs['status']] \
+                                   or current_health \
+                                   or Health.UNKNOWN
         return super(ComponentMetadataQuerySet, self).create(**kwargs)
 
 
@@ -1423,13 +1424,17 @@ def metadata_post_save(sender, **kwargs):
     host = metadata.host
     sls_path = metadata.sls_path
 
-    logger.debug('Deleting metadata from cache for component: {}'.format(metadata))
+    logger.debug('Pre-caching metadata from cache for component: {}'.format(metadata))
+
+    metadata_key = 'host-{}-component-metadata-for-{}'.format(host.id, sls_path)
+
+    # Set it in the cache
+    cache.set(metadata_key, metadata, None)
 
     # Then delete these from the cache
     cache_keys = [
         'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
-        'host-{}-component-metadata-for-{}'.format(host.id, sls_path),
     ]
     cache.delete_many(cache_keys)
 
