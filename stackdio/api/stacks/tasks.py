@@ -473,7 +473,7 @@ def launch_hosts(stack, parallel=True, max_retries=2,
 
             for err_msg in errors:
                 stack.log_history(err_msg)
-            raise StackTaskException('Error(s) while launching stack {0}'.format(stack.title))
+            raise StackTaskException('Error(s) found while launching stack.')
 
         # Everything worked?
         break
@@ -732,7 +732,7 @@ def sync_all(stack):
 
         if data.get('retcode', 1) != 0:
             err_msg = six.text_type(data['ret'])
-            raise StackTaskException('Error syncing salt data on stack {0}: '
+            raise StackTaskException('Error syncing salt data: '
                                      '{1!r}'.format(stack.title, err_msg))
 
     stack.log_history('Finished synchronizing salt systems on all hosts.')
