@@ -399,18 +399,37 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return sorted(sorted_by_sls, key=lambda x: x.component.order)
 
-    def set_all_component_statuses(self, status):
+    def set_all_component_statuses(self, status, health=None, sls_path=None, host_ids=None):
         """
         Will set the status for all components on all hosts to the given status
         :param status: the status to set to
+        :param health: the health to set to
+        :param sls_path: only set the status / health on the given sls_path
+        :param host_ids: only set the status / health on the given host_ids
         :return:
         """
-        for host in self.hosts.all():
+        for host in self.get_hosts(host_ids):
             for component in host.formula_components.all():
+                if sls_path and component.sls_path != sls_path:
+                    # If we have an sls_path and it doesn't match, go on
+                    continue
+
+                create_kwargs = {
+                    'formula_component': component,
+                    'status': status,
+                }
+
                 current_health = host.get_metadata_for_component(component).health
-                host.component_metadatas.create(formula_component=component,
-                                                status=status,
-                                                current_health=current_health)
+
+                if health is not None and current_health == Health.UNKNOWN:
+                    # Only explicitly set the health if it was passed and the current health
+                    # isn't unknown
+                    create_kwargs['health'] = health
+                else:
+                    create_kwargs['current_health'] = current_health
+
+                # Create it
+                host.component_metadatas.create(**create_kwargs)
 
     def set_component_status(self, sls_path, status, include_list=None, exclude_list=None):
         """

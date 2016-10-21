@@ -30,6 +30,7 @@ import types
 from datetime import datetime
 from fnmatch import fnmatch
 from functools import wraps
+from inspect import getcallargs
 
 import git
 import salt.client
@@ -44,7 +45,7 @@ from django.conf import settings
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.formulas.models import FormulaVersion
-from stackdio.core.constants import Activity, ComponentStatus
+from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.events import trigger_event
 
 from . import utils, validators
@@ -72,6 +73,12 @@ def stack_task(*args, **kwargs):
         @shared_task(*args, **kwargs)
         @wraps(func)
         def task(stack_id, *task_args, **task_kwargs):
+            # Get what locals() would return directly after calling
+            # 'func' with the given task_args and task_kwargs
+            task_called_args = getcallargs(func, *((stack_id,) + task_args), **task_kwargs)
+            host_ids = task_called_args.get('host_ids')
+            sls_path = task_called_args.get('component')
+
             try:
                 stack = Stack.objects.get(id=stack_id)
             except Stack.DoesNotExist:
@@ -88,12 +95,21 @@ def stack_task(*args, **kwargs):
 
             except StackTaskException as e:
                 stack.log_history(e.message, Activity.IDLE)
+                stack.set_all_component_statuses(ComponentStatus.CANCELLED,
+                                                 Health.UNHEALTHY,
+                                                 sls_path,
+                                                 host_ids)
                 logger.exception(e)
                 raise
             except Exception as e:
                 err_msg = 'Unhandled exception: {0}'.format(e)
                 stack.log_history(err_msg, Activity.IDLE)
+                stack.set_all_component_statuses(ComponentStatus.CANCELLED,
+                                                 Health.UNHEALTHY,
+                                                 sls_path,
+                                                 host_ids)
                 logger.exception(e)
+                six.reraise()
                 raise
 
         return task
@@ -421,7 +437,6 @@ def launch_hosts(stack, parallel=True, max_retries=2,
                 err_msg = ('{0} failed to launch and the '
                            'maximum number of tries have been '
                            'reached.'.format(label))
-                stack.log_history(err_msg, Activity.IDLE)
                 raise StackTaskException(err_msg)
 
         # Simulating zombies is a bit more work than just modifying the
@@ -458,7 +473,7 @@ def launch_hosts(stack, parallel=True, max_retries=2,
 
             for err_msg in errors:
                 stack.log_history(err_msg)
-            raise StackTaskException('Error(s) while launching stack {0}'.format(stack.id))
+            raise StackTaskException('Error(s) while launching stack {0}'.format(stack.title))
 
         # Everything worked?
         break
@@ -728,7 +743,7 @@ def sync_all(stack):
         if data.get('retcode', 1) != 0:
             err_msg = six.text_type(data['ret'])
             raise StackTaskException('Error syncing salt data on stack {0}: '
-                                     '{1!r}'.format(stack.id, err_msg))
+                                     '{1!r}'.format(stack.title, err_msg))
 
     stack.log_history('Finished synchronizing salt systems on all hosts.')
 
