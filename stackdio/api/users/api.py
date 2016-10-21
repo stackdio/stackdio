@@ -15,13 +15,16 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from django.conf import settings
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.models import Group
 from rest_framework import generics
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
-
 from stackdio.core.config import StackdioConfigException
 from stackdio.core.notifications.models import NotificationChannel
 from stackdio.core.permissions import StackdioModelPermissions
@@ -31,6 +34,7 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
+
 from . import filters, mixins, permissions, serializers
 
 try:
@@ -238,3 +242,17 @@ class ChangePasswordAPIView(generics.GenericAPIView):
         # This ensures that the user doesn't get logged out after the password change
         update_session_auth_hash(request, user)
         return Response(serializer.data)
+
+
+class ResetAuthToken(ObtainAuthToken):
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        # Delete the current token
+        user.auth_token.delete()
+
+        # Create a new token
+        token = Token.objects.create(user=user)
+        return Response({'token': token.key})
