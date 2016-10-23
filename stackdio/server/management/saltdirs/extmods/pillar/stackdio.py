@@ -29,14 +29,10 @@ logger = logging.getLogger(__name__)
 
 
 def __virtual__():
-    """
-    """
-
-    # Only load the module if stack_pillar_file has been set.
-    return 'stackdio' if 'stack_pillar_file' in __grains__ else False  # NOQA
+    return True
 
 
-def ext_pillar(pillar, *args, **kwargs):
+def ext_pillar(minion_id, pillar, *args, **kwargs):
     """
     Basically, we need to providee additional pillar data to our states
     but only the pillar data defined for a stack. The user should have
@@ -44,14 +40,18 @@ def ext_pillar(pillar, *args, **kwargs):
     be located in the grains.
     """
 
+    # If the file isn't specified in the grains, just return an empty pillar
+    if 'stack_pillar_file' not in __grains__:
+        return {}
+
     # load the stack_pillar_file, rendered as yaml, and return it
-    d = {}
     try:
         with open(__grains__['stack_pillar_file'], 'r') as f:  # NOQA
             d = yaml.safe_load(f)
             d['stack_pillar_available'] = True
+            return d
     except Exception as e:
         logger.exception(e)
         logger.critical('Unable to load/render stack_pillar_file. Is the YAML '
                         'properly formatted?')
-    return d
+    return {}
