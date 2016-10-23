@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from rest_framework import status
 
 from stackdio.core.tests.utils import StackdioTestCase
@@ -30,6 +32,13 @@ class AuthenticationTestCase(StackdioTestCase):
     # These don't allow get requests
     EXEMPT_ENDPOINTS = (
         '/api/user/password/',
+        '/api/user/token/',
+        '/api/user/token/reset/',
+    )
+
+    NO_AUTH_ENDPOINTS = (
+        '/api/user/token/',
+        '/api/user/token/reset/',
     )
 
     PERMISSION_MODELS = (
@@ -88,7 +97,13 @@ class AuthenticationTestCase(StackdioTestCase):
     def test_permission_denied(self):
         for url in self.list_endpoints:
             response = self.client.get(url)
-            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            expected = status.HTTP_403_FORBIDDEN
+            if url in self.NO_AUTH_ENDPOINTS:
+                expected = status.HTTP_200_OK
+                if url in self.EXEMPT_ENDPOINTS:
+                    expected = status.HTTP_405_METHOD_NOT_ALLOWED
+
+            self.assertEqual(response.status_code, expected)
 
     def test_success_admin(self):
         self.client.login(username='test.admin', password='1234')
