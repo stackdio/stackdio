@@ -399,18 +399,37 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return sorted(sorted_by_sls, key=lambda x: x.component.order)
 
-    def set_all_component_statuses(self, status):
+    def set_all_component_statuses(self, status, health=None, sls_path=None, host_ids=None):
         """
         Will set the status for all components on all hosts to the given status
         :param status: the status to set to
+        :param health: the health to set to
+        :param sls_path: only set the status / health on the given sls_path
+        :param host_ids: only set the status / health on the given host_ids
         :return:
         """
-        for host in self.hosts.all():
+        for host in self.get_hosts(host_ids):
             for component in host.formula_components.all():
+                if sls_path and component.sls_path != sls_path:
+                    # If we have an sls_path and it doesn't match, go on
+                    continue
+
+                create_kwargs = {
+                    'formula_component': component,
+                    'status': status,
+                }
+
                 current_health = host.get_metadata_for_component(component).health
-                host.component_metadatas.create(formula_component=component,
-                                                status=status,
-                                                current_health=current_health)
+
+                if health is not None and current_health == Health.UNKNOWN:
+                    # Only explicitly set the health if it was passed and the current health
+                    # isn't unknown
+                    create_kwargs['health'] = health
+                else:
+                    create_kwargs['current_health'] = current_health
+
+                # Create it
+                host.component_metadatas.create(**create_kwargs)
 
     def set_component_status(self, sls_path, status, include_list=None, exclude_list=None):
         """
@@ -1325,11 +1344,12 @@ class Host(TimeStampedModel):
 class ComponentMetadataQuerySet(models.QuerySet):
 
     def create(self, **kwargs):
-        current_health = kwargs.pop('current_health', None)
-        if 'status' in kwargs:
-            kwargs['health'] = ComponentMetadata.HEALTH_MAP[kwargs['status']] \
-                               or current_health \
-                               or Health.UNKNOWN
+        if 'health' not in kwargs:
+            current_health = kwargs.pop('current_health', None)
+            if 'status' in kwargs:
+                kwargs['health'] = ComponentMetadata.HEALTH_MAP[kwargs['status']] \
+                                   or current_health \
+                                   or Health.UNKNOWN
         return super(ComponentMetadataQuerySet, self).create(**kwargs)
 
 
@@ -1404,13 +1424,17 @@ def metadata_post_save(sender, **kwargs):
     host = metadata.host
     sls_path = metadata.sls_path
 
-    logger.debug('Deleting metadata from cache for component: {}'.format(metadata))
+    logger.debug('Pre-caching metadata from cache for component: {}'.format(metadata))
+
+    metadata_key = 'host-{}-component-metadata-for-{}'.format(host.id, sls_path)
+
+    # Set it in the cache
+    cache.set(metadata_key, metadata, None)
 
     # Then delete these from the cache
     cache_keys = [
         'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
-        'host-{}-component-metadata-for-{}'.format(host.id, sls_path),
     ]
     cache.delete_many(cache_keys)
 

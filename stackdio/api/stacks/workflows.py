@@ -168,7 +168,7 @@ class DestroyStackWorkflow(BaseWorkflow):
     def task_list(self):
         stack_id = self.stack.pk
         return [
-            tasks.update_metadata.si(stack_id, Activity.TERMINATING, remove_absent=False),
+            tasks.update_metadata.si(stack_id, Activity.TERMINATING),
             tasks.register_volume_delete.si(stack_id),
             tasks.unregister_dns.si(stack_id, Activity.TERMINATING),
             tasks.destroy_hosts.si(stack_id, parallel=self.opts.parallel),
@@ -195,7 +195,7 @@ class ActionWorkflow(BaseWorkflow):
                 tasks.cure_zombies.si(self.stack.id),
             ],
             Action.TERMINATE: [
-                tasks.update_metadata.si(self.stack.id, Activity.TERMINATING, remove_absent=False),
+                tasks.update_metadata.si(self.stack.id, Activity.TERMINATING),
                 tasks.register_volume_delete.si(self.stack.id),
                 tasks.unregister_dns.si(self.stack.id, Activity.TERMINATING),
                 tasks.destroy_hosts.si(self.stack.id, delete_hosts=False,
