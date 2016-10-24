@@ -25,6 +25,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 from stackdio.core.config import StackdioConfigException
 from stackdio.core.notifications.models import NotificationChannel
 from stackdio.core.permissions import StackdioModelPermissions
@@ -244,7 +245,17 @@ class ChangePasswordAPIView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-class ResetAuthToken(ObtainAuthToken):
+class AuthToken(ObtainAuthToken):
+    """
+    POST your username and password here to retrieve your API authentication token.
+    """
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+
+
+class ResetAuthToken(AuthToken):
+    """
+    POST your username and password here to reset your API authentication token.
+    """
 
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)

@@ -18,7 +18,6 @@
 from __future__ import unicode_literals
 
 from django.conf.urls import include, url
-from rest_framework.authtoken.views import obtain_auth_token
 from stackdio.core import routers
 
 from . import api
@@ -102,7 +101,7 @@ urlpatterns = (
         name='currentuser-detail'),
 
     url(r'^user/token/$',
-        obtain_auth_token,
+        api.AuthToken.as_view(),
         name='currentuser-token'),
 
     url(r'^user/token/reset/$',
