@@ -19,8 +19,9 @@ define([
     'jquery',
     'knockout',
     'bootbox',
+    'utils/utils',
     'models/user'
-], function($, ko, bootbox, User) {
+], function($, ko, bootbox, utils, User) {
     'use strict';
 
     return function() {
@@ -71,7 +72,10 @@ define([
             bootbox.prompt({
                 title: msg,
                 inputType: 'password',
-                callback: callback
+                callback: function (password) {
+                    if (!password) return;
+                    callback(password);
+                }
             });
         };
 
@@ -89,7 +93,7 @@ define([
                         self.userToken(resp.token);
                         self.userTokenShown(true);
                     }).fail(function (jqxhr) {
-
+                        utils.growlAlert('Failed to retrieve API token.  Make sure you entered the correct password.', 'danger');
                     });
                 });
         };
@@ -97,18 +101,27 @@ define([
         self.resetUserToken = function () {
             self.promptPassword('Enter password to reset token',
                 function (password) {
-                    $.ajax({
-                        method: 'POST',
-                        url: '/api/user/token/reset/',
-                        data: JSON.stringify({
-                            username: self.user.username(),
-                            password: password
-                        })
-                    }).done(function (resp) {
-                        self.userToken(resp.token);
-                        self.userTokenShown(true);
-                    }).fail(function (jqxhr) {
+                    bootbox.confirm({
+                        title: 'Confirm token reset',
+                        message: 'Are you sure you want to reset your API token?  It will permanently be deleted and will be deactivated immediately.',
+                        callback: function (result) {
+                            // Bail now if the didn't confirm
+                            if (!result) return;
 
+                            $.ajax({
+                                method: 'POST',
+                                url: '/api/user/token/reset/',
+                                data: JSON.stringify({
+                                    username: self.user.username(),
+                                    password: password
+                                })
+                            }).done(function (resp) {
+                                self.userToken(resp.token);
+                                self.userTokenShown(true);
+                            }).fail(function (jqxhr) {
+                                utils.growlAlert('Failed to reset API token.  Make sure you entered the correct password.', 'danger');
+                            });
+                        }
                     });
                 });
         };
