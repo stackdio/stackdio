@@ -431,6 +431,9 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
             'formula_versions',
         )
 
+    def to_representation(self, instance):
+        return super(FullBlueprintSerializer, self).to_representation(instance)
+
 
 class BlueprintLabelSerializer(StackdioLabelSerializer):
 
