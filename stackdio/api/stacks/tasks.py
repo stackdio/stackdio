@@ -109,7 +109,6 @@ def stack_task(*args, **kwargs):
                                                  sls_path,
                                                  host_ids)
                 logger.exception(e)
-                six.reraise()
                 raise
 
         return task
@@ -732,8 +731,7 @@ def sync_all(stack):
 
         if data.get('retcode', 1) != 0:
             err_msg = six.text_type(data['ret'])
-            raise StackTaskException('Error syncing salt data: '
-                                     '{1!r}'.format(stack.title, err_msg))
+            raise StackTaskException('Error syncing salt data: {0!r}'.format(err_msg))
 
     stack.log_history('Finished synchronizing salt systems on all hosts.')
 
