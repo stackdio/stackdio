@@ -18,8 +18,9 @@
 define([
     'jquery',
     'knockout',
+    'bootbox',
     'models/user'
-], function($, ko, User) {
+], function($, ko, bootbox, User) {
     'use strict';
 
     return function() {
@@ -27,6 +28,9 @@ define([
 
         // View variables
         self.user = null;
+        self.userTokenShown = ko.observable();
+        self.userToken = ko.observable();
+        self.apiRootUrl = ko.observable();
 
         // Override the breadcrumbs
         self.breadcrumbs = [
@@ -46,6 +50,9 @@ define([
 
             // Create the user object.
             self.user = new User(null, self);
+            self.userTokenShown(false);
+            self.userToken(null);
+            self.apiRootUrl(window.location.origin + '/api/');
             var $el = $('.checkbox-custom');
             self.subscription = self.user.advanced.subscribe(function (newVal) {
                 if (newVal) {
@@ -60,6 +67,51 @@ define([
             });
         };
 
+        self.promptPassword = function (msg, callback) {
+            bootbox.prompt({
+                title: msg,
+                inputType: 'password',
+                callback: callback
+            });
+        };
+
+        self.showUserToken = function () {
+            self.promptPassword('Enter password to retrieve token',
+                function (password) {
+                    $.ajax({
+                        method: 'POST',
+                        url: '/api/user/token/',
+                        data: JSON.stringify({
+                            username: self.user.username(),
+                            password: password
+                        })
+                    }).done(function (resp) {
+                        self.userToken(resp.token);
+                        self.userTokenShown(true);
+                    }).fail(function (jqxhr) {
+
+                    });
+                });
+        };
+
+        self.resetUserToken = function () {
+            self.promptPassword('Enter password to reset token',
+                function (password) {
+                    $.ajax({
+                        method: 'POST',
+                        url: '/api/user/token/reset/',
+                        data: JSON.stringify({
+                            username: self.user.username(),
+                            password: password
+                        })
+                    }).done(function (resp) {
+                        self.userToken(resp.token);
+                        self.userTokenShown(true);
+                    }).fail(function (jqxhr) {
+
+                    });
+                });
+        };
 
         // Start everything up
         self.reset();
