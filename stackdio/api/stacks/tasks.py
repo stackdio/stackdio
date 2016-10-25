@@ -567,22 +567,15 @@ def update_metadata(stack, activity=None, host_ids=None):
 
         # Check for terminated host state
         if is_absent or ('state' in host_data and host_data['state'] in bad_states):
-            # udpate relevant metadata
+            # update relevant metadata
             host.instance_id = ''
             host.sir_id = 'NA'
 
             host.state = 'Absent' if is_absent else host_data['state']
 
-            # if AWS gives a reason, save it with the host
-            if not is_absent:
-                state_reason = host_data.get('stateReason', {}).get('message', None)
-                if state_reason:
-                    host.state_reason = state_reason
-            host.save()
-            continue
-
-        # Process the host info
-        utils.process_host_info(host_data, host)
+        else:
+            # Process the host info
+            utils.process_host_info(host_data, host)
 
         # save the host
         host.save()
