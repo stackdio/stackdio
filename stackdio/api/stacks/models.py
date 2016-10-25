@@ -637,9 +637,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def generate_cloud_map(self):
         # TODO: Figure out a way to make this provider agnostic
 
-        # TODO: Should we store this somewhere instead of assuming
-
         master = settings.STACKDIO_CONFIG.salt_master_fqdn
+
+        extra_salt_cloud_settings = settings.STACKDIO_CONFIG.get('extra_salt_cloud_settings', {})
 
         images = collections.defaultdict(dict)
 
@@ -704,8 +704,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 # any default values set by salt-minion
                 'minion': {
                     'master': master,
-                    'log_level': 'debug',
-                    'log_level_logfile': 'debug',
                     'mine_functions': {
                         'grains.items': []
                     },
@@ -748,6 +746,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 host_metadata['spot_config'] = {
                     'spot_price': six.text_type(host.sir_price)  # convert to string
                 }
+
+            # Add in our extra settings from the config file
+            # NOTE: we are trusting that you do not put Bad Things in your config file.
+            recursive_update(host_metadata, extra_salt_cloud_settings)
 
             # Set our extra options - as long as they're not in the blacklist
             for key, value in host.extra_options.items():
