@@ -18,8 +18,8 @@
 from __future__ import unicode_literals
 
 from django.conf.urls import include, url
-
 from stackdio.core import routers
+
 from . import api
 
 
@@ -99,6 +99,14 @@ urlpatterns = (
     url(r'^user/$',
         api.CurrentUserDetailAPIView.as_view(),
         name='currentuser-detail'),
+
+    url(r'^user/token/$',
+        api.AuthToken.as_view(),
+        name='currentuser-token'),
+
+    url(r'^user/token/reset/$',
+        api.ResetAuthToken.as_view(),
+        name='currentuser-token-reset'),
 
     url(r'^user/channels/$',
         api.CurrentUserChannelListAPIView.as_view(),

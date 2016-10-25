@@ -347,6 +347,7 @@ REST_FRAMEWORK = {
     # Authentication
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ),
 
@@ -380,6 +381,14 @@ CLOUD_PROVIDERS = STACKDIO_CONFIG.cloud_providers
 BROKER_URL = STACKDIO_CONFIG.celery_broker_url
 CELERY_REDIRECT_STDOUTS = False
 CELERY_DEFAULT_QUEUE = 'default'
+
+# Make sure workers don't prefetch tasks - otherwise you can end up with a single worker
+# claiming multiple orchestration tasks, and it will only run 1 at a time even though
+# there are other idle workers
+CELERYD_PREFETCH_MULTIPLIER = 1
+
+# Also enable late acks, so tasks don't get acked until they're finished
+CELERY_ACKS_LATE = True
 
 # Serializer settings
 # We'll use json since pickle can sometimes be insecure

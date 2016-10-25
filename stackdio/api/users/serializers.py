@@ -169,6 +169,10 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
 
     channels = HyperlinkedField(view_name='api:users:currentuser-channel-list')
 
+    token = HyperlinkedField(view_name='api:users:currentuser-token')
+
+    reset_token = HyperlinkedField(view_name='api:users:currentuser-token-reset')
+
     change_password = HyperlinkedField(view_name='api:users:currentuser-password')
 
     class Meta:
@@ -183,6 +187,8 @@ class UserSerializer(StackdioHyperlinkedModelSerializer):
             'last_login',
             'groups',
             'channels',
+            'token',
+            'reset_token',
             'change_password',
             'settings',
         )
