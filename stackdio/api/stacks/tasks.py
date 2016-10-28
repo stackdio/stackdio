@@ -704,7 +704,6 @@ def sync_all(stack):
     # Generate all the files before we sync
     stack.generate_pillar_file(update_formulas=True)
     stack.generate_global_pillar_file(update_formulas=True)
-    stack.generate_top_file()
     stack.generate_orchestrate_file()
     stack.generate_global_orchestrate_file()
 
@@ -732,9 +731,9 @@ def sync_all(stack):
 @stack_task(name='stacks.highstate')
 def highstate(stack, max_retries=2):
     """
-    Executes the state.top function using the custom top file generated via
-    the stacks.models._generate_top_file. This will only target the 'base'
-    environment and core.* states for the stack. These core states are
+    Executes the state.highstate function on the stack using the default
+    stackdio top file. That top tile will only target the 'base'
+    environment and core states for the stack. These core states are
     purposely separate from others to provision hosts with things that
     stackdio needs.
 
@@ -804,9 +803,8 @@ def highstate(stack, max_retries=2):
 
             ret = salt_client.cmd_iter(
                 target,
-                'state.top',
-                [stack.top_file.name],
-                expr_form='list'
+                'state.highstate',
+                expr_form='list',
             )
 
             result = {}

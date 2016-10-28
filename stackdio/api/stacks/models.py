@@ -189,14 +189,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         default=None,
         storage=stack_storage)
 
-    # Where on disk is the custom salt top.sls file stored
-    top_file = DeletingFileField(
-        max_length=255,
-        null=True,
-        blank=True,
-        default=None,
-        storage=FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_core_states))
-
     # Where on disk is the custom orchestrate file stored
     orchestrate_file = DeletingFileField(
         max_length=255,
@@ -768,24 +760,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         else:
             with open(self.map_file.path, 'w') as f:
                 f.write(map_file_yaml)
-
-    def generate_top_file(self):
-        top_file_data = {
-            'base': {
-                'G@stack_id:{0}'.format(self.pk): [
-                    {'match': 'compound'},
-                    'core.*',
-                ]
-            }
-        }
-
-        top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
-
-        if not self.top_file:
-            self.top_file.save('stack_{0}_top.sls'.format(self.pk), ContentFile(top_file_yaml))
-        else:
-            with open(self.top_file.path, 'w') as f:
-                f.write(top_file_yaml)
 
     def generate_orchestrate_file(self):
         hosts = self.hosts.all()
