@@ -1363,9 +1363,6 @@ def single_sls(stack, component, host_target, max_retries=2):
         for host, ret in result.items():
             states = ret['ret']
 
-            if ret['retcode'] != 0:
-                errors[host] = states
-
             if isinstance(states, list):
                 errors[host] = states
                 continue
