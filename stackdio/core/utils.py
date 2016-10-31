@@ -60,15 +60,6 @@ class FakeQuerySet(object):
         return FakeQuerySet(self.model, ret)
 
 
-class PasswordStr(six.text_type):
-    """
-    Used so that passwords aren't logged in the celery task log
-    """
-
-    def __repr__(self):
-        return '*' * len(self)
-
-
 def recursively_sort_dict(d):
     ret = collections.OrderedDict()
     for k, v in sorted(d.items(), key=lambda x: x[0]):

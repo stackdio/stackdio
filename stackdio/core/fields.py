@@ -28,7 +28,6 @@ from django.db.utils import DEFAULT_DB_ALIAS
 from rest_framework import relations
 from rest_framework.fields import CharField
 
-from stackdio.core.utils import PasswordStr
 from stackdio.core.warnings import StackdioWarning
 
 logger = logging.getLogger(__name__)
@@ -180,12 +179,6 @@ class PasswordField(CharField):
         kwargs.setdefault('style', {})['input_type'] = 'password'
         self.trim_whitespace = False
         super(PasswordField, self).__init__(**kwargs)
-
-    def to_internal_value(self, data):
-        return PasswordStr(data)
-
-    def to_representation(self, value):
-        return PasswordStr(value)
 
 
 class HyperlinkedField(relations.HyperlinkedIdentityField):
