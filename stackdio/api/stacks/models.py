@@ -261,6 +261,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         if activity is not None:
             self.set_activity(activity, host_ids)
 
+        max_history_length = StackHistory._meta.get_field('message').max_length
+
+        # Make sure we chop the history message off so we don't get a database error
+        if len(message) > max_history_length:
+            message = message[:max_history_length]
+
         # Create a history
         self.history.create(message=message)
 
