@@ -74,7 +74,7 @@ class LabelFilterMixin(object):
 
     def filter_label(self, queryset, value):
         if ':' in value:
-            k, v = value.split(':')
+            k, v = value.split(':', 1)
             v = v if v else None
         else:
             k, v = value, None
