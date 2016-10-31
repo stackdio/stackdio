@@ -1469,6 +1469,8 @@ def host_post_save(sender, **kwargs):
 
     # Delete from the cache
     cache_keys = [
+        'stack-{}-host-count'.format(host.stack_id),
+        'stack-{}-volume-count'.format(host.stack_id),
         'stack-{}-hosts'.format(host.stack_id),
         'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
@@ -1496,6 +1498,19 @@ def host_post_delete(sender, **kwargs):
         'host-{}-image'.format(host.id),
         'host-{}-account'.format(host.id),
         'host-{}-provider'.format(host.id),
+    ]
+    cache.delete_many(cache_keys)
+
+
+@receiver(models.signals.post_save, sender=Stack)
+def stack_post_save(sender, **kwargs):
+    stack = kwargs.pop('instance')
+
+    ctype = ContentType.objects.get_for_model(Stack)
+
+    # Delete from the cache
+    cache_keys = [
+        'blueprint-{}-stack-count'.format(stack.blueprint_id),
     ]
     cache.delete_many(cache_keys)
 
