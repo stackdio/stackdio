@@ -1506,8 +1506,6 @@ def host_post_delete(sender, **kwargs):
 def stack_post_save(sender, **kwargs):
     stack = kwargs.pop('instance')
 
-    ctype = ContentType.objects.get_for_model(Stack)
-
     # Delete from the cache
     cache_keys = [
         'blueprint-{}-stack-count'.format(stack.blueprint_id),
