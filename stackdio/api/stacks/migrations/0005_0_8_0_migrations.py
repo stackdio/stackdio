@@ -14,7 +14,7 @@ def delete_top_files(apps, schema_migration):
     Stack = apps.get_model('stacks', 'Stack')
 
     # Delete all the top files.
-    for stack in Stack.object.all():
+    for stack in Stack.objects.all():
         if os.path.exists(stack.top_file.path):
             os.remove(stack.top_file.path)
 
