@@ -149,8 +149,11 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
         return provider_class(self)
 
     def get_config_file_path(self):
-        return os.path.join(settings.STACKDIO_CONFIG.salt_providers_dir,
-                            '{}.conf'.format(self.slug))
+        basedir = settings.STACKDIO_CONFIG.salt_providers_dir
+        if not os.path.isdir(basedir):
+            os.makedirs(basedir)
+
+        return os.path.join(basedir, '{}.conf'.format(self.slug))
 
     def update_config(self):
         """
@@ -251,8 +254,11 @@ class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
         return six.text_type(self.title)
 
     def get_config_file_path(self):
-        return os.path.join(settings.STACKDIO_CONFIG.salt_profiles_dir,
-                            '{}.conf'.format(self.slug))
+        basedir = settings.STACKDIO_CONFIG.salt_profiles_dir
+        if not os.path.isdir(basedir):
+            os.makedirs(basedir)
+
+        return os.path.join(basedir, '{}.conf'.format(self.slug))
 
     def update_config(self):
         """
