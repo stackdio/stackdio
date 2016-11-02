@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import os
+
 import django.core.files.storage
 import django.utils.timezone
 import django_extensions.db.fields
@@ -8,8 +10,19 @@ import model_utils.fields
 from django.conf import settings
 from django.db import migrations, models
 
-import stackdio.api.stacks.models
 import stackdio.core.fields
+
+
+stack_storage = django.core.files.storage.FileSystemStorage(location=os.path.join(settings.FILE_STORAGE_DIRECTORY, 'stacks'))
+
+
+# Put these here so we don't have to import it
+def get_local_file_path(instance, filename):
+    return '{0}-{1}/{2}'.format(instance.pk, instance.slug, filename)
+
+
+def get_orchestrate_file_path(instance, filename):
+    return '{0}-{1}/formulas/__stackdio__/{2}'.format(instance.pk, instance.slug, filename)
 
 
 class Migration(migrations.Migration):
@@ -75,13 +88,13 @@ class Migration(migrations.Migration):
                 ('status_changed', model_utils.fields.MonitorField(default=django.utils.timezone.now, verbose_name='status changed', monitor='status')),
                 ('namespace', models.CharField(max_length=64, verbose_name='Namespace')),
                 ('create_users', models.BooleanField(verbose_name='Create SSH Users')),
-                ('map_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_local_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
+                ('map_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_local_file_path, storage=stack_storage, max_length=255, blank=True, null=True)),
                 ('top_file', stackdio.core.fields.DeletingFileField(default=None, upload_to='', storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_core_states), max_length=255, blank=True, null=True)),
-                ('orchestrate_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_orchestrate_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
-                ('global_orchestrate_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_orchestrate_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
-                ('pillar_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_local_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
-                ('global_pillar_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_local_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
-                ('props_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.stacks.models.get_local_file_path, storage=stackdio.api.stacks.models.stack_storage, max_length=255, blank=True, null=True)),
+                ('orchestrate_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_orchestrate_file_path, storage=stack_storage, max_length=255, blank=True, null=True)),
+                ('global_orchestrate_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_orchestrate_file_path, storage=stack_storage, max_length=255, blank=True, null=True)),
+                ('pillar_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_local_file_path, storage=stack_storage, max_length=255, blank=True, null=True)),
+                ('global_pillar_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_local_file_path, storage=stack_storage, max_length=255, blank=True, null=True)),
+                ('props_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_local_file_path, storage=stack_storage, max_length=255, blank=True, null=True)),
                 ('blueprint', models.ForeignKey(related_name='stacks', to='blueprints.Blueprint')),
             ],
             options={
