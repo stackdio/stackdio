@@ -470,9 +470,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
             # create the managed security group for each host definition
             # and assign the rules to the group
-            sg_name = 'stackdio-managed-{0}-stack-{1}'.format(
-                hostdef.slug,
-                self.pk
+            sg_name = 'stackdio-managed-stack-{0}-hosts-{1}'.format(
+                self.namespace,
+                hostdef.title.lower().replace(' ', '-'),
             )
             sg_description = 'stackd.io managed security group'
 
