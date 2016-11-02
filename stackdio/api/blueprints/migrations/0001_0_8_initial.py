@@ -7,8 +7,11 @@ import django_extensions.db.fields
 from django.conf import settings
 from django.db import migrations, models
 
-import stackdio.api.blueprints.models
 import stackdio.core.fields
+
+
+def get_props_file_path(obj, filename):
+    return 'blueprints/{0}-{1}.props'.format(obj.pk, obj.slug)
 
 
 class Migration(migrations.Migration):
@@ -37,7 +40,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField(null=True, verbose_name='description', blank=True)),
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
                 ('create_users', models.BooleanField(verbose_name='Create SSH Users')),
-                ('props_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.blueprints.models.get_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY), max_length=255, blank=True, null=True)),
+                ('props_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY), max_length=255, blank=True, null=True)),
             ],
             options={
                 'ordering': ('title',),
