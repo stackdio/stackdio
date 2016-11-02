@@ -18,7 +18,6 @@
 from __future__ import unicode_literals
 
 import logging
-import json
 import os
 
 import six
@@ -26,8 +25,6 @@ import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.core.files.storage import FileSystemStorage
-from django.core.files.base import ContentFile
 from django_extensions.db.models import (
     TimeStampedModel,
     TitleSlugDescriptionModel,
@@ -35,7 +32,7 @@ from django_extensions.db.models import (
 from salt.version import __version__ as salt_version
 
 from stackdio.core.queryset_transform import TransformQuerySet
-from stackdio.core.fields import DeletingFileField
+from stackdio.core.fields import JSONField
 from stackdio.api.cloud.providers.base import GroupNotFoundException
 from .utils import get_cloud_provider_choices, get_provider_driver_class
 
@@ -48,14 +45,6 @@ FILESYSTEM_CHOICES = (
     ('fuse', 'fuse'),
     ('xfs', 'xfs'),
 )
-
-
-def get_config_file_path(instance, filename):
-    return filename
-
-
-def get_global_orch_props_file_path(instance, filename):
-    return 'cloud/{0}/{1}'.format(instance.slug, filename)
 
 
 _cloudprovider_model_permissions = ()
@@ -142,24 +131,8 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
     # Grab the formula versions
     formula_versions = GenericRelation('formulas.FormulaVersion')
 
-    # salt-cloud provider configuration file
-    config_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_config_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=FileSystemStorage(
-            location=settings.STACKDIO_CONFIG.salt_providers_dir))
-
-    # storage for properties file
-    global_orch_props_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_global_orch_props_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+    # Properties for this account
+    global_orchestration_properties = JSONField('Global Orchestration Properties')
 
     def __str__(self):
         return six.text_type(self.title)
@@ -175,6 +148,10 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
         # Return an instance of the provider driver
         return provider_class(self)
 
+    def get_config_file_path(self):
+        return os.path.join(settings.STACKDIO_CONFIG.salt_providers_dir,
+                            '{}.conf'.format(self.slug))
+
     def update_config(self):
         """
         Writes the yaml configuration file for the given account object.
@@ -188,30 +165,9 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
         self.yaml = yaml.safe_dump(account_yaml, default_flow_style=False)
         self.save()
 
-        if not self.config_file:
-            self.config_file.save(self.slug + '.conf', ContentFile(self.yaml))
-        else:
-            with open(self.config_file.path, 'w') as f:
-                # update the yaml to include updated security group information
-                f.write(self.yaml)
-
-    def _get_global_orchestration_properties(self):
-        if not self.global_orch_props_file:
-            return {}
-        with open(self.global_orch_props_file.path) as f:
-            return json.loads(f.read())
-
-    def _set_global_orchestration_properties(self, props):
-        props_json = json.dumps(props, indent=4)
-        if not self.global_orch_props_file:
-            self.global_orch_props_file.save('global_orch.props', ContentFile(props_json))
-        else:
-            with open(self.global_orch_props_file.path, 'w') as f:
-                f.write(props_json)
-
-    # Add as a property
-    global_orchestration_properties = property(_get_global_orchestration_properties,
-                                               _set_global_orchestration_properties)
+        with open(self.get_config_file_path(), 'w') as f:
+            # update the yaml to include updated security group information
+            f.write(self.yaml)
 
     def get_root_directory(self):
         return os.path.join(settings.FILE_STORAGE_DIRECTORY, 'cloud', self.slug)
@@ -291,20 +247,12 @@ class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
     # up to the salt-master automatically.
     ssh_user = models.CharField('SSH User', max_length=64)
 
-    # salt-cloud profile configuration file
-    config_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_config_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=FileSystemStorage(
-            location=settings.STACKDIO_CONFIG.salt_profiles_dir
-        )
-    )
-
     def __str__(self):
         return six.text_type(self.title)
+
+    def get_config_file_path(self):
+        return os.path.join(settings.STACKDIO_CONFIG.salt_profiles_dir,
+                            '{}.conf'.format(self.slug))
 
     def update_config(self):
         """
@@ -331,12 +279,9 @@ class CloudImage(TimeStampedModel, TitleSlugDescriptionModel):
         profile_yaml = yaml.safe_dump(profile_yaml,
                                       default_flow_style=False)
 
-        if not self.config_file:
-            self.config_file.save(self.slug + '.conf', ContentFile(profile_yaml))
-        else:
-            with open(self.config_file.path, 'w') as f:
-                # update the yaml to include updated security group information
-                f.write(profile_yaml)
+        with open(self.get_config_file_path(), 'w') as f:
+            # update the yaml to include updated security group information
+            f.write(profile_yaml)
 
     def get_driver(self):
         return self.account.get_driver()

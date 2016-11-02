@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 POSTGRES_ENGINES = ('django.db.backends.postgresql', 'django.db.backends.postgresql_psycopg2')
 
 
+# TODO This can be removed in 0.9.0 once it's no longer referenced in migrations
 class DeletingFileField(models.FileField):
     """
     Borrowed from: https://gist.github.com/889692

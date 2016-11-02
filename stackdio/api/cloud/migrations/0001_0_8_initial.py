@@ -7,8 +7,15 @@ import django_extensions.db.fields
 from django.conf import settings
 from django.db import migrations, models
 
-import stackdio.api.cloud.models
 import stackdio.core.fields
+
+
+def get_config_file_path(instance, filename):
+    return filename
+
+
+def get_global_orch_props_file_path(instance, filename):
+    return 'cloud/{0}/{1}'.format(instance.slug, filename)
 
 
 class Migration(migrations.Migration):
@@ -43,8 +50,8 @@ class Migration(migrations.Migration):
                 ('vpc_id', models.CharField(max_length=64, verbose_name='VPC ID', blank=True)),
                 ('account_id', models.CharField(max_length=64, verbose_name='Account ID')),
                 ('create_security_groups', models.BooleanField(default=True, verbose_name='Create Security Groups')),
-                ('config_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.cloud.models.get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_providers_dir), max_length=255, blank=True, null=True)),
-                ('global_orch_props_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.cloud.models.get_global_orch_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY), max_length=255, blank=True, null=True)),
+                ('config_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_providers_dir), max_length=255, blank=True, null=True)),
+                ('global_orch_props_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_global_orch_props_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY), max_length=255, blank=True, null=True)),
             ],
             options={
                 'ordering': ('title',),
@@ -62,7 +69,7 @@ class Migration(migrations.Migration):
                 ('slug', django_extensions.db.fields.AutoSlugField(populate_from='title', verbose_name='slug', editable=False, blank=True)),
                 ('image_id', models.CharField(max_length=64, verbose_name='Image ID')),
                 ('ssh_user', models.CharField(max_length=64, verbose_name='SSH User')),
-                ('config_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=stackdio.api.cloud.models.get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_profiles_dir), max_length=255, blank=True, null=True)),
+                ('config_file', stackdio.core.fields.DeletingFileField(default=None, upload_to=get_config_file_path, storage=django.core.files.storage.FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_profiles_dir), max_length=255, blank=True, null=True)),
             ],
             options={
                 'ordering': ('title',),
