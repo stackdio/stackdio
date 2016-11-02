@@ -1428,6 +1428,7 @@ def metadata_post_save(sender, **kwargs):
     metadata = kwargs.pop('instance')
 
     host = metadata.host
+    stack = host.stack
     sls_path = metadata.sls_path
 
     logger.debug('Pre-caching metadata from cache for component: {}'.format(metadata))
@@ -1443,6 +1444,10 @@ def metadata_post_save(sender, **kwargs):
         'host-{}-health'.format(host.id),
     ]
     cache.delete_many(cache_keys)
+
+    # Pre-cache these by accessing them
+    host.health
+    stack.health
 
 
 @receiver(models.signals.post_delete, sender=ComponentMetadata)
@@ -1466,27 +1471,33 @@ def metadata_post_delete(sender, **kwargs):
 @receiver(models.signals.post_save, sender=Host)
 def host_post_save(sender, **kwargs):
     host = kwargs.pop('instance')
+    stack = host.stack
 
     # Delete from the cache
     cache_keys = [
         'stack-{}-host-count'.format(host.stack_id),
-        'stack-{}-volume-count'.format(host.stack_id),
         'stack-{}-hosts'.format(host.stack_id),
         'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
     ]
     cache.delete_many(cache_keys)
 
+    # Pre-cache these by accessing them
+    host.health
+    stack.get_cached_hosts()
+    stack.host_count
+    stack.health
+
 
 @receiver(models.signals.post_delete, sender=Host)
 def host_post_delete(sender, **kwargs):
     host = kwargs.pop('instance')
+    stack = host.stack
 
     # Delete from the cache
     cache_keys = [
         'stack-{}-hosts'.format(host.stack_id),
         'stack-{}-host-count'.format(host.stack_id),
-        'stack-{}-volume-count'.format(host.stack_id),
         'stack-{}-health'.format(host.stack_id),
 
         # Delete anything about this host, not needed anymore
@@ -1501,10 +1512,16 @@ def host_post_delete(sender, **kwargs):
     ]
     cache.delete_many(cache_keys)
 
+    # Pre-cache these by accessing them
+    stack.get_cached_hosts()
+    stack.host_count
+    stack.health
+
 
 @receiver(models.signals.post_save, sender=Stack)
 def stack_post_save(sender, **kwargs):
     stack = kwargs.pop('instance')
+    blueprint = stack.blueprint
 
     # Delete from the cache
     cache_keys = [
@@ -1512,10 +1529,14 @@ def stack_post_save(sender, **kwargs):
     ]
     cache.delete_many(cache_keys)
 
+    # Pre-cache these by accessing them
+    blueprint.stack_count
+
 
 @receiver(models.signals.post_delete, sender=Stack)
 def stack_post_delete(sender, **kwargs):
     stack = kwargs.pop('instance')
+    blueprint = stack.blueprint
 
     ctype = ContentType.objects.get_for_model(Stack)
 
@@ -1529,3 +1550,6 @@ def stack_post_delete(sender, **kwargs):
         'stack-{}-health'.format(stack.id),
     ]
     cache.delete_many(cache_keys)
+
+    # Pre-cache these by accessing them
+    blueprint.stack_count

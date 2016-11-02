@@ -18,7 +18,9 @@
 from __future__ import unicode_literals
 
 import six
+from django.core.cache import cache
 from django.db import models
+from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel
 
 _volume_model_permissions = (
@@ -90,3 +92,33 @@ class Volume(TimeStampedModel):
     @property
     def stack(self):
         return self.host.stack if self.host else None
+
+
+@receiver(models.signals.post_save, sender=Volume)
+def volume_post_save(sender, **kwargs):
+    volume = kwargs.pop('instance')
+    stack = volume.stack
+
+    if stack:
+        # Delete from the cache
+        cache_keys = [
+            'stack-{}-volume-count'.format(stack.id),
+        ]
+        cache.delete_many(cache_keys)
+
+        stack.volume_count
+
+
+@receiver(models.signals.post_delete, sender=Volume)
+def host_post_delete(sender, **kwargs):
+    volume = kwargs.pop('instance')
+    stack = volume.stack
+
+    if stack:
+        # Delete from the cache
+        cache_keys = [
+            'stack-{}-volume-count'.format(stack.id),
+        ]
+        cache.delete_many(cache_keys)
+
+        stack.volume_count
