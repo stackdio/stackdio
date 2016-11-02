@@ -544,7 +544,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             host_definitions = [host_definition]
 
         for hostdef in host_definitions:
-            hosts = self.hosts.all()
+            # We only care about the hosts belonging to this hostdef
+            hosts = self.hosts.filter(blueprint_host_definition=hostdef).order_by('index')
 
             if count is None:
                 start = 0
@@ -554,35 +555,41 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 start = 0
                 end = count
                 indexes = range(start, end)
-            else:
-                if backfill:
-                    hosts = hosts.order_by('index')
+            elif backfill:
+                # Get the set of current indices
+                host_indexes = set(h.index for h in hosts)
 
-                    # The set of existing host indexes
-                    host_indexes = set([h.index for h in hosts])
+                # The last index available (they are sorted by index)
+                last_index = hosts.last().index
 
-                    # The last index available
-                    last_index = sorted(host_indexes)[-1]
+                # The set of expected indexes based on the last known
+                # index
+                expected_indexes = set(range(last_index + 1))
 
-                    # The set of expected indexes based on the last known
-                    # index
-                    expected_indexes = set(range(last_index + 1))
+                # Any gaps any the expected indexes?
+                gaps = expected_indexes - host_indexes
 
-                    # Any gaps any the expected indexes?
-                    gaps = expected_indexes - host_indexes
-
-                    indexes = []
-                    if gaps:
-                        indexes = list(gaps)
-
-                    count -= len(indexes)
-                    start = sorted(host_indexes)[-1] + 1
-                    end = start + count
-                    indexes += range(start, end)
+                # If we have gaps, start with those
+                if gaps:
+                    indexes = sorted(list(gaps))
+                    # Truncate the list so there are only *count* items in the list
+                    indexes = indexes[:count]
                 else:
-                    start = hosts.order_by('-index')[0].index + 1
-                    end = start + count
-                    indexes = range(start, end)
+                    indexes = []
+
+                # We already have *len(indexes)* to create, so subtract that number from
+                # the original count to see how many more we need to create past the end
+                # of the current set of indices
+                count -= len(indexes)
+                start = last_index + 1
+                end = start + count
+
+                # Add that into the current list
+                indexes.extend(range(start, end))
+            else:
+                start = hosts.last().index + 1
+                end = start + count
+                indexes = range(start, end)
 
             # iterate over the host definition count and create individual
             # host records on the stack
