@@ -151,7 +151,11 @@ if settings.DATABASES[DEFAULT_DB_ALIAS]['ENGINE'] in POSTGRES_ENGINES:
     from django.contrib.postgres.fields import JSONField as DjangoJSONField
 
     class JSONField(DjangoJSONField):
-        pass
+        def __init__(self, *args, **kwargs):
+            default = kwargs.get('default', None)
+            if default is None:
+                kwargs['default'] = {}
+            super(JSONField, self).__init__(*args, **kwargs)
 
 else:
     # no postgres :( for testing only, use our custom JSONField
