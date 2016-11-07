@@ -61,30 +61,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(delete_top_files, lambda a, s: None),
-        migrations.RemoveField(
-            model_name='stack',
-            name='top_file',
-        ),
-        migrations.RemoveField(
-            model_name='stack',
-            name='global_orchestrate_file',
-        ),
-        migrations.RemoveField(
-            model_name='stack',
-            name='global_pillar_file',
-        ),
-        migrations.RemoveField(
-            model_name='stack',
-            name='map_file',
-        ),
-        migrations.RemoveField(
-            model_name='stack',
-            name='orchestrate_file',
-        ),
-        migrations.RemoveField(
-            model_name='stack',
-            name='pillar_file',
-        ),
 
         # Add the properties field first
         migrations.AddField(
@@ -94,9 +70,4 @@ class Migration(migrations.Migration):
         ),
         # Then copy everything from all the props files into the properties field
         migrations.RunPython(props_file_to_db, db_to_props_file),
-        # Then delete the props_file field
-        migrations.RemoveField(
-            model_name='stack',
-            name='props_file',
-        ),
     ]

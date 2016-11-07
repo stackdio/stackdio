@@ -50,15 +50,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='cloudaccount',
-            name='config_file',
-        ),
-        migrations.RemoveField(
-            model_name='cloudimage',
-            name='config_file',
-        ),
-
         # Add the properties field first
         migrations.AddField(
             model_name='cloudaccount',
@@ -67,9 +58,4 @@ class Migration(migrations.Migration):
         ),
         # Then copy everything from all the props files into the properties field
         migrations.RunPython(props_file_to_db, db_to_props_file),
-        # Then delete the props_file field
-        migrations.RemoveField(
-            model_name='cloudaccount',
-            name='global_orch_props_file',
-        ),
     ]
