@@ -303,12 +303,22 @@ class BlueprintSerializer(StackdioHyperlinkedModelSerializer):
         }
 
 
-class FullBlueprintSerializer(BlueprintSerializer):
+class IntermediateBlueprintSerializer(BlueprintSerializer):
+    """
+    This should purely be used to add extra fields for the FullBlueprintSerializer
+    / BlueprintExportSerializer
+    """
     properties = PropertiesField(required=False)
     host_definitions = BlueprintHostDefinitionSerializer(many=True)
     formula_versions = FormulaVersionSerializer(many=True, required=False)
     labels = StackdioLiteralLabelsSerializer(many=True, required=False)
 
+
+class FullBlueprintSerializer(IntermediateBlueprintSerializer):
+    """
+    Used when creating blueprints so that you can pass host definitions, etc
+    nested within a single request
+    """
     def validate(self, attrs):
         host_definitions = attrs['host_definitions']
         formula_versions = attrs.get('formula_versions', [])
@@ -418,7 +428,10 @@ class FullBlueprintSerializer(BlueprintSerializer):
         return super_serializer.to_representation(instance)
 
 
-class BlueprintExportSerializer(FullBlueprintSerializer):
+class BlueprintExportSerializer(IntermediateBlueprintSerializer):
+    """
+    Serializer that renders an object that can validly be POSTed to the blueprint create endpoint
+    """
     class Meta:
         model = models.Blueprint
         fields = (
@@ -430,9 +443,6 @@ class BlueprintExportSerializer(FullBlueprintSerializer):
             'host_definitions',
             'formula_versions',
         )
-
-    def to_representation(self, instance):
-        return super(FullBlueprintSerializer, self).to_representation(instance)
 
 
 class BlueprintLabelSerializer(StackdioLabelSerializer):
