@@ -680,11 +680,14 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         with open(self.get_map_file_path(), 'w') as f:
             f.write(map_file_yaml)
 
+    def get_stackdio_dir(self):
+        ret = os.path.join(self.get_root_directory(), 'formulas', '__stackdio__')
+        if not os.path.exists(ret):
+            os.makedirs(ret)
+        return ret
+
     def get_orchestrate_file_path(self):
-        return os.path.join(self.get_root_directory(),
-                            'formulas',
-                            '__stackdio__',
-                            'orchestrate.sls')
+        return os.path.join(self.get_stackdio_dir(), 'orchestrate.sls')
 
     def generate_orchestrate_file(self):
         hosts = self.hosts.all()
@@ -725,10 +728,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             f.write(yaml_data)
 
     def get_global_orchestrate_file_path(self):
-        return os.path.join(self.get_root_directory(),
-                            'formulas',
-                            '__stackdio__',
-                            'global_orchestrate.sls')
+        return os.path.join(self.get_stackdio_dir(), 'global_orchestrate.sls')
 
     def generate_global_orchestrate_file(self):
         accounts = set([host.cloud_account for host in self.hosts.all()])
