@@ -24,6 +24,7 @@ import json
 import logging
 import os
 import re
+import shutil
 
 import salt.cloud
 import six
@@ -32,8 +33,6 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
-from django.core.files.base import ContentFile
-from django.core.files.storage import FileSystemStorage
 from django.db import models, transaction
 from django.dispatch import receiver
 from django.utils.timezone import now
@@ -47,7 +46,7 @@ from stackdio.api.cloud.providers.base import GroupExistsException
 from stackdio.api.volumes.models import Volume
 from stackdio.core.constants import Health, ComponentStatus, Activity
 from stackdio.core.decorators import django_cache
-from stackdio.core.fields import DeletingFileField, JSONField
+from stackdio.core.fields import JSONField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.notifications.decorators import add_subscribed_channels
 from stackdio.core.utils import recursive_update
@@ -132,18 +131,6 @@ _stack_object_permissions = (
     'admin',
 )
 
-stack_storage = FileSystemStorage(location=os.path.join(settings.FILE_STORAGE_DIRECTORY, 'stacks'))
-
-
-# For map, pillar, and properties.  Doesn't need to go in a sub directory
-def get_local_file_path(instance, filename):
-    return '{0}-{1}/{2}'.format(instance.pk, instance.slug, filename)
-
-
-# Orchestrate files go in formula directory
-def get_orchestrate_file_path(instance, filename):
-    return '{0}-{1}/formulas/__stackdio__/{2}'.format(instance.pk, instance.slug, filename)
-
 
 @add_subscribed_channels
 @six.python_2_unicode_compatible
@@ -180,69 +167,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
     create_users = models.BooleanField('Create SSH Users')
 
-    # Where on disk is the salt-cloud map file stored
-    map_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_local_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=stack_storage)
-
-    # Where on disk is the custom salt top.sls file stored
-    top_file = DeletingFileField(
-        max_length=255,
-        null=True,
-        blank=True,
-        default=None,
-        storage=FileSystemStorage(location=settings.STACKDIO_CONFIG.salt_core_states))
-
-    # Where on disk is the custom orchestrate file stored
-    orchestrate_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_orchestrate_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=stack_storage)
-
-    # Where on disk is the global orchestrate file stored
-    global_orchestrate_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_orchestrate_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=stack_storage)
-
-    # Where on disk is the custom pillar file for custom configuration for
-    # all salt states used by the top file
-    pillar_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_local_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=stack_storage)
-
-    # Where on disk is the custom pillar file for custom configuration for
-    # all salt states used by the top file
-    global_pillar_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_local_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=stack_storage)
-
-    # storage for properties file
-    props_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_local_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=stack_storage)
+    # The properties for this stack
+    properties = JSONField('Properties')
 
     # Use our custom manager object
     objects = StackQuerySet.as_manager()
@@ -350,22 +276,6 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             del tags['Name']
 
         return tags
-
-    def _get_properties(self):
-        if not self.props_file:
-            return {}
-        with open(self.props_file.path, 'r') as f:
-            return json.load(f)
-
-    def _set_properties(self, props):
-        props_json = json.dumps(props, indent=4)
-        if not self.props_file:
-            self.props_file.save('stack.props', ContentFile(props_json))
-        else:
-            with open(self.props_file.path, 'w') as f:
-                f.write(props_json)
-
-    properties = property(_get_properties, _set_properties)
 
     @property
     @django_cache('stack-{id}-health')
@@ -720,7 +630,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                         'fqdn': fqdn,
                         'domain': domain,
                         'cluster_size': cluster_size,
-                        'stack_pillar_file': self.pillar_file.path,
+                        'stack_pillar_file': self.get_pillar_file_path(),
                         'volumes': map_volumes,
                         'cloud_account': host.cloud_account.slug,
                         'cloud_image': host.cloud_image.slug,
@@ -758,34 +668,26 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return images
 
+    def get_map_file_path(self):
+        return os.path.join(self.get_root_directory(), 'stack.map')
+
     def generate_map_file(self):
-        images = self.generate_cloud_map()
+        cloud_map = self.generate_cloud_map()
 
-        map_file_yaml = yaml.safe_dump(images, default_flow_style=False)
+        map_file_yaml = yaml.safe_dump(cloud_map, default_flow_style=False)
 
-        if not self.map_file:
-            self.map_file.save('stack.map', ContentFile(map_file_yaml))
-        else:
-            with open(self.map_file.path, 'w') as f:
-                f.write(map_file_yaml)
+        # just write out to the specified location
+        with open(self.get_map_file_path(), 'w') as f:
+            f.write(map_file_yaml)
 
-    def generate_top_file(self):
-        top_file_data = {
-            'base': {
-                'G@stack_id:{0}'.format(self.pk): [
-                    {'match': 'compound'},
-                    'core.*',
-                ]
-            }
-        }
+    def get_stackdio_dir(self):
+        ret = os.path.join(self.get_root_directory(), 'formulas', '__stackdio__')
+        if not os.path.exists(ret):
+            os.makedirs(ret)
+        return ret
 
-        top_file_yaml = yaml.safe_dump(top_file_data, default_flow_style=False)
-
-        if not self.top_file:
-            self.top_file.save('stack_{0}_top.sls'.format(self.pk), ContentFile(top_file_yaml))
-        else:
-            with open(self.top_file.path, 'w') as f:
-                f.write(top_file_yaml)
+    def get_orchestrate_file_path(self):
+        return os.path.join(self.get_stackdio_dir(), 'orchestrate.sls')
 
     def generate_orchestrate_file(self):
         hosts = self.hosts.all()
@@ -822,11 +724,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         yaml_data = yaml.safe_dump(orchestrate, default_flow_style=False)
 
-        if not self.orchestrate_file:
-            self.orchestrate_file.save('orchestrate.sls', ContentFile(yaml_data))
-        else:
-            with open(self.orchestrate_file.path, 'w') as f:
-                f.write(yaml_data)
+        with open(self.get_orchestrate_file_path(), 'w') as f:
+            f.write(yaml_data)
+
+    def get_global_orchestrate_file_path(self):
+        return os.path.join(self.get_stackdio_dir(), 'global_orchestrate.sls')
 
     def generate_global_orchestrate_file(self):
         accounts = set([host.cloud_account for host in self.hosts.all()])
@@ -864,11 +766,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         yaml_data = yaml.safe_dump(orchestrate, default_flow_style=False)
 
-        if not self.global_orchestrate_file:
-            self.global_orchestrate_file.save('global_orchestrate.sls', ContentFile(yaml_data))
-        else:
-            with open(self.global_orchestrate_file.path, 'w') as f:
-                f.write(yaml_data)
+        with open(self.get_global_orchestrate_file_path(), 'w') as f:
+            f.write(yaml_data)
+
+    def get_pillar_file_path(self):
+        return os.path.join(self.get_root_directory(), 'stack.pillar')
 
     def generate_pillar_file(self, update_formulas=False):
         # Import here to not cause circular imports
@@ -938,11 +840,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         pillar_file_yaml = yaml.safe_dump(pillar_props, default_flow_style=False)
 
-        if not self.pillar_file:
-            self.pillar_file.save('stack.pillar', ContentFile(pillar_file_yaml))
-        else:
-            with open(self.pillar_file.path, 'w') as f:
-                f.write(pillar_file_yaml)
+        with open(self.get_pillar_file_path(), 'w') as f:
+            f.write(pillar_file_yaml)
+
+    def get_global_pillar_file_path(self):
+        return os.path.join(self.get_root_directory(), 'stack.global_pillar')
 
     def generate_global_pillar_file(self, update_formulas=False):
         # Import here to not cause circular imports
@@ -980,11 +882,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         pillar_file_yaml = yaml.safe_dump(pillar_props, default_flow_style=False)
 
-        if not self.global_pillar_file:
-            self.global_pillar_file.save('stack.global_pillar', ContentFile(pillar_file_yaml))
-        else:
-            with open(self.global_pillar_file.path, 'w') as f:
-                f.write(pillar_file_yaml)
+        with open(self.get_global_pillar_file_path(), 'w') as f:
+            f.write(pillar_file_yaml)
 
     def query_hosts(self, force=False):
         """
@@ -1027,7 +926,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return host_result
 
     def get_root_directory(self):
-        return os.path.join(stack_storage.location, '{0}-{1}'.format(self.pk, self.slug))
+        return os.path.join(settings.FILE_STORAGE_DIRECTORY,
+                            'stacks',
+                            '{0}-{1}'.format(self.pk, self.slug))
 
     def get_log_directory(self):
         root_dir = self.get_root_directory()
@@ -1510,3 +1411,7 @@ def stack_post_delete(sender, **kwargs):
         'stack-{}-health'.format(stack.id),
     ]
     cache.delete_many(cache_keys)
+
+    # delete the stack storage directory
+    if os.path.exists(stack.get_root_directory()):
+        shutil.rmtree(stack.get_root_directory())

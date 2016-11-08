@@ -176,7 +176,7 @@ def clone_formulas(stack_or_account):
 def copy_global_orchestrate(stack):
     stack.generate_global_orchestrate_file()
 
-    src_file = stack.global_orchestrate_file.path
+    src_file = stack.get_global_orchestrate_file_path()
 
     accounts = set([host.cloud_image.account for host in stack.hosts.all()])
 
@@ -704,7 +704,6 @@ def sync_all(stack):
     # Generate all the files before we sync
     stack.generate_pillar_file(update_formulas=True)
     stack.generate_global_pillar_file(update_formulas=True)
-    stack.generate_top_file()
     stack.generate_orchestrate_file()
     stack.generate_global_orchestrate_file()
 
@@ -732,9 +731,9 @@ def sync_all(stack):
 @stack_task(name='stacks.highstate')
 def highstate(stack, max_retries=2):
     """
-    Executes the state.top function using the custom top file generated via
-    the stacks.models._generate_top_file. This will only target the 'base'
-    environment and core.* states for the stack. These core states are
+    Executes the state.highstate function on the stack using the default
+    stackdio top file. That top tile will only target the 'base'
+    environment and core states for the stack. These core states are
     purposely separate from others to provision hosts with things that
     stackdio needs.
 
@@ -750,7 +749,7 @@ def highstate(stack, max_retries=2):
     logger.info('Running core provisioning for stack: {0!r}'.format(stack))
 
     # Make sure the pillar is properly set
-    change_pillar(stack, stack.pillar_file.path)
+    change_pillar(stack, stack.get_pillar_file_path())
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()
@@ -804,9 +803,8 @@ def highstate(stack, max_retries=2):
 
             ret = salt_client.cmd_iter(
                 target,
-                'state.top',
-                [stack.top_file.name],
-                expr_form='list'
+                'state.highstate',
+                expr_form='list',
             )
 
             result = {}
@@ -890,7 +888,7 @@ def propagate_ssh(stack, max_retries=2):
     logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
 
     # Make sure the pillar is properly set
-    change_pillar(stack, stack.pillar_file.path)
+    change_pillar(stack, stack.get_pillar_file_path())
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()
@@ -1034,7 +1032,7 @@ def global_orchestrate(stack, max_retries=2):
     accounts = list(accounts)
 
     # Set the pillar file to the global pillar data file
-    change_pillar(stack, stack.global_pillar_file.path)
+    change_pillar(stack, stack.get_global_pillar_file_path())
 
     # Copy the global orchestrate file into the cloud directory
     copy_global_orchestrate(stack)
@@ -1147,7 +1145,7 @@ def orchestrate(stack, max_retries=2):
     clone_formulas(stack)
 
     # Set the pillar file back to the regular pillar
-    change_pillar(stack, stack.pillar_file.path)
+    change_pillar(stack, stack.get_pillar_file_path())
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()
@@ -1270,7 +1268,7 @@ def single_sls(stack, component, host_target, max_retries=2):
     clone_formulas(stack)
 
     # Set the pillar file back to the regular pillar
-    change_pillar(stack, stack.pillar_file.path)
+    change_pillar(stack, stack.get_pillar_file_path())
 
     # Set up logging for this task
     log_dir = stack.get_log_directory()
@@ -1539,9 +1537,6 @@ def destroy_stack(stack):
             'Stack appears to have hosts attached and can\'t be completely destroyed.'
         )
     else:
-        # delete the stack storage directory
-        if os.path.exists(stack.get_root_directory()):
-            shutil.rmtree(stack.get_root_directory())
         stack.delete()
 
 

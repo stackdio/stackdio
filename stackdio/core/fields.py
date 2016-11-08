@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 POSTGRES_ENGINES = ('django.db.backends.postgresql', 'django.db.backends.postgresql_psycopg2')
 
 
+# TODO This can be removed in 0.9.0 once it's no longer referenced in migrations
 class DeletingFileField(models.FileField):
     """
     Borrowed from: https://gist.github.com/889692
@@ -150,7 +151,11 @@ if settings.DATABASES[DEFAULT_DB_ALIAS]['ENGINE'] in POSTGRES_ENGINES:
     from django.contrib.postgres.fields import JSONField as DjangoJSONField
 
     class JSONField(DjangoJSONField):
-        pass
+        def __init__(self, *args, **kwargs):
+            default = kwargs.get('default', None)
+            if default is None:
+                kwargs['default'] = {}
+            super(JSONField, self).__init__(*args, **kwargs)
 
 else:
     # no postgres :( for testing only, use our custom JSONField
