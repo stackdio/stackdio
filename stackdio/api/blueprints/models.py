@@ -17,16 +17,12 @@
 
 from __future__ import unicode_literals
 
-import json
 import logging
 
 import six
-from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
-from django.core.files.base import ContentFile
-from django.core.files.storage import FileSystemStorage
 from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import (
@@ -35,7 +31,7 @@ from django_extensions.db.models import (
     TitleSlugDescriptionModel,
 )
 from stackdio.core.decorators import django_cache
-from stackdio.core.fields import DeletingFileField, JSONField
+from stackdio.core.fields import JSONField
 from stackdio.core.models import SearchQuerySet
 from stackdio.core.notifications.decorators import add_subscribed_channels
 
@@ -61,10 +57,6 @@ DEVICE_ID_CHOICES = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-def get_props_file_path(obj, filename):
-    return 'blueprints/{0}-{1}.props'.format(obj.pk, obj.slug)
 
 
 class BlueprintQuerySet(SearchQuerySet):
@@ -109,14 +101,8 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
 
     create_users = models.BooleanField('Create SSH Users')
 
-    # storage for properties file
-    props_file = DeletingFileField(
-        max_length=255,
-        upload_to=get_props_file_path,
-        null=True,
-        blank=True,
-        default=None,
-        storage=FileSystemStorage(location=settings.FILE_STORAGE_DIRECTORY))
+    # The properties for this blueprint
+    properties = JSONField('Properties')
 
     objects = BlueprintQuerySet.as_manager()
 
@@ -134,23 +120,6 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
     @django_cache('blueprint-{id}-stack-count')
     def stack_count(self):
         return self.stacks.count()
-
-    def _get_properties(self):
-        if not self.props_file:
-            return {}
-        with open(self.props_file.path) as f:
-            return json.loads(f.read())
-
-    def _set_properties(self, props):
-        props_json = json.dumps(props, indent=4)
-        if not self.props_file:
-            self.props_file.save(self.slug + '.props', ContentFile(props_json))
-        else:
-            with open(self.props_file.path, 'w') as f:
-                f.write(props_json)
-
-    # Create a property
-    properties = property(_get_properties, _set_properties)
 
     def get_formulas(self):
         formulas = set()
