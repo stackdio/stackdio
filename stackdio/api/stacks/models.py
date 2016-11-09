@@ -785,7 +785,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def get_pillar_file_path(self):
         return os.path.join(self.get_root_directory(), 'stack.pillar')
 
-    def generate_pillar_file(self, update_formulas=False):
+    def get_full_pillar(self, update_formulas=False):
         # Import here to not cause circular imports
         from stackdio.api.formulas.models import FormulaVersion
         from stackdio.api.formulas.tasks import update_formula
@@ -850,6 +850,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # Add in properties that were supplied via the blueprint and during
         # stack creation
         recursive_update(pillar_props, self.properties)
+
+        return pillar_props
+
+    def generate_pillar_file(self, update_formulas=False):
+        pillar_props = self.get_full_pillar(update_formulas)
 
         pillar_file_yaml = yaml.safe_dump(pillar_props, default_flow_style=False)
 

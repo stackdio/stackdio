@@ -34,7 +34,7 @@ def __virtual__():
 
 def ext_pillar(minion_id, pillar, *args, **kwargs):
     """
-    Basically, we need to providee additional pillar data to our states
+    Basically, we need to provide additional pillar data to our states
     but only the pillar data defined for a stack. The user should have
     the ability to do this from the UI and the pillar file used will
     be located in the grains.

@@ -26,30 +26,27 @@ users.
 NOTE: Most of this was taken from salt's fileserver.roots module and
 adapted to work in the manner described above.
 """
+from __future__ import absolute_import
 
 # Import python libs
 import logging
 import os
 
-if '__opts__' not in globals():
-    __opts__ = {}
-
-try:
-    import fcntl
-    HAS_FCNTL = os.uname()[0] != "SunOS"
-except ImportError:
-    # fcntl is not available on windows
-    HAS_FCNTL = False
-
 # Import salt libs
-from salt.utils.event import tagify  # NOQA
-import salt.fileserver  # NOQA
-import salt.utils  # NOQA
+import salt.fileserver
+import salt.utils
+from salt.utils.event import tagify
 
 log = logging.getLogger(__name__)
 
 
+__virtualname__ = 'stackdio'
+
+
 def __virtual__():
+    if __virtualname__ not in __opts__['fileserver_backend']:
+        return False
+
     storage_dir = _get_storage_dir()
 
     if storage_dir is None:
@@ -62,7 +59,7 @@ def __virtual__():
         log.error('stackdio::root_dir location is not a directory: {0}'.format(storage_dir))
         return False
 
-    return 'stackdio'
+    return __virtualname__
 
 
 def _get_storage_dir():
@@ -91,7 +88,7 @@ def _get_env_dir(saltenv):
     formula_dir = os.path.join(root_dir, 'formulas')
 
     if not os.path.exists(formula_dir):
-        os.mkdir(formula_dir, 0755)
+        os.mkdir(formula_dir, 0o755)
 
     return formula_dir
 
