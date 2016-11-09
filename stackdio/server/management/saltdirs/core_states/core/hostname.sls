@@ -7,15 +7,17 @@
 
 # Edit the appropriate hostname file
 hostname_file:
-  file.replace:
+  file.managed:
 {% if grains['os_family'] == 'Debian' %}
     - name: /etc/hostname
-    - pattern: "^.*$"
-    - repl: "{{ grains['fqdn'] }}"
+    - contents:
+      - "{{ grains['fqdn'] }}"
 {% elif grains['os_family'] == 'RedHat' %}
     - name: /etc/sysconfig/network
-    - pattern: "^HOSTNAME=.*$"
-    - repl: "HOSTNAME={{ grains['fqdn'] }}"
+    - contents:
+      - "NOZEROCONF=yes"
+      - "NETWORKING=yes"
+      - "HOSTNAME={{ grains['fqdn'] }}"
 {% endif %}
 
 # Add an IP->FQDN mapping for each machine in the stack
