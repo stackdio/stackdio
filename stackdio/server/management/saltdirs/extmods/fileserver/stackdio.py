@@ -312,15 +312,9 @@ def file_hash(load, fnd):  # NOQA
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     # save the cache object "hash:mtime"
-    if HAS_FCNTL:
-        with salt.utils.flopen(cache_path, 'w') as fp_:
-            fp_.write('{0}:{1}'.format(ret['hsum'], os.path.getmtime(path)))
-            fcntl.flock(fp_.fileno(), fcntl.LOCK_UN)
-        return ret
-    else:
-        with salt.utils.fopen(cache_path, 'w') as fp_:
-            fp_.write('{0}:{1}'.format(ret['hsum'], os.path.getmtime(path)))
-        return ret
+    with salt.utils.fopen(cache_path, 'w') as fp_:
+        fp_.write('{0}:{1}'.format(ret['hsum'], os.path.getmtime(path)))
+    return ret
 
 
 # Ignoring code complexity issues
