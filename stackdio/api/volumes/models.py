@@ -110,7 +110,7 @@ def volume_post_save(sender, **kwargs):
 
 
 @receiver(models.signals.post_delete, sender=Volume)
-def host_post_delete(sender, **kwargs):
+def volume_post_delete(sender, **kwargs):
     volume = kwargs.pop('instance')
     stack = volume.stack
 
