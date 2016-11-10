@@ -35,6 +35,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import models, transaction
 from django.dispatch import receiver
+from django.template.defaultfilters import slugify
 from django.utils.timezone import now
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 from guardian.shortcuts import get_users_with_perms
@@ -382,7 +383,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             # and assign the rules to the group
             sg_name = 'stackdio-managed-stack-{0}-hosts-{1}'.format(
                 self.namespace,
-                hostdef.title.lower().replace(' ', '-'),
+                slugify(hostdef.title),
             )
             sg_description = 'stackd.io managed security group'
 
