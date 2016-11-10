@@ -144,11 +144,16 @@ class FormulaValidVersionListAPIView(mixins.FormulaRelatedMixin, generics.ListAP
     def list(self, request, *args, **kwargs):
         formula = self.get_formula()
 
-        versions = sorted(formula.get_valid_versions())
+        versions = formula.get_valid_versions()
+
+        version = request.query_params.get('version', '')
+
+        if version:
+            versions = [v for v in versions if version in v]
 
         data = OrderedDict((
             ('count', len(versions)),
-            ('results', versions),
+            ('results', sorted(versions)),
         ))
 
         return Response(data)

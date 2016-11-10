@@ -35,6 +35,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import models, transaction
 from django.dispatch import receiver
+from django.template.defaultfilters import slugify
 from django.utils.timezone import now
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 from guardian.shortcuts import get_users_with_perms
@@ -186,6 +187,12 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         """
         if activity is not None:
             self.set_activity(activity, host_ids)
+
+        max_history_length = StackHistory._meta.get_field('message').max_length
+
+        # Make sure we chop the history message off so we don't get a database error
+        if len(message) > max_history_length:
+            message = message[:max_history_length]
 
         # Create a history
         self.history.create(message=message)
@@ -374,9 +381,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
             # create the managed security group for each host definition
             # and assign the rules to the group
-            sg_name = 'stackdio-managed-{0}-stack-{1}'.format(
-                hostdef.slug,
-                self.pk
+            sg_name = 'stackdio-managed-stack-{0}-hosts-{1}'.format(
+                self.namespace,
+                slugify(hostdef.title),
             )
             sg_description = 'stackd.io managed security group'
 
@@ -448,7 +455,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             host_definitions = [host_definition]
 
         for hostdef in host_definitions:
-            hosts = self.hosts.all()
+            # We only care about the hosts belonging to this hostdef
+            hosts = self.hosts.filter(blueprint_host_definition=hostdef).order_by('index')
 
             if count is None:
                 start = 0
@@ -458,35 +466,41 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                 start = 0
                 end = count
                 indexes = range(start, end)
-            else:
-                if backfill:
-                    hosts = hosts.order_by('index')
+            elif backfill:
+                # Get the set of current indices
+                host_indexes = set(h.index for h in hosts)
 
-                    # The set of existing host indexes
-                    host_indexes = set([h.index for h in hosts])
+                # The last index available (they are sorted by index)
+                last_index = hosts.last().index
 
-                    # The last index available
-                    last_index = sorted(host_indexes)[-1]
+                # The set of expected indexes based on the last known
+                # index
+                expected_indexes = set(range(last_index + 1))
 
-                    # The set of expected indexes based on the last known
-                    # index
-                    expected_indexes = set(range(last_index + 1))
+                # Any gaps any the expected indexes?
+                gaps = expected_indexes - host_indexes
 
-                    # Any gaps any the expected indexes?
-                    gaps = expected_indexes - host_indexes
-
-                    indexes = []
-                    if gaps:
-                        indexes = list(gaps)
-
-                    count -= len(indexes)
-                    start = sorted(host_indexes)[-1] + 1
-                    end = start + count
-                    indexes += range(start, end)
+                # If we have gaps, start with those
+                if gaps:
+                    indexes = sorted(list(gaps))
+                    # Truncate the list so there are only *count* items in the list
+                    indexes = indexes[:count]
                 else:
-                    start = hosts.order_by('-index')[0].index + 1
-                    end = start + count
-                    indexes = range(start, end)
+                    indexes = []
+
+                # We already have *len(indexes)* to create, so subtract that number from
+                # the original count to see how many more we need to create past the end
+                # of the current set of indices
+                count -= len(indexes)
+                start = last_index + 1
+                end = start + count
+
+                # Add that into the current list
+                indexes.extend(range(start, end))
+            else:
+                start = hosts.last().index + 1
+                end = start + count
+                indexes = range(start, end)
 
             # iterate over the host definition count and create individual
             # host records on the stack
@@ -772,7 +786,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def get_pillar_file_path(self):
         return os.path.join(self.get_root_directory(), 'stack.pillar')
 
-    def generate_pillar_file(self, update_formulas=False):
+    def get_full_pillar(self, update_formulas=False):
         # Import here to not cause circular imports
         from stackdio.api.formulas.models import FormulaVersion
         from stackdio.api.formulas.tasks import update_formula
@@ -837,6 +851,11 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # Add in properties that were supplied via the blueprint and during
         # stack creation
         recursive_update(pillar_props, self.properties)
+
+        return pillar_props
+
+    def generate_pillar_file(self, update_formulas=False):
+        pillar_props = self.get_full_pillar(update_formulas)
 
         pillar_file_yaml = yaml.safe_dump(pillar_props, default_flow_style=False)
 
@@ -1323,6 +1342,7 @@ def metadata_post_save(sender, **kwargs):
     metadata = kwargs.pop('instance')
 
     host = metadata.host
+    stack = host.stack
     sls_path = metadata.sls_path
 
     logger.debug('Pre-caching metadata from cache for component: {}'.format(metadata))
@@ -1338,6 +1358,10 @@ def metadata_post_save(sender, **kwargs):
         'host-{}-health'.format(host.id),
     ]
     cache.delete_many(cache_keys)
+
+    # Pre-cache these by accessing them
+    host.health
+    stack.health
 
 
 @receiver(models.signals.post_delete, sender=ComponentMetadata)
@@ -1361,25 +1385,33 @@ def metadata_post_delete(sender, **kwargs):
 @receiver(models.signals.post_save, sender=Host)
 def host_post_save(sender, **kwargs):
     host = kwargs.pop('instance')
+    stack = host.stack
 
     # Delete from the cache
     cache_keys = [
+        'stack-{}-host-count'.format(host.stack_id),
         'stack-{}-hosts'.format(host.stack_id),
         'stack-{}-health'.format(host.stack_id),
         'host-{}-health'.format(host.id),
     ]
     cache.delete_many(cache_keys)
 
+    # Pre-cache these by accessing them
+    host.health
+    stack.get_cached_hosts()
+    stack.host_count
+    stack.health
+
 
 @receiver(models.signals.post_delete, sender=Host)
 def host_post_delete(sender, **kwargs):
     host = kwargs.pop('instance')
+    stack = host.stack
 
     # Delete from the cache
     cache_keys = [
         'stack-{}-hosts'.format(host.stack_id),
         'stack-{}-host-count'.format(host.stack_id),
-        'stack-{}-volume-count'.format(host.stack_id),
         'stack-{}-health'.format(host.stack_id),
 
         # Delete anything about this host, not needed anymore
@@ -1394,10 +1426,31 @@ def host_post_delete(sender, **kwargs):
     ]
     cache.delete_many(cache_keys)
 
+    # Pre-cache these by accessing them
+    stack.get_cached_hosts()
+    stack.host_count
+    stack.health
+
+
+@receiver(models.signals.post_save, sender=Stack)
+def stack_post_save(sender, **kwargs):
+    stack = kwargs.pop('instance')
+    blueprint = stack.blueprint
+
+    # Delete from the cache
+    cache_keys = [
+        'blueprint-{}-stack-count'.format(stack.blueprint_id),
+    ]
+    cache.delete_many(cache_keys)
+
+    # Pre-cache these by accessing them
+    blueprint.stack_count
+
 
 @receiver(models.signals.post_delete, sender=Stack)
 def stack_post_delete(sender, **kwargs):
     stack = kwargs.pop('instance')
+    blueprint = stack.blueprint
 
     ctype = ContentType.objects.get_for_model(Stack)
 
@@ -1411,6 +1464,9 @@ def stack_post_delete(sender, **kwargs):
         'stack-{}-health'.format(stack.id),
     ]
     cache.delete_many(cache_keys)
+
+    # Pre-cache these by accessing them
+    blueprint.stack_count
 
     # delete the stack storage directory
     if os.path.exists(stack.get_root_directory()):

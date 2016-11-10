@@ -25,8 +25,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import models
 from django.dispatch import receiver
-from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
-
+from django_extensions.db.models import (
+    TimeStampedModel,
+    TitleDescriptionModel,
+    TitleSlugDescriptionModel,
+)
 from stackdio.core.decorators import django_cache
 from stackdio.core.fields import JSONField
 from stackdio.core.models import SearchQuerySet
@@ -128,7 +131,7 @@ class Blueprint(TimeStampedModel, TitleSlugDescriptionModel):
 
 
 @six.python_2_unicode_compatible
-class BlueprintHostDefinition(TitleSlugDescriptionModel, TimeStampedModel):
+class BlueprintHostDefinition(TimeStampedModel, TitleDescriptionModel):
 
     class Meta:
         verbose_name_plural = 'host definitions'

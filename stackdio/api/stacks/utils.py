@@ -495,6 +495,9 @@ def process_times(sls_result):
 
 
 def process_orchestrate_result(result, stack, log_file, err_file):
+    # The actual info we want is nested in the 'data' key
+    result = result['data']
+
     opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
     if not isinstance(result, dict):

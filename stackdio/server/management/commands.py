@@ -434,9 +434,11 @@ class InitCommand(WizardCommand):
                  **self.INFO_INDENT)
 
         # Copy the salt directories needed
-        saltdirs = self.load_resource('server/management/saltdirs')
-        for rp in os.listdir(saltdirs):
-            path = os.path.join(saltdirs, rp)
+        salt_dir = self.load_resource('salt')
+
+        # We only need to copy core_states and pillar
+        for rp in ['core_states', 'pillar']:
+            path = os.path.join(salt_dir, rp)
             dst = os.path.join(self.config.salt_root, rp)
 
             # check for existing dst and skip it

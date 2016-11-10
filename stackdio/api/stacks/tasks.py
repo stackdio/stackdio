@@ -1092,7 +1092,7 @@ def global_orchestrate(stack, max_retries=2):
             # This might be kind of scary - but it'll work while we only have one account per
             # stack
             result = salt_runner.cmd(
-                'stackdio.orchestrate',
+                'state.orchestrate',
                 [
                     'stack_{0}_global_orchestrate'.format(stack.id),
                     'cloud.{0}'.format(accounts[0].slug),
@@ -1202,7 +1202,7 @@ def orchestrate(stack, max_retries=2):
             stack.set_all_component_statuses(ComponentStatus.RUNNING)
 
             result = salt_runner.cmd(
-                'stackdio.orchestrate',
+                'state.orchestrate',
                 [
                     'orchestrate',
                     'stacks.{0}-{1}'.format(stack.pk, stack.slug),
@@ -1360,9 +1360,6 @@ def single_sls(stack, component, host_target, max_retries=2):
         errors = {}
         for host, ret in result.items():
             states = ret['ret']
-
-            if ret['retcode'] != 0:
-                errors[host] = states
 
             if isinstance(states, list):
                 errors[host] = states

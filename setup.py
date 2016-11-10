@@ -158,5 +158,9 @@ setup(
         'console_scripts': [
             'stackdio = stackdio.server.management:main',
         ],
+        'salt.loader': [
+            'fileserver_dirs = stackdio.salt.extension_loader:fileserver_dirs',
+            'pillar_dirs = stackdio.salt.extension_loader:pillar_dirs',
+        ],
     }
 )
