@@ -6,7 +6,9 @@ include MANIFEST.in
 recursive-include config *
 recursive-include stackdio/api/cloud/fixtures *.json
 recursive-include stackdio/core/templates *
-recursive-include stackdio/server/management/saltdirs *
+recursive-include stackdio/salt/core_states *
+recursive-include stackdio/salt/extmods *
+recursive-include stackdio/salt/pillar *
 recursive-include stackdio/server/management/templates *
 include stackdio/ui/management/files/app.build.js
 recursive-include stackdio/ui/static *

@@ -28,9 +28,6 @@ pillar_roots:
 # Disable master config from showing in pillar
 pillar_opts: False
 
-# Where our external pillar and other custom modules live
-extension_modules: {{ salt_root }}/extmods
-
 # Enable our custom external pillar
 ext_pillar:
   - stackdio: ''
