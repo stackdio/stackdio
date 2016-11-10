@@ -1,19 +1,33 @@
 # -*- coding: utf-8 -*-
-"""
-The default file server backend
 
-This fileserver backend serves files from the Master's local filesystem. If
-:conf_master:`fileserver_backend` is not defined in the Master config file,
-then this backend is enabled by default. If it *is* defined then ``roots`` must
-be in the :conf_master:`fileserver_backend` list to enable this backend.
+# Copyright 2016,  Digital Reasoning
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+"""
+The stackdio file server backend
+
+This fileserver backend serves files from the Master's local filesystem.
+``stackdio`` must be in the :conf_master:`fileserver_backend` list to enable this backend.
 
 .. code-block:: yaml
 
     fileserver_backend:
+      - stackdio
       - roots
 
-Fileserver environments are defined using the :conf_master:`file_roots`
-configuration option.
+This backend allows us to have several environments that change dynamically rather
+than static environments in the config file.
 """
 from __future__ import absolute_import
 
