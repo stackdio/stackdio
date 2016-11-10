@@ -28,13 +28,6 @@ import salt.utils
 from salt.utils.event import tagify
 import salt.ext.six as six
 
-# import the functions that don't change from the default roots fileserver
-from salt.fileserver.roots import (
-    serve_file,
-    file_list,
-    file_list_emptydirs,
-    dir_list,
-)
 
 log = logging.getLogger(__name__)
 
@@ -163,6 +156,36 @@ def envs():
             continue
         ret.append('stacks.{0}'.format(stack))
 
+    return ret
+
+
+def serve_file(load, fnd):
+    """
+    Return a chunk from a file based on the data received
+    """
+    if 'env' in load:
+        salt.utils.warn_until(
+            'Carbon',
+            'Passing a salt environment should be done using \'saltenv\' '
+            'not \'env\'. This functionality will be removed in Salt Carbon.'
+        )
+        load['saltenv'] = load.pop('env')
+
+    ret = {'data': '',
+           'dest': ''}
+    if 'path' not in load or 'loc' not in load or 'saltenv' not in load:
+        return ret
+    if not fnd['path']:
+        return ret
+    ret['dest'] = fnd['rel']
+    gzip = load.get('gzip', None)
+    with salt.utils.fopen(os.path.normpath(fnd['path']), 'rb') as fp_:
+        fp_.seek(load['loc'])
+        data = fp_.read(__opts__['file_buffer_size'])
+        if gzip and data:
+            data = salt.utils.gzip_util.compress(data, gzip)
+            ret['gzip'] = gzip
+        ret['data'] = data
     return ret
 
 
@@ -375,6 +398,28 @@ def _file_lists(load, form):
         return ret.get(form, [])
     # Shouldn't get here, but if we do, this prevents a TypeError
     return []
+
+
+def file_list(load):
+    """
+    Return a list of all files on the file server in a specified
+    environment
+    """
+    return _file_lists(load, 'files')
+
+
+def file_list_emptydirs(load):
+    """
+    Return a list of all empty directories on the master
+    """
+    return _file_lists(load, 'empty_dirs')
+
+
+def dir_list(load):
+    """
+    Return a list of all directories on the master
+    """
+    return _file_lists(load, 'dirs')
 
 
 def symlink_list(load):
