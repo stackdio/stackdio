@@ -27,7 +27,7 @@ from stackdio.core.serializers import (
     StackdioParentHyperlinkedModelSerializer,
 )
 
-from . import models, tasks, validators
+from . import models, validators
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +65,6 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
             'root_path',
             'created',
             'modified',
-            'status',
-            'status_detail',
             'properties',
             'components',
             'valid_versions',
@@ -107,11 +105,7 @@ class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstra
 
     def do_update(self):
         formula = self.instance
-        formula.set_status(
-            models.Formula.IMPORTING,
-            'Importing formula...this could take a while.'
-        )
-        tasks.update_formula.si(formula.id, formula.default_version).apply_async()
+        formula.get_gitfs().update()
 
     def save(self, **kwargs):
         action = self.validated_data['action']

@@ -786,10 +786,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def get_pillar_file_path(self):
         return os.path.join(self.get_root_directory(), 'stack.pillar')
 
-    def get_full_pillar(self, update_formulas=False):
+    def get_full_pillar(self):
         # Import here to not cause circular imports
         from stackdio.api.formulas.models import FormulaVersion
-        from stackdio.api.formulas.tasks import update_formula
 
         users = []
         # pull the create_ssh_users property from the stackd.io config file.
@@ -843,9 +842,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             except FormulaVersion.DoesNotExist:
                 version = formula.default_version
 
-            if update_formulas:
-                # Update the formulas if requested
-                update_formula.si(formula.id, version)()
+            # Update the formula
+            formula.get_gitfs().update()
+
+            # Add it to the rest of the pillar
             recursive_update(pillar_props, formula.properties(version))
 
         # Add in properties that were supplied via the blueprint and during
@@ -854,8 +854,8 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
 
         return pillar_props
 
-    def generate_pillar_file(self, update_formulas=False):
-        pillar_props = self.get_full_pillar(update_formulas)
+    def generate_pillar_file(self):
+        pillar_props = self.get_full_pillar()
 
         pillar_file_yaml = yaml.safe_dump(pillar_props, default_flow_style=False)
 
@@ -865,10 +865,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def get_global_pillar_file_path(self):
         return os.path.join(self.get_root_directory(), 'stack.global_pillar')
 
-    def generate_global_pillar_file(self, update_formulas=False):
+    def generate_global_pillar_file(self):
         # Import here to not cause circular imports
         from stackdio.api.formulas.models import FormulaVersion
-        from stackdio.api.formulas.tasks import update_formula
 
         pillar_props = {}
 
@@ -889,9 +888,10 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             except FormulaVersion.DoesNotExist:
                 version = formula.default_version
 
-            if update_formulas:
-                # Update the formulas if requested
-                update_formula.si(formula.id, version)()
+            # Update the formula
+            formula.get_gitfs().update()
+
+            # Add it to the rest of the pillar
             recursive_update(pillar_props, formula.properties(version))
 
         # Add in the account properties AFTER the stack properties

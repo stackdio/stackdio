@@ -6,7 +6,6 @@ import os
 import shutil
 from django.conf import settings
 from django.db import migrations
-from stackdio.api.formulas.tasks import import_formula
 
 
 def fix_formulas_forwards(apps, schema_editor):
@@ -19,9 +18,6 @@ def fix_formulas_forwards(apps, schema_editor):
         repo_name = os.path.splitext(os.path.split(formula.uri)[-1])[0]
         dir_name = '{}-{}'.format(formula.id, repo_name)
         shutil.rmtree(os.path.join(formula_dir, dir_name), ignore_errors=True)
-
-        # re-import
-        import_formula.si(formula.id)()
 
 
 def fix_formulas_reverse(apps, schema_editor):

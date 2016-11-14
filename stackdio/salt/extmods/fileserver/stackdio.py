@@ -31,19 +31,22 @@ than static environments in the config file.
 """
 from __future__ import absolute_import
 
-# Import python libs
-import os
 import errno
 import logging
+import os
 
-# Import salt libs
+import django
+import salt.ext.six as six
 import salt.fileserver
 import salt.utils
 from salt.utils.event import tagify
-import salt.ext.six as six
+from salt.utils.gitfs import GitFS
 
 
 log = logging.getLogger(__name__)
+
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.server.settings.production')
 
 
 __virtualname__ = 'stackdio'
@@ -151,24 +154,18 @@ def envs():
     """
     Return the file server environments
     """
-    storage_dir = _get_storage_dir()
+    django.setup()
+
+    from stackdio.api.stacks.models import Stack
+    from stackdio.api.cloud.models import CloudAccount
 
     ret = []
 
-    cloud_dir = os.path.join(storage_dir, 'cloud')
-    stacks_dir = os.path.join(storage_dir, 'stacks')
+    for stack in Stack.objects.all():
+        ret.append('stacks.{}'.format(stack.id))
 
-    for account in os.listdir(cloud_dir):
-        account_dir = os.path.join(cloud_dir, account)
-        if not os.path.isdir(account_dir):
-            continue
-        ret.append('cloud.{0}'.format(account))
-
-    for stack in os.listdir(stacks_dir):
-        stack_dir = os.path.join(stacks_dir, stack)
-        if not os.path.isdir(stack_dir):
-            continue
-        ret.append('stacks.{0}'.format(stack))
+    for account in CloudAccount.objects.all():
+        ret.append('cloud.{}'.format(account.slug))
 
     return ret
 

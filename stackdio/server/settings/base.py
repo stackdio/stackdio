@@ -398,8 +398,6 @@ CELERY_ACCEPT_CONTENT = ['json']
 
 # Configure queues
 CELERY_ROUTES = {
-    'formulas.import_formula': {'queue': 'short'},
-    'formulas.update_formula': {'queue': 'short'},
     'notifications.generate_notifications': {'queue': 'short'},
     'notifications.resend_failed_notifications': {'queue': 'short'},
     'notifications.send_notification': {'queue': 'short'},
