@@ -32,7 +32,8 @@ dep_versions = OrderedDict()
 if 'stackdio-server' in versions:
     stackdio_dist = versions['stackdio-server']
     for dist in sorted(stackdio_dist.requires(), key=lambda x: x.project_name.lower()):
-        dep_versions[dist.project_name] = versions[dist.project_name].version
+        v = versions.get(dist.project_name)
+        dep_versions[dist.project_name] = v.version if v else None
 
 
 class VersionAPIView(views.APIView):

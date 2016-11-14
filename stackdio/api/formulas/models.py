@@ -25,6 +25,7 @@ from shutil import rmtree
 import salt.config
 import six
 import yaml
+from Crypto.PublicKey import RSA
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
@@ -214,13 +215,52 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel):
     def __str__(self):
         return six.text_type('{} ({})'.format(self.title, self.uri))
 
+    def get_root_dir(self):
+        root_dir = os.path.join(
+            settings.FILE_STORAGE_DIRECTORY,
+            'formulas',
+            six.text_type(self.pk),
+        )
+
+        if not os.path.exists(root_dir):
+            os.makedirs(root_dir)
+        return root_dir
+
     def get_gitfs(self):
-        opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
-        gitfs_config = self.uri
-        opts['gitfs_remotes'] = [gitfs_config]
-        gitfs = GitFS(opts)
-        gitfs.init_remotes([gitfs_config], PER_REMOTE_OVERRIDES)
-        return gitfs
+        # Always write out the private / public keys
+        if self.ssh_private_key:
+            private_key = RSA.importKey(self.ssh_private_key)
+            public_key = private_key.publickey()
+
+            # Write out the key file
+            ssh_private_key_file = os.path.join(self.get_root_dir(), 'id_rsa')
+            with open(ssh_private_key_file, 'w') as f:
+                f.write(private_key.exportKey())
+
+            os.chmod(ssh_private_key_file, 0o600)
+
+            ssh_public_key_file = os.path.join(self.get_root_dir(), 'id_rsa.pub')
+            with open(ssh_public_key_file, 'w') as f:
+                f.write(public_key.exportKey('OpenSSH'))
+
+            # The config now looks different
+            gitfs_remotes = [{
+                self.uri: [
+                    {'privkey': ssh_private_key_file},
+                    {'pubkey': ssh_public_key_file},
+                ]
+            }]
+        else:
+            gitfs_remotes = [self.uri]
+
+        if not hasattr(self, '_gitfs'):
+            opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+            opts['gitfs_remotes'] = gitfs_remotes
+            gitfs = GitFS(opts)
+            gitfs.init_remotes(gitfs_remotes, PER_REMOTE_OVERRIDES)
+            self._gitfs = gitfs
+
+        return self._gitfs
 
     def get_valid_versions(self):
         gitfs = self.get_gitfs()
