@@ -197,41 +197,43 @@ class FormulaComponentSerializer(StackdioParentHyperlinkedModelSerializer):
     def validate(self, attrs):
         formula = attrs.get('formula', None)
         sls_path = attrs['sls_path']
-        attrs['validated'] = False
 
         # Grab the formula versions out of the content object
         content_object = self.context.get('content_object')
-        formula_versions = content_object.formula_versions.all() if content_object else ()
 
-        if formula is None:
-            # Do some validation if the formula is done
-            all_components = models.Formula.all_components(formula_versions)
+        if content_object:
+            # Only validate here if we have a content object to get formula versions from.
+            formula_versions = content_object.formula_versions.all()
 
-            if sls_path not in all_components:
-                raise serializers.ValidationError({
-                    'sls_path': ['sls_path `{0}` does not exist.'.format(sls_path)]
-                })
+            version_map = {}
 
-            # This means the component exists.  We'll check to make sure it doesn't
-            # span multiple formulas.
-            sls_formulas = all_components[sls_path]
-            if len(sls_formulas) > 1:
-                err_msg = 'sls_path `{0}` is contained in multiple formulas.  Please specify one.'
-                raise serializers.ValidationError({
-                    'sls_path': [err_msg.format(sls_path)]
-                })
+            # Build the map of formula -> version
+            for version in formula_versions:
+                version_map[version.formula] = version.version
 
-            # Be sure to throw the formula in!
-            attrs['formula'] = sls_formulas[0]
-            attrs['validated'] = True
-        else:
-            # If they provided a formula, validate the sls_path is in that formula
-            validators.validate_formula_component(attrs, formula_versions)
-            attrs['validated'] = True
+            if formula is None:
+                # Do some validation if the formula isn't passed in
+                all_components = models.Formula.all_components(version_map)
+
+                if sls_path not in all_components:
+                    raise serializers.ValidationError({
+                        'sls_path': ['sls_path `{0}` does not exist.'.format(sls_path)]
+                    })
+
+                # This means the component exists.  We'll check to make sure it doesn't
+                # span multiple formulas.
+                sls_formulas = all_components[sls_path]
+                if len(sls_formulas) > 1:
+                    err_msg = ('sls_path `{0}` is contained in multiple formulas.  '
+                               'Please specify one.')
+                    raise serializers.ValidationError({
+                        'sls_path': [err_msg.format(sls_path)]
+                    })
+
+                # Be sure to throw the formula in!
+                attrs['formula'] = sls_formulas[0]
+            else:
+                # If they provided a formula, validate the sls_path is in that formula
+                validators.validate_formula_component(attrs, version_map)
 
         return attrs
-
-    def save(self, **kwargs):
-        # Be sure that validated doesn't end up in the final validated data
-        self.validated_data.pop('validated', None)
-        return super(FormulaComponentSerializer, self).save(**kwargs)

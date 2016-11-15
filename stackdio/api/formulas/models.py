@@ -25,19 +25,19 @@ from shutil import rmtree
 import salt.config
 import six
 import yaml
-from Crypto.PublicKey import RSA
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 from model_utils.models import StatusModel
-from salt.utils.gitfs import GitFS
 from stackdio.core.models import SearchQuerySet
+
+from .utils import StackdioGitFS
 
 logger = logging.getLogger(__name__)
 
-PER_REMOTE_OVERRIDES = ('base', 'mountpoint', 'root', 'ssl_verify')
+PER_REMOTE_OVERRIDES = ('base', 'mountpoint', 'root', 'ssl_verify', 'privkey')
 
 
 @six.python_2_unicode_compatible
@@ -229,25 +229,17 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel):
     def get_gitfs(self):
         # Always write out the private / public keys
         if self.ssh_private_key:
-            private_key = RSA.importKey(self.ssh_private_key)
-            public_key = private_key.publickey()
-
             # Write out the key file
             ssh_private_key_file = os.path.join(self.get_root_dir(), 'id_rsa')
             with open(ssh_private_key_file, 'w') as f:
-                f.write(private_key.exportKey())
+                f.write(self.ssh_private_key)
 
             os.chmod(ssh_private_key_file, 0o600)
-
-            ssh_public_key_file = os.path.join(self.get_root_dir(), 'id_rsa.pub')
-            with open(ssh_public_key_file, 'w') as f:
-                f.write(public_key.exportKey('OpenSSH'))
 
             # The config now looks different
             gitfs_remotes = [{
                 self.uri: [
                     {'privkey': ssh_private_key_file},
-                    {'pubkey': ssh_public_key_file},
                 ]
             }]
         else:
@@ -255,8 +247,15 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel):
 
         if not hasattr(self, '_gitfs'):
             opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
-            opts['gitfs_remotes'] = gitfs_remotes
-            gitfs = GitFS(opts)
+            opts['stackdiogitfs_remotes'] = gitfs_remotes
+            new_cachedir = os.path.join(opts['cachedir'],
+                                        'stackdio',
+                                        'formulas',
+                                        six.text_type(self.id))
+            if not os.path.isdir(new_cachedir):
+                os.makedirs(new_cachedir)
+            opts['cachedir'] = new_cachedir
+            gitfs = StackdioGitFS(opts)
             gitfs.init_remotes(gitfs_remotes, PER_REMOTE_OVERRIDES)
             self._gitfs = gitfs
 
@@ -296,12 +295,8 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel):
             return ret
 
     @classmethod
-    def all_components(cls, versions=()):
-        version_map = {}
-
-        # Build the map of formula -> version
-        for version in versions:
-            version_map[version.formula] = version.version
+    def all_components(cls, version_map=None):
+        version_map = version_map or {}
 
         ret = {}
         for formula in cls.objects.all():

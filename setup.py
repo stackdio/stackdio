@@ -84,7 +84,7 @@ requirements = [
     # Light usage, no need to have an upper bound on the version
     'dj-database-url>=0.3',
     'envoy',
-    'pygit2~=0.20.3',
+    'GitPython>=2.0',
     'Markdown>=2.6',
     'pip>=6',
     'PyYAML>=3.10',
