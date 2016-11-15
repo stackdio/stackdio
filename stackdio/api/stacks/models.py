@@ -695,7 +695,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
             f.write(map_file_yaml)
 
     def get_stackdio_dir(self):
-        ret = os.path.join(self.get_root_directory(), 'formulas', '__stackdio__')
+        ret = os.path.join(self.get_root_directory(), 'salt_files')
         if not os.path.exists(ret):
             os.makedirs(ret)
         return ret
@@ -947,7 +947,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
     def get_root_directory(self):
         return os.path.join(settings.FILE_STORAGE_DIRECTORY,
                             'stacks',
-                            '{0}-{1}'.format(self.pk, self.slug))
+                            six.text_type(self.pk))
 
     def get_log_directory(self):
         root_dir = self.get_root_directory()

@@ -131,13 +131,6 @@ def is_state_error(state_meta):
     return not state_meta['result']
 
 
-def update_formulas(stack_or_account):
-
-    # Update all the formulas for the stack / account
-    for formula in stack_or_account.get_formulas():
-        formula.get_gitfs().update()
-
-
 def copy_global_orchestrate(stack):
     stack.generate_global_orchestrate_file()
 
@@ -146,12 +139,13 @@ def copy_global_orchestrate(stack):
     accounts = set([host.cloud_image.account for host in stack.hosts.all()])
 
     for account in accounts:
-        dest_dir = os.path.join(account.get_root_directory(), 'formulas', '__stackdio__')
+        dest_dir = os.path.join(account.get_root_directory(), 'salt_files')
 
         if not os.path.isdir(dest_dir):
             os.mkdir(dest_dir, 0o755)
 
-        shutil.copyfile(src_file, '{0}/stack_{1}_global_orchestrate.sls'.format(dest_dir, stack.id))
+        shutil.copyfile(src_file, os.path.join(dest_dir,
+                                               'stack_{0}_global_orchestrate.sls'.format(stack.id)))
 
 
 def change_pillar(stack, new_pillar_file):
@@ -991,7 +985,6 @@ def global_orchestrate(stack, max_retries=2):
 
     for host_definition in stack.blueprint.host_definitions.all():
         account = host_definition.cloud_image.account
-        update_formulas(account)
         accounts.add(account)
 
     accounts = list(accounts)
@@ -1106,9 +1099,6 @@ def orchestrate(stack, max_retries=2):
 
     logger.info('Executing orchestration for stack: {0!r}'.format(stack))
 
-    # Clone the formulas to somewhere useful
-    update_formulas(stack)
-
     # Set the pillar file back to the regular pillar
     change_pillar(stack, stack.get_pillar_file_path())
 
@@ -1170,7 +1160,7 @@ def orchestrate(stack, max_retries=2):
                 'state.orchestrate',
                 [
                     'orchestrate',
-                    'stacks.{0}-{1}'.format(stack.pk, stack.slug),
+                    'stacks.{0}'.format(stack.pk),
                 ]
             )
 
@@ -1228,9 +1218,6 @@ def single_sls(stack, component, host_target, max_retries=2):
     stack.set_activity(Activity.ORCHESTRATING, host_ids)
 
     logger.info('Executing single sls {0} for stack: {1!r}'.format(component, stack))
-
-    # Clone the formulas to somewhere useful
-    update_formulas(stack)
 
     # Set the pillar file back to the regular pillar
     change_pillar(stack, stack.get_pillar_file_path())
@@ -1298,7 +1285,7 @@ def single_sls(stack, component, host_target, max_retries=2):
                 'state.sls',
                 [
                     component,
-                    'stacks.{0}-{1}'.format(stack.pk, stack.slug),
+                    'stacks.{0}'.format(stack.pk),
                 ],
                 expr_form=expr_form,
             )
