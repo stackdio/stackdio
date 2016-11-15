@@ -20,7 +20,7 @@ import os
 
 import git
 import salt.utils
-from salt.utils.gitfs import GitBase, GitFS, GitPython
+from salt.utils.gitfs import GitFS, GitPython
 
 
 _INVALID_REPO = (

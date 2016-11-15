@@ -28,4 +28,3 @@ def fileserver_dirs():
 
 def pillar_dirs():
     yield os.path.join(EXTMODS_DIR, 'pillar')
-

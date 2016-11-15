@@ -43,7 +43,6 @@ from celery.utils.log import get_task_logger
 from django.conf import settings
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
-from stackdio.api.formulas.models import FormulaVersion
 from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.events import trigger_event
 
