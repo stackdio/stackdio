@@ -161,6 +161,7 @@ setup(
         'salt.loader': [
             'fileserver_dirs = stackdio.salt.extension_loader:fileserver_dirs',
             'pillar_dirs = stackdio.salt.extension_loader:pillar_dirs',
+            'wheel_dirs = stackdio.salt.extension_loader:wheel_dirs',
         ],
     }
 )
