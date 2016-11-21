@@ -17,17 +17,19 @@
 
 from __future__ import unicode_literals
 
+import collections
 import logging
 
 from django.db.models import URLField
 from rest_framework import serializers
+from stackdio.api.formulas.exceptions import InvalidFormula, InvalidFormulaComponent
 from stackdio.core.mixins import CreateOnlyFieldsMixin
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
 )
 
-from . import models, validators
+from . import models, utils, validators
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +91,45 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
     # Add in our custom URL field
     serializer_field_mapping = serializers.ModelSerializer.serializer_field_mapping
     serializer_field_mapping[URLField] = validators.FormulaURLField
+
+    def validate(self, attrs):
+        uri = attrs.get('uri')
+        priv_key = attrs.get('ssh_private_key')
+
+        # If a new private key is passed in with no URI,
+        # then set the URI to that of the current instance
+        if priv_key is not None and uri is None and self.instance is not None:
+            uri = self.instance.uri
+
+        if uri:
+            with utils.get_gitfs(uri, priv_key) as gitfs:
+                gitfs.update()
+
+                errors = collections.defaultdict(list)
+
+                try:
+                    formula_info = validators.validate_specfile(gitfs)
+                except InvalidFormula as e:
+                    formula_info = None
+                    errors['uri'].append(e.message)
+
+                if formula_info:
+                    # Add the info into the attrs
+                    attrs['title'] = formula_info.title
+                    attrs['description'] = formula_info.description
+                    attrs['root_path'] = formula_info.root_path
+
+                    # Then validate the components
+                    for component in formula_info.components:
+                        try:
+                            validators.validate_component(gitfs, component)
+                        except InvalidFormulaComponent as e:
+                            errors['uri'].append(e.message)
+
+                if errors:
+                    raise serializers.ValidationError(errors)
+
+        return attrs
 
 
 class FormulaActionSerializer(serializers.Serializer):  # pylint: disable=abstract-method

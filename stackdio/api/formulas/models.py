@@ -33,11 +33,9 @@ from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionMo
 from model_utils.models import StatusModel
 from stackdio.core.models import SearchQuerySet
 
-from .utils import StackdioGitFS
+from . import utils
 
 logger = logging.getLogger(__name__)
-
-PER_REMOTE_OVERRIDES = ('base', 'mountpoint', 'root', 'ssl_verify', 'privkey')
 
 
 @six.python_2_unicode_compatible
@@ -87,13 +85,6 @@ class FormulaQuerySet(SearchQuerySet):
     Override create to automatically kick off a celery task to clone the formula repository.
     """
     searchable_fields = ('title', 'description', 'uri')
-
-    def create(self, **kwargs):
-        formula = super(FormulaQuerySet, self).create(**kwargs)
-
-        # Go ahead and update the gitfs
-        formula.get_gitfs().update()
-        return formula
 
     def search(self, query):
         result = super(FormulaQuerySet, self).search(query)
@@ -227,39 +218,7 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel):
         return root_dir
 
     def get_gitfs(self):
-        # Always write out the private / public keys
-        if self.ssh_private_key:
-            # Write out the key file
-            ssh_private_key_file = os.path.join(self.get_root_dir(), 'id_rsa')
-            with open(ssh_private_key_file, 'w') as f:
-                f.write(self.ssh_private_key)
-
-            os.chmod(ssh_private_key_file, 0o600)
-
-            # The config now looks different
-            gitfs_remotes = [{
-                self.uri: [
-                    {'privkey': ssh_private_key_file},
-                ]
-            }]
-        else:
-            gitfs_remotes = [self.uri]
-
-        if not hasattr(self, '_gitfs'):
-            opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
-            opts['stackdiogitfs_remotes'] = gitfs_remotes
-            new_cachedir = os.path.join(opts['cachedir'],
-                                        'stackdio',
-                                        'formulas',
-                                        six.text_type(self.id))
-            if not os.path.isdir(new_cachedir):
-                os.makedirs(new_cachedir)
-            opts['cachedir'] = new_cachedir
-            gitfs = StackdioGitFS(opts)
-            gitfs.init_remotes(gitfs_remotes, PER_REMOTE_OVERRIDES)
-            self._gitfs = gitfs
-
-        return self._gitfs
+        return utils.get_gitfs(self.uri, self.ssh_private_key, self)
 
     def get_valid_versions(self):
         gitfs = self.get_gitfs()
@@ -387,6 +346,16 @@ class FormulaComponent(TimeStampedModel):
 ##
 
 
+@receiver(models.signals.post_save, sender=Formula)
+def formula_post_save(sender, instance, **kwargs):
+    """
+    Utility method to clone the formula once it is saved.  We do this here so that the POST
+    request to create the formula returns immediately, letting the update wait
+    """
+    # Go ahead and update the gitfs
+    instance.get_gitfs().update()
+
+
 @receiver(models.signals.post_delete, sender=Formula)
 def cleanup_formula(sender, instance, **kwargs):
     """
@@ -395,6 +364,15 @@ def cleanup_formula(sender, instance, **kwargs):
     """
 
     repos_dir = instance.get_root_dir()
-    logger.debug('cleanup_formula called. Path to remove: {0}'.format(repos_dir))
     if os.path.isdir(repos_dir):
         rmtree(repos_dir)
+
+    opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+
+    gitfs_cachedir = os.path.join(opts['cachedir'],
+                                  'stackdio',
+                                  'formulas',
+                                  six.text_type(instance.id))
+
+    if os.path.isdir(gitfs_cachedir):
+        rmtree(gitfs_cachedir)

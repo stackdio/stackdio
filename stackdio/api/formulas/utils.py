@@ -17,11 +17,16 @@
 
 import logging
 import os
+import uuid
+from shutil import rmtree
 
 import git
+import salt.config
 import salt.utils
+from django.conf import settings
 from salt.utils.gitfs import GitFS, GitPython
 
+PER_REMOTE_OVERRIDES = ('base', 'mountpoint', 'root', 'ssl_verify', 'privkey')
 
 _INVALID_REPO = (
     'Cache path {0} (corresponding remote: {1}) exists but is not a valid '
@@ -111,3 +116,63 @@ class StackdioGitFS(GitFS):
         """
         self.provider = 'stackdiogitpython'
         self.provider_class = StackdioGitPython
+
+    # Make it work as a contextmanager
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.opts.get('cleanup_cachedir', False):
+            if os.path.isdir(self.opts['cachedir']):
+                logger.debug('Cleaning up gitfs cachedir: {}'.format(self.opts['cachedir']))
+                rmtree(self.opts['cachedir'])
+        return False
+
+
+def get_gitfs(uri, ssh_private_key, formula=None):
+    """
+    Given a uri and optionally a private key, return a GitFS object that can be used to
+    inspect formulas
+    :param uri:
+    :param ssh_private_key:
+    :param formula:
+    :return:
+    """
+    opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+
+    base_cachedir = os.path.join(opts['cachedir'], 'stackdio', 'formulas')
+
+    if formula is None:
+        root_dir = os.path.join(base_cachedir, str(uuid.uuid4()))
+        new_cachedir = root_dir
+        opts['cleanup_cachedir'] = True
+    else:
+        root_dir = formula.get_root_dir()
+        new_cachedir = os.path.join(base_cachedir, str(formula.id))
+
+    # Always write out the private / public keys
+    if ssh_private_key:
+        # Write out the key file
+        ssh_private_key_file = os.path.join(root_dir, 'id_rsa')
+        with open(ssh_private_key_file, 'w') as f:
+            f.write(ssh_private_key)
+
+        os.chmod(ssh_private_key_file, 0o600)
+
+        # The config now looks different
+        gitfs_remotes = [{
+            uri: [
+                {'privkey': ssh_private_key_file},
+            ]
+        }]
+    else:
+        gitfs_remotes = [uri]
+
+    opts['gitfs_remotes'] = gitfs_remotes
+    if not os.path.isdir(new_cachedir):
+        os.makedirs(new_cachedir)
+    opts['cachedir'] = new_cachedir
+    gitfs = StackdioGitFS(opts)
+    gitfs.init_remotes(gitfs_remotes, PER_REMOTE_OVERRIDES)
+
+    return gitfs
