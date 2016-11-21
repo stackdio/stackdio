@@ -24,15 +24,13 @@ test:
     - mkdir /home/ubuntu/.stackdio
 
   override:
+    # Copy the config file over to use mysql
+    - cp tests/stackdio-circle.yaml /home/ubuntu/.stackdio/stackdio.yaml
+
     # Run init to make sure the salt config files are in place
     - stackdio init --no-prompt
 
     # Run migration and tests on the default config file first
-    - python manage.py migrate
-    - py.test --cov=stackdio --cov-report=html --junit-xml=tests.xml stackdio
-
-    # Then copy the config file and try again (for mysql)
-    - cp tests/stackdio-circle.yaml /home/ubuntu/.stackdio/stackdio.yaml
     - python manage.py migrate
     - py.test --cov=stackdio --cov-report=html --junit-xml=tests.xml stackdio
 
