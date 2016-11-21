@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 import os
 import uuid
@@ -23,6 +25,7 @@ from shutil import rmtree
 import git
 import salt.config
 import salt.utils
+import six
 from django.conf import settings
 from salt.utils.gitfs import GitFS, GitPython
 
@@ -55,9 +58,9 @@ class StackdioGitPython(GitPython):
         if private_key_file:
             git_wrapper = salt.utils.path_join(self.cache_root, '{}.sh'.format(self.hash))
             with open(git_wrapper, 'w') as f:
-                f.write('#!/bin/bash\n')
-                f.write('SSH=$(which ssh)\n')
-                f.write('exec $SSH -o StrictHostKeyChecking=no -i {} "$@"\n'.format(
+                f.write(b'#!/bin/bash\n')
+                f.write(b'SSH=$(which ssh)\n')
+                f.write(b'exec $SSH -o StrictHostKeyChecking=no -i {} "$@"\n'.format(
                     private_key_file
                 ))
 
@@ -133,27 +136,24 @@ def get_gitfs(uri, ssh_private_key, formula=None):
     """
     Given a uri and optionally a private key, return a GitFS object that can be used to
     inspect formulas
-    :param uri:
-    :param ssh_private_key:
-    :param formula:
-    :return:
+    :return: GitFS
     """
     opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
 
-    base_cachedir = os.path.join(opts['cachedir'], 'stackdio', 'formulas')
+    base_cachedir = os.path.join(opts['cachedir'], b'stackdio', b'formulas')
 
     if formula is None:
-        root_dir = os.path.join(base_cachedir, str(uuid.uuid4()))
+        root_dir = os.path.join(base_cachedir, six.binary_type(uuid.uuid4()))
         new_cachedir = root_dir
         opts['cleanup_cachedir'] = True
     else:
         root_dir = formula.get_root_dir()
-        new_cachedir = os.path.join(base_cachedir, str(formula.id))
+        new_cachedir = os.path.join(base_cachedir, six.binary_type(formula.id))
 
     # Always write out the private / public keys
     if ssh_private_key:
         # Write out the key file
-        ssh_private_key_file = os.path.join(root_dir, 'id_rsa')
+        ssh_private_key_file = os.path.join(root_dir, b'id_rsa')
         with open(ssh_private_key_file, 'w') as f:
             f.write(ssh_private_key)
 
@@ -161,12 +161,12 @@ def get_gitfs(uri, ssh_private_key, formula=None):
 
         # The config now looks different
         gitfs_remotes = [{
-            uri: [
+            six.binary_type(uri): [
                 {'privkey': ssh_private_key_file},
             ]
         }]
     else:
-        gitfs_remotes = [uri]
+        gitfs_remotes = [six.binary_type(uri)]
 
     opts['gitfs_remotes'] = gitfs_remotes
     if not os.path.isdir(new_cachedir):
