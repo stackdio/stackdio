@@ -186,8 +186,7 @@ class WizardCommand(BaseCommand):
         # name must be unique.
         self.answers = {}
 
-    # TODO: Ignoring code complexity issues
-    def run(self):  # NOQA
+    def run(self):
         """
         Iterate over the QUESTIONS attribute, prompting the user
         while recording and validating their answers.
@@ -344,9 +343,16 @@ class InitCommand(WizardCommand):
             'default': 'true',
         }]
 
+    def run(self):
+        # Just skip the run step if --no-prompt was passed
+        if self.args.no_prompt:
+            self.answers['user'] = getpass.getuser()
+        else:
+            super(InitCommand, self).run()
+
     def pre_run(self):
         try:
-            self.answers = self.stackdio_config(self.CONFIG_FILE)
+            self.answers = self.stackdio_config()
         except StackdioConfigException:
             self.answers = {}
 

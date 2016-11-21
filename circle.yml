@@ -24,6 +24,9 @@ test:
     - mkdir /home/ubuntu/.stackdio
 
   override:
+    # Run init to make sure the salt config files are in place
+    - stackdio init --no-prompt
+
     # Run migration and tests on the default config file first
     - python manage.py migrate
     - py.test --cov=stackdio --cov-report=html --junit-xml=tests.xml stackdio
