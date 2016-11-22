@@ -317,8 +317,8 @@ def file_hash(load, fnd):
     cache_path = os.path.join(__opts__['cachedir'],
                               'stackdio/hash',
                               load['saltenv'],
-                              u'{0}.hash.{1}'.format(fnd['rel'],
-                              __opts__['hash_type']))
+                              u'{0}.hash.{1}'.format(fnd['rel'], __opts__['hash_type']))
+
     # if we have a cache, serve that if the mtime hasn't changed
     if os.path.exists(cache_path):
         try:

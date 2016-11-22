@@ -15,6 +15,9 @@
 # limitations under the License.
 #
 
+# Disable these pylint things since we just copied a bunch of code from salt
+# pylint: disable=super-init-not-called,redefined-outer-name
+
 import copy
 import errno
 import hashlib
@@ -35,7 +38,14 @@ from django.conf import settings
 from salt.fileserver import wait_lock, _lock_cache
 from salt.exceptions import GitLockError
 from salt.utils.event import tagify
-from salt.utils.gitfs import GitFS, GitPython, PER_REMOTE_ONLY, AUTH_PARAMS, AUTH_PROVIDERS, failhard
+from salt.utils.gitfs import (
+    GitFS,
+    GitPython,
+    PER_REMOTE_ONLY,
+    AUTH_PARAMS,
+    AUTH_PROVIDERS,
+    failhard,
+)
 from salt.utils.process import os_is_running as pid_exists
 
 PER_REMOTE_OVERRIDES = ('base', 'mountpoint', 'root', 'ssl_verify', 'privkey')
@@ -45,7 +55,6 @@ _INVALID_REPO = (
     'git repository. You will need to manually delete this directory on the '
     'master to continue to use this {2} remote.'
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -68,11 +77,10 @@ def recursive_encode(d):
 
 
 def check_file_list_cache(opts, form, list_cache, w_lock):
-    '''
-    Checks the cache file to see if there is a new enough file list cache, and
-    returns the match (if found, along with booleans used by the fileserver
-    backend to determine if the cache needs to be refreshed/written).
-    '''
+    """
+    COPIED FROM SALT
+    changed: Read unicode strings from the file instead of binary strings
+    """
     refresh_cache = False
     save_cache = True
     serial = salt.payload.Serial(opts)
@@ -118,6 +126,11 @@ class StackdioGitPython(GitPython):
 
     def __init__(self, opts, remote, per_remote_defaults,
                  override_params, cache_root, role='gitfs'):
+        """
+        COPIED FROM SALT
+        changed: self.id needs to be a unicode string - but a hash is created from it,
+        and the hash needs a bytes object
+        """
         self.provider = 'stackdiogitpython'
         self.cache_root = cache_root
         self.opts = opts
@@ -156,8 +169,7 @@ class StackdioGitPython(GitPython):
                     'Invalid per-remote configuration for {0} remote \'{1}\'. '
                     'If no per-remote parameters are being specified, there '
                     'may be a trailing colon after the URL, which should be '
-                    'removed. Check the master configuration file.'
-                    .format(self.role, self.id)
+                    'removed. Check the master configuration file.'.format(self.role, self.id)
                 )
                 failhard(self.role)
 
@@ -175,8 +187,7 @@ class StackdioGitPython(GitPython):
                     msg = (
                         '{0} authentication parameter \'{1}\' (from remote '
                         '\'{2}\') is only supported by the following '
-                        'provider(s): {3}. Current {0}_provider is \'{4}\'.'
-                        .format(
+                        'provider(s): {3}. Current {0}_provider is \'{4}\'.'.format(
                             self.role,
                             param,
                             self.id,
@@ -329,10 +340,11 @@ class StackdioGitPython(GitPython):
             else:
                 new = True
         return new
-    
+
     def _lock(self, lock_type='update', failhard=False):
         """
-        Identical to the super(), just fixing unicode errors
+        COPIED FROM SALT
+        changed: Fixed unicode errors (convert pid to bytes)
         """
         try:
             fh_ = os.open(self._get_lock_file(lock_type),
@@ -387,7 +399,7 @@ class StackdioGitPython(GitPython):
                             'process is not running. Cleaning up lock file.',
                             pid, self.role, lock_type, lock_file
                         )
-                    success, fail = self.clear_lock()
+                    success, _ = self.clear_lock()
                     if success:
                         return self._lock(lock_type='update',
                                           failhard=failhard)
@@ -413,7 +425,8 @@ class StackdioGitPython(GitPython):
 
     def write_file(self, blob, dest):
         """
-        Open the file as binary
+        COPIED FROM SALT
+        changed: Open the file as binary
         """
         with salt.utils.fopen(dest, 'wb+') as fp_:
             blob.stream_data(fp_)
@@ -421,7 +434,7 @@ class StackdioGitPython(GitPython):
 
 class StackdioGitFS(GitFS):
 
-    # Make sure envs() returns the right type of strings
+    # Make sure envs() returns unicode strings instead of bytes
     def envs(self, ignore_cache=False):
         envs = super(StackdioGitFS, self).envs(ignore_cache)
         ret = []
@@ -440,6 +453,10 @@ class StackdioGitFS(GitFS):
         self.provider_class = StackdioGitPython
 
     def _file_lists(self, load, form):
+        """
+        COPIED FROM SALT
+        changed: use our custom check_file_list_cache method that reads unicode strings
+        """
         if 'env' in load:
             salt.utils.warn_until(
                 'Carbon',
@@ -498,8 +515,8 @@ class StackdioGitFS(GitFS):
 
     def update(self):
         """
-        This is IDENTICAL to the version in the super class, except the salt.utils.fopen()
-        call opens the file in binary mode instead.
+        COPIED FROM SALT
+        changed: salt.utils.fopen() call opens the file in binary mode instead.
         """
         # data for the fileserver event
         data = {
@@ -523,11 +540,12 @@ class StackdioGitFS(GitFS):
         # if there is a change, fire an event
         if self.opts.get('fileserver_events', False):
             event = salt.utils.event.get_event(
-                    'master',
-                    self.opts['sock_dir'],
-                    self.opts['transport'],
-                    opts=self.opts,
-                    listen=False)
+                'master',
+                self.opts['sock_dir'],
+                self.opts['transport'],
+                opts=self.opts,
+                listen=False,
+            )
             event.fire_event(
                 data,
                 tagify(['gitfs', 'update'], prefix='fileserver')
