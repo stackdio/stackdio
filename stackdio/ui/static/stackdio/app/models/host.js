@@ -79,23 +79,27 @@ define([
 
         // Determine what type of label should be around the activity
         switch (raw.activity) {
-            case 'running':
+            case 'idle':
                 this.labelClass('label-success');
                 break;
-            case 'shutting-down':
-            case 'pausing':
-            case 'resuming':
             case 'launching':
-            case 'deleting':
+            case 'provisioning':
+            case 'orchestrating':
+            case 'resuming':
+            case 'pausing':
+            case 'executing':
+            case 'terminating':
                 this.labelClass('label-warning');
                 break;
-            case 'terminated':
+            case 'queued':
             case 'paused':
-                this.labelClass('label-danger');
-                break;
-            case 'pending':
+            case 'terminated':
                 this.labelClass('label-info');
                 break;
+            case 'dead':
+                this.labelClass('label-danger');
+                break;
+            case 'unknown':
             default:
                 this.labelClass('label-default');
         }
@@ -111,6 +115,7 @@ define([
             case 'unhealthy':
                 this.healthLabelClass('label-danger');
                 break;
+            case 'unknown':
             default:
                 this.healthLabelClass('label-default');
         }

@@ -1150,7 +1150,7 @@ class Host(TimeStampedModel):
         healths = self.get_current_component_healths().values()
 
         # Add the health from the driver
-        healths.append(self.get_driver().get_health_from_state(self.state))
+        healths.append(self.get_driver().get_host_health(self.state, self.activity))
 
         # Aggregate them together
         return Health.aggregate(healths)

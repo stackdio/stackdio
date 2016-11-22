@@ -35,7 +35,7 @@ from boto.route53.record import ResourceRecordSets
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.serializers import ValidationError
 
-from stackdio.core.constants import Action, Health
+from stackdio.core.constants import Action, Activity, Health
 from stackdio.api.cloud.providers.base import (
     BaseCloudProvider,
     DeleteGroupException,
@@ -280,11 +280,21 @@ class AWSCloudProvider(BaseCloudProvider):
             Action.PROPAGATE_SSH,
         ]
 
-    def get_health_from_state(self, state):
-        if state in ('running',):
-            return Health.HEALTHY
+    def get_host_health(self, state, activity):
+        expected_state_map = {
+            Activity.PAUSED: ['stopped'],
+            Activity.TERMINATED: ['terminated'],
+        }
+
+        expected_states = expected_state_map.get(activity, ['running'])
+
+        if state in expected_states:
+            if activity in (Activity.IDLE,):
+                return Health.HEALTHY
+            else:
+                return Health.UNKNOWN
         else:
-            return Health.UNKNOWN
+            return Health.UNSTABLE
 
     def get_private_key_path(self):
         return os.path.join(self.provider_storage, 'id_rsa')
