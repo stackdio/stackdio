@@ -31,19 +31,21 @@ than static environments in the config file.
 """
 from __future__ import absolute_import
 
-# Import python libs
-import os
 import errno
 import logging
+import os
 
-# Import salt libs
+import django
+import salt.ext.six as six
 import salt.fileserver
 import salt.utils
 from salt.utils.event import tagify
-import salt.ext.six as six
 
 
 log = logging.getLogger(__name__)
+
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.server.settings.production')
 
 
 __virtualname__ = 'stackdio'
@@ -91,12 +93,29 @@ def _get_env_dir(saltenv):
     if not os.path.isdir(root_dir):
         log.warn('The env dir doesn\'t exist... Something has gone horribly wrong.')
 
-    formula_dir = os.path.join(root_dir, 'formulas')
+    salt_files_dir = os.path.join(root_dir, 'salt_files')
 
-    if not os.path.exists(formula_dir):
-        os.mkdir(formula_dir, 0o755)
+    if not os.path.exists(salt_files_dir):
+        os.mkdir(salt_files_dir, 0o755)
 
-    return formula_dir
+    return salt_files_dir
+
+
+def _get_object(saltenv):
+    env_type, dot, obj_id = saltenv.partition('.')
+
+    django.setup()
+
+    if env_type == 'stacks':
+        from stackdio.api.stacks.models import Stack
+        return Stack.objects.get(id=int(obj_id))
+
+    elif env_type == 'cloud':
+        from stackdio.api.cloud.models import CloudAccount
+        return CloudAccount.objects.get(slug=obj_id)
+    else:
+        log.warning('Invalid saltenv: {}'.format(saltenv))
+        return None
 
 
 def _get_dir_list(saltenv):
@@ -105,15 +124,7 @@ def _get_dir_list(saltenv):
     :param saltenv: the salt env
     :return: A list of filesystem paths to search for files
     """
-    env_dir = _get_env_dir(saltenv)
-
-    formula_dirs = []
-    for formula_root in os.listdir(env_dir):
-        formula_env_dir = os.path.join(env_dir, formula_root)
-        if os.path.isdir(formula_env_dir):
-            formula_dirs.append(formula_env_dir)
-
-    return formula_dirs
+    return [_get_env_dir(saltenv)]
 
 
 def find_file(path, saltenv='base', env=None, **kwargs):
@@ -137,6 +148,7 @@ def find_file(path, saltenv='base', env=None, **kwargs):
     if saltenv not in envs():
         return fnd
 
+    # Just look in the one stack directory first
     for root in _get_dir_list(saltenv):
         full = os.path.join(root, path)
         if os.path.isfile(full) and not salt.fileserver.is_file_ignored(__opts__, full):
@@ -144,6 +156,18 @@ def find_file(path, saltenv='base', env=None, **kwargs):
             fnd['rel'] = path
             fnd['stat'] = list(os.stat(full))
             return fnd
+
+    # Then check all of the formulas
+    obj = _get_object(saltenv)
+
+    for formula_version in obj.formula_versions.all():
+        gitfs = formula_version.formula.get_gitfs()
+        formula_fnd = gitfs.find_file(path, formula_version.version, **kwargs)
+
+        # If we have a hit here, return it, otherwise go on to the next one
+        if formula_fnd['path']:
+            return formula_fnd
+
     return fnd
 
 
@@ -151,24 +175,18 @@ def envs():
     """
     Return the file server environments
     """
-    storage_dir = _get_storage_dir()
+    django.setup()
+
+    from stackdio.api.stacks.models import Stack
+    from stackdio.api.cloud.models import CloudAccount
 
     ret = []
 
-    cloud_dir = os.path.join(storage_dir, 'cloud')
-    stacks_dir = os.path.join(storage_dir, 'stacks')
+    for stack in Stack.objects.all():
+        ret.append('stacks.{}'.format(stack.id))
 
-    for account in os.listdir(cloud_dir):
-        account_dir = os.path.join(cloud_dir, account)
-        if not os.path.isdir(account_dir):
-            continue
-        ret.append('cloud.{0}'.format(account))
-
-    for stack in os.listdir(stacks_dir):
-        stack_dir = os.path.join(stacks_dir, stack)
-        if not os.path.isdir(stack_dir):
-            continue
-        ret.append('stacks.{0}'.format(stack))
+    for account in CloudAccount.objects.all():
+        ret.append('cloud.{}'.format(account.slug))
 
     return ret
 
@@ -260,6 +278,15 @@ def update():
                 listen=False)
         event.fire_event(data, tagify(['stackdio', 'update'], prefix='fileserver'))
 
+    # Update all of the formulas too
+    django.setup()
+
+    from stackdio.api.formulas.models import Formula
+
+    for formula in Formula.objects.all():
+        gitfs = formula.get_gitfs()
+        gitfs.update()
+
 
 def file_hash(load, fnd):
     """
@@ -290,8 +317,8 @@ def file_hash(load, fnd):
     cache_path = os.path.join(__opts__['cachedir'],
                               'stackdio/hash',
                               load['saltenv'],
-                              u'{0}.hash.{1}'.format(fnd['rel'],
-                              __opts__['hash_type']))
+                              u'{0}.hash.{1}'.format(fnd['rel'], __opts__['hash_type']))
+
     # if we have a cache, serve that if the mtime hasn't changed
     if os.path.exists(cache_path):
         try:
@@ -419,7 +446,20 @@ def file_list(load):
     Return a list of all files on the file server in a specified
     environment
     """
-    return _file_lists(load, 'files')
+    # Grab the local ones
+    ret = _file_lists(load, 'files')
+
+    if load['saltenv'] not in envs():
+        return ret
+
+    # Then check all of the formulas
+    obj = _get_object(load['saltenv'])
+
+    for formula_version in obj.formula_versions.all():
+        gitfs = formula_version.formula.get_gitfs()
+        ret.extend(gitfs.file_list(load))
+
+    return ret
 
 
 def file_list_emptydirs(load):
@@ -433,7 +473,19 @@ def dir_list(load):
     """
     Return a list of all directories on the master
     """
-    return _file_lists(load, 'dirs')
+    ret = _file_lists(load, 'dirs')
+
+    if load['saltenv'] not in envs():
+        return ret
+
+    # Then check all of the formulas
+    obj = _get_object(load['saltenv'])
+
+    for formula_version in obj.formula_versions.all():
+        gitfs = formula_version.formula.get_gitfs()
+        ret.extend(gitfs.dir_list(load))
+
+    return ret
 
 
 def symlink_list(load):
@@ -473,4 +525,14 @@ def symlink_list(load):
                                                      dname),
                                         path)] = os.readlink(os.path.join(root,
                                                                           dname))
+
+    # Then check all of the formulas
+    obj = _get_object(load['saltenv'])
+
+    for formula_version in obj.formula_versions.all():
+        gitfs = formula_version.formula.get_gitfs()
+        for k, v in gitfs.symlink_list(load).items():
+            if k not in ret:
+                ret[k] = v
+
     return ret

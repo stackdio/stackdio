@@ -22,20 +22,18 @@ import os
 from collections import OrderedDict
 from shutil import rmtree
 
-import git
+import salt.config
 import six
 import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.core.cache import cache
 from django.db import models
 from django.dispatch import receiver
-from django.utils.lru_cache import lru_cache
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
-from model_utils import Choices
 from model_utils.models import StatusModel
-
 from stackdio.core.models import SearchQuerySet
+
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -88,20 +86,6 @@ class FormulaQuerySet(SearchQuerySet):
     """
     searchable_fields = ('title', 'description', 'uri')
 
-    def create(self, **kwargs):
-        kwargs['status'] = Formula.IMPORTING
-        kwargs['status_detail'] = 'Importing formula...this could take a while.'
-
-        formula = super(FormulaQuerySet, self).create(**kwargs)
-
-        # Fix circular import issue
-        from . import tasks
-
-        # Start up the task to import the formula
-        tasks.import_formula.si(formula.id).apply_async()
-
-        return formula
-
     def search(self, query):
         result = super(FormulaQuerySet, self).search(query)
 
@@ -123,7 +107,7 @@ class FormulaQuerySet(SearchQuerySet):
 
 
 @six.python_2_unicode_compatible
-class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
+class Formula(TimeStampedModel, TitleSlugDescriptionModel):
     """
     The intention here is to be able to install an entire formula along
     with identifying the individual components that may be installed
@@ -201,11 +185,6 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         sls_path: cdh4.hbase.regionserver
 
     """
-    ERROR = 'error'
-    COMPLETE = 'complete'
-    IMPORTING = 'importing'
-    STATUS = Choices(ERROR, COMPLETE, IMPORTING)
-
     model_permissions = _formula_model_permissions
     object_permissions = _formula_object_permissions
 
@@ -231,128 +210,37 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         root_dir = os.path.join(
             settings.FILE_STORAGE_DIRECTORY,
             'formulas',
-            '{0}-{1}'.format(self.pk, self.get_repo_name()),
+            six.text_type(self.pk),
         )
 
         if not os.path.exists(root_dir):
             os.makedirs(root_dir)
         return root_dir
 
-    def get_repos_dir(self):
-        return os.path.join(
-            self.get_root_dir(),
-            'checkouts',
-        )
-
-    def get_repo_name(self):
-        return os.path.splitext(os.path.split(self.uri)[-1])[0]
-
-    def get_repo_env(self):
-        repo_env = {}
-
-        if self.ssh_private_key:
-            ssh_key_file = os.path.join(self.get_root_dir(), 'id_rsa')
-            with open(ssh_key_file, 'w') as f:
-                f.write(self.ssh_private_key)
-
-            # fix permissions on the private key
-            os.chmod(ssh_key_file, 0o600)
-
-            # Create our ssh wrapper script to make ssh w/ private key work
-            git_wrapper = os.path.join(self.get_root_dir(), 'git.sh')
-            with open(git_wrapper, 'w') as f:
-                f.write('#!/bin/bash\n')
-                f.write('SSH=$(which ssh)\n')
-                f.write('exec $SSH -o StrictHostKeyChecking=no -i {} "$@"\n'.format(ssh_key_file))
-
-            # Make the git wrapper executable
-            os.chmod(git_wrapper, 0o755)
-
-            repo_env['GIT_SSH'] = git_wrapper
-
-        return repo_env
-
-    def get_repo_from_directory(self, repo_dir):
-        if not os.path.exists(repo_dir):
-            return None
-
-        repo = git.Repo(repo_dir)
-
-        repo.git.update_environment(**self.get_repo_env())
-
-        return repo
-
-    @lru_cache()
-    def get_repo(self, version=None):
-        version = version or 'HEAD'
-
-        repo_dir = os.path.join(self.get_repos_dir(), version)
-
-        return self.get_repo_from_directory(repo_dir)
-
-    def clone_to(self, to_path, *args, **kwargs):
-        repo_env = self.get_repo_env()
-
-        if 'env' in kwargs:
-            kwargs['env'].update(repo_env)
-        else:
-            kwargs['env'] = repo_env
-
-        repo = git.Repo.clone_from(self.uri, to_path, *args, **kwargs)
-
-        # Now update the environment on the actual repo object
-        repo.git.update_environment(**repo_env)
-
-        return repo
+    def get_gitfs(self):
+        return utils.get_gitfs(self.uri, self.ssh_private_key, self)
 
     def get_valid_versions(self):
-        main_repo = self.get_repo()
-
-        if main_repo is None:
-            return []
-
-        remote = main_repo.remote()
-
-        # This will grab all the remote branches & tags
-        refs = set()
-
-        # First get all the remote branches
-        for r in remote.refs:
-            refs.add(r.remote_head)
-
-        # Then get all the tags
-        for t in main_repo.tags:
-            refs.add(t.name)
-
-        # remove HEAD as a valid version
-        refs.remove('HEAD')
-
-        return list(refs)
+        gitfs = self.get_gitfs()
+        return gitfs.envs()
 
     @property
     def default_version(self):
-        default_repo = self.get_repo()
-
-        if default_repo is None:
-            return None
-
-        # This will be the name of the default branch.
-        return default_repo.remote().refs.HEAD.ref.remote_head
+        return 'base'
 
     def components(self, version=None):
-        repo = self.get_repo(version)
+        gitfs = self.get_gitfs()
 
-        if repo is None:
-            return {}
+        version = version or self.default_version
 
-        cache_key = 'formula-{}-components-{}-{}'.format(self.id, version, repo.head.commit)
+        fnd = gitfs.find_file('SPECFILE', tgt_env=version)
 
-        cached_components = cache.get(cache_key)
+        if not os.path.exists(fnd['path']):
+            # If the path doesn't exist, update & retry
+            gitfs.update()
+            fnd = gitfs.find_file('SPECFILE', tgt_env=version)
 
-        if cached_components:
-            return cached_components
-
-        with open(os.path.join(repo.working_dir, 'SPECFILE')) as f:
+        with open(fnd['path']) as f:
             yaml_data = yaml.safe_load(f)
             ret = OrderedDict()
             # Create a map of sls_path -> component pairs
@@ -363,16 +251,11 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
                     ('description', component['description']),
                     ('sls_path', component['sls_path']),
                 ))
-            cache.set(cache_key, ret, 10)
             return ret
 
     @classmethod
-    def all_components(cls, versions=()):
-        version_map = {}
-
-        # Build the map of formula -> version
-        for version in versions:
-            version_map[version.formula] = version.version
+    def all_components(cls, version_map=None):
+        version_map = version_map or {}
 
         ret = {}
         for formula in cls.objects.all():
@@ -388,7 +271,18 @@ class Formula(TimeStampedModel, TitleSlugDescriptionModel, StatusDetailModel):
         return ret
 
     def properties(self, version):
-        with open(os.path.join(self.get_repos_dir(), version, 'SPECFILE')) as f:
+        gitfs = self.get_gitfs()
+
+        version = version or self.default_version
+
+        fnd = gitfs.find_file('SPECFILE', tgt_env=version)
+
+        if not os.path.exists(fnd['path']):
+            # If the path doesn't exist, update & retry
+            gitfs.update()
+            fnd = gitfs.find_file('SPECFILE', tgt_env=version)
+
+        with open(fnd['path']) as f:
             yaml_data = yaml.safe_load(f)
             return yaml_data.get('pillar_defaults', {})
 
@@ -452,6 +346,16 @@ class FormulaComponent(TimeStampedModel):
 ##
 
 
+@receiver(models.signals.post_save, sender=Formula)
+def formula_post_save(sender, instance, **kwargs):
+    """
+    Utility method to clone the formula once it is saved.  We do this here so that the POST
+    request to create the formula returns immediately, letting the update wait
+    """
+    # Go ahead and update the gitfs
+    instance.get_gitfs().update()
+
+
 @receiver(models.signals.post_delete, sender=Formula)
 def cleanup_formula(sender, instance, **kwargs):
     """
@@ -460,6 +364,15 @@ def cleanup_formula(sender, instance, **kwargs):
     """
 
     repos_dir = instance.get_root_dir()
-    logger.debug('cleanup_formula called. Path to remove: {0}'.format(repos_dir))
     if os.path.isdir(repos_dir):
         rmtree(repos_dir)
+
+    opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+
+    gitfs_cachedir = os.path.join(opts['cachedir'],
+                                  'stackdio',
+                                  'formulas',
+                                  six.text_type(instance.id))
+
+    if os.path.isdir(gitfs_cachedir):
+        rmtree(gitfs_cachedir)

@@ -325,6 +325,16 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'git.cmd': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'salt.config': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         '': {
             'handlers': ['console', 'file'],
             'level': 'WARNING',
@@ -398,8 +408,6 @@ CELERY_ACCEPT_CONTENT = ['json']
 
 # Configure queues
 CELERY_ROUTES = {
-    'formulas.import_formula': {'queue': 'short'},
-    'formulas.update_formula': {'queue': 'short'},
     'notifications.generate_notifications': {'queue': 'short'},
     'notifications.resend_failed_notifications': {'queue': 'short'},
     'notifications.send_notification': {'queue': 'short'},

@@ -49,6 +49,11 @@ def main():
         description='Initializes the required stackdio configuration file.')
     init_parser.set_defaults(command=commands.InitCommand)
     init_parser.set_defaults(raw_args=False)
+    init_parser.add_argument('--no-prompt',
+                             default=False,
+                             action='store_true',
+                             help='Use the current config file values to re-write '
+                                  'the salt config files.  The current config file is not changed.')
 
     # Dumps the configuration of various things
     config_parser = subparsers.add_parser(

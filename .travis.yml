@@ -55,6 +55,9 @@ script:
   # Place the proper config file in place based on the environment
   - tests/place_config.sh
 
+  # Run init to make sure the salt config files are in place
+  - stackdio init --no-prompt
+
   # Run migration and tests
   - python manage.py migrate
   - py.test --cov=stackdio stackdio

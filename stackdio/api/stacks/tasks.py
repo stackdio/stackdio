@@ -32,7 +32,6 @@ from fnmatch import fnmatch
 from functools import wraps
 from inspect import getcallargs
 
-import git
 import salt.client
 import salt.cloud
 import salt.config
@@ -44,7 +43,6 @@ from celery.utils.log import get_task_logger
 from django.conf import settings
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
-from stackdio.api.formulas.models import FormulaVersion
 from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.events import trigger_event
 
@@ -132,47 +130,6 @@ def is_state_error(state_meta):
     return not state_meta['result']
 
 
-def clone_formulas(stack_or_account):
-    dest_dir = os.path.join(stack_or_account.get_root_directory(), 'formulas')
-
-    # Be sure to create a formula version for all formulas needed
-    for formula in stack_or_account.get_formulas():
-        try:
-            # Try to the version if it exists
-            stack_or_account.formula_versions.get(formula=formula)
-        except FormulaVersion.DoesNotExist:
-            # Default to the head branch
-            stack_or_account.formula_versions.create(formula=formula,
-                                                     version=formula.default_version)
-
-    for formula_version in stack_or_account.formula_versions.all():
-        formula = formula_version.formula
-        version = formula_version.version
-
-        formula_dir = os.path.join(dest_dir, formula.get_repo_name())
-
-        if os.path.exists(formula_dir):
-            # We already have the repo - just do a fetch
-            try:
-                repo = formula.get_repo_from_directory(formula_dir)
-                repo.remote().fetch(prune=True)
-            except (git.InvalidGitRepositoryError, git.GitCommandError):
-                # If we run into issues, just re-clone
-                shutil.rmtree(formula_dir)
-                repo = formula.clone_to(formula_dir)
-        else:
-            # We need to clone
-            repo = formula.clone_to(formula_dir)
-
-        # Checkout the appropriate version
-        try:
-            repo.remote().refs[version].checkout()
-        except TypeError as e:
-            # checkout raises a TypeError if you checkout a remote ref :(
-            if 'is a detached symbolic reference as it points to' not in e.message:
-                raise
-
-
 def copy_global_orchestrate(stack):
     stack.generate_global_orchestrate_file()
 
@@ -181,12 +138,13 @@ def copy_global_orchestrate(stack):
     accounts = set([host.cloud_image.account for host in stack.hosts.all()])
 
     for account in accounts:
-        dest_dir = os.path.join(account.get_root_directory(), 'formulas', '__stackdio__')
+        dest_dir = os.path.join(account.get_root_directory(), 'salt_files')
 
         if not os.path.isdir(dest_dir):
             os.mkdir(dest_dir, 0o755)
 
-        shutil.copyfile(src_file, '{0}/stack_{1}_global_orchestrate.sls'.format(dest_dir, stack.id))
+        shutil.copyfile(src_file, os.path.join(dest_dir,
+                                               'stack_{0}_global_orchestrate.sls'.format(stack.id)))
 
 
 def change_pillar(stack, new_pillar_file):
@@ -259,7 +217,7 @@ def launch_hosts(stack, parallel=True, max_retries=2,
     log_file = utils.get_salt_cloud_log_file(stack, 'launch')
 
     # Generate the pillar file.  We need it!
-    stack.generate_pillar_file(update_formulas=True)
+    stack.generate_pillar_file()
 
     logger.info('Launching hosts for stack: {0!r}'.format(stack))
     logger.info('Log file: {0}'.format(log_file))
@@ -702,8 +660,8 @@ def sync_all(stack):
     logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
     # Generate all the files before we sync
-    stack.generate_pillar_file(update_formulas=True)
-    stack.generate_global_pillar_file(update_formulas=True)
+    stack.generate_pillar_file()
+    stack.generate_global_pillar_file()
     stack.generate_orchestrate_file()
     stack.generate_global_orchestrate_file()
 
@@ -883,7 +841,7 @@ def propagate_ssh(stack, max_retries=2):
 
     target = [h.hostname for h in stack.get_hosts()]
     # Regenerate the stack pillar file
-    stack.generate_pillar_file(update_formulas=True)
+    stack.generate_pillar_file()
     num_hosts = len(stack.get_hosts())
     logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
 
@@ -1026,7 +984,6 @@ def global_orchestrate(stack, max_retries=2):
 
     for host_definition in stack.blueprint.host_definitions.all():
         account = host_definition.cloud_image.account
-        clone_formulas(account)
         accounts.add(account)
 
     accounts = list(accounts)
@@ -1141,9 +1098,6 @@ def orchestrate(stack, max_retries=2):
 
     logger.info('Executing orchestration for stack: {0!r}'.format(stack))
 
-    # Clone the formulas to somewhere useful
-    clone_formulas(stack)
-
     # Set the pillar file back to the regular pillar
     change_pillar(stack, stack.get_pillar_file_path())
 
@@ -1205,7 +1159,7 @@ def orchestrate(stack, max_retries=2):
                 'state.orchestrate',
                 [
                     'orchestrate',
-                    'stacks.{0}-{1}'.format(stack.pk, stack.slug),
+                    'stacks.{0}'.format(stack.pk),
                 ]
             )
 
@@ -1263,9 +1217,6 @@ def single_sls(stack, component, host_target, max_retries=2):
     stack.set_activity(Activity.ORCHESTRATING, host_ids)
 
     logger.info('Executing single sls {0} for stack: {1!r}'.format(component, stack))
-
-    # Clone the formulas to somewhere useful
-    clone_formulas(stack)
 
     # Set the pillar file back to the regular pillar
     change_pillar(stack, stack.get_pillar_file_path())
@@ -1333,7 +1284,7 @@ def single_sls(stack, component, host_target, max_retries=2):
                 'state.sls',
                 [
                     component,
-                    'stacks.{0}-{1}'.format(stack.pk, stack.slug),
+                    'stacks.{0}'.format(stack.pk),
                 ],
                 expr_form=expr_form,
             )

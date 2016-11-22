@@ -18,6 +18,7 @@
 from __future__ import unicode_literals
 
 import collections
+import logging
 import os
 
 import yaml
@@ -25,6 +26,10 @@ from django.core.validators import URLValidator
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.serializers import CharField, ValidationError
 from stackdio.api.formulas.exceptions import InvalidFormula, InvalidFormulaComponent
+from stackdio.api.formulas.models import Formula
+
+
+logger = logging.getLogger(__name__)
 
 
 FormulaInfo = collections.namedtuple('FormulaInfo',
@@ -48,13 +53,13 @@ class FormulaURLField(CharField):
         self.validators.append(validator)
 
 
-def validate_specfile(repodir):
-    specfile_path = os.path.join(repodir, 'SPECFILE')
-    if not os.path.isfile(specfile_path):
-        raise InvalidFormula(
-            'Formula did not have a SPECFILE. Each formula must define a '
-            'SPECFILE in the root of the repository.'
-        )
+def validate_specfile(gitfs):
+    fnd = gitfs.find_file('SPECFILE')
+
+    if not fnd['path']:
+        raise InvalidFormula('Could not find a SPECFILE, are you sure this is a valid formula?')
+
+    specfile_path = fnd['path']
 
     # Load and validate the SPECFILE
     with open(specfile_path) as f:
@@ -71,8 +76,10 @@ def validate_specfile(repodir):
     if not root_path:
         raise InvalidFormula('Formula SPECFILE \'root_path\' field is required.')
 
+    dir_list = gitfs.dir_list({'saltenv': 'base'})
+
     # check root path location
-    if not os.path.isdir(os.path.join(repodir, root_path)):
+    if root_path not in dir_list:
         raise InvalidFormula(
             'Formula SPECFILE \'root_path\' must exist in the formula. '
             'Unable to locate directory: {0}'.format(root_path)
@@ -88,7 +95,7 @@ def validate_specfile(repodir):
     return FormulaInfo(formula_title, formula_description, root_path, components)
 
 
-def validate_component(repodir, component):
+def validate_component(gitfs, component):
     # check for required fields
     if 'title' not in component or 'sls_path' not in component:
         raise InvalidFormulaComponent(
@@ -103,13 +110,14 @@ def validate_component(repodir, component):
     sls_path = component['sls_path'].replace('.', '/')
     init_file = os.path.join(sls_path, 'init.sls')
     sls_file = sls_path + '.sls'
-    abs_init_file = os.path.join(repodir, init_file)
-    abs_sls_file = os.path.join(repodir, sls_file)
 
     err_msg = ('Could not locate an SLS file for component \'{0}\'. Expected to find either '
                '\'{1}\' or \'{2}\'.'.format(component_title, init_file, sls_file))
 
-    if not os.path.isfile(abs_init_file) and not os.path.isfile(abs_sls_file):
+    init_file_fnd = gitfs.find_file(init_file)
+    sls_file_fnd = gitfs.find_file(sls_file)
+
+    if not init_file_fnd['path'] and not sls_file_fnd['path']:
         raise InvalidFormulaComponent(err_msg)
 
 
@@ -124,22 +132,35 @@ def validate_formula_components(components, versions):
     for version in versions:
         version_map[version['formula']] = version['version']
 
-    errors = {}
+    errors = collections.defaultdict(list)
 
     for component in components:
-        validated = component.pop('validated', False)
         formula = component.get('formula')
-        if not validated:
-            # We only care to validate here it wasn't already validated in the other serializer.
-            sls_path = component['sls_path']
 
+        sls_path = component['sls_path']
+
+        if formula is None:
+            all_components = Formula.all_components(version_map)
+
+            if sls_path in all_components:
+                formulas = all_components[sls_path]
+                if len(formulas) != 1:
+                    # Multiple formulas - handle this error
+                    err_msg = ('sls_path `{0}` is contained in multiple formulas.  '
+                               'Please specify one.')
+                    errors['sls_path'].append(err_msg.format(sls_path))
+                else:
+                    component['formula'] = formulas[0]
+            else:
+                err_msg = 'no sls_path `{}` found.'.format(sls_path)
+                errors['sls_path'].append(err_msg.format(sls_path))
+        else:
             version = version_map.get(formula)
-
             component_list = formula.components(version)
 
             if sls_path not in component_list:
                 err_msg = 'formula `{0}` does not contain an sls_path called `{1}`.'
-                errors.setdefault('sls_path', []).append(err_msg.format(formula.uri, sls_path))
+                errors['sls_path'].append(err_msg.format(formula.uri, sls_path))
 
     if errors:
         raise ValidationError(errors)
@@ -147,16 +168,12 @@ def validate_formula_components(components, versions):
     return components
 
 
-def validate_formula_component(component, versions=()):
+def validate_formula_component(component, version_map=None):
     """
     Validate a SINGLE formula component from versions that already exist.
     i.e. adding a formula component to a blueprint or cloud account
     """
-    version_map = {}
-
-    # Build the map of formula -> version
-    for version in versions:
-        version_map[version.formula] = version.version
+    version_map = version_map or {}
 
     errors = {}
 
