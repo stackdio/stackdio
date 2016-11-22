@@ -6,6 +6,10 @@ from django.db import migrations
 
 
 def master_to_base(apps, schema_migration):
+    """
+    Convert all formula versions that are 'master' to 'base' instead
+    since that what is required by the salt gitfs
+    """
     FormulaVersion = apps.get_model('formulas', 'FormulaVersion')
 
     for v in FormulaVersion.objects.all():
@@ -15,6 +19,11 @@ def master_to_base(apps, schema_migration):
 
 
 def base_to_master(apps, schema_migration):
+    """
+    **This is for the reverse migration**
+    Convert all formula versions that are 'base' to 'master', since 'base' was not a valid
+    version prior to using the salt gitfs
+    """
     FormulaVersion = apps.get_model('formulas', 'FormulaVersion')
 
     for v in FormulaVersion.objects.all():
