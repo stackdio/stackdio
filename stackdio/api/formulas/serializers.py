@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import collections
 import logging
 
+import six
 from django.db.models import URLField
 from rest_framework import serializers
 from stackdio.api.formulas.exceptions import InvalidFormula, InvalidFormulaComponent
@@ -105,13 +106,15 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
             with utils.get_gitfs(uri, priv_key) as gitfs:
                 gitfs.update()
 
+                logger.warning(gitfs.dir_list({'saltenv': 'base'}))
+
                 errors = collections.defaultdict(list)
 
                 try:
                     formula_info = validators.validate_specfile(gitfs)
                 except InvalidFormula as e:
                     formula_info = None
-                    errors['uri'].append(e.message)
+                    errors['uri'].append(six.text_type(e))
 
                 if formula_info:
                     # Add the info into the attrs
@@ -124,7 +127,7 @@ class FormulaSerializer(CreateOnlyFieldsMixin, StackdioHyperlinkedModelSerialize
                         try:
                             validators.validate_component(gitfs, component)
                         except InvalidFormulaComponent as e:
-                            errors['uri'].append(e.message)
+                            errors['uri'].append(six.text_type(e))
 
                 if errors:
                     raise serializers.ValidationError(errors)
