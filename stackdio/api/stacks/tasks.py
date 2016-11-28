@@ -78,38 +78,37 @@ def stack_task(*args, **kwargs):
             host_ids = task_called_args.get('host_ids')
             sls_path = task_called_args.get('component')
 
-            with transaction.atomic(using=Stack.objects.db):
-                try:
-                    stack = Stack.objects.select_for_update().get(id=stack_id)
-                except Stack.DoesNotExist:
-                    raise ValueError('No stack found with id {}'.format(stack_id))
+            try:
+                stack = Stack.objects.get(id=stack_id)
+            except Stack.DoesNotExist:
+                raise ValueError('No stack found with id {}'.format(stack_id))
 
-                try:
-                    # Call our actual task function and catch some common errors
-                    func(stack, *task_args, **task_kwargs)
+            try:
+                # Call our actual task function and catch some common errors
+                func(stack, *task_args, **task_kwargs)
 
-                    if not final_task:
-                        # Everything went OK, set back to queued
-                        stack.activity = Activity.QUEUED
-                        stack.save()
+                if not final_task:
+                    # Everything went OK, set back to queued
+                    stack.activity = Activity.QUEUED
+                    stack.save()
 
-                except StackTaskException as e:
-                    stack.log_history(e.message, Activity.IDLE)
-                    stack.set_all_component_statuses(ComponentStatus.CANCELLED,
-                                                     Health.UNHEALTHY,
-                                                     sls_path,
-                                                     host_ids)
-                    logger.exception(e)
-                    raise
-                except Exception as e:
-                    err_msg = 'Unhandled exception: {0}'.format(e)
-                    stack.log_history(err_msg, Activity.IDLE)
-                    stack.set_all_component_statuses(ComponentStatus.CANCELLED,
-                                                     Health.UNHEALTHY,
-                                                     sls_path,
-                                                     host_ids)
-                    logger.exception(e)
-                    raise
+            except StackTaskException as e:
+                stack.log_history(e.message, Activity.IDLE)
+                stack.set_all_component_statuses(ComponentStatus.CANCELLED,
+                                                 Health.UNHEALTHY,
+                                                 sls_path,
+                                                 host_ids)
+                logger.exception(e)
+                raise
+            except Exception as e:
+                err_msg = 'Unhandled exception: {0}'.format(e)
+                stack.log_history(err_msg, Activity.IDLE)
+                stack.set_all_component_statuses(ComponentStatus.CANCELLED,
+                                                 Health.UNHEALTHY,
+                                                 sls_path,
+                                                 host_ids)
+                logger.exception(e)
+                raise
 
         return task
 
