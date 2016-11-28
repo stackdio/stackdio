@@ -133,11 +133,14 @@ define([
                 this.labelClass('label-warning');
                 break;
             case 'queued':
+            case 'paused':
+            case 'terminated':
                 this.labelClass('label-info');
                 break;
             case 'dead':
                 this.labelClass('label-danger');
                 break;
+            case 'unknown':
             default:
                 this.labelClass('label-default');
         }
@@ -156,6 +159,7 @@ define([
             case 'unhealthy':
                 this.healthLabelClass('label-danger');
                 break;
+            case 'unknown':
             default:
                 this.healthLabelClass('label-default');
         }

@@ -142,7 +142,7 @@ class BaseCloudProvider(object):
 
         return cls.SHORT_NAME, cls.LONG_NAME
 
-    def get_health_from_state(self, state):
+    def get_host_health(self, state, activity):
         return Health.UNKNOWN
 
     def get_required_fields(self):
