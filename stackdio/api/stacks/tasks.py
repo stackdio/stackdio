@@ -41,6 +41,7 @@ import yaml
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
+from django.db import transaction
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.core.constants import Activity, ComponentStatus, Health
@@ -77,37 +78,38 @@ def stack_task(*args, **kwargs):
             host_ids = task_called_args.get('host_ids')
             sls_path = task_called_args.get('component')
 
-            try:
-                stack = Stack.objects.get(id=stack_id)
-            except Stack.DoesNotExist:
-                raise ValueError('No stack found with id {}'.format(stack_id))
+            with transaction.atomic(using=Stack.objects.db):
+                try:
+                    stack = Stack.objects.select_for_update().get(id=stack_id)
+                except Stack.DoesNotExist:
+                    raise ValueError('No stack found with id {}'.format(stack_id))
 
-            try:
-                # Call our actual task function and catch some common errors
-                func(stack, *task_args, **task_kwargs)
+                try:
+                    # Call our actual task function and catch some common errors
+                    func(stack, *task_args, **task_kwargs)
 
-                if not final_task:
-                    # Everything went OK, set back to queued
-                    stack.activity = Activity.QUEUED
-                    stack.save()
+                    if not final_task:
+                        # Everything went OK, set back to queued
+                        stack.activity = Activity.QUEUED
+                        stack.save()
 
-            except StackTaskException as e:
-                stack.log_history(e.message, Activity.IDLE)
-                stack.set_all_component_statuses(ComponentStatus.CANCELLED,
-                                                 Health.UNHEALTHY,
-                                                 sls_path,
-                                                 host_ids)
-                logger.exception(e)
-                raise
-            except Exception as e:
-                err_msg = 'Unhandled exception: {0}'.format(e)
-                stack.log_history(err_msg, Activity.IDLE)
-                stack.set_all_component_statuses(ComponentStatus.CANCELLED,
-                                                 Health.UNHEALTHY,
-                                                 sls_path,
-                                                 host_ids)
-                logger.exception(e)
-                raise
+                except StackTaskException as e:
+                    stack.log_history(e.message, Activity.IDLE)
+                    stack.set_all_component_statuses(ComponentStatus.CANCELLED,
+                                                     Health.UNHEALTHY,
+                                                     sls_path,
+                                                     host_ids)
+                    logger.exception(e)
+                    raise
+                except Exception as e:
+                    err_msg = 'Unhandled exception: {0}'.format(e)
+                    stack.log_history(err_msg, Activity.IDLE)
+                    stack.set_all_component_statuses(ComponentStatus.CANCELLED,
+                                                     Health.UNHEALTHY,
+                                                     sls_path,
+                                                     host_ids)
+                    logger.exception(e)
+                    raise
 
         return task
 
@@ -1598,77 +1600,81 @@ def update_host_info():
     logger.info('Received host info from salt cloud.')
 
     # Iterate through all the stacks & hosts and check their state / activity
-    for stack in Stack.objects.all():
+    with transaction.atomic(using=Stack.objects.db):
 
-        newly_dead_hosts = []
+        # Use select_for_update so that we don't have an issue where a stack gets deleted
+        # then re-saved during this task
+        for stack in Stack.objects.select_for_update():
 
-        new_host_activities = []
+            newly_dead_hosts = []
 
-        for host in stack.hosts.all():
-            account = host.cloud_account
+            new_host_activities = []
 
-            if account.slug not in query_results:
-                # If the account is missing, then we shouldn't do anything.
-                continue
+            for host in stack.hosts.all():
+                account = host.cloud_account
 
-            account_info = query_results[account.slug].get(account.provider.name, {})
-            host_info = account_info.get(host.hostname)
+                if account.slug not in query_results:
+                    # If the account is missing, then we shouldn't do anything.
+                    continue
 
-            old_state = host.state
-            old_activity = host.activity
+                account_info = query_results[account.slug].get(account.provider.name, {})
+                host_info = account_info.get(host.hostname)
 
-            # Check for terminated host state
-            if not host_info:
-                # If we're queued or launching, we may have just not been launched yet,
-                # so we don't want to be terminated in that case
-                if host.activity not in (Activity.QUEUED, Activity.LAUNCHING):
-                    host.state = 'terminated'
-            else:
-                host.state = host_info['state']
+                old_state = host.state
+                old_activity = host.activity
 
-                # Process the info
-                utils.process_host_info(host_info, host)
+                # Check for terminated host state
+                if not host_info:
+                    # If we're queued or launching, we may have just not been launched yet,
+                    # so we don't want to be terminated in that case
+                    if host.activity not in (Activity.QUEUED, Activity.LAUNCHING):
+                        host.state = 'terminated'
+                else:
+                    host.state = host_info['state']
 
-            if host.state != old_state:
-                logger.info('Host {0} state changed from {1} to {2}'.format(host.hostname,
-                                                                            old_state,
-                                                                            host.state))
+                    # Process the info
+                    utils.process_host_info(host_info, host)
 
-            # Only change the host activity if the state is terminated and we are
-            # not currently terminated or terminating
-            if host.state in ('terminated',):
-                if host.activity not in (Activity.TERMINATING, Activity.TERMINATED):
-                    host.activity = Activity.DEAD
+                if host.state != old_state:
+                    logger.info('Host {0} state changed from {1} to {2}'.format(host.hostname,
+                                                                                old_state,
+                                                                                host.state))
 
-            # Change the activity back to idle if we're no longer dead
-            if host.activity == Activity.DEAD and host.state not in ('terminated',):
-                host.activity = Activity.IDLE
+                # Only change the host activity if the state is terminated and we are
+                # not currently terminated or terminating
+                if host.state in ('terminated',):
+                    if host.activity not in (Activity.TERMINATING, Activity.TERMINATED):
+                        host.activity = Activity.DEAD
 
-            new_host_activities.append(host.activity)
+                # Change the activity back to idle if we're no longer dead
+                if host.activity == Activity.DEAD and host.state not in ('terminated',):
+                    host.activity = Activity.IDLE
 
-            if old_activity != Activity.DEAD and host.activity == Activity.DEAD:
-                newly_dead_hosts.append(host.hostname)
+                new_host_activities.append(host.activity)
 
-            # save the host
-            host.save()
+                if old_activity != Activity.DEAD and host.activity == Activity.DEAD:
+                    newly_dead_hosts.append(host.hostname)
 
-        # Log some history if we've marked hosts as DEAD
-        if len(newly_dead_hosts) > 0:
-            err_msg = ('The following hosts have now been marked '
-                       '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
-            if len(err_msg) > StackHistory._meta.get_field('message').max_length:
-                err_msg = 'Several hosts have been marked \'{}\'.'.format(Activity.DEAD)
-            stack.log_history(err_msg)
+                # save the host
+                host.save()
 
-        all_dead = new_host_activities and all([a == Activity.DEAD for a in new_host_activities])
+            # Log some history if we've marked hosts as DEAD
+            if len(newly_dead_hosts) > 0:
+                err_msg = ('The following hosts have now been marked '
+                           '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
+                if len(err_msg) > StackHistory._meta.get_field('message').max_length:
+                    err_msg = 'Several hosts have been marked \'{}\'.'.format(Activity.DEAD)
+                stack.log_history(err_msg)
 
-        # If all the hosts are dead, set the stack to dead also
-        if all_dead:
-            stack.activity = Activity.DEAD
+            all_dead = new_host_activities and all([a == Activity.DEAD for a in new_host_activities])
 
-        # If the stack is currently marked dead and all the hosts are NOT dead, then set the
-        # activity to idle.
-        if stack.activity == Activity.DEAD and not all_dead:
-            stack.activity = Activity.IDLE
+            # If all the hosts are dead, set the stack to dead also
+            if all_dead:
+                stack.activity = Activity.DEAD
 
-        stack.save()
+            # If the stack is currently marked dead and all the hosts are NOT dead, then set the
+            # activity to idle.
+            if stack.activity == Activity.DEAD and not all_dead:
+                stack.activity = Activity.IDLE
+
+            stack.save()
