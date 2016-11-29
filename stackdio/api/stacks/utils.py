@@ -23,6 +23,7 @@ import os
 import random
 import re
 from datetime import datetime
+from functools import wraps
 from logging.handlers import WatchedFileHandler
 
 import salt.client
@@ -50,6 +51,56 @@ ERROR_REQUISITE = 'One or more requisite failed'
 COLOR_REGEX = re.compile(r'\[0;[\d]+m')
 
 SALT_CLOUD_CACHE_DIR = os.path.join(salt.syspaths.CACHE_DIR, 'cloud')
+
+
+def catch_salt_map_failures(retry_times):
+    """
+    Decorator to catch common salt errors and automatically retry
+    """
+    if retry_times <= 0:
+        raise ValueError('retry_times must be a positive integer')
+
+    def decorator(func):
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            num_errors = 0
+
+            # Only loop until we've failed too many times
+            while num_errors < retry_times:
+                try:
+                    # Call our function & return it's return val
+                    return func(*args, **kwargs)
+                except ExtraData as e:
+                    logger.info('Received ExtraData, retrying: {0}'.format(e))
+                    # Blow away the salt cloud cache and try again
+                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                    num_errors += 1
+                except salt.cloud.SaltCloudSystemExit as e:
+                    if 'extra data' in e.message:
+                        logger.info('Received ExtraData, retrying: {0}'.format(e))
+                        # Blow away the salt cloud cache and try again
+                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                        num_errors += 1
+                    else:
+                        raise
+                except TypeError as e:
+                    if 'NoneType' in e.message:
+                        logger.info('Received TypeError, retrying: {0}'.format(e))
+                        # Blow away the salt cloud cache and try again
+                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
+                        num_errors += 1
+                    else:
+                        raise
+
+            # If we make it out of the loop, we failed
+            raise salt.cloud.SaltCloudSystemExit(
+                'Maximum number of errors reached while launching stack.'
+            )
+
+        return wrapper
+
+    return decorator
 
 
 class StackdioSaltCloudMap(salt.cloud.Map):
@@ -210,52 +261,22 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
             date_format=opts['log_datefmt_logfile'],
         )
 
-        ret = None
-
         try:
             mapper = StackdioSaltCloudMap(opts)
             mapper.rendered_map = cloud_map
 
-            launched = False
-            num_errors = 0
-            while not launched:
-                if num_errors >= 5:
-                    raise salt.cloud.SaltCloudSystemExit(
-                        'Maximum number of errors reached while launching stack.'
-                    )
+            @catch_salt_map_failures(retry_times=5)
+            def do_launch():
+                # Do the launch
+                dmap = mapper.map_data()
+                return mapper.run_map(dmap)
 
-                try:
-                    # Do the launch
-                    dmap = mapper.map_data()
-                    ret = mapper.run_map(dmap)
-                    # It worked
-                    launched = True
-                except ExtraData as e:
-                    logger.info('Received ExtraData, retrying: {0}'.format(e))
-                    # Blow away the salt cloud cache and try again
-                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                    num_errors += 1
-                except salt.cloud.SaltCloudSystemExit as e:
-                    if 'extra data' in e.message:
-                        logger.info('Received ExtraData, retrying: {0}'.format(e))
-                        # Blow away the salt cloud cache and try again
-                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                        num_errors += 1
-                    else:
-                        raise
-                except TypeError as e:
-                    if 'NoneType' in e.message:
-                        logger.info('Received TypeError, retrying: {0}'.format(e))
-                        # Blow away the salt cloud cache and try again
-                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                        num_errors += 1
-                    else:
-                        raise
+            # This should catch our failures and retry
+            return salt.utils.cloud.simple_types_filter(do_launch())
+
         finally:
             # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
             root_logger.removeHandler(handler)
-
-        return salt.utils.cloud.simple_types_filter(ret)
 
     def destroy_map(self, cloud_map, hosts, **kwargs):
         """
@@ -266,42 +287,10 @@ class StackdioSaltCloudClient(salt.cloud.CloudClient):
         mapper = StackdioSaltCloudMap(self._opts_defaults(**kwarg))
         mapper.rendered_map = cloud_map
 
-        ret = None
+        # This should catch our failures and retry
+        return self._do_destroy(mapper, hosts)
 
-        destroyed = False
-        num_errors = 0
-        while not destroyed:
-            if num_errors >= 5:
-                raise salt.cloud.SaltCloudSystemExit(
-                    'Maximum number of errors reached while destroying stack.'
-                )
-
-            try:
-                ret = self._do_destroy(mapper, hosts)
-                # It worked
-                destroyed = True
-            except ExtraData as e:
-                logger.info('Received ExtraData, retrying: {0}'.format(e))
-                # Blow away the salt cloud cache and try again
-                os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                num_errors += 1
-            except salt.cloud.SaltCloudSystemExit as e:
-                if 'extra data' in e.message:
-                    logger.info('Received ExtraData, retrying: {0}'.format(e))
-                    # Blow away the salt cloud cache and try again
-                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                    num_errors += 1
-                else:
-                    raise
-            except TypeError as e:
-                if 'NoneType' in e.message:
-                    logger.info('Received TypeError, retrying: {0}'.format(e))
-                    num_errors += 1
-                else:
-                    raise
-
-        return ret
-
+    @catch_salt_map_failures(retry_times=5)
     def _do_destroy(self, mapper, hosts):
         """
         Here's where the destroying actually happens
@@ -690,18 +679,9 @@ def get_salt_cloud_opts():
     )
 
 
-def get_salt_master_opts():
-    return config.cloud_config(
-        settings.STACKDIO_CONFIG.salt_master_config
-    )
-
-
 def get_stack_mapper(cloud_map):
     opts = get_salt_cloud_opts()
-    opts.update({
-        'hard': False,
-    })
-    ret = salt.cloud.Map(opts)
+    ret = StackdioSaltCloudMap(opts)
     ret.rendered_map = cloud_map
     return ret
 
@@ -859,6 +839,7 @@ def check_for_ssh(cloud_map, hosts):
     return result
 
 
+@catch_salt_map_failures(retry_times=5)
 def terminate_hosts(stack, hosts):
     """
     Uses salt-cloud to terminate the given list of hosts.
@@ -871,7 +852,7 @@ def terminate_hosts(stack, hosts):
     opts.update({
         'parallel': True
     })
-    mapper = salt.cloud.Map(opts)
+    mapper = StackdioSaltCloudMap(opts)
     hostnames = [h.hostname for h in hosts]
     logger.debug('Terminating hosts: {0}'.format(hostnames))
     mapper.destroy(hostnames)
