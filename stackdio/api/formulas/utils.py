@@ -434,8 +434,11 @@ class StackdioGitPython(GitPython):
 
 class StackdioGitFS(GitFS):
 
-    # Make sure envs() returns unicode strings instead of bytes
     def envs(self, ignore_cache=False):
+        """
+        COPIED FROM SALT
+        changed: Make sure envs() returns unicode strings instead of bytes
+        """
         envs = super(StackdioGitFS, self).envs(ignore_cache)
         ret = []
         for env in envs:
@@ -487,7 +490,6 @@ class StackdioGitFS(GitFS):
             check_file_list_cache(
                 self.opts, form, list_cache, w_lock
             )
-        logger.warning(cache_match)
         if cache_match is not None:
             return cache_match
         if refresh_cache:

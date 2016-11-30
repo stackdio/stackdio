@@ -35,7 +35,6 @@ import errno
 import logging
 import os
 
-import django
 import salt.ext.six as six
 import salt.fileserver
 import salt.utils
@@ -49,6 +48,24 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stackdio.server.settings.produc
 
 
 __virtualname__ = 'stackdio'
+
+
+def django_setup():
+    """
+    Our version of django.setup() that doesn't configure logging
+    """
+    from django.apps import apps
+    from django.conf import settings
+
+    apps.populate(settings.INSTALLED_APPS)
+
+# setup django (without logging)
+django_setup()
+
+# These must be imported AFTER django is set up
+from stackdio.api.cloud.models import CloudAccount  # NOQA
+from stackdio.api.formulas.models import Formula  # NOQA
+from stackdio.api.stacks.models import Stack  # NOQA
 
 
 def __virtual__():
@@ -104,14 +121,10 @@ def _get_env_dir(saltenv):
 def _get_object(saltenv):
     env_type, dot, obj_id = saltenv.partition('.')
 
-    django.setup()
-
     if env_type == 'stacks':
-        from stackdio.api.stacks.models import Stack
         return Stack.objects.get(id=int(obj_id))
 
     elif env_type == 'cloud':
-        from stackdio.api.cloud.models import CloudAccount
         return CloudAccount.objects.get(slug=obj_id)
     else:
         log.warning('Invalid saltenv: {}'.format(saltenv))
@@ -175,11 +188,6 @@ def envs():
     """
     Return the file server environments
     """
-    django.setup()
-
-    from stackdio.api.stacks.models import Stack
-    from stackdio.api.cloud.models import CloudAccount
-
     ret = []
 
     for stack in Stack.objects.all():
@@ -279,10 +287,6 @@ def update():
         event.fire_event(data, tagify(['stackdio', 'update'], prefix='fileserver'))
 
     # Update all of the formulas too
-    django.setup()
-
-    from stackdio.api.formulas.models import Formula
-
     for formula in Formula.objects.all():
         gitfs = formula.get_gitfs()
         gitfs.update()
@@ -428,6 +432,7 @@ def _file_lists(load, form):
                         if __opts__.get('file_client', 'remote') == 'local' and os.path.sep == "\\":
                             rel_fn = rel_fn.replace('\\', '/')
                         ret['files'].append(rel_fn)
+
         if save_cache:
             try:
                 salt.fileserver.write_file_list_cache(
@@ -449,15 +454,22 @@ def file_list(load):
     # Grab the local ones
     ret = _file_lists(load, 'files')
 
-    if load['saltenv'] not in envs():
+    saltenv = load['saltenv']
+
+    if saltenv not in envs():
         return ret
 
     # Then check all of the formulas
-    obj = _get_object(load['saltenv'])
+    obj = _get_object(saltenv)
 
     for formula_version in obj.formula_versions.all():
         gitfs = formula_version.formula.get_gitfs()
+        # temporarily inject our saltenv
+        load['saltenv'] = formula_version.version
         ret.extend(gitfs.file_list(load))
+
+    # put the saltenv back
+    load['saltenv'] = saltenv
 
     return ret
 
@@ -475,15 +487,22 @@ def dir_list(load):
     """
     ret = _file_lists(load, 'dirs')
 
-    if load['saltenv'] not in envs():
+    saltenv = load['saltenv']
+
+    if saltenv not in envs():
         return ret
 
     # Then check all of the formulas
-    obj = _get_object(load['saltenv'])
+    obj = _get_object(saltenv)
 
     for formula_version in obj.formula_versions.all():
         gitfs = formula_version.formula.get_gitfs()
+        # temporarily inject our saltenv
+        load['saltenv'] = formula_version.version
         ret.extend(gitfs.dir_list(load))
+
+    # put the saltenv back
+    load['saltenv'] = saltenv
 
     return ret
 
@@ -501,9 +520,10 @@ def symlink_list(load):
         load['saltenv'] = load.pop('env')
 
     ret = {}
-    if load['saltenv'] not in envs():
+    saltenv = load['saltenv']
+    if saltenv not in envs():
         return ret
-    for path in _get_dir_list(load['saltenv']):
+    for path in _get_dir_list(saltenv):
         try:
             prefix = load['prefix'].strip('/')
         except KeyError:
@@ -527,12 +547,17 @@ def symlink_list(load):
                                                                           dname))
 
     # Then check all of the formulas
-    obj = _get_object(load['saltenv'])
+    obj = _get_object(saltenv)
 
     for formula_version in obj.formula_versions.all():
         gitfs = formula_version.formula.get_gitfs()
+        # temporarily inject our saltenv
+        load['saltenv'] = formula_version.version
         for k, v in gitfs.symlink_list(load).items():
             if k not in ret:
                 ret[k] = v
+
+    # put the saltenv back
+    load['saltenv'] = saltenv
 
     return ret

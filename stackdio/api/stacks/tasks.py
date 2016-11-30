@@ -1665,10 +1665,10 @@ def update_host_info():
                     err_msg = 'Several hosts have been marked \'{}\'.'.format(Activity.DEAD)
                 stack.log_history(err_msg)
 
-            all_dead = new_host_activities and all([a == Activity.DEAD for a in new_host_activities])
+            all_dead = all([a == Activity.DEAD for a in new_host_activities])
 
             # If all the hosts are dead, set the stack to dead also
-            if all_dead:
+            if all_dead and new_host_activities:
                 stack.activity = Activity.DEAD
 
             # If the stack is currently marked dead and all the hosts are NOT dead, then set the
