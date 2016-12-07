@@ -1,0 +1,46 @@
+{% extends 'environments/environment-detail-base.html' %}
+
+
+{% block detail-content %}
+<div class="col-sm-6 col-sm-pull-3">
+    <div class="row">
+        <div class="col-md-12">
+            <form data-bind="submit: function() { environment.save(); }">
+                <div id="name" class="form-group">
+                    <label for="environmentName">Name</label>
+                    <input type="text" class="form-control" id="environmentName"
+                           data-bind="value: environment.name, valueUpdate: 'keyup'">
+                </div>
+                <div id="description" class="form-group">
+                    <label for="environmentDescription">Description</label>
+                    <input type="text" class="form-control" id="environmentDescription"
+                           data-bind="value: environment.description, valueUpdate: 'keyup'">
+                </div>
+                <div id="create_users">
+                    <div class="checkbox">
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox"
+                                   data-bind="checked: environment.createUsers">
+                            <span class="checkbox-label">Create Users</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 15px">
+                    {% if has_update %}
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    {% endif %}
+
+                    {% if has_delete %}
+                    <button class="btn btn-danger" data-bind="click: function () { environment.delete() }">
+                        Delete
+                        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="col-sm-3 col-sm-pull-3"></div>
+{% endblock %}

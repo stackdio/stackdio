@@ -22,6 +22,7 @@ from stackdio.core.utils import cached_url
 from . import views
 from .views import accounts
 from .views import blueprints
+from .views import environments
 from .views import formulas
 from .views import images
 from .views import snapshots
@@ -184,6 +185,40 @@ urlpatterns = (
     cached_url(r'^stacks/(?P<pk>[0-9]+)/logs/$',
                stacks.StackLogsView.as_view(),
                name='stack-logs'),
+
+    cached_url(r'^environments/$',
+               environments.EnvironmentListView.as_view(),
+               name='environment-list',
+               timeout=30),
+
+    cached_url(r'^environments/create/$',
+               environments.EnvironmentCreateView.as_view(),
+               name='environment-create'),
+
+    cached_url(r'^environments/permissions/$',
+               environments.EnvironmentModelPermissionsView.as_view(),
+               name='environment-model-permissions'),
+
+    cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/$',
+               environments.EnvironmentDetailView.as_view(),
+               name='environment-detail',
+               timeout=30),
+
+    cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/properties/$',
+               environments.EnvironmentPropertiesView.as_view(),
+               name='environment-properties'),
+
+    cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/labels/$',
+               environments.EnvironmentLabelsView.as_view(),
+               name='environment-labels'),
+
+    cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/formula_versions/$',
+               environments.EnvironmentFormulaVersionsView.as_view(),
+               name='environment-formula-versions'),
+
+    cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/permissions/$',
+               environments.EnvironmentObjectPermissionsView.as_view(),
+               name='environment-object-permissions'),
 
     cached_url(r'^blueprints/$',
                blueprints.BlueprintListView.as_view(),

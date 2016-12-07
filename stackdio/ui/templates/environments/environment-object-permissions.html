@@ -1,0 +1,22 @@
+{% extends 'environments/environment-detail-base.html' %}
+
+{% block title %}{{ object_type }} Permissions{% endblock %}
+
+{# Inject the environment id into the window so we can access it in our javascript VM #}
+{% if object_id %}
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.objectId = '{{ object_id }}';
+    </script>
+{% endblock %}
+{% endif %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    {% include 'stackdio/stubs/permissions-table.html' with user_or_group='user' %}
+
+    {% include 'stackdio/stubs/permissions-table.html' with user_or_group='group' %}
+</div>
+{% endblock %}

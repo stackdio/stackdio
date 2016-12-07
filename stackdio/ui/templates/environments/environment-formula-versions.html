@@ -1,0 +1,48 @@
+{% extends 'environments/environment-detail-base.html' %}
+{% load staticfiles %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2/dist/css/select2.min.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/select2-bootstrap-theme/dist/select2-bootstrap.min.css' %}">
+{% endblock %}
+
+{% block detail-content %}
+    <div class="col-sm-9 col-sm-pull-3">
+        {% include 'stackdio/stubs/pager.html' with object_type='formula versions' search=True %}
+
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table table-hover">
+                    <thead>
+                    <tr>
+                        {% include 'stackdio/stubs/table-sort-header.html' %}
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- ko foreach: sortedObjects -->
+                    <tr class="stackdio-hidden-on-load" data-bind="visible: $root.versionsReady">
+                        <td data-bind="text: formula"></td>
+                        {% if has_update %}
+                        <td>
+                            <select style="width: 100%" class="hidden-formula-versions" data-bind="attr: {id: formulaHtmlId}"></select>
+                        </td>
+                        {% else %}
+                        <td data-bind="text: version"></td>
+                        {% endif %}
+                    </tr>
+                    <!-- /ko -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if has_update %}
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary" data-bind="click: function () { saveVersions() }">Save</button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}

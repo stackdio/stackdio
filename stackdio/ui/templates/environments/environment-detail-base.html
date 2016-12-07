@@ -1,0 +1,45 @@
+{% extends 'stackdio/page.html' %}
+
+{% block title %}Environment Detail{% endblock %}
+{% block environment-class %}active{% endblock %}
+
+{# Inject the environment id into the window so we can access it in our javascript VM #}
+{% block scripts %}
+    {{ block.super }}
+    <script type="text/javascript">
+        if (typeof window.stackdio == 'undefined') window.stackdio = {};
+        window.stackdio.environmentName = '{{ environment.name }}';
+        {% if has_update != None %}
+        window.stackdio.hasUpdatePerm = {{ has_update | lower }};
+        {% endif %}
+    </script>
+{% endblock %}
+
+
+{% block page-content %}
+    <div class="row">
+        <div class="col-sm-3 col-sm-push-9">
+            <ul class="nav nav-pills nav-stacked">
+                <li role="presentation"{% if page_id == 'detail' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:environment-detail' name=environment.name %}">Detail</a>
+                </li>
+                <li role="presentation"{% if page_id == 'properties' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:environment-properties' name=environment.name %}">Properties</a>
+                </li>
+                <li role="presentation"{% if page_id == 'labels' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:environment-labels' name=environment.name %}">Labels</a>
+                </li>
+                <li role="presentation"{% if page_id == 'formula-versions' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:environment-formula-versions' name=environment.name %}">Formula Versions</a>
+                </li>
+                {% if has_admin %}
+                <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:environment-object-permissions' name=environment.name %}">Permissions</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        {% block detail-content %}{% endblock %}
+    </div>
+{% endblock %}
