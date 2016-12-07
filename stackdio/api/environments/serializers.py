@@ -51,22 +51,24 @@ class EnvironmentSerializer(StackdioHyperlinkedModelSerializer):
     label_list = StackdioLiteralLabelsSerializer(read_only=True, many=True, source='labels')
 
     properties = serializers.HyperlinkedIdentityField(
-        view_name='api:environments:environment-properties')
+        view_name='api:environments:environment-properties',
+        lookup_field='name')
     formula_versions = serializers.HyperlinkedIdentityField(
         view_name='api:environments:environment-formula-versions',
-        lookup_url_kwarg='parent_pk')
+        lookup_field='name', lookup_url_kwarg='parent_name')
     labels = serializers.HyperlinkedIdentityField(
         view_name='api:environments:environment-label-list',
-        lookup_url_kwarg='parent_pk')
+        lookup_field='name', lookup_url_kwarg='parent_name')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:environments:environment-object-user-permissions-list',
-        lookup_url_kwarg='parent_pk')
+        lookup_field='name', lookup_url_kwarg='parent_name')
     group_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:environments:environment-object-group-permissions-list',
-        lookup_url_kwarg='parent_pk')
+        lookup_field='name', lookup_url_kwarg='parent_name')
 
     class Meta:
         model = models.Environment
+        lookup_field = 'name'
         fields = (
             'url',
             'name',
@@ -134,3 +136,4 @@ class EnvironmentLabelSerializer(StackdioLabelSerializer):
     class Meta(StackdioLabelSerializer.Meta):
         app_label = 'environments'
         model_name = 'environment-label'
+        parent_lookup_field = 'name'
