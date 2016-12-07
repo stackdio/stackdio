@@ -44,6 +44,7 @@ class EnvironmentListAPIView(generics.ListCreateAPIView):
     permission_classes = (StackdioModelPermissions,)
     filter_backends = (DjangoObjectPermissionsFilter, DjangoFilterBackend)
     filter_class = filters.EnvironmentFilter
+    lookup_field = 'name'
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -61,12 +62,14 @@ class EnvironmentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = models.Environment.objects.all()
     serializer_class = serializers.EnvironmentSerializer
     permission_classes = (StackdioObjectPermissions,)
+    lookup_field = 'name'
 
 
 class EnvironmentPropertiesAPIView(generics.RetrieveUpdateAPIView):
     queryset = models.Environment.objects.all()
     serializer_class = ObjectPropertiesSerializer
     permission_classes = (StackdioObjectPermissions,)
+    lookup_field = 'name'
 
 
 class EnvironmentLabelListAPIView(mixins.EnvironmentRelatedMixin, generics.ListCreateAPIView):

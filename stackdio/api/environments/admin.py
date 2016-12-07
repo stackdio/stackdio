@@ -24,8 +24,8 @@ from . import models
 
 class EnvironmentAdmin(GuardedModelAdmin):
     list_display = [
-        'title',
-        'slug',
+        'name',
+        'description',
         'created',
         'modified',
     ]

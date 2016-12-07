@@ -48,26 +48,26 @@ urlpatterns = (
     url(r'^permissions/',
         include(model_router.urls)),
 
-    url(r'^(?P<pk>[0-9]+)/$',
+    url(r'^(?P<name>[a-z0-9\-_.]+)/$',
         api.EnvironmentDetailAPIView.as_view(),
         name='environment-detail'),
 
-    url(r'^(?P<pk>[0-9]+)/properties/$',
+    url(r'^(?P<name>[a-z0-9\-_.]+)/properties/$',
         api.EnvironmentPropertiesAPIView.as_view(),
         name='environment-properties'),
 
-    url(r'^(?P<parent_pk>[0-9]+)/permissions/',
+    url(r'^(?P<parent_name>[a-z0-9\-_.]+)/permissions/',
         include(object_router.urls)),
 
-    url(r'^(?P<parent_pk>[0-9]+)/labels/$',
+    url(r'^(?P<parent_name>[a-z0-9\-_.]+)/labels/$',
         api.EnvironmentLabelListAPIView.as_view(),
         name='environment-label-list'),
 
-    url(r'^(?P<parent_pk>[0-9]+)/labels/(?P<label_name>[\w.@+-]+)/$',
+    url(r'^(?P<parent_name>[a-z0-9\-_.]+)/labels/(?P<label_name>[\w.@+-]+)/$',
         api.EnvironmentLabelDetailAPIView.as_view(),
         name='environment-label-detail'),
 
-    url(r'^(?P<parent_pk>[0-9]+)/formula_versions/$',
+    url(r'^(?P<parent_name>[a-z0-9\-_.]+)/formula_versions/$',
         api.EnvironmentFormulaVersionsAPIView.as_view(),
         name='environment-formula-versions'),
 )

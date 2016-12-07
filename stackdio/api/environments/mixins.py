@@ -22,6 +22,7 @@ from . import models
 
 class EnvironmentRelatedMixin(ParentRelatedMixin):
     parent_queryset = models.Environment.objects.all()
+    parent_lookup_field = 'name'
 
     def get_environment(self):
         return self.get_parent_object()

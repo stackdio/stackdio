@@ -20,7 +20,8 @@ from __future__ import unicode_literals
 import logging
 
 from django.contrib.contenttypes.fields import GenericRelation
-from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
+from django.db import models
+from django_extensions.db.models import TimeStampedModel
 from stackdio.core.fields import JSONField
 
 logger = logging.getLogger(__name__)
@@ -39,15 +40,18 @@ _environment_object_permissions = (
 )
 
 
-class Environment(TimeStampedModel, TitleSlugDescriptionModel):
+class Environment(TimeStampedModel):
 
     model_permissions = _environment_model_permissions
     object_permissions = _environment_object_permissions
 
     class Meta:
-        ordering = ('title',)
+        ordering = ('name',)
         default_permissions = tuple(set(_environment_model_permissions +
                                         _environment_object_permissions))
+
+    name = models.CharField('Name', max_length=255, unique=True)
+    description = models.TextField('Description', blank=True, null=True)
 
     labels = GenericRelation('core.Label')
 
