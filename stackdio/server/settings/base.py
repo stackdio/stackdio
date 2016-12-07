@@ -92,6 +92,7 @@ INSTALLED_APPS = (
     'stackdio.api.users',
     'stackdio.api.cloud',
     'stackdio.api.stacks',
+    'stackdio.api.environments',
     'stackdio.api.volumes',
     'stackdio.api.blueprints',
     'stackdio.api.formulas',
