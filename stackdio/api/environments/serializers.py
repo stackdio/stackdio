@@ -36,13 +36,13 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
-ENV_NAME_REGEX = r'^[a-z0-9\-\_\.]+$'
+ENV_NAME_REGEX = r'^[a-z0-9\-\_]+$'
 
 
 def validate_name(value):
     if not re.match(ENV_NAME_REGEX, value):
         raise serializers.ValidationError(
-            'Name may only contain alphanumeric characters, -, _, and .'
+            'Name may only contain alphanumeric characters, dashes (-), and underscores (_).'
         )
 
 

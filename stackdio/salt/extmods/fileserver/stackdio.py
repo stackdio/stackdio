@@ -108,6 +108,9 @@ def _get_env_dir(saltenv):
     env_type, dot, name = saltenv.partition('.')
     root_dir = os.path.join(_get_storage_dir(), env_type, name)
 
+    if not os.path.exists(root_dir):
+        os.makedirs(root_dir)
+
     if not os.path.isdir(root_dir):
         log.warn('The env dir doesn\'t exist... Something has gone horribly wrong.')
 
