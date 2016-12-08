@@ -56,7 +56,6 @@ class LaunchWorkflowOptions(WorkflowOptions):
         # See stacks.tasks::launch_hosts for information on these params
         'simulate_launch_failures': False,
         'simulate_ssh_failures': False,
-        'simulate_zombies': False,
         'failure_percent': 0.3,
     }
 
@@ -107,11 +106,8 @@ class LaunchWorkflow(BaseWorkflow):
                 max_retries=opts.max_retries,
                 simulate_launch_failures=opts.simulate_launch_failures,
                 simulate_ssh_failures=opts.simulate_ssh_failures,
-                simulate_zombies=opts.simulate_zombies,
                 failure_percent=opts.failure_percent
             ),
-            tasks.update_metadata.si(stack_id, Activity.LAUNCHING, host_ids=host_ids),
-            tasks.cure_zombies.si(stack_id, max_retries=opts.max_retries),
             tasks.update_metadata.si(stack_id, Activity.LAUNCHING, host_ids=host_ids),
             tasks.tag_infrastructure.si(stack_id, activity=Activity.LAUNCHING, host_ids=host_ids),
             tasks.register_dns.si(stack_id, Activity.LAUNCHING, host_ids=host_ids),
@@ -191,8 +187,6 @@ class ActionWorkflow(BaseWorkflow):
         base_tasks = {
             Action.LAUNCH: [
                 tasks.launch_hosts.si(self.stack.id),
-                tasks.update_metadata.si(self.stack.id, Activity.LAUNCHING),
-                tasks.cure_zombies.si(self.stack.id),
             ],
             Action.TERMINATE: [
                 tasks.update_metadata.si(self.stack.id, Activity.TERMINATING),

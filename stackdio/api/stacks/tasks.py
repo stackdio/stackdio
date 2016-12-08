@@ -42,14 +42,16 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db import transaction
+
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
+from stackdio.api.stacks import utils, validators
+from stackdio.api.stacks.exceptions import StackTaskException
+from stackdio.api.stacks.models import Stack, StackCommand, StackHistory
 from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.events import trigger_event
-
-from . import utils, validators
-from .exceptions import StackTaskException
-from .models import Stack, StackCommand, StackHistory
+from stackdio.salt.utils.cloud import StackdioSaltCloudClient
+from stackdio.salt.utils.logging import setup_logfile_logger
 
 logger = get_task_logger(__name__)
 
@@ -172,12 +174,50 @@ def change_pillar(stack, new_pillar_file):
             result[minion] = state_ret
 
 
-# Tasks that directly operate on stacks
+def auto_retry(name=None, max_attempts=3, exception_type=StackTaskException):
+    """
+    Decorator to automatically retry a function a given number of times
+    :param name: the name of the retry function
+    :param max_attempts: the maximum number of attempts to call the function
+    :param exception_type: the type of exception to catch
+    """
+    def decorator(func):
 
-@stack_task(name='stacks.launch_hosts')
-def launch_hosts(stack, parallel=True, max_retries=2,
-                 simulate_launch_failures=False, simulate_zombies=False,
-                 simulate_ssh_failures=False, failure_percent=0.3):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+
+            current_attempt = 1
+
+            exc = None
+
+            while current_attempt <= max_attempts:
+                # Pass some extra things in
+                kwargs['attempt'] = current_attempt
+                kwargs['max_attempts'] = max_attempts
+                try:
+                    return func(*args, **kwargs)
+                except exception_type as e:
+                    # Save the most recent exception
+                    exc = e
+
+                current_attempt += 1
+
+            if name:
+                msg = 'Max attempts for {} exceeded'.format(name)
+            else:
+                msg = 'Max attempts exceeded'
+
+            # If we exit the loop that means we failed.
+            raise exception_type('{}: {}'.format(msg, exc))
+
+        return wrapper
+
+    return decorator
+
+
+def do_launch(stack, attempt=None, max_attempts=None,
+              parallel=True, simulate_launch_failures=False,
+              simulate_ssh_failures=False, failure_percent=0.3):
     """
     Uses salt cloud to launch machines using the given Stack's map_file
     that was generated when the Stack was created. Salt cloud will
@@ -188,8 +228,7 @@ def launch_hosts(stack, parallel=True, max_retries=2,
     @param stack (Stack) - the primary key of the stack to launch
     @param parallel (bool) - if True, salt-cloud will launch the stack
         in parallel using multiprocessing.
-    @param max_retries (int) - the number of retries to use if launch
-        failures are detected.
+    @param max_attempts (int) - the number of attempts to launch the stack
 
     Failure simulations:
     @param simulate_launch_failures (bool) - if True, will modify the stack's
@@ -201,300 +240,147 @@ def launch_hosts(stack, parallel=True, max_retries=2,
         to use an existing, yet invalid SSH key, causing SSH failures in
         salt-cloud during any SSH auth attempts. After launch, we clean this
         modification up so subsequent launches do not intentionally fail.
-    @param simulate_zombies (bool) - if True, after a successful launch of
-        hosts, we will manually kill salt-minion service on a random subset of
-        the stack's hosts. This task doesn't actually attempt to fix zombie
-        hosts, but we will in the `cure_zombies` task later.
     @param failure_percent (float) - percentage of the Stack's hosts to be
-        flagged to fail during launch or become zombie hosts. This param
+        flagged to fail during launch. This param
         is ignored if all of the above failure flags are set to False.
         Defaults to 0.3 (30%).
     """
-    # Set the activity right away
-    stack.set_activity(Activity.LAUNCHING)
-
     hosts = stack.get_hosts()
     num_hosts = len(hosts)
     log_file = utils.get_salt_cloud_log_file(stack, 'launch')
 
-    # Generate the pillar file.  We need it!
-    stack.generate_pillar_file()
-
     logger.info('Launching hosts for stack: {0!r}'.format(stack))
     logger.info('Log file: {0}'.format(log_file))
 
-    salt_cloud = utils.StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
+    salt_cloud = StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
     query = salt_cloud.query()
 
-    hostnames = [host.hostname for host in hosts]
-
-    # Since a blueprint can have multiple accounts
-    accounts = set()
+    # Check each host to make sure it is running
     for host in hosts:
-        accounts.add(host.cloud_image.account)
-
-    for account in accounts:
+        account = host.cloud_account
         provider = account.provider.name
 
-        for instance, details in query.get(account.slug, {}).get(provider, {}).items():
-            if instance in hostnames:
-                if details['state'] in ('shutting-down', 'terminated'):
-                    salt_cloud.action(
-                        'set_tags',
-                        names=[instance],
-                        kwargs={
-                            'Name': '{0}-DEL_BY_STACKDIO'.format(instance)
-                        }
-                    )
+        # Grab the details
+        host_details = query.get(account.slug, {}).get(provider, {}).get(host.hostname)
 
-    current_try, unrecoverable_error = 0, False
-    while True:
-        current_try += 1
-        logger.info('Task {0} try {1} of {2} for stack {3!r}'.format(
-            launch_hosts.name,
-            current_try,
-            max_retries + 1,
-            stack))
+        if host_details:
+            state = host_details.get('state')
 
-        if num_hosts > 1:
-            label = '{0} hosts are'.format(num_hosts)
-        else:
-            label = '1 host is'
+            # Only re-tag if the state exists and it is not running
+            if state and state not in ('running',):
+                salt_cloud.action(
+                    'set_tags',
+                    names=[host.hostname],
+                    kwargs={
+                        'Name': '{0}-DEL_BY_STACKDIO'.format(host.hostname)
+                    }
+                )
 
-        stack.log_history(
-            '{0} being launched. Try {1} of {2}. '
-            'This may take a while.'.format(
-                label,
-                current_try,
-                max_retries + 1
-            )
+                # Delete the volume IDs on these
+                for vol in host.volumes.all():
+                    vol.volume_id = ''
+                    vol.save()
+
+    logger.info('Task {0} try {1} of {2} for stack {3!r}'.format(
+        launch_hosts.name,
+        attempt,
+        max_attempts,
+        stack,
+    ))
+
+    if num_hosts == 1:
+        label = '1 host is'
+    else:
+        label = '{0} hosts are'.format(num_hosts)
+
+    stack.log_history(
+        '{0} being launched. Try {1} of {2}. '
+        'This may take a while.'.format(
+            label,
+            attempt,
+            max_attempts,
         )
+    )
 
-        cloud_map = stack.generate_cloud_map()
+    cloud_map = stack.generate_cloud_map()
 
-        # Modify the stack's map to inject a private key that does not
-        # exist, which will fail immediately and the host will not launch
-        if simulate_launch_failures:
-            n = int(len(hosts) * failure_percent)
-            logger.info('Simulating failures on {0} host(s).'.format(n))
-            utils.mod_hosts_map(cloud_map, n, private_key='/tmp/bogus-key-file')
+    # Modify the stack's map to inject a private key that does not
+    # exist, which will fail immediately and the host will not launch
+    if simulate_launch_failures:
+        n = int(len(hosts) * failure_percent)
+        logger.info('Simulating failures on {0} host(s).'.format(n))
+        utils.mod_hosts_map(cloud_map, n, private_key='/tmp/bogus-key-file')
 
-        # Modify the map file to inject a real key file, but one that
-        # will not auth via SSH
-        if not simulate_launch_failures and simulate_ssh_failures:
-            bogus_key = '/tmp/id_rsa-bogus-key'
-            if os.path.isfile(bogus_key):
-                os.remove(bogus_key)
-            subprocess.call(['ssh-keygen', '-f', bogus_key, '-N', ''])
-            n = int(len(hosts) * failure_percent)
-            logger.info('Simulating SSH failures on {0} host(s).'.format(n))
-            utils.mod_hosts_map(cloud_map, n, private_key=bogus_key)
+    # Modify the map file to inject a real key file, but one that
+    # will not auth via SSH
+    if not simulate_launch_failures and simulate_ssh_failures:
+        bogus_key = '/tmp/id_rsa-bogus-key'
+        if os.path.isfile(bogus_key):
+            os.remove(bogus_key)
+        subprocess.call(['ssh-keygen', '-f', bogus_key, '-N', ''])
+        n = int(len(hosts) * failure_percent)
+        logger.info('Simulating SSH failures on {0} host(s).'.format(n))
+        utils.mod_hosts_map(cloud_map, n, private_key=bogus_key)
 
-        if parallel:
-            logger.info('Launching hosts in PARALLEL mode.')
-        else:
-            logger.info('Launching hosts in SERIAL mode.')
+    if parallel:
+        logger.info('Launching hosts in PARALLEL mode.')
+    else:
+        logger.info('Launching hosts in SERIAL mode.')
 
-        # Launch everything!
-        launch_result = salt_cloud.launch_map(
-            cloud_map=cloud_map,
-            parallel=parallel,
-            log_level='quiet',
-            log_file=log_file,
-            log_level_logfile='debug'
-        )
+    # Launch everything!
+    launch_result = salt_cloud.launch_map(
+        cloud_map=cloud_map,
+        parallel=parallel,
+        log_file=log_file,
+    )
 
-        if not launch_result:
-            # This means nothing was launched b/c everything is already running
-            break
+    # Look for launch errors
+    errors = set()
+    terminate_list = []
+    for host_name, results in launch_result.items():
+        logger.debug('Checking host {0} for errors.'.format(host_name))
 
-        # Remove the failure modifications if necessary
-        if simulate_launch_failures:
-            simulate_launch_failures = False
+        # Error format #1
+        if 'Errors' in results and 'Error' in results['Errors']:
+            err_msg = results['Errors']['Error']['Message']
+            logger.debug('Error on host {0}: {1}'.format(host_name, err_msg))
+            errors.add(err_msg)
+            # Add to the list of hosts to terminate
+            terminate_list.append(host_name)
 
-        # Check for launch failures...a couple things happen here:
-        #
-        # 1) We'll query salt-cloud looking for hosts that salt
-        # believes need to be created. This indicates that the
-        # host never came online, so we'll just retry and attempt
-        # to launch those hosts again; and
-        #
-        # 2) We'll look for zombie hosts check for a successful
-        # SSH connection. If we couldn't connect via SSH then we'll
-        # consider this a launch failure, terminate the machine and
-        # let salt relaunch them
+        # Error format #2
+        elif 'Error' in results:
+            err_msg = results['Error']
+            logger.debug('Error on host {0}: {1}'.format(host_name, err_msg))
+            errors.add(err_msg)
+            terminate_list.append(host_name)
 
-        # First we'll attempt to SSH to all zombie nodes and terminate
-        # the unsuccessful ones so we can relaunch them
-        zombies = utils.find_zombie_hosts(stack)
-        terminate_list = []
-        if zombies is not None and zombies.count() > 0:
-            check_ssh_results = utils.check_for_ssh(cloud_map, zombies)
-            if check_ssh_results:
-                for ssh_ok, host in check_ssh_results:
-                    if not ssh_ok:
-                        # build the list of hosts we need to kill
-                        # and relaunch
-                        terminate_list.append(host)
+    if terminate_list:
+        # terminate the errored hosts
+        utils.terminate_hosts(stack, cloud_map, terminate_list)
 
-                n = len(terminate_list)
-                if n > 0:
-                    label = '{0} host'.format(n)
-                    if n > 1:
-                        label += 's were'
-                    else:
-                        label += ' was'
+        logger.debug('Errors found, terminating hosts for retry: {0!r}'.format(errors))
 
-                    err_msg = (
-                        '{0} unresponsive and will be terminated '
-                        'and tried again.'.format(label))
-                    logger.debug(err_msg)
-
-                    # Create a history log
-                    stack.log_history(err_msg)
-
-                    # terminate the unresponsive zombie hosts
-                    utils.terminate_hosts(stack, terminate_list)
-
-        # Revert SSH failure simulation after we've found the SSH
-        # issues and terminated the hosts
-        if simulate_ssh_failures:
-            logger.debug('Reverting SSH failure simulation '
-                         'modifications.')
-            utils.unmod_hosts_map(cloud_map,
-                                  'private_key')
-            simulate_ssh_failures = False
-
-        # The map data structure gives us the list of hosts that
-        # salt believes need to be created. This also includes any
-        # unresponsive zombie hosts we just terminated. Note that
-        # we don't have to actually wait for those hosts to die
-        # because salt-cloud renames them and will not consider
-        # them available.
-        dmap = utils.get_stack_map_data(cloud_map)
-
-        if 'create' in dmap and len(dmap['create']) > 0:
-            failed_hosts = dmap['create'].keys()
-
-            # reset number of hosts we think we are launching
-            num_hosts = len(failed_hosts)
-            label = '{0} host'.format(num_hosts)
-            if num_hosts > 1:
-                label += 's'
-
-            logger.debug('VMs failed to launch: {0}'.format(
-                failed_hosts
-            ))
-
-            if current_try <= max_retries:
-                stack.log_history('{0} failed to launch and will be retried.'.format(label))
-                continue
-
-            else:
-                # Max tries reached...unrecoverable failure.
-                err_msg = ('{0} failed to launch and the '
-                           'maximum number of tries have been '
-                           'reached.'.format(label))
-                raise StackTaskException(err_msg)
-
-        # Simulating zombies is a bit more work than just modifying the
-        # stacks' map file. At this point we assume hosts are up and
-        # functional, so we simply need to disable the salt-minion
-        # service on some of the hosts.
-        if simulate_zombies:
-            n = int(len(hosts) * failure_percent)
-            logger.info('Simulating zombies on {0} host(s).'.format(n))
-            utils.create_zombies(stack, n)
-
-        # Look for errors if we got valid JSON
-        errors = set()
-        for h, v in launch_result.items():
-            logger.debug('Checking host {0} for errors.'.format(h))
-
-            # Error format #1
-            if 'Errors' in v and 'Error' in v['Errors']:
-                err_msg = v['Errors']['Error']['Message']
-                logger.debug('Error on host {0}: {1}'.format(h, err_msg))
-                errors.add(err_msg)
-
-            # Error format #2
-            elif 'Error' in v:
-                err_msg = v['Error']
-                logger.debug('Error on host {0}: {1}'.format(h, err_msg))
-                errors.add(err_msg)
-
-        if errors:
-            logger.debug('Errors found!: {0!r}'.format(errors))
-
-            if not unrecoverable_error and current_try <= max_retries:
-                continue
-
-            for err_msg in errors:
-                stack.log_history(err_msg)
-            raise StackTaskException('Error(s) found while launching stack.')
-
-        # Everything worked?
-        break
+        for err_msg in errors:
+            stack.log_history(err_msg)
+        raise StackTaskException('Error(s) found while launching stack.')
 
 
-@stack_task(name='stacks.cure_zombies')
-def cure_zombies(stack, max_retries=2):
+# Tasks that directly operate on stacks
+
+@stack_task(name='stacks.launch_hosts')
+def launch_hosts(stack, max_attempts=3, **kwargs):
     """
-    Attempts to detect zombie hosts, or those hosts in the stack that are
-    up and running but are failing to be pinged. This usually means that
-    the bootstrapping process failed or went wrong. To fix this, we will
-    try to rerun the bootstrap process to get the zombie hosts to sync
-    up with the master.
-
-    @ param stack_id (int) -
-    @ param max_retries (int) -
+    See the do_launch function for more options.
     """
-    # Set the activity
+    # Set the activity right away
     stack.set_activity(Activity.LAUNCHING)
 
-    current_try = 0
-    while True:
-        current_try += 1
+    # Generate our retrying launch function
+    launch_func = auto_retry('launch_hosts', max_attempts)(do_launch)
 
-        # Attempt to find zombie hosts
-        zombies = utils.find_zombie_hosts(stack)
-
-        if zombies is None or zombies.count() == 0:
-            break
-
-        n = len(zombies)
-        label = '{0} zombie host'.format(n)
-        if n > 1:
-            label += 's'
-
-        if current_try <= max_retries + 1:
-            logger.info('Zombies found: {0}'.format(zombies))
-            logger.info('Zombie bootstrap try {0} of {1}'.format(
-                current_try,
-                max_retries + 1))
-
-            # If we have some zombie hosts, we'll attempt to bootstrap
-            # them again, up to the max retries
-            stack.log_history(
-                '{0} detected. Attempting try {1} of {2} to '
-                'bootstrap. This may take a while.'.format(
-                    label,
-                    current_try,
-                    max_retries + 1
-                )
-            )
-            utils.bootstrap_hosts(
-                stack,
-                zombies,
-                parallel=True
-            )
-            continue
-        else:
-            err_msg = (
-                '{0} detected and the maximum number of '
-                'tries have been reached.'.format(label)
-            )
-            raise StackTaskException(err_msg)
+    # Now call it
+    launch_func(stack, **kwargs)
 
 
 @stack_task(name='stacks.update_metadata', final_task=True)
@@ -688,7 +574,7 @@ def sync_all(stack):
 
 
 @stack_task(name='stacks.highstate')
-def highstate(stack, max_retries=2):
+def highstate(stack, max_attempts=3):
     """
     Executes the state.highstate function on the stack using the default
     stackdio top file. That top tile will only target the 'base'
@@ -714,7 +600,7 @@ def highstate(stack, max_retries=2):
     root_dir = stack.get_root_directory()
     log_dir = stack.get_log_directory()
 
-    # we'll break out of the loop based on the given number of retries
+    # we'll break out of the loop based on the given number of attempts
     current_try, unrecoverable_error = 0, False
     while True:
         current_try += 1
@@ -728,7 +614,7 @@ def highstate(stack, max_retries=2):
             'Executing core provisioning try {0} of {1}. '
             'This may take a while.'.format(
                 current_try,
-                max_retries + 1
+                max_attempts,
             )
         )
 
@@ -747,7 +633,7 @@ def highstate(stack, max_retries=2):
         symlink(log_file, log_symlink)
         symlink(err_file, err_symlink)
 
-        file_log_handler = utils.setup_logfile_logger(log_file)
+        file_log_handler = setup_logfile_logger(log_file)
 
         # Remove the other handlers, but save them so we can put them back later
         old_handlers = []
@@ -783,7 +669,7 @@ def highstate(stack, max_retries=2):
 
         if len(result) != num_hosts:
             logger.debug('salt did not provision all hosts')
-            if current_try <= max_retries:
+            if current_try <= max_attempts:
                 continue
             err_msg = 'Salt errored and did not provision all the hosts'
             raise StackTaskException('Error executing core provisioning: {0!r}'.format(err_msg))
@@ -815,7 +701,7 @@ def highstate(stack, max_retries=2):
                 with open(err_file, 'a') as f:
                     f.write(yaml.safe_dump(errors))
 
-                if not unrecoverable_error and current_try <= max_retries:
+                if not unrecoverable_error and current_try <= max_attempts:
                     continue
 
                 err_msg = 'Core provisioning errors on hosts: ' \
@@ -832,7 +718,7 @@ def highstate(stack, max_retries=2):
 
 
 @stack_task(name='stacks.propagate_ssh')
-def propagate_ssh(stack, max_retries=2):
+def propagate_ssh(stack, max_attempts=3):
     """
     Similar to stacks.highstate, except we only run `core.stackdio_users`
     instead of `core.*`.  This is useful so that ssh keys can be added to
@@ -853,7 +739,7 @@ def propagate_ssh(stack, max_retries=2):
     root_dir = stack.get_root_directory()
     log_dir = stack.get_log_directory()
 
-    # we'll break out of the loop based on the given number of retries
+    # we'll break out of the loop based on the given number of attempts
     current_try, unrecoverable_error = 0, False
     while True:
         current_try += 1
@@ -866,7 +752,7 @@ def propagate_ssh(stack, max_retries=2):
         stack.log_history(
             'Propagating ssh try {0} of {1}. This may take a while.'.format(
                 current_try,
-                max_retries + 1
+                max_attempts,
             )
         )
 
@@ -885,7 +771,7 @@ def propagate_ssh(stack, max_retries=2):
         symlink(log_file, log_symlink)
         symlink(err_file, err_symlink)
 
-        file_log_handler = utils.setup_logfile_logger(log_file)
+        file_log_handler = setup_logfile_logger(log_file)
 
         # Remove the other handlers, but save them so we can put them back later
         old_handlers = []
@@ -921,7 +807,7 @@ def propagate_ssh(stack, max_retries=2):
 
         if len(result) != num_hosts:
             logger.debug('salt did not propagate ssh keys to all hosts')
-            if current_try <= max_retries:
+            if current_try <= max_attempts:
                 continue
             err_msg = 'Salt errored and did not propagate ssh keys to all hosts'
             raise StackTaskException('Error propagating ssh keys: {0!r}'.format(err_msg))
@@ -953,7 +839,7 @@ def propagate_ssh(stack, max_retries=2):
                 with open(err_file, 'a') as f:
                     f.write(yaml.safe_dump(errors))
 
-                if not unrecoverable_error and current_try <= max_retries:
+                if not unrecoverable_error and current_try <= max_attempts:
                     continue
 
                 err_msg = 'SSH key propagation errors on hosts: ' \
@@ -970,7 +856,7 @@ def propagate_ssh(stack, max_retries=2):
 
 
 @stack_task(name='stacks.global_orchestrate')
-def global_orchestrate(stack, max_retries=2):
+def global_orchestrate(stack, max_attempts=3):
     """
     Executes the runners.state.over function with the custom orchestrate
     file  generated via the stacks.models._generate_global_orchestrate_file. This
@@ -1006,7 +892,7 @@ def global_orchestrate(stack, max_retries=2):
             role_host_nums.setdefault(fc.sls_path, 0)
             role_host_nums[fc.sls_path] += bhd.count
 
-    # we'll break out of the loop based on the given number of retries
+    # we'll break out of the loop based on the given number of attempts
     current_try = 0
     while True:
         current_try += 1
@@ -1021,7 +907,7 @@ def global_orchestrate(stack, max_retries=2):
             'Executing global orchestration try {0} of {1}. This '
             'may take a while.'.format(
                 current_try,
-                max_retries + 1
+                max_attempts,
             )
         )
 
@@ -1040,7 +926,7 @@ def global_orchestrate(stack, max_retries=2):
         symlink(err_file, err_symlink)
 
         # Set up logging
-        file_log_handler = utils.setup_logfile_logger(log_file)
+        file_log_handler = setup_logfile_logger(log_file)
 
         try:
             opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
@@ -1064,7 +950,7 @@ def global_orchestrate(stack, max_retries=2):
             root_logger.removeHandler(file_log_handler)
 
         if failed:
-            if current_try <= max_retries:  # NOQA
+            if current_try <= max_attempts:  # NOQA
                 continue
 
             err_msg = 'Global Orchestration errors on hosts: ' \
@@ -1082,7 +968,7 @@ def global_orchestrate(stack, max_retries=2):
 
 
 @stack_task(name='stacks.orchestrate')
-def orchestrate(stack, max_retries=2):
+def orchestrate(stack, max_attempts=3):
     """
     Executes the runners.state.over function with the custom orchestrate
     file  generated via the stacks.models._generate_orchestrate_file. This
@@ -1113,7 +999,7 @@ def orchestrate(stack, max_retries=2):
             role_host_nums.setdefault(fc.sls_path, 0)
             role_host_nums[fc.sls_path] += bhd.count
 
-    # we'll break out of the loop based on the given number of retries
+    # we'll break out of the loop based on the given number of attempts
     current_try = 0
     while True:
         current_try += 1
@@ -1127,7 +1013,7 @@ def orchestrate(stack, max_retries=2):
             'Executing orchestration try {0} of {1}. This '
             'may take a while.'.format(
                 current_try,
-                max_retries + 1
+                max_attempts,
             )
         )
 
@@ -1146,7 +1032,7 @@ def orchestrate(stack, max_retries=2):
         symlink(err_file, err_symlink)
 
         # Set up logging
-        file_log_handler = utils.setup_logfile_logger(log_file)
+        file_log_handler = setup_logfile_logger(log_file)
 
         try:
             opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
@@ -1172,7 +1058,7 @@ def orchestrate(stack, max_retries=2):
             root_logger.removeHandler(file_log_handler)
 
         if failed:
-            if current_try <= max_retries:
+            if current_try <= max_attempts:
                 continue
 
             err_msg = 'Orchestration errors on hosts: ' \
@@ -1190,7 +1076,7 @@ def orchestrate(stack, max_retries=2):
 
 
 @stack_task(name='stacks.single_sls')
-def single_sls(stack, component, host_target, max_retries=2):
+def single_sls(stack, component, host_target, max_attempts=3):
     """
     Executes the runners.state.over function with the custom orchestrate
     file  generated via the stacks.models._generate_orchestrate_file. This
@@ -1239,7 +1125,7 @@ def single_sls(stack, component, host_target, max_retries=2):
         target = list_target
         expr_form = 'list'
 
-    # we'll break out of the loop based on the given number of retries
+    # we'll break out of the loop based on the given number of attempts
     current_try = 0
     while True:
         current_try += 1
@@ -1255,7 +1141,7 @@ def single_sls(stack, component, host_target, max_retries=2):
             'may take a while.'.format(
                 component,
                 current_try,
-                max_retries + 1,
+                max_attempts,
             )
         )
 
@@ -1265,7 +1151,7 @@ def single_sls(stack, component, host_target, max_retries=2):
         err_file = os.path.join(log_dir,
                                 '{0}.single.err'.format(now))
 
-        file_log_handler = utils.setup_logfile_logger(log_file)
+        file_log_handler = setup_logfile_logger(log_file)
 
         # Remove the other handlers, but save them so we can put them back later
         old_handlers = []
@@ -1334,7 +1220,7 @@ def single_sls(stack, component, host_target, max_retries=2):
             with open(err_file, 'a') as f:
                 f.write(yaml.safe_dump(errors))
 
-            if current_try <= max_retries:
+            if current_try <= max_attempts:
                 continue
 
             err_msg = 'Single sls errors on hosts: ' \
@@ -1403,7 +1289,7 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
     hosts = stack.get_hosts(host_ids)
 
     if hosts:
-        salt_cloud = utils.StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
+        salt_cloud = StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
 
         # if host ids are given, we're going to terminate only those hosts
         if host_ids:

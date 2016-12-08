@@ -25,6 +25,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
+from __future__ import unicode_literals
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import logging
 import os
@@ -413,7 +415,6 @@ CELERY_ROUTES = {
     'notifications.resend_failed_notifications': {'queue': 'short'},
     'notifications.send_notification': {'queue': 'short'},
     'notifications.send_bulk_notifications': {'queue': 'short'},
-    'stacks.cure_zombies': {'queue': 'stacks'},
     'stacks.destroy_hosts': {'queue': 'stacks'},
     'stacks.destroy_stack': {'queue': 'stacks'},
     'stacks.execute_action': {'queue': 'short'},

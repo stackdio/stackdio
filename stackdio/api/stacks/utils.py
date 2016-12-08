@@ -18,13 +18,10 @@
 from __future__ import print_function, unicode_literals
 
 import logging
-import multiprocessing
 import os
 import random
 import re
 from datetime import datetime
-from functools import wraps
-from logging.handlers import WatchedFileHandler
 
 import salt.client
 import salt.cloud
@@ -36,313 +33,17 @@ import salt.utils.cloud
 import six
 import yaml
 from django.conf import settings
-from msgpack.exceptions import ExtraData
-from salt.log.setup import LOG_LEVELS
 
+from stackdio.api.stacks.exceptions import StackTaskException
 from stackdio.core.constants import Action, ComponentStatus
+from stackdio.salt.utils.cloud import StackdioSaltCloudMap, catch_salt_cloud_map_failures
 
-from .exceptions import StackTaskException
 
 logger = logging.getLogger(__name__)
-root_logger = logging.getLogger()
 
 ERROR_REQUISITE = 'One or more requisite failed'
 
 COLOR_REGEX = re.compile(r'\[0;[\d]+m')
-
-SALT_CLOUD_CACHE_DIR = os.path.join(salt.syspaths.CACHE_DIR, 'cloud')
-
-
-def catch_salt_map_failures(retry_times):
-    """
-    Decorator to catch common salt errors and automatically retry
-    """
-    if retry_times <= 0:
-        raise ValueError('retry_times must be a positive integer')
-
-    def decorator(func):
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            num_errors = 0
-
-            # Only loop until we've failed too many times
-            while num_errors < retry_times:
-                try:
-                    # Call our function & return it's return val
-                    return func(*args, **kwargs)
-                except ExtraData as e:
-                    logger.info('Received ExtraData, retrying: {0}'.format(e))
-                    # Blow away the salt cloud cache and try again
-                    os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                    num_errors += 1
-                except salt.cloud.SaltCloudSystemExit as e:
-                    if 'extra data' in e.message:
-                        logger.info('Received ExtraData, retrying: {0}'.format(e))
-                        # Blow away the salt cloud cache and try again
-                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                        num_errors += 1
-                    else:
-                        raise
-                except TypeError as e:
-                    if 'NoneType' in e.message:
-                        logger.info('Received TypeError, retrying: {0}'.format(e))
-                        # Blow away the salt cloud cache and try again
-                        os.remove(os.path.join(SALT_CLOUD_CACHE_DIR, 'index.p'))
-                        num_errors += 1
-                    else:
-                        raise
-
-            # If we make it out of the loop, we failed
-            raise salt.cloud.SaltCloudSystemExit(
-                'Maximum number of errors reached while launching stack.'
-            )
-
-        return wrapper
-
-    return decorator
-
-
-class StackdioSaltCloudMap(salt.cloud.Map):
-
-    def interpolated_map(self, query='list_nodes', cached=False):
-        """
-        Override this to use the in-memory map instead of on disk.
-        Also we'll change it so that having multiple providers on the same cloud
-        account doesn't break things
-        """
-        rendered_map = self.rendered_map.copy()
-        interpolated_map = {}
-
-        for profile, mapped_vms in rendered_map.items():
-            names = set(mapped_vms)
-            if profile not in self.opts['profiles']:
-                if 'Errors' not in interpolated_map:
-                    interpolated_map['Errors'] = {}
-                msg = (
-                    'No provider for the mapped {0!r} profile was found. '
-                    'Skipped VMS: {1}'.format(
-                        profile, ', '.join(names)
-                    )
-                )
-                logger.info(msg)
-                interpolated_map['Errors'][profile] = msg
-                continue
-
-            # Grab the provider name
-            provider_info = self.opts['profiles'][profile]['provider'].split(':')
-
-            provider = provider_info[0]
-            driver_name = provider_info[1]
-
-            matching = self.get_running_by_names(names, query, cached)
-
-            for alias, drivers in matching.items():
-                if alias != provider:
-                    # If the alias doesn't match the provider of the profile we're looking at,
-                    # skip it.
-                    continue
-
-                for driver, vms in drivers.items():
-                    if driver != driver_name:
-                        logger.warning(
-                            'The driver in the matching info doesn\'t match the provider '
-                            'specified in the config... Something fishy is going on'
-                        )
-
-                    for vm_name, vm_details in vms.items():
-                        if alias not in interpolated_map:
-                            interpolated_map[alias] = {}
-                        if driver not in interpolated_map[alias]:
-                            interpolated_map[alias][driver] = {}
-                        interpolated_map[alias][driver][vm_name] = vm_details
-                        names.remove(vm_name)
-
-            if not names:
-                continue
-
-            profile_details = self.opts['profiles'][profile]
-            alias, driver = profile_details['provider'].split(':')
-            for vm_name in names:
-                if alias not in interpolated_map:
-                    interpolated_map[alias] = {}
-                if driver not in interpolated_map[alias]:
-                    interpolated_map[alias][driver] = {}
-                interpolated_map[alias][driver][vm_name] = 'Absent'
-
-        return interpolated_map
-
-    def delete_map(self, query='list_nodes'):
-        """
-        Change the default value to something reasonable.
-        """
-        return super(StackdioSaltCloudMap, self).delete_map(query)
-
-    def get_running_by_names(self, names, query='list_nodes', cached=False, profile=None):
-        """
-        Override this so we only get appropriate things for our map
-        """
-        if isinstance(names, six.string_types):
-            names = [names]
-
-        matches = {}
-        handled_drivers = {}
-        mapped_providers = self.map_providers_parallel(query, cached=cached)
-        for alias, drivers in mapped_providers.items():
-            for driver, vms in drivers.items():
-                if driver not in handled_drivers:
-                    handled_drivers[driver] = alias
-                # When a profile is specified, only return an instance
-                # that matches the provider specified in the profile.
-                # This solves the issues when many providers return the
-                # same instance. For example there may be one provider for
-                # each availability zone in amazon in the same region, but
-                # the search returns the same instance for each provider
-                # because amazon returns all instances in a region, not
-                # availability zone.
-                if profile:
-                    if alias not in self.opts['profiles'][profile]['provider'].split(':')[0]:
-                        continue
-
-                for vm_name, details in vms.items():
-                    # XXX: The logic below can be removed once the aws driver
-                    # is removed
-                    if vm_name not in names:
-                        continue
-
-                    elif (driver == 'ec2' and
-                          'aws' in handled_drivers and
-                          'aws' in matches[handled_drivers['aws']] and
-                          vm_name in matches[handled_drivers['aws']]['aws']):
-                        continue
-                    elif (driver == 'aws' and
-                          'ec2' in handled_drivers and
-                          'ec2' in matches[handled_drivers['ec2']] and
-                          vm_name in matches[handled_drivers['ec2']]['ec2']):
-                        continue
-
-                    # This little addition makes everything not break :)
-                    # Without this, if you have 2 providers attaching to the same AWS account,
-                    # salt-cloud will try to kill / rename instances twice.  This snippet below
-                    # removes those duplicates, and only kills the ones you actually want killed.
-                    should_continue = False
-                    for profile, data in self.rendered_map.items():
-                        provider = self.opts['profiles'][profile]['provider'].split(':')[0]
-                        if vm_name in data and alias != provider:
-                            should_continue = True
-                            break
-
-                    if should_continue:
-                        continue
-
-                    # End inserted snippet #
-
-                    if alias not in matches:
-                        matches[alias] = {}
-                    if driver not in matches[alias]:
-                        matches[alias][driver] = {}
-                    matches[alias][driver][vm_name] = details
-
-        return matches
-
-
-class StackdioSaltCloudClient(salt.cloud.CloudClient):
-
-    def launch_map(self, cloud_map, **kwargs):
-        """
-        Runs a map from an already in-memory representation rather than an file on disk.
-        """
-        opts = self._opts_defaults(**kwargs)
-
-        handler = setup_logfile_logger(
-            opts['log_file'],
-            opts['log_level_logfile'],
-            log_format=opts['log_fmt_logfile'],
-            date_format=opts['log_datefmt_logfile'],
-        )
-
-        try:
-            mapper = StackdioSaltCloudMap(opts)
-            mapper.rendered_map = cloud_map
-
-            @catch_salt_map_failures(retry_times=5)
-            def do_launch():
-                # Do the launch
-                dmap = mapper.map_data()
-                return mapper.run_map(dmap)
-
-            # This should catch our failures and retry
-            return salt.utils.cloud.simple_types_filter(do_launch())
-
-        finally:
-            # Cancel the logging, but make sure it still gets cancelled if an exception is thrown
-            root_logger.removeHandler(handler)
-
-    def destroy_map(self, cloud_map, hosts, **kwargs):
-        """
-        Destroy the named VMs
-        """
-        kwarg = kwargs.copy()
-        kwarg['destroy'] = True
-        mapper = StackdioSaltCloudMap(self._opts_defaults(**kwarg))
-        mapper.rendered_map = cloud_map
-
-        # This should catch our failures and retry
-        return self._do_destroy(mapper, hosts)
-
-    @catch_salt_map_failures(retry_times=5)
-    def _do_destroy(self, mapper, hosts):
-        """
-        Here's where the destroying actually happens
-        """
-        dmap = mapper.delete_map()
-
-        hostnames = [host.hostname for host in hosts]
-
-        # This is pulled from the salt-cloud ec2 driver code.
-        msg = 'The following VMs are set to be destroyed:\n'
-        names = set()
-        for alias, drivers in dmap.items():
-            msg += '  {0}:\n'.format(alias)
-            for driver, vms in drivers.items():
-                msg += '    {0}:\n'.format(driver)
-                for name in vms:
-                    if name in hostnames:
-                        msg += '      {0}\n'.format(name)
-                        names.add(name)
-
-        if names:
-            logger.info(msg)
-            return salt.utils.cloud.simple_types_filter(mapper.destroy(names))
-        else:
-            logger.info('There are no VMs to be destroyed.')
-            return {}
-
-
-def setup_logfile_logger(log_path, log_level=None, log_format=None, date_format=None):
-    """
-    Set up logging to a file.
-    """
-    # Create the handler
-    handler = WatchedFileHandler(log_path)
-
-    if log_level:
-        # Grab and set the level
-        level = LOG_LEVELS.get(log_level.lower(), logging.ERROR)
-        handler.setLevel(level)
-
-    # Set the default console formatter config
-    if not log_format:
-        log_format = '%(asctime)s [%(name)-15s][%(levelname)-8s] %(message)s'
-    if not date_format:
-        date_format = '%Y-%m-%d %H:%M:%S'
-
-    formatter = logging.Formatter(log_format, datefmt=date_format)
-
-    handler.setFormatter(formatter)
-    root_logger.addHandler(handler)
-
-    return handler
 
 
 def state_to_dict(state_string):
@@ -679,168 +380,8 @@ def get_salt_cloud_opts():
     )
 
 
-def get_stack_mapper(cloud_map):
-    opts = get_salt_cloud_opts()
-    ret = StackdioSaltCloudMap(opts)
-    ret.rendered_map = cloud_map
-    return ret
-
-
-def get_stack_map_data(cloud_map):
-    mapper = get_stack_mapper(cloud_map)
-    return mapper.map_data()
-
-
-def get_stack_vm_map(cloud_map):
-    dmap = get_stack_map_data(cloud_map)
-    vms = {}
-    for k in ('create', 'existing',):
-        if k in dmap:
-            vms.update(dmap[k])
-    return vms
-
-
-def get_ssh_kwargs(host, vm_, __opts__):
-    return {
-        'host': host.provider_private_dns,
-        'hostname': host.provider_private_dns,
-        'timeout': 3,
-        'display_ssh_output': False,
-        'key_filename': config.get_cloud_config_value(
-            'private_key', vm_, __opts__, search_global=False, default=None
-        ),
-        'username': config.get_cloud_config_value(
-            'ssh_username', vm_, __opts__, search_global=False, default=None
-        )
-
-    }
-
-
-def regenerate_minion_keys(host, vm_, __opts__):
-    logger.info('Regenerating minion keys for: {0}'.format(vm_['name']))
-
-    # Kill existing master keys
-    key_cli = salt.key.KeyCLI(__opts__)
-    matches = key_cli.key.name_match(vm_['name'])
-    if matches:
-        key_cli.key.delete_key(match_dict=matches)
-
-    # Kill remote master keys
-    kwargs = get_ssh_kwargs(host, vm_, __opts__)
-    tty = config.get_cloud_config_value(
-        'tty', vm_, __opts__, default=True
-    )
-    sudo = config.get_cloud_config_value(
-        'sudo', vm_, __opts__, default=True
-    )
-    salt.utils.cloud.root_cmd('rm -rf /etc/salt/pki', tty, sudo, **kwargs)
-
-    # Generate new keys for the minion
-    minion_pem, minion_pub = salt.utils.cloud.gen_keys(
-        config.get_cloud_config_value('keysize', vm_, __opts__)
-    )
-
-    # Preauthorize the minion
-    logger.info('Accepting key for {0}'.format(vm_['name']))
-    key_id = vm_.get('id', vm_['name'])
-    salt.utils.cloud.accept_key(
-        __opts__['pki_dir'], minion_pub, key_id
-    )
-
-    return minion_pem, minion_pub
-
-
-def ping_stack_hosts(stack):
-    """
-    Returns a set of hostnames in the stack that were reachable via
-    a ping request.
-
-    NOTE: This specifically targets the hosts in a stack instead of
-    pinging all available hosts that salt is managing.
-    """
-    client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
-    target = [host.hostname for host in stack.hosts.all()]
-
-    ret = set()
-    for val in client.cmd_iter(target, 'test.ping', expr_form='list'):
-        ret.update(val.keys())
-    return ret
-
-
-def find_zombie_hosts(stack):
-    """
-    Returns a QuerySet of host objects in the given stack that were not
-    reachable via a ping request.
-    """
-    pinged_hosts = ping_stack_hosts(stack)
-    hostnames = set([host.hostname for host in stack.hosts.all()])
-    zombies = hostnames - pinged_hosts
-    if not zombies:
-        return None
-    return stack.hosts.filter(hostname__in=zombies)
-
-
-def check_for_ssh(cloud_map, hosts):
-    """
-    Attempts to SSH to the given hosts.
-
-    @param (stacks.models.Stack) - the stack the hosts belong to
-    @param (list[stacks.models.Host]) - hosts to check for SSH
-    @returns (list) - list of tuples (bool, Host) where the bool value is
-    True if we could connect to Host over SSH, False otherwise
-    """
-    opts = get_salt_cloud_opts()
-    vms = get_stack_vm_map(cloud_map)
-    mapper = get_stack_mapper(cloud_map)
-    result = []
-
-    # Iterate over the given hosts. If the host hasn't been assigned a
-    # hostname or is not physically running, there's nothing we can do
-    # so we skip them
-    for host in hosts:
-        if host.hostname not in vms:
-            continue
-
-        # Build the standard vm_ object and inject some additional stuff
-        # we'll need
-        vm_ = vms[host.hostname]
-        vm_provider_metadata = mapper.get_running_by_names(host.hostname)
-        if not vm_provider_metadata:
-            # host is not actually running so skip it
-            continue
-
-        provider, provider_type = vm_['provider'].split(':')
-        vm_.update(
-            vm_provider_metadata[provider][provider_type][vm_['name']]
-        )
-
-        # Pull some values we need to test for SSH
-        key_filename = config.get_cloud_config_value(
-            'private_key', vm_, opts, search_global=False, default=None
-        )
-        username = config.get_cloud_config_value(
-            'ssh_username', vm_, opts, search_global=False, default=None
-        )
-        hostname = config.get_cloud_config_value(
-            'private_ips', vm_, opts, search_global=False, default=None
-        )
-
-        # Test SSH connection
-        ok = salt.utils.cloud.wait_for_passwd(
-            hostname,
-            key_filename=key_filename,
-            username=username,
-            ssh_timeout=1,  # 1 second timeout
-            maxtries=3,     # 3 max tries per host
-            trysleep=0.5,   # half second between tries
-            display_ssh_output=False)
-
-        result.append((ok, host))
-    return result
-
-
-@catch_salt_map_failures(retry_times=5)
-def terminate_hosts(stack, hosts):
+@catch_salt_cloud_map_failures(retry_times=5)
+def terminate_hosts(stack, cloud_map, hostnames):
     """
     Uses salt-cloud to terminate the given list of hosts.
 
@@ -848,196 +389,36 @@ def terminate_hosts(stack, hosts):
     @returns None
     """
 
+    hosts = stack.hosts.filter(hostname__in=hostnames)
+
+    # Set the volume_id to null for all the hosts we're deleting
+    for host in hosts:
+        for vol in host.volumes.all():
+            vol.volume_id = ''
+            vol.save()
+
     opts = get_salt_cloud_opts()
     opts.update({
         'parallel': True
     })
+
     mapper = StackdioSaltCloudMap(opts)
-    hostnames = [h.hostname for h in hosts]
-    logger.debug('Terminating hosts: {0}'.format(hostnames))
-    mapper.destroy(hostnames)
+    mapper.rendered_map = cloud_map
 
+    map_data = mapper.map_data()
 
-def bootstrap_hosts(stack, hosts, parallel=True):
-    """
-    Iterates over the given `hosts` and executes the bootstrapping process
-    via salt cloud.
+    missing_hosts = map_data.get('create', [])
 
-    @param stack (stacks.models.Stack) - Stack object (should be the stack that
-        owns the given `hosts`.
-    @param hosts (QuerySet) - QuerySet of stacks.models.Host objects
-    @param parallel (bool) - if True, we'll bootstrap in parallel using a
-        multiprocessing Pool with a size determined by salt-cloud's config
-        Defaults to True
+    terminate_list = set(hostnames)
 
-    WARNING: This is not parallelized. My only hope is that the list is
-    relatively small (e.g, only bootstrap hosts that were unsuccessful...see
-    the `find_zombie_hosts` method)
-    """
-    __opts__ = get_salt_cloud_opts()
-    dmap = get_stack_map_data(stack.generate_cloud_map())
+    # We don't want to try to terminate missing hosts, salt doesn't like that.
+    # This should remove them from the set
+    terminate_list -= missing_hosts
 
-    # Params list holds the dict objects that will be used during
-    # the deploy process; this will be handed off to the multiprocessing
-    # Pool as the "iterable" argument
-    params = []
-    for host in hosts:
-        vm_ = dmap['existing'].get(host.hostname)
-        if vm_ is None:
-            continue
-
-        # Regenerate minion keys which will kill the keys for this host
-        # on the master as well as the pki directory on the minion to
-        # ensure we have the same keys in use or else the automatic
-        # key acceptance will fail and the minion will still be in limbo
-        minion_pem, minion_pub = regenerate_minion_keys(host, vm_, __opts__)
-
-        # Add the keys
-        vm_['priv_key'] = minion_pem
-        vm_['pub_key'] = minion_pub
-
-        d = {
-            'host_obj': host,
-            'vm_': vm_,
-            '__opts__': __opts__,
-        }
-
-        # if we're not deploying in parallel, simply pass the dict
-        # in, else we'll shove the dict into the params list
-        if not parallel:
-            deploy_vm(d)
-        else:
-            params.append(d)
-
-    # Parallel deployment using multiprocessing Pool. The size of the
-    # Pool object is either pulled from salt-cloud's config file or
-    # the length of `params` is used. Note, it's highly recommended to
-    # set the `pool_size` parameter in the salt-cloud config file to
-    # prevent issues with larger pool sizes
-    if parallel and len(params) > 0:
-        pool_size = __opts__.get('pool_size', len(params))
-        multiprocessing.Pool(pool_size).map(
-            func=deploy_vm,
-            iterable=params
-        )
-
-
-def deploy_vm(params):
-    """
-    Basically duplicating the deploy logic from `salt.cloud.clouds.ec2::create`
-    so we can bootstrap minions whenever needed. Ideally, this would be handled
-    in salt-cloud directly, but for now it's easier to handle this on our end.
-
-    @param params (dict) - a dictionary containing all the necessary
-        params we need and are defined below:
-
-    @params[host_obj] (stacks.models.Host) - a Django ORM Host object
-    @params[vm_] (dict) - the vm data structure that salt likes to use
-    @params[__opts__] (dict) - the big config object that salt passes
-        around to all of its modules. See `get_salt_cloud_opts`
-    """
-
-    host_obj = params['host_obj']
-    vm_ = params['vm_']
-    __opts__ = params['__opts__']
-
-    logger.info('Deploying minion on VM: {0}'.format(vm_['name']))
-
-    # Start gathering the information we need to build up the deploy kwargs
-    # object that will be handed to `salt.utils.cloud.deploy_script`
-
-    # The SSH username we'll use for pushing files and remote execution. This
-    # should already be defined in the cloud image this host is using.
-    username = config.get_cloud_config_value(
-        'ssh_username', vm_, __opts__, search_global=False, default=None
-    )
-
-    # The private key, along with ssh_username above, is necessary for SSH
-    key_filename = config.get_cloud_config_value(
-        'private_key', vm_, __opts__, search_global=False, default=None
-    )
-
-    # Which deploy script will be run to bootstrap the minions. This is pre-
-    # defined in the cloud image/profile for the host.
-    deploy_script = salt.utils.cloud.os_script(
-        config.get_cloud_config_value('script', vm_, __opts__),
-        vm_,
-        __opts__,
-        salt.utils.cloud.salt_config_to_yaml(
-            salt.utils.cloud.minion_config(__opts__, vm_)
-        )
-    )
-
-    # Generate the master's public fingerprint
-    master_finger = salt.utils.pem_finger(os.path.join(
-        __opts__['pki_dir'], 'master.pub'
-    ))
-    vm_['master_finger'] = master_finger
-
-    # The big deploy kwargs object. This is roughly the exact same as that
-    # in the salt.cloud.clouds.ec2::create method.
-    deploy_kwargs = {
-        'host': host_obj.provider_private_dns,
-        'hostname': host_obj.provider_private_dns,
-        'username': username,
-        'key_filename': key_filename,
-        'tmp_dir': config.get_cloud_config_value(
-            'tmp_dir', vm_, __opts__, default='/tmp/.saltcloud'
-        ),
-        'deploy_command': config.get_cloud_config_value(
-            'deploy_command', vm_, __opts__,
-            default='/tmp/.saltcloud/deploy.sh',
-        ),
-        'tty': config.get_cloud_config_value(
-            'tty', vm_, __opts__, default=True
-        ),
-        'script': deploy_script,
-        'name': vm_['name'],
-        'sudo': config.get_cloud_config_value(
-            'sudo', vm_, __opts__, default=(username != 'root')
-        ),
-        'sudo_password': config.get_cloud_config_value(
-            'sudo_password', vm_, __opts__, default=None
-        ),
-        'start_action': __opts__['start_action'],
-        'parallel': False,
-        'conf_file': __opts__['conf_file'],
-        'sock_dir': __opts__['sock_dir'],
-        'keep_tmp': True,
-        'preseed_minion_keys': vm_.get('preseed_minion_keys', None),
-        'display_ssh_output': False,
-        'minion_conf': salt.utils.cloud.minion_config(__opts__, vm_),
-        'script_args': config.get_cloud_config_value(
-            'script_args', vm_, __opts__
-        ),
-        'script_env': config.get_cloud_config_value(
-            'script_env', vm_, __opts__
-        ),
-        'make_minion': config.get_cloud_config_value(
-            'make_minion', vm_, __opts__, default=True
-        ),
-        'minion_pem': vm_['priv_key'],
-        'minion_pub': vm_['pub_key'],
-    }
-
-    # TODO(abemusic): log this to a file instead of dumping to celery
-    logger.info('Executing deploy_script for {0}'.format(vm_['name']))
-    try:
-        deployed = salt.utils.cloud.deploy_script(**deploy_kwargs)
-        if deployed:
-            logger.info('Salt installed on {name}'.format(**vm_))
-        else:
-            logger.error('Failed to start Salt on Cloud VM '
-                         '{name}'.format(**vm_))
-    except Exception:
-        logger.exception('Unhandled exception while deploying minion')
-        deployed = False
-
-    # TODO(abemusic): the create method in the EC2 driver currently handles
-    # the creation logic for EBS volumes. We should be checking for those
-    # volumes and creating them if necessary here.
-
-    return deployed
+    # Only call destroy if the list is non-empty
+    if terminate_list:
+        logger.debug('Terminating hosts: {0}'.format(terminate_list))
+        mapper.destroy(terminate_list)
 
 
 def mod_hosts_map(cloud_map, n, **kwargs):
@@ -1055,42 +436,3 @@ def mod_hosts_map(cloud_map, n, **kwargs):
         cloud_map[host].update(kwargs)
 
     return cloud_map
-
-
-def unmod_hosts_map(cloud_map, *args):
-    """
-    For debug method purpose only
-    """
-    for host_data in cloud_map.values():
-        for k in args:
-            if k in host_data:
-                del host_data[k]
-
-    return cloud_map
-
-
-def create_zombies(stack, n):
-    """
-    For the given stack, will randomly select `n` hosts and kill the
-    salt-minion service that should already be running on the host.
-
-    @param (stacks.models.Stack) stack - the stack we're targeting
-    @param (int) n - the number of randomly selected hosts to zombify
-    @returns (None)
-    """
-
-    # Random sampling of n hosts
-    hosts = random.sample(stack.hosts.all(), n)
-    if not hosts:
-        return
-
-    client = salt.client.LocalClient(
-        settings.STACKDIO_CONFIG.salt_master_config
-    )
-    result = list(client.cmd_iter(
-        [h.hostname for h in hosts],
-        'service.stop',
-        arg=('salt-minion',),
-        expr_form='list'
-    ))
-    logger.info(result)
