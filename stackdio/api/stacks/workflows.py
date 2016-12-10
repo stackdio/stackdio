@@ -45,7 +45,7 @@ class WorkflowOptions(object):
 
 class LaunchWorkflowOptions(WorkflowOptions):
     DEFAULTS = {
-        'max_retries': 2,
+        'max_attempts': 3,
         # Skips launching if set to False
         'launch': True,
         'provision': True,
@@ -103,7 +103,7 @@ class LaunchWorkflow(BaseWorkflow):
             tasks.launch_hosts.si(
                 stack_id,
                 parallel=opts.parallel,
-                max_retries=opts.max_retries,
+                max_attempts=opts.max_attempts,
                 simulate_launch_failures=opts.simulate_launch_failures,
                 simulate_ssh_failures=opts.simulate_ssh_failures,
                 failure_percent=opts.failure_percent
@@ -113,13 +113,11 @@ class LaunchWorkflow(BaseWorkflow):
             tasks.register_dns.si(stack_id, Activity.LAUNCHING, host_ids=host_ids),
             tasks.ping.si(stack_id, Activity.LAUNCHING),
             tasks.sync_all.si(stack_id),
-            tasks.highstate.si(stack_id, max_retries=opts.max_retries),
-            tasks.global_orchestrate.si(stack_id,
-                                        max_retries=opts.max_retries)
+            tasks.highstate.si(stack_id, max_attempts=opts.max_attempts),
+            tasks.global_orchestrate.si(stack_id, max_attempts=opts.max_attempts),
         ]
         if opts.provision:
-            l.append(tasks.orchestrate.si(stack_id,
-                                          max_retries=opts.max_retries))
+            l.append(tasks.orchestrate.si(stack_id,  max_attempts=opts.max_attempts))
         l.append(tasks.finish_stack.si(stack_id))
 
         self.stack.set_activity(Activity.QUEUED)

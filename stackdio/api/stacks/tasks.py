@@ -21,7 +21,6 @@ from __future__ import unicode_literals
 
 import collections
 import json
-import logging
 import os
 import shutil
 import subprocess
@@ -37,7 +36,6 @@ import salt.cloud
 import salt.config
 import salt.runner
 import six
-import yaml
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -50,16 +48,14 @@ from stackdio.api.stacks.exceptions import StackTaskException
 from stackdio.api.stacks.models import Stack, StackCommand, StackHistory
 from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.events import trigger_event
+from stackdio.salt.utils.client import (
+    StackdioLocalClient,
+    StackdioRunnerClient,
+    StackdioSaltClientException,
+)
 from stackdio.salt.utils.cloud import StackdioSaltCloudClient
-from stackdio.salt.utils.logging import setup_logfile_logger
 
 logger = get_task_logger(__name__)
-
-root_logger = logging.getLogger()
-
-ERROR_ALL_NODES_EXIST = 'All nodes in this map already exist'
-ERROR_ALL_NODES_RUNNING = 'The following virtual machines were found already running'
-ERROR_ALREADY_RUNNING = 'Already running'
 
 
 def stack_task(*args, **kwargs):
@@ -115,22 +111,6 @@ def stack_task(*args, **kwargs):
         return task
 
     return wrapped
-
-
-def symlink(source, target):
-    """
-    Symlink the given source to the given target
-    """
-    if os.path.islink(target):
-        os.remove(target)
-    os.symlink(source, target)
-
-
-def is_state_error(state_meta):
-    """
-    Determines if the state resulted in an error.
-    """
-    return not state_meta['result']
 
 
 def copy_global_orchestrate(stack):
@@ -193,7 +173,6 @@ def auto_retry(name=None, max_attempts=3, exception_type=StackTaskException):
             while current_attempt <= max_attempts:
                 # Pass some extra things in
                 kwargs['attempt'] = current_attempt
-                kwargs['max_attempts'] = max_attempts
                 try:
                     return func(*args, **kwargs)
                 except exception_type as e:
@@ -215,9 +194,12 @@ def auto_retry(name=None, max_attempts=3, exception_type=StackTaskException):
     return decorator
 
 
-def do_launch(stack, attempt=None, max_attempts=None,
-              parallel=True, simulate_launch_failures=False,
-              simulate_ssh_failures=False, failure_percent=0.3):
+# Tasks that directly operate on stacks
+
+@stack_task(name='stacks.launch_hosts')
+def launch_hosts(stack, max_attempts=3,
+                 parallel=True, simulate_launch_failures=False,
+                 simulate_ssh_failures=False, failure_percent=0.3):
     """
     Uses salt cloud to launch machines using the given Stack's map_file
     that was generated when the Stack was created. Salt cloud will
@@ -245,6 +227,9 @@ def do_launch(stack, attempt=None, max_attempts=None,
         is ignored if all of the above failure flags are set to False.
         Defaults to 0.3 (30%).
     """
+    # Set the activity right away
+    stack.set_activity(Activity.LAUNCHING)
+
     hosts = stack.get_hosts()
     num_hosts = len(hosts)
     log_file = utils.get_salt_cloud_log_file(stack, 'launch')
@@ -252,135 +237,125 @@ def do_launch(stack, attempt=None, max_attempts=None,
     logger.info('Launching hosts for stack: {0!r}'.format(stack))
     logger.info('Log file: {0}'.format(log_file))
 
-    salt_cloud = StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
-    query = salt_cloud.query()
+    # Build up our launch function
+    @auto_retry('launch_hosts', max_attempts)
+    def do_launch(attempt=None):
 
-    # Check each host to make sure it is running
-    for host in hosts:
-        account = host.cloud_account
-        provider = account.provider.name
+        salt_cloud = StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
+        query = salt_cloud.query()
 
-        # Grab the details
-        host_details = query.get(account.slug, {}).get(provider, {}).get(host.hostname)
+        # Check each host to make sure it is running
+        for host in hosts:
+            account = host.cloud_account
+            provider = account.provider.name
 
-        if host_details:
-            state = host_details.get('state')
+            # Grab the details
+            host_details = query.get(account.slug, {}).get(provider, {}).get(host.hostname)
 
-            # Only re-tag if the state exists and it is not running
-            if state and state not in ('running',):
-                salt_cloud.action(
-                    'set_tags',
-                    names=[host.hostname],
-                    kwargs={
-                        'Name': '{0}-DEL_BY_STACKDIO'.format(host.hostname)
-                    }
-                )
+            if host_details:
+                state = host_details.get('state')
 
-                # Delete the volume IDs on these
-                for vol in host.volumes.all():
-                    vol.volume_id = ''
-                    vol.save()
+                # Only re-tag if the state exists and it is not running
+                if state and state not in ('running',):
+                    salt_cloud.action(
+                        'set_tags',
+                        names=[host.hostname],
+                        kwargs={
+                            'Name': '{0}-DEL_BY_STACKDIO'.format(host.hostname)
+                        }
+                    )
 
-    logger.info('Task {0} try {1} of {2} for stack {3!r}'.format(
-        launch_hosts.name,
-        attempt,
-        max_attempts,
-        stack,
-    ))
+                    # Delete the volume IDs on these
+                    for vol in host.volumes.all():
+                        vol.volume_id = ''
+                        vol.save()
 
-    if num_hosts == 1:
-        label = '1 host is'
-    else:
-        label = '{0} hosts are'.format(num_hosts)
-
-    stack.log_history(
-        '{0} being launched. Try {1} of {2}. '
-        'This may take a while.'.format(
-            label,
+        logger.info('Task {0} try {1} of {2} for stack {3!r}'.format(
+            launch_hosts.name,
             attempt,
             max_attempts,
+            stack,
+        ))
+
+        if num_hosts == 1:
+            label = '1 host is'
+        else:
+            label = '{0} hosts are'.format(num_hosts)
+
+        stack.log_history(
+            '{0} being launched. Try {1} of {2}. '
+            'This may take a while.'.format(
+                label,
+                attempt,
+                max_attempts,
+            )
         )
-    )
 
-    cloud_map = stack.generate_cloud_map()
+        cloud_map = stack.generate_cloud_map()
 
-    # Modify the stack's map to inject a private key that does not
-    # exist, which will fail immediately and the host will not launch
-    if simulate_launch_failures:
-        n = int(len(hosts) * failure_percent)
-        logger.info('Simulating failures on {0} host(s).'.format(n))
-        utils.mod_hosts_map(cloud_map, n, private_key='/tmp/bogus-key-file')
+        # Modify the stack's map to inject a private key that does not
+        # exist, which will fail immediately and the host will not launch
+        if simulate_launch_failures:
+            n = int(len(hosts) * failure_percent)
+            logger.info('Simulating failures on {0} host(s).'.format(n))
+            utils.mod_hosts_map(cloud_map, n, private_key='/tmp/bogus-key-file')
 
-    # Modify the map file to inject a real key file, but one that
-    # will not auth via SSH
-    if not simulate_launch_failures and simulate_ssh_failures:
-        bogus_key = '/tmp/id_rsa-bogus-key'
-        if os.path.isfile(bogus_key):
-            os.remove(bogus_key)
-        subprocess.call(['ssh-keygen', '-f', bogus_key, '-N', ''])
-        n = int(len(hosts) * failure_percent)
-        logger.info('Simulating SSH failures on {0} host(s).'.format(n))
-        utils.mod_hosts_map(cloud_map, n, private_key=bogus_key)
+        # Modify the map file to inject a real key file, but one that
+        # will not auth via SSH
+        if not simulate_launch_failures and simulate_ssh_failures:
+            bogus_key = '/tmp/id_rsa-bogus-key'
+            if os.path.isfile(bogus_key):
+                os.remove(bogus_key)
+            subprocess.call(['ssh-keygen', '-f', bogus_key, '-N', ''])
+            n = int(len(hosts) * failure_percent)
+            logger.info('Simulating SSH failures on {0} host(s).'.format(n))
+            utils.mod_hosts_map(cloud_map, n, private_key=bogus_key)
 
-    if parallel:
-        logger.info('Launching hosts in PARALLEL mode.')
-    else:
-        logger.info('Launching hosts in SERIAL mode.')
+        if parallel:
+            logger.info('Launching hosts in PARALLEL mode.')
+        else:
+            logger.info('Launching hosts in SERIAL mode.')
 
-    # Launch everything!
-    launch_result = salt_cloud.launch_map(
-        cloud_map=cloud_map,
-        parallel=parallel,
-        log_file=log_file,
-    )
+        # Launch everything!
+        launch_result = salt_cloud.launch_map(
+            cloud_map=cloud_map,
+            parallel=parallel,
+            log_file=log_file,
+        )
 
-    # Look for launch errors
-    errors = set()
-    terminate_list = []
-    for host_name, results in launch_result.items():
-        logger.debug('Checking host {0} for errors.'.format(host_name))
+        # Look for launch errors
+        errors = set()
+        terminate_list = []
+        for host_name, results in launch_result.items():
+            logger.debug('Checking host {0} for errors.'.format(host_name))
 
-        # Error format #1
-        if 'Errors' in results and 'Error' in results['Errors']:
-            err_msg = results['Errors']['Error']['Message']
-            logger.debug('Error on host {0}: {1}'.format(host_name, err_msg))
-            errors.add(err_msg)
-            # Add to the list of hosts to terminate
-            terminate_list.append(host_name)
+            # Error format #1
+            if 'Errors' in results and 'Error' in results['Errors']:
+                err_msg = results['Errors']['Error']['Message']
+                logger.debug('Error on host {0}: {1}'.format(host_name, err_msg))
+                errors.add(err_msg)
+                # Add to the list of hosts to terminate
+                terminate_list.append(host_name)
 
-        # Error format #2
-        elif 'Error' in results:
-            err_msg = results['Error']
-            logger.debug('Error on host {0}: {1}'.format(host_name, err_msg))
-            errors.add(err_msg)
-            terminate_list.append(host_name)
+            # Error format #2
+            elif 'Error' in results:
+                err_msg = results['Error']
+                logger.debug('Error on host {0}: {1}'.format(host_name, err_msg))
+                errors.add(err_msg)
+                terminate_list.append(host_name)
 
-    if terminate_list:
-        # terminate the errored hosts
-        utils.terminate_hosts(stack, cloud_map, terminate_list)
+        if terminate_list:
+            # terminate the errored hosts
+            utils.terminate_hosts(stack, cloud_map, terminate_list)
 
-        logger.debug('Errors found, terminating hosts for retry: {0!r}'.format(errors))
+            logger.debug('Errors found, terminating hosts for retry: {0!r}'.format(errors))
 
-        for err_msg in errors:
-            stack.log_history(err_msg)
-        raise StackTaskException('Error(s) found while launching stack.')
+            for err_msg in errors:
+                stack.log_history(err_msg)
+            raise StackTaskException('Error(s) found while launching stack.')
 
-
-# Tasks that directly operate on stacks
-
-@stack_task(name='stacks.launch_hosts')
-def launch_hosts(stack, max_attempts=3, **kwargs):
-    """
-    See the do_launch function for more options.
-    """
-    # Set the activity right away
-    stack.set_activity(Activity.LAUNCHING)
-
-    # Generate our retrying launch function
-    launch_func = auto_retry('launch_hosts', max_attempts)(do_launch)
-
-    # Now call it
-    launch_func(stack, **kwargs)
+    # Now call our launch function
+    do_launch()
 
 
 @stack_task(name='stacks.update_metadata', final_task=True)
@@ -496,8 +471,6 @@ def ping(stack, activity, interval=5, max_failures=10):
     # Execute until successful, failing after a few attempts
     failures = 0
 
-    false_hosts = []
-
     while True:
         ret = client.cmd_iter(required_hosts, 'test.ping', expr_form='list')
 
@@ -581,11 +554,6 @@ def highstate(stack, max_attempts=3):
     environment and core states for the stack. These core states are
     purposely separate from others to provision hosts with things that
     stackdio needs.
-
-    TODO: We aren't orchestrating the core states in any way (like the
-    stacks.orchestrate task.) They are all executed in the order defined
-    by the SLS. I don't see this as a problem right now, but something we
-    might have to tackle in the future if someone were to need that.
     """
     stack.set_activity(Activity.PROVISIONING)
 
@@ -594,125 +562,52 @@ def highstate(stack, max_attempts=3):
     logger.info('Running core provisioning for stack: {0!r}'.format(stack))
 
     # Make sure the pillar is properly set
+    stack.generate_pillar_file()
     change_pillar(stack, stack.get_pillar_file_path())
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()
     log_dir = stack.get_log_directory()
 
-    # we'll break out of the loop based on the given number of attempts
-    current_try, unrecoverable_error = 0, False
-    while True:
-        current_try += 1
+    # Build up our highstate function
+    @auto_retry('highstate', max_attempts)
+    def do_highstate(attempt=None):
+
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             highstate.name,
-            current_try,
+            attempt,
             stack))
 
         # Update status
         stack.log_history(
             'Executing core provisioning try {0} of {1}. '
             'This may take a while.'.format(
-                current_try,
+                attempt,
                 max_attempts,
             )
         )
 
-        now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir,
-                                '{0}.provisioning.log'.format(now))
-        err_file = os.path.join(log_dir,
-                                '{0}.provisioning.err'.format(now))
-        log_symlink = os.path.join(root_dir, 'provisioning.log.latest')
-        err_symlink = os.path.join(root_dir, 'provisioning.err.latest')
+        # Use our fancy context manager that handles logging for us
+        with StackdioLocalClient(run_type='provisioning',
+                                 root_dir=root_dir,
+                                 log_dir=log_dir) as client:
 
-        # "touch" the log file and symlink it to the latest
-        for l in (log_file, err_file):
-            with open(l, 'w') as _:
-                pass
-        symlink(log_file, log_symlink)
-        symlink(err_file, err_symlink)
+            results = client.run(target, 'state.highstate', expr_form='list')
 
-        file_log_handler = setup_logfile_logger(log_file)
+            if results['failed']:
+                raise StackTaskException(
+                    'Core provisioning errors on hosts: '
+                    '{0}. Please see the provisioning errors API '
+                    'or the log file for more details.'.format(', '.join(results['failed_hosts']))
+                )
 
-        # Remove the other handlers, but save them so we can put them back later
-        old_handlers = []
-        for handler in root_logger.handlers:
-            if isinstance(handler, logging.StreamHandler):
-                old_handlers.append(handler)
-                root_logger.removeHandler(handler)
+            if num_hosts != results['num_hosts']:
+                logger.debug('salt did not provision all hosts')
+                err_msg = 'Salt errored and did not provision all the hosts'
+                raise StackTaskException('Error executing core provisioning: {0!r}'.format(err_msg))
 
-        # Put this in a try block so the handler always gets cleaned up
-        try:
-            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
-
-            ret = salt_client.cmd_iter(
-                target,
-                'state.highstate',
-                expr_form='list',
-            )
-
-            result = {}
-            # cmd_iter returns a generator that blocks until jobs finish, so
-            # we want to loop through it until the jobs are done
-            for i in ret:
-                for k, v in i.items():
-                    result[k] = v['ret']
-
-        finally:
-            root_logger.removeHandler(file_log_handler)
-            for handler in old_handlers:
-                root_logger.addHandler(handler)
-
-        with open(log_file, 'a') as f:
-            f.write(yaml.safe_dump(result))
-
-        if len(result) != num_hosts:
-            logger.debug('salt did not provision all hosts')
-            if current_try <= max_attempts:
-                continue
-            err_msg = 'Salt errored and did not provision all the hosts'
-            raise StackTaskException('Error executing core provisioning: {0!r}'.format(err_msg))
-
-        else:
-            # each key in the dict is a host, and the value of the host
-            # is either a list or dict. Those that are lists we can
-            # assume to be a list of errors
-            errors = {}
-            for host, states in result.items():
-                if not isinstance(states, dict):
-                    errors[host] = states
-                    continue
-
-                # iterate over the individual states in the host
-                # looking for state failures
-                for state_str, state_meta in states.items():
-                    if not is_state_error(state_meta):
-                        continue
-
-                    if not utils.is_requisite_error(state_meta):
-                        err, recoverable = utils.state_error(state_str, state_meta)
-                        if not recoverable:
-                            unrecoverable_error = True
-                        errors.setdefault(host, []).append(err)
-
-            if errors:
-                # write the errors to the err_file
-                with open(err_file, 'a') as f:
-                    f.write(yaml.safe_dump(errors))
-
-                if not unrecoverable_error and current_try <= max_attempts:
-                    continue
-
-                err_msg = 'Core provisioning errors on hosts: ' \
-                          '{0}. Please see the provisioning errors API ' \
-                          'or the log file for more details: {1}'.format(
-                              ', '.join(errors.keys()),
-                              os.path.basename(log_file))
-                raise StackTaskException(err_msg)
-
-            # Everything worked?
-            break
+    # Call our highstate.  Will raise the appropriate exception if it fails.
+    do_highstate()
 
     stack.log_history('Finished core provisioning all hosts.')
 
@@ -727,130 +622,53 @@ def propagate_ssh(stack, max_attempts=3):
     stack.set_activity(Activity.PROVISIONING)
 
     target = [h.hostname for h in stack.get_hosts()]
-    # Regenerate the stack pillar file
-    stack.generate_pillar_file()
     num_hosts = len(stack.get_hosts())
     logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
 
     # Make sure the pillar is properly set
+    stack.generate_pillar_file()
     change_pillar(stack, stack.get_pillar_file_path())
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()
     log_dir = stack.get_log_directory()
 
-    # we'll break out of the loop based on the given number of attempts
-    current_try, unrecoverable_error = 0, False
-    while True:
-        current_try += 1
+    @auto_retry('propagate_ssh', max_attempts)
+    def do_propagate_ssh(attempt=None):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             propagate_ssh.name,
-            current_try,
+            attempt,
             stack))
 
         # Update status
         stack.log_history(
             'Propagating ssh try {0} of {1}. This may take a while.'.format(
-                current_try,
+                attempt,
                 max_attempts,
             )
         )
 
-        now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir,
-                                '{0}.provisioning.log'.format(now))
-        err_file = os.path.join(log_dir,
-                                '{0}.provisioning.err'.format(now))
-        log_symlink = os.path.join(root_dir, 'provisioning.log.latest')
-        err_symlink = os.path.join(root_dir, 'provisioning.err.latest')
+        # Use our fancy context manager that handles logging for us
+        with StackdioLocalClient(run_type='propagate-ssh',
+                                 root_dir=root_dir,
+                                 log_dir=log_dir) as client:
 
-        # "touch" the log file and symlink it to the latest
-        for l in (log_file, err_file):
-            with open(l, 'w') as _:
-                pass
-        symlink(log_file, log_symlink)
-        symlink(err_file, err_symlink)
+            results = client.run(target, 'state.sls', arg=['core.stackdio_users'], expr_form='list')
 
-        file_log_handler = setup_logfile_logger(log_file)
+            if results['failed']:
+                raise StackTaskException(
+                    'SSH key propagation errors on hosts: '
+                    '{0}. Please see the provisioning errors API '
+                    'or the log file for more details.'.format(', '.join(results['failed_hosts']))
+                )
 
-        # Remove the other handlers, but save them so we can put them back later
-        old_handlers = []
-        for handler in root_logger.handlers:
-            if isinstance(handler, logging.StreamHandler):
-                old_handlers.append(handler)
-                root_logger.removeHandler(handler)
+            if num_hosts != results['num_hosts']:
+                logger.debug('salt did not propagate ssh keys to all hosts')
+                err_msg = 'Salt errored and did not propagate ssh keys to all hosts'
+                raise StackTaskException('Error propagating ssh keys: {0!r}'.format(err_msg))
 
-        try:
-            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
-
-            ret = salt_client.cmd_iter(
-                target,
-                'state.sls',
-                ['core.stackdio_users'],
-                expr_form='list'
-            )
-
-            result = {}
-            # cmd_iter returns a generator that blocks until jobs finish, so
-            # we want to loop through it until the jobs are done
-            for i in ret:
-                for k, v in i.items():
-                    result[k] = v['ret']
-
-        finally:
-            root_logger.removeHandler(file_log_handler)
-            for handler in old_handlers:
-                root_logger.addHandler(handler)
-
-        with open(log_file, 'a') as f:
-            f.write(yaml.safe_dump(result))
-
-        if len(result) != num_hosts:
-            logger.debug('salt did not propagate ssh keys to all hosts')
-            if current_try <= max_attempts:
-                continue
-            err_msg = 'Salt errored and did not propagate ssh keys to all hosts'
-            raise StackTaskException('Error propagating ssh keys: {0!r}'.format(err_msg))
-
-        else:
-            # each key in the dict is a host, and the value of the host
-            # is either a list or dict. Those that are lists we can
-            # assume to be a list of errors
-            errors = {}
-            for host, states in result.items():
-                if isinstance(states, list):
-                    errors[host] = states
-                    continue
-
-                # iterate over the individual states in the host
-                # looking for state failures
-                for state_str, state_meta in states.items():
-                    if not is_state_error(state_meta):
-                        continue
-
-                    if not utils.is_requisite_error(state_meta):
-                        err, recoverable = utils.state_error(state_str, state_meta)
-                        if not recoverable:
-                            unrecoverable_error = True
-                        errors.setdefault(host, []).append(err)
-
-            if errors:
-                # write the errors to the err_file
-                with open(err_file, 'a') as f:
-                    f.write(yaml.safe_dump(errors))
-
-                if not unrecoverable_error and current_try <= max_attempts:
-                    continue
-
-                err_msg = 'SSH key propagation errors on hosts: ' \
-                          '{0}. Please see the provisioning errors API ' \
-                          'or the log file for more details: {1}'.format(
-                              ', '.join(errors.keys()),
-                              os.path.basename(log_file))
-                raise StackTaskException(err_msg)
-
-            # Everything worked?
-            break
+    # Call our function
+    do_propagate_ssh()
 
     stack.log_history('Finished propagating ssh keys to all hosts.')
 
@@ -876,6 +694,8 @@ def global_orchestrate(stack, max_attempts=3):
     accounts = list(accounts)
 
     # Set the pillar file to the global pillar data file
+    stack.generate_global_pillar_file()
+    stack.generate_global_orchestrate_file()
     change_pillar(stack, stack.get_global_pillar_file_path())
 
     # Copy the global orchestrate file into the cloud directory
@@ -892,13 +712,11 @@ def global_orchestrate(stack, max_attempts=3):
             role_host_nums.setdefault(fc.sls_path, 0)
             role_host_nums[fc.sls_path] += bhd.count
 
-    # we'll break out of the loop based on the given number of attempts
-    current_try = 0
-    while True:
-        current_try += 1
+    @auto_retry('global_orchestrate', max_attempts)
+    def do_global_orchestrate(attempt=None):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             global_orchestrate.name,
-            current_try,
+            attempt,
             stack,
         ))
 
@@ -906,63 +724,34 @@ def global_orchestrate(stack, max_attempts=3):
         stack.log_history(
             'Executing global orchestration try {0} of {1}. This '
             'may take a while.'.format(
-                current_try,
+                attempt,
                 max_attempts,
             )
         )
 
-        now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir,
-                                '{0}.global_orchestration.log'.format(now))
-        err_file = os.path.join(log_dir,
-                                '{0}.global_orchestration.err'.format(now))
-        log_symlink = os.path.join(root_dir, 'global_orchestration.log.latest')
-        err_symlink = os.path.join(root_dir, 'global_orchestration.err.latest')
-
-        for l in (log_file, err_file):
-            with open(l, 'w') as _:
-                pass
-        symlink(log_file, log_symlink)
-        symlink(err_file, err_symlink)
-
-        # Set up logging
-        file_log_handler = setup_logfile_logger(log_file)
-
-        try:
-            opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
-
-            salt_runner = salt.runner.RunnerClient(opts)
+        with StackdioRunnerClient(run_type='global_orchestration',
+                                  root_dir=root_dir,
+                                  log_dir=log_dir) as client:
 
             # This might be kind of scary - but it'll work while we only have one account per
             # stack
-            result = salt_runner.cmd(
-                'state.orchestrate',
-                [
+            try:
+                result = client.orchestrate(arg=[
                     'stack_{0}_global_orchestrate'.format(stack.id),
                     'cloud.{0}'.format(accounts[0].slug),
-                ]
-            )
+                ])
+            except StackdioSaltClientException as e:
+                raise StackTaskException('Global orchestration failed: {}'.format(six.text_type(e)))
 
-            failed, failed_hosts = utils.process_orchestrate_result(result, stack,
-                                                                    log_file, err_file)
+            if result['failed']:
+                err_msg = 'Global Orchestration errors on components: ' \
+                          '{0}. Please see the global orchestration errors ' \
+                          'API or the global orchestration log file for more ' \
+                          'details.'.format(', '.join(result['failed_sls']))
+                raise StackTaskException(err_msg)
 
-        finally:
-            root_logger.removeHandler(file_log_handler)
-
-        if failed:
-            if current_try <= max_attempts:  # NOQA
-                continue
-
-            err_msg = 'Global Orchestration errors on hosts: ' \
-                      '{0}. Please see the global orchestration errors ' \
-                      'API or the global orchestration log file for more ' \
-                      'details: {1}'.format(
-                          ', '.join(failed_hosts),
-                          os.path.basename(log_file))
-            raise StackTaskException(err_msg)
-
-        # it worked?
-        break
+    # Call our function
+    do_global_orchestrate()
 
     stack.log_history('Finished executing global orchestration all hosts.')
 
@@ -986,6 +775,8 @@ def orchestrate(stack, max_attempts=3):
     logger.info('Executing orchestration for stack: {0!r}'.format(stack))
 
     # Set the pillar file back to the regular pillar
+    stack.generate_pillar_file()
+    stack.generate_orchestrate_file()
     change_pillar(stack, stack.get_pillar_file_path())
 
     # Set up logging for this task
@@ -999,78 +790,48 @@ def orchestrate(stack, max_attempts=3):
             role_host_nums.setdefault(fc.sls_path, 0)
             role_host_nums[fc.sls_path] += bhd.count
 
-    # we'll break out of the loop based on the given number of attempts
-    current_try = 0
-    while True:
-        current_try += 1
+    @auto_retry('orchestrate', max_attempts)
+    def do_orchestrate(attempt=None):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             orchestrate.name,
-            current_try,
+            attempt,
             stack))
 
         # Update status
         stack.log_history(
             'Executing orchestration try {0} of {1}. This '
             'may take a while.'.format(
-                current_try,
+                attempt,
                 max_attempts,
             )
         )
 
-        now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir,
-                                '{0}.orchestration.log'.format(now))
-        err_file = os.path.join(log_dir,
-                                '{0}.orchestration.err'.format(now))
-        log_symlink = os.path.join(root_dir, 'orchestration.log.latest')
-        err_symlink = os.path.join(root_dir, 'orchestration.err.latest')
-
-        for l in (log_file, err_file):
-            with open(l, 'w') as _:
-                pass
-        symlink(log_file, log_symlink)
-        symlink(err_file, err_symlink)
-
-        # Set up logging
-        file_log_handler = setup_logfile_logger(log_file)
-
-        try:
-            opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
-
-            salt_runner = salt.runner.RunnerClient(opts)
+        with StackdioRunnerClient(run_type='orchestration',
+                                  root_dir=root_dir,
+                                  log_dir=log_dir) as client:
 
             # Set us to RUNNING
             stack.set_all_component_statuses(ComponentStatus.RUNNING)
 
-            result = salt_runner.cmd(
-                'state.orchestrate',
-                [
+            try:
+                result = client.orchestrate(arg=[
                     'orchestrate',
                     'stacks.{0}'.format(stack.pk),
-                ]
-            )
+                ])
+            except StackdioSaltClientException as e:
+                raise StackTaskException('Orchestration failed: {}'.format(six.text_type(e)))
 
-            failed, failed_hosts = utils.process_orchestrate_result(result, stack,
-                                                                    log_file, err_file)
+            utils.set_component_statuses(stack, result)
 
-        finally:
-            # Stop logging
-            root_logger.removeHandler(file_log_handler)
+            if result['failed']:
+                err_msg = 'Orchestration errors on components: ' \
+                          '{0}. Please see the orchestration errors ' \
+                          'API or the orchestration log file for more ' \
+                          'details.'.format(', '.join(result['failed_sls']))
+                raise StackTaskException(err_msg)
 
-        if failed:
-            if current_try <= max_attempts:
-                continue
-
-            err_msg = 'Orchestration errors on hosts: ' \
-                      '{0}. Please see the orchestration errors ' \
-                      'API or the orchestration log file for more ' \
-                      'details: {1}'.format(
-                          ', '.join(failed_hosts),
-                          os.path.basename(log_file))
-            raise StackTaskException(err_msg)
-
-        # it worked?
-        break
+    # Call our function
+    do_orchestrate()
 
     stack.log_history('Finished executing orchestration all hosts.')
 
@@ -1109,6 +870,7 @@ def single_sls(stack, component, host_target, max_attempts=3):
     change_pillar(stack, stack.get_pillar_file_path())
 
     # Set up logging for this task
+    root_dir = stack.get_root_directory()
     log_dir = stack.get_log_directory()
 
     try:
@@ -1125,13 +887,11 @@ def single_sls(stack, component, host_target, max_attempts=3):
         target = list_target
         expr_form = 'list'
 
-    # we'll break out of the loop based on the given number of attempts
-    current_try = 0
-    while True:
-        current_try += 1
+    @auto_retry('single_sls', max_attempts)
+    def do_single_sls(attempt=None):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             single_sls.name,
-            current_try,
+            attempt,
             stack,
         ))
 
@@ -1140,102 +900,48 @@ def single_sls(stack, component, host_target, max_attempts=3):
             'Executing sls {0} try {1} of {2}. This '
             'may take a while.'.format(
                 component,
-                current_try,
+                attempt,
                 max_attempts,
             )
         )
 
-        now = datetime.now().strftime('%Y%m%d-%H%M%S')
-        log_file = os.path.join(log_dir,
-                                '{0}.single.log'.format(now))
-        err_file = os.path.join(log_dir,
-                                '{0}.single.err'.format(now))
+        with StackdioLocalClient(run_type='single-sls',
+                                 root_dir=root_dir,
+                                 log_dir=log_dir) as client:
 
-        file_log_handler = setup_logfile_logger(log_file)
+            stack.set_component_status(component, ComponentStatus.RUNNING,
+                                       include_list=included_hostnames)
 
-        # Remove the other handlers, but save them so we can put them back later
-        old_handlers = []
-        for handler in root_logger.handlers:
-            if isinstance(handler, logging.StreamHandler):
-                old_handlers.append(handler)
-                root_logger.removeHandler(handler)
-
-        stack.set_component_status(component, ComponentStatus.RUNNING,
-                                   include_list=included_hostnames)
-
-        try:
-            salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
-
-            ret = salt_client.cmd_iter(
+            results = client.run(
                 target,
                 'state.sls',
-                [
+                arg=[
                     component,
                     'stacks.{0}'.format(stack.pk),
                 ],
                 expr_form=expr_form,
             )
 
-            result = {}
+            if results['failed']:
+                raise StackTaskException(
+                    'Single SLS {} errors on hosts: '
+                    '{}. Please see the provisioning errors API '
+                    'or the log file for more details.'.format(
+                        component,
+                        ', '.join(results['failed_hosts']),
+                    )
+                )
 
-            # cmd_iter returns a generator that blocks until jobs finish, so
-            # we want to loop through it until the jobs are done
-            for i in ret:
-                for k, v in i.items():
-                    result[k] = v
+            if results['succeeded_hosts']:
+                stack.set_component_status(component, ComponentStatus.SUCCEEDED,
+                                           results['succeeded_hosts'])
 
-        finally:
-            root_logger.removeHandler(file_log_handler)
-            for handler in old_handlers:
-                root_logger.addHandler(handler)
+            if results['failed_hosts']:
+                stack.set_component_status(component, ComponentStatus.FAILED,
+                                           results['failed_hosts'])
 
-        with open(log_file, 'a') as f:
-            f.write(yaml.safe_dump(result))
-
-        # each key in the dict is a host, and the value of the host
-        # is either a list or dict. Those that are lists we can
-        # assume to be a list of errors
-        errors = {}
-        for host, ret in result.items():
-            states = ret['ret']
-
-            if isinstance(states, list):
-                errors[host] = states
-                continue
-
-            # iterate over the individual states in the host
-            # looking for state failures
-            for state_str, state_meta in states.items():
-                if not is_state_error(state_meta):
-                    continue
-
-                if not utils.is_requisite_error(state_meta):
-                    err, _ = utils.state_error(state_str, state_meta)
-                    errors.setdefault(host, []).append(err)
-
-        if errors:
-            stack.set_component_status(component, ComponentStatus.FAILED,
-                                       include_list=included_hostnames)
-            # write the errors to the err_file
-            with open(err_file, 'a') as f:
-                f.write(yaml.safe_dump(errors))
-
-            if current_try <= max_attempts:
-                continue
-
-            err_msg = 'Single sls errors on hosts: ' \
-                      '{0}. Please see the orchestration errors API ' \
-                      'or the log file for more details: {1}'.format(
-                          ', '.join(errors.keys()),
-                          os.path.basename(log_file))
-            raise StackTaskException(err_msg)
-
-        # it worked?
-        break
-
-    # Everything worked, set the status appropriately
-    stack.set_component_status(component, ComponentStatus.SUCCEEDED,
-                               include_list=included_hostnames)
+    # Call our function
+    do_single_sls()
 
     stack.log_history('Finished executing single sls {} on all hosts.'.format(component))
 

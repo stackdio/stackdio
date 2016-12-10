@@ -20,270 +20,35 @@ from __future__ import print_function, unicode_literals
 import logging
 import os
 import random
-import re
 from datetime import datetime
 
-import salt.client
-import salt.cloud
 import salt.config as config
-import salt.key
-import salt.syspaths
-import salt.utils
-import salt.utils.cloud
-import six
-import yaml
 from django.conf import settings
 
-from stackdio.api.stacks.exceptions import StackTaskException
 from stackdio.core.constants import Action, ComponentStatus
 from stackdio.salt.utils.cloud import StackdioSaltCloudMap, catch_salt_cloud_map_failures
 
 
 logger = logging.getLogger(__name__)
 
-ERROR_REQUISITE = 'One or more requisite failed'
 
-COLOR_REGEX = re.compile(r'\[0;[\d]+m')
+def set_component_statuses(stack, orch_result):
 
+    for sls_path, sls_result in orch_result['succeeded_sls'].items():
+        stack.set_component_status(sls_path, ComponentStatus.SUCCEEDED)
 
-def state_to_dict(state_string):
-    """
-    Takes the state string and transforms it into a dict of key/value
-    pairs that are a bit easier to handle.
+    for sls_path, sls_result in orch_result['cancelled_sls'].items():
+        stack.set_component_status(sls_path, ComponentStatus.CANCELLED)
 
-    Before: group_|-stackdio_group_|-abe_|-present
+    for sls_path, sls_result in orch_result['failed_sls'].items():
+        # Set the status to succeeded on the hosts that succeeded
+        # but only if the list is non-empty
+        if sls_result['succeeded_hosts']:
+            stack.set_component_status(sls_path, ComponentStatus.SUCCEEDED,
+                                       sls_result['succeeded_hosts'])
 
-    After: {
-        'module': 'group',
-        'function': 'present',
-        'name': 'abe',
-        'declaration_id': 'stackdio_group'
-    }
-    """
-    state_labels = settings.STATE_EXECUTION_FIELDS
-    state_fields = state_string.split(settings.STATE_EXECUTION_DELIMITER)
-    return dict(zip(state_labels, state_fields))
-
-
-def is_requisite_error(state_meta):
-    """
-    Is the state error because of a requisite state failure?
-    """
-    return ERROR_REQUISITE in state_meta['comment']
-
-
-def is_recoverable(err):
-    """
-    Checks the provided error against a blacklist of errors
-    determined to be unrecoverable. This should be used to
-    prevent retrying of provisioning or orchestration because
-    the error will continue to occur.
-    """
-    # TODO: determine the blacklist of errors that
-    # will trigger a return of False here
-    return True
-
-
-def state_error(state_str, state_meta):
-    """
-    Takes the given state result string and the metadata
-    of the state execution result and returns a consistent
-    dict for the error along with whether or not the error
-    is recoverable.
-    """
-    state = state_to_dict(state_str)
-    func = '{module}.{func}'.format(**state)
-    decl_id = state['declaration_id']
-    err = {
-        'error': state_meta['comment'],
-        'function': func,
-        'declaration_id': decl_id,
-    }
-    if 'stderr' in state_meta['changes']:
-        err['stderr'] = state_meta['changes']['stderr']
-    if 'stdout' in state_meta['changes']:
-        err['stdout'] = state_meta['changes']['stdout']
-    return err, is_recoverable(err)
-
-
-def process_sls_result(sls_result, err_file):
-    if 'out' in sls_result and sls_result['out'] != 'highstate':
-        logger.debug('This isn\'t highstate data... it may not process correctly.')
-
-        raise StackTaskException('Missing highstate data from the orchestrate runner.')
-
-    if 'ret' not in sls_result:
-        return True, set()
-
-    failed = False
-    failed_hosts = set()
-
-    for host, state_results in sls_result['ret'].items():
-        sorted_result = sorted(state_results.values(), key=lambda x: x['__run_num__'])
-        for stage_result in sorted_result:
-
-            if stage_result.get('result', False):
-                continue
-
-            # We have failed
-            failed = True
-
-            # Check to see if it's a requisite error - if so, we don't want to clutter the
-            # logs, so we'll continue on.
-            if is_requisite_error(stage_result):
-                continue
-
-            failed_hosts.add(host)
-
-            # Write to the error log
-            with open(err_file, 'a') as f:
-                f.write(yaml.safe_dump(stage_result))
-
-    return failed, failed_hosts
-
-
-def process_times(sls_result):
-    if 'ret' not in sls_result:
-        return
-
-    max_time_map = {}
-
-    for state_results in sls_result['ret'].values():
-        for stage_label, stage_result in state_results.items():
-
-            # Pull out the duration
-            if 'duration' in stage_result:
-                current = max_time_map.get(stage_label, 0)
-                duration = stage_result['duration']
-                try:
-                    if isinstance(duration, six.string_types):
-                        new_time = float(duration.split()[0])
-                    else:
-                        new_time = float(duration)
-                except ValueError:
-                    # Make sure we never fail
-                    new_time = 0
-
-                # Only set the duration if it's higher than what we already have
-                # This should be all we care about - since everything is running in parallel,
-                # the bottleneck is the max time
-                max_time_map[stage_label] = max(current, new_time)
-
-    time_map = {}
-
-    # aggregate into modules
-    for stage_label, max_time in max_time_map.items():
-        info_dict = state_to_dict(stage_label)
-
-        current = time_map.get(info_dict['module'], 0)
-
-        # Now we want the sum since these are NOT running in parallel.
-        time_map[info_dict['module']] = current + max_time
-
-    for module, time in sorted(time_map.items()):
-        logger.info('Module {0} took {1} total seconds to run'.format(module, time / 1000))
-
-
-def process_orchestrate_result(result, stack, log_file, err_file):
-    # The actual info we want is nested in the 'data' key
-    result = result['data']
-
-    opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
-
-    if not isinstance(result, dict):
-        with open(err_file, 'a') as f:
-            f.write('Orchestration failed.  See below.\n\n')
-            f.write(six.text_type(result))
-        return True, set()
-
-    if opts['id'] not in result:
-        with open(err_file, 'a') as f:
-            f.write('Orchestration result is missing information:\n\n')
-            f.write(six.text_type(result))
-        return True, set()
-
-    result = result[opts['id']]
-
-    if not isinstance(result, dict):
-        with open(err_file, 'a') as f:
-            f.write(six.text_type(result))
-
-        raise StackTaskException(result)
-
-    failed = False
-    failed_hosts = set()
-
-    for sls, sls_result in sorted(result.items(), key=lambda x: x[1]['__run_num__']):
-        sls_dict = state_to_dict(sls)
-
-        logger.info('Processing stage {0} for stack {1}'.format(sls_dict['name'], stack.title))
-
-        if 'changes' in sls_result:
-            process_times(sls_result['changes'])
-
-        logger.info('')
-
-        status_set = False
-
-        with open(err_file, 'a') as f:
-            if 'changes' in sls_result and 'ret' in sls_result['changes']:
-                f.write(
-                    'Stage {0} returned {1} host info object(s)\n\n'.format(
-                        sls_dict['name'],
-                        len(sls_result['changes']['ret'])
-                    )
-                )
-            elif sls_result.get('result', False):
-                f.write('Stage {0} appears to have no changes, and it succeeded.\n\n'.format(
-                    sls_dict['name']
-                ))
-            else:
-                f.write(
-                    'Stage {0} appears to have no changes, but it failed.  See below.\n'.format(
-                        sls_dict['name']
-                    )
-                )
-                # No changes, so set based on the comment
-                if ERROR_REQUISITE in sls_result['comment']:
-                    stack.set_component_status(sls_dict['name'], ComponentStatus.CANCELLED)
-                else:
-                    stack.set_component_status(sls_dict['name'], ComponentStatus.FAILED)
-                status_set = True
-
-        if sls_result.get('result', False):
-            # This whole sls is good!  Just continue on with the next one.
-            if not status_set:
-                stack.set_component_status(sls_dict['name'], ComponentStatus.SUCCEEDED)
-            continue
-
-        # Process the data for this sls
-        with open(err_file, 'a') as f:
-            comment = sls_result['comment']
-            if isinstance(comment, six.string_types):
-                f.write('{0}\n\n'.format(COLOR_REGEX.sub('', comment)))
-            else:
-                f.write('{0}\n\n'.format(yaml.safe_dump(comment)))
-        local_failed, local_failed_hosts = process_sls_result(sls_result['changes'], err_file)
-
-        if not status_set:
-            # Set the status to FAILED on everything that failed
-            stack.set_component_status(sls_dict['name'],
-                                       ComponentStatus.FAILED,
-                                       local_failed_hosts)
-
-            if local_failed and local_failed_hosts:
-                # Set the status to SUCCEEDED on everything that didn't fail
-                stack.set_component_status(sls_dict['name'],
-                                           ComponentStatus.SUCCEEDED,
-                                           [],
-                                           local_failed_hosts)
-
-        if local_failed:
-            # Do it this way to ensure we don't set it BACK to false after a failure.
-            failed = True
-        failed_hosts.update(local_failed_hosts)
-
-    return failed, failed_hosts
+        # Set the status to failed on everything else
+        stack.set_component_status(sls_path, ComponentStatus.FAILED, sls_result['failed_hosts'])
 
 
 def filter_actions(user, stack, actions):
