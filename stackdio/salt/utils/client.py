@@ -253,15 +253,15 @@ def process_orchestrate_result(result, err_file):
             with open(err_file, 'a') as f:
                 if sls_ret_dict['succeeded_hosts']:
                     f.write(
-                        'Stage {0} succeeded and returned {1} host info object{}\n\n'.format(
-                            '' if len(sls_ret_dict['succeeded_hosts']) == 1 else 's',
+                        'Stage {} succeeded and returned {} host info object{}\n\n'.format(
                             sls_dict['name'],
-                            len(sls_ret_dict['succeeded_hosts'])
+                            len(sls_ret_dict['succeeded_hosts']),
+                            '' if len(sls_ret_dict['succeeded_hosts']) == 1 else 's',
                         )
                     )
                 else:
-                    f.write('Stage {0} succeeded, but appears to have no changes.\n\n'.format(
-                        sls_dict['name']
+                    f.write('Stage {} succeeded, but appears to have no changes.\n\n'.format(
+                        sls_dict['name'],
                     ))
 
             # Add to the success map
@@ -271,16 +271,16 @@ def process_orchestrate_result(result, err_file):
             with open(err_file, 'a') as f:
                 if 'changes' in sls_result and 'ret' in sls_result['changes']:
                     f.write(
-                        'Stage {0} failed and returned {1} host info object{}\n\n'.format(
-                            '' if len(sls_result['changes']['ret']) == 1 else 's',
+                        'Stage {} failed and returned {} host info object{}\n\n'.format(
                             sls_dict['name'],
-                            len(sls_result['changes']['ret'])
+                            len(sls_result['changes']['ret']),
+                            '' if len(sls_result['changes']['ret']) == 1 else 's',
                         )
                     )
                 else:
                     f.write(
-                        'Stage {0} failed, but appears to have no changes. See below.\n'.format(
-                            sls_dict['name']
+                        'Stage {} failed, but appears to have no changes. See below.\n'.format(
+                            sls_dict['name'],
                         )
                     )
 
@@ -288,9 +288,9 @@ def process_orchestrate_result(result, err_file):
                 if 'comment' in sls_result:
                     comment = sls_result['comment']
                     if isinstance(comment, six.string_types):
-                        f.write('{0}\n\n'.format(COLOR_REGEX.sub('', comment)))
+                        f.write('{}\n\n'.format(COLOR_REGEX.sub('', comment)))
                     else:
-                        f.write('{0}\n\n'.format(yaml.safe_dump(comment)))
+                        f.write('{}\n\n'.format(yaml.safe_dump(comment)))
 
             if 'changes' in sls_result:
                 # Process the info to see which hosts failed (will then print more info)
