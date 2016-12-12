@@ -33,7 +33,7 @@ def setup_logfile_logger(log_path, log_level=None, log_format=None, date_format=
     Set up logging to a file.
     """
     # Create the handler
-    handler = WatchedFileHandler(log_path)
+    handler = WatchedFileHandler(log_path, mode='a', encoding='utf-8', delay=0)
 
     if log_level:
         # Grab and set the level
@@ -42,7 +42,7 @@ def setup_logfile_logger(log_path, log_level=None, log_format=None, date_format=
 
     # Set the default console formatter config
     if not log_format:
-        log_format = '%(asctime)s [%(name)-15s][%(levelname)-8s] %(message)s'
+        log_format = '%(asctime)s [%(name)s][%(levelname)s] %(message)s'
     if not date_format:
         date_format = '%Y-%m-%d %H:%M:%S'
 

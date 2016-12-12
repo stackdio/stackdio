@@ -16,5 +16,8 @@
 #
 
 
-class StackTaskException(Exception):
+from stackdio.core.exceptions import TaskException
+
+
+class StackTaskException(TaskException):
     pass

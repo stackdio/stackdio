@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 
 
 class WorkflowOptions(object):
-    DEFAULTS = {}
+    DEFAULTS = {
+        'max_attempts': 3,
+    }
 
     def __init__(self, opts):
         self.user_opts = opts
@@ -257,7 +259,7 @@ class ActionWorkflow(BaseWorkflow):
 
         if self.action in (Action.LAUNCH, Action.PROVISION, Action.ORCHESTRATE):
             task_list.append(tasks.global_orchestrate.si(self.stack.id))
-            task_list.append(tasks.orchestrate.si(self.stack.id, 2))
+            task_list.append(tasks.orchestrate.si(self.stack.id, self.opts.max_attempts))
 
         # Always finish the stack
         task_list.append(tasks.finish_stack.si(self.stack.id, action_to_end_activity[self.action]))

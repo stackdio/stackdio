@@ -48,6 +48,7 @@ from stackdio.api.stacks.exceptions import StackTaskException
 from stackdio.api.stacks.models import Stack, StackCommand, StackHistory
 from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.events import trigger_event
+from stackdio.core.utils import auto_retry
 from stackdio.salt.utils.client import (
     StackdioLocalClient,
     StackdioRunnerClient,
@@ -91,7 +92,7 @@ def stack_task(*args, **kwargs):
                     stack.save()
 
             except StackTaskException as e:
-                stack.log_history(e.message, Activity.IDLE)
+                stack.log_history(six.text_type(e), Activity.IDLE)
                 stack.set_all_component_statuses(ComponentStatus.CANCELLED,
                                                  Health.UNHEALTHY,
                                                  sls_path,
@@ -152,46 +153,6 @@ def change_pillar(stack, new_pillar_file):
     for res in ret:
         for minion, state_ret in res.items():
             result[minion] = state_ret
-
-
-def auto_retry(name=None, max_attempts=3, exception_type=StackTaskException):
-    """
-    Decorator to automatically retry a function a given number of times
-    :param name: the name of the retry function
-    :param max_attempts: the maximum number of attempts to call the function
-    :param exception_type: the type of exception to catch
-    """
-    def decorator(func):
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-
-            current_attempt = 1
-
-            exc = None
-
-            while current_attempt <= max_attempts:
-                # Pass some extra things in
-                kwargs['attempt'] = current_attempt
-                try:
-                    return func(*args, **kwargs)
-                except exception_type as e:
-                    # Save the most recent exception
-                    exc = e
-
-                current_attempt += 1
-
-            if name:
-                msg = 'Max attempts for {} exceeded'.format(name)
-            else:
-                msg = 'Max attempts exceeded'
-
-            # If we exit the loop that means we failed.
-            raise exception_type('{}: {}'.format(msg, exc))
-
-        return wrapper
-
-    return decorator
 
 
 # Tasks that directly operate on stacks
@@ -1044,10 +1005,10 @@ def destroy_hosts(stack, host_ids=None, delete_hosts=True, delete_security_group
                     logger.debug('Managed security group {0} '
                                  'deleted...'.format(security_group.name))
                 except DeleteGroupException as e:
-                    if 'does not exist' in e.message:
+                    if 'does not exist' in six.text_type(e):
                         # The group didn't exist in the first place - just throw out a warning
-                        logger.warning(e.message)
-                    elif 'instances using security group' in e.message:
+                        logger.warning(six.text_type(e))
+                    elif 'instances using security group' in six.text_type(e):
                         # The group has running instances in it - we can't delete it
                         instances = driver.get_instances_for_group(security_group.group_id)
                         err_msg = (

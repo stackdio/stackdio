@@ -18,13 +18,19 @@
 from __future__ import unicode_literals
 
 import logging
+import os
 
 import six
+import yaml
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
+
+from stackdio.api.formulas.models import FormulaVersion
 from stackdio.core.constants import ComponentStatus, Health
 from stackdio.core.fields import JSONField
+from stackdio.core.utils import recursive_update
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +69,47 @@ class Environment(TimeStampedModel):
     # The properties for this blueprint
     properties = JSONField('Properties')
 
+    orchestrate_sls_path = models.CharField('Orchestrate SLS Path', max_length=255,
+                                            default='orchestrate')
+
     def __str__(self):
         return six.text_type('Environment {}'.format(self.name))
+
+    def get_root_directory(self):
+        return os.path.join(settings.FILE_STORAGE_DIRECTORY,
+                            'environments',
+                            six.text_type(self.name))
+
+    def get_log_directory(self):
+        root_dir = self.get_root_directory()
+        log_dir = os.path.join(root_dir, 'logs')
+        if not os.path.isdir(log_dir):
+            os.makedirs(log_dir)
+        return log_dir
+
+    def get_full_pillar(self):
+        pillar_props = {}
+
+        # If any of the formulas we're using have default pillar
+        # data defined in its corresponding SPECFILE, we need to pull
+        # that into our environment pillar file.
+
+        # for each unique formula, pull the properties from the SPECFILE
+        for formula_version in self.formula_versions.all():
+            formula = formula_version.formula
+            version = formula_version.version
+
+            # Update the formula
+            formula.get_gitfs().update()
+
+            # Add it to the rest of the pillar
+            recursive_update(pillar_props, formula.properties(version))
+
+        # Add in properties that were supplied via the blueprint and during
+        # environment creation
+        recursive_update(pillar_props, self.properties)
+
+        return pillar_props
 
 
 class ComponentMetadataQuerySet(models.QuerySet):

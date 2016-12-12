@@ -15,10 +15,8 @@
 # limitations under the License.
 #
 
-
-class InvalidFormula(Exception):
-    pass
+from stackdio.core.exceptions import TaskException
 
 
-class InvalidFormulaComponent(InvalidFormula):
+class EnvironmentTaskException(TaskException):
     pass

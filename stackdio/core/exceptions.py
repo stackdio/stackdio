@@ -25,6 +25,10 @@ from rest_framework.exceptions import APIException
 logger = logging.getLogger(__name__)
 
 
+class TaskException(Exception):
+    pass
+
+
 class ResourceConflict(APIException):
     status_code = status.HTTP_409_CONFLICT
     default_detail = _('Resource Conflict')

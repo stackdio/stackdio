@@ -15,13 +15,17 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import collections
+from functools import wraps
 
 from django.conf import settings
 from django.conf.urls import url
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
+
+from stackdio.core.exceptions import TaskException
 
 
 class FakeQuerySet(object):
@@ -57,6 +61,46 @@ class FakeQuerySet(object):
                     if getattr(group, k) == v:
                         ret.append(group)
         return FakeQuerySet(self.model, ret)
+
+
+def auto_retry(name=None, max_attempts=3, exception_type=TaskException):
+    """
+    Decorator to automatically retry a function a given number of times
+    :param name: the name of the retry function
+    :param max_attempts: the maximum number of attempts to call the function
+    :param exception_type: the type of exception to catch
+    """
+    def decorator(func):
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+
+            current_attempt = 1
+
+            exc = None
+
+            while current_attempt <= max_attempts:
+                # Pass some extra things in
+                kwargs['attempt'] = current_attempt
+                try:
+                    return func(*args, **kwargs)
+                except exception_type as e:
+                    # Save the most recent exception
+                    exc = e
+
+                current_attempt += 1
+
+            if name:
+                msg = 'Max attempts for {} exceeded'.format(name)
+            else:
+                msg = 'Max attempts exceeded'
+
+            # If we exit the loop that means we failed.
+            raise exception_type('{}: {}'.format(msg, exc))
+
+        return wrapper
+
+    return decorator
 
 
 def recursively_sort_dict(d):

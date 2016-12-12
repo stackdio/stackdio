@@ -125,7 +125,7 @@ def _get_env_dir(saltenv):
 def _get_object(saltenv):
     env_type, dot, obj_id = saltenv.partition('.')
 
-    if env_type == 'environment':
+    if env_type == 'environments':
         return Environment.objects.get(name=obj_id)
     elif env_type == 'stacks':
         return Stack.objects.get(id=int(obj_id))
@@ -196,7 +196,7 @@ def envs():
     ret = []
 
     for env in Environment.objects.all():
-        ret.append('environment.{}'.format(env.name))
+        ret.append('environments.{}'.format(env.name))
 
     for stack in Stack.objects.all():
         ret.append('stacks.{}'.format(stack.id))
