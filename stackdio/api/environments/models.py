@@ -111,6 +111,20 @@ class Environment(TimeStampedModel):
 
         return pillar_props
 
+    def get_current_component_metadata(self, sls_path, host):
+        return self.component_metadatas.filter(
+            sls_path=sls_path, host=host
+        ).order_by('-modified').first()
+
+    def set_component_status(self, sls_path, status, host_list):
+        for host in host_list:
+            current_metadata = self.get_current_component_metadata(sls_path, host)
+            current_health = current_metadata.health if current_metadata else None
+            self.component_metadatas.create(sls_path=sls_path,
+                                            host=host,
+                                            status=status,
+                                            current_health=current_health)
+
 
 class ComponentMetadataQuerySet(models.QuerySet):
 

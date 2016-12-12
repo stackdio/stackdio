@@ -25,7 +25,8 @@ from celery import shared_task
 
 from stackdio.api.environments.exceptions import EnvironmentTaskException
 from stackdio.api.environments.models import Environment
-from stackdio.core.constants import Activity, ComponentStatus
+from stackdio.api.environments import utils
+from stackdio.core.constants import Activity
 from stackdio.core.utils import auto_retry
 from stackdio.salt.utils.client import StackdioRunnerClient, StackdioSaltClientException
 
@@ -114,6 +115,9 @@ def orchestrate(environment, max_attempts=3):
                 ])
             except StackdioSaltClientException as e:
                 raise EnvironmentTaskException('Orchestration failed: {}'.format(six.text_type(e)))
+
+            # Set the statuses
+            utils.set_component_statuses(environment, result)
 
             if result['failed']:
                 err_msg = 'Orchestration errors on components: ' \
