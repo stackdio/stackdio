@@ -59,6 +59,12 @@ class EnvironmentSerializer(StackdioHyperlinkedModelSerializer):
     labels = serializers.HyperlinkedIdentityField(
         view_name='api:environments:environment-label-list',
         lookup_field='name', lookup_url_kwarg='parent_name')
+    components = serializers.HyperlinkedIdentityField(
+        view_name='api:environments:environment-component-list',
+        lookup_field='name', lookup_url_kwarg='parent_name')
+    logs = serializers.HyperlinkedIdentityField(
+        view_name='api:environments:environment-logs',
+        lookup_field='name', lookup_url_kwarg='parent_name')
     user_permissions = serializers.HyperlinkedIdentityField(
         view_name='api:environments:environment-object-user-permissions-list',
         lookup_field='name', lookup_url_kwarg='parent_name')
@@ -75,8 +81,10 @@ class EnvironmentSerializer(StackdioHyperlinkedModelSerializer):
             'description',
             'label_list',
             'properties',
+            'components',
             'labels',
             'formula_versions',
+            'logs',
             'user_permissions',
             'group_permissions',
         )
@@ -137,3 +145,32 @@ class EnvironmentLabelSerializer(StackdioLabelSerializer):
         app_label = 'environments'
         model_name = 'environment-label'
         parent_lookup_field = 'name'
+
+
+class ComponentMetadataSerializer(serializers.ModelSerializer):
+
+    timestamp = serializers.DateTimeField(source='modified')
+
+    class Meta:
+        model = models.ComponentMetadata
+
+        fields = (
+            'host',
+            'status',
+            'health',
+            'timestamp',
+        )
+
+
+class EnvironmentComponentSerializer(serializers.Serializer):
+
+    sls_path = serializers.CharField()
+    status = serializers.CharField()
+    health = serializers.CharField()
+    hosts = ComponentMetadataSerializer(many=True, source='metadatas')
+
+    def create(self, validated_data):
+        raise NotImplementedError('Cannot create components.')
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError('Cannot update components.')

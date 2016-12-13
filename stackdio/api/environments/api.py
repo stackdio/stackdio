@@ -17,12 +17,19 @@
 
 
 import logging
+import os
+from collections import OrderedDict
 
+import envoy
 from guardian.shortcuts import assign_perm
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.serializers import ValidationError
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
+from stackdio.core.renderers import PlainTextRenderer
 from stackdio.core.serializers import ObjectPropertiesSerializer
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
@@ -104,6 +111,14 @@ class EnvironmentLabelDetailAPIView(mixins.EnvironmentRelatedMixin,
         return context
 
 
+class EnvironmentComponentListAPIView(mixins.EnvironmentRelatedMixin, generics.ListAPIView):
+    serializer_class = serializers.EnvironmentComponentSerializer
+
+    def get_queryset(self):
+        environment = self.get_environment()
+        return environment.get_components()
+
+
 class EnvironmentFormulaVersionsAPIView(mixins.EnvironmentRelatedMixin, generics.ListCreateAPIView):
     serializer_class = FormulaVersionSerializer
 
@@ -113,6 +128,93 @@ class EnvironmentFormulaVersionsAPIView(mixins.EnvironmentRelatedMixin, generics
 
     def perform_create(self, serializer):
         serializer.save(content_object=self.get_environment())
+
+
+class EnvironmentLogsAPIView(mixins.EnvironmentRelatedMixin, generics.GenericAPIView):
+
+    log_types = (
+        'orchestration',
+        'orchestration-error',
+    )
+
+    def get(self, request, *args, **kwargs):
+        environment = self.get_environment()
+        root_dir = environment.get_root_directory()
+        log_dir = environment.get_log_directory()
+
+        latest = OrderedDict()
+
+        for log_type in self.log_types:
+            spl = log_type.split('-')
+            if len(spl) > 1 and spl[1] == 'error':
+                log_file = '%s.err.latest' % spl[0]
+            else:
+                log_file = '%s.log.latest' % log_type
+
+            if os.path.isfile(os.path.join(root_dir, log_file)):
+                latest[log_type] = reverse(
+                    'api:environments:environment-logs-detail',
+                    kwargs={'parent_name': environment.name, 'log': log_file},
+                    request=request,
+                )
+
+        historical = [
+            reverse('api:environments:environment-logs-detail',
+                    kwargs={'parent_name': environment.name, 'log': log},
+                    request=request)
+            for log in sorted(os.listdir(log_dir))
+        ]
+
+        ret = OrderedDict((
+            ('latest', latest),
+            ('historical', historical),
+        ))
+
+        return Response(ret)
+
+
+class EnvironmentLogsDetailAPIView(mixins.EnvironmentRelatedMixin, generics.GenericAPIView):
+    renderer_classes = (PlainTextRenderer,)
+
+    # TODO: Code complexity ignored for now
+    def get(self, request, *args, **kwargs):  # NOQA
+        environment = self.get_environment()
+        log_file = self.kwargs.get('log', '')
+
+        try:
+            tail = int(request.query_params.get('tail', 0))
+        except ValueError:
+            tail = None
+
+        try:
+            head = int(request.query_params.get('head', 0))
+        except ValueError:
+            head = None
+
+        if head and tail:
+            return Response('Both head and tail may not be used.',
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if log_file.endswith('.latest'):
+            log = os.path.join(environment.get_root_directory(), log_file)
+        elif log_file.endswith('.log') or log_file.endswith('.err'):
+            log = os.path.join(environment.get_log_directory(), log_file)
+        else:
+            log = None
+
+        if not log or not os.path.isfile(log):
+            raise ValidationError({
+                'log_file': ['Log file does not exist: {0}.'.format(log_file)]
+            })
+
+        if tail:
+            ret = envoy.run('tail -{0} {1}'.format(tail, log)).std_out
+        elif head:
+            ret = envoy.run('head -{0} {1}'.format(head, log)).std_out
+        else:
+            with open(log, 'r') as f:
+                ret = f.read()
+        return Response(ret)
 
 
 class EnvironmentModelUserPermissionsViewSet(StackdioModelUserPermissionsViewSet):

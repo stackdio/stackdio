@@ -21,7 +21,6 @@ import logging
 import os
 
 import six
-import yaml
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
@@ -46,6 +45,30 @@ _environment_object_permissions = (
     'delete',
     'admin',
 )
+
+
+class EnvironmentComponent(object):
+
+    def __init__(self, environment, sls_path):
+        super(EnvironmentComponent, self).__init__()
+        self.environment = environment
+        self.sls_path = sls_path
+        self.metadatas = []
+
+    def add_metadata(self, metadata):
+        # Check to see if the host was already added
+        for m in self.metadatas:
+            if m.host == metadata.host:
+                return
+        self.metadatas.append(metadata)
+
+    @property
+    def health(self):
+        return Health.aggregate([m.health for m in self.metadatas])
+
+    @property
+    def status(self):
+        return ComponentStatus.aggregate([m.status for m in self.metadatas])
 
 
 @six.python_2_unicode_compatible
@@ -110,6 +133,17 @@ class Environment(TimeStampedModel):
         recursive_update(pillar_props, self.properties)
 
         return pillar_props
+
+    def get_components(self):
+        component_map = {}
+
+        for metadata in self.component_metadatas.order_by('-modified'):
+            if metadata.sls_path not in component_map:
+                component_map[metadata.sls_path] = EnvironmentComponent(self, metadata.sls_path)
+
+            component_map[metadata.sls_path].add_metadata(metadata)
+
+        return sorted(component_map.values(), key=lambda x: x.sls_path)
 
     def get_current_component_metadata(self, sls_path, host):
         return self.component_metadatas.filter(

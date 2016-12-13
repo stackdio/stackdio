@@ -17,10 +17,9 @@
 
 
 import logging
+import os
 import zipfile
 from collections import OrderedDict
-from os import listdir
-from os.path import join, isfile
 
 import envoy
 from actstream import action
@@ -411,7 +410,7 @@ class StackLogsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
             else:
                 log_file = '%s.log.latest' % log_type
 
-            if isfile(join(root_dir, log_file)):
+            if os.path.isfile(os.path.join(root_dir, log_file)):
                 latest[log_type] = reverse(
                     'api:stacks:stack-logs-detail',
                     kwargs={'parent_pk': stack.pk, 'log': log_file},
@@ -422,7 +421,7 @@ class StackLogsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
             reverse('api:stacks:stack-logs-detail',
                     kwargs={'parent_pk': stack.pk, 'log': log},
                     request=request)
-            for log in sorted(listdir(log_dir))
+            for log in sorted(os.listdir(log_dir))
         ]
 
         ret = OrderedDict((
@@ -436,8 +435,7 @@ class StackLogsAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
 class StackLogsDetailAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
     renderer_classes = (PlainTextRenderer,)
 
-    # TODO: Code complexity ignored for now
-    def get(self, request, *args, **kwargs):  # NOQA
+    def get(self, request, *args, **kwargs):
         stack = self.get_stack()
         log_file = self.kwargs.get('log', '')
 
@@ -456,13 +454,13 @@ class StackLogsDetailAPIView(mixins.StackRelatedMixin, generics.GenericAPIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
         if log_file.endswith('.latest'):
-            log = join(stack.get_root_directory(), log_file)
+            log = os.path.join(stack.get_root_directory(), log_file)
         elif log_file.endswith('.log') or log_file.endswith('.err'):
-            log = join(stack.get_log_directory(), log_file)
+            log = os.path.join(stack.get_log_directory(), log_file)
         else:
             log = None
 
-        if not log or not isfile(log):
+        if not log or not os.path.isfile(log):
             raise ValidationError({
                 'log_file': ['Log file does not exist: {0}.'.format(log_file)]
             })

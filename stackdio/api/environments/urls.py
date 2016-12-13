@@ -59,6 +59,10 @@ urlpatterns = (
     url(r'^(?P<parent_name>[a-z0-9\-_]+)/permissions/',
         include(object_router.urls)),
 
+    url(r'^(?P<parent_name>[a-z0-9\-_]+)/components/$',
+        api.EnvironmentComponentListAPIView.as_view(),
+        name='environment-component-list'),
+
     url(r'^(?P<parent_name>[a-z0-9\-_]+)/labels/$',
         api.EnvironmentLabelListAPIView.as_view(),
         name='environment-label-list'),
@@ -70,4 +74,12 @@ urlpatterns = (
     url(r'^(?P<parent_name>[a-z0-9\-_]+)/formula_versions/$',
         api.EnvironmentFormulaVersionsAPIView.as_view(),
         name='environment-formula-versions'),
+
+    url(r'^(?P<parent_name>[a-z0-9\-_]+)/logs/$',
+        api.EnvironmentLogsAPIView.as_view(),
+        name='environment-logs'),
+
+    url(r'^(?P<parent_name>[a-z0-9\-_]+)/logs/(?P<log>.*)$',
+        api.EnvironmentLogsDetailAPIView.as_view(),
+        name='environment-logs-detail'),
 )
