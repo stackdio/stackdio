@@ -66,12 +66,13 @@ def environment_task(*args, **kwargs):
                     environment.save()
 
             except EnvironmentTaskException as e:
-                environment.log_history(six.text_type(e), Activity.IDLE)
+                environment.activity = Activity.IDLE
+                environment.save()
                 logger.exception(e)
                 raise
             except Exception as e:
-                err_msg = 'Unhandled exception: {0}'.format(e)
-                environment.log_history(err_msg, Activity.IDLE)
+                environment.activity = Activity.IDLE
+                environment.save()
                 logger.exception(e)
                 raise
 
