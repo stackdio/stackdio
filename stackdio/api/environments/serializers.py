@@ -26,7 +26,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.validators import UniqueValidator
 
-from stackdio.api.environments import models, utils
+from stackdio.api.environments import models, utils, workflows
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.core.constants import Action, Activity
 from stackdio.core.serializers import (
@@ -220,8 +220,8 @@ class EnvironmentActionSerializer(serializers.Serializer):
         environment.save()
 
         # Utilize our workflow to run the action
-        # workflow = workflows.ActionWorkflow(environment, action, args)
-        # workflow.execute()
+        workflow = workflows.ActionWorkflow(environment, action, args)
+        workflow.execute()
 
         return self.instance
 
