@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import absolute_import, unicode_literals
 
 import logging
 import os
@@ -27,7 +28,10 @@ from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsF
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.serializers import ValidationError
+
+from stackdio.api.environments import filters, mixins, models, serializers, utils
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
+from stackdio.core.constants import Activity
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.renderers import PlainTextRenderer
 from stackdio.core.serializers import ObjectPropertiesSerializer
@@ -37,8 +41,6 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-
-from . import filters, mixins, models, serializers
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +121,35 @@ class EnvironmentComponentListAPIView(mixins.EnvironmentRelatedMixin, generics.L
         return environment.get_components()
 
 
+class EnvironmentActionAPIView(mixins.EnvironmentRelatedMixin, generics.GenericAPIView):
+    serializer_class = serializers.EnvironmentActionSerializer
+
+    def get(self, request, *args, **kwargs):
+        environment = self.get_environment()
+        # Grab the list of available actions for the current environment activity
+        available_actions = Activity.env_action_map.get(environment.activity, [])
+
+        # Filter them based on permissions
+        available_actions = utils.filter_actions(request.user, environment, available_actions)
+
+        return Response({
+            'available_actions': sorted(available_actions),
+        })
+
+    def post(self, request, *args, **kwargs):
+        """
+        POST request allows RPC-like actions to be called to interact
+        with the environment. Request contains JSON with an `action` parameter
+        and optional `args` depending on the action being executed.
+        """
+        environment = self.get_environment()
+
+        serializer = self.get_serializer(environment, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
 class EnvironmentFormulaVersionsAPIView(mixins.EnvironmentRelatedMixin, generics.ListCreateAPIView):
     serializer_class = FormulaVersionSerializer
 
@@ -133,6 +164,8 @@ class EnvironmentFormulaVersionsAPIView(mixins.EnvironmentRelatedMixin, generics
 class EnvironmentLogsAPIView(mixins.EnvironmentRelatedMixin, generics.GenericAPIView):
 
     log_types = (
+        'provisioning',
+        'provisioning-error',
         'orchestration',
         'orchestration-error',
     )

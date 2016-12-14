@@ -27,7 +27,7 @@ from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
 from stackdio.api.formulas.models import FormulaVersion
-from stackdio.core.constants import ComponentStatus, Health
+from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.fields import JSONField
 from stackdio.core.utils import recursive_update
 
@@ -42,6 +42,9 @@ _environment_model_permissions = (
 _environment_object_permissions = (
     'view',
     'update',
+    'ssh',
+    'provision',
+    'orchestrate',
     'delete',
     'admin',
 )
@@ -84,6 +87,14 @@ class Environment(TimeStampedModel):
 
     name = models.CharField('Name', max_length=255, unique=True)
     description = models.TextField('Description', blank=True, null=True)
+
+    activity = models.CharField('Activity',
+                                max_length=32,
+                                blank=True,
+                                choices=Activity.ALL,
+                                default=Activity.IDLE)
+
+    create_users = models.BooleanField('Create SSH Users')
 
     labels = GenericRelation('core.Label')
 

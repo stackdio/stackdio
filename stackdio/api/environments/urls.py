@@ -71,6 +71,10 @@ urlpatterns = (
         api.EnvironmentLabelDetailAPIView.as_view(),
         name='environment-label-detail'),
 
+    url(r'^(?P<parent_name>[a-z0-9\-_]+)/action/$',
+        api.EnvironmentActionAPIView.as_view(),
+        name='environment-action'),
+
     url(r'^(?P<parent_name>[a-z0-9\-_]+)/formula_versions/$',
         api.EnvironmentFormulaVersionsAPIView.as_view(),
         name='environment-formula-versions'),

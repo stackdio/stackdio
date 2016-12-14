@@ -19,9 +19,21 @@ from __future__ import print_function, unicode_literals
 
 import logging
 
-from stackdio.core.constants import ComponentStatus
+from stackdio.core.constants import Action, ComponentStatus
 
 logger = logging.getLogger(__name__)
+
+
+def filter_actions(user, stack, actions):
+    ret = []
+    for action in actions:
+        the_action = action
+        if action == Action.PROPAGATE_SSH:
+            the_action = 'admin'
+        if user.has_perm('stacks.{0}_stack'.format(the_action.lower()), stack):
+            ret.append(action)
+
+    return ret
 
 
 def set_component_statuses(environment, orch_result):
