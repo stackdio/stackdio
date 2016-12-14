@@ -411,6 +411,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 
 # Configure queues
 CELERY_ROUTES = {
+    'environments.finish_environment': {'queue': 'environments'},
+    'environments.highstate': {'queue': 'environments'},
+    'environments.orchestrate': {'queue': 'environments'},
+    'environments.propagate_ssh': {'queue': 'environments'},
+    'environments.single_sls': {'queue': 'environments'},
+    'environments.sync_all': {'queue': 'environments'},
     'notifications.generate_notifications': {'queue': 'short'},
     'notifications.resend_failed_notifications': {'queue': 'short'},
     'notifications.send_notification': {'queue': 'short'},

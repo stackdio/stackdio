@@ -247,18 +247,6 @@ def orchestrate(environment, max_attempts=3):
 
 @environment_task(name='environments.single_sls')
 def single_sls(environment, component, host_target, max_attempts=3):
-    """
-    Executes the runners.state.over function with the custom orchestrate
-    file  generated via the environments.models._generate_orchestrate_file. This
-    will only target the user's environment and provision the hosts with
-    the formulas defined in the blueprint and in the order specified.
-
-    TODO: We aren't allowing users to provision from formulas owned by
-    others at the moment, but if we do want to support that without
-    forcing them to clone those formulas into their own account, we
-    will need to support executing multiple orchestrate files in different
-    environments.
-    """
     environment.activity = Activity.ORCHESTRATING
     environment.save()
 
