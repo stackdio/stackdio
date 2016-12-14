@@ -20,6 +20,7 @@ from __future__ import absolute_import, unicode_literals
 import logging
 import re
 
+from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
@@ -84,6 +85,9 @@ class EnvironmentSerializer(StackdioHyperlinkedModelSerializer):
             'url',
             'name',
             'description',
+            'activity',
+            'health',
+            'create_users',
             'label_list',
             'properties',
             'components',
@@ -95,13 +99,21 @@ class EnvironmentSerializer(StackdioHyperlinkedModelSerializer):
             'group_permissions',
         )
 
+        read_only_fields = (
+            'activity',
+            'health',
+        )
+
         extra_kwargs = {
             'name': {
                 'validators': [
                     UniqueValidator(models.Environment.objects.all()),
                     validate_name,
                 ]
-            }
+            },
+            'create_users': {
+                'default': serializers.CreateOnlyDefault(settings.STACKDIO_CONFIG.create_ssh_users)
+            },
         }
 
 

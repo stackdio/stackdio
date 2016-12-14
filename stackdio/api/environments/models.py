@@ -109,6 +109,18 @@ class Environment(TimeStampedModel):
     def __str__(self):
         return six.text_type('Environment {}'.format(self.name))
 
+    @property
+    def health(self):
+        """
+        Calculates the health of this stack from its hosts
+        """
+        healths = []
+
+        for component in self.get_components():
+            healths.append(component.health)
+
+        return Health.aggregate(healths)
+
     def get_root_directory(self):
         return os.path.join(settings.FILE_STORAGE_DIRECTORY,
                             'environments',
