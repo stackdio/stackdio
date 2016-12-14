@@ -243,8 +243,6 @@ def orchestrate(environment, max_attempts=3):
     # Call our function
     do_orchestrate()
 
-    environment.log_history('Finished executing orchestration all hosts.')
-
 
 @environment_task(name='environments.single_sls')
 def single_sls(environment, component, host_target, max_attempts=3):
