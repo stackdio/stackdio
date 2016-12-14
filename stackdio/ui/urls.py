@@ -216,6 +216,14 @@ urlpatterns = (
                environments.EnvironmentFormulaVersionsView.as_view(),
                name='environment-formula-versions'),
 
+    cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/components/$',
+               environments.EnvironmentComponentsView.as_view(),
+               name='environment-components'),
+
+    cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/logs/$',
+               environments.EnvironmentLogsView.as_view(),
+               name='environment-logs'),
+
     cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/permissions/$',
                environments.EnvironmentObjectPermissionsView.as_view(),
                name='environment-object-permissions'),

@@ -109,7 +109,19 @@ class EnvironmentLabelsView(EnvironmentDetailView):
     page_id = 'labels'
 
 
+class EnvironmentComponentsView(EnvironmentDetailView):
+    template_name = 'environments/environment-components.html'
+    viewmodel = 'viewmodels/environment-components'
+    page_id = 'components'
+
+
 class EnvironmentFormulaVersionsView(EnvironmentDetailView):
     template_name = 'environments/environment-formula-versions.html'
     viewmodel = 'viewmodels/environment-formula-versions'
     page_id = 'formula-versions'
+
+
+class EnvironmentLogsView(EnvironmentDetailView):
+    template_name = 'environments/environment-logs.html'
+    viewmodel = 'viewmodels/environment-logs'
+    page_id = 'logs'

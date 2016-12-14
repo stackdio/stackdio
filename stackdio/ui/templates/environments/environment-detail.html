@@ -16,9 +16,41 @@
                     <input type="text" class="form-control" id="environmentDescription"
                            data-bind="value: environment.description, valueUpdate: 'keyup'">
                 </div>
+                <div id="activity" class="form-group">
+                    <label>Activity</label>
+                    <p class="form-control-static"><span class="label" data-bind="css: environment.labelClass, text: environment.activity"></span></p>
+                </div>
+                <div id="health" class="form-group">
+                    <label>Health</label>
+                    <p class="form-control-static"><span class="label" data-bind="css: environment.healthLabelClass, text: environment.health"></span></p>
+                </div>
+                <div id="create_users">
+                    <div class="checkbox">
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox"
+                                   data-bind="checked: environment.createUsers">
+                            <span class="checkbox-label">Create Users</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="form-group" style="margin-top: 15px">
                     {% if has_update %}
                     <button type="submit" class="btn btn-primary">Save</button>
+
+                    <div class="btn-group action-dropdown">
+                        <button type="button" class="btn btn-info dropdown-toggle"
+                                data-toggle="dropdown" aria-haspopup="true"
+                                aria-expanded="false">
+                            Action <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" data-bind="foreach: environment.availableActions">
+                            <li>
+                                <!-- Do this function() dance so that `this` is set properly -->
+                                <a href="#"
+                                   data-bind="click: function (action) { $root.environment.performAction(action) }, text: $data"></a>
+                            </li>
+                        </ul>
+                    </div>
                     {% endif %}
 
                     {% if has_delete %}

@@ -46,6 +46,11 @@ define([
         self.subscription = null;
 
         self.reset = function() {
+            // Make sure we don't have more than 1 subscription
+            if (self.subscription) {
+                self.subscription.dispose();
+            }
+
             // Create the environment object.  Pass in the environment id, and let the model load itself.
             self.environment = new Environment(window.stackdio.environmentName, self);
             self.environment.waiting.done(function () {
@@ -54,9 +59,31 @@ define([
                 // Just go back to the main page if we fail
                 window.location = '/environments/';
             });
+            var $el = $('.checkbox-custom');
+            self.subscription = self.environment.createUsers.subscribe(function (newVal) {
+                if (newVal) {
+                    $el.checkbox('check');
+                } else {
+                    $el.checkbox('uncheck');
+                }
+            });
         };
+
+        // Functions
+        self.refreshEnvironment = function () {
+            self.environment.refreshActivity().fail(function () {
+                window.location = '/environments/';
+            });
+        };
+
+        // React to an open-dropdown event & lazy load the actions
+        $('.action-dropdown').on('show.bs.dropdown', function () {
+            self.environment.loadAvailableActions();
+        });
 
         // Start everything up
         self.reset();
+        self.refreshEnvironment();
+        setInterval(self.refreshEnvironment, 3000);
     };
 });

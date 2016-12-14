@@ -32,11 +32,17 @@
                 <li role="presentation"{% if page_id == 'formula-versions' %} class="active"{% endif %}>
                     <a href="{% url 'ui:environment-formula-versions' name=environment.name %}">Formula Versions</a>
                 </li>
+                <li role="presentation"{% if page_id == 'components' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:environment-components' name=environment.name %}">Components</a>
+                </li>
                 {% if has_admin %}
                 <li role="presentation"{% if page_id == 'permissions' %} class="active"{% endif %}>
                     <a href="{% url 'ui:environment-object-permissions' name=environment.name %}">Permissions</a>
                 </li>
                 {% endif %}
+                <li role="presentation"{% if page_id == 'logs' %} class="active"{% endif %}>
+                    <a href="{% url 'ui:environment-logs' name=environment.name %}">Logs</a>
+                </li>
             </ul>
         </div>
 

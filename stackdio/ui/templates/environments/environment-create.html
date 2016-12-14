@@ -25,6 +25,14 @@
                     <input type="text" class="form-control" id="environmentDescription"
                            data-bind="value: description, valueUpdate: 'keyup'">
                 </div>
+                <div id="create_users">
+                    <div class="checkbox">
+                        <label class="checkbox-custom" data-initialize="checkbox">
+                            <input class="sr-only" type="checkbox" data-bind="checked: createUsers">
+                            <span class="checkbox-label">Create Users</span>
+                        </label>
+                    </div>
+                </div>
                 <div class="form-group" id="properties">
                     <label for="environmentProperties">Properties</label>
 

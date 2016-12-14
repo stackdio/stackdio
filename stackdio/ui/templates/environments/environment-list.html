@@ -36,6 +36,7 @@
                     </th>
                     <!-- /ko -->
                     <th style="width: 5%"></th>
+                    <th style="width: 5%"></th>
                 </tr>
                 </thead>
                 <tbody data-bind="foreach: sortedObjects">
@@ -56,6 +57,30 @@
                         <!-- ko ifnot: value -->
                         <span class="label label-default" data-bind="text: key"></span>
                         <!-- /ko -->
+                    </td>
+                    <td>
+                        <span class="label" data-bind="css: labelClass, text: activity"></span>
+                    </td>
+                    <td>
+                        <span class="label" data-bind="css: healthLabelClass, text: health"></span>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-xs action-dropdown"
+                             data-bind="css: {open: $root.openActionEnvironmentId === id},
+                                        attr: {id: id}, if: !$root.permissionsMap[$data.id] || $root.permissionsMap[$data.id].update">
+                            <button type="button" class="btn btn-xs btn-info dropdown-toggle"
+                                    data-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">
+                                Action <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" data-bind="foreach: availableActions">
+                                <li>
+                                    <!-- Do this function() dance so that `this` is set properly -->
+                                    <a href="#"
+                                       data-bind="click: function (action) { $parent.performAction(action) }, text: $data"></a>
+                                </li>
+                            </ul>
+                        </div>
                     </td>
                     <td class="text-center">
                         <a href="#" data-bind="click: $data.delete, if: !$root.permissionsMap[$data.id] || $root.permissionsMap[$data.id].delete">
