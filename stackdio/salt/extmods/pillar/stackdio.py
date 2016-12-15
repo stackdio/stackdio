@@ -70,8 +70,9 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
 
     # First try the environment
     if 'env' in __grains__:
+        _, _, env_name = __grains__['env'].partition('.')
         try:
-            environment = Environment.objects.get(name=__grains__['env'])
+            environment = Environment.objects.get(name=env_name)
             recursive_update(new_pillar, environment.get_full_pillar())
         except Environment.DoesNotExist:
             logger.info('Environment {} not found'.format(__grains__['env']))
