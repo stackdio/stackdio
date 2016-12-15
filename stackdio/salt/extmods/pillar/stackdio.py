@@ -85,7 +85,7 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
             logger.info('Cloud account {} not found'.format(__grains__['cloud_account']))
 
     # Then the stack (so that stack properties override the cloud account ones)
-    if 'stack_id' in __grains__:
+    if 'stack_id' in __grains__ and isinstance(__grains__['stack_id'], int):
         try:
             stack = Stack.objects.get(id=__grains__['stack_id'])
             recursive_update(new_pillar, stack.get_full_pillar())
