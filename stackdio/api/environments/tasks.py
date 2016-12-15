@@ -87,7 +87,7 @@ def sync_all(environment):
 
     client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
-    ret = client.cmd_iter('env:{}'.format(environment.name),
+    ret = client.cmd_iter('env:environments.{}'.format(environment.name),
                           'saltutil.sync_all',
                           expr_form='grain')
 
@@ -137,7 +137,7 @@ def highstate(environment, max_attempts=3):
                                  root_dir=root_dir,
                                  log_dir=log_dir) as client:
 
-            results = client.run('env:{}'.format(environment.name),
+            results = client.run('env:environments.{}'.format(environment.name),
                                  'state.highstate',
                                  expr_form='grain')
 
@@ -180,7 +180,7 @@ def propagate_ssh(environment, max_attempts=3):
                                  root_dir=root_dir,
                                  log_dir=log_dir) as client:
 
-            results = client.run('env:{}'.format(environment.name),
+            results = client.run('env:environments.{}'.format(environment.name),
                                  'state.sls',
                                  arg=['core.stackdio_users'],
                                  expr_form='grain')
@@ -256,10 +256,10 @@ def single_sls(environment, component, host_target, max_attempts=3):
     log_dir = environment.get_log_directory()
 
     if host_target:
-        target = '{0} and G@env:{1}'.format(host_target, environment.name)
+        target = '{0} and G@env:environments.{1}'.format(host_target, environment.name)
         expr_form = 'compound'
     else:
-        target = 'env:{0}'.format(environment.name)
+        target = 'env:environments.{0}'.format(environment.name)
         expr_form = 'grain'
 
     @auto_retry('single_sls', max_attempts)
