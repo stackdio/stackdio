@@ -25,6 +25,7 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
+from guardian.shortcuts import get_users_with_perms
 
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.core.constants import Activity, ComponentStatus, Health
@@ -134,7 +135,40 @@ class Environment(TimeStampedModel):
         return log_dir
 
     def get_full_pillar(self):
-        pillar_props = {}
+        users = []
+        # pull the create_ssh_users property from the stackd.io config file.
+        # If it's False, we won't create ssh users on the box.
+        if self.create_users:
+            user_permissions_map = get_users_with_perms(
+                self, attach_perms=True, with_superusers=True, with_group_users=True
+            )
+
+            for user, perms in user_permissions_map.items():
+                if 'ssh_environment' in perms:
+                    if user.settings.public_key:
+                        logger.debug('Granting {0} ssh permission to environment: {1}'.format(
+                            user.username,
+                            self.title,
+                        ))
+                        users.append({
+                            'username': user.username,
+                            'public_key': user.settings.public_key,
+                            'id': user.id,
+                        })
+                    else:
+                        logger.debug(
+                            'User {0} has ssh permission for environment {1}, '
+                            'but has no public key.  Skipping.'.format(
+                                user.username,
+                                self.title,
+                            )
+                        )
+
+        pillar_props = {
+            '__stackdio__': {
+                'users': users
+            }
+        }
 
         # If any of the formulas we're using have default pillar
         # data defined in its corresponding SPECFILE, we need to pull
