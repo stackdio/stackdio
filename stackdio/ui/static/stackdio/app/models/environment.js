@@ -21,8 +21,9 @@ define([
     'underscore',
     'knockout',
     'bootbox',
+    'moment',
     'utils/utils'
-], function ($, _, ko, bootbox, utils) {
+], function ($, _, ko, bootbox, moment, utils) {
     'use strict';
 
     // Define the environment model.
