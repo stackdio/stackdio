@@ -85,6 +85,7 @@ class EnvironmentSerializer(StackdioHyperlinkedModelSerializer):
             'url',
             'name',
             'description',
+            'orchestrate_sls_path',
             'activity',
             'health',
             'create_users',

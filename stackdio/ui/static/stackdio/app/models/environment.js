@@ -51,6 +51,7 @@ define([
         // Editable fields
         this.name = ko.observable();
         this.description = ko.observable();
+        this.orchestrateSlsPath = ko.observable();
         this.labelList = ko.observable();
         this.createUsers = ko.observable();
         this.activity = ko.observable();
@@ -138,6 +139,7 @@ define([
         this.description(raw.description);
         this.labelList(raw.label_list);
         this.createUsers(raw.create_users);
+        this.orchestrateSlsPath(raw.orchestrate_sls_path);
         this._processActivity(raw.activity);
         this._processHealth(raw.health);
     };
@@ -190,7 +192,7 @@ define([
 
     Environment.prototype.save = function () {
         var self = this;
-        var keys = ['name', 'description'];
+        var keys = ['name', 'description', 'create_users', 'orchestrate_sls_path'];
 
         keys.forEach(function (key) {
             var el = $('#' + key);
@@ -204,7 +206,9 @@ define([
             url: self.raw.url,
             data: JSON.stringify({
                 name: self.name(),
-                description: self.description()
+                description: self.description(),
+                create_users: self.createUsers(),
+                orchestrate_sls_path: self.orchestrateSlsPath()
             })
         }).done(function (environment) {
             utils.growlAlert('Successfully saved environment!', 'success');

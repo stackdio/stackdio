@@ -16,6 +16,11 @@
                     <input type="text" class="form-control" id="environmentDescription"
                            data-bind="value: environment.description, valueUpdate: 'keyup'">
                 </div>
+                <div id="orchestrate_sls_path" class="form-group">
+                    <label for="environmentOrchestrateSlsPath">Orchestrate SLS Path</label>
+                    <input type="text" class="form-control" id="environmentOrchestrateSlsPath"
+                           data-bind="value: environment.orchestrateSlsPath, valueUpdate: 'keyup'">
+                </div>
                 <div id="activity" class="form-group">
                     <label>Activity</label>
                     <p class="form-control-static"><span class="label" data-bind="css: environment.labelClass, text: environment.activity"></span></p>
