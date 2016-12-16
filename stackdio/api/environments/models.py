@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import logging
 import os
 
+import salt.client
 import six
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -215,6 +216,21 @@ class Environment(TimeStampedModel):
                                             host=host,
                                             status=status,
                                             current_health=current_health)
+
+    def get_current_hosts(self):
+        client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
+
+        result = client.cmd_iter('env:environment.{}'.format(self.name),
+                                 'test.ping',
+                                 expr_form='grain')
+
+        ret = []
+        for res in result:
+            for host, data in res.items():
+                if data.get('ret', False):
+                    ret.append(host)
+
+        return ret
 
 
 class ComponentMetadataQuerySet(models.QuerySet):
