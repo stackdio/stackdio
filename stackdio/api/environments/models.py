@@ -149,7 +149,7 @@ class Environment(TimeStampedModel):
                     if user.settings.public_key:
                         logger.debug('Granting {0} ssh permission to environment: {1}'.format(
                             user.username,
-                            self.title,
+                            self.name,
                         ))
                         users.append({
                             'username': user.username,
@@ -161,7 +161,7 @@ class Environment(TimeStampedModel):
                             'User {0} has ssh permission for environment {1}, '
                             'but has no public key.  Skipping.'.format(
                                 user.username,
-                                self.title,
+                                self.name,
                             )
                         )
 
