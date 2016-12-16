@@ -383,16 +383,12 @@ class FullBlueprintSerializer(IntermediateBlueprintSerializer):
     def create(self, validated_data):
         # Pull out the nested stuff
         host_definitions = validated_data.pop('host_definitions')
-        properties = validated_data.pop('properties', {})
         formula_versions = validated_data.pop('formula_versions', [])
         labels = validated_data.pop('labels', [])
 
         with transaction.atomic(using=models.Blueprint.objects.db):
             # Create the blueprint
             blueprint = super(FullBlueprintSerializer, self).create(validated_data)
-
-            # Set the properties
-            blueprint.properties = properties
 
             # Create the host definitions
             host_definition_field = self.fields['host_definitions']
@@ -416,7 +412,6 @@ class FullBlueprintSerializer(IntermediateBlueprintSerializer):
             label_field.create(labels)
 
         # Add the other fields back in for deserialization
-        validated_data['properties'] = properties
         validated_data['host_definitions'] = host_definitions
         validated_data['formula_versions'] = formula_versions
         validated_data['labels'] = labels

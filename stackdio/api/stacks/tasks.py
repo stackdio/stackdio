@@ -88,8 +88,7 @@ def stack_task(*args, **kwargs):
 
                 if not final_task:
                     # Everything went OK, set back to queued
-                    stack.activity = Activity.QUEUED
-                    stack.save()
+                    stack.set_activity(Activity.QUEUED, [])
 
             except StackTaskException as e:
                 stack.log_history(six.text_type(e), Activity.IDLE)
@@ -1087,8 +1086,7 @@ def run_command(command_id):
     stack.log_history('Running command: {}'.format(command.command), Activity.EXECUTING)
 
     # Create a salt client
-    salt_client = salt.client.LocalClient(os.path.join(
-        settings.STACKDIO_CONFIG.salt_config_root, 'master'))
+    salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
     command.status = StackCommand.RUNNING
     command.start = datetime.now()
@@ -1229,4 +1227,4 @@ def update_host_info():
             if stack.activity == Activity.DEAD and not all_dead:
                 stack.activity = Activity.IDLE
 
-            stack.save()
+            stack.save(update_fields=['activity'])
