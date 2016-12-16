@@ -130,7 +130,7 @@ def copy_global_orchestrate(stack):
                                                'stack_{0}_global_orchestrate.sls'.format(stack.id)))
 
 
-def change_pillar(stack, new_pillar_file):
+def change_pillar(stack, global_orch):
     salt_client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
     target = [h.hostname for h in stack.get_hosts()]
@@ -140,8 +140,8 @@ def change_pillar(stack, new_pillar_file):
         target,
         'grains.setval',
         [
-            'stack_pillar_file',
-            new_pillar_file
+            'global_orchestration',
+            global_orch,
         ],
         expr_form='list',
     )
@@ -480,8 +480,6 @@ def sync_all(stack):
     logger.info('Syncing all salt systems for stack: {0!r}'.format(stack))
 
     # Generate all the files before we sync
-    stack.generate_pillar_file()
-    stack.generate_global_pillar_file()
     stack.generate_orchestrate_file()
     stack.generate_global_orchestrate_file()
 
@@ -522,8 +520,7 @@ def highstate(stack, max_attempts=3):
     logger.info('Running core provisioning for stack: {0!r}'.format(stack))
 
     # Make sure the pillar is properly set
-    stack.generate_pillar_file()
-    change_pillar(stack, stack.get_pillar_file_path())
+    change_pillar(stack, global_orch=False)
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()
@@ -586,8 +583,7 @@ def propagate_ssh(stack, max_attempts=3):
     logger.info('Propagating ssh keys on stack: {0!r}'.format(stack))
 
     # Make sure the pillar is properly set
-    stack.generate_pillar_file()
-    change_pillar(stack, stack.get_pillar_file_path())
+    change_pillar(stack, global_orch=False)
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()
@@ -654,9 +650,8 @@ def global_orchestrate(stack, max_attempts=3):
     accounts = list(accounts)
 
     # Set the pillar file to the global pillar data file
-    stack.generate_global_pillar_file()
     stack.generate_global_orchestrate_file()
-    change_pillar(stack, stack.get_global_pillar_file_path())
+    change_pillar(stack, global_orch=True)
 
     # Copy the global orchestrate file into the cloud directory
     copy_global_orchestrate(stack)
@@ -734,10 +729,9 @@ def orchestrate(stack, max_attempts=3):
 
     logger.info('Executing orchestration for stack: {0!r}'.format(stack))
 
-    # Set the pillar file back to the regular pillar
-    stack.generate_pillar_file()
+    # Set the pillar back to the regular pillar
     stack.generate_orchestrate_file()
-    change_pillar(stack, stack.get_pillar_file_path())
+    change_pillar(stack, global_orch=False)
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()
@@ -827,7 +821,7 @@ def single_sls(stack, component, host_target, max_attempts=3):
     logger.info('Executing single sls {0} for stack: {1!r}'.format(component, stack))
 
     # Set the pillar file back to the regular pillar
-    change_pillar(stack, stack.get_pillar_file_path())
+    change_pillar(stack, global_orch=False)
 
     # Set up logging for this task
     root_dir = stack.get_root_directory()

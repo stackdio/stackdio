@@ -69,24 +69,28 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
     new_pillar = {}
 
     # First try the environment
+    # (always do this regardless of whether there's we're in global orchestration or not)
     if 'env' in __grains__:
         _, _, env_name = __grains__['env'].partition('.')
         try:
             environment = Environment.objects.get(name=env_name)
             recursive_update(new_pillar, environment.get_full_pillar())
         except Environment.DoesNotExist:
-            logger.info('Environment {} not found'.format(__grains__['env']))
+            logger.info('Environment {} was specified in the grains '
+                        'but was not found.'.format(env_name))
 
-    # Then the cloud account
-    if 'cloud_account' in __grains__:
+    global_orch = __grains__.get('global_orchestration', False)
+
+    # Then the cloud account (but only if we ARE in global orchestration)
+    if global_orch and 'cloud_account' in __grains__:
         try:
             account = CloudAccount.objects.get(slug=__grains__['cloud_account'])
             recursive_update(new_pillar, account.get_full_pillar())
         except CloudAccount.DoesNotExist:
             logger.info('Cloud account {} not found'.format(__grains__['cloud_account']))
 
-    # Then the stack (so that stack properties override the cloud account ones)
-    if 'stack_id' in __grains__ and isinstance(__grains__['stack_id'], int):
+    # Then the stack (but only if we ARE NOT in global orchestration)
+    if not global_orch and 'stack_id' in __grains__ and isinstance(__grains__['stack_id'], int):
         try:
             stack = Stack.objects.get(id=__grains__['stack_id'])
             recursive_update(new_pillar, stack.get_full_pillar())

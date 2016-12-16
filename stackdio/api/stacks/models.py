@@ -643,7 +643,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                         'fqdn': fqdn,
                         'domain': domain,
                         'cluster_size': cluster_size,
-                        'stack_pillar_file': self.get_pillar_file_path(),
+                        'global_orchestration': False,
                         'volumes': map_volumes,
                         'cloud_account': host.cloud_account.slug,
                         'cloud_image': host.cloud_image.slug,
