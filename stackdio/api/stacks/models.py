@@ -206,10 +206,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         # Make sure all host activities are saved atomically
         with transaction.atomic(using=Stack.objects.db):
             self.activity = activity
-            self.save()
+            self.save(update_fields=['activity'])
             for host in self.get_hosts(host_ids):
-                host.activity = activity
-                host.save()
+                host.set_activity(activity)
 
     @property
     def volumes(self):
@@ -264,7 +263,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         @host_ids (list); list of primary keys of hosts in this stack
         @returns (QuerySet);
         """
-        if not host_ids:
+        if host_ids is None:
             return self.hosts.all()
         return self.hosts.filter(id__in=host_ids)
 
@@ -1138,7 +1137,7 @@ class Host(TimeStampedModel):
 
     def set_activity(self, activity):
         self.activity = activity
-        self.save()
+        self.save(update_fields=['activity'])
 
     @property
     @django_cache('host-{id}-health')
@@ -1330,7 +1329,7 @@ class ComponentMetadata(TimeStampedModel):
         if new_health is not None:
             self.health = new_health
 
-        self.save()
+        self.save(update_fields=['status', 'health'])
 
 
 @receiver(models.signals.post_save, sender=ComponentMetadata)
