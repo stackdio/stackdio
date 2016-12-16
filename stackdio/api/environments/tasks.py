@@ -124,7 +124,7 @@ def highstate(environment, max_attempts=3):
     log_dir = environment.get_log_directory()
 
     # Build up our highstate function
-    @auto_retry('highstate', max_attempts)
+    @auto_retry('highstate', max_attempts, EnvironmentTaskException)
     def do_highstate(attempt=None):
 
         logger.info('Task {0} try #{1} for environment {2!r}'.format(
@@ -168,7 +168,7 @@ def propagate_ssh(environment, max_attempts=3):
     root_dir = environment.get_root_directory()
     log_dir = environment.get_log_directory()
 
-    @auto_retry('propagate_ssh', max_attempts)
+    @auto_retry('propagate_ssh', max_attempts, EnvironmentTaskException)
     def do_propagate_ssh(attempt=None):
         logger.info('Task {0} try #{1} for environment {2!r}'.format(
             propagate_ssh.name,
@@ -211,7 +211,7 @@ def orchestrate(environment, max_attempts=3):
     root_dir = environment.get_root_directory()
     log_dir = environment.get_log_directory()
 
-    @auto_retry('orchestrate', max_attempts)
+    @auto_retry('orchestrate', max_attempts, EnvironmentTaskException)
     def do_orchestrate(attempt=None):
         logger.info('Task {0} try #{1} for environment {2!r}'.format(
             orchestrate.name,
@@ -262,7 +262,7 @@ def single_sls(environment, component, host_target, max_attempts=3):
         target = 'env:environments.{0}'.format(environment.name)
         expr_form = 'grain'
 
-    @auto_retry('single_sls', max_attempts)
+    @auto_retry('single_sls', max_attempts, EnvironmentTaskException)
     def do_single_sls(attempt=None):
         logger.info('Task {0} try #{1} for environment {2!r}'.format(
             single_sls.name,

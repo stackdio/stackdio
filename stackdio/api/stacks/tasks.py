@@ -198,7 +198,7 @@ def launch_hosts(stack, max_attempts=3,
     logger.info('Log file: {0}'.format(log_file))
 
     # Build up our launch function
-    @auto_retry('launch_hosts', max_attempts)
+    @auto_retry('launch_hosts', max_attempts, StackTaskException)
     def do_launch(attempt=None):
 
         salt_cloud = StackdioSaltCloudClient(settings.STACKDIO_CONFIG.salt_cloud_config)
@@ -527,7 +527,7 @@ def highstate(stack, max_attempts=3):
     log_dir = stack.get_log_directory()
 
     # Build up our highstate function
-    @auto_retry('highstate', max_attempts)
+    @auto_retry('highstate', max_attempts, StackTaskException)
     def do_highstate(attempt=None):
 
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
@@ -589,7 +589,7 @@ def propagate_ssh(stack, max_attempts=3):
     root_dir = stack.get_root_directory()
     log_dir = stack.get_log_directory()
 
-    @auto_retry('propagate_ssh', max_attempts)
+    @auto_retry('propagate_ssh', max_attempts, StackTaskException)
     def do_propagate_ssh(attempt=None):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             propagate_ssh.name,
@@ -667,7 +667,7 @@ def global_orchestrate(stack, max_attempts=3):
             role_host_nums.setdefault(fc.sls_path, 0)
             role_host_nums[fc.sls_path] += bhd.count
 
-    @auto_retry('global_orchestrate', max_attempts)
+    @auto_retry('global_orchestrate', max_attempts, StackTaskException)
     def do_global_orchestrate(attempt=None):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             global_orchestrate.name,
@@ -744,7 +744,7 @@ def orchestrate(stack, max_attempts=3):
             role_host_nums.setdefault(fc.sls_path, 0)
             role_host_nums[fc.sls_path] += bhd.count
 
-    @auto_retry('orchestrate', max_attempts)
+    @auto_retry('orchestrate', max_attempts, StackTaskException)
     def do_orchestrate(attempt=None):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             orchestrate.name,
@@ -841,7 +841,7 @@ def single_sls(stack, component, host_target, max_attempts=3):
         target = list_target
         expr_form = 'list'
 
-    @auto_retry('single_sls', max_attempts)
+    @auto_retry('single_sls', max_attempts, StackTaskException)
     def do_single_sls(attempt=None):
         logger.info('Task {0} try #{1} for stack {2!r}'.format(
             single_sls.name,
