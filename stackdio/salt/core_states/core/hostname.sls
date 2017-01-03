@@ -20,6 +20,18 @@ hostname_file:
       - "HOSTNAME={{ grains['fqdn'] }}"
 {% endif %}
 
+cloud_init_hostname:
+  file.managed:
+    - name: /etc/cloud/cloud.cfg.d/stackdio_hostname.cfg
+    - user: root
+    - group: root
+    - mode: 644
+    - makedirs: true
+    - contents:
+      - "preserve_hostname: false"
+      - "hostname: {{ grains['fqdn'] }}"
+      - "fqdn: {{ grains['fqdn'] }}"
+
 # Add an IP->FQDN mapping for each machine in the stack
 stack_hostnames:
   file.managed:
