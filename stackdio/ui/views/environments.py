@@ -103,6 +103,12 @@ class EnvironmentPropertiesView(EnvironmentDetailView):
     page_id = 'properties'
 
 
+class EnvironmentHostsView(EnvironmentDetailView):
+    template_name = 'environments/environment-hosts.html'
+    viewmodel = 'viewmodels/environment-hosts'
+    page_id = 'hosts'
+
+
 class EnvironmentLabelsView(EnvironmentDetailView):
     template_name = 'environments/environment-labels.html'
     viewmodel = 'viewmodels/environment-labels'

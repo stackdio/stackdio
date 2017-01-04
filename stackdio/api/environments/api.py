@@ -86,7 +86,7 @@ class EnvironmentHostListAPIView(mixins.EnvironmentRelatedMixin, generics.ListAP
 
     def get_queryset(self):
         environment = self.get_environment()
-        return environment.get_current_hosts()
+        return sorted(environment.get_current_hosts(), key=lambda x: x['id'])
 
 
 class EnvironmentLabelListAPIView(mixins.EnvironmentRelatedMixin, generics.ListCreateAPIView):

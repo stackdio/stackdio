@@ -208,6 +208,10 @@ urlpatterns = (
                environments.EnvironmentPropertiesView.as_view(),
                name='environment-properties'),
 
+    cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/hosts/$',
+               environments.EnvironmentHostsView.as_view(),
+               name='environment-hosts'),
+
     cached_url(r'^environments/(?P<name>[a-z0-9\-_]+)/labels/$',
                environments.EnvironmentLabelsView.as_view(),
                name='environment-labels'),

@@ -1,0 +1,35 @@
+{% extends 'environments/environment-detail-base.html' %}
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    {% include 'stackdio/stubs/pager.html' with object_type='hosts' search=True %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-hover">
+            <thead>
+                <tr>
+                    <!-- ko foreach: sortableFields -->
+                    <th data-bind="style: {width: width}">
+                        <a href="#" data-bind="text: displayName, click: function (field) { $root.changeSortKey(field) }"></a>
+                        <span data-bind="visible: $root.sortKey() === name, css: {dropdown: $root.sortAsc(), dropup: !$root.sortAsc()}">
+                            <span class="caret"></span>
+                        </span>
+                    </th>
+                    <!-- /ko -->
+                </tr>
+            </thead>
+            <tbody data-bind="foreach: sortedObjects">
+                <tr class="stackdio-hidden-on-load">
+                    <td data-bind="text: hostname"></td>
+                    <td data-bind="foreach: roles">
+                        <span class="label label-default" data-bind="text: $data"></span>
+                    </td>
+                    <td data-bind="text: ip_addresses"></td>
+                </tr>
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

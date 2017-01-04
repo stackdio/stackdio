@@ -239,6 +239,8 @@ class EnvironmentHostSerializer(serializers.Serializer):
 
     hostname = serializers.CharField(source='id')
 
+    roles = serializers.ListField()
+
     ip_addresses = serializers.ListField(source='ipv4')
 
     def create(self, validated_data):
