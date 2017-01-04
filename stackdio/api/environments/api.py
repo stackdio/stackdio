@@ -81,6 +81,14 @@ class EnvironmentPropertiesAPIView(generics.RetrieveUpdateAPIView):
     lookup_field = 'name'
 
 
+class EnvironmentHostListAPIView(mixins.EnvironmentRelatedMixin, generics.ListAPIView):
+    serializer_class = serializers.EnvironmentHostSerializer
+
+    def get_queryset(self):
+        environment = self.get_environment()
+        return environment.get_current_hosts()
+
+
 class EnvironmentLabelListAPIView(mixins.EnvironmentRelatedMixin, generics.ListCreateAPIView):
     serializer_class = serializers.EnvironmentLabelSerializer
 

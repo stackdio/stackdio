@@ -220,15 +220,14 @@ class Environment(TimeStampedModel):
     def get_current_hosts(self):
         client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
-        result = client.cmd_iter('env:environment.{}'.format(self.name),
-                                 'test.ping',
+        result = client.cmd_iter('env:environments.{}'.format(self.name),
+                                 'grains.items',
                                  expr_form='grain')
 
         ret = []
         for res in result:
             for host, data in res.items():
-                if data.get('ret', False):
-                    ret.append(host)
+                ret.append(data['ret'])
 
         return ret
 

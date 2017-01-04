@@ -235,6 +235,19 @@ class EnvironmentLabelSerializer(StackdioLabelSerializer):
         parent_lookup_field = 'name'
 
 
+class EnvironmentHostSerializer(serializers.Serializer):
+
+    hostname = serializers.CharField(source='id')
+
+    ip_addresses = serializers.ListField(source='ipv4')
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+
 class ComponentMetadataSerializer(serializers.ModelSerializer):
 
     timestamp = serializers.DateTimeField(source='modified')
