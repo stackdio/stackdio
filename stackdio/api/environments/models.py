@@ -226,8 +226,9 @@ class Environment(TimeStampedModel):
 
         ret = []
         for res in result:
-            for host, data in res.items():
-                ret.append(data['ret'])
+            for data in res.values():
+                if data.get('ret', False):
+                    ret.append(data['ret'])
 
         return ret
 
