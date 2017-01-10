@@ -1,6 +1,7 @@
 [
     {
         "model": "CloudProvider",
+        "filter_attr": "name",
         "objects": [
             {
                 "pk": 1,
@@ -10,6 +11,7 @@
     },
     {
         "model": "CloudRegion",
+        "filter_attr": "title",
         "objects": [
             {
                 "pk": 1,
@@ -71,6 +73,7 @@
     },
     {
         "model": "CloudZone",
+        "filter_attr": "title",
         "objects": [
             {
                 "slug": "ap-northeast-1a",
@@ -214,6 +217,7 @@
     },
     {
         "model": "CloudInstanceSize",
+        "filter_attr": "instance_id",
         "objects": [
             {
                 "instance_id": "t1.micro",
