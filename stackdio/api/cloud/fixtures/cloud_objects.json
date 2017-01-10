@@ -1,6 +1,7 @@
 [
     {
         "model": "CloudProvider",
+        "filter_attr": "name",
         "objects": [
             {
                 "pk": 1,
@@ -10,67 +11,111 @@
     },
     {
         "model": "CloudRegion",
+        "filter_attr": "title",
         "objects": [
             {
                 "pk": 1,
                 "slug": "ap-northeast-1",
                 "provider_id": 1,
-                "description": "",
+                "description": "Asia Pacific (Tokyo)",
                 "title": "ap-northeast-1"
             },
             {
                 "pk": 2,
                 "slug": "ap-southeast-1",
                 "provider_id": 1,
-                "description": "",
+                "description": "Asia Pacific (Singapore)",
                 "title": "ap-southeast-1"
             },
             {
                 "pk": 3,
                 "slug": "ap-southeast-2",
                 "provider_id": 1,
-                "description": "",
+                "description": "Asia Pacific (Sidney)",
                 "title": "ap-southeast-2"
             },
             {
                 "pk": 4,
                 "slug": "eu-west-1",
                 "provider_id": 1,
-                "description": "",
+                "description": "EU (Ireland)",
                 "title": "eu-west-1"
             },
             {
                 "pk": 5,
                 "slug": "sa-east-1",
                 "provider_id": 1,
-                "description": "",
+                "description": "South America (São Paulo)",
                 "title": "sa-east-1"
             },
             {
                 "pk": 6,
                 "slug": "us-east-1",
                 "provider_id": 1,
-                "description": "",
+                "description": "US East (N. Virginia)",
                 "title": "us-east-1"
             },
             {
                 "pk": 7,
                 "slug": "us-west-1",
                 "provider_id": 1,
-                "description": "",
+                "description": "US West (N. California)",
                 "title": "us-west-1"
             },
             {
                 "pk": 8,
                 "slug": "us-west-2",
                 "provider_id": 1,
-                "description": "",
+                "description": "US West (Oregon)",
                 "title": "us-west-2"
+            },
+            {
+                "pk": 9,
+                "slug": "us-east-2",
+                "provider_id": 1,
+                "description": "US East (Ohio)",
+                "title": "us-east-2"
+            },
+            {
+                "pk": 10,
+                "slug": "ca-central-1",
+                "provider_id": 1,
+                "description": "Canada (Central)",
+                "title": "ca-central-1"
+            },
+            {
+                "pk": 11,
+                "slug": "eu-central-1",
+                "provider_id": 1,
+                "description": "EU (Frankfurt)",
+                "title": "eu-central-1"
+            },
+            {
+                "pk": 12,
+                "slug": "eu-west-2",
+                "provider_id": 1,
+                "description": "EU (London)",
+                "title": "eu-west-2"
+            },
+            {
+                "pk": 13,
+                "slug": "ap-northeast-2",
+                "provider_id": 1,
+                "description": "Asia Pacific (Seoul)",
+                "title": "ap-northeast-2"
+            },
+            {
+                "pk": 14,
+                "slug": "ap-south-1",
+                "provider_id": 1,
+                "description": "Asia Pacific (Mumbai)",
+                "title": "ap-south-1"
             }
         ]
     },
     {
         "model": "CloudZone",
+        "filter_attr": "title",
         "objects": [
             {
                 "slug": "ap-northeast-1a",
@@ -115,6 +160,12 @@
                 "title": "ap-southeast-2b"
             },
             {
+                "slug": "ap-southeast-2c",
+                "region_id": 3,
+                "description": "",
+                "title": "ap-southeast-2c"
+            },
+            {
                 "slug": "eu-west-1a",
                 "region_id": 4,
                 "description": "",
@@ -143,6 +194,12 @@
                 "region_id": 5,
                 "description": "",
                 "title": "sa-east-1b"
+            },
+            {
+                "slug": "sa-east-1c",
+                "region_id": 5,
+                "description": "",
+                "title": "sa-east-1c"
             },
             {
                 "slug": "us-east-1a",
@@ -209,11 +266,90 @@
                 "region_id": 8,
                 "description": "",
                 "title": "us-west-2c"
+            },
+            {
+                "slug": "us-east-2a",
+                "region_id": 9,
+                "description": "",
+                "title": "us-east-2a"
+            },
+            {
+                "slug": "us-east-2b",
+                "region_id": 9,
+                "description": "",
+                "title": "us-east-2b"
+            },
+            {
+                "slug": "us-east-2c",
+                "region_id": 9,
+                "description": "",
+                "title": "us-east-2c"
+            },
+            {
+                "slug": "ca-central-1a",
+                "region_id": 10,
+                "description": "",
+                "title": "ca-central-1a"
+            },
+            {
+                "slug": "ca-central-1b",
+                "region_id": 10,
+                "description": "",
+                "title": "ca-central-1b"
+            },
+            {
+                "slug": "eu-central-1a",
+                "region_id": 11,
+                "description": "",
+                "title": "eu-central-1a"
+            },
+            {
+                "slug": "eu-central-1b",
+                "region_id": 11,
+                "description": "",
+                "title": "eu-central-1b"
+            },
+            {
+                "slug": "eu-west-2a",
+                "region_id": 12,
+                "description": "",
+                "title": "eu-west-2a"
+            },
+            {
+                "slug": "eu-west-2b",
+                "region_id": 12,
+                "description": "",
+                "title": "eu-west-2b"
+            },
+            {
+                "slug": "ap-northeast-2a",
+                "region_id": 13,
+                "description": "",
+                "title": "ap-northeast-2a"
+            },
+            {
+                "slug": "ap-northeast-2b",
+                "region_id": 13,
+                "description": "",
+                "title": "ap-northeast-2b"
+            },
+            {
+                "slug": "ap-south-1a",
+                "region_id": 14,
+                "description": "",
+                "title": "ap-south-1a"
+            },
+            {
+                "slug": "ap-south-1b",
+                "region_id": 14,
+                "description": "",
+                "title": "ap-south-1b"
             }
         ]
     },
     {
         "model": "CloudInstanceSize",
+        "filter_attr": "instance_id",
         "objects": [
             {
                 "instance_id": "t1.micro",
@@ -321,6 +457,13 @@
                 "provider_id": 1
             },
             {
+                "instance_id": "t2.nano",
+                "slug": "t2.nano",
+                "title": "t2.nano",
+                "description": "General Purpose T2 Nano Instance",
+                "provider_id": 1
+            },
+            {
                 "instance_id": "t2.micro",
                 "slug": "t2.micro",
                 "title": "t2.micro",
@@ -339,6 +482,27 @@
                 "slug": "t2.medium",
                 "title": "t2.medium",
                 "description": "General Purpose T2 Medium Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "t2.large",
+                "slug": "t2.large",
+                "title": "t2.large",
+                "description": "General Purpose T2 Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "t2.xlarge",
+                "slug": "t2.xlarge",
+                "title": "t2.xlarge",
+                "description": "General Purpose T2 Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "t2.2xlarge",
+                "slug": "t2.2xlarge",
+                "title": "t2.2xlarge",
+                "description": "General Purpose T2 Double Extra Large Instance",
                 "provider_id": 1
             },
             {
@@ -402,6 +566,13 @@
                 "slug": "m4.10xlarge",
                 "title": "m4.10xlarge",
                 "description": "General Purpose M4 Ten Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "m4.16xlarge",
+                "slug": "m4.16xlarge",
+                "title": "m4.16xlarge",
+                "description": "General Purpose M4 Sixteen Extra Large Instance",
                 "provider_id": 1
             },
             {
@@ -510,6 +681,83 @@
                 "provider_id": 1
             },
             {
+                "instance_id": "x1.16xlarge",
+                "slug": "x1.16xlarge",
+                "title": "x1.16xlarge",
+                "description": "Memory Optimized X1 Sixteen Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "x1.32xlarge",
+                "slug": "x1.32xlarge",
+                "title": "x1.32xlarge",
+                "description": "Memory Optimized X1 32 Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "r4.large",
+                "slug": "r4.large",
+                "title": "r4.large",
+                "description": "Memory Optimized R4 Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "r4.xlarge",
+                "slug": "r4.xlarge",
+                "title": "r4.xlarge",
+                "description": "Memory Optimized R4 Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "r4.2xlarge",
+                "slug": "r4.2xlarge",
+                "title": "r4.2xlarge",
+                "description": "Memory Optimized R4 Double Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "r4.4xlarge",
+                "slug": "r4.4xlarge",
+                "title": "r4.4xlarge",
+                "description": "Memory Optimized R4 Quadruple Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "r4.8xlarge",
+                "slug": "r4.8xlarge",
+                "title": "r4.8xlarge",
+                "description": "Memory Optimized R4 Eight Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "r4.16xlarge",
+                "slug": "r4.16xlarge",
+                "title": "r4.16xlarge",
+                "description": "Memory Optimized R4 Sixteen Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "p2.xlarge",
+                "slug": "p2.xlarge",
+                "title": "p2.xlarge",
+                "description": "Accelerated Computing P2 Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "p2.8xlarge",
+                "slug": "p2.8xlarge",
+                "title": "p2.8xlarge",
+                "description": "Accelerated Computing P2 Eight Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "p2.16xlarge",
+                "slug": "p2.16xlarge",
+                "title": "p2.16xlarge",
+                "description": "Accelerated Computing P2 Sixteen Extra Large Instance",
+                "provider_id": 1
+            },
+            {
                 "instance_id": "g2.2xlarge",
                 "slug": "g2.2xlarge",
                 "title": "g2.2xlarge",
@@ -521,6 +769,20 @@
                 "slug": "g2.8xlarge",
                 "title": "g2.8xlarge",
                 "description": "GPU Optimized G2 Eight Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "f1.2xlarge",
+                "slug": "f1.2xlarge",
+                "title": "f1.2xlarge",
+                "description": "Accelerated Computing F1 Double Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "f1.16xlarge",
+                "slug": "f1.16xlarge",
+                "title": "f1.16xlarge",
+                "description": "Accelerated Computing F1 Sixteen Extra Large Instance",
                 "provider_id": 1
             },
             {
