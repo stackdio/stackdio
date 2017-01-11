@@ -14,6 +14,11 @@ ff02::3 ip6-allhosts
 ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
 {% endif %}
 
+{# On ubuntu, the network interface isn't called  #}
 {% for items in stack_hosts.values() %}
-{{ items['ip_interfaces']['eth0'][0] }} {{ items['fqdn'] }} {{ items['id'] }}
+{%- for ip_addr in items.ipv4 %}
+{%- if ip_addr != '127.0.0.1' %}
+{{ ip_addr }} {{ items.fqdn }} {{ items.id }}
+{%- endif %}
+{%- endfor %}
 {%- endfor %}
