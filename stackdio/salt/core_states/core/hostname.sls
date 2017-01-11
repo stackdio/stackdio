@@ -1,5 +1,5 @@
-{% set hostname_service = grains['filter_by']({
-    'Debian': grains['filter_by']({
+{% set hostname_service = salt['grains.filter_by']({
+    'Debian': salt['grains.filter_by']({
       '12': 'hostname',
       '14': 'hostname',
       '16': 'networking',
