@@ -25,6 +25,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
+from __future__ import unicode_literals
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import logging
 import os
@@ -92,6 +94,7 @@ INSTALLED_APPS = (
     'stackdio.api.users',
     'stackdio.api.cloud',
     'stackdio.api.stacks',
+    'stackdio.api.environments',
     'stackdio.api.volumes',
     'stackdio.api.blueprints',
     'stackdio.api.formulas',
@@ -262,7 +265,7 @@ LOGGING = {
     },
     'formatters': {
         'default': {
-            'format': '[%(levelname)s] %(asctime)s %(name)s: %(message)s',
+            'format': '%(asctime)s %(levelname)s %(name)s - %(message)s',
         }
     },
     'handlers': {
@@ -408,11 +411,16 @@ CELERY_ACCEPT_CONTENT = ['json']
 
 # Configure queues
 CELERY_ROUTES = {
+    'environments.finish_environment': {'queue': 'environments'},
+    'environments.highstate': {'queue': 'environments'},
+    'environments.orchestrate': {'queue': 'environments'},
+    'environments.propagate_ssh': {'queue': 'environments'},
+    'environments.single_sls': {'queue': 'environments'},
+    'environments.sync_all': {'queue': 'environments'},
     'notifications.generate_notifications': {'queue': 'short'},
     'notifications.resend_failed_notifications': {'queue': 'short'},
     'notifications.send_notification': {'queue': 'short'},
     'notifications.send_bulk_notifications': {'queue': 'short'},
-    'stacks.cure_zombies': {'queue': 'stacks'},
     'stacks.destroy_hosts': {'queue': 'stacks'},
     'stacks.destroy_stack': {'queue': 'stacks'},
     'stacks.execute_action': {'queue': 'short'},

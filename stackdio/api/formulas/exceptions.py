@@ -16,10 +16,6 @@
 #
 
 
-class FormulaTaskException(Exception):
-    pass
-
-
 class InvalidFormula(Exception):
     pass
 

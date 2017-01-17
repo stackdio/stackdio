@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 
 
 class WorkflowOptions(object):
-    DEFAULTS = {}
+    DEFAULTS = {
+        'max_attempts': 3,
+    }
 
     def __init__(self, opts):
         self.user_opts = opts
@@ -45,7 +47,7 @@ class WorkflowOptions(object):
 
 class LaunchWorkflowOptions(WorkflowOptions):
     DEFAULTS = {
-        'max_retries': 2,
+        'max_attempts': 3,
         # Skips launching if set to False
         'launch': True,
         'provision': True,
@@ -56,7 +58,6 @@ class LaunchWorkflowOptions(WorkflowOptions):
         # See stacks.tasks::launch_hosts for information on these params
         'simulate_launch_failures': False,
         'simulate_ssh_failures': False,
-        'simulate_zombies': False,
         'failure_percent': 0.3,
     }
 
@@ -104,26 +105,21 @@ class LaunchWorkflow(BaseWorkflow):
             tasks.launch_hosts.si(
                 stack_id,
                 parallel=opts.parallel,
-                max_retries=opts.max_retries,
+                max_attempts=opts.max_attempts,
                 simulate_launch_failures=opts.simulate_launch_failures,
                 simulate_ssh_failures=opts.simulate_ssh_failures,
-                simulate_zombies=opts.simulate_zombies,
                 failure_percent=opts.failure_percent
             ),
-            tasks.update_metadata.si(stack_id, Activity.LAUNCHING, host_ids=host_ids),
-            tasks.cure_zombies.si(stack_id, max_retries=opts.max_retries),
             tasks.update_metadata.si(stack_id, Activity.LAUNCHING, host_ids=host_ids),
             tasks.tag_infrastructure.si(stack_id, activity=Activity.LAUNCHING, host_ids=host_ids),
             tasks.register_dns.si(stack_id, Activity.LAUNCHING, host_ids=host_ids),
             tasks.ping.si(stack_id, Activity.LAUNCHING),
             tasks.sync_all.si(stack_id),
-            tasks.highstate.si(stack_id, max_retries=opts.max_retries),
-            tasks.global_orchestrate.si(stack_id,
-                                        max_retries=opts.max_retries)
+            tasks.highstate.si(stack_id, max_attempts=opts.max_attempts),
+            tasks.global_orchestrate.si(stack_id, max_attempts=opts.max_attempts),
         ]
         if opts.provision:
-            l.append(tasks.orchestrate.si(stack_id,
-                                          max_retries=opts.max_retries))
+            l.append(tasks.orchestrate.si(stack_id,  max_attempts=opts.max_attempts))
         l.append(tasks.finish_stack.si(stack_id))
 
         self.stack.set_activity(Activity.QUEUED)
@@ -191,8 +187,6 @@ class ActionWorkflow(BaseWorkflow):
         base_tasks = {
             Action.LAUNCH: [
                 tasks.launch_hosts.si(self.stack.id),
-                tasks.update_metadata.si(self.stack.id, Activity.LAUNCHING),
-                tasks.cure_zombies.si(self.stack.id),
             ],
             Action.TERMINATE: [
                 tasks.update_metadata.si(self.stack.id, Activity.TERMINATING),
@@ -265,7 +259,7 @@ class ActionWorkflow(BaseWorkflow):
 
         if self.action in (Action.LAUNCH, Action.PROVISION, Action.ORCHESTRATE):
             task_list.append(tasks.global_orchestrate.si(self.stack.id))
-            task_list.append(tasks.orchestrate.si(self.stack.id, 2))
+            task_list.append(tasks.orchestrate.si(self.stack.id, self.opts.max_attempts))
 
         # Always finish the stack
         task_list.append(tasks.finish_stack.si(self.stack.id, action_to_end_activity[self.action]))

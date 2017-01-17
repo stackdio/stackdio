@@ -66,6 +66,7 @@ django_setup()
 from stackdio.api.cloud.models import CloudAccount  # NOQA
 from stackdio.api.formulas.models import Formula  # NOQA
 from stackdio.api.stacks.models import Stack  # NOQA
+from stackdio.api.environments.models import Environment  # NOQA
 
 
 def __virtual__():
@@ -107,6 +108,9 @@ def _get_env_dir(saltenv):
     env_type, dot, name = saltenv.partition('.')
     root_dir = os.path.join(_get_storage_dir(), env_type, name)
 
+    if not os.path.exists(root_dir):
+        os.makedirs(root_dir)
+
     if not os.path.isdir(root_dir):
         log.warn('The env dir doesn\'t exist... Something has gone horribly wrong.')
 
@@ -121,9 +125,10 @@ def _get_env_dir(saltenv):
 def _get_object(saltenv):
     env_type, dot, obj_id = saltenv.partition('.')
 
-    if env_type == 'stacks':
+    if env_type == 'environments':
+        return Environment.objects.get(name=obj_id)
+    elif env_type == 'stacks':
         return Stack.objects.get(id=int(obj_id))
-
     elif env_type == 'cloud':
         return CloudAccount.objects.get(slug=obj_id)
     else:
@@ -189,6 +194,9 @@ def envs():
     Return the file server environments
     """
     ret = []
+
+    for env in Environment.objects.all():
+        ret.append('environments.{}'.format(env.name))
 
     for stack in Stack.objects.all():
         ret.append('stacks.{}'.format(stack.id))

@@ -107,6 +107,8 @@ class Action(object):
 
     ALL = [LAUNCH, TERMINATE, PAUSE, RESUME, ORCHESTRATE, PROVISION, SINGLE_SLS, PROPAGATE_SSH]
 
+    ENVIRONMENT_ALL = [ORCHESTRATE, PROVISION, SINGLE_SLS, PROPAGATE_SSH]
+
 
 class Activity(object):
     """
@@ -161,6 +163,11 @@ class Activity(object):
         PAUSED: [Action.RESUME, Action.TERMINATE],
         TERMINATED: [Action.LAUNCH],
         DEAD: [Action.LAUNCH],
+    }
+
+    env_action_map = {
+        IDLE: [Action.PROPAGATE_SSH, Action.PROVISION, Action.ORCHESTRATE,
+               Action.SINGLE_SLS],
     }
 
     # states when deleting a stack is valid

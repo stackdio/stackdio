@@ -45,6 +45,7 @@ class AuthenticationTestCase(StackdioTestCase):
         'blueprints',
         'formulas',
         'stacks',
+        'environments',
         'volumes',
         'cloud/accounts',
         'cloud/images',

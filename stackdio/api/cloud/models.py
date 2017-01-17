@@ -31,10 +31,12 @@ from django_extensions.db.models import (
 )
 from salt.version import __version__ as salt_version
 
-from stackdio.core.queryset_transform import TransformQuerySet
-from stackdio.core.fields import JSONField
 from stackdio.api.cloud.providers.base import GroupNotFoundException
-from .utils import get_cloud_provider_choices, get_provider_driver_class
+from stackdio.api.cloud.utils import get_cloud_provider_choices, get_provider_driver_class
+from stackdio.api.formulas.models import FormulaVersion
+from stackdio.core.fields import JSONField
+from stackdio.core.queryset_transform import TransformQuerySet
+from stackdio.core.utils import recursive_update
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +183,36 @@ class CloudAccount(TimeStampedModel, TitleSlugDescriptionModel):
             formulas.add(component.formula)
 
         return list(formulas)
+
+    def get_full_pillar(self):
+        pillar_props = {}
+
+        # If any of the formulas we're using have default pillar
+        # data defined in its corresponding SPECFILE, we need to pull
+        # that into our stack pillar file.
+
+        # First get the unique set of formulas
+        formulas = self.get_formulas()
+
+        # for each unique formula, pull the properties from the SPECFILE
+        for formula in formulas:
+            # Grab the formula version
+            try:
+                version = self.formula_versions.get(formula=formula).version
+            except FormulaVersion.DoesNotExist:
+                version = formula.default_version
+
+            # Update the formula
+            formula.get_gitfs().update()
+
+            # Add it to the rest of the pillar
+            recursive_update(pillar_props, formula.properties(version))
+
+        # Add in properties that were supplied via the blueprint and during
+        # stack creation
+        recursive_update(pillar_props, self.global_orchestration_properties)
+
+        return pillar_props
 
 
 @six.python_2_unicode_compatible

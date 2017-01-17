@@ -434,10 +434,6 @@ class ObjectPropertiesSerializer(serializers.Serializer):
             # This is a PUT, so just add the data directly
             instance.properties = validated_data
 
-        # Regenerate the pillar file now too
-        if hasattr(instance, 'generate_pillar_file'):
-            instance.generate_pillar_file()
-
         # Be sure to save the instance
         instance.save()
 

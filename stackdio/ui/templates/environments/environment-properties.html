@@ -1,0 +1,28 @@
+{% extends 'environments/environment-detail-base.html' %}
+{% load staticfiles %}
+
+
+{% block detail-content %}
+<div class="col-sm-9 col-sm-pull-3">
+    <div class="row">
+        <div class="col-md-12">
+            <form data-bind="submit: saveProperties">
+                <div class="form-group" id="properties">
+                    <label for="environmentProperties">Properties</label>
+
+                    {% if has_update %}
+                    <textarea class="form-control" id="environmentProperties" rows="25"
+                              data-bind="value: propertiesJSON, valueUpdate: 'keyup'"></textarea>
+                    {% else %}
+                    <pre data-bind="text: propertiesJSON"></pre>
+                    {% endif %}
+                </div>
+
+                {% if has_update %}
+                <button type="submit" class="btn btn-success">Save</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
