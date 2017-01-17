@@ -31,7 +31,7 @@
     - fstype: {{ vol['filesystem_type'] }}
     - mount: true
     - mkmnt: true
-    - persist: false
+    - persist: true
 {% endif %}
 
 {% endfor %}

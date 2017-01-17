@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import logging
 
@@ -109,7 +109,7 @@ def create_extra_permissions(app_config, verbosity=2, interactive=True,
 
 class UsersConfig(AppConfig):
     name = 'stackdio.api.users'
-    verbose_name = _("Users")
+    verbose_name = _('Users')
 
     def ready(self):
         post_migrate.connect(create_extra_permissions, sender=self)

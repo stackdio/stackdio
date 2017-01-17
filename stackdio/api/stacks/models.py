@@ -103,7 +103,9 @@ class StackQuerySet(SearchQuerySet):
             properties = stack.blueprint.properties
             recursive_update(properties, new_properties)
 
+            # Set the properties AND save them
             stack.properties = properties
+            stack.save()
 
             # Create the appropriate hosts & security group objects
             stack.create_security_groups()
