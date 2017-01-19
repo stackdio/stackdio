@@ -18,7 +18,7 @@ DESC="stackd.io web server"
 NAME=stackdio
 USER=stackdio
 DAEMON=/usr/share/stackdio/bin/supervisord
-OTHER_DAEMON=/usr/share/stackdio/bin/supervisorctl
+CONTROLLER=/usr/share/stackdio/bin/supervisorctl
 CONFIG=/etc/stackdio/supervisord.conf
 DAEMON_ARGS="-c $CONFIG"
 PIDFILE=/var/run/$NAME.pid
@@ -68,7 +68,7 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	$OTHER_DAEMON $DAEMON_ARGS shutdown &> /dev/null
+	$CONTROLLER $DAEMON_ARGS shutdown &> /dev/null
 	RETVAL="$?"
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
@@ -87,7 +87,7 @@ do_reload() {
 	# restarting (for example, when it is sent a SIGHUP),
 	# then implement that here.
 	#
-	$OTHER_DAEMON $DAEMON_ARGS reload &> /dev/null
+	$CONTROLLER $DAEMON_ARGS reload &> /dev/null
 	return "$?"
 }
 
