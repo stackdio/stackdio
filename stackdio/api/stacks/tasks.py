@@ -486,7 +486,7 @@ def sync_all(stack):
     target = [h.hostname for h in stack.get_hosts()]
     client = salt.client.LocalClient(settings.STACKDIO_CONFIG.salt_master_config)
 
-    ret = client.cmd_iter(target, 'saltutil.sync_all', expr_form='list')
+    ret = client.cmd_iter(target, 'saltutil.sync_all', kwarg={'saltenv': 'base'}, expr_form='list')
 
     result = {}
     for res in ret:
