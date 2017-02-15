@@ -23,22 +23,22 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-    <title>stackd.io | {% block title %}Home{% endblock %}</title>
-    <meta name="description" content="{% block description %}a modern cloud deployment and provisioning framework for everyone{% endblock %}">
+    <title>stackd.io | {{ title }}</title>
+    <meta name="description" content="{{ description }}">
 
     <meta property="og:type" content="object">
     <meta property="og:url" content="/">
     <meta property="og:site_name" content="stackd.io">
-    <meta property="og:title" content="stackd.io">
-    <meta property="og:description" content="a modern cloud deployment and provisioning framework for everyone">
+    <meta property="og:title" content="{{ title }}">
+    <meta property="og:description" content="{{ description }}">
 
     <meta name="twitter:card" content="summary">
     <meta name="twitter:site" content="@stackdio">
-    <meta name="twitter:title" content="stackd.io">
-    <meta name="twitter:description" content="a modern cloud deployment and provisioning framework for everyone">
-
+    <meta name="twitter:title" content="{{ title }}">
+    <meta name="twitter:description" content="{{ description }}">
     {% include 'stackdio/favicons.html' %}
 
+    {% if not user_agent_only %}
     <!-- Bootstrap -->
     <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Open+Sans:400,600,300">
     <link rel="stylesheet" type="text/css" href="{% static 'stackdio/lib/bower_components/bootstrap/dist/css/bootstrap.min.css' %}">
@@ -55,8 +55,10 @@
       <script src="//oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="//oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+    {% endif %}
 </head>
 <body class="fuelux">
+{% if not user_agent_only %}
 {% block body %}
     {% block navbar %}
         <nav class="navbar navbar-fixed-top {% block navbar-variant %}navbar-default{% endblock %}">
@@ -175,5 +177,6 @@
     <script src="{% static 'stackdio/app/utils/mobile-fix.js' %}"></script>
     {% endblock scripts %}
 {% endblock body %}
+{% endif %}
 </body>
 </html>

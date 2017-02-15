@@ -20,7 +20,12 @@ from django.shortcuts import get_object_or_404
 
 from stackdio.api.blueprints.models import Blueprint
 from stackdio.api.stacks.models import Stack, StackCommand
-from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.views import (
+    PageView,
+    ObjectDetailView,
+    ModelPermissionsView,
+    ObjectPermissionsView,
+)
 from stackdio.ui.utils import get_object_list
 
 
@@ -67,24 +72,14 @@ class StackModelPermissionsView(ModelPermissionsView):
     model = Stack
 
 
-class StackDetailView(PageView):
+class StackDetailView(ObjectDetailView):
     template_name = 'stacks/stack-detail.html'
     viewmodel = 'viewmodels/stack-detail'
     page_id = 'detail'
 
-    def get_context_data(self, **kwargs):
-        context = super(StackDetailView, self).get_context_data(**kwargs)
-        pk = kwargs['pk']
-        # Go ahead an raise a 404 here if the stack doesn't exist rather than waiting until later.
-        stack = get_object_or_404(Stack.objects.all(), pk=pk)
-        if not self.request.user.has_perm('stacks.view_stack', stack):
-            raise Http404()
-        context['stack'] = stack
-        context['has_admin'] = self.request.user.has_perm('stacks.admin_stack', stack)
-        context['has_delete'] = self.request.user.has_perm('stacks.delete_stack', stack)
-        context['has_update'] = self.request.user.has_perm('stacks.update_stack', stack)
-        context['page_id'] = self.page_id
-        return context
+    model = Stack
+    model_verbose_name = 'Stack'
+    model_short_name = 'stack'
 
 
 class StackObjectPermissionsView(ObjectPermissionsView):

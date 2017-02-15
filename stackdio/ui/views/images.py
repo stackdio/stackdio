@@ -19,7 +19,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from stackdio.api.cloud.models import CloudImage
-from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.views import (
+    PageView,
+    ObjectDetailView,
+    ModelPermissionsView,
+    ObjectPermissionsView,
+)
 from stackdio.ui.utils import get_object_list
 
 
@@ -51,25 +56,14 @@ class ImageModelPermissionsView(ModelPermissionsView):
     model = CloudImage
 
 
-class ImageDetailView(PageView):
+class ImageDetailView(ObjectDetailView):
     template_name = 'cloud/cloud-image-detail.html'
     viewmodel = 'viewmodels/cloud-image-detail'
     page_id = 'detail'
 
-    def get_context_data(self, **kwargs):
-        context = super(ImageDetailView, self).get_context_data(**kwargs)
-        pk = kwargs['pk']
-        # Go ahead an raise a 404 here if the image doesn't exist rather
-        # than waiting until later.
-        image = get_object_or_404(CloudImage.objects.all(), pk=pk)
-        if not self.request.user.has_perm('cloud.view_cloudimage', image):
-            raise Http404()
-        context['image'] = image
-        context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudimage', image)
-        context['has_delete'] = self.request.user.has_perm('cloud.delete_cloudimage', image)
-        context['has_update'] = self.request.user.has_perm('cloud.update_cloudimage', image)
-        context['page_id'] = self.page_id
-        return context
+    model = CloudImage
+    model_verbose_name = 'Cloud Image'
+    model_short_name = 'image'
 
 
 class ImageObjectPermissionsView(ObjectPermissionsView):

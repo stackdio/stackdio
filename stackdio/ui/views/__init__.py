@@ -19,7 +19,7 @@
 import logging
 
 from django.http import HttpResponseRedirect, Http404
-from django.shortcuts import resolve_url
+from django.shortcuts import get_object_or_404, resolve_url
 from django.views.generic import TemplateView
 
 from stackdio.api.cloud.models import CloudAccount
@@ -27,7 +27,25 @@ from stackdio.api.cloud.models import CloudAccount
 logger = logging.getLogger(__name__)
 
 
-class RootView(TemplateView):
+class StackdioUIView(TemplateView):
+    title = 'stackd.io'
+    description = 'a modern cloud deployment and provisioning framework for everyone'
+
+    def get_title(self, **kwargs):
+        return self.title
+
+    def get_description(self, **kwargs):
+        return self.description
+
+    def get_context_data(self, **kwargs):
+        context = super(StackdioUIView, self).get_context_data(**kwargs)
+        context['title'] = self.get_title(**kwargs)
+        context['description'] = self.get_description(**kwargs)
+        context['user_agent_only'] = self.request.META.get('ALLOWED_FROM_USER_AGENT', False)
+        return context
+
+
+class RootView(StackdioUIView):
     """
     We don't really have a home page, so let's redirect to either the
     stack or account page depending on certain cases
@@ -45,12 +63,12 @@ class RootView(TemplateView):
         return HttpResponseRedirect(resolve_url(redirect_view))
 
 
-class AppMainView(TemplateView):
+class AppMainView(StackdioUIView):
     template_name = 'stackdio/js/main.js'
     content_type = 'application/javascript'
 
 
-class PageView(TemplateView):
+class PageView(StackdioUIView):
     viewmodel = None
 
     def __init__(self, **kwargs):
@@ -63,6 +81,44 @@ class PageView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(PageView, self).get_context_data(**kwargs)
         context['viewmodel'] = self.viewmodel
+        return context
+
+
+class ObjectDetailView(PageView):
+    page_id = None
+    model = None
+    model_verbose_name = None
+    model_short_name = None
+
+    lookup_field = 'pk'
+    lookup_kwarg = None
+
+    def get_context_data(self, **kwargs):
+        context = super(ObjectDetailView, self).get_context_data(**kwargs)
+
+        lookup_kwarg = self.lookup_kwarg or self.lookup_field
+
+        lookup_value = kwargs[lookup_kwarg]
+        # Go ahead an raise a 404 here if the account doesn't exist rather
+        # than waiting until later.
+        obj = get_object_or_404(self.model.objects.all(), **{self.lookup_field: lookup_value})
+        context['title'] = '{} - {}'.format(self.model_verbose_name, obj.title)
+        context['description'] = obj.description
+
+        model_name = self.model._meta.model_name
+        app_label = self.model._meta.app_label
+
+        perm_str = '{}.{{}}_{}'.format(app_label, model_name)
+
+        if not self.request.user.has_perm(perm_str.format('view'), obj):
+            # Let the request through if it's allowed via user agent
+            if not self.request.META.get('ALLOWED_FROM_USER_AGENT', False):
+                raise Http404()
+        context[self.model_short_name] = obj
+        context['has_admin'] = self.request.user.has_perm(perm_str.format('admin'), obj)
+        context['has_delete'] = self.request.user.has_perm(perm_str.format('delete'), obj)
+        context['has_update'] = self.request.user.has_perm(perm_str.format('update'), obj)
+        context['page_id'] = self.page_id
         return context
 
 
