@@ -30,8 +30,8 @@ Below we'll create a ``stackdio`` database and grant permissions to the ``stackd
 
     **WARNING**: we're not focusing on security here, so the default
     Postgres setup definitely needs to be tweaked, passwords changed, etc.,
-    but for a quick-start guide this is out of scope. Please, don't run
-    this as-is in production :)
+    but for a quick-start guide this is out of scope.
+    Please, don't run this as-is in production.
 
 .. code:: bash
 
@@ -41,25 +41,13 @@ Below we'll create a ``stackdio`` database and grant permissions to the ``stackd
     ALTER DATABASE stackdio OWNER to stackdio;
     EOF
 
-virtualenvwrapper
------------------
-
-.. code:: bash
-
-    # install the package
-    sudo apt-get install virtualenvwrapper
-
-    # post-install step for virtualenvwrapper shortcuts
-    source /etc/bash_completion.d/virtualenvwrapper
-
 Core requirements
 -----------------
 
--  gcc and other development tools
--  git
--  libpq-dev (the c header files for compiling the python postgres client)
--  python-dev
--  redis-server
+- libpq-dev (the c header files for compiling the python postgres client)
+- python-dev (for compiling native python libraries)
+- redis-server (for our cache / message queue)
+- nginx (for serving static files)
 
 To quickly get up and running, you can run the following to install the
 required packages.
@@ -67,12 +55,7 @@ required packages.
 .. code:: bash
 
     # Install requirements needed to install stackd.io
-    sudo apt-get install python-dev libpq-dev nodejs npm redis-server git nginx gcc
-
-.. code:: bash
-
-    # Link nodejs over to node - bower will complain otherwise
-    sudo ln -s /usr/bin/nodejs /usr/bin/node
+    sudo apt-get install libpq-dev python-dev redis-server nginx
 
 Next Steps
 ----------
