@@ -1,0 +1,15 @@
+[Unit]
+Description=stackdio celery worker
+After=network.target
+
+[Service]
+LimitNOFILE=16384
+Type=single
+User=stackdio
+Group=stackdio
+Restart=always
+PIDFile=/var/run/stackdio/celery-main.pid
+ExecStart=/usr/local/bin/stackdio celery worker --pidfile=/var/run/stackdio/celery-main.pid --logfile=/var/log/stackdio/celery-main.log -Ofair -Q default,stacks -n main.%%h
+
+[Install]
+WantedBy=multi-user.target
