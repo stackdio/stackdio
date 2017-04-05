@@ -10,6 +10,7 @@ Group=stackdio
 Restart=always
 PIDFile=/var/run/stackdio/celery-main.pid
 ExecStart=/usr/local/bin/stackdio celery worker --pidfile=/var/run/stackdio/celery-main.pid --logfile=/var/log/stackdio/celery-main.log -Ofair -Q default,stacks -n main.%%h
+Environment=PYTHONOPTIMIZE=1
 
 [Install]
 WantedBy=multi-user.target
