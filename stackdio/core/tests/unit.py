@@ -626,7 +626,7 @@ class ModelPermissionsViewSetTestCase(StackdioTestCase):
         self.assertTrue('permissions' in first)
 
         self.assertEqual(first[user_or_group], auth_obj)
-        self.assertEqual(first['permissions'], ['admin', 'create'])
+        self.assertEqual(set(first['permissions']), {'admin', 'create'})
 
     def test_user_get_queryset(self):
         self._test_get_queryset(self.user, 'user')
@@ -695,7 +695,7 @@ class ObjectPermissionsViewSetTestCase(StackdioTestCase):
         self.assertTrue('permissions' in first)
 
         self.assertEqual(first[user_or_group], auth_obj)
-        self.assertEqual(first['permissions'], ['admin', 'delete', 'update', 'view'])
+        self.assertEqual(set(first['permissions']), {'admin', 'delete', 'update', 'view'})
 
     def test_user_get_queryset(self):
         self._test_get_queryset(self.user, 'user')

@@ -13,7 +13,7 @@ Common Steps
 ------------
 
 To do some of the steps below you will need to have already installed stackdio and be in the virtual environment.
-To make sure you're in the virtualenv:
+To make sure you're in the virtualenv if you created on when installing (optional):
 
 .. code:: bash
 

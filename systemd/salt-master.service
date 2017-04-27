@@ -1,0 +1,15 @@
+[Unit]
+Description=stackdio salt-master server
+After=network.target
+
+[Service]
+LimitNOFILE=16384
+Type=forking
+User=stackdio
+Group=stackdio
+Restart=always
+PIDFile=/var/run/stackdio/salt-master.pid
+ExecStart=/usr/local/bin/stackdio salt-master --daemon --log-file=/var/log/stackdio/salt-master.log --pid-file=/var/run/stackdio/salt-master.pid
+
+[Install]
+WantedBy=multi-user.target

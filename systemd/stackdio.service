@@ -1,0 +1,18 @@
+[Unit]
+Description=stackdio web server
+After=network.target
+
+[Service]
+Type=forking
+User=stackdio
+Group=stackdio
+PIDFile=/var/run/stackdio/gunicorn.pid
+WorkingDirectory=/var/lib/stackdio
+RuntimeDirectory=gunicorn
+ExecStart=/usr/local/bin/gunicorn --daemon --access-logfile /var/log/stackdio/access.log --log-file /var/log/stackdio/gunicorn.log --pid /var/run/stackdio/gunicorn.pid -w 12 stackdio.server.wsgi
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
