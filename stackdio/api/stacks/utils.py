@@ -72,6 +72,9 @@ def process_host_info(host_info, host):
     :param host_info: the salt-cloud host dict
     :param host: the stackdio host object
     """
+    # Set the host state
+    host.state = host_info.get('state') or 'unknown'
+
     # The instance id of the host
     host.instance_id = host_info.get('instanceId') or ''
 

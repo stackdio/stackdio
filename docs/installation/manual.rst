@@ -7,6 +7,7 @@ we may make some assumptions you don't agree with, and there may be things we mi
 If you feel anything is out of the ordinary, a bit confusing,
 or just plain missing, please :doc:`contact us<../contact>`.
 
+
 1. A database
 -------------
 
@@ -19,6 +20,7 @@ For more information on Django's database support, see:
 https://docs.djangoproject.com/en/1.9/ref/databases/
 
 The OS-specific prep of your choice (below) will walk you through installing postgres.
+
 
 2. OS-specific preparation
 --------------------------
@@ -41,8 +43,13 @@ Once you finish, come back here and continue on.
 
 .. _installation:
 
-3. Create a virtualenv
-----------------------
+
+3. Create a virtualenv (Optional)
+---------------------------------
+
+We recommend that you create a virtualenv to separate your stackd.io dependencies out into a separate environment,
+but it is completely optional.  The following commands utilize virtualenvwrapper.
+If you'd like to use it, it's documentation is found here: https://virtualenvwrapper.readthedocs.io/en/latest/
 
 Let's create a virtualenv to install stackd.io into:
 
@@ -59,39 +66,25 @@ To do this, virtualenvwrapper gives you the ``workon`` command:
 
     workon stackdio
 
-4. Install bower
-----------------
 
-In your terminal, run the following command to install bower:
-
-.. note::
-
-    You must have previously installed npm/node from the OS specific preparation
-
-.. code:: bash
-
-    sudo npm install -g bower
-
-5. Install stackd.io
+4. Install stackd.io
 --------------------
 
 .. note::
 
-    Double-check that your virtualenv is activated or else this
+    If you created a virtualenv, double-check that it is activated or else this
     will probably complain that you don't have permissions to install
-    (because it's trying to install into the global python site-packages
-    directory which we don't want!)
+    (because it's trying to install into the global python site-packages directory).
 
-There's two options for installing here.
 We recommend pulling the latest version from `pypi <https://pypi.python.org/pypi/stackdio-server>`__ with pip, like this:
 
 .. code:: bash
 
-    workon stackdio  # Activate the virtualenv
+    workon stackdio  # Activate the virtualenv if you created one (optional)
     pip install stackdio-server[production,postgres]
 
 
-6. Configuration
+5. Configuration
 ----------------
 
 After the install, you'll have a ``stackdio`` command available to interact with much of the platform.
@@ -112,14 +105,14 @@ but if you deviated from the path you will need to provide the following informa
 
     stackdio init
 
-Now, let's populate are database with a schema:
+Now, let's populate the database with a schema:
 
 .. code:: bash
 
     stackdio manage.py migrate
 
 
-7. stackd.io users
+6. stackd.io users
 ------------------
 
 LDAP
@@ -153,7 +146,8 @@ Non-LDAP regular users
 When not using LDAP, the easiest way to create new non-admin users is to use the built-in Django admin interface.
 First we need the server to be up and running so keep following the steps below and we'll come back to adding users later.
 
-8. Web server configuration
+
+7. Web server configuration
 ---------------------------
 
 For this guide, we'll use the ``stackdio`` command to generate the necessary configuration for Nginx to serve our static content as well as proxying the Python app through gunicorn.
@@ -162,14 +156,14 @@ To configure Nginx for CentOS:
 
 .. code:: bash
 
-    # CENTOS
+    # CENTOS ONLY
 
     # add execute permissions to the user's home directory for static content to serve correctly
     chmod +x ~/
 
     stackdio config nginx | sudo tee /etc/nginx/conf.d/stackdio.conf > /dev/null
 
-    # rename the default server configuration
+    # rename the default server configuration (only files matching *.conf get picked up)
     sudo mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
 
 To configure Nginx for Ubuntu:
@@ -195,7 +189,8 @@ and finally, start Nginx:
 
     sudo service nginx restart
 
-9. Redis, celery, and salt
+
+8. Redis, celery, and salt
 --------------------------
 
 Start the redis server:
@@ -217,15 +212,17 @@ so we'll just need to configure supervisor and start the services.
     supervisord -c ~/.stackdio/supervisord.conf
     supervisorctl -c ~/.stackdio/supervisord.conf start all
 
-10. Try it out!
----------------
+
+9. Try it out!
+--------------
 
 At this point, you should have everything configured and running,
 so fire up a web browser and point it to your hostname and you should see the stackd.io login page.
 If you're using LDAP, try logging in with a user that is a member of the ``stackdio-admin`` and ``stackdio-user`` groups,
 or login with the admin user you created earlier.
 
-11. Creating additional users
+
+10. Creating additional users
 -----------------------------
 
 .. note::
@@ -234,7 +231,7 @@ or login with the admin user you created earlier.
 
 The superuser we created earlier will give us admin access to stackd.io,
 however, you probably want at least one non-superuser.
-Point your browser to http://hostname:8000/__private/admin and use the username and password for the superuser you created earlier.
+Point your browser to http://<hostname>/__private/admin and use the username and password for the superuser you created earlier.
 You should be presented with the Django admin interface.
 To create additional users, follow the steps below.
 

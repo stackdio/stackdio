@@ -1,0 +1,13 @@
+[Unit]
+Description=stackdio celery beat scheduler
+After=network.target
+
+[Service]
+User=stackdio
+Group=stackdio
+Restart=always
+PIDFile=/var/run/stackdio/celery-beat.pid
+ExecStart=/usr/local/bin/stackdio celery beat -s /var/lib/stackdio/supervisor-celery-schedule.db --logfile=/var/log/stackdio/celery-beat.log --pidfile=/var/run/stackdio/celery-beat.pid
+
+[Install]
+WantedBy=multi-user.target

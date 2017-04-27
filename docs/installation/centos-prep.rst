@@ -19,12 +19,18 @@ iptables
 Let's just turn it off for now.
 Please note, if you're using EC2 or some other cloud provider that has firewall rules enabled by default,
 you will need to configure the particular firewall rules to gain access to the web server we'll start in the guide.
-The default port for the webserver is 8000, so open this port up at a minimum.
-(Port 22 for SSH will obviously be needed as well.)
 
 .. code:: bash
 
     sudo service iptables stop
+
+If you'd like to lock down security more, here are the ports that need to be opened up:
+
+22 - SSH
+80 - HTTP
+443 - HTTPS (optional)
+4505 - salt
+4506 - salt
 
 SELinux
 -------
@@ -56,13 +62,6 @@ For our purposes, it's completely out of scope, so we're going to disable it.
     >>> 1
      
     # If the output is 1 you're good to go.
-
-EPEL
-----
-
-.. code:: bash
-
-    sudo rpm -Uvh http://mirror.steadfast.net/epel/6/i386/epel-release-6-8.noarch.rpm
 
 Postgres
 --------
@@ -102,41 +101,21 @@ Below we'll create a ``stackdio`` database and grant permissions to the
     ALTER DATABASE stackdio OWNER to stackdio;
     EOF
 
-virtualenvwrapper
------------------
-
-.. code:: bash
-
-    # install the package
-    sudo yum install python-virtualenvwrapper
-
-    # Update the user's ~/.bash_profile to enable virtualenvwrapper
-    # You're using the stackdio user, right? :)
-    echo "source /usr/bin/virtualenvwrapper.sh" >> ~/.bash_profile
-
-    # re-source the .bash_profile
-    . ~/.bash_profile
-
 Core requirements
 -----------------
 
--  gcc and other development tools
--  git
--  libpq-devel (the c header files for compiling the python postgres client)
--  python-devel
--  redis-server
--  nginx
+- libpq-devel (the c header files for compiling the python postgres client)
+- python-devel (for compiling native python libraries)
+- redis-server (for our cache / message queue)
+- nginx (for serving static files)
 
 To quickly get up and running, you can run the following to install the
 required packages.
 
 .. code:: bash
 
-    # Install the development tools group
-    sudo yum groupinstall "Development Tools"
-
-    # Install the other requirements needed to install stackd.io
-    sudo yum install git libpq-devel python-devel redis-server nginx nodejs npm
+    # Install requirements needed to install stackd.io
+    sudo yum install libpq-devel python-devel redis-server nginx
 
 Next Steps
 ----------
