@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2016,  Digital Reasoning
+# Copyright 2017,  Digital Reasoning
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,6 @@ except ImportError:
     sys.stderr.write("Not importing celery... "
                      "Ignore if this if you're currently running setup.py.\n")
 
-__copyright__ = "Copyright 2016,  Digital Reasoning"
+__copyright__ = "Copyright 2017,  Digital Reasoning"
 __license__ = "Apache License Version 2.0, January 2004"
 __maintainer__ = "https://github.com/stackdio/stackdio"
