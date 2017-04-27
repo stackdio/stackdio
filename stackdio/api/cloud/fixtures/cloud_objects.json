@@ -814,6 +814,48 @@
                 "provider_id": 1
             },
             {
+                "instance_id": "i3.large",
+                "slug": "i3.large",
+                "title": "i3.large",
+                "description": "Storage Optimized I3 Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "i3.xlarge",
+                "slug": "i3.xlarge",
+                "title": "i3.xlarge",
+                "description": "Storage Optimized I3 Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "i3.2xlarge",
+                "slug": "i3.2xlarge",
+                "title": "i3.2xlarge",
+                "description": "Storage Optimized I3 Double Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "i3.4xlarge",
+                "slug": "i3.4xlarge",
+                "title": "i3.4xlarge",
+                "description": "Storage Optimized I3 Quadruple Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "i3.8xlarge",
+                "slug": "i3.8xlarge",
+                "title": "i3.8xlarge",
+                "description": "Storage Optimized I3 Eight Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "i3.16xlarge",
+                "slug": "i3.16xlarge",
+                "title": "i3.16xlarge",
+                "description": "Storage Optimized I3 Sixteen Extra Large Instance",
+                "provider_id": 1
+            },
+            {
                 "instance_id": "d2.xlarge",
                 "slug": "d2.xlarge",
                 "title": "d2.xlarge",
