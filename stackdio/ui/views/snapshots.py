@@ -19,7 +19,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from stackdio.api.cloud.models import Snapshot
-from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.views import (
+    PageView,
+    ObjectDetailView,
+    ModelPermissionsView,
+    ObjectPermissionsView,
+)
 from stackdio.ui.utils import get_object_list
 
 
@@ -51,25 +56,14 @@ class SnapshotModelPermissionsView(ModelPermissionsView):
     model = Snapshot
 
 
-class SnapshotDetailView(PageView):
+class SnapshotDetailView(ObjectDetailView):
     template_name = 'snapshots/snapshot-detail.html'
     viewmodel = 'viewmodels/snapshot-detail'
     page_id = 'detail'
 
-    def get_context_data(self, **kwargs):
-        context = super(SnapshotDetailView, self).get_context_data(**kwargs)
-        pk = kwargs['pk']
-        # Go ahead an raise a 404 here if the snapshot doesn't exist rather
-        # than waiting until later.
-        snapshot = get_object_or_404(Snapshot.objects.all(), pk=pk)
-        if not self.request.user.has_perm('cloud.view_snapshot', snapshot):
-            raise Http404()
-        context['snapshot'] = snapshot
-        context['has_admin'] = self.request.user.has_perm('cloud.admin_snapshot', snapshot)
-        context['has_delete'] = self.request.user.has_perm('cloud.delete_snapshot', snapshot)
-        context['has_update'] = self.request.user.has_perm('cloud.update_snapshot', snapshot)
-        context['page_id'] = self.page_id
-        return context
+    model = Snapshot
+    model_verbose_name = 'Snapshot'
+    model_short_name = 'snapshot'
 
 
 class SnapshotObjectPermissionsView(ObjectPermissionsView):

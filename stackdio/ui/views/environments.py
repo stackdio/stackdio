@@ -19,7 +19,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from stackdio.api.environments.models import Environment
-from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.views import (
+    PageView,
+    ObjectDetailView,
+    ModelPermissionsView,
+    ObjectPermissionsView,
+)
 from stackdio.ui.utils import get_object_list
 
 
@@ -51,25 +56,15 @@ class EnvironmentModelPermissionsView(ModelPermissionsView):
     model = Environment
 
 
-class EnvironmentDetailView(PageView):
+class EnvironmentDetailView(ObjectDetailView):
     template_name = 'environments/environment-detail.html'
     viewmodel = 'viewmodels/environment-detail'
     page_id = 'detail'
 
-    def get_context_data(self, **kwargs):
-        context = super(EnvironmentDetailView, self).get_context_data(**kwargs)
-        name = kwargs['name']
-        # Go ahead an raise a 404 here if the environment doesn't exist rather
-        # than waiting until later.
-        environment = get_object_or_404(Environment.objects.all(), name=name)
-        if not self.request.user.has_perm('environments.view_environment', environment):
-            raise Http404()
-        context['environment'] = environment
-        context['has_admin'] = self.request.user.has_perm('environments.admin_environment', environment)
-        context['has_delete'] = self.request.user.has_perm('environments.delete_environment', environment)
-        context['has_update'] = self.request.user.has_perm('environments.update_environment', environment)
-        context['page_id'] = self.page_id
-        return context
+    model = Environment
+    model_verbose_name = 'Environment'
+    model_short_name = 'environment'
+    lookup_field = 'name'
 
 
 class EnvironmentObjectPermissionsView(ObjectPermissionsView):

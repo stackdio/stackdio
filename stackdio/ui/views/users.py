@@ -21,7 +21,12 @@ from django.contrib.auth.models import Group
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 
-from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.views import (
+    PageView,
+    ObjectDetailView,
+    ModelPermissionsView,
+    ObjectPermissionsView,
+)
 from stackdio.ui.utils import get_object_list
 
 
@@ -104,24 +109,16 @@ class GroupModelPermissionsView(ModelPermissionsView):
     model = Group
 
 
-class GroupDetailView(PageView):
+class GroupDetailView(ObjectDetailView):
     template_name = 'users/group-detail.html'
     viewmodel = 'viewmodels/group-detail'
     page_id = 'detail'
 
-    def get_context_data(self, **kwargs):
-        context = super(GroupDetailView, self).get_context_data(**kwargs)
-        name = kwargs['name']
-        # Go ahead an raise a 404 here if the group doesn't exist rather than waiting until later.
-        group = get_object_or_404(Group.objects.all(), name=name)
-        if not self.request.user.has_perm('auth.view_group', group):
-            raise Http404()
-        context['group'] = group
-        context['has_admin'] = self.request.user.has_perm('auth.admin_group', group)
-        context['has_delete'] = self.request.user.has_perm('auth.delete_group', group)
-        context['has_update'] = self.request.user.has_perm('auth.update_group', group)
-        context['page_id'] = self.page_id
-        return context
+    model = Group
+    model_verbose_name = 'Group'
+    model_short_name = 'group'
+
+    lookup_field = 'name'
 
 
 class GroupObjectPermissionsView(ObjectPermissionsView):

@@ -19,7 +19,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from stackdio.api.formulas.models import Formula
-from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.views import (
+    PageView,
+    ObjectDetailView,
+    ModelPermissionsView,
+    ObjectPermissionsView,
+)
 from stackdio.ui.utils import get_object_list
 
 
@@ -51,25 +56,14 @@ class FormulaModelPermissionsView(ModelPermissionsView):
     model = Formula
 
 
-class FormulaDetailView(PageView):
+class FormulaDetailView(ObjectDetailView):
     template_name = 'formulas/formula-detail.html'
     viewmodel = 'viewmodels/formula-detail'
     page_id = 'detail'
 
-    def get_context_data(self, **kwargs):
-        context = super(FormulaDetailView, self).get_context_data(**kwargs)
-        pk = kwargs['pk']
-        # Go ahead an raise a 404 here if the formula doesn't exist rather
-        # than waiting until later.
-        formula = get_object_or_404(Formula.objects.all(), pk=pk)
-        if not self.request.user.has_perm('formulas.view_formula', formula):
-            raise Http404()
-        context['formula'] = formula
-        context['has_admin'] = self.request.user.has_perm('formulas.admin_formula', formula)
-        context['has_delete'] = self.request.user.has_perm('formulas.delete_formula', formula)
-        context['has_update'] = self.request.user.has_perm('formulas.update_formula', formula)
-        context['page_id'] = self.page_id
-        return context
+    model = Formula
+    model_verbose_name = 'Formula'
+    model_short_name = 'formula'
 
 
 class FormulaObjectPermissionsView(ObjectPermissionsView):

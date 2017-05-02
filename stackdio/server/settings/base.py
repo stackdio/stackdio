@@ -455,6 +455,7 @@ CELERYBEAT_SCHEDULE = {
     }
 }
 
+USER_AGENT_WHITELIST = STACKDIO_CONFIG.get('user_agent_whitelist', [])
 
 # opbeat things
 if OPBEAT_ENABLED:

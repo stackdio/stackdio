@@ -19,7 +19,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from stackdio.api.cloud.models import CloudAccount
-from stackdio.ui.views import PageView, ModelPermissionsView, ObjectPermissionsView
+from stackdio.ui.views import (
+    PageView,
+    ObjectDetailView,
+    ModelPermissionsView,
+    ObjectPermissionsView,
+)
 from stackdio.ui.utils import get_object_list
 
 
@@ -51,25 +56,14 @@ class AccountModelPermissionsView(ModelPermissionsView):
     model = CloudAccount
 
 
-class AccountDetailView(PageView):
+class AccountDetailView(ObjectDetailView):
     template_name = 'cloud/cloud-account-detail.html'
     viewmodel = 'viewmodels/cloud-account-detail'
     page_id = 'detail'
 
-    def get_context_data(self, **kwargs):
-        context = super(AccountDetailView, self).get_context_data(**kwargs)
-        pk = kwargs['pk']
-        # Go ahead an raise a 404 here if the account doesn't exist rather
-        # than waiting until later.
-        account = get_object_or_404(CloudAccount.objects.all(), pk=pk)
-        if not self.request.user.has_perm('cloud.view_cloudaccount', account):
-            raise Http404()
-        context['account'] = account
-        context['has_admin'] = self.request.user.has_perm('cloud.admin_cloudaccount', account)
-        context['has_delete'] = self.request.user.has_perm('cloud.delete_cloudaccount', account)
-        context['has_update'] = self.request.user.has_perm('cloud.update_cloudaccount', account)
-        context['page_id'] = self.page_id
-        return context
+    model = CloudAccount
+    model_verbose_name = 'Cloud Account'
+    model_short_name = 'account'
 
 
 class AccountObjectPermissionsView(ObjectPermissionsView):

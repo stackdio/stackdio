@@ -36,13 +36,28 @@ class LoginRedirectMiddleware(object):
             "'stackdio.core.middleware.LoginRedirectMiddleware'."
         )
 
-        if self.should_redirect(request):
+        if not self.should_allow(request) and not self.allow_from_user_agent(request):
+            # Request not allowed - redirect to login
             return HttpResponseRedirect(self.get_redirect_url(request))
 
-    def should_redirect(self, request):
-        return not request.get_full_path().startswith(settings.LOGIN_URL) \
-               and not self.is_api_endpoint(request.get_full_path()) \
-               and not request.user.is_authenticated()
+    @staticmethod
+    def allow_from_user_agent(request):
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+        if user_agent in settings.USER_AGENT_WHITELIST:
+            request.META['ALLOWED_FROM_USER_AGENT'] = True
+            return True
+        else:
+            return False
+
+    def should_allow(self, request):
+        user = request.user
+        path = request.get_full_path()
+
+        return path.startswith(settings.LOGIN_URL) \
+               or path.startswith(settings.STATIC_URL) \
+               or self.is_api_endpoint(path) \
+               or user.is_authenticated()
 
     def is_api_endpoint(self, path):
         return path.startswith('/api/')
