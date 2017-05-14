@@ -648,7 +648,9 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
                         'cloud_account': host.cloud_account.slug,
                         'cloud_image': host.cloud_image.slug,
                         'namespace': self.namespace,
-                        'host_definition': slugify(host.blueprint_host_definition.title),
+                        'host_definition': six.text_type(slugify(
+                            host.blueprint_host_definition.title
+                        )),
                     },
                 },
 
