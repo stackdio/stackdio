@@ -400,9 +400,6 @@ CELERY_DEFAULT_QUEUE = 'default'
 # there are other idle workers
 CELERYD_PREFETCH_MULTIPLIER = 1
 
-# Also enable late acks, so tasks don't get acked until they're finished
-CELERY_ACKS_LATE = True
-
 # Serializer settings
 # We'll use json since pickle can sometimes be insecure
 CELERY_RESULT_SERIALIZER = 'json'
