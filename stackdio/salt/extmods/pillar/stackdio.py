@@ -25,7 +25,6 @@ from __future__ import absolute_import
 
 import logging
 import os
-import subprocess
 
 import yaml
 from stackdio.core.utils import recursive_update
@@ -110,88 +109,5 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
             logger.exception(e)
             logger.critical('Unable to load/render stack_pillar_file. Is the YAML '
                             'properly formatted?')
-
-    # Generate an SSL cert for the host
-    ca_dir = __opts__.get('ssl_ca_dir')
-    ca_subject = __opts__.get('ssl_ca_subject', '')
-    ca_key_password = __opts__.get('ssl_ca_key_password')
-
-    if not ca_dir:
-        raise ValueError('Missing the ssl_ca_dir config option')
-
-    if not ca_key_password:
-        raise ValueError('Missing the ssl_ca_key_password config option')
-
-    key_file = os.path.join(ca_dir, 'private', __grains__['fqdn'] + '.key')
-    csr_file = os.path.join(ca_dir, 'csr', __grains__['fqdn'] + '.csr')
-    cert_file = os.path.join(ca_dir, 'certs', __grains__['fqdn'] + '.crt')
-    ca_cert_chain_file = os.path.join(ca_dir, 'certs', 'chain.crt')
-    root_ca_cert_file = os.path.join(ca_dir, 'certs', 'root.crt')
-
-    # Give everything a default
-    ssl_opts = {
-        'private_key': None,
-        'certificate': None,
-        'chained_certificate': None,
-        'ca_certificate': None,
-    }
-
-    # Grab the private key
-    if not os.path.exists(key_file):
-        # Generate a key
-        subprocess.call(['openssl', 'genrsa', '-out', key_file, '2048'])
-
-        # Check again just in case it didn't work for some reason
-        if os.path.exists(key_file):
-            os.chmod(key_file, 0o400)
-
-    if not os.path.exists(cert_file):
-        # Generate a cert signing request
-        subprocess.call([
-            'openssl', 'req',
-            '-config', os.path.join(ca_dir, 'openssl.cnf'),
-            '-key', key_file,
-            '-new', '-sha256',
-            '-out', csr_file,
-            '-subj', '{}/CN={}'.format(ca_subject, __grains__['fqdn'])
-        ], env={'DNS_NAME': __grains__['fqdn']})
-
-        # Sign the certificate
-        subprocess.call([
-            'openssl', 'ca',
-            '-config', os.path.join(ca_dir, 'openssl.cnf'),
-            '-extensions', 'stackdio',
-            '-days', '1825',
-            '-notext', '-batch',
-            '-md', 'sha256',
-            '-key', ca_key_password,
-            '-in', csr_file,
-            '-out', cert_file
-        ], env={'DNS_NAME': __grains__['fqdn']})
-
-        if os.path.exists(cert_file):
-            os.chmod(cert_file, 0o444)
-
-    try:
-        # Add the priv key to the pillar
-        with open(key_file, 'r') as f:
-            ssl_opts['private_key'] = f.read()
-
-        # Add all the certs to the pillar
-        with open(cert_file, 'r') as f:
-            ssl_opts['certificate'] = f.read()
-
-        with open(ca_cert_chain_file, 'r') as f:
-            # We need to put the newly generated cert on the front
-            ssl_opts['chained_certificate'] = ssl_opts['certificate'] + f.read()
-
-        with open(root_ca_cert_file, 'r') as f:
-            ssl_opts['ca_certificate'] = f.read()
-
-    except IOError:
-        logger.warning('Certificate generation didn\'t work for some reason.  '
-                       'Look at the logs above.')
-
-    new_pillar['ssl'] = ssl_opts
 
     return new_pillar
