@@ -1,6 +1,8 @@
 machine:
   python:
-    version: '2.7.13'
+    version: '2.7.14'
+  pre:
+    - git -C ~/.pyenv pull
 
   environment:
     DJANGO_SETTINGS_MODULE: 'stackdio.server.settings.testing'
