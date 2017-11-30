@@ -21,9 +21,8 @@ import logging
 
 import actstream
 from celery import chain
+from stackdio.api.stacks import tasks
 from stackdio.core.constants import Action, Activity
-
-from . import tasks
 
 logger = logging.getLogger(__name__)
 

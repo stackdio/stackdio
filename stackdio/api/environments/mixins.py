@@ -15,9 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
+from stackdio.api.environments import models
 from stackdio.core.mixins import ParentRelatedMixin
 from stackdio.core.permissions import StackdioPermissionsPermissions
-from . import models
 
 
 class EnvironmentRelatedMixin(ParentRelatedMixin):

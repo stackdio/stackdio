@@ -26,6 +26,7 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
+from stackdio.api.users import filters, mixins, permissions, serializers
 from stackdio.core.config import StackdioConfigException
 from stackdio.core.notifications.models import NotificationChannel
 from stackdio.core.permissions import StackdioModelPermissions
@@ -35,8 +36,6 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-
-from . import filters, mixins, permissions, serializers
 
 try:
     from django_auth_ldap.backend import LDAPBackend

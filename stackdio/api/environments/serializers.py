@@ -25,7 +25,6 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.validators import UniqueValidator
-
 from stackdio.api.environments import models, utils, workflows
 from stackdio.api.formulas.serializers import FormulaVersionSerializer
 from stackdio.core.constants import Action, Activity

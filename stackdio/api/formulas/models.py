@@ -31,7 +31,6 @@ from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel, TitleSlugDescriptionModel
 from model_utils.models import StatusModel
-
 from stackdio.api.formulas import utils
 from stackdio.core.models import SearchQuerySet
 

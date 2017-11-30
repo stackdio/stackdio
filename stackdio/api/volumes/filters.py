@@ -15,11 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import django_filters
-
+from stackdio.api.volumes import models
 from stackdio.core.filters import OrFieldsFilter
-from . import models
 
 
 class VolumeFilter(django_filters.FilterSet):

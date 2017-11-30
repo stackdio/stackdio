@@ -15,8 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 from collections import OrderedDict
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -26,15 +29,13 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from rest_framework import serializers
-
+from stackdio.api.users import models, utils
 from stackdio.core.fields import HyperlinkedField, PasswordField
 from stackdio.core.notifications.serializers import NotificationChannelSerializer
 from stackdio.core.serializers import (
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
 )
-from . import models, utils
-
 
 logger = logging.getLogger(__name__)
 

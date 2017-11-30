@@ -18,10 +18,8 @@
 from __future__ import unicode_literals
 
 from django.conf.urls import include, url
+from stackdio.api.users import api
 from stackdio.core import routers
-
-from . import api
-
 
 user_model_router = routers.SimpleBulkRouter()
 user_model_router.register(r'users',

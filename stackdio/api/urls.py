@@ -21,7 +21,6 @@ from collections import OrderedDict
 
 from django.conf.urls import include, url
 from django.views.defaults import page_not_found, server_error, bad_request, permission_denied
-
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response

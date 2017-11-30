@@ -30,7 +30,6 @@ from django_extensions.db.models import (
     TitleSlugDescriptionModel,
 )
 from salt.version import __version__ as salt_version
-
 from stackdio.api.cloud.providers.base import GroupNotFoundException
 from stackdio.api.cloud.utils import get_cloud_provider_choices, get_provider_driver_class
 from stackdio.api.formulas.models import FormulaVersion

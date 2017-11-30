@@ -15,11 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import django_filters
-
+from stackdio.api.formulas import models
 from stackdio.core.filters import OrFieldsFilter
-from . import models
 
 
 class FormulaFilter(django_filters.FilterSet):

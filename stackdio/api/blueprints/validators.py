@@ -15,10 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import string
 
 from rest_framework.serializers import ValidationError
-
 from stackdio.core.validators import BaseValidator, validate_hostname
 
 VAR_NAMESPACE = 'namespace'

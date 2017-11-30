@@ -20,9 +20,8 @@ from __future__ import absolute_import, unicode_literals
 import logging
 
 from celery import chain
-
 from stackdio.api.environments import tasks
-from stackdio.core.constants import Action, Activity
+from stackdio.core.constants import Action
 
 logger = logging.getLogger(__name__)
 

@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 import os
@@ -22,7 +23,6 @@ import shutil
 
 from django.conf import settings
 from rest_framework.serializers import ValidationError
-
 from stackdio.core.constants import Health
 
 logger = logging.getLogger(__name__)

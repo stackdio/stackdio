@@ -25,6 +25,7 @@ import logging
 import yaml
 from rest_framework import serializers
 from stackdio.api.blueprints.models import PROTOCOL_CHOICES
+from stackdio.api.cloud import models
 from stackdio.api.cloud.providers.base import (
     GroupExistsException,
     GroupNotFoundException,
@@ -32,6 +33,7 @@ from stackdio.api.cloud.providers.base import (
     RuleNotFoundException,
     SecurityGroupRule,
 )
+from stackdio.api.cloud.utils import get_provider_driver_class
 from stackdio.api.formulas.serializers import FormulaComponentSerializer
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.mixins import CreateOnlyFieldsMixin
@@ -41,9 +43,6 @@ from stackdio.core.serializers import (
 )
 from stackdio.core.utils import recursive_update, recursively_sort_dict
 from stackdio.core.validators import PropertiesValidator
-
-from . import models
-from .utils import get_provider_driver_class
 
 logger = logging.getLogger(__name__)
 

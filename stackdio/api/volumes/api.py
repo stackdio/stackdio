@@ -15,12 +15,13 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
 from rest_framework import generics
 from rest_framework.filters import DjangoFilterBackend, DjangoObjectPermissionsFilter
-
+from stackdio.api.volumes import filters, mixins, models, serializers
 from stackdio.core.permissions import StackdioModelPermissions, StackdioObjectPermissions
 from stackdio.core.viewsets import (
     StackdioModelUserPermissionsViewSet,
@@ -28,7 +29,6 @@ from stackdio.core.viewsets import (
     StackdioObjectUserPermissionsViewSet,
     StackdioObjectGroupPermissionsViewSet,
 )
-from . import filters, mixins, models, serializers
 
 logger = logging.getLogger(__name__)
 

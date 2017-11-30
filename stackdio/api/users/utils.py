@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from django.core.mail import EmailMultiAlternatives
 from django.template import loader
 

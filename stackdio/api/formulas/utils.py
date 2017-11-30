@@ -18,6 +18,8 @@
 # Disable these pylint things since we just copied a bunch of code from salt
 # pylint: disable=super-init-not-called,redefined-outer-name
 
+from __future__ import unicode_literals
+
 import os
 import uuid
 
@@ -28,7 +30,6 @@ import salt.utils
 import salt.utils.event
 import six
 from django.conf import settings
-
 from stackdio.salt.utils.gitfs import StackdioGitFS, PER_REMOTE_OVERRIDES
 
 

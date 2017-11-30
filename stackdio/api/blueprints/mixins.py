@@ -15,9 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
+from stackdio.api.blueprints import models
 from stackdio.core.mixins import ParentRelatedMixin
 from stackdio.core.permissions import StackdioPermissionsPermissions
-from . import models
 
 
 class BlueprintRelatedMixin(ParentRelatedMixin):

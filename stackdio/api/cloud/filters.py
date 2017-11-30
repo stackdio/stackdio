@@ -15,10 +15,11 @@
 # limitations under the License.
 #
 
-import django_filters
+from __future__ import unicode_literals
 
+import django_filters
+from stackdio.api.cloud import models
 from stackdio.core.filters import OrFieldsFilter
-from . import models
 
 
 class CloudAccountFilter(django_filters.FilterSet):

@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
@@ -24,11 +25,10 @@ from rest_framework import generics, permissions
 from rest_framework.filters import DjangoObjectPermissionsFilter
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-
 from stackdio.api.blueprints.serializers import BlueprintSerializer
 from stackdio.api.formulas.serializers import FormulaSerializer
+from stackdio.api.search import serializers
 from stackdio.api.stacks.serializers import StackSerializer
-from . import serializers
 
 logger = logging.getLogger(__name__)
 

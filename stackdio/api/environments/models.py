@@ -27,7 +27,6 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 from guardian.shortcuts import get_users_with_perms
-
 from stackdio.api.formulas.models import FormulaVersion
 from stackdio.core.constants import Activity, ComponentStatus, Health
 from stackdio.core.fields import JSONField

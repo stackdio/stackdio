@@ -24,10 +24,8 @@ from datetime import datetime
 
 import salt.config as config
 from django.conf import settings
-
 from stackdio.core.constants import Action, ComponentStatus
 from stackdio.salt.utils.cloud import StackdioSaltCloudMap, catch_salt_cloud_map_failures
-
 
 logger = logging.getLogger(__name__)
 

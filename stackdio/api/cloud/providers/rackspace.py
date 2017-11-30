@@ -20,6 +20,8 @@
 Rackspace provider for stackd.io
 """
 
+from __future__ import unicode_literals
+
 import logging
 
 from stackdio.api.cloud.providers.base import BaseCloudProvider

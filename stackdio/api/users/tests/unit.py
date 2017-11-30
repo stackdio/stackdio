@@ -15,15 +15,16 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
 from django.conf import settings
 from django.http import HttpRequest
 from rest_framework.request import Request
 from rest_framework.serializers import ValidationError
-
-from stackdio.core.tests.utils import StackdioTestCase, get_fake_request
 from stackdio.api.users import serializers
+from stackdio.core.tests.utils import StackdioTestCase, get_fake_request
 
 logger = logging.getLogger(__name__)
 

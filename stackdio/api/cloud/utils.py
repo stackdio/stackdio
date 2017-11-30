@@ -15,10 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
+import importlib
 import logging
 import re
-import importlib
 
 from django.conf import settings
 from stackdio.core.config import StackdioConfigException

@@ -15,14 +15,14 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
 from rest_framework import serializers
-
+from stackdio.api.volumes import models
 from stackdio.core.fields import HyperlinkedParentField
 from stackdio.core.serializers import StackdioHyperlinkedModelSerializer
-from . import models
 
 logger = logging.getLogger(__name__)
 

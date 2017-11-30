@@ -40,7 +40,6 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db import transaction
-
 from stackdio.api.cloud.models import SecurityGroup
 from stackdio.api.cloud.providers.base import DeleteGroupException
 from stackdio.api.stacks import utils, validators

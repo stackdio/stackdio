@@ -15,11 +15,13 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
+from stackdio.api.cloud import models
 from stackdio.core.mixins import ParentRelatedMixin
 from stackdio.core.permissions import StackdioPermissionsPermissions
-from . import models
 
 logger = logging.getLogger(__name__)
 

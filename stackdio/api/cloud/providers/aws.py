@@ -20,6 +20,8 @@
 Amazon Web Services provider for stackd.io
 """
 
+from __future__ import unicode_literals
+
 import logging
 import os
 import re
@@ -34,8 +36,6 @@ import yaml
 from boto.route53.record import ResourceRecordSets
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.serializers import ValidationError
-
-from stackdio.core.constants import Action, Activity, Health
 from stackdio.api.cloud.providers.base import (
     BaseCloudProvider,
     DeleteGroupException,
@@ -48,6 +48,7 @@ from stackdio.api.cloud.providers.base import (
     SecurityGroupRule,
     TimeoutException,
 )
+from stackdio.core.constants import Action, Activity, Health
 
 GROUP_PATTERN = re.compile(r'\d+:[a-zA-Z0-9-_]')
 CIDR_PATTERN = re.compile(r'[0-9]+(?:\.[0-9]+){3}/\d{1,2}')

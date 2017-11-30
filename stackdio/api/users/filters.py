@@ -15,11 +15,11 @@
 # limitations under the License.
 #
 
-import django_filters
+from __future__ import unicode_literals
 
+import django_filters
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-
 from stackdio.core.filters import OrFieldsFilter
 
 

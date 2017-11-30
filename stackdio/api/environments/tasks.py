@@ -24,7 +24,6 @@ import salt.client
 import six
 from celery import shared_task
 from django.conf import settings
-
 from stackdio.api.environments import utils
 from stackdio.api.environments.exceptions import EnvironmentTaskException
 from stackdio.api.environments.models import Environment

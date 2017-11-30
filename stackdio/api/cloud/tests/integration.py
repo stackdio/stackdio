@@ -15,13 +15,14 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
 import yaml
 from rest_framework import status
-
-from stackdio.core.tests.utils import PermissionsMixin, StackdioTestCase
 from stackdio.api.cloud import models
+from stackdio.core.tests.utils import PermissionsMixin, StackdioTestCase
 
 logger = logging.getLogger(__name__)
 

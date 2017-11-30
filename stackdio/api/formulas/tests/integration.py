@@ -15,10 +15,11 @@
 # limitations under the License.
 #
 
-from rest_framework import status
+from __future__ import unicode_literals
 
-from stackdio.core.tests.utils import PermissionsMixin, StackdioTestCase
+from rest_framework import status
 from stackdio.api.formulas import models
+from stackdio.core.tests.utils import PermissionsMixin, StackdioTestCase
 
 
 class FormulaTestCase(StackdioTestCase, PermissionsMixin):

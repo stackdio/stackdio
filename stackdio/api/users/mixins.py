@@ -15,11 +15,12 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-
+from stackdio.api.users import permissions
 from stackdio.core.mixins import ParentRelatedMixin
-from . import permissions
 
 
 class UserRelatedMixin(ParentRelatedMixin):

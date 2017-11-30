@@ -28,7 +28,6 @@ from rest_framework.serializers import CharField, ValidationError
 from stackdio.api.formulas.exceptions import InvalidFormula, InvalidFormulaComponent
 from stackdio.api.formulas.models import Formula
 
-
 logger = logging.getLogger(__name__)
 
 

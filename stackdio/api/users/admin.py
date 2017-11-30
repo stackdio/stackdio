@@ -15,10 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from django.contrib import admin
 from guardian.admin import GuardedModelAdmin
-
-from . import models
+from stackdio.api.users import models
 
 
 class UserSettingsAdmin(GuardedModelAdmin):

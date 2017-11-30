@@ -15,13 +15,14 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
 from django.core.management.base import BaseCommand
-
 from stackdio.api.stacks.models import Stack
 
-logger = logging.getLogger('stacks')
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):

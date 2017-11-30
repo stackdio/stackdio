@@ -15,11 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import django_filters
-
+from stackdio.api.stacks import models
 from stackdio.core.filters import OrFieldsFilter, LabelFilterMixin
-from . import models
 
 
 class StackFilter(django_filters.FilterSet, LabelFilterMixin):

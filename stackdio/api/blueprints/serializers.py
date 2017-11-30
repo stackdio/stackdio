@@ -25,6 +25,7 @@ import string
 from django.conf import settings
 from django.db import transaction
 from rest_framework import serializers
+from stackdio.api.blueprints import models, validators
 from stackdio.api.cloud.models import CloudImage, CloudInstanceSize, CloudZone, Snapshot
 from stackdio.api.formulas.serializers import FormulaVersionSerializer, FormulaComponentSerializer
 from stackdio.api.formulas.validators import validate_formula_components
@@ -36,8 +37,6 @@ from stackdio.core.serializers import (
     StackdioLabelSerializer,
     StackdioLiteralLabelsSerializer,
 )
-
-from . import models, validators
 
 logger = logging.getLogger(__name__)
 
