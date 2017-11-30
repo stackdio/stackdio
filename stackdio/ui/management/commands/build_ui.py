@@ -17,6 +17,7 @@
 
 from __future__ import unicode_literals
 
+import io
 import os
 import shutil
 import subprocess
@@ -107,7 +108,7 @@ class Command(BaseCommand):
         full_path = os.path.join(APP_DIR, 'main.js')
 
         # Write it to disk
-        with open(full_path, 'w') as f:
+        with io.open(full_path, 'wb') as f:
             f.write(js)
 
         # Optimize the project using r.js
@@ -122,7 +123,7 @@ class Command(BaseCommand):
         built_main_file = os.path.join(BUILD_DIR, 'main.js')
 
         # Grab the contents of the build main file
-        with open(built_main_file, 'r') as f:
+        with io.open(built_main_file, 'r') as f:
             built_main_js = f.read()
 
         # Fix the built main file
@@ -132,7 +133,7 @@ class Command(BaseCommand):
         )
 
         # Write it back out to disk
-        with open(built_main_file, 'w') as f:
+        with io.open(built_main_file, 'w') as f:
             f.write(built_main_js)
 
         # Get rid of temporary main.js

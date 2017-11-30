@@ -20,12 +20,12 @@
 Generates an SSL certificate / private key pair for each minion
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
+import io
 import logging
 import os
 import subprocess
-
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -102,18 +102,18 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
 
     try:
         # Add the priv key to the pillar
-        with open(key_file, 'r') as f:
+        with io.open(key_file, 'r') as f:
             ssl_opts['private_key'] = f.read()
 
         # Add all the certs to the pillar
-        with open(cert_file, 'r') as f:
+        with io.open(cert_file, 'r') as f:
             ssl_opts['certificate'] = f.read()
 
-        with open(ca_cert_chain_file, 'r') as f:
+        with io.open(ca_cert_chain_file, 'r') as f:
             # We need to put the newly generated cert on the front
             ssl_opts['chained_certificate'] = ssl_opts['certificate'] + f.read()
 
-        with open(root_ca_cert_file, 'r') as f:
+        with io.open(root_ca_cert_file, 'r') as f:
             ssl_opts['ca_certificate'] = f.read()
 
     except IOError:
