@@ -15,14 +15,15 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from collections import OrderedDict
 
 import pip
 from rest_framework import generics, permissions, views
 from rest_framework.response import Response
-
+from stackdio.core import models, serializers
 from stackdio.server import __version__ as stackdio_version
-from . import models, serializers
 
 # Do this once at the module level so we don't have to load it multiple times
 versions = dict((x.project_name, x) for x in pip.get_installed_distributions())

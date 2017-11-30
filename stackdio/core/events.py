@@ -15,8 +15,9 @@
 # limitations under the License.
 #
 
-from django.contrib.contenttypes.models import ContentType
+from __future__ import unicode_literals
 
+from django.contrib.contenttypes.models import ContentType
 from stackdio.core.notifications.tasks import generate_notifications
 
 

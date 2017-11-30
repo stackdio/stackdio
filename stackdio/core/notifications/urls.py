@@ -19,7 +19,7 @@ from __future__ import unicode_literals
 
 from django.conf.urls import url
 
-from . import api
+from stackdio.core.notifications import api
 
 urlpatterns = (
     url(r'^$',

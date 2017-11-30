@@ -15,15 +15,16 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from collections import OrderedDict
 
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.views import APIView
-
-from .utils import get_all_notifiers
-from . import serializers
+from stackdio.core.notifications import serializers
+from stackdio.core.notifications.utils import get_all_notifiers
 
 
 class NotificationsRootView(APIView):

@@ -15,10 +15,12 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
-from django.http import HttpResponseRedirect
 from django.conf import settings
+from django.http import HttpResponseRedirect
 
 logger = logging.getLogger(__name__)
 

@@ -15,10 +15,11 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from abc import ABCMeta, abstractmethod
 
 import six
-
 
 NOTIFIER_REQUIRED_METHODS = (
     'get_required_options',

@@ -18,9 +18,7 @@
 from __future__ import unicode_literals
 
 from django.conf.urls import include, url
-
-from . import api
-
+from stackdio.core import api
 
 urlpatterns = (
     url(r'^api/version/$',

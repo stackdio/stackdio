@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from functools import wraps
 
 from django.contrib.contenttypes.models import ContentType

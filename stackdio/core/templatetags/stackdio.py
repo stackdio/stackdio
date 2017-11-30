@@ -16,14 +16,13 @@
 #
 
 # Need this so the stackdio import below doesn't get confused
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from django import template
 from django.conf import settings
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.shortcuts import resolve_url
 from django.utils.safestring import mark_safe
-
 from stackdio.server import __version__
 
 register = template.Library()

@@ -20,6 +20,7 @@ Some shortcuts for getting model permissions for users.
 Adapted from the `guardian.shortcuts` module.
 """
 
+from __future__ import unicode_literals
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group

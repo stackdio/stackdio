@@ -15,8 +15,9 @@
 # limitations under the License.
 #
 
-import requests
+from __future__ import unicode_literals
 
+import requests
 from stackdio.core.notifications import registry
 from stackdio.core.notifiers.base import BaseNotifier
 

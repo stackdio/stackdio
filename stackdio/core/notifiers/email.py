@@ -15,12 +15,13 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
 from django.conf import settings
 from django.core import mail
 from django.template import loader
-
 from stackdio.core.notifications import registry
 from stackdio.core.notifiers.base import BaseNotifier
 

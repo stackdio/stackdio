@@ -15,12 +15,13 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
 from django.http import Http404
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework.serializers import ValidationError
-
 from stackdio.api.cloud.models import CloudAccount
 from stackdio.core import shortcuts, viewsets
 from stackdio.core.tests.utils import StackdioTestCase, group_has_perm

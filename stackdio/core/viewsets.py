@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
 from django.conf import settings
@@ -23,12 +25,11 @@ from django.http import Http404
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms, remove_perm
 from rest_framework import viewsets
 from rest_framework.serializers import ListField, SlugRelatedField, ValidationError
-
 from stackdio.api.users.models import get_user_queryset
+from stackdio.core import fields, mixins, serializers
 from stackdio.core.config import StackdioConfigException
-from .permissions import StackdioPermissionsModelPermissions
-from .shortcuts import get_groups_with_model_perms, get_users_with_model_perms
-from . import fields, mixins, serializers
+from stackdio.core.permissions import StackdioPermissionsModelPermissions
+from stackdio.core.shortcuts import get_groups_with_model_perms, get_users_with_model_perms
 
 try:
     from django_auth_ldap.backend import LDAPBackend

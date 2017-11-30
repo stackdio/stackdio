@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 from rest_framework.serializers import ValidationError
-
-from . import models
+from stackdio.core.notifications import models
 
 
 class UniqueChannelValidator(object):

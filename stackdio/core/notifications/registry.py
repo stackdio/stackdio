@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from collections import namedtuple
 
 from django.conf import settings
@@ -25,7 +27,6 @@ from rest_framework.request import Request
 from rest_framework.reverse import reverse
 from rest_framework.serializers import BaseSerializer
 from six.moves.urllib_parse import urljoin, urlsplit  # pylint: disable=import-error
-
 from stackdio.core.config import StackdioConfigException
 
 NotifiableModelConfig = namedtuple('NotifiableModelConfig', ['serializer_class', 'url_name'])

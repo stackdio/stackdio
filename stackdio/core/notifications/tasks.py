@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 from collections import defaultdict
 
@@ -23,9 +25,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-
 from stackdio.core.models import Event
-from . import models, utils
+from stackdio.core.notifications import models, utils
 
 logger = logging.getLogger(__name__)
 

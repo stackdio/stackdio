@@ -15,13 +15,13 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
 from django.conf import settings
 from django.http import Http404
 from rest_framework import permissions
-
 
 logger = logging.getLogger(__name__)
 

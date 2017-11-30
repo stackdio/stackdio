@@ -15,7 +15,9 @@
 # limitations under the License.
 #
 
-from .models import NotificationChannel
+from __future__ import unicode_literals
+
+from stackdio.core.notifications.models import NotificationChannel
 
 
 def add_subscribed_channels(model_cls):

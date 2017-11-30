@@ -14,11 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from __future__ import print_function, unicode_literals
+
+from __future__ import unicode_literals
 
 import collections
-import logging
 import getpass
+import logging
 import os
 import socket
 

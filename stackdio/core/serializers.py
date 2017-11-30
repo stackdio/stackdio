@@ -24,9 +24,8 @@ from django.db import transaction
 from django.utils.translation import ugettext_lazy as _
 from guardian.shortcuts import assign_perm, remove_perm
 from rest_framework import serializers
-
-from .fields import HyperlinkedParentField
-from . import mixins, models, utils, validators
+from stackdio.core import mixins, models, utils, validators
+from stackdio.core.fields import HyperlinkedParentField
 
 logger = logging.getLogger(__name__)
 

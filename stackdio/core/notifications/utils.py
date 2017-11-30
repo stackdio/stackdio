@@ -15,11 +15,12 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import importlib
 from collections import namedtuple
 
 from django.conf import settings
-
 from stackdio.core.config import StackdioConfigException
 from stackdio.core.notifiers import BaseNotifier
 
@@ -87,7 +88,7 @@ def get_notifier_class(name):
     """
     Get the imported notifier class
     :param name: the notifier name
-    :rtype: abc.ABCMeta
+    :rtype: BaseNotifier
     :return: the notifier class object
     """
     if name not in notifier_classes:

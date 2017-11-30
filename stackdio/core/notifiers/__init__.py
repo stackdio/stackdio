@@ -15,10 +15,12 @@
 # limitations under the License.
 #
 
-from .base import BaseNotifier
-from .email import EmailNotifier, ExtraEmailNotifier
-from .webhook import WebhookNotifier
-from .slack import SlackNotifier
+from __future__ import unicode_literals
+
+from stackdio.core.notifiers.base import BaseNotifier
+from stackdio.core.notifiers.email import EmailNotifier, ExtraEmailNotifier
+from stackdio.core.notifiers.slack import SlackNotifier
+from stackdio.core.notifiers.webhook import WebhookNotifier
 
 __all__ = ['BaseNotifier', 'EmailNotifier', 'ExtraEmailNotifier', 'WebhookNotifier',
            'SlackNotifier']

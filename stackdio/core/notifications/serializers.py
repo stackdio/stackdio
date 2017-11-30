@@ -15,19 +15,20 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import logging
 
 from django.contrib.auth.models import Group
 from django.db import transaction
 from rest_framework import serializers
-
+from stackdio.core.notifications import models, utils, validators
 from stackdio.core.serializers import (
     EventField,
     StackdioHyperlinkedModelSerializer,
     StackdioParentHyperlinkedModelSerializer,
 )
 from stackdio.core.utils import recursive_update
-from . import models, utils, validators
 
 logger = logging.getLogger(__name__)
 

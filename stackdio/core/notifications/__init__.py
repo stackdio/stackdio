@@ -15,4 +15,6 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 default_app_config = 'stackdio.core.notifications.apps.StackdioNotificationsAppConfig'

@@ -15,8 +15,9 @@
 # limitations under the License.
 #
 
-import boto3
+from __future__ import unicode_literals
 
+import boto3
 from stackdio.core.notifiers.base import BaseNotifier, abstractmethod
 
 

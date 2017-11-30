@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 import copy
 
 from rest_framework.routers import SimpleRouter
