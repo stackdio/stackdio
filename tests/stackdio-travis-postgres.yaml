@@ -5,7 +5,7 @@ cloud_providers:
 
 server_url: http://localhost:8000
 
-database_url: postgresql://travis@localhost/stackdio
+database_url: postgresql://travis@localhost/travis
 
 celery_broker_url: redis://localhost:6379/0
 

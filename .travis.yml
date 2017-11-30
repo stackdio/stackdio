@@ -24,18 +24,16 @@ sudo: false
 
 # Make sure our pip install works
 addons:
-  postgresql: 9.4
+  postgresql: "9.4"
   apt:
     packages:
       - swig
 
 services:
-  - postgresql
   - mysql
 
 before_install:
   - mysql -e "CREATE DATABASE IF NOT EXISTS stackdio;" -u root
-  - psql -c "CREATE DATABASE stackdio;" -U postgres
 
 ## Customize dependencies
 install:
