@@ -23,6 +23,8 @@
 # this without an install will not work as expected. After an install, the
 # command `stackdio` will be available.
 
+from __future__ import unicode_literals
+
 import argparse
 import sys
 

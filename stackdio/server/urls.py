@@ -14,7 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""stackdio URL Configuration
+"""
+stackdio URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.9/topics/http/urls/
@@ -30,9 +31,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 
+from __future__ import unicode_literals
+
 from django.conf.urls import include, url
 from django.contrib import admin
-
 from stackdio.api.urls import get_error_handler
 
 # Enable admin interface

@@ -15,8 +15,7 @@
 # limitations under the License.
 #
 
-
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import getpass
 import json
@@ -27,8 +26,8 @@ import socket
 import sys
 import textwrap
 
-import django
 import dj_database_url
+import django
 import six
 import yaml
 from django.db.utils import load_backend

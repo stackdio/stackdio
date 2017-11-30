@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 """
 WSGI config for server project.
 
@@ -31,7 +30,11 @@ middleware here, or combine a Django application with an application of another
 framework.
 
 """
+
+from __future__ import unicode_literals
+
 import os
+
 from django.core.wsgi import get_wsgi_application
 
 # We defer to a DJANGO_SETTINGS_MODULE already in the environment. This breaks

@@ -17,6 +17,8 @@
 
 # pylint: disable=wildcard-import, unused-wildcard-import
 
+from __future__ import unicode_literals
+
 from stackdio.server.settings.base import *
 
 # Add additional testing settings here
