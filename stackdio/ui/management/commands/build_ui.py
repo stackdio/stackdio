@@ -108,7 +108,7 @@ class Command(BaseCommand):
         full_path = os.path.join(APP_DIR, 'main.js')
 
         # Write it to disk
-        with io.open(full_path, 'wb') as f:
+        with io.open(full_path, 'w') as f:
             f.write(js)
 
         # Optimize the project using r.js
