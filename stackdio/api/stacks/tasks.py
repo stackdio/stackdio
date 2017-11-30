@@ -70,6 +70,9 @@ def stack_task(*args, **kwargs):
         @shared_task(*args, **kwargs)
         @wraps(func)
         def task(stack_id, *task_args, **task_kwargs):
+            # getcallargs() is deprecated in python3.5+
+            # pylint: disable=deprecated-method
+
             # Get what locals() would return directly after calling
             # 'func' with the given task_args and task_kwargs
             task_called_args = getcallargs(func, *((stack_id,) + task_args), **task_kwargs)
