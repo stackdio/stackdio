@@ -100,7 +100,7 @@ class LaunchWorkflow(BaseWorkflow):
         if not opts.launch:
             return []
 
-        l = [
+        task_list = [
             tasks.launch_hosts.si(
                 stack_id,
                 parallel=opts.parallel,
@@ -118,13 +118,13 @@ class LaunchWorkflow(BaseWorkflow):
             tasks.global_orchestrate.si(stack_id, max_attempts=opts.max_attempts),
         ]
         if opts.provision:
-            l.append(tasks.orchestrate.si(stack_id,  max_attempts=opts.max_attempts))
-        l.append(tasks.finish_stack.si(stack_id))
+            task_list.append(tasks.orchestrate.si(stack_id, max_attempts=opts.max_attempts))
+        task_list.append(tasks.finish_stack.si(stack_id))
 
         self.stack.set_activity(Activity.QUEUED)
         actstream.action.send(self.stack, verb='was submitted to launch queue')
 
-        return l
+        return task_list
 
 
 class DestroyHostsWorkflow(BaseWorkflow):

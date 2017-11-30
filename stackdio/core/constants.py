@@ -37,10 +37,12 @@ class Health(object):
     @classmethod
     def aggregate(cls, health_list):
         # Make sure everything in the list is a valid health
-        if len([h for h in health_list if h not in cls.priority]) != 0:
+        invalid_healths = [h for h in health_list if h not in cls.priority]
+
+        if invalid_healths:
             raise ValueError('An invalid health was passed in.')
 
-        if len(health_list) == 0:
+        if not health_list:
             # We can get an empty list sometimes when we're deleting a stack, so we'll
             # just aggregate that to unknown
             return cls.UNKNOWN
@@ -76,10 +78,12 @@ class ComponentStatus(object):
     @classmethod
     def aggregate(cls, status_list):
         # Make sure everything in the list is a valid status
-        if len([s for s in status_list if s not in cls.priority]) != 0:
+        invalid_statuses = [s for s in status_list if s not in cls.priority]
+
+        if invalid_statuses:
             raise ValueError('An invalid status was passed in.')
 
-        if len(status_list) == 0:
+        if not status_list:
             # We can get an empty list sometimes when we're deleting a stack, so we'll
             # just aggregate that to unknown
             return cls.UNKNOWN

@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+# pylint: disable=pointless-statement
+
 from __future__ import unicode_literals
 
 import six

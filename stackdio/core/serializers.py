@@ -39,20 +39,20 @@ class NoOpSerializer(serializers.Serializer):
         return data
 
     def create(self, validated_data):
-        return super(NoOpSerializer, self).create(validated_data)
+        raise NotImplementedError()
 
     def update(self, instance, validated_data):
-        return super(NoOpSerializer, self).update(instance, validated_data)
+        raise NotImplementedError()
 
 
 class BulkListSerializer(serializers.ListSerializer):
 
-    def update(self, queryset, all_validated_data):
+    def update(self, instance, validated_data):
         id_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
 
         all_validated_data_by_id = {
             i.pop(id_attr): i
-            for i in all_validated_data
+            for i in validated_data
         }
 
         if not all((bool(i) and not inspect.isclass(i)
@@ -62,7 +62,7 @@ class BulkListSerializer(serializers.ListSerializer):
         # since this method is given a queryset which can have many
         # model instances, first find all objects to update
         # and only then update the models
-        objects_to_update = self.filter_queryset(queryset, id_attr, all_validated_data_by_id)
+        objects_to_update = self.filter_queryset(instance, id_attr, all_validated_data_by_id)
 
         self.check_objects_to_update(objects_to_update, all_validated_data_by_id)
 

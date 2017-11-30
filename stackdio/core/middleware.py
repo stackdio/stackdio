@@ -57,9 +57,9 @@ class LoginRedirectMiddleware(object):
         path = request.get_full_path()
 
         return path.startswith(settings.LOGIN_URL) \
-               or path.startswith(settings.STATIC_URL) \
-               or self.is_api_endpoint(path) \
-               or user.is_authenticated()
+            or path.startswith(settings.STATIC_URL) \
+            or self.is_api_endpoint(path) \
+            or user.is_authenticated()
 
     def is_api_endpoint(self, path):
         return path.startswith('/api/')

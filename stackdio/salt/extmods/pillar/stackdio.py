@@ -45,6 +45,7 @@ def django_setup():
 
     apps.populate(settings.INSTALLED_APPS)
 
+
 # setup django (without logging)
 django_setup()
 

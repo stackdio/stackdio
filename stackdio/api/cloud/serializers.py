@@ -202,10 +202,10 @@ class VPCSubnetSerializer(serializers.Serializer):
 
 
 class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
-    def to_representation(self, obj):
+    def to_representation(self, instance):
         ret = {}
-        if obj is not None:
-            ret = obj.global_orchestration_properties
+        if instance is not None:
+            ret = instance.global_orchestration_properties
         return recursively_sort_dict(ret)
 
     def to_internal_value(self, data):
@@ -218,19 +218,19 @@ class GlobalOrchestrationPropertiesSerializer(serializers.Serializer):
     def create(self, validated_data):
         raise NotImplementedError('Cannot create global orchestration properties')
 
-    def update(self, account, validated_data):
+    def update(self, instance, validated_data):
         if self.partial:
             # This is a PATCH, so properly merge in the old data
-            old_properties = account.global_orchestration_properties
-            account.global_orchestration_properties = recursive_update(old_properties,
-                                                                       validated_data)
+            old_properties = instance.global_orchestration_properties
+            instance.global_orchestration_properties = recursive_update(old_properties,
+                                                                        validated_data)
         else:
             # This is a PUT, so just add the data directly
-            account.global_orchestration_properties = validated_data
+            instance.global_orchestration_properties = validated_data
 
         # Be sure to persist the data
-        account.save()
-        return account
+        instance.save()
+        return instance
 
 
 class GlobalOrchestrationComponentSerializer(FormulaComponentSerializer):

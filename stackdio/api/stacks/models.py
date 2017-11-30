@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines,pointless-statement
 
 from __future__ import unicode_literals
 

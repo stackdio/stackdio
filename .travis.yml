@@ -46,12 +46,11 @@ install:
   - pip install -U opbeat
   - pip install -U -e .[testing,mysql,postgresql]
 
-## Customize test commands
-before_script:
-  - pep8 stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
-  - pylint stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
-
 script:
+  # Run code style checks first
+  - pycodestyle stackdio
+  - pylint stackdio
+
   # Place the proper config file in place based on the environment
   - tests/place_config.sh
 

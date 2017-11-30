@@ -1202,7 +1202,7 @@ def update_host_info():
                 host.save()
 
             # Log some history if we've marked hosts as DEAD
-            if len(newly_dead_hosts) > 0:
+            if newly_dead_hosts:
                 err_msg = ('The following hosts have now been marked '
                            '\'{}\': {}'.format(Activity.DEAD, ', '.join(newly_dead_hosts)))
                 if len(err_msg) > StackHistory._meta.get_field('message').max_length:

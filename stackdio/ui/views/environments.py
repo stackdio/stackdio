@@ -82,7 +82,8 @@ class EnvironmentObjectPermissionsView(ObjectPermissionsView):
         if not self.request.user.has_perm('environments.admin_environment', environment):
             raise Http404()
         context['environment'] = environment
-        context['has_admin'] = self.request.user.has_perm('environments.admin_environment', environment)
+        context['has_admin'] = self.request.user.has_perm('environments.admin_environment',
+                                                          environment)
         context['page_id'] = self.page_id
 
         # override the object id

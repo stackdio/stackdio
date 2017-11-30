@@ -66,7 +66,7 @@ class BaseNotifier(six.with_metaclass(ABCMeta)):
     split_group_notifications = False
 
     def __init__(self):
-        super(BaseNotifier, self).__init__()
+        pass
 
     @classmethod
     def __subclasshook__(cls, subclass):

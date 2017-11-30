@@ -96,6 +96,7 @@ disable=
   missing-docstring,
   next-method-called,
   no-absolute-import,
+  no-else-return,
   no-init,
   no-member,
   no-self-use,

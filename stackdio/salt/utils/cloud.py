@@ -158,7 +158,7 @@ class StackdioSaltCloudMap(salt.cloud.Map):
 
         return interpolated_map
 
-    def delete_map(self, query='list_nodes'):
+    def delete_map(self, query='list_nodes'):  # pylint: disable=useless-super-delegation
         """
         Change the default value to something reasonable.
         """
@@ -212,8 +212,8 @@ class StackdioSaltCloudMap(salt.cloud.Map):
                     # salt-cloud will try to kill / rename instances twice.  This snippet below
                     # removes those duplicates, and only kills the ones you actually want killed.
                     should_continue = False
-                    for profile, data in self.rendered_map.items():
-                        provider = self.opts['profiles'][profile]['provider'].split(':')[0]
+                    for rendered_profile, data in self.rendered_map.items():
+                        provider = self.opts['profiles'][rendered_profile]['provider'].split(':')[0]
                         if vm_name in data and alias != provider:
                             should_continue = True
                             break

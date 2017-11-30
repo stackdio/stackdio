@@ -95,7 +95,7 @@ requirements = [
 testing_requirements = [
     'coveralls',
     'mock',
-    'pep8',
+    'pycodestyle',
     'pylint',
     'pytest',
     'pytest-cov',

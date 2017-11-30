@@ -41,7 +41,7 @@ from salt.utils.gitfs import (
     PER_REMOTE_ONLY,
     AUTH_PARAMS,
     AUTH_PROVIDERS,
-    failhard,
+    failhard as gitfs_failhard,
 )
 from salt.utils.process import os_is_running as pid_exists
 
@@ -122,6 +122,7 @@ def check_file_list_cache(opts, form, list_cache, w_lock):
 
 class StackdioGitPython(GitPython):
 
+    # pylint: disable=super-init-not-called
     def __init__(self, opts, remote, per_remote_defaults,
                  override_params, cache_root, role='gitfs'):
         """
@@ -169,7 +170,7 @@ class StackdioGitPython(GitPython):
                     'may be a trailing colon after the URL, which should be '
                     'removed. Check the master configuration file.'.format(self.role, self.id)
                 )
-                failhard(self.role)
+                gitfs_failhard(self.role)
 
             # Separate the per-remote-only (non-global) parameters
             per_remote_only = {}
@@ -218,7 +219,7 @@ class StackdioGitPython(GitPython):
 
                 per_remote_errors = True
             if per_remote_errors:
-                failhard(self.role)
+                gitfs_failhard(self.role)
 
             repo_conf.update(per_remote_conf)
             repo_conf.update(per_remote_only)
@@ -260,7 +261,7 @@ class StackdioGitPython(GitPython):
                     self.id
                 )
             )
-            failhard(self.role)
+            gitfs_failhard(self.role)
 
         hash_type = getattr(hashlib, self.opts.get('hash_type', 'md5'))
         self.hash = hash_type(self.id.encode('utf-8')).hexdigest()
@@ -277,7 +278,7 @@ class StackdioGitPython(GitPython):
             if isinstance(self, GitPython):
                 msg += ' Perhaps git is not available.'
             logger.critical(msg, exc_info_on_loglevel=logging.DEBUG)
-            failhard(self.role)
+            gitfs_failhard(self.role)
 
     def _get_remote_env(self):
         remote_env = {}
