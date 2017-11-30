@@ -21,9 +21,7 @@ dependencies:
 ## Customize test commands
 test:
   pre:
-    - pep8 stackdio/ && echo 'Finished PEP-8 Check Cleanly' || echo 'Finished PEP-8 Check With Errors'
-    - pylint stackdio/ && echo 'Finished Pylint Check Cleanly' || echo 'Finished Pylint Check With Errors'
-    - mkdir /home/ubuntu/.stackdio
+    - mkdir ~/.stackdio
 
   override:
     # Copy the config file over to use mysql
