@@ -15,13 +15,13 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
 
 import logging
 
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404, resolve_url
 from django.views.generic import TemplateView
-
 from stackdio.api.cloud.models import CloudAccount
 
 logger = logging.getLogger(__name__)

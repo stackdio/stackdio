@@ -15,19 +15,20 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from django.conf.urls import url
 from django.contrib.auth import views as auth_views
-
 from stackdio.core.utils import cached_url
-from . import views
-from .views import accounts
-from .views import blueprints
-from .views import environments
-from .views import formulas
-from .views import images
-from .views import snapshots
-from .views import stacks
-from .views import users
+from stackdio.ui import views
+from stackdio.ui.views import accounts
+from stackdio.ui.views import blueprints
+from stackdio.ui.views import environments
+from stackdio.ui.views import formulas
+from stackdio.ui.views import images
+from stackdio.ui.views import snapshots
+from stackdio.ui.views import stacks
+from stackdio.ui.views import users
 
 auth_login_kwargs = {
     'template_name': 'stackdio/login.html',

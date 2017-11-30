@@ -15,19 +15,20 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-
+from stackdio.ui.utils import get_object_list
 from stackdio.ui.views import (
     PageView,
     ObjectDetailView,
     ModelPermissionsView,
     ObjectPermissionsView,
 )
-from stackdio.ui.utils import get_object_list
 
 
 class FailOnLDAPMixin(object):

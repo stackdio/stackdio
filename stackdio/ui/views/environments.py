@@ -15,17 +15,18 @@
 # limitations under the License.
 #
 
+from __future__ import unicode_literals
+
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-
 from stackdio.api.environments.models import Environment
+from stackdio.ui.utils import get_object_list
 from stackdio.ui.views import (
     PageView,
     ObjectDetailView,
     ModelPermissionsView,
     ObjectPermissionsView,
 )
-from stackdio.ui.utils import get_object_list
 
 
 class EnvironmentCreateView(PageView):
