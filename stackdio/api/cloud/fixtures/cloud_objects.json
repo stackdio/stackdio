@@ -882,6 +882,90 @@
                 "title": "d2.8xlarge",
                 "description": "Dense Storage D2 Eight Extra Large Instance",
                 "provider_id": 1
+            },
+            {
+                "instance_id": "m5.large",
+                "slug": "m5.large",
+                "title": "m5.large",
+                "description": "General Purpose M5 Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "m5.xlarge",
+                "slug": "m5.xlarge",
+                "title": "m5.xlarge",
+                "description": "General Purpose M5 Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "m5.2xlarge",
+                "slug": "m5.2xlarge",
+                "title": "m5.2xlarge",
+                "description": "General Purpose M5 Double Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "m5.4xlarge",
+                "slug": "m5.4xlarge",
+                "title": "m5.4xlarge",
+                "description": "General Purpose M5 Quadruple Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "m5.12xlarge",
+                "slug": "m5.12xlarge",
+                "title": "m5.12xlarge",
+                "description": "General Purpose M5 Twelve Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "m5.24xlarge",
+                "slug": "m5.24xlarge",
+                "title": "m5.24xlarge",
+                "description": "General Purpose M5 Twenty-Four Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "c5.large",
+                "slug": "c5.large",
+                "title": "c5.large",
+                "description": "Compute Optimized C5 Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "c5.xlarge",
+                "slug": "c5.xlarge",
+                "title": "c5.xlarge",
+                "description": "Compute Optimized C5 Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "c5.2xlarge",
+                "slug": "c5.2xlarge",
+                "title": "c5.2xlarge",
+                "description": "Compute Optimized C5 Double Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "c5.4xlarge",
+                "slug": "c5.4xlarge",
+                "title": "c5.4xlarge",
+                "description": "Compute Optimized C5 Quadruple Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "c5.9xlarge",
+                "slug": "c5.9xlarge",
+                "title": "c5.9xlarge",
+                "description": "Compute Optimized C5 Nine Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "c5.18xlarge",
+                "slug": "c5.18xlarge",
+                "title": "c5.18xlarge",
+                "description": "Compute Optimized C5 Eighteen Extra Large Instance",
+                "provider_id": 1
             }
         ]
     }
