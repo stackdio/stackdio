@@ -966,6 +966,27 @@
                 "title": "c5.18xlarge",
                 "description": "Compute Optimized C5 Eighteen Extra Large Instance",
                 "provider_id": 1
+            },
+            {
+                "instance_id": "p3.2xlarge",
+                "slug": "p3.2xlarge",
+                "title": "p3.2xlarge",
+                "description": "Accelerated Computing P3 Double Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "p3.8xlarge",
+                "slug": "p3.8xlarge",
+                "title": "p3.8xlarge",
+                "description": "Accelerated Computing P3 Eight Extra Large Instance",
+                "provider_id": 1
+            },
+            {
+                "instance_id": "p3.16xlarge",
+                "slug": "p3.16xlarge",
+                "title": "p3.16xlarge",
+                "description": "Accelerated Computing P3 Sixteen Extra Large Instance",
+                "provider_id": 1
             }
         ]
     }
