@@ -65,7 +65,7 @@ def find_ebs_device(device):
             new_device_letter = ord(device[7]) - ord('a')
             device_pattern = '/dev/nvme{}n1{}'
         else:
-            raise ValueError('Unable to find EBS device: {}'.format(device))
+            return None
 
         device_partition = device[8:]
 
