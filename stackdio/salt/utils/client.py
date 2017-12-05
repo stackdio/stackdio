@@ -17,6 +17,7 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+import io
 import logging
 import os
 import re
@@ -147,8 +148,8 @@ def process_sls_result(sls_result, err_file):
                 continue
 
             # Write to the error log
-            with open(err_file, 'a') as f:
-                f.write(yaml.safe_dump(stage_result))
+            with io.open(err_file, 'at') as f:
+                yaml.safe_dump(stage_result, f)
 
     return ret
 
@@ -191,42 +192,51 @@ def process_times(sls_result):
         # Now we want the sum since these are NOT running in parallel.
         time_map[info_dict['module']] = current + max_time
 
-    for module, time in sorted(time_map.items()):
-        logger.info('Module {0} took {1} total seconds to run'.format(module, time / 1000))
+    for smodule, time in sorted(time_map.items()):
+        logger.info('Module {0} took {1} total seconds to run'.format(smodule, time / 1000))
 
 
 def process_orchestrate_result(result, err_file):
-    # The actual info we want is nested in the 'data' key
-    result = result['data']
-
-    opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
-
-    if not isinstance(result, dict):
-        with open(err_file, 'a') as f:
-            f.write('Orchestration failed.  See below.\n\n')
-            f.write(six.text_type(result))
-        return True, set()
-
-    if opts['id'] not in result:
-        with open(err_file, 'a') as f:
-            f.write('Orchestration result is missing information:\n\n')
-            f.write(six.text_type(result))
-        return True, set()
-
-    result = result[opts['id']]
-
-    if not isinstance(result, dict):
-        with open(err_file, 'a') as f:
-            f.write(six.text_type(result))
-
-        raise StackdioSaltClientException(result)
-
     ret = {
         'failed': False,
         'succeeded_sls': {},
         'failed_sls': {},
         'cancelled_sls': {},
     }
+
+    if 'data' not in result:
+        with io.open(err_file, 'at') as f:
+            f.write('Orchestration result is missing information:\n\n')
+            f.write(six.text_type(result))
+        ret['failed'] = True
+        return ret
+
+    # The actual info we want is nested in the 'data' key
+    result = result['data']
+
+    opts = salt.config.client_config(settings.STACKDIO_CONFIG.salt_master_config)
+
+    if not isinstance(result, dict):
+        with io.open(err_file, 'at') as f:
+            f.write('Orchestration failed.  See below.\n\n')
+            f.write(six.text_type(result))
+        ret['failed'] = True
+        return ret
+
+    if opts['id'] not in result:
+        with io.open(err_file, 'at') as f:
+            f.write('Orchestration result is missing information:\n\n')
+            f.write(six.text_type(result))
+        ret['failed'] = True
+        return ret
+
+    result = result[opts['id']]
+
+    if not isinstance(result, dict):
+        with io.open(err_file, 'at') as f:
+            f.write(six.text_type(result))
+
+        raise StackdioSaltClientException(result)
 
     for sls, sls_result in sorted(result.items(), key=lambda x: x[1]['__run_num__']):
         sls_dict = state_to_dict(sls)
@@ -250,7 +260,7 @@ def process_orchestrate_result(result, err_file):
                 sls_ret_dict['succeeded_hosts'] = set(sls_result['changes'].get('ret', {}).keys())
 
             # Write a message to the error log
-            with open(err_file, 'a') as f:
+            with io.open(err_file, 'at') as f:
                 if sls_ret_dict['succeeded_hosts']:
                     f.write(
                         'Stage {} succeeded and returned {} host info object{}\n\n'.format(
@@ -268,7 +278,7 @@ def process_orchestrate_result(result, err_file):
             ret['succeeded_sls'][sls_dict['name']] = sls_ret_dict
         else:
             # We failed - print a message to the log.
-            with open(err_file, 'a') as f:
+            with io.open(err_file, 'at') as f:
                 if 'changes' in sls_result and 'ret' in sls_result['changes']:
                     f.write(
                         'Stage {} failed and returned {} host info object{}\n\n'.format(
@@ -347,7 +357,7 @@ class LoggingContextManager(object):
 
         # "touch" the log file and symlink it to the latest
         for l in (self.log_file, self.err_file):
-            with open(l, 'w') as _:
+            with io.open(l, 'w') as _:
                 pass
         self._symlink(self.log_file, log_symlink)
         self._symlink(self.err_file, err_symlink)
@@ -406,9 +416,9 @@ class StackdioLocalClient(LoggingContextManager):
                     # We failed.
                     ret['failed'] = True
                     ret['failed_hosts'].add(host)
-                    with open(self.err_file, 'a') as f:
+                    with io.open(self.err_file, 'at') as f:
                         f.write('Errors on host {}:\n'.format(host))
-                        f.write(yaml.safe_dump(host_errors))
+                        yaml.safe_dump(host_errors, f)
                         f.write('\n')
                 else:
                     # We succeeded!

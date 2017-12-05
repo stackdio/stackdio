@@ -69,7 +69,7 @@ requirements = [
     'celery[redis]~=3.1.0',
     'Django~=1.9.0',
     'djangorestframework~=3.4.0',
-    'salt~=2016.3.0,!=2016.3.3',
+    'salt~=2016.3.0,!=2016.3.3,!=2016.3.6,!=2016.3.7,!=2016.3.8',
 
     # Used, but still hold an upper bound on the version
     'boto~=2.32',
