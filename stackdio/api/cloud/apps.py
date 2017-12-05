@@ -35,7 +35,7 @@ def load_initial_data():
     cloud_dir = os.path.dirname(os.path.abspath(__file__))
     fixtures_json = os.path.join(cloud_dir, 'fixtures', 'cloud_objects.json')
 
-    with io.open(fixtures_json, 'rb') as f:
+    with io.open(fixtures_json, 'rt') as f:
         initial_data = json.load(f)
 
     if initial_data is None:
