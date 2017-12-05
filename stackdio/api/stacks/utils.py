@@ -173,7 +173,7 @@ def terminate_hosts(stack, cloud_map, hostnames):
 
     map_data = mapper.map_data()
 
-    missing_hosts = map_data.get('create', [])
+    missing_hosts = set(map_data.get('create', []))
 
     terminate_list = set(hostnames)
 
