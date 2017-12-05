@@ -265,7 +265,7 @@ LOGGING = {
     },
     'formatters': {
         'default': {
-            'format': '%(asctime)s %(levelname)s %(name)s - %(message)s',
+            'format': '%(asctime)s %(levelname)s [%(threadName)s] %(name)s - %(message)s',
         }
     },
     'handlers': {
