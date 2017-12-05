@@ -15,8 +15,9 @@
 # limitations under the License.
 #
 
-from __future__ import print_function, unicode_literals
+from __future__ import unicode_literals
 
+import io
 import json
 import logging
 import os
@@ -32,12 +33,13 @@ logger = logging.getLogger(__name__)
 
 def load_initial_data():
     cloud_dir = os.path.dirname(os.path.abspath(__file__))
+    fixtures_json = os.path.join(cloud_dir, 'fixtures', 'cloud_objects.json')
 
-    with open(os.path.join(cloud_dir, 'fixtures', 'cloud_objects.json')) as f:
+    with io.open(fixtures_json, 'rt') as f:
         initial_data = json.load(f)
 
     if initial_data is None:
-        print('Unable to load cloud objects')
+        logger.info('Unable to load cloud objects')
 
     return initial_data
 
@@ -51,15 +53,17 @@ def load_cloud_objects(app_config, verbosity=2, interactive=True,
     initial_data = load_initial_data()
 
     for model in initial_data:
+        logger.info("Attempting to load data for {}...".format(model['model']))
         # Grab the model class, but don't fail if we can't find it
         try:
             model_cls = apps.get_model('cloud', model['model'])
         except LookupError:
-            print('Failed to load model class: {}'.format(model['model']))
+            logger.warning('Failed to load model class: {}'.format(model['model']))
             continue
 
         # If we can't migrate this model, don't do anything & go on to the next
         if not router.allow_migrate_model(using, model_cls):
+            logger.info("Skipping data load for {}".format(model['model']))
             continue
 
         to_create = []

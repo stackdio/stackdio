@@ -1,11 +1,3 @@
-{% set hostname_service = salt['grains.filter_by']({
-    'Debian': salt['grains.filter_by']({
-      '12': 'hostname',
-      '14': 'hostname',
-      '16': 'networking',
-    }, 'osmajorrelease'),
-    'RedHat': 'network',
-}) %}
 
 # Edit the appropriate hostname file
 hostname_file:
@@ -51,13 +43,4 @@ set_hostname:
     - name: "hostname {{ grains['fqdn'] }}"
     - unless: "hostname | grep {{ grains['fqdn'] }}"
     - require:
-      - file: hostname_file
-
-# Restart the appropriate service for this change to take effect
-hostname-svc:
-  service.running:
-    - name: {{ hostname_service }}
-    - watch:
-      - cmd: set_hostname
-      - file: stack_hostnames
       - file: hostname_file

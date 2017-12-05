@@ -36,6 +36,9 @@ CACHES = {
 
 DATABASES['default']['CONN_MAX_AGE'] = 0
 
+# Add in the secure proxy header
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTOCOL', 'ssl')
+
 ##
 # Add in additional applications
 ##
