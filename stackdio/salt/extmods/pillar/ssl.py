@@ -49,6 +49,7 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
     csr_file = os.path.join(ca_dir, 'csr', __grains__['fqdn'] + '.csr')
     cert_file = os.path.join(ca_dir, 'certs', __grains__['fqdn'] + '.crt')
     ca_cert_chain_file = os.path.join(ca_dir, 'certs', 'chain.crt')
+    intermediate_ca_cert_file = os.path.join(ca_dir, 'certs', 'intermediate.crt')
     root_ca_cert_file = os.path.join(ca_dir, 'certs', 'root.crt')
 
     # Generate the private key
@@ -97,6 +98,7 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
         'private_key': None,
         'certificate': None,
         'chained_certificate': None,
+        'intermediate_ca_certificate': None,
         'ca_certificate': None,
     }
 
@@ -112,6 +114,9 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
         with io.open(ca_cert_chain_file, 'r') as f:
             # We need to put the newly generated cert on the front
             ssl_opts['chained_certificate'] = ssl_opts['certificate'] + f.read()
+
+        with io.open(intermediate_ca_cert_file, 'r') as f:
+            ssl_opts['intermediate_ca_certificate'] = f.read()
 
         with io.open(root_ca_cert_file, 'r') as f:
             ssl_opts['ca_certificate'] = f.read()
