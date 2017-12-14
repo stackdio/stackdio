@@ -19,6 +19,18 @@ env:
     - DB=postgres
     - DB=mysql
 
+# Only test postgres on older versions of python 3
+matrix:
+  exclude:
+    - python: "3.4"
+      env: DB=default
+    - python: "3.4"
+      env: DB=mysql
+    - python: "3.5"
+      env: DB=default
+    - python: "3.5"
+      env: DB=mysql
+
 # So that we get a docker container
 sudo: false
 
