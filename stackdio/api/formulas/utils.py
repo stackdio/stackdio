@@ -20,6 +20,7 @@
 
 from __future__ import unicode_literals
 
+import io
 import os
 import uuid
 
@@ -30,6 +31,7 @@ import salt.utils
 import salt.utils.event
 import six
 from django.conf import settings
+
 from stackdio.salt.utils.gitfs import StackdioGitFS, PER_REMOTE_OVERRIDES
 
 
@@ -55,7 +57,7 @@ def get_gitfs(uri, ssh_private_key, formula=None):
     if ssh_private_key:
         # Write out the key file
         ssh_private_key_file = os.path.join(root_dir, 'id_rsa')
-        with open(ssh_private_key_file, 'w') as f:
+        with io.open(ssh_private_key_file, 'wt') as f:
             f.write(ssh_private_key)
 
         os.chmod(ssh_private_key_file, 0o600)

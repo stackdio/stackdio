@@ -1,18 +1,22 @@
 
-# Edit the appropriate hostname file
+# Edit the hostname file
 hostname_file:
   file.managed:
-    {% if grains['os_family'] == 'RedHat' %}
+    - name: /etc/hostname
+    - contents:
+      - "{{ grains['fqdn'] }}"
+
+{% if grains['os_family'] == 'RedHat' %}
+network_file:
+  file.managed:
     - name: /etc/sysconfig/network
     - contents:
       - "NOZEROCONF=yes"
       - "NETWORKING=yes"
       - "HOSTNAME={{ grains['fqdn'] }}"
-    {% else %}
-    - name: /etc/hostname
-    - contents:
-      - "{{ grains['fqdn'] }}"
-    {% endif %}
+    - require_in:
+      - cmd: set_hostname
+{% endif %}
 
 cloud_init_hostname:
   file.managed:
