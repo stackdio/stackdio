@@ -43,7 +43,7 @@ define([
             }
         ],
         stack: ko.observable(),
-        autoRefresh: true,
+        autoRefresh: false,
         model: Host,
         baseUrl: '/stacks/',
         initialUrl: '/api/stacks/' + window.stackdio.stackId + '/hosts/',
