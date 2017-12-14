@@ -135,6 +135,7 @@ define([
                 return this.count() % this.pageSize() == 0 ? pages : pages + 1;
             }, this);
 
+            this.numFailures = 0;
             if (this.autoRefresh) {
                 this.intervalId = setInterval((function (self) {
                     return function() {
@@ -220,6 +221,10 @@ define([
                 method: 'GET',
                 url: this.currentPage()
             }).done(function (objects) {
+                // Reset the failures first
+                self.numFailures = 0;
+
+                // Then set all our view vars
                 self.count(objects.count);
                 self.previousPage(objects.previous);
                 self.nextPage(objects.next);
@@ -240,8 +245,18 @@ define([
                     // On 403, we should reload, which SHOULD redirect to the login page
                     window.location.reload(true);
                 } else {
-                    // If we get a 404 or something else, reset EVERYTHING.
-                    self.reset();
+                    if (self.numFailures >= 5) {
+                        console.warn('Too many ajax failures. Stopping refresh polling.');
+                        // We have failed to many times.  Stop the autorefresh
+                        clearInterval(self.intervalId);
+                        self.intervalId = null;
+                    } else {
+                        // Not enough failures to bomb out yet reset
+                        self.reset();
+                    }
+
+                    // Always increment our failures
+                    self.numFailures += 1;
                 }
             }).always(function () {
                 self.loading(false);
