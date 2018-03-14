@@ -1120,14 +1120,14 @@ class Host(TimeStampedModel):
 
     # Instance id of the running host. This is provided by the cloud
     # provider
-    instance_id = models.CharField('Instance ID', max_length=32, blank=True)
+    instance_id = models.CharField('Instance ID', max_length=64, blank=True)
 
     # Spot instance request ID will be populated when metadata is refreshed
     # if the host has been configured to launch spot instances. By default,
     # it will be unknown and will be set to NA if spot instances were not
     # used.
     sir_id = models.CharField('SIR ID',
-                              max_length=32,
+                              max_length=64,
                               default='unknown')
 
     # The spot instance price for this host if using spot instances

@@ -354,7 +354,7 @@ class Snapshot(TimeStampedModel, TitleSlugDescriptionModel):
 
     # The snapshot id. Must exist already, be preformatted, and available
     # to the associated cloud account
-    snapshot_id = models.CharField('Snapshot ID', max_length=32)
+    snapshot_id = models.CharField('Snapshot ID', max_length=64)
 
     # the type of file system the volume uses
     filesystem_type = models.CharField('Filesystem Type', max_length=16, choices=FILESYSTEM_CHOICES)
@@ -460,7 +460,7 @@ class SecurityGroup(TimeStampedModel, models.Model):
     # ID given by the provider
     # NOTE: This will be set automatically after it has been created on the
     # account and will be ignored if passed in
-    group_id = models.CharField(max_length=16)
+    group_id = models.CharField(max_length=64)
 
     # The stack that the security group is for (this is only
     # useful if it's a managed security group)
