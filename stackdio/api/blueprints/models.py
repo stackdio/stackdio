@@ -166,7 +166,7 @@ class BlueprintHostDefinition(TimeStampedModel, TitleDescriptionModel):
 
     # The subnet id for VPC enabled accounts
     # Only for EC2 VPC
-    subnet_id = models.CharField('Subnet ID', max_length=32, blank=True, default='')
+    subnet_id = models.CharField('Subnet ID', max_length=64, blank=True, default='')
 
     # The spot instance price for this host. If null, spot
     # instances will not be used for this host.

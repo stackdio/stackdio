@@ -58,7 +58,7 @@ class Volume(TimeStampedModel):
     # the volume id as provided by the cloud provider. This can only
     # be populated after the volume has been created, thus allowing
     # blank values
-    volume_id = models.CharField('Volume ID', max_length=32, blank=True)
+    volume_id = models.CharField('Volume ID', max_length=64, blank=True)
 
     def __str__(self):
         return six.text_type(self.volume_id)
