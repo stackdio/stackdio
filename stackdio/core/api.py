@@ -17,24 +17,11 @@
 
 from __future__ import unicode_literals
 
-from collections import OrderedDict
-
-import pip
 from rest_framework import generics, permissions, views
 from rest_framework.response import Response
+
 from stackdio.core import models, serializers
 from stackdio.server import __version__ as stackdio_version
-
-# Do this once at the module level so we don't have to load it multiple times
-versions = dict((x.project_name, x) for x in pip.get_installed_distributions())
-
-dep_versions = OrderedDict()
-
-if 'stackdio-server' in versions:
-    stackdio_dist = versions['stackdio-server']
-    for dist in sorted(stackdio_dist.requires(), key=lambda x: x.project_name.lower()):
-        v = versions.get(dist.project_name)
-        dep_versions[dist.project_name] = v.version if v else None
 
 
 class VersionAPIView(views.APIView):
@@ -46,7 +33,6 @@ class VersionAPIView(views.APIView):
     def get(self, request, *args, **kwargs):
         return Response({
             'version': stackdio_version,
-            'dependency_versions': dep_versions,
         })
 
 

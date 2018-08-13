@@ -89,6 +89,7 @@ disable=
   intern-builtin,
   invalid-name,
   keyword-arg-before-vararg,
+  len-as-condition,
   locally-disabled,
   logging-format-interpolation,
   long-builtin,
@@ -135,6 +136,7 @@ disable=
   unichr-builtin,
   unicode-builtin,
   unused-argument,
+  useless-object-inheritance,
   using-cmp-argument,
   xrange-builtin,
   zip-builtin-not-iterating

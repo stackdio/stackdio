@@ -70,6 +70,8 @@ requirements = [
     'Django~=1.9.0',
     'djangorestframework~=3.4.0',
     'salt~=2016.3.0,!=2016.3.3,!=2016.3.6,!=2016.3.7,!=2016.3.8',
+    'tornado<5',  # salt doesn't work with tornado 5, but it's dependencies don't show that
+    'pyzmq<17',  # salt emits warnings on pyzmq 17
 
     # Used, but still hold an upper bound on the version
     'boto~=2.32',
@@ -87,7 +89,6 @@ requirements = [
     'envoy',
     'GitPython>=2.0',
     'Markdown>=2.6',
-    'pip>=6',
     'PyYAML>=3.10',
     'requests>=2.4',
     'six>=1.6',

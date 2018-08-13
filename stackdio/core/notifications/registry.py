@@ -26,7 +26,8 @@ from django.utils.encoding import iri_to_uri
 from rest_framework.request import Request
 from rest_framework.reverse import reverse
 from rest_framework.serializers import BaseSerializer
-from six.moves.urllib_parse import urljoin, urlsplit  # pylint: disable=import-error
+from six.moves import urllib_parse as urllib
+
 from stackdio.core.config import StackdioConfigException
 
 NotifiableModelConfig = namedtuple('NotifiableModelConfig', ['serializer_class', 'url_name'])
@@ -42,9 +43,9 @@ class DummyRequest(HttpRequest):
         if location is None:
             return None
 
-        bits = urlsplit(location)
+        bits = urllib.urlsplit(location)
         if not (bits.scheme and bits.netloc):
-            location = urljoin(self.prod_url, location)
+            location = urllib.urljoin(self.prod_url, location)
         return iri_to_uri(location)
 
 
