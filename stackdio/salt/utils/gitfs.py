@@ -159,10 +159,8 @@ class StackdioGitPython(GitPython):
         if isinstance(remote, dict):
             self.id = next(iter(remote))
             self.get_url()
-            per_remote_conf = dict(
-                [(key, six.text_type(val)) for key, val in
-                 six.iteritems(salt.utils.repack_dictlist(remote[self.id]))]
-            )
+            per_remote_conf = {key: six.text_type(val) for key, val in
+                               six.iteritems(salt.utils.repack_dictlist(remote[self.id]))}
             if not per_remote_conf:
                 logger.critical(
                     'Invalid per-remote configuration for {0} remote \'{1}\'. '

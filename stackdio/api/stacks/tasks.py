@@ -120,7 +120,7 @@ def copy_global_orchestrate(stack):
 
     src_file = stack.get_global_orchestrate_file_path()
 
-    accounts = set([host.cloud_image.account for host in stack.hosts.all()])
+    accounts = {host.cloud_image.account for host in stack.hosts.all()}
 
     for account in accounts:
         dest_dir = os.path.join(account.get_root_directory(), 'salt_files')

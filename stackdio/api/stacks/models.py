@@ -751,7 +751,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         return os.path.join(self.get_stackdio_dir(), 'global_orchestrate.sls')
 
     def generate_global_orchestrate_file(self):
-        accounts = set([host.cloud_account for host in self.hosts.all()])
+        accounts = {host.cloud_account for host in self.hosts.all()}
 
         orchestrate = {}
 
@@ -878,10 +878,7 @@ class Stack(TimeStampedModel, TitleSlugDescriptionModel):
         pillar_props = {}
 
         # Find all of the globally used formulas for the stack
-        accounts = set(
-            [host.cloud_account for
-             host in self.hosts.all()]
-        )
+        accounts = {host.cloud_account for host in self.hosts.all()}
         global_formulas = []
         for account in accounts:
             global_formulas.extend(account.get_formulas())
