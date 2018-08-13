@@ -70,7 +70,8 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
             '-new', '-sha256',
             '-out', csr_file,
             '-subj', '{}/CN={}'.format(ca_subject, __grains__['fqdn'])
-        ], env={'DNS_NAME': __grains__['fqdn']})
+        ], env={'DNS_NAME': __grains__['fqdn'],
+                'DOMAIN': '*.' + __grains__['domain']})
 
         # Sign the certificate
         command = [
@@ -88,7 +89,8 @@ def ext_pillar(minion_id, pillar, *args, **kwargs):
         if ca_key_password:
             command += ['-key', ca_key_password]
 
-        subprocess.call(command, env={'DNS_NAME': __grains__['fqdn']})
+        subprocess.call(command, env={'DNS_NAME': __grains__['fqdn'],
+                                      'DOMAIN': '*.' + __grains__['domain']})
 
         if os.path.exists(cert_file):
             os.chmod(cert_file, 0o444)
