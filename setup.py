@@ -87,7 +87,6 @@ requirements = [
     'envoy',
     'GitPython>=2.0',
     'Markdown>=2.6',
-    'pip>=6',
     'PyYAML>=3.10',
     'requests>=2.4',
     'six>=1.6',
