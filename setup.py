@@ -92,6 +92,7 @@ requirements = [
     'PyYAML>=3.10',
     'requests>=2.4',
     'six>=1.6',
+    'setuptools>=40.0',
 ]
 
 testing_requirements = [
