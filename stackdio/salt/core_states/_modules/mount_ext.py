@@ -54,16 +54,16 @@ def find_ebs_device(device):
     if device.startswith('/dev/sd'):
         if os.path.exists('/dev/xvda'):
             new_device_letter = device[7]
-            device_pattern = '/dev/xvd{}{}'
+            device_pattern = '/dev/xvd{0}{1}'
         elif os.path.exists('/dev/xvde'):
             # Some systems start with /dev/xvde instead of /dev/xvda,
             # so we need to add 4 to the current letter
             new_device_letter = chr(ord(device[7]) + 4)
-            device_pattern = '/dev/xvd{}{}'
+            device_pattern = '/dev/xvd{0}{1}'
         elif os.path.exists('/dev/nvme0n1'):
             # Some devices use the NVMe naming scheme, so we need to convert the letter to a number
             new_device_letter = ord(device[7]) - ord('a')
-            device_pattern = '/dev/nvme{}n1{}'
+            device_pattern = '/dev/nvme{0}n1{1}'
         else:
             return None
 
